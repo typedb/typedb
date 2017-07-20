@@ -266,8 +266,6 @@ public class EntityTypeTest extends GraphTestBase{
         entityType1.resource(rtSuper);
         entityType2.resource(rt);
 
-        graknGraph.showImplicitConcepts(true);
-
         //Check role types are only built explicitly
         assertThat(entityType1.plays(),
                 containsInAnyOrder(graknGraph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(superLabel).getValue())));

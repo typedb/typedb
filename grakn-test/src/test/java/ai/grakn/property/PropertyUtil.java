@@ -19,18 +19,14 @@
 
 package ai.grakn.property;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.util.CommonUtil;
 import com.google.common.collect.Lists;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.empty;
@@ -43,11 +39,8 @@ import static org.junit.Assume.assumeThat;
 public class PropertyUtil {
 
     @SuppressWarnings("unchecked")
-    public static <T extends OntologyConcept> Collection<T> directSubs(GraknGraph graph, T ontologyElement) {
-        Function<GraknGraph,? extends List<? extends T>> function = g ->
-            ontologyElement.subs().stream().filter(subType -> ontologyElement.equals(subType.sup())).map(o -> (T) o).collect(toList());
-        Object ret = CommonUtil.withImplicitConceptsVisible(graph, function);
-        return (Collection<T>)ret;
+    public static <T extends OntologyConcept> Collection<T> directSubs(T ontologyElement) {
+        return ontologyElement.subs().stream().filter(subType -> ontologyElement.equals(subType.sup())).map(o -> (T) o).collect(toList());
     }
 
     public static Collection<OntologyConcept> indirectSupers(OntologyConcept ontologyConcept) {

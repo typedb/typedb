@@ -18,16 +18,22 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.util.Schema;
+import com.google.common.collect.Iterables;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.INVALID_DATATYPE;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -35,6 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ResourceTest extends GraphTestBase{
     @Test
@@ -122,4 +129,83 @@ public class ResourceTest extends GraphTestBase{
         assertEquals(myBirthday, resourceType.getResource(date));
         assertThat(graknGraph.getResourcesByValue(date), containsInAnyOrder(myBirthday));
     }
+
+    @Test
+    public void whenLinkingResourcesToThings_EnsureTheRelationIsAnEdge(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("My resource type", ResourceType.DataType.STRING);
+        Resource<String> resource = resourceType.putResource("A String");
+
+        EntityType entityType = graknGraph.putEntityType("My entity type").resource(resourceType);
+        Entity entity = entityType.addEntity();
+
+        entity.resource(resource);
+
+        RelationStructure relationStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relations())).structure();
+        assertThat(relationStructure, instanceOf(RelationEdge.class));
+        assertTrue("Edge Relation id not starting with [" + Schema.PREFIX_EDGE + "]",relationStructure.getId().getValue().startsWith(Schema.PREFIX_EDGE));
+        assertEquals(entity, resource.owner());
+        assertThat(entity.resources(), containsInAnyOrder(resource));
+    }
+
+    @Test
+    public void whenAddingRolePlayerToRelationEdge_RelationAutomaticallyReifies(){
+        //Create boring resource which creates a relation edge
+        ResourceType<String> resourceType = graknGraph.putResourceType("My resource type", ResourceType.DataType.STRING);
+        Resource<String> resource = resourceType.putResource("A String");
+        EntityType entityType = graknGraph.putEntityType("My entity type").resource(resourceType);
+        Entity entity = entityType.addEntity();
+        entity.resource(resource);
+        RelationImpl relation = RelationImpl.from(entity.relations().iterator().next());
+
+        //Check it's a relation edge.
+        RelationStructure relationStructureBefore = relation.structure();
+        assertThat(relationStructureBefore, instanceOf(RelationEdge.class));
+
+        //Get the roles and role players via the relation edge:
+        Map<Role, Set<Thing>> allRolePlayerBefore = relationStructureBefore.allRolePlayers();
+
+        //Expand Ontology to allow new role
+        Role newRole = graknGraph.putRole("My New Role");
+        entityType.plays(newRole);
+        relation.type().relates(newRole);
+        Entity newEntity = entityType.addEntity();
+
+        //Now actually add the new role player
+        relation.addRolePlayer(newRole, newEntity);
+
+        //Check it's a relation reified now.
+        RelationStructure relationStructureAfter = relation.structure();
+        assertThat(relationStructureAfter, instanceOf(RelationReified.class));
+
+        //Check IDs are equal
+        assertEquals(relationStructureBefore.getId(), relation.getId());
+        assertEquals(relationStructureBefore.getId(), relationStructureAfter.getId());
+
+        //Check Role Players have been transferred
+        allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationStructureAfter.rolePlayers(role)));
+
+        //Check Type Has Been Transferred
+        assertEquals(relationStructureBefore.type(), relationStructureAfter.type());
+
+        //Check new role player has been added as well
+        assertEquals(newEntity, Iterables.getOnlyElement(relationStructureAfter.rolePlayers(newRole)));
+    }
+
+    @Test
+    public void whenInsertingAThingWithTwoKeys_Throw(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("Key Thingy", ResourceType.DataType.STRING);
+        EntityType entityType = graknGraph.putEntityType("Entity Type Thingy").key(resourceType);
+        Entity entity = entityType.addEntity();
+
+        Resource<String> key1 = resourceType.putResource("key 1");
+        Resource<String> key2 = resourceType.putResource("key 2");
+
+        entity.resource(key1);
+        entity.resource(key2);
+
+        expectedException.expect(InvalidGraphException.class);
+
+        graknGraph.commit();
+    }
+
 }

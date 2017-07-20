@@ -22,6 +22,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -33,6 +34,8 @@ import org.javatuples.Tuple;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
+
+import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The vertex program for computing the shortest path between two instances.
@@ -114,9 +117,9 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
     public void safeExecute(final Vertex vertex, Messenger<Tuple> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
+                if (vertexHasSelectedTypeId(vertex, selectedTypes)) {
                     // send message from both source(1) and destination(-1) vertex
-                    String id = vertex.id().toString();
+                    String id = vertex.value(Schema.VertexProperty.ID.name());
                     if (persistentProperties.get(SOURCE).equals(id)) {
                         LOGGER.debug("Found source vertex");
                         vertex.property(PREDECESSOR, "");
@@ -135,7 +138,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
             default:
                 if (memory.<Boolean>get(FOUND_PATH)) {
                     //This will likely have to change as we support more and more vendors.
-                    String id = vertex.id().toString();
+                    String id = vertex.value(Schema.VertexProperty.ID.name());
                     if (memory.get(PREDECESSOR_FROM_SOURCE).equals(id)) {
                         LOGGER.debug("Traversing back to vertex " + id);
                         memory.set(PREDECESSOR_FROM_SOURCE, vertex.value(PREDECESSOR));
@@ -145,8 +148,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                         memory.set(PREDECESSOR_FROM_DESTINATION, vertex.value(PREDECESSOR));
                         vertex.property(FOUND_IN_ITERATION, memory.getIteration());
                     }
-                } else if (selectedTypes.contains(Utility.getVertexTypeId(vertex)) &&
-                        messenger.receiveMessages().hasNext()) {
+                } else if (vertexHasSelectedTypeId(vertex, selectedTypes) && messenger.receiveMessages().hasNext()) {
                     updateInstance(vertex, messenger, memory);
                 }
                 break;
@@ -155,7 +157,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     private void updateInstance(Vertex vertex, Messenger<Tuple> messenger, Memory memory) {
         if (!vertex.property(PREDECESSOR).isPresent()) {
-            String id = vertex.id().toString();
+            String id = vertex.value(Schema.VertexProperty.ID.name());
             LOGGER.debug("Considering instance " + id);
 
             Iterator<Tuple> iterator = messenger.receiveMessages();
@@ -216,7 +218,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     if ((int) message.getValue(DIRECTION) == -1) {
                         LOGGER.debug("Found path");
                         memory.or(FOUND_PATH, true);
-                        memory.set(PREDECESSORS, vertex.id().toString() + DIVIDER + message.getValue(ID));
+                        memory.set(PREDECESSORS, vertex.value(Schema.VertexProperty.ID.name()) +
+                                DIVIDER + message.getValue(ID));
                         return;
                     }
                 }
@@ -227,7 +230,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
                     if ((int) message.getValue(DIRECTION) == 1) {
                         LOGGER.debug("Found path");
                         memory.or(FOUND_PATH, true);
-                        memory.set(PREDECESSORS, message.getValue(ID) + DIVIDER + vertex.id().toString());
+                        memory.set(PREDECESSORS, message.getValue(ID) + DIVIDER +
+                                vertex.value(Schema.VertexProperty.ID.name()));
                         return;
                     }
                 }

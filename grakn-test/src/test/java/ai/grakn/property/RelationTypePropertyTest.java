@@ -108,7 +108,7 @@ public class RelationTypePropertyTest {
     }
 
     @Property
-    public void ARelationTypeRelatingARoleIsEquivalentToARoleHavingARelationType(
+    public void relationTypeRelatingARoleIsEquivalentToARoleHavingARelationType(
             RelationType relationType, @FromGraph Role role) {
         assertEquals(relationType.relates().contains(role), role.relationTypes().contains(relationType));
     }

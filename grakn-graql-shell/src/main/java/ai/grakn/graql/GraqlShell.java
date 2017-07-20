@@ -75,7 +75,6 @@ import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
 import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
 import static ai.grakn.util.REST.RemoteShell.DISPLAY;
 import static ai.grakn.util.REST.RemoteShell.ERROR;
-import static ai.grakn.util.REST.RemoteShell.IMPLICIT;
 import static ai.grakn.util.REST.RemoteShell.INFER;
 import static ai.grakn.util.REST.RemoteShell.KEYSPACE;
 import static ai.grakn.util.REST.RemoteShell.MATERIALISE;
@@ -176,7 +175,6 @@ public class GraqlShell {
         options.addOption("o", "output", true, "output format for results");
         options.addOption("u", "user", true, "username to sign in");
         options.addOption("p", "pass", true, "password to sign in");
-        options.addOption("i", "implicit", false, "show implicit types");
         options.addOption("n", "infer", false, "perform inference on results");
         options.addOption("m", "materialise", false, "materialise inferred results");
         options.addOption("h", "help", false, "print usage message");
@@ -227,7 +225,6 @@ public class GraqlShell {
             return;
         }
 
-        boolean showImplicitTypes = cmd.hasOption("i");
         boolean infer = cmd.hasOption("n");
         boolean materialise = cmd.hasOption("m");
 
@@ -266,7 +263,7 @@ public class GraqlShell {
 
             new GraqlShell(
                     historyFilename, keyspace, username, password, client, uri, queries, outputFormat,
-                    showImplicitTypes, infer, materialise
+                    infer, materialise
             );
         } catch (java.net.ConnectException e) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
@@ -329,7 +326,7 @@ public class GraqlShell {
     GraqlShell(
             String historyFilename, String keyspace, Optional<String> username, Optional<String> password,
             GraqlClient client, URI uri, Optional<List<String>> queryStrings, String outputFormat,
-            boolean showImplicitTypes, boolean infer, boolean materialise
+            boolean infer, boolean materialise
     ) throws Throwable {
 
         this.historyFilename = historyFilename;
@@ -343,7 +340,6 @@ public class GraqlShell {
                     ACTION, ACTION_INIT,
                     KEYSPACE, keyspace,
                     OUTPUT_FORMAT, outputFormat,
-                    IMPLICIT, showImplicitTypes,
                     INFER, infer,
                     MATERIALISE, materialise
             );

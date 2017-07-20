@@ -58,7 +58,7 @@ public class GraknOrientDBGraphTest {
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
         graknGraph.putEntityType(UUID.randomUUID().toString());
-        assertEquals(9, graknGraph.admin().getTinkerTraversal().toList().size());
+        assertEquals(9, graknGraph.admin().getTinkerTraversal().V().toList().size());
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
@@ -75,6 +75,6 @@ public class GraknOrientDBGraphTest {
             }
         });
 
-        assertEquals(9, graknGraph.admin().getTinkerTraversal().toList().size());
+        assertEquals(9, graknGraph.admin().getTinkerTraversal().V().toList().size());
     }
 }

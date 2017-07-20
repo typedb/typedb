@@ -18,14 +18,16 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -71,9 +73,15 @@ class ResourceImpl<D> extends ThingImpl<Resource<D>, ResourceType<D>> implements
      */
     @Override
     public Collection<Thing> ownerInstances() {
-        return getShortcutNeighbours().stream().
+        //Get Owner via implicit structure
+        Set<Thing> owners = getShortcutNeighbours().stream().
                 filter(concept -> !concept.isResource()).
                 collect(Collectors.toSet());
+
+        //Get owners via edges
+        neighbours(Direction.IN, Schema.EdgeLabel.RESOURCE).forEach(concept -> owners.add(concept.asThing()));
+
+        return owners;
     }
 
     @Override

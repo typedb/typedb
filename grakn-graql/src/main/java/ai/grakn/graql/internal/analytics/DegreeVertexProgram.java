@@ -31,6 +31,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
+
 /**
  * The vertex program for computing the degree.
  * <p>
@@ -105,15 +107,14 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     }
 
     void degreeMessagePassing(Vertex vertex, Messenger<Long> messenger) {
-        if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
+        if (vertexHasSelectedTypeId(vertex, selectedTypes)) {
             messenger.sendMessage(messageScopeShortcutIn, 1L);
             messenger.sendMessage(messageScopeShortcutOut, 1L);
         }
     }
 
     void degreeMessageCounting(Vertex vertex, Messenger<Long> messenger) {
-        LabelId labelId = Utility.getVertexTypeId(vertex);
-        if (selectedTypes.contains(labelId) && ofLabelIds.contains(labelId)) {
+        if (vertexHasSelectedTypeId(vertex, selectedTypes, ofLabelIds)) {
             vertex.property(degreePropertyKey, getMessageCount(messenger));
         }
     }

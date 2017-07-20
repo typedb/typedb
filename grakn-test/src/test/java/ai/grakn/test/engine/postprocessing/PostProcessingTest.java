@@ -84,7 +84,6 @@ public class PostProcessingTest {
         graph = session.open(GraknTxType.WRITE);
 
         assertEquals(1, resourceType.instances().size());
-
         //Check duplicates have been created
         Set<Vertex> resource1 = createDuplicateResource(graph, resourceType, resource);
         Set<Vertex> resource2 = createDuplicateResource(graph, resourceType, resource);
@@ -107,7 +106,7 @@ public class PostProcessingTest {
         //Now fix everything
 
         // Casting sets as ConceptIds
-        Set<String> resourceConcepts = merged.stream().map(c -> c.id().toString()).collect(toSet());
+        Set<String> resourceConcepts = merged.stream().map(c -> Schema.PREFIX_VERTEX + c.id().toString()).collect(toSet());
 
         //Now fix everything
         PostProcessingTask task = new PostProcessingTask();

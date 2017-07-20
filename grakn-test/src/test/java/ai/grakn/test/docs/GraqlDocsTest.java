@@ -25,9 +25,10 @@ import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Query;
 import ai.grakn.test.EngineContext;
-
+import ai.grakn.test.GraknTestSetup;
 import org.apache.tinkerpop.gremlin.util.function.TriConsumer;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,6 +49,7 @@ import static ai.grakn.test.docs.DocTestUtil.allMarkdownFiles;
 import static ai.grakn.test.docs.DocTestUtil.getLineNumber;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
 public class GraqlDocsTest {
@@ -89,9 +91,14 @@ public class GraqlDocsTest {
 
     @AfterClass
     public static void assertEnoughExamplesFound() {
-        if (numFound < 10) {
+        if (GraknTestSetup.usingTinker() && numFound < 10) {
             fail("Only found " + numFound + " Graql examples. Perhaps the regex is wrong?");
         }
+    }
+
+    @BeforeClass
+    public static void onlyRunOnTinker(){
+        assumeTrue(GraknTestSetup.usingTinker());
     }
 
     @Test

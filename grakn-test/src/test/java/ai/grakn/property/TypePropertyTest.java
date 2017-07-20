@@ -55,6 +55,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -126,7 +127,7 @@ public class TypePropertyTest {
     @Property
     public void whenGettingIndirectInstances_ReturnDirectInstancesAndIndirectInstancesOfDirectSubTypes(
             @Open GraknGraph graph, @FromGraph Type type) {
-        Collection<Type> directSubTypes = directSubs(graph, type);
+        Collection<Type> directSubTypes = directSubs(type);
         Thing[] expected = Stream.concat(
             directInstances(type).stream(),
             directSubTypes.stream().flatMap(subType -> subType.instances().stream())

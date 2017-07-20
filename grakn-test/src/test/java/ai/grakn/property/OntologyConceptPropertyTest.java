@@ -51,7 +51,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -102,12 +101,11 @@ public class OntologyConceptPropertyTest {
     }
 
     @Property
-    public void whenAnOntologyElementHasADirectSuper_ItIsADirectSubOfThatSuper(
-            @Open GraknGraph graph, @FromGraph OntologyConcept ontologyConcept) {
+    public void whenAnOntologyElementHasADirectSuper_ItIsADirectSubOfThatSuper(OntologyConcept ontologyConcept) {
         OntologyConcept superConcept = ontologyConcept.sup();
         assumeTrue(superConcept != null);
 
-        assertThat(directSubs(graph, superConcept), hasItem(ontologyConcept));
+        assertThat(directSubs(superConcept), hasItem(ontologyConcept));
     }
 
     @Property
@@ -130,9 +128,8 @@ public class OntologyConceptPropertyTest {
     }
 
     @Property
-    public void whenGettingIndirectSub_ReturnSelfAndIndirectSubsOfDirectSub(
-            @Open GraknGraph graph, @FromGraph OntologyConcept concept) {
-        Collection<OntologyConcept> directSubs = directSubs(graph, concept);
+    public void whenGettingIndirectSub_ReturnSelfAndIndirectSubsOfDirectSub(@FromGraph OntologyConcept concept) {
+        Collection<OntologyConcept> directSubs = directSubs(concept);
         OntologyConcept[] expected = Stream.concat(
                 Stream.of(concept),
                 directSubs.stream().flatMap(subConcept -> subConcept.subs().stream())
@@ -144,15 +141,6 @@ public class OntologyConceptPropertyTest {
     @Property
     public void whenGettingTheIndirectSubs_TheyContainTheOntologyConcept(OntologyConcept concept) {
         assertThat((Collection<OntologyConcept>) concept.subs(), hasItem(concept));
-    }
-
-    @Property
-    public void whenGettingTheIndirectSubsWithoutImplicitConceptsVisible_TheyDoNotContainImplicitConcepts(
-            @Open GraknGraph graph, @FromGraph OntologyConcept concept) {
-        assumeFalse(graph.implicitConceptsVisible());
-        concept.subs().forEach(subConcept -> {
-            assertFalse(subConcept + " should not be implicit", subConcept.isImplicit());
-        });
     }
 
     @Property
@@ -208,14 +196,13 @@ public class OntologyConceptPropertyTest {
 
     @Property
     public void whenAddingADirectSub_TheDirectSubIsAdded(
-            @Open GraknGraph graph,
-            @FromGraph OntologyConcept superConcept, @NonMeta @FromGraph OntologyConcept subConcept) {
+            OntologyConcept superConcept, @NonMeta @FromGraph OntologyConcept subConcept) {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
         assumeThat((Collection<OntologyConcept>) subConcept.subs(), not(hasItem(superConcept)));
 
         addDirectSub(superConcept, subConcept);
 
-        assertThat(directSubs(graph, superConcept), hasItem(subConcept));
+        assertThat(directSubs(superConcept), hasItem(subConcept));
     }
 
     @Ignore // TODO: Find a way to generate linked rules
