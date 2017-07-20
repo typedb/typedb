@@ -272,12 +272,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary(thing, "resource", resource);
             },
             () -> {
-                OntologyConcept type = ontologyConcept();
+                Type type = type();
                 Thing thing = instance();
-                //TODO: Clean this up
-                if(type instanceof Type) {
-                    ((Type)type).scope(thing);
-                }
+                type.scope(thing);
                 summary(type, "scope", thing);
             },
             () -> {
@@ -325,9 +322,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private Type type() {
-        // TODO: Revise this when `role` is not a sub of `thing`
+        // TODO: Revise this when meta concept is a type
         Collection<? extends Type> candidates = graph.admin().getMetaConcept().subs().stream().
-                filter(o -> !o.isRole()).map(o -> (Type) o).collect(Collectors.toSet());
+                map(o -> (Type) o).collect(Collectors.toSet());
         return random.choose(candidates);
     }
 
@@ -352,12 +349,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private Thing instance() {
-        // TODO: Revise this when `role` is not a sub of `thing`
-        Set<? extends Thing> candidates = graph.admin().getMetaConcept().subs().stream().
-                filter(element -> !element.isRole()).
-                flatMap(element -> ((Type) element).instances().stream()).
-                collect(Collectors.toSet());
-        return chooseOrThrow(candidates);
+        return chooseOrThrow(allInstancesFrom(graph));
     }
 
     private Relation relation() {
@@ -395,9 +387,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     public static Collection<? extends Thing> allInstancesFrom(GraknGraph graph) {
-        // TODO: Revise this when `role` is not a sub of `thing`
+        // TODO: Revise this when meta concept is a type
         return graph.admin().getMetaConcept().subs().stream().
-                filter(element -> !element.isRole()).
                 flatMap(element -> ((Type) element).instances().stream()).
                 collect(Collectors.toSet());
     }
