@@ -40,29 +40,27 @@ public class GraknComponentSupervisionTest {
 //  public void shouldStopCassandra() {
 //    // TODO
 //  }
-//
-//  @Test
-//  public void shouldReturnTrueIfCassandraIsRunning() {
-//    ProcessSupervision supervision = new ProcessSupervision();
-//    ProcessSupervision supervisionSpy = spy(supervision);
-//
-//    when(supervisionSpy.fileExists(anyString())).thenReturn(true);
-//    when(supervisionSpy.catPidFile(anyString())).thenReturn(0);
-//    when(supervisionSpy.psP(anyInt())).thenReturn(0);
-//
-//    assertEquals(supervisionSpy.isCassandraRunning(), true);
-//  }
 
-//  @Test
-//  public void shouldReturnFalseIfCassandraIsNotRunning() {
-//    ProcessSupervision supervision = new ProcessSupervision();
-//    ProcessSupervision supervisionSpy = spy(supervision);
-//
-//    when(supervisionSpy.fileExists(anyString())).thenReturn(false); // simulate file not found
-//    when(supervisionSpy.psP(anyInt())).thenReturn(0);
-//
-//    assertEquals(supervisionSpy.isCassandraRunning(), false);
-//  }
+  @Test
+  public void shouldReturnTrueIfCassandraIsRunning() throws MalformedPidFileException, IOException, InterruptedException {
+    GraknComponentSupervisor supervisionSpy = spy(GraknComponentSupervisor.class);
+
+    doReturn(true).when(supervisionSpy).fileExists(anyString());
+    doReturn(-1).when(supervisionSpy).catPidFile(anyString());
+    doReturn(0).when(supervisionSpy).psP(anyInt()); // simulate ps -p successful exit status
+
+    assertEquals(supervisionSpy.isCassandraRunning(), true);
+  }
+
+  @Test
+  public void shouldReturnFalseIfCassandraIsNotRunning() {
+    GraknComponentSupervisor supervisionSpy = spy(GraknComponentSupervisor.class);
+
+    doReturn(false).when(supervisionSpy).fileExists(anyString()); // simulate file not found
+    doReturn(0).when(supervisionSpy).psP(anyInt());
+
+    assertEquals(supervisionSpy.isCassandraRunning(), false);
+  }
 
   @Test
   public void shouldThrowIfPsExitCodeIsNonZero() throws IOException, InterruptedException, MalformedPidFileException {
@@ -71,7 +69,7 @@ public class GraknComponentSupervisionTest {
 
     doReturn(true).when(supervision).fileExists(anyString());
     doReturn(-1).when(supervision).catPidFile(anyString());
-    doReturn(NON_ZERO_EXIT_CODE).when(supervision).psP(anyInt()); // simulate ps -p unsuccessful return value (due to incorrect PID)
+    doReturn(NON_ZERO_EXIT_CODE).when(supervision).psP(anyInt()); // simulate ps -p unsuccessful exit status (i.e., due to incorrect PID)
 
     try {
       supervision.isCassandraRunning();
