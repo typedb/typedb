@@ -60,6 +60,6 @@ public class ResourceTypePropertyTest {
 
         Collection newResources = type.instances();
 
-        assertEquals(previousResources, newResources);
+        assertEquals(previousResources.size(), newResources.size());
     }
 }
