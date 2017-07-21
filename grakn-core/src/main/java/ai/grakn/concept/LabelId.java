@@ -20,8 +20,7 @@ package ai.grakn.concept;
 
 import com.google.auto.value.AutoValue;
 
-import com.google.common.base.Preconditions;
-
+import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
 /**
@@ -44,6 +43,7 @@ public abstract class LabelId implements Comparable<LabelId>, Serializable {
      *
      * @return Used for indexing purposes and for graql traversals
      */
+    @CheckReturnValue
     public abstract Integer getValue();
 
     @Override
