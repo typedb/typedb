@@ -161,8 +161,8 @@ public class ExplanationTest {
     public void testExplanationTreeCorrect_QueryingSpecificAnswer(){
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "$x id '" + polibuda.getId().getValue() + "';" +
-                "$y id '" + europe.getId().getValue() + "';";
+                "$x id '" + polibuda.getId() + "';" +
+                "$y id '" + europe.getId() + "';";
 
         MatchQuery query = iqb.parse(queryString);
         List<Answer> answers = query.admin().execute();
@@ -181,8 +181,8 @@ public class ExplanationTest {
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;" +
-                "$x id '" + polibuda.getId().getValue() + "';" +
-                "$z id '" + masovia.getId().getValue() + "';" +
+                "$x id '" + polibuda.getId() + "';" +
+                "$z id '" + masovia.getId() + "';" +
                 "select $y;";
 
         MatchQuery query = iqb.parse(queryString);
@@ -195,8 +195,8 @@ public class ExplanationTest {
     public void testExplainingQueryContainingContradiction(){
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "$x id '" + polibuda.getId().getValue() + "';" +
-                "$y id '" + uw.getId().getValue() + "';";
+                "$x id '" + polibuda.getId() + "';" +
+                "$y id '" + uw.getId() + "';";
 
         MatchQuery query = iqb.parse(queryString);
         List<Answer> answers = query.admin().execute();

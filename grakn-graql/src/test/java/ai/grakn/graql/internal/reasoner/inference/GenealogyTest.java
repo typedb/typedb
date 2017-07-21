@@ -86,7 +86,7 @@ public class GenealogyTest {
         Concept concept = Sets.newHashSet(genealogyGraph.graph().graql().infer(false).<MatchQuery>parse("match $x isa person;"))
                 .iterator().next()
                 .entrySet().iterator().next().getValue();
-        String queryString = "match $x id '" + concept.getId().getValue() + "' has gender $g;";
+        String queryString = "match $x id '" + concept.getId() + "' has gender $g;";
 
         MatchQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);

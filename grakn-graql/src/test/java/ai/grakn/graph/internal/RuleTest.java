@@ -86,13 +86,9 @@ public class RuleTest {
         then = graknGraph.graql().parsePattern("$x isa My-Type");
         Rule rule = graknGraph.admin().getMetaRuleInference().putRule(when, then);
 
-        String when = Schema.VertexProperty.RULE_WHEN.name();
-        String ruleType = rule.type().getLabel().getValue();
-        String ruleId = rule.getId().getValue();
-
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(
-                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(when, ruleId, ruleType, "Your-Type"));
+                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(Schema.VertexProperty.RULE_WHEN.name(), rule.getId(), rule.type().getLabel(), "Your-Type"));
 
         graknGraph.commit();
     }
