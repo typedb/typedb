@@ -179,10 +179,10 @@ public class RelationTest extends GraphTestBase{
         assertEquals(getFakeId(relation.type(), roleMap), relation.reified().get().getIndex());
     }
     private String getFakeId(RelationType relationType, TreeMap<Role, Thing> roleMap){
-        String itemIdentifier = "RelationType_" + relationType.getId().getValue() + "_Relation";
+        String itemIdentifier = "RelationType_" + relationType.getId() + "_Relation";
         for(Map.Entry<Role, Thing> entry: roleMap.entrySet()){
-            itemIdentifier = itemIdentifier + "_" + entry.getKey().getId().getValue();
-            if(entry.getValue() != null) itemIdentifier += "_" + entry.getValue().getId().getValue();
+            itemIdentifier = itemIdentifier + "_" + entry.getKey().getId();
+            if(entry.getValue() != null) itemIdentifier += "_" + entry.getValue().getId();
         }
         return itemIdentifier;
     }
