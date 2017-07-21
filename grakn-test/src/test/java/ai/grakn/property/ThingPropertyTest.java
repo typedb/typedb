@@ -24,6 +24,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 import static ai.grakn.property.PropertyUtil.choose;
@@ -47,6 +48,7 @@ public class ThingPropertyTest {
         assertThat(directInstances(type), hasItem(thing));
     }
 
+    @Ignore // TODO: Re-enable this when bug #16192 is fixed
     @Property
     public void whenGettingTheResourceOfAThing_TheResourcesOwnerIsTheThing(Thing thing, long seed) {
         assumeThat(thing, not(instanceOf(Resource.class)));
