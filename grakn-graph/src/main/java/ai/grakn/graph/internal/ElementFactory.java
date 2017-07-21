@@ -97,8 +97,8 @@ final class ElementFactory {
     }
 
     // ------------------------------------------ Building Resources
-    <V> ResourceImpl <V> buildResource(VertexElement vertex, ResourceType<V> type, V value){
-        return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(v, type, value));
+    <V> ResourceImpl <V> buildResource(VertexElement vertex, ResourceType<V> type, Object persitedValue){
+        return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(v, type, persitedValue));
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
