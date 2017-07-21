@@ -39,8 +39,8 @@ public enum ErrorMessage {
     INVALID_DATATYPE("The value [%s] must be of datatype [%s]"),
     INVALID_RESOURCE_CAST("The value of [%s] cannot be cast to [%s]"),
     INVALID_OBJECT_TYPE("The concept [%s] is not of type [%s]"),
-    REGEX_INSTANCE_FAILURE("The regex [%s] cannot be applied because instance [%s] with value [%s] of the " +
-            "Resource Type [%s] does not conform to the regular expression"),
+    REGEX_INSTANCE_FAILURE("The regex [%s] of Resource Type [%s] cannot be applied because value [%s] " +
+            "does not conform to the regular expression"),
     REGEX_NOT_STRING("The Resource Type [%s] is not of type String so it cannot support regular expressions"),
     CLOSED_CLEAR("The session for graph has been closed due to deleting the graph"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The transaction was not %s. The graph was actually effected directly"),
