@@ -168,7 +168,6 @@ public class TypePropertyTest {
         assertEquals(type, graph.getOntologyConcept(label));
     }
 
-    @Ignore // TODO: Fix this (Bug #16191)
     @Property
     public void whenATypeWithDirectInstancesIsSetToAbstract_Throw(Type type) {
         assumeThat(directInstances(type), not(empty()));
