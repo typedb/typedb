@@ -70,7 +70,7 @@ public class CassandraSupervisor {
         Process nodeTool = osCalls.exec(new String[]{ "sh", "-c", nodeToolCheckRunningCmd});
         int status = nodeTool.waitFor();
         System.out.println("== " + nodeToolCheckRunningCmd + " / " + status + " ==");
-        if (status != 0) throw new RuntimeException("unable to run nodetool - " + nodeToolCheckRunningCmd);
+        if (status != 0) throw new ExternalComponentException("unable to run nodetool - " + nodeToolCheckRunningCmd);
         String lines = osCalls.readStdoutFromProcess(nodeTool);
         return lines.equals(NODETOOL_RESPONSE_IF_RUNNING);
     }
@@ -79,7 +79,7 @@ public class CassandraSupervisor {
         Process startCassandra = osCalls.exec(new String[]{ "sh", "-c", cassandraStartCmd });
         int status = startCassandra.waitFor();
         System.out.println("== " + cassandraStartCmd + " / " + status + " ==");
-        if (status != 0) throw new RuntimeException("unable to start cassandra - " + cassandraStartCmd);
+        if (status != 0) throw new ExternalComponentException("unable to start cassandra - " + cassandraStartCmd);
         waitForCassandraStarted();
     }
 
@@ -89,11 +89,11 @@ public class CassandraSupervisor {
             boolean processRunning = osCalls.psP(pid) == 0;
             if (processRunning) {
                 // process found, stop it
-                Process kill = Runtime.getRuntime().exec(new String[]{"sh", "-c", "kill " + pid});
+                Process kill = osCalls.exec(new String[]{"sh", "-c", "kill " + pid});
                 int status = kill.waitFor();
                 waitForCassandraStopped();
                 if (status != 0) {
-                    throw new RuntimeException("unable to stop cassandra with PID " + pid);
+                    throw new ExternalComponentException("unable to stop cassandra with PID " + pid);
                 }
             }
         }
