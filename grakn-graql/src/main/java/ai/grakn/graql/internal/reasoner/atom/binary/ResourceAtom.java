@@ -209,7 +209,7 @@ public class ResourceAtom extends Binary{
 
         Set<String> errors = new HashSet<>();
         if (!type.isResourceType()){
-            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage(type.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage(type.getLabel().getValue()));
             return errors;
         }
 
@@ -218,7 +218,8 @@ public class ResourceAtom extends Binary{
         if (ownerType != null
                 && ownerType.isType()
                 && !ownerType.asType().resources().contains(type.asResourceType())){
-            errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(type.getLabel(), ownerType.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(
+                    type.getLabel().getValue(), ownerType.getLabel().getValue()));
         }
         return errors;
     }

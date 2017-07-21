@@ -33,8 +33,10 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.macro.Macro;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Collections2;
 
 import java.time.format.DateTimeParseException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -99,7 +101,7 @@ public class GraqlQueryException extends GraknException{
     }
 
     public static GraqlQueryException labelNotFound(Label label) {
-        return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
+        return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label.getValue()));
     }
 
     public static GraqlQueryException failDelete(VarProperty property) {
@@ -109,19 +111,19 @@ public class GraqlQueryException extends GraknException{
     }
 
     public static GraqlQueryException mustBeResourceType(Label resourceType) {
-        return new GraqlQueryException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
+        return new GraqlQueryException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType.getValue()));
     }
 
     public static GraqlQueryException queryInstanceOfRoleType(Label label) {
-        return new GraqlQueryException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(label));
+        return new GraqlQueryException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(label.getValue()));
     }
 
     public static GraqlQueryException notARelationType(Label label) {
-        return new GraqlQueryException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(label));
+        return new GraqlQueryException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(label.getValue()));
     }
 
     public static GraqlQueryException notARoleType(Label roleId) {
-        return new GraqlQueryException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(roleId, roleId));
+        return new GraqlQueryException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(roleId.getValue(), roleId.getValue()));
     }
 
     public static GraqlQueryException insertRelationWithoutType() {
@@ -129,7 +131,7 @@ public class GraqlQueryException extends GraknException{
     }
 
     public static GraqlQueryException insertUnsupportedProperty(String name, Schema.MetaSchema metaSchema) {
-        return new GraqlQueryException(INSERT_UNSUPPORTED_PROPERTY.getMessage(name, metaSchema.getLabel()));
+        return new GraqlQueryException(INSERT_UNSUPPORTED_PROPERTY.getMessage(name, metaSchema.getLabel().getValue()));
     }
 
     public static GraqlQueryException insertPredicate() {
@@ -145,7 +147,7 @@ public class GraqlQueryException extends GraknException{
     }
 
     public static GraqlQueryException insertInstanceWithLabel(Label label) {
-        return new GraqlQueryException(INSERT_INSTANCE_WITH_NAME.getMessage(label));
+        return new GraqlQueryException(INSERT_INSTANCE_WITH_NAME.getMessage(label.getValue()));
     }
 
     public static GraqlQueryException insertWithoutType(ConceptId conceptId) {
@@ -157,11 +159,12 @@ public class GraqlQueryException extends GraknException{
     }
 
     public static GraqlQueryException createInstanceOfMetaConcept(VarPatternAdmin var, Type type) {
-        return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.getLabel());
+        return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.getLabel().getValue());
     }
 
     public static GraqlQueryException insertMetaType(Label label, OntologyConcept ontologyConcept) {
-        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, ontologyConcept.getLabel()));
+        return new GraqlQueryException(
+                ErrorMessage.INSERT_METATYPE.getMessage(label.getValue(), ontologyConcept.getLabel().getValue()));
     }
 
     public static GraqlQueryException insertMultipleValues(ValuePredicateAdmin predicate, Object value) {
@@ -234,11 +237,13 @@ public class GraqlQueryException extends GraknException{
     }
 
     public static GraqlQueryException resourceMustBeANumber(ResourceType.DataType dataType, Label resourceType) {
-        return new GraqlQueryException(resourceType + " must have data type of `long` or `double`, but was " + dataType.getName());
+        return new GraqlQueryException(
+                resourceType.getValue() + " must have data type of `long` or `double`, but was " + dataType.getName());
     }
 
     public static GraqlQueryException resourcesWithDifferentDataTypes(Set<Label> resourceTypes) {
-        return new GraqlQueryException("resource types " + resourceTypes + " have different data types");
+        Collection<String> labels = Collections2.transform(resourceTypes, Label::getValue);
+        return new GraqlQueryException("resource types " + labels + " have different data types");
     }
 
     public static GraqlQueryException unificationAtomIncompatibility() {
@@ -294,7 +299,7 @@ public class GraqlQueryException extends GraknException{
     }
 
     public static GraqlQueryException insertAbstractOnNonType(OntologyConcept concept){
-        return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.getLabel()));
+        return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.getLabel().getValue()));
     }
 
     public static GraqlQueryException insertResourceTypeWithoutDataType(VarPatternAdmin var) {

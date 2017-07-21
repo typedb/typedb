@@ -375,7 +375,9 @@ class ValidateGlobalRules {
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
                     OntologyConcept ontologyConcept = graph.getOntologyConcept(typeLabel);
                     if(ontologyConcept == null){
-                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
+                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(
+                                side, rule.getId().getValue(), rule.type().getLabel().getValue(), typeLabel.getValue()
+                        ));
                     } else {
                         if(Schema.VertexProperty.RULE_WHEN.equals(side)){
                             RuleImpl.from(rule).addHypothesis(ontologyConcept);
