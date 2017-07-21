@@ -237,7 +237,7 @@ public class DeleteQueryTest {
     }
 
     @Test
-    public void testDeleteResource() {
+    public void whenDeletingAResource_TheResourceAndImplicitRelationsAreDeleted() {
         MatchQuery godfather = qb.match(var().has("title", "Godfather"));
         ConceptId id = qb.match(
                 x.has("title", "Godfather"),
@@ -252,9 +252,9 @@ public class DeleteQueryTest {
 
         qb.match(x.val(1000L).isa("tmdb-vote-count")).delete(x).execute();
 
-        assertTrue(exists(godfather));
-        assertFalse(exists(relation)); //Relation is implicit it was deleted
-        assertFalse(exists(voteCount));
+        assertTrue("When a resource is deleted, an owner of the resource should not be deleted", exists(godfather));
+        assertFalse("When a resource is deleted, any attached implicit relations should be deleted", exists(relation));
+        assertFalse("When a resource is deleted, it should no longer exist in the graph", exists(voteCount));
     }
 
     @Test

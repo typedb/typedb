@@ -107,6 +107,7 @@ public class CWGraph extends TestGraph {
         graph.putEntityType("missile")
                 .sup(weapon)
                 .plays(transactionItem)
+                .resource(propulsion)
                 .resource(key);
 
         country = graph.putEntityType("country")

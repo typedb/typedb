@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import com.google.common.base.Preconditions;
+
 import java.io.Serializable;
 
 /**
@@ -38,6 +40,7 @@ public class LabelId implements Comparable<LabelId>, Serializable {
     private Integer typeId;
 
     private LabelId(Integer typeId){
+        Preconditions.checkNotNull(typeId);
         this.typeId = typeId;
     }
 

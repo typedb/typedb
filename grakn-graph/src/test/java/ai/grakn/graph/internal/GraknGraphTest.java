@@ -22,6 +22,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.Veri
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -52,7 +53,7 @@ public class GraknGraphTest extends GraphTestBase {
     public void whenAttemptingToMutateViaTraversal_Throw(){
         expectedException.expect(VerificationException.class);
         expectedException.expectMessage("not read only");
-        graknGraph.getTinkerTraversal().drop().iterate();
+        graknGraph.getTinkerTraversal().V().drop().iterate();
     }
 
     @Test
@@ -101,11 +102,9 @@ public class GraknGraphTest extends GraphTestBase {
     public void whenGettingSubTypesFromRootMeta_IncludeAllTypes(){
         EntityType sampleEntityType = graknGraph.putEntityType("Sample Entity Type");
         RelationType sampleRelationType = graknGraph.putRelationType("Sample Relation Type");
-        Role sampleRole = graknGraph.putRole("Sample Role Type");
 
         assertThat(graknGraph.admin().getMetaConcept().subs(), containsInAnyOrder(
                 graknGraph.admin().getMetaConcept(),
-                graknGraph.admin().getMetaRoleType(),
                 graknGraph.admin().getMetaRelationType(),
                 graknGraph.admin().getMetaEntityType(),
                 graknGraph.admin().getMetaRuleType(),
@@ -113,8 +112,7 @@ public class GraknGraphTest extends GraphTestBase {
                 graknGraph.admin().getMetaRuleConstraint(),
                 graknGraph.admin().getMetaRuleInference(),
                 sampleEntityType,
-                sampleRelationType,
-                sampleRole
+                sampleRelationType
         ));
     }
 
@@ -127,18 +125,20 @@ public class GraknGraphTest extends GraphTestBase {
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.READ);
-        Collection<? extends OntologyConcept> types = graknGraph.getMetaConcept().subs();
+
+        Set<OntologyConcept> finalTypes = new HashSet<>();
+        finalTypes.addAll(graknGraph.getMetaConcept().subs());
+        finalTypes.add(graknGraph.admin().getMetaRole());
+
         graknGraph.abort();
 
         for (OntologyConcept type : graknGraph.getGraphCache().getCachedTypes().values()) {
-            assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", types.contains(type));
+            assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", finalTypes.contains(type));
         }
     }
     private void assertCacheOnlyContainsMetaTypes(){
         Set<Label> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(Collectors.toSet());
-        graknGraph.getGraphCache().getCachedTypes().keySet().forEach(cachedLabel -> {
-            assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel));
-        });
+        graknGraph.getGraphCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
     }
 
     @Test
@@ -277,8 +277,8 @@ public class GraknGraphTest extends GraphTestBase {
         failMutation(graknGraph, () -> relationT2.relates(roleT1));
     }
     private void failMutation(GraknGraph graph, Runnable mutator){
-        int vertexCount = graph.admin().getTinkerTraversal().toList().size();
-        int eddgeCount = graph.admin().getTinkerTraversal().bothE().toList().size();
+        int vertexCount = graph.admin().getTinkerTraversal().V().toList().size();
+        int eddgeCount = graph.admin().getTinkerTraversal().E().toList().size();
 
         Exception caughtException = null;
         try{
@@ -290,8 +290,8 @@ public class GraknGraphTest extends GraphTestBase {
         assertNotNull("No exception thrown when attempting to mutate a read only graph", caughtException);
         assertThat(caughtException, instanceOf(GraphOperationException.class));
         assertEquals(caughtException.getMessage(), ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
-        assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.admin().getTinkerTraversal().toList().size());
-        assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.admin().getTinkerTraversal().bothE().toList().size());
+        assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.admin().getTinkerTraversal().V().toList().size());
+        assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.admin().getTinkerTraversal().E().toList().size());
     }
 
     @Test

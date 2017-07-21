@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -29,6 +30,8 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.Collections;
 import java.util.Set;
+
+import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The vertex program for connected components in a graph.
@@ -87,15 +90,17 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public void safeExecute(final Vertex vertex, Messenger<String> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                    String id = vertex.id().toString();
+                if (vertexHasSelectedTypeId(vertex, selectedTypes)) {
+                    String id = vertex.value(Schema.VertexProperty.ID.name());
                     vertex.property(clusterLabel, id);
                     messenger.sendMessage(messageScopeShortcutIn, id);
+                    messenger.sendMessage(messageScopeResourceIn, id);
                     messenger.sendMessage(messageScopeShortcutOut, id);
+                    messenger.sendMessage(messageScopeResourceOut, id);
                 }
                 break;
             default:
-                if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
+                if (vertexHasSelectedTypeId(vertex, selectedTypes)) {
                     update(vertex, messenger, memory);
                 }
                 break;
@@ -109,7 +114,9 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         if (max.compareTo(currentMax) > 0) {
             vertex.property(clusterLabel, max);
             messenger.sendMessage(messageScopeShortcutIn, max);
+            messenger.sendMessage(messageScopeResourceIn, max);
             messenger.sendMessage(messageScopeShortcutOut, max);
+            messenger.sendMessage(messageScopeResourceOut, max);
             memory.and(VOTE_TO_HALT, false);
         }
     }

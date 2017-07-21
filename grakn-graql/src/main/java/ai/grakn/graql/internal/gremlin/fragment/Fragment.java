@@ -27,7 +27,7 @@ import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 import java.util.Map;
 import java.util.Optional;
@@ -71,7 +71,8 @@ public interface Fragment {
      * @param traversal the traversal to extend with this Fragment
      * @param graph     the graph to execute the traversal on
      */
-    void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph);
+    GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph);
 
     /**
      * The name of the fragment
@@ -133,4 +134,12 @@ public interface Fragment {
      */
     Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
                                                        Map<Node, Map<Node, Fragment>> edgeToFragment);
+
+    /**
+     * Indicates whether the fragment can be used on an {@link org.apache.tinkerpop.gremlin.structure.Edge} as well as
+     * a {@link org.apache.tinkerpop.gremlin.structure.Vertex}.
+     */
+    default boolean canOperateOnEdges() {
+        return false;
+    }
 }

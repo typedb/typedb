@@ -42,6 +42,7 @@ import static ai.grakn.util.ErrorMessage.LABEL_TAKEN;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.NO_TYPE;
 import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
+import static ai.grakn.util.ErrorMessage.UNKNOWN_CONCEPT;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 
 /**
@@ -83,8 +84,8 @@ public class GraphOperationException extends GraknException{
      * Thrown when an {@code thing} is not allowed to have {@code resource} of the type {@code hasType}.
      * {@code hasType} can be resources or keys.
      */
-    public static GraphOperationException hasNotAllowed(Thing thing, Resource resource, String hasType){
-        return new GraphOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), hasType, resource.type().getLabel()));
+    public static GraphOperationException hasNotAllowed(Thing thing, Resource resource){
+        return new GraphOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), resource.type().getLabel()));
     }
 
     /**
@@ -134,7 +135,7 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when attempting to mutate a property which is immutable
      */
-    public static GraphOperationException immutableProperty(Object oldValue, Object newValue, Schema.VertexProperty vertexProperty){
+    public static GraphOperationException immutableProperty(Object oldValue, Object newValue, Enum vertexProperty){
         return new GraphOperationException(ErrorMessage.IMMUTABLE_VALUE.getMessage(oldValue, newValue, vertexProperty.name()));
     }
 
@@ -232,6 +233,13 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException invalidPropertyUse(Concept concept, Schema.VertexProperty property) {
         return new GraphOperationException(INVALID_PROPERTY_USE.getMessage(concept, property));
+    }
+
+    /**
+     * Thrown when trying to build a {@link Concept} using an invalid graph construct
+     */
+    public static GraphOperationException unknownConcept(String type){
+        return new GraphOperationException(UNKNOWN_CONCEPT.getMessage(type));
     }
 
     /**
