@@ -32,8 +32,18 @@ public class CassandraSupervisor {
     private final Logger LOG = Logger.getLogger(CassandraSupervisor.class.getName());
     private final long WAIT_TIME_BETWEEN_ATTEMPT_MS = 2000;
 
-    public CassandraSupervisor(OperatingSystemCalls osCalls) {
+    // commands
+    private final String nodeToolCheckRunningCmd;
+    private final String NODETOOL_RESPONSE_IF_RUNNING = "running";
+    private final String cassandraStartCmd;
+    private final String cassandraStopCmd;
+
+    public CassandraSupervisor(OperatingSystemCalls osCalls, String baseWorkDir) {
         this.osCalls = osCalls;
+
+        this.cassandraStartCmd = baseWorkDir + "bin/grakn-cassandra.sh start";
+        this.cassandraStopCmd = baseWorkDir + "bin/grakn-cassandra.sh stop";
+        this.nodeToolCheckRunningCmd = baseWorkDir + "bin/nodetool statusthrift 2>/dev/null | tr -d '\\n\\r'";
     }
 
     public void startIfNotRunning() throws IOException, InterruptedException {
@@ -58,21 +68,28 @@ public class CassandraSupervisor {
         }
     }
 
-    // TODO: fix path
-    public boolean isRunning() throws IOException {
-        final String RESPONSE_IF_RUNNING = "running";
-        Process nodeTool = osCalls.exec(new String[]{"sh", "-c", "bin/nodetool statusthrift 2>/dev/null | tr -d '\\n\\r'"});
+    public boolean isRunning() throws IOException, InterruptedException {
+        Process nodeTool = osCalls.exec(new String[]{ "sh", "-c", nodeToolCheckRunningCmd});
+        int status = nodeTool.waitFor();
+        System.out.println("== " + nodeToolCheckRunningCmd + " / " + status + " ==");
+        if (status != 0) throw new RuntimeException("unable to run nodetool - " + nodeToolCheckRunningCmd);
         String lines = osCalls.readStdoutFromProcess(nodeTool);
-        return lines.equals(RESPONSE_IF_RUNNING);
+        return lines.equals(NODETOOL_RESPONSE_IF_RUNNING);
     }
 
     public void start() throws IOException, InterruptedException {
-        osCalls.exec(new String[]{"sh", "-c", "bin/grakn-cassandra.sh start"});
+        Process startCassandra = osCalls.exec(new String[]{ "sh", "-c", cassandraStartCmd });
+        int status = startCassandra.waitFor();
+        System.out.println("== " + cassandraStartCmd + " / " + status + " ==");
+        if (status != 0) throw new RuntimeException("unable to start cassandra - " + cassandraStartCmd);
         waitForCassandraStarted();
     }
 
     public void stop() throws IOException, InterruptedException {
-        osCalls.exec(new String[]{"sh", "-c", "bin/grakn-cassandra.sh stop"});
+        Process stopCassandra = osCalls.exec(new String[]{ "sh", "-c", cassandraStopCmd });
+        int status = stopCassandra.waitFor();
+        System.out.println("== " + cassandraStopCmd + " / " + status + " ==");
+        if (status != 0) throw new RuntimeException("unable to stop cassandra - " + cassandraStopCmd);
         waitForCassandraStopped();
     }
 

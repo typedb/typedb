@@ -118,8 +118,8 @@ public class GraknEngineServer implements AutoCloseable {
         this.metricRegistry = new MetricRegistry();
         this.taskManager = startTaskManager(inMemoryQueue, redisCountStorage, jedisPool, lockProvider);
         OperatingSystemCalls osCalls = new OperatingSystemCalls();
-        this.cassandraSupervisor = new CassandraSupervisor(osCalls);
-        this.redisSupervisor = new RedisSupervisor(osCalls);
+        this.cassandraSupervisor = new CassandraSupervisor(osCalls, "");
+        this.redisSupervisor = new RedisSupervisor(osCalls, "");
     }
 
     public static void main(String[] args) {

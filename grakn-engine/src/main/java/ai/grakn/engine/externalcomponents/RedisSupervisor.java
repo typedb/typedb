@@ -31,8 +31,25 @@ public class RedisSupervisor {
     private final Logger LOG = Logger.getLogger(RedisSupervisor.class.getName());
     private OperatingSystemCalls osCalls;
 
-    public RedisSupervisor(OperatingSystemCalls osCalls) {
+    private final String startRedisCmd;
+    private final String stopRedisCmd;
+    private final String isRedisRunningCmd;
+
+    public RedisSupervisor(OperatingSystemCalls osCalls, String baseWorkDir) {
         this.osCalls = osCalls;
+
+        if (osCalls.isMac()) {
+            this.startRedisCmd = baseWorkDir + "bin/redis-server-osx " + baseWorkDir + "conf/redis/redis.conf";
+            this.stopRedisCmd = baseWorkDir + "bin/redis-cli-osx shutdown";
+
+        }
+        else {
+            this.startRedisCmd = baseWorkDir + "bin/redis-server-linux " + baseWorkDir + "conf/redis/redis.conf";
+            this.stopRedisCmd = baseWorkDir + "bin/redis-cli-linux shutdown";
+        }
+
+        this.isRedisRunningCmd = "echo $(ps -ef | grep redis-server | grep -v grep | awk '{ print $2}')";
+
     }
 
     public void startIfNotRunning() throws IOException, InterruptedException {
@@ -56,48 +73,29 @@ public class RedisSupervisor {
         }
     }
 
+
     public void start() throws IOException, InterruptedException {
-        if (osCalls.isMac()) {
-            startRedisOsX();
-        } else {
-            startRedisLinux();
-        }
+        Process startRedis = osCalls.exec(new String[] { "sh", "-c", startRedisCmd } );
+        int status = startRedis.waitFor();
+        System.out.println("== " + startRedisCmd + " / " + status + " ==");
+        if (status != 0) throw new RuntimeException("unable to start redis - " + startRedisCmd);
     }
 
     public void stop() throws IOException, InterruptedException {
-        if (osCalls.isMac()) {
-            shutdownRedisOsX();
-        }
-        else {
-            shutdownRedisLinux();
-        }
-    }
-
-    // TODO: fix path
-    public void startRedisOsX() throws IOException, InterruptedException {
-        Process ps = osCalls.exec(new String[] { "sh", "-c", "bin/redis-server-osx conf/redis/redis.conf"} );
-        System.out.println("=== " + ps.waitFor() + " ===");
-    }
-
-    // TODO: fix path
-    public void startRedisLinux() throws IOException, InterruptedException {
-        Process ps = osCalls.exec(new String[] { "sh", "-c", "bin/redis-server-linux conf/redis/redis.conf"} );
-        System.out.println("=== " + ps.waitFor() + " ===");
-    }
-
-    public void shutdownRedisOsX() throws IOException, InterruptedException {
-        Process ps = osCalls.exec(new String[] { "sh", "-c", "bin/redis-cli-osx shutdown"} );
-        ps.waitFor();
-    }
-
-    public void shutdownRedisLinux() throws IOException, InterruptedException {
-        Process ps = osCalls.exec(new String[] { "sh", "-c", "bin/redis-cli-linux shutdown"} );
-        ps.waitFor();
+        Process stopRedis = osCalls.exec(new String[] { "sh", "-c", stopRedisCmd} );
+        int status = stopRedis.waitFor();
+        System.out.println("== " + stopRedisCmd + " / " + status + " ==");
+        if (status != 0) throw new RuntimeException("unable to stop redis - " + stopRedisCmd);
     }
 
     public boolean isRunning() throws IOException, InterruptedException {
-        Process ps = osCalls.exec(new String[] { "sh", "-c", "echo $(ps -ef | grep redis-server | grep -v grep | awk '{ print $2}')"} );
-        String output = osCalls.readStdoutFromProcess(ps);
+        Process isRedisRunning = osCalls.exec(new String[] { "sh", "-c", isRedisRunningCmd } );
+
+        int status = isRedisRunning.waitFor();
+        System.out.println("== " + isRedisRunningCmd + " / " + status + " ==");
+        if (status != 0) throw new RuntimeException("unable to run redis cli - " + isRedisRunningCmd);
+
+        String output = osCalls.readStdoutFromProcess(isRedisRunning);
         boolean running = !output.equals("");
         return running;
     }
