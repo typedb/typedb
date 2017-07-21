@@ -75,15 +75,13 @@ public class RedisSupervisor {
 
 
     public void start() throws IOException, InterruptedException {
-        Process startRedis = osCalls.exec(new String[] { "sh", "-c", startRedisCmd } );
-        int status = startRedis.waitFor();
+        int status = osCalls.execAndReturn(new String[] { "sh", "-c", startRedisCmd } );
         System.out.println("== " + startRedisCmd + " / " + status + " ==");
         if (status != 0) throw new ExternalComponentException("unable to start redis - " + startRedisCmd);
     }
 
     public void stop() throws IOException, InterruptedException {
-        Process stopRedis = osCalls.exec(new String[] { "sh", "-c", stopRedisCmd} );
-        int status = stopRedis.waitFor();
+        int status = osCalls.execAndReturn(new String[] { "sh", "-c", stopRedisCmd} );
         System.out.println("== " + stopRedisCmd + " / " + status + " ==");
         if (status != 0) throw new ExternalComponentException("unable to stop redis - " + stopRedisCmd);
     }

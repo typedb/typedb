@@ -71,6 +71,7 @@ public class CassandraSupervisorTest {
         doReturn(-1).when(osCallsMockitoSpy).catPidFile(anyString());
         doReturn(0).when(osCallsMockitoSpy).execAndReturn(any());
         doReturn(SUCCESS_EXIT_CODE).when(osCallsMockitoSpy).psP(anyInt());
+        doCallRealMethod().when(cassandraSupervisorMockitoSpy).stop();
 
         try {
             cassandraSupervisorMockitoSpy.stop();
@@ -81,15 +82,16 @@ public class CassandraSupervisorTest {
 
     @Test
     public void cassandraStopShouldThrowIfExecReturnsNonZero() throws IOException, InterruptedException {
-        final int SUCCESS_EXIT_CODE = 0;
+        final int NON_ZERO_EXIT_CODE = 1;
         OperatingSystemCalls osCallsMockitoSpy = spy(OperatingSystemCalls.class);
         CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(osCallsMockitoSpy, "");
         CassandraSupervisor cassandraSupervisorMockitoSpy = spy(cassandraSupervisor);
 
         doReturn(true).when(osCallsMockitoSpy).fileExists(anyString());
         doReturn(-1).when(osCallsMockitoSpy).catPidFile(anyString());
-        doReturn(1).when(osCallsMockitoSpy).execAndReturn(any());
-        doReturn(SUCCESS_EXIT_CODE).when(osCallsMockitoSpy).psP(anyInt());
+        doReturn(NON_ZERO_EXIT_CODE).when(osCallsMockitoSpy).execAndReturn(any());
+        doReturn(0).when(osCallsMockitoSpy).psP(anyInt());
+        doCallRealMethod().when(cassandraSupervisorMockitoSpy).stop();
 
         try {
             cassandraSupervisorMockitoSpy.stop();
