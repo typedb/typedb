@@ -66,4 +66,10 @@ public abstract class Label implements Comparable<Label>, Serializable {
     public static Label of(String value){
         return new AutoValue_Label(value);
     }
+
+    @Override
+    public final String toString() {
+        // TODO: Consider using @AutoValue toString
+        return getValue();
+    }
 }

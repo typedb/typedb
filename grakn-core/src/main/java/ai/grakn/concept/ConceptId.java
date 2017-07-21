@@ -60,4 +60,10 @@ public abstract class ConceptId implements Comparable<ConceptId>, Serializable {
     public static ConceptId of(String value){
         return new AutoValue_ConceptId(value);
     }
+
+    @Override
+    public final String toString() {
+        // TODO: Consider using @AutoValue toString
+        return getValue();
+    }
 }
