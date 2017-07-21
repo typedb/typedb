@@ -122,7 +122,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         preCheckForInstanceCreation();
 
         V instance = finder.get();
-        if(instance == null) instance = addInstance(instanceBaseType, producer);
+        if(instance == null) instance = addInstance(instanceBaseType, producer, false);
         return instance;
     }
 
@@ -131,10 +131,11 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      *
      * @param instanceBaseType The base type of the instances of this type
      * @param producer The factory method to produce the instance
+     * @param checkNeeded indicates if a check is necessary before adding the instance
      * @return A new instance
      */
-    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer){
-        preCheckForInstanceCreation();
+    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean checkNeeded){
+        if(checkNeeded) preCheckForInstanceCreation();
 
         if(isAbstract()) throw GraphOperationException.addingInstancesToAbstractType(this);
 

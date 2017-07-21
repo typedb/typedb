@@ -57,7 +57,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public Relation addRelation() {
         return addInstance(Schema.BaseType.RELATION,
-                (vertex, type) -> vertex().graph().factory().buildRelation(vertex, type));
+                (vertex, type) -> vertex().graph().factory().buildRelation(vertex, type), true);
     }
 
     @Override
