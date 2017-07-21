@@ -820,6 +820,14 @@ public class QueryParserTest {
     }
 
     @Test
+    public void lhsAndRhsSyntaxHasDeprecatedSupport() {
+        assertEquals(
+                parse("insert lhs  { $x; } rhs  { $y; }; "),
+                parse("insert when { $x; } then { $y; }; ")
+        );
+    }
+
+    @Test
     public void whenParsingAggregateWithWrongArgumentNumber_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("count", 0, 1));
