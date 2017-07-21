@@ -41,7 +41,7 @@ public class CassandraSupervisor {
     public CassandraSupervisor(OperatingSystemCalls osCalls, String baseWorkDir) {
         this.osCalls = osCalls;
 
-        this.cassandraStartCmd = baseWorkDir + "bin/grakn-cassandra.sh start";
+        this.cassandraStartCmd = baseWorkDir + "bin/cassandra -p /tmp/grakn-cassandra.pid";
         this.cassandraStopCmd = baseWorkDir + "bin/grakn-cassandra.sh stop";
         this.nodeToolCheckRunningCmd = baseWorkDir + "bin/nodetool statusthrift 2>/dev/null | tr -d '\\n\\r'";
     }
@@ -85,12 +85,27 @@ public class CassandraSupervisor {
         waitForCassandraStarted();
     }
 
-    public void stop() throws IOException, InterruptedException {
+    public void stop2() throws IOException, InterruptedException {
         Process stopCassandra = osCalls.exec(new String[]{ "sh", "-c", cassandraStopCmd });
         int status = stopCassandra.waitFor();
         System.out.println("== " + cassandraStopCmd + " / " + status + " ==");
         if (status != 0) throw new RuntimeException("unable to stop cassandra - " + cassandraStopCmd);
         waitForCassandraStopped();
+    }
+
+    public void stop() throws IOException, InterruptedException {
+        if (osCalls.fileExists("/tmp/grakn-cassandra.pid")) {
+            int pid = osCalls.catPidFile("/tmp/grakn-cassandra.pid");
+            boolean processRunning = osCalls.psP(pid) == 0;
+            if (processRunning) {
+                // process found, stop it
+                Process kill = Runtime.getRuntime().exec(new String[]{"sh", "-c", "kill " + pid});
+                int status = kill.waitFor();
+                if (status != 0) {
+                    throw new RuntimeException("unable to stop cassandra - " + cassandraStopCmd);
+                }
+            }
+        }
     }
 
     private void waitForCassandraStarted() throws IOException, InterruptedException {
