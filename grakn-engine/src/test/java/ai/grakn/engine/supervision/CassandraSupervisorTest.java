@@ -71,6 +71,7 @@ public class CassandraSupervisorTest {
         doReturn(-1).when(osCallsMockitoSpy).catPidFile(anyString());
         doReturn(0).when(osCallsMockitoSpy).execAndReturn(any());
         doReturn(SUCCESS_EXIT_CODE).when(osCallsMockitoSpy).psP(anyInt());
+        doNothing().when(cassandraSupervisorMockitoSpy).waitForCassandraStopped();
         doCallRealMethod().when(cassandraSupervisorMockitoSpy).stop();
 
         try {
@@ -91,6 +92,7 @@ public class CassandraSupervisorTest {
         doReturn(-1).when(osCallsMockitoSpy).catPidFile(anyString());
         doReturn(NON_ZERO_EXIT_CODE).when(osCallsMockitoSpy).execAndReturn(any());
         doReturn(0).when(osCallsMockitoSpy).psP(anyInt());
+        doNothing().when(cassandraSupervisorMockitoSpy).waitForCassandraStopped();
         doCallRealMethod().when(cassandraSupervisorMockitoSpy).stop();
 
         try {
