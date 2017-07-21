@@ -142,8 +142,8 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when trying to set a {@code value} on the {@code resource} which does not conform to it's regex
      */
-    public static GraphOperationException regexFailure(Resource resource, String value, String regex){
-        return new GraphOperationException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.getId(), value, resource.type().getLabel()));
+    public static GraphOperationException regexFailure(ResourceType resourceType, String value, String regex){
+        return new GraphOperationException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resourceType.getLabel(), value));
     }
 
     /**

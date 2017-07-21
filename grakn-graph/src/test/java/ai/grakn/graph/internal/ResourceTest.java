@@ -32,6 +32,7 @@ import com.google.common.collect.Iterables;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,6 +43,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ResourceTest extends GraphTestBase{
     @Test
@@ -117,6 +119,24 @@ public class ResourceTest extends GraphTestBase{
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(INVALID_DATATYPE.getMessage("Invalid Thing", Long.class.getName()));
         longResourceType.putResource("Invalid Thing");
+    }
+
+    // this is deliberately an incorrect type for the test
+    @SuppressWarnings("unchecked")
+    @Test
+    public void whenCreatingResourceWithAnInvalidDataType_DoNotCreateTheResource(){
+        ResourceType longResourceType = graknGraph.putResourceType("long", ResourceType.DataType.LONG);
+
+        try {
+            longResourceType.putResource("Invalid Thing");
+            fail("Expected to throw");
+        } catch (GraphOperationException e) {
+            // expected failure
+        }
+
+        Collection<Resource> instances = longResourceType.instances();
+
+        assertThat(instances, empty());
     }
 
     @Test
