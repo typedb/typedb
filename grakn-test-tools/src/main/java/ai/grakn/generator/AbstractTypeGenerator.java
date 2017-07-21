@@ -47,11 +47,11 @@ public abstract class AbstractTypeGenerator<T extends Type> extends AbstractOnto
         super(type);
     }
 
-    private boolean includeAbstract(){
+    private boolean willIncludeAbstractTypes(){
         return includeAbstract.orElse(true);
     }
 
-    final AbstractOntologyConceptGenerator<T> excludeAbstract() {
+    final AbstractOntologyConceptGenerator<T> makeExcludeAbstractTypes() {
         includeAbstract = Optional.of(false);
         return this;
     }
@@ -62,7 +62,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends AbstractOnto
 
     @Override
     protected final boolean filter(T type) {
-        return includeAbstract() || !type.isAbstract();
+        return willIncludeAbstractTypes() || !type.isAbstract();
     }
 
     /**

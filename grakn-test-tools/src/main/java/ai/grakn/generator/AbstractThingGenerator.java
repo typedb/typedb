@@ -44,7 +44,7 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
 
     @Override
     protected final T generateFromGraph() {
-        S type = genFromGraph(generatorClass).excludeAbstract().excludeMeta().generate(random, status);
+        S type = genFromGraph(generatorClass).makeExcludeAbstractTypes().excludeMeta().generate(random, status);
 
         Collection<T> instances = (Collection<T>) type.instances();
         if (instances.isEmpty()) {
