@@ -42,6 +42,7 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
@@ -76,6 +77,8 @@ public class GraqlShellIT {
     private static final String historyFile = StandardSystemProperty.JAVA_IO_TMPDIR.value() + "/graql-test-history";
 
     private static int keyspaceSuffix = 0;
+
+    private static boolean showStdOutAndErr = true;
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -415,26 +418,40 @@ public class GraqlShellIT {
 
     @Test
     public void testLargeQuery() throws Exception {
-        String value = Strings.repeat("really-", 100000) + "long-value";
+        // We don't show output for this test because the query is really-really-really-really-really-really-really long
+        showStdOutAndErr = false;
 
-        assertShellMatches(
-                "insert X sub resource datatype string; val '" + value + "' isa X;",
-                anything(),
-                "match $x isa X;",
-                allOf(containsString("$x"), containsString(value))
-        );
+        try {
+            String value = Strings.repeat("really-", 100000) + "long-value";
+
+            assertShellMatches(
+                    "insert X sub resource datatype string; val '" + value + "' isa X;",
+                    anything(),
+                    "match $x isa X;",
+                    allOf(containsString("$x"), containsString(value))
+            );
+        } finally {
+            showStdOutAndErr = true;
+        }
     }
 
     @Test
     public void whenErrorIsLarge_UserStillSeesEntireErrorMessage() throws Exception {
-        String value = Strings.repeat("really-", 100000) + "long-value";
+        // We don't show output for this test because the query is really-really-really-really-really-really-really long
+        showStdOutAndErr = false;
 
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        try {
+            String value = Strings.repeat("really-", 100000) + "long-value";
 
-        // Query has a syntax error
-        testShell("insert X sub resource datatype string; value '" + value + "' isa X;\n", err);
+            ByteArrayOutputStream err = new ByteArrayOutputStream();
 
-        assertThat(err.toString(), allOf(containsString("syntax error"), containsString(value)));
+            // Query has a syntax error
+            testShell("insert X sub resource datatype string; value '" + value + "' isa X;\n", err);
+
+            assertThat(err.toString(), allOf(containsString("syntax error"), containsString(value)));
+        } finally {
+            showStdOutAndErr = true;
+        }
     }
 
     @Test
@@ -637,37 +654,41 @@ public class GraqlShellIT {
         return testShell(input, err, args);
     }
 
-    private String testShell(String input, ByteArrayOutputStream berr, String... args) throws Exception {
+    private String testShell(String input, OutputStream berr, String... args) throws Exception {
         args = specifyUniqueKeyspace(args);
 
         InputStream in = new ByteArrayInputStream(input.getBytes());
 
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        OutputStream bout = new ByteArrayOutputStream();
 
-        PrintStream out = new PrintStream(new TeeOutputStream(bout, trueOut));
+        if (showStdOutAndErr) {
+            // Intercept stdout and stderr, but make sure it is still printed using the TeeOutputStream
+            bout = new TeeOutputStream(bout, trueOut);
+            berr = new TeeOutputStream(berr, trueErr);
+        }
 
-        // Intercept stderr, but make sure it is still printed using the TeeOutputStream
-        PrintStream err = new PrintStream(new TeeOutputStream(berr, trueErr));
+        PrintStream pout = new PrintStream(bout);
+        PrintStream perr = new PrintStream(berr);
 
         try {
             System.out.flush();
             System.err.flush();
             System.setIn(in);
-            System.setOut(out);
-            System.setErr(err);
+            System.setOut(pout);
+            System.setErr(perr);
 
             GraqlShell.runShell(args, expectedVersion, historyFile);
         } catch (Exception e) {
             System.setErr(trueErr);
             e.printStackTrace();
-            err.flush();
+            perr.flush();
             fail(berr.toString());
         } finally {
             resetIO();
         }
 
-        out.flush();
-        err.flush();
+        pout.flush();
+        perr.flush();
 
 
         return bout.toString();
