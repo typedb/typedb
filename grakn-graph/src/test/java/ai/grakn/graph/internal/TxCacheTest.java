@@ -173,7 +173,7 @@ public class TxCacheTest extends GraphTestBase{
                 "\":{\"" + Schema.BaseType.RESOURCE.name() +
                 "\":{}},\"" + REST.Request.COMMIT_LOG_COUNTING  +
                 "\":[{\"" + REST.Request.COMMIT_LOG_CONCEPT_ID +
-                "\":\"" + entityType.getId() + "\",\"" + REST.Request.COMMIT_LOG_SHARDING_COUNT + "\":2}]}");
+                "\":\"" + entityType.getId().getValue() + "\",\"" + REST.Request.COMMIT_LOG_SHARDING_COUNT + "\":2}]}");
         assertEquals("Unexpected graph logs", expected, graknGraph.txCache().getFormattedLog());
     }
 
