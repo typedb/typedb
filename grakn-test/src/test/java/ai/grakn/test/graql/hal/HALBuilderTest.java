@@ -7,6 +7,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.AcademyGraph;
+import ai.grakn.test.graphs.GenealogyGraph;
 import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -22,6 +23,9 @@ public class HALBuilderTest {
 
     @ClassRule
     public static final GraphContext academyGraph = GraphContext.preLoad(AcademyGraph.get());
+
+    public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get());
+
 
     @Test
     public void whenReceivingHALResponse_EnsureResponseContainsConceptDetails() {
@@ -94,6 +98,17 @@ public class HALBuilderTest {
             assertEquals(halObj.at("_baseType").asString(), "ENTITY");
             String entityType = halObj.at("_type").asString();
             assertTrue(entityType.equals("bond") || entityType.equals("article"));
+        });
+    }
+
+    @Test
+    public void whenSelectInferredRelationWithSingleVar_EnsureValidExplanationHrefIsContainedInResponse(){
+        Json response = getHALRepresentation(genealogyGraph.graph(), "match $x isa marriage; offset 0; limit 5;");
+        assertEquals(5, response.asList().size());
+        response.asJsonList().forEach(halObj -> {
+            assertEquals("inferred-relation", halObj.at("_baseType").asString());
+            String href = halObj.at("_links").at("self").at("href").asString();
+            assertTrue(href.contains("($a,$b) isa marriage;"));
         });
     }
 
