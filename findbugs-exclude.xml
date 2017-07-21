@@ -15,6 +15,16 @@
         <Class name="~ai\.grakn\.test\..*"/>
     </Match>
 
+    <!-- Exclude classes that implement `compareTo`, but use `@AutoValue` to implement `equals` and `hashCode` -->
+    <Match>
+        <Or>
+            <Class name="ai.grakn.concept.ConceptId"/>
+            <Class name="ai.grakn.concept.Label"/>
+            <Class name="ai.grakn.concept.LabelId"/>
+        </Or>
+        <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS"/>
+    </Match>
+
     <!-- Exclude a lot of bugs we can't be bothered to fix -->
     <!-- TODO: Re-enable these -->
 
