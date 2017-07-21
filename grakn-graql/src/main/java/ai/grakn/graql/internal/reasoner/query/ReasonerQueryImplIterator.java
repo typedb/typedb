@@ -86,7 +86,5 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
     }
 
     @Override
-    public Answer next() {
-        return queryIterator.next();
-    }
+    public Answer next() { return queryIterator.next();}
 }
