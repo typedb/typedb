@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 
 public class CassandraSupervisorTest {
     @Test
-    public void shouldStartCassandraSuccessfully() throws IOException, InterruptedException {
+    public void cassandraStartShouldWorkProperly() throws IOException, InterruptedException {
         final int SUCCESS_EXIT_CODE = 0;
         OperatingSystemCalls osCallsMockitoSpy = spy(OperatingSystemCalls.class);
         CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(osCallsMockitoSpy, "");
@@ -41,7 +41,7 @@ public class CassandraSupervisorTest {
     }
 
     @Test
-    public void shouldThrowIfExecReturnsNonZero() throws IOException, InterruptedException {
+    public void cassandraStartShouldThrowIfExecReturnsNonZero() throws IOException, InterruptedException {
         final int NON_ZERO_EXIT_CODE = 1;
         OperatingSystemCalls osCallsMockitoSpy = spy(OperatingSystemCalls.class);
         CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(osCallsMockitoSpy, "");
@@ -61,7 +61,7 @@ public class CassandraSupervisorTest {
     }
 
     @Test
-    public void shouldStopCassandraSucessfully() throws IOException, InterruptedException {
+    public void cassandraStopShouldWorkProperly() throws IOException, InterruptedException {
         final int SUCCESS_EXIT_CODE = 0;
         OperatingSystemCalls osCallsMockitoSpy = spy(OperatingSystemCalls.class);
         CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(osCallsMockitoSpy, "");
@@ -76,6 +76,26 @@ public class CassandraSupervisorTest {
             cassandraSupervisorMockitoSpy.stop();
         } catch (IOException | InterruptedException e) {
             assertTrue(false);
+        }
+    }
+
+    @Test
+    public void cassandraStopShouldThrowIfExecReturnsNonZero() throws IOException, InterruptedException {
+        final int SUCCESS_EXIT_CODE = 0;
+        OperatingSystemCalls osCallsMockitoSpy = spy(OperatingSystemCalls.class);
+        CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(osCallsMockitoSpy, "");
+        CassandraSupervisor cassandraSupervisorMockitoSpy = spy(cassandraSupervisor);
+
+        doReturn(true).when(osCallsMockitoSpy).fileExists(anyString());
+        doReturn(-1).when(osCallsMockitoSpy).catPidFile(anyString());
+        doReturn(1).when(osCallsMockitoSpy).execAndReturn(any());
+        doReturn(SUCCESS_EXIT_CODE).when(osCallsMockitoSpy).psP(anyInt());
+
+        try {
+            cassandraSupervisorMockitoSpy.stop();
+            assertTrue(false);
+        } catch (ExternalComponentException e) {
+            assertTrue(true);
         }
     }
 }
