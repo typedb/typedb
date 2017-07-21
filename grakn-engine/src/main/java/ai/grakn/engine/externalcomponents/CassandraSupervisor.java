@@ -91,6 +91,7 @@ public class CassandraSupervisor {
                 // process found, stop it
                 Process kill = Runtime.getRuntime().exec(new String[]{"sh", "-c", "kill " + pid});
                 int status = kill.waitFor();
+                waitForCassandraStopped();
                 if (status != 0) {
                     throw new RuntimeException("unable to stop cassandra with PID " + pid);
                 }
