@@ -26,7 +26,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
-import ai.grakn.generator.AbstractTypeGenerator.Abstract;
+import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import com.google.common.collect.ImmutableSet;
@@ -80,28 +80,28 @@ public class RelationTypePropertyTest {
 
     @Property
     public void whenAddingARelation_TheDirectTypeOfTheRelationIsTheTypeItWasCreatedFrom(
-            @NonMeta @Abstract(false) RelationType type) {
+            @NonMeta @NonAbstract RelationType type) {
         Relation relation = type.addRelation();
 
         assertEquals(type, relation.type());
     }
 
     @Property
-    public void whenAddingARelation_TheRelationIsInNoRelations(@NonMeta @Abstract(false) RelationType type) {
+    public void whenAddingARelation_TheRelationIsInNoRelations(@NonMeta @NonAbstract RelationType type) {
         Relation relation = type.addRelation();
 
         assertThat(relation.relations(), empty());
     }
 
     @Property
-    public void whenAddingARelation_TheRelationHasNoResources(@NonMeta @Abstract(false) RelationType type) {
+    public void whenAddingARelation_TheRelationHasNoResources(@NonMeta @NonAbstract RelationType type) {
         Relation relation = type.addRelation();
 
         assertThat(relation.resources(), empty());
     }
 
     @Property
-    public void whenAddingARelation_TheRelationHasNoRolePlayers(@NonMeta @Abstract(false) RelationType type) {
+    public void whenAddingARelation_TheRelationHasNoRolePlayers(@NonMeta @NonAbstract RelationType type) {
         Relation relation = type.addRelation();
 
         assertThat(relation.rolePlayers(), empty());

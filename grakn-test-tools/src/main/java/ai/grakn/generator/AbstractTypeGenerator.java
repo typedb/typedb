@@ -20,6 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.Type;
+import com.google.common.base.Preconditions;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
@@ -56,8 +57,20 @@ public abstract class AbstractTypeGenerator<T extends Type> extends AbstractOnto
         return this;
     }
 
-    public final void configure(Abstract includeAbstract) {
-        this.includeAbstract = Optional.of(includeAbstract.value());
+    public final void configure(Abstract abstract_) {
+        Preconditions.checkArgument(
+                !this.includeAbstract.isPresent() || this.includeAbstract.get(),
+                "Cannot specify parameter is both abstract and non-abstract"
+        );
+        this.includeAbstract = Optional.of(true);
+    }
+
+    public final void configure(NonAbstract nonAbstract) {
+        Preconditions.checkArgument(
+                !this.includeAbstract.isPresent() || !this.includeAbstract.get(),
+                "Cannot specify parameter is both abstract and non-abstract"
+        );
+        this.includeAbstract = Optional.of(false);
     }
 
     @Override
@@ -66,12 +79,20 @@ public abstract class AbstractTypeGenerator<T extends Type> extends AbstractOnto
     }
 
     /**
-     * Specify whether the generated {@link Type} should be abstract
+     * Specify that the generated {@link Type} should be abstract
      */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
     public @interface Abstract {
-        boolean value() default true;
+    }
+
+    /**
+     * Specify that the generated {@link Type} should not be abstract
+     */
+    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
+    @Retention(RUNTIME)
+    @GeneratorConfiguration
+    public @interface NonAbstract {
     }
 }

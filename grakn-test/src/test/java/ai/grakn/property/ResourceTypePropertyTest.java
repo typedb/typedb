@@ -22,7 +22,7 @@ package ai.grakn.property;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
-import ai.grakn.generator.AbstractTypeGenerator.Abstract;
+import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
 import ai.grakn.generator.ResourceValues;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
@@ -47,7 +47,7 @@ public class ResourceTypePropertyTest {
 
     @Property
     public void whenPuttingAResourceAndMethodThrows_DoNotCreateTheResource(
-            @NonMeta @Abstract(false) ResourceType type, @From(ResourceValues.class) Object value) {
+            @NonMeta @NonAbstract ResourceType type, @From(ResourceValues.class) Object value) {
 
         Collection previousResources = type.instances();
 
