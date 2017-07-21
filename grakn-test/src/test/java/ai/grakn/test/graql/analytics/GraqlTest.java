@@ -79,8 +79,7 @@ public class GraqlTest {
     private String relationId24;
 
     @ClassRule
-    // TODO: Don't set port once bug #15130 is fixed
-    public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
+    public static final EngineContext context = EngineContext.startInMemoryServer();
 
     @Before
     public void setUp() {

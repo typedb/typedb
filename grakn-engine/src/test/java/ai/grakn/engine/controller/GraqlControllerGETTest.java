@@ -93,7 +93,7 @@ public class GraqlControllerGETTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         new SystemController(mockFactory, spark);
         new GraqlController(mockFactory, spark);
-    });//.port(4567); // TODO: Don't use the default port when bug #15130 is fixed
+    });
 
     @Before
     public void setupMock() {
@@ -437,8 +437,8 @@ public class GraqlControllerGETTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
-    @Ignore
     @Test
+    @Ignore
     public void ZGETGraqlComputePathWithTextType_ResponseIsCorrect() {
         assumeTrue(GraknTestSetup.usingTitan());
 
@@ -453,7 +453,6 @@ public class GraqlControllerGETTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
-    @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseContentTypeIsHAL() {
         assumeTrue(GraknTestSetup.usingTitan());
@@ -468,7 +467,6 @@ public class GraqlControllerGETTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
-    @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseStatusIs200() {
         assumeTrue(GraknTestSetup.usingTitan());
@@ -483,8 +481,8 @@ public class GraqlControllerGETTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
-    @Ignore
     @Test
+    @Ignore
     public void ZGETGraqlComputePathWithHALType_ResponseIsNotEmpty() {
         assumeTrue(GraknTestSetup.usingTitan());
 
@@ -498,7 +496,6 @@ public class GraqlControllerGETTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
-    @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseContainsValidHALObjects() {
         assumeTrue(GraknTestSetup.usingTitan());
@@ -517,7 +514,6 @@ public class GraqlControllerGETTest {
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
-    @Ignore
     @Test
     public void ZGETGraqlComputePathWithHALTypeAndNoPath_ResponseIsEmptyJson() {
         String fromId = graphContext.graph().getResourcesByValue("Apocalypse Now").iterator().next().owner().getId().getValue();
