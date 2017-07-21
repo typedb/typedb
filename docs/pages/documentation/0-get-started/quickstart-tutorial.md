@@ -210,6 +210,8 @@ We will move on to discuss the use of GRAKN.AI to infer new information about a 
 However, the `person` entity does have a gender resource, and we can use Grakn to infer more information about each relationship by using that property. The ontology accommodates the more specific roles of mother, father, daughter and son:
 
 ```graql
+insert
+
 person 
   plays son
   plays daughter
@@ -233,6 +235,8 @@ daughter sub child;
 Included in *basic-genealogy.gql* are a set of Graql rules to instruct Grakn's reasoner on how to label each parentship relation:
 
 ```graql
+insert
+
 $genderizeParentships1 isa inference-rule
 when
 {(parent: $p, child: $c) isa parentship;
@@ -341,7 +345,8 @@ match $x has identifier "Barbara Shafner"; $y has identifier "Jacob J. Niesz";
 
 and then search for relationships joining two of them using:
 
-```graql
+<!-- Ignoring because uses fake IDs -->
+```graql-test-ignore
 compute path from "id1" to "id2"; # Use the actual values of identifier for each person
 # e.g. compute path from "114848" to "348264";
 ```
@@ -354,7 +359,8 @@ The path query uses a scalable shortest path algorithm to determine the smallest
 
 To narrow the path to specific relations between specific entities:
 
-```graql
+<!-- Ignoring because uses fake IDs -->
+```graql-test-ignore
 compute path from "id1" to "id2" in person, parentship;
 ```
 

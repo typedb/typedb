@@ -20,22 +20,23 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
 import ai.grakn.engine.GraknEngineServer;
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
-import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.engine.SystemKeyspace;
+import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.util.EmbeddedRedis;
 import com.jayway.restassured.RestAssured;
+import org.slf4j.LoggerFactory;
+import spark.Service;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.Set;
 
+import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
+import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.graql.Graql.var;
-import org.slf4j.LoggerFactory;
-import spark.Service;
 
 /**
  * <p>

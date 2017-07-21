@@ -64,7 +64,7 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
 
     @Override
     public boolean isSessionClosed() {
-        return !rootGraph.traversal().V().has(Schema.VertexProperty.TYPE_LABEL.name(), Schema.MetaSchema.ENTITY.getLabel().getValue()).hasNext();
+        return !rootGraph.traversal().V().has(Schema.VertexProperty.ONTOLOGY_LABEL.name(), Schema.MetaSchema.ENTITY.getLabel().getValue()).hasNext();
     }
 
     @Override

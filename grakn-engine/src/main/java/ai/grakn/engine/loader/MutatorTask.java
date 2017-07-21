@@ -29,7 +29,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.REST;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer.Context;
 import mjson.Json;
 
@@ -40,6 +39,7 @@ import java.util.stream.Collectors;
 import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
 import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * Task that will mutate data in a graph. It uses the engine running on the
@@ -75,7 +75,6 @@ public class MutatorTask extends BackgroundTask {
      */
     private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts) {
         try(Context context = metricRegistry().timer(name(MutatorTask.class, "execution")).time()) {
-            graph.showImplicitConcepts(true);
             inserts.forEach(q -> {
                 try(Context contextSingle = metricRegistry().timer(name(MutatorTask.class, "execution-single")).time()){
                     q.withGraph(graph).execute();

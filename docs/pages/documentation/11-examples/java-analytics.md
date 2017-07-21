@@ -69,7 +69,8 @@ The Titan factory is required because engine is configured with Titan as the bac
 
 First, we load the ontology and data we will be working with, which is the familiar *basic-genealogy.gql* dataset.
 
-```java
+<!-- We ignore these examples because try-with-resources isn't valid Groovy -->
+```java-test-ignore
 private static void loadBasicGenealogy() {
     ClassLoader classLoader = Main.class.getClassLoader();
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
@@ -89,7 +90,8 @@ private static void loadBasicGenealogy() {
 
 The next thing to do is connect to the running engine instance and check that the graph contains the data that we expect. This can be achieved with the following code:
 
-```java
+<!-- We ignore these examples because try-with-resources isn't valid Groovy -->
+```java-test-ignore
 private static void testConnection() {
     // initialise the connection to Grakn engine
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
@@ -115,7 +117,8 @@ private static void testConnection() {
 
 Now that we have established the connection to Grakn engine works we can obtain the graph object and compute the clusters that we are interested in:
 
-```java
+<!-- We ignore these examples because try-with-resources isn't valid Groovy -->
+```java-test-ignore
 private static Map<String, Set<String>> computeClusters() {
     // initialise the connection to Grakn engine
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
@@ -146,7 +149,8 @@ If we had not used the members syntax we would only know the size of the cluster
 
 Now that we have information about the clusters, it would be useful to add it to the graph so that we can visualise it. We can do this by creating a new entity type called `cluster` and a new relation type called `grouping` with the roles `group` and `member`. The ontology can be mutated as follows:
 
-```java
+<!-- We ignore these examples because try-with-resources isn't valid Groovy -->
+```java-test-ignore
 private static void mutateOntology() {
     // initialise the connection to Grakn engine
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
@@ -179,7 +183,8 @@ We also have to ensure that the existing types in the ontology can play the spec
 
 Now all that is left is to populate the graph with the clusters and grouping relationships. To do this we can create a cluster for each result from the analytics query, which can then be attached to each of the concepts returned in the set of members:
 
-```java
+<!-- We ignore these examples because try-with-resources isn't valid Groovy -->
+```java-test-ignore
 private static void persistClusters(Map<String, Set<String>> results) {
 
     // initialise the connection to Grakn engine
@@ -227,7 +232,8 @@ If you explore the results you can now see the entities that are members of a gi
 
 When using the visualiser it is probably quite useful to be able to see the size of the cluster before clicking on it. In order to add this information to the graph we will use another analytics function degree. The code to compute the degree is:
 
-```java
+<!-- We ignore these examples because try-with-resources isn't valid Groovy -->
+```java-test-ignore
 private static Map<Long, Set<String>> degreeOfClusters() {
     // initialise the connection to Grakn engine
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
@@ -255,7 +261,8 @@ The `in` syntax has again been used here to restrict the algorithm to the graph 
 As we did when computing the clusters, we need to put the information back into the graph. This time we will attach a resource called `degree` to the cluster entity. The ontology mutation and persisting of the degrees is performed in a single method:
 
 
-```java
+<!-- We ignore these examples because try-with-resources isn't valid Groovy -->
+```java-test-ignore
 private static void persistDegrees(Map<Long, Set<String>> degrees) {
     // initialise the connection to Grakn engine
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {

@@ -20,6 +20,8 @@ package ai.grakn.concept;
 
 import com.google.auto.value.AutoValue;
 
+import com.google.common.base.Preconditions;
+
 import java.io.Serializable;
 
 /**

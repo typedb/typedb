@@ -40,11 +40,11 @@ public abstract class RelationPlayer {
     }
 
     /**
-     * @param roleType the role of the role - role player pair
+     * @param role the role of the role - role player pair
      * @param rolePlayer the role player of the role - role player pair
      */
-    public static RelationPlayer of(VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
-        return new AutoValue_RelationPlayer(Optional.of(roleType), rolePlayer);
+    public static RelationPlayer of(VarPatternAdmin role, VarPatternAdmin rolePlayer) {
+        return new AutoValue_RelationPlayer(Optional.of(role), rolePlayer);
     }
 
     /**

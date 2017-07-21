@@ -89,9 +89,9 @@ public class GraknGraphPropertyTest {
     public void whenCallingMostMethodOnAClosedGraph_Throw(
             @Open(false) GraknGraph graph, @MethodOf(GraknGraph.class) Method method) throws Throwable {
 
-        // TODO: Should `admin`, `close`, `implicitConceptsVisible`, `showImplicitConcepts`, `getKeyspace` and `graql` be here?
+        // TODO: Should `admin`, `close`, `implicitConceptsVisible`, `getKeyspace` and `graql` be here?
         assumeThat(method.getName(), not(isOneOf(
-                "isClosed", "admin", "close", "commit", "abort", "isReadOnly", "implicitConceptsVisible", "showImplicitConcepts",
+                "isClosed", "admin", "close", "commit", "abort", "isReadOnly", "implicitConceptsVisible",
                 "getKeyspace", "graql", "getId"
         )));
         Object[] params = mockParamsOf(method);
@@ -240,13 +240,6 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingAdmin_TheResultIsTheSameGraph(GraknGraph graph) {
         assertEquals(graph, graph.admin());
-    }
-
-    @Property
-    public void whenCallingShowImplicitConcepts_ImplicitConceptsVisibleIsTheSame(GraknGraph graph, boolean flag) {
-        graph.showImplicitConcepts(flag);
-
-        assertEquals(flag, graph.implicitConceptsVisible());
     }
 
     @Property

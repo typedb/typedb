@@ -26,6 +26,8 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Set;
 
+import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
+
 /**
  * The MapReduce program for counting the number of instances in a graph
  * <p>
@@ -46,7 +48,7 @@ public class CountMapReduce extends GraknMapReduce<Long> {
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
-        if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
+        if (vertexHasSelectedTypeId(vertex, selectedTypes)) {
             emitter.emit(NullObject.instance(), 1L);
             return;
         }

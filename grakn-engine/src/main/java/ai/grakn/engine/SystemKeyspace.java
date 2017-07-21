@@ -77,9 +77,15 @@ public class SystemKeyspace {
     private final EngineGraknGraphFactory factory;
 
     public SystemKeyspace(EngineGraknGraphFactory factory){
+        this(factory, true);
+    }
+
+    public SystemKeyspace(EngineGraknGraphFactory factory, boolean loadSystemOntology){
         this.factory = factory;
         this.openSpaces = new ConcurrentHashMap<>();
-        loadSystemOntology();
+        if (loadSystemOntology) {
+            loadSystemOntology();
+        }
     }
 
     /**
@@ -150,7 +156,7 @@ public class SystemKeyspace {
      * only consists of types, the inserts are idempotent and it is safe to load it
      * multiple times.
      */
-    void loadSystemOntology() {
+    public void loadSystemOntology() {
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             if (graph.getOntologyConcept(KEYSPACE_ENTITY) != null) {
                 checkVersion(graph);

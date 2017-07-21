@@ -7,12 +7,14 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.AcademyGraph;
+import ai.grakn.test.graphs.GenealogyGraph;
 import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.graql.internal.hal.HALBuilder.HALExploreConcept;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
+import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -21,6 +23,9 @@ public class HALBuilderTest {
 
     @ClassRule
     public static final GraphContext academyGraph = GraphContext.preLoad(AcademyGraph.get());
+
+    public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get());
+
 
     @Test
     public void whenReceivingHALResponse_EnsureResponseContainsConceptDetails() {
@@ -34,6 +39,7 @@ public class HALBuilderTest {
             assertTrue(halObj.at("_links").at("explore").asJsonList().get(0).at("href").asString().contains("explore"));
             assertTrue(halObj.has("_type"));
             assertTrue(halObj.has("_id"));
+            assertFalse(halObj.has("_implicit"));
         });
     }
 
@@ -43,6 +49,17 @@ public class HALBuilderTest {
         String conceptId = response.asJsonList().get(0).at("_id").asString();
         Json halObj = getHALExploreRepresentation(academyGraph.graph(), conceptId);
         assertTrue(halObj.at("_links").at("explore").asJsonList().get(0).at("href").asString().contains("explore"));
+    }
+
+    @Test
+    public void whenAskForRelationTypes_EnsureAllObjectsHaveImplicitField() {
+        Json response = getHALRepresentation(academyGraph.graph(), "match $x sub relation;");
+        response.asJsonList().forEach(halObj -> {
+            assertTrue(halObj.has("_implicit"));
+            if(halObj.at("_name").asString().startsWith("has-")){
+                assertTrue(halObj.at("_implicit").asBoolean());
+            }
+        });
     }
 
 
@@ -81,6 +98,17 @@ public class HALBuilderTest {
             assertEquals(halObj.at("_baseType").asString(), "ENTITY");
             String entityType = halObj.at("_type").asString();
             assertTrue(entityType.equals("bond") || entityType.equals("article"));
+        });
+    }
+
+    @Test
+    public void whenSelectInferredRelationWithSingleVar_EnsureValidExplanationHrefIsContainedInResponse(){
+        Json response = getHALRepresentation(genealogyGraph.graph(), "match $x isa marriage; offset 0; limit 5;");
+        assertEquals(5, response.asList().size());
+        response.asJsonList().forEach(halObj -> {
+            assertEquals("inferred-relation", halObj.at("_baseType").asString());
+            String href = halObj.at("_links").at("self").at("href").asString();
+            assertTrue(href.contains("($a,$b) isa marriage;"));
         });
     }
 

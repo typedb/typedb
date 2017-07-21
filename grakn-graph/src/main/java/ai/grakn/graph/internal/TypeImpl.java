@@ -20,18 +20,15 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +41,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
 
 /**
  * <p>
@@ -65,11 +60,11 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
 class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
-    private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
-    private Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
+    private final Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
+    private final Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
 
     //This cache is different in order to keep track of which plays are required
-    private Cache<Map<Role, Boolean>> cachedDirectPlays = new Cache<>(() -> {
+    private final Cache<Map<Role, Boolean>> cachedDirectPlays = new Cache<>(() -> {
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
@@ -163,14 +158,14 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         Set<Role> allRoles = new HashSet<>();
 
         //Get the immediate plays which may be cached
-        allRoles.addAll(cachedDirectPlays.get().keySet());
+        allRoles.addAll(directPlays().keySet());
 
         //Now get the super type plays (Which may also be cached locally within their own context
         Set<T> superSet = superSet();
         superSet.remove(this); //We already have the plays from ourselves
         superSet.forEach(superParent -> allRoles.addAll(((TypeImpl<?,?>) superParent).directPlays().keySet()));
 
-        return Collections.unmodifiableCollection(filterImplicitStructures(allRoles));
+        return Collections.unmodifiableCollection(allRoles);
     }
 
     @Override
@@ -186,26 +181,22 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
     }
 
     private Collection<ResourceType> resources(Schema.ImplicitType implicitType){
-        return CommonUtil.withImplicitConceptsVisible(vertex().graph(), () -> {
-            //TODO: Make this less convoluted
-            String [] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
-            String prefix = implicitIdentifiers[0] + "-";
-            String suffix = "-" + implicitIdentifiers[1];
+        //TODO: Make this less convoluted
+        String [] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
+        String prefix = implicitIdentifiers[0] + "-";
+        String suffix = "-" + implicitIdentifiers[1];
 
-            vertex().graph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retrieved
+        Set<ResourceType> resourceTypes = new HashSet<>();
+        //A traversal is not used in this caching so that ontology caching can be taken advantage of.
+        plays().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
+            String roleTypeLabel = roleType.getLabel().getValue();
+            if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
+                String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
+                resourceTypes.add(vertex().graph().getResourceType(resourceTypeLabel));
+            }
+        }));
 
-            Set<ResourceType> resourceTypes = new HashSet<>();
-            //A traversal is not used in this caching so that ontology caching can be taken advantage of.
-            plays().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
-                String roleTypeLabel = roleType.getLabel().getValue();
-                if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
-                    String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
-                    resourceTypes.add(vertex().graph().getResourceType(resourceTypeLabel));
-                }
-            }));
-
-            return resourceTypes;
-        });
+        return resourceTypes;
     }
 
     Map<Role, Boolean> directPlays(){
@@ -237,7 +228,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      */
     @Override
     public Collection<T> subs(){
-        return Collections.unmodifiableCollection(filterImplicitStructures(super.subs()));
+        return Collections.unmodifiableCollection(super.subs());
     }
 
     /**
@@ -247,22 +238,24 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
     @SuppressWarnings("unchecked")
     @Override
     public Collection<V> instances() {
-        final Set<V> instances = new HashSet<>();
+        Set<V> instances = new HashSet<>();
+        //TODO: Clean this up. Maybe remove role from the meta ontology
+        //OntologyConcept is used here because when calling `graph.admin().getMataConcept().instances()` a role can appear
+        //When that happens this leads to a crash
+        for (OntologyConcept sub : subs()) {
+            if (!sub.isRole()) {
+                TypeImpl<?, V> typeImpl = (TypeImpl) sub;
+                instances.addAll(typeImpl.directInstances());
+            }
+        }
 
-        GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerPopGraph().traversal().V()
-                .has(Schema.VertexProperty.TYPE_ID.name(), getLabelId().getValue())
-                .union(__.identity(),
-                        __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
-                ).unfold()
-                .in(Schema.EdgeLabel.SHARD.getLabel())
-                .in(Schema.EdgeLabel.ISA.getLabel());
+        return Collections.unmodifiableCollection(instances);
+    }
 
-        traversal.forEachRemaining(vertex -> {
-            Concept concept = vertex().graph().factory().buildConcept(vertex);
-            if (concept != null) instances.add((V) concept);
-        });
-
-        return Collections.unmodifiableCollection(filterImplicitStructures(instances));
+    Collection<V> directInstances(){
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
+                map(edge -> vertex().graph().factory().buildShard(edge.source())).
+                flatMap(Shard::<V>links).collect(Collectors.toSet());
     }
 
     /**
@@ -372,7 +365,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
     }
 
     T property(Schema.VertexProperty key, Object value){
-        if(!Schema.VertexProperty.CURRENT_TYPE_ID.equals(key)) checkOntologyMutationAllowed();
+        if(!Schema.VertexProperty.CURRENT_LABEL_ID.equals(key)) checkOntologyMutationAllowed();
         vertex().property(key, value);
         return getThis();
     }
@@ -456,5 +449,9 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         if(resources(implicitType).contains(resourceType)) {
             throw GraphOperationException.duplicateHas(this, resourceType);
         }
+    }
+
+    public static TypeImpl from(Type type){
+        return (TypeImpl) type;
     }
 }

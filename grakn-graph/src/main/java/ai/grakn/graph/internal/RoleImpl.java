@@ -21,6 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -53,10 +54,6 @@ class RoleImpl extends OntologyConceptImpl<Role> implements Role {
 
     RoleImpl(VertexElement vertexElement) {
         super(vertexElement);
-    }
-
-    RoleImpl(VertexElement vertexElement, Role type) {
-        super(vertexElement, type);
     }
 
     RoleImpl(VertexElement vertexElement, Role type, Boolean isImplicit) {
@@ -130,10 +127,11 @@ class RoleImpl extends OntologyConceptImpl<Role> implements Role {
      * @return Get all the roleplayers of this role type
      */
     public Stream<Casting> rolePlayers(){
-        //TODO: This should not call reify() it should call reified() but we need a way of getting the roleplayers from relation edges which are not linked to the relation type
         return relationTypes().stream().
                 flatMap(relationType -> relationType.instances().stream()).
-                flatMap(relation -> ((RelationImpl)relation).reify().castingsRelation(this));
+                map(relation -> RelationImpl.from(relation).reified()).
+                flatMap(CommonUtil::optionalToStream).
+                flatMap(relation -> relation.castingsRelation(this));
     }
 
     @Override
