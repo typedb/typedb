@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -255,17 +256,17 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         for (OntologyConcept sub : subs()) {
             if (!sub.isRole()) {
                 TypeImpl<?, V> typeImpl = (TypeImpl) sub;
-                instances.addAll(typeImpl.directInstances());
+                typeImpl.instancesDirect().forEach(instances::add);
             }
         }
 
         return Collections.unmodifiableCollection(instances);
     }
 
-    Collection<V> directInstances(){
+    Stream<V> instancesDirect(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
                 map(edge -> vertex().graph().factory().buildShard(edge.source())).
-                flatMap(Shard::<V>links).collect(Collectors.toSet());
+                flatMap(Shard::<V>links);
     }
 
     /**
@@ -365,7 +366,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      * @return The Type itself.
      */
     public T setAbstract(Boolean isAbstract) {
-        if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract && currentShard().links().findAny().isPresent()){
+        if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract && instancesDirect().findAny().isPresent()){
             throw GraphOperationException.addingInstancesToAbstractType(this);
         }
 
