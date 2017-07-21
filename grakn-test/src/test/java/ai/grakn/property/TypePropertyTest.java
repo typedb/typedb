@@ -48,10 +48,8 @@ import static ai.grakn.property.PropertyUtil.choose;
 import static ai.grakn.property.PropertyUtil.directInstances;
 import static ai.grakn.property.PropertyUtil.directSubs;
 import static ai.grakn.property.PropertyUtil.indirectSuperTypes;
-import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
-import static ai.grakn.util.ErrorMessage.SUPER_LOOP_DETECTED;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -110,7 +108,7 @@ public class TypePropertyTest {
         exception.expect(GraphOperationException.class);
         exception.expectMessage(isOneOf(
                 META_TYPE_IMMUTABLE.getMessage(type.getLabel()),
-                CANNOT_DELETE.getMessage(type.getLabel())
+                GraphOperationException.cannotBeDeleted(type).getMessage()
         ));
         type.delete();
     }
@@ -121,7 +119,7 @@ public class TypePropertyTest {
         assumeFalse(isMetaLabel(superType.getLabel()));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(superType.getLabel()));
+        exception.expectMessage(GraphOperationException.cannotBeDeleted(superType).getMessage());
         superType.delete();
     }
 
@@ -131,7 +129,7 @@ public class TypePropertyTest {
         assumeThat(type.instances(), not(empty()));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(type.getLabel()));
+        exception.expectMessage(GraphOperationException.cannotBeDeleted(type).getMessage());
         type.delete();
     }
 
@@ -141,7 +139,7 @@ public class TypePropertyTest {
         assumeThat(type.getRulesOfHypothesis(), not(empty()));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(type.getLabel()));
+        exception.expectMessage(GraphOperationException.cannotBeDeleted(type).getMessage());
         type.delete();
     }
 
@@ -151,7 +149,7 @@ public class TypePropertyTest {
         assumeThat(type.getRulesOfConclusion(), not(empty()));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(type.getLabel()));
+        exception.expectMessage(GraphOperationException.cannotBeDeleted(type).getMessage());
         type.delete();
     }
 
@@ -246,7 +244,7 @@ public class TypePropertyTest {
         Type newSuperType = choose(type.subs(), seed);
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(SUPER_LOOP_DETECTED.getMessage(type.getLabel(), newSuperType.getLabel()));
+        exception.expectMessage(GraphOperationException.loopCreated(type, newSuperType).getMessage());
         setDirectSuperType(type, newSuperType);
     }
 
@@ -277,7 +275,7 @@ public class TypePropertyTest {
         Type type = choose(newSubType.subs(), seed);
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(SUPER_LOOP_DETECTED.getMessage(newSubType.getLabel(), type.getLabel()));
+        exception.expectMessage(GraphOperationException.loopCreated(newSubType, type).getMessage());
         addDirectSubType(type, newSubType);
     }
 
