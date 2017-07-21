@@ -78,14 +78,12 @@ import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.matcher.GraknMatchers.allVariables;
 import static ai.grakn.matcher.GraknMatchers.concept;
 import static ai.grakn.matcher.GraknMatchers.constraintRule;
 import static ai.grakn.matcher.GraknMatchers.entity;
 import static ai.grakn.matcher.GraknMatchers.hasType;
 import static ai.grakn.matcher.GraknMatchers.hasValue;
 import static ai.grakn.matcher.GraknMatchers.inferenceRule;
-import static ai.grakn.matcher.GraknMatchers.isCasting;
 import static ai.grakn.matcher.GraknMatchers.isInstance;
 import static ai.grakn.matcher.GraknMatchers.isShard;
 import static ai.grakn.matcher.GraknMatchers.resource;
@@ -717,9 +715,6 @@ public class MatchQueryTest {
         // Make sure there a reasonable number of results
         assertThat(query.execute(), hasSize(greaterThan(10)));
 
-        // Make sure results never contain castings
-        assertThat(query, variable("x", everyItem(not(isCasting()))));
-
         // Make sure results never contain shards
         assertThat(query, variable("x", everyItem(not(isShard()))));
     }
@@ -731,7 +726,7 @@ public class MatchQueryTest {
         // Make sure there a reasonable number of results
         assertThat(query.execute(), hasSize(greaterThan(10)));
 
-        assertThat(query, variable("x", everyItem(both(isInstance()).and(not(isCasting())))));
+        assertThat(query, variable("x", everyItem(isInstance())));
     }
 
     @Test
@@ -747,9 +742,6 @@ public class MatchQueryTest {
     public void testMatchAllDistinctPairs() {
         int numConcepts = (int) qb.match(x).stream().count();
         MatchQuery pairs = qb.match(x.neq(y));
-
-        // Make sure there are no castings in results
-        assertThat(pairs, allVariables(everyItem(not(isCasting()))));
 
         // We expect there to be a result for every distinct pair of concepts
         assertThat(pairs.execute(), hasSize(numConcepts * (numConcepts - 1)));
@@ -839,12 +831,6 @@ public class MatchQueryTest {
     public void testNoInstancesOfRoleTypeUnselectedVariable() {
         MatchQuery query = qb.match(var().isa(y), y.label("actor"));
         assertThat(query.execute(), empty());
-    }
-
-    @Test
-    public void testNoInstancesOfRoleTypeStartingFromCasting() {
-        MatchQuery query = qb.match(x.isa(y));
-        assertThat(query, variable("y", everyItem(not(isCasting()))));
     }
 
     @Test
