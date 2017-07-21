@@ -183,7 +183,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
             //Clear Global Cache
             vertex().graph().txCache().remove(this);
         } else {
-            throw GraphOperationException.typeCannotBeDeleted(getLabel());
+            throw GraphOperationException.cannotBeDeleted(this);
         }
     }
 

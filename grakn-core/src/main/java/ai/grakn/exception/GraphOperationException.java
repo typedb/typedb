@@ -91,8 +91,8 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when a {@link Type} has incoming edges and therefore cannot be deleted
      */
-    public static GraphOperationException typeCannotBeDeleted(Label label){
-        return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(label));
+    public static GraphOperationException cannotBeDeleted(OntologyConcept ontologyConcept){
+        return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(ontologyConcept.getLabel()));
     }
 
     /**
