@@ -661,34 +661,37 @@ public class GraqlShellIT {
 
         OutputStream bout = new ByteArrayOutputStream();
 
+        OutputStream tout = bout;
+        OutputStream terr = berr;
+
         if (showStdOutAndErr) {
             // Intercept stdout and stderr, but make sure it is still printed using the TeeOutputStream
-            bout = new TeeOutputStream(bout, trueOut);
-            berr = new TeeOutputStream(berr, trueErr);
+            tout = new TeeOutputStream(bout, trueOut);
+            terr = new TeeOutputStream(berr, trueErr);
         }
 
-        PrintStream pout = new PrintStream(bout);
-        PrintStream perr = new PrintStream(berr);
+        PrintStream out = new PrintStream(tout);
+        PrintStream err = new PrintStream(terr);
 
         try {
             System.out.flush();
             System.err.flush();
             System.setIn(in);
-            System.setOut(pout);
-            System.setErr(perr);
+            System.setOut(out);
+            System.setErr(err);
 
             GraqlShell.runShell(args, expectedVersion, historyFile);
         } catch (Exception e) {
             System.setErr(trueErr);
             e.printStackTrace();
-            perr.flush();
+            err.flush();
             fail(berr.toString());
         } finally {
             resetIO();
         }
 
-        pout.flush();
-        perr.flush();
+        out.flush();
+        err.flush();
 
 
         return bout.toString();
