@@ -62,6 +62,11 @@ public class OperatingSystemCalls {
         return Runtime.getRuntime().exec(args);
     }
 
+    public int execAndReturn(String[] args) throws IOException, InterruptedException {
+        Process process = Runtime.getRuntime().exec(args);
+        return process.waitFor();
+    }
+
     public boolean isMac() {
         String OS = System.getProperty("os.name").toLowerCase();
         return OS.contains("mac");

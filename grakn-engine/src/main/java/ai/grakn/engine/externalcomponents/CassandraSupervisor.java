@@ -76,8 +76,7 @@ public class CassandraSupervisor {
     }
 
     public void start() throws IOException, InterruptedException {
-        Process startCassandra = osCalls.exec(new String[]{ "sh", "-c", cassandraStartCmd });
-        int status = startCassandra.waitFor();
+        int status = osCalls.execAndReturn(new String[]{ "sh", "-c", cassandraStartCmd });;
         System.out.println("== " + cassandraStartCmd + " / " + status + " ==");
         if (status != 0) throw new ExternalComponentException("unable to start cassandra - " + cassandraStartCmd);
         waitForCassandraStarted();
@@ -89,8 +88,8 @@ public class CassandraSupervisor {
             boolean processRunning = osCalls.psP(pid) == 0;
             if (processRunning) {
                 // process found, stop it
-                Process kill = osCalls.exec(new String[]{"sh", "-c", "kill " + pid});
-                int status = kill.waitFor();
+                int status  = osCalls.execAndReturn(new String[]{"sh", "-c", "kill " + pid});
+
                 waitForCassandraStopped();
                 if (status != 0) {
                     throw new ExternalComponentException("unable to stop cassandra with PID " + pid);
@@ -99,7 +98,7 @@ public class CassandraSupervisor {
         }
     }
 
-    private void waitForCassandraStarted() throws IOException, InterruptedException {
+    public void waitForCassandraStarted() throws IOException, InterruptedException {
         final int MAX_CHECK_ATTEMPT = 3;
         int attempt = 0;
         while (attempt < MAX_CHECK_ATTEMPT) {
@@ -116,7 +115,7 @@ public class CassandraSupervisor {
         throw new ExternalComponentException("unable to start grakn-cassandra!");
     }
 
-    private void waitForCassandraStopped() throws IOException, InterruptedException {
+    public void waitForCassandraStopped() throws IOException, InterruptedException {
         final int MAX_CHECK_ATTEMPT = 3;
         int attempt = 0;
         while (attempt < MAX_CHECK_ATTEMPT) {
