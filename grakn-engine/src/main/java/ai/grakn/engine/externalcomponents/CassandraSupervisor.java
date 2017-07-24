@@ -18,6 +18,8 @@
 
 package ai.grakn.engine.externalcomponents;
 
+import ai.grakn.engine.GraknEngineConfig;
+
 import java.io.IOException;
 import java.util.logging.Logger;
 
@@ -36,11 +38,14 @@ public class CassandraSupervisor {
     private final String nodeToolCheckRunningCmd;
     private final String NODETOOL_RESPONSE_IF_RUNNING = "running";
     private final String cassandraStartCmd;
+    private final String cassandraPidFile;
 
-    public CassandraSupervisor(OperatingSystemCalls osCalls, String baseWorkDir) {
+    public CassandraSupervisor(GraknEngineConfig prop, OperatingSystemCalls osCalls, String baseWorkDir) {
         this.osCalls = osCalls;
 
-        this.cassandraStartCmd = baseWorkDir + "bin/cassandra -p /tmp/grakn-cassandra.pid";
+        this.cassandraPidFile = prop.getProperty(GraknEngineConfig.STORAGE_CASSANDRA_PID_FILE);
+
+        this.cassandraStartCmd = baseWorkDir + "bin/cassandra -p " + this.cassandraPidFile;
         this.nodeToolCheckRunningCmd = baseWorkDir + "bin/nodetool statusthrift 2>/dev/null | tr -d '\\n\\r'";
     }
 
@@ -69,7 +74,6 @@ public class CassandraSupervisor {
     public boolean isRunning() throws IOException, InterruptedException {
         Process nodeTool = osCalls.exec(new String[]{ "sh", "-c", nodeToolCheckRunningCmd});
         int status = nodeTool.waitFor();
-        System.out.println("== " + nodeToolCheckRunningCmd + " / " + status + " ==");
         if (status != 0) throw new ExternalComponentException("unable to run nodetool - " + nodeToolCheckRunningCmd);
         String lines = osCalls.readStdoutFromProcess(nodeTool);
         return lines.equals(NODETOOL_RESPONSE_IF_RUNNING);
@@ -77,14 +81,13 @@ public class CassandraSupervisor {
 
     public void start() throws IOException, InterruptedException {
         int status = osCalls.execAndReturn(new String[]{ "sh", "-c", cassandraStartCmd });;
-        System.out.println("== " + cassandraStartCmd + " / " + status + " ==");
         if (status != 0) throw new ExternalComponentException("unable to start cassandra - " + cassandraStartCmd);
         waitForCassandraStarted();
     }
 
     public void stop() throws IOException, InterruptedException {
-        if (osCalls.fileExists("/tmp/grakn-cassandra.pid")) {
-            int pid = osCalls.catPidFile("/tmp/grakn-cassandra.pid");
+        if (osCalls.fileExists(cassandraPidFile)) {
+            int pid = osCalls.catPidFile(cassandraPidFile);
             boolean processRunning = osCalls.psP(pid) == 0;
             if (processRunning) {
                 // process found, stop it

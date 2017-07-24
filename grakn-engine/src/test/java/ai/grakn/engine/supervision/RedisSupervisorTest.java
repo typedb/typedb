@@ -1,6 +1,5 @@
 package ai.grakn.engine.supervision;
 
-import ai.grakn.engine.externalcomponents.CassandraSupervisor;
 import ai.grakn.engine.externalcomponents.ExternalComponentException;
 import ai.grakn.engine.externalcomponents.OperatingSystemCalls;
 import ai.grakn.engine.externalcomponents.RedisSupervisor;
@@ -10,10 +9,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 

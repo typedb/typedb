@@ -1,5 +1,7 @@
 package ai.grakn.engine.supervision;
 
+import ai.grakn.engine.EngineTestHelper;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.externalcomponents.CassandraSupervisor;
 import ai.grakn.engine.externalcomponents.ExternalComponentException;
 import ai.grakn.engine.externalcomponents.OperatingSystemCalls;
@@ -17,6 +19,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -24,8 +27,9 @@ public class CassandraSupervisorTest {
     @Test
     public void cassandraStartShouldWorkProperly() throws IOException, InterruptedException {
         final int SUCCESS_EXIT_CODE = 0;
+        GraknEngineConfig graknEngineConfig = EngineTestHelper.config();
         OperatingSystemCalls osCallsMockitoSpy = spy(OperatingSystemCalls.class);
-        CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(osCallsMockitoSpy, "");
+        CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(graknEngineConfig, osCallsMockitoSpy, "");
         CassandraSupervisor cassandraSupervisorMockitoSpy = spy(cassandraSupervisor);
 
         doReturn(SUCCESS_EXIT_CODE).when(osCallsMockitoSpy).execAndReturn(any());
@@ -43,8 +47,9 @@ public class CassandraSupervisorTest {
     @Test
     public void cassandraStartShouldThrowIfExecReturnsNonZero() throws IOException, InterruptedException {
         final int NON_ZERO_EXIT_CODE = 1;
+        GraknEngineConfig graknEngineConfig = EngineTestHelper.config();
         OperatingSystemCalls osCallsMockitoSpy = spy(OperatingSystemCalls.class);
-        CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(osCallsMockitoSpy, "");
+        CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(graknEngineConfig, osCallsMockitoSpy, "");
         CassandraSupervisor cassandraSupervisorMockitoSpy = spy(cassandraSupervisor);
 
         doReturn(NON_ZERO_EXIT_CODE).when(osCallsMockitoSpy).execAndReturn(any());
@@ -63,8 +68,9 @@ public class CassandraSupervisorTest {
     @Test
     public void cassandraStopShouldWorkProperly() throws IOException, InterruptedException {
         final int SUCCESS_EXIT_CODE = 0;
+        GraknEngineConfig graknEngineConfig = EngineTestHelper.config();
         OperatingSystemCalls osCallsMockitoSpy = spy(OperatingSystemCalls.class);
-        CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(osCallsMockitoSpy, "");
+        CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(graknEngineConfig, osCallsMockitoSpy, "");
         CassandraSupervisor cassandraSupervisorMockitoSpy = spy(cassandraSupervisor);
 
         doReturn(true).when(osCallsMockitoSpy).fileExists(anyString());
@@ -84,8 +90,9 @@ public class CassandraSupervisorTest {
     @Test
     public void cassandraStopShouldThrowIfExecReturnsNonZero() throws IOException, InterruptedException {
         final int NON_ZERO_EXIT_CODE = 1;
+        GraknEngineConfig graknEngineConfig = EngineTestHelper.config();
         OperatingSystemCalls osCallsMockitoSpy = spy(OperatingSystemCalls.class);
-        CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(osCallsMockitoSpy, "");
+        CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(graknEngineConfig, osCallsMockitoSpy, "");
         CassandraSupervisor cassandraSupervisorMockitoSpy = spy(cassandraSupervisor);
 
         doReturn(true).when(osCallsMockitoSpy).fileExists(anyString());

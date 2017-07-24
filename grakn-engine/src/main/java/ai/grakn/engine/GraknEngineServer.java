@@ -120,13 +120,14 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public static void main(String[] args) {
+        GraknEngineConfig prop = GraknEngineConfig.create();
+
         // Start external components (Cassandra and Redis)
         OperatingSystemCalls osCalls = new OperatingSystemCalls();
-        CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(osCalls, "");
+        CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(prop, osCalls, "");
         RedisSupervisor redisSupervisor = new RedisSupervisor(osCalls, "");
 
         // Start Grakn Engine
-        GraknEngineConfig prop = GraknEngineConfig.create();
         GraknEngineServer graknEngineServer = new GraknEngineServer(prop);
         graknEngineServer.start();
 
