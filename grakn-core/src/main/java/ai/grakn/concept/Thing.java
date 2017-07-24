@@ -88,4 +88,19 @@ public interface Thing extends Concept{
      */
     @CheckReturnValue
     Collection<Resource<?>> resources(ResourceType ... resourceTypes);
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default Thing asThing(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isThing(){
+        return true;
+    }
 }

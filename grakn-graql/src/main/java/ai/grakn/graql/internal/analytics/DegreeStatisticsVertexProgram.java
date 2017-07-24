@@ -29,6 +29,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collections;
 import java.util.Set;
 
+import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
+
 /**
  * The vertex program for computing the degree in statistics.
  * <p>
@@ -84,7 +86,7 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     static void degreeStatisticsStepResourceOwner(Vertex vertex, Messenger<Long> messenger,
                                                   Set<LabelId> selectedLabelIds, Set<LabelId> ofLabelIds) {
         LabelId labelId = Utility.getVertexTypeId(vertex);
-        if (selectedLabelIds.contains(labelId) && !ofLabelIds.contains(labelId)) {
+        if (labelId.isValid() && selectedLabelIds.contains(labelId) && !ofLabelIds.contains(labelId)) {
             messenger.sendMessage(messageScopeShortcutIn, 1L);
         }
     }
@@ -97,7 +99,7 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
 
     static void degreeStatisticsStepResource(Vertex vertex, Messenger<Long> messenger,
                                              Set<LabelId> ofLabelIds, String degree) {
-        if (ofLabelIds.contains(Utility.getVertexTypeId(vertex))) {
+        if (vertexHasSelectedTypeId(vertex, ofLabelIds)) {
             vertex.property(degree, getMessageCount(messenger));
         }
     }

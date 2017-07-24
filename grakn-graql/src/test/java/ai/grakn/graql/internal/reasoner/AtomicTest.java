@@ -123,10 +123,10 @@ public class AtomicTest {
 
     @Test
     public void testAtomFactoryProducesAtomsOfCorrectType(){
-        GraknGraph graph = cwGraph.graph();
-        String atomString = "{$x isa person;}";
-        String relString = "{($x, $y, $z) isa transaction;}";
-        String resString = "{$x has alignment 'hostile';}";
+        GraknGraph graph = unificationTestSet.graph();
+        String atomString = "{$x isa entity1;}";
+        String relString = "{($x, $y, $z) isa relation1;}";
+        String resString = "{$x has res1 'value';}";
 
         Atom atom = ReasonerQueries.atomic(conjunction(atomString, graph), graph).getAtom();
         Atom relation = ReasonerQueries.atomic(conjunction(relString, graph), graph).getAtom();

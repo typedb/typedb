@@ -450,18 +450,18 @@ public class QueryParserTest {
 
     @Test
     public void testInsertRules() {
-        String lhs = "$x isa movie;";
-        String rhs = "id '123' isa movie;";
-        Pattern lhsPattern = and(parsePatterns(lhs));
-        Pattern rhsPattern = and(parsePatterns(rhs));
+        String when = "$x isa movie;";
+        String then = "id '123' isa movie;";
+        Pattern whenPattern = and(parsePatterns(when));
+        Pattern thenPattern = and(parsePatterns(then));
 
         InsertQuery expected = insert(
-                label("my-rule-thing").sub("rule"), var().isa("my-rule-thing").lhs(lhsPattern).rhs(rhsPattern)
+                label("my-rule-thing").sub("rule"), var().isa("my-rule-thing").when(whenPattern).then(thenPattern)
         );
 
         InsertQuery parsed = parse(
                 "insert 'my-rule-thing' sub rule; \n" +
-                "isa my-rule-thing, lhs {" + lhs + "}, rhs {" + rhs + "};"
+                "isa my-rule-thing, when {" + when + "}, then {" + then + "};"
         );
 
         assertEquals(expected, parsed);
@@ -817,6 +817,14 @@ public class QueryParserTest {
         exception.expectMessage("limit1");
         //noinspection ResultOfMethodCallIgnored
         parse("match ($x, $y); limit1;");
+    }
+
+    @Test
+    public void lhsAndRhsSyntaxHasDeprecatedSupport() {
+        assertEquals(
+                parse("insert lhs  { $x; } rhs  { $y; }; "),
+                parse("insert when { $x; } then { $y; }; ")
+        );
     }
 
     @Test

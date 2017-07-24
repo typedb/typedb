@@ -45,14 +45,14 @@ $g  isa Person, has name "g";
 ####################################################
 
 isa inference-rule,
-lhs {
+when {
 (friendA: $x, friendB: $y) isa Friend;},
-rhs {
+then {
 (person: $x, ancestor-friend: $y) isa Ancestor-friend;};
 
 isa inference-rule,
-lhs {
+when {
 (parent: $x, child: $z) isa Parent;
 (person: $z, ancestor-friend: $y) isa Ancestor-friend;},
-rhs {
+then {
 (person: $x, ancestor-friend: $y) isa Ancestor-friend;};

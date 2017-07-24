@@ -44,60 +44,62 @@ In our system we define both the head and the body of rules as Graql patterns. C
 q1 ∧ q2 ∧ ... ∧ qn → p
 ```
 
-where qs and the p are atoms that each correspond to a single Graql statement. The left-hand-side of the statement (antecedent) then corresponds to the rule body with the right-hand-side (consequent) corresponding to the rule head.
+where qs and the p are atoms that each correspond to a single Graql statement. The "when" of the statement (antecedent) then corresponds to the rule body with the "then" (consequent) corresponding to the rule head.
 
-The implication form of Horn clauses aligns more naturally with Graql semantics as we define the rules in terms of the left-hand-side and right-hand-side which directly correspond to the antecedent and consequent of the implication respectively.
+The implication form of Horn clauses aligns more naturally with Graql semantics as we define the rules in terms of the "when" and "then" which directly correspond to the antecedent and consequent of the implication respectively.
 
 ## Graql Rule Syntax
-In Graql we refer to the body of the rule as the left-hand-side of the rule (antecedent of the implication) and the head as the right-hand-side of the rule (consequent of the implication). Therefore, in Graql terms, we define rule objects in the following way:
+In Graql we refer to the body of the rule as the "when" of the rule (antecedent of the implication) and the head as the "then" of the rule (consequent of the implication). Therefore, in Graql terms, we define rule objects in the following way:
 
-```graql
+```graql-test-ignore
 $optional-name isa inference-rule,
-lhs {
+when {
     ...;
     ...;
     ...;
 },
-rhs {
+then {
     ...;
 };
 ```
 
 Each dotted line corresponds to a single Graql variable. The rule name is optional and can be omitted, but it is useful if we want to be able to refer to and identify particular rules in the graph. This way, as inference-rule is a concept, we can attach resources to it:
 
-```graql
+```graql-test-ignore
 $myRule isa inference-rule,
-lhs {
+when {
     ...;
     ...;
     ...;
 },
-rhs {
+then {
     ...;
 };
 
 $myRule has description 'this is my rule';
 ```
 
-In Graql the left-hand-side of the rule is required to be a [conjunctive pattern](https://en.wikipedia.org/wiki/Logical_conjunction), whereas the right-hand-side should contain a single pattern. If your use case requires a rule with a disjunction on the left-hand side, please notice that, when using the disjunctive normal form, it can be decomposed into series of conjunctive rules.
+In Graql the "when" of the rule is required to be a [conjunctive pattern](https://en.wikipedia.org/wiki/Logical_conjunction), whereas the "then" should contain a single pattern. If your use case requires a rule with a disjunction on the "when", please notice that, when using the disjunctive normal form, it can be decomposed into series of conjunctive rules.
 
 A classic reasoning example is the ancestor example. Yhe two Graql rules R1 and R2 stated below define the ancestor relationship, which can be understood as either happening between two generations directly between a parent and a child or between three generations when the first generation hop is expressed via a parentship relation and the second generation hop is captured by an ancestor relation.
 
 ```graql
+insert
+
 $R1 isa inference-rule,
-lhs {
+when {
     (parent: $p, child: $c) isa Parent;
 },
-rhs {
+then {
     (ancestor: $p, descendant: $c) isa Ancestor;
 };
 
 $R2 isa inference-rule,
-lhs {
+when {
     (parent: $p, child: $c) isa Parent;
     (ancestor: $c, descendant: $d) isa Ancestor;
 },
-rhs {
+then {
     (ancestor: $p, descendant: $d) isa Ancestor;
 };
 ```
@@ -112,15 +114,15 @@ R2: parent(X, Z) ∧ ancestor(Z, Y) → ancestor(X, Y)
 ```
 
 ## Allowed Graql Constructs in Rules
-The tables below summarise Graql constructs that are allowed to appear in LHS
-and RHS of rules.   
+The tables below summarise Graql constructs that are allowed to appear in when
+and then of rules.
 
 We define atomic queries as queries that contain at most one potentially rule-resolvable statement.
-That means atomic queries contain at most one statement that can potentially appear in the right-hand-side of any rule.
+That means atomic queries contain at most one statement that can potentially appear in the "then" of any rule.
 
 ### Queries
 
-| Description        | LHS | RHS
+| Description        | when | then
 | -------------------- |:--|:--|
 | atomic queries | ✓ | ✓ |
 | conjunctive queries        | ✓ | x |
@@ -128,10 +130,10 @@ That means atomic queries contain at most one statement that can potentially app
 
 ### Variable Patterns
 
-| Description        | Pattern Example           | LHS | RHS
+| Description        | Pattern Example           | when | then
 | -------------------- |:--- |:--|:--|
 | `isa` | `$x isa person;` | ✓ | x |
-| `id`  | `$x id "264597";` | ✓ | variable needs to be bound within the RHS  |
+| `id`  | `$x id "264597";` | ✓ | variable needs to be bound within the then  |
 | `val` | `$x val contains "Bar";`  | ✓ | indirect only  |
 | `has` | `$x has age < 20;` | ✓ | ✓ |
 | `relation` | `(parent: $x, child: $y) isa parentship;` | ✓ | ✓ |
@@ -141,7 +143,7 @@ That means atomic queries contain at most one statement that can potentially app
 
 ### Type Properties
 
-| Description        | Pattern Example   | LHS | RHS
+| Description        | Pattern Example   | when | then
 | -------------------- |:---|:--|:--|
 | `sub`        | `$x sub type;` | ✓| x |
 | `plays` | `$x plays parent;` |✓| x |

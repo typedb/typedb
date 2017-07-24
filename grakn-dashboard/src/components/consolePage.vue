@@ -142,7 +142,7 @@ export default {
       if (resp.length === 0) {
         this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
       } else {
-        this.graqlResponse = Prism.highlight(JSON.parse(resp).response, PLang);
+        this.graqlResponse = Prism.highlight(resp, PLang);
       }
     },
 

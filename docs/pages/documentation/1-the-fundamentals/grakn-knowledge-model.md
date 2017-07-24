@@ -259,7 +259,8 @@ A relation is valid if:
 Let us say that we want to model a marriage between a man `Bob` and woman `Alice`.
 This will be our first attempt:
 
-```graql
+<!-- This example is meant to fail TODO: Make this only parse, not execute -->
+```graql-test-ignore
 insert
   human is-abstract sub entity;
   human has name;
@@ -347,7 +348,7 @@ The type inference is set ON by default when querying Grakn.
 ### Rule-Based Inference
 The rule-based inference exploits a set of user-defined datalog rules and is conducted by means of the  reasoner built natively into Grakn. Every rule is declared as an instance of a built-in Grakn type `inference-rule`.
 
-A rule is an expression of the form `lhs G1 rhs G2`, where `G1` and `G2` are a pair of Graql patterns. Whenever the left-hand-side (lhs) pattern `G1` is found in the data, the right-hand-side (rhs) pattern `G2` can be assumed to exist and optionally materialised (inserted). For example:
+A rule is an expression of the form `when G1 then G2`, where `G1` and `G2` are a pair of Graql patterns. Whenever the "when" pattern `G1` is found in the data, the "then" pattern `G2` can be assumed to exist and optionally materialised (inserted). For example:
 
 ```graql
 insert
@@ -360,11 +361,11 @@ insert
   subject-location sub role;
 
   $transitive-location isa inference-rule,
-    lhs {
+    when {
       ($x, $y) isa located-in;
       ($y, $z) isa located-in;
     }
-    rhs {
+    then {
       ($x, $z) isa located-in;
     };
 

@@ -33,7 +33,7 @@ The `BatchMutatorClient` makes use of the `TaskClient`. If your intention is to 
 The task client provides only one constructor that accepts the host and port where a single engine is running.
 
 ```java
-TaskClient loader = TaskClient.of(String host, String port);
+TaskClient loader = TaskClient.of(host, port);
 ```
 
 ## Creating a task
@@ -53,7 +53,7 @@ The creating of tasks requires a number of parameters:
 The `TaskClient.sendTask()` function accepts all of the above as arguments:
 
 ```java
-TaskClient client = TaskClient.of(String host, String port);
+TaskClient client = TaskClient.of(host, port);
 
 Class taskClass = ShortExecutionMockTask.class;
 String creator = this.getClass().getName();
@@ -71,9 +71,7 @@ This function will execute a `POST` request against the server that will then ru
 To stop a task, its ID must be known. This method returns a boolean indicating if the task was sucessfully stopped by the server. 
 
 ```java
-TaskClient client = TaskClient.of(host, port);
-
-boolean stopped = client.stopTask(TaskId.of("randomTaskId");
+boolean stopped = client.stopTask(identifier);
 ```
 
 ## Status of a task
@@ -81,9 +79,7 @@ boolean stopped = client.stopTask(TaskId.of("randomTaskId");
 To check on the status of the task, its ID must be known. This method will throw an exception if the task cannot be found on the server. 
 
 ```java
-TaskClient client = TaskClient.of(host, port);
-
-TaskStatus status = client.getStatus(TaskId.of("randomTaskId"));
+TaskStatus status = client.getStatus(identifier);
 ```
 
 ## Comments

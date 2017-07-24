@@ -25,10 +25,11 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.AskQuery;
@@ -39,15 +40,15 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.pattern.property.LhsProperty;
+import ai.grakn.graql.internal.pattern.property.WhenProperty;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.matcher.MatchableConcept;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.hamcrest.Matcher;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -77,21 +78,18 @@ import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.matcher.GraknMatchers.allVariables;
 import static ai.grakn.matcher.GraknMatchers.concept;
 import static ai.grakn.matcher.GraknMatchers.constraintRule;
 import static ai.grakn.matcher.GraknMatchers.entity;
 import static ai.grakn.matcher.GraknMatchers.hasType;
 import static ai.grakn.matcher.GraknMatchers.hasValue;
 import static ai.grakn.matcher.GraknMatchers.inferenceRule;
-import static ai.grakn.matcher.GraknMatchers.isCasting;
 import static ai.grakn.matcher.GraknMatchers.isInstance;
 import static ai.grakn.matcher.GraknMatchers.isShard;
 import static ai.grakn.matcher.GraknMatchers.resource;
 import static ai.grakn.matcher.GraknMatchers.results;
 import static ai.grakn.matcher.GraknMatchers.role;
 import static ai.grakn.matcher.GraknMatchers.rule;
-import static ai.grakn.matcher.GraknMatchers.type;
 import static ai.grakn.matcher.GraknMatchers.variable;
 import static ai.grakn.matcher.MovieMatchers.aRuleType;
 import static ai.grakn.matcher.MovieMatchers.action;
@@ -164,7 +162,6 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -189,17 +186,21 @@ public class MatchQueryTest {
     @ClassRule
     public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
 
+    // This is a graph to contain unusual edge cases
+    @ClassRule
+    public static final GraphContext weirdGraph = GraphContext.preLoad(graph -> {
+        ResourceType<String> weirdLoopType = graph.putResourceType("name", ResourceType.DataType.STRING);
+        weirdLoopType.resource(weirdLoopType);
+        Resource<String> weird = weirdLoopType.putResource("weird");
+        weird.resource(weird);
+    });
+
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUp() {
         qb = movieGraph.graph().graql();
-    }
-
-    @After
-    public void tearDown() {
-        if (movieGraph.graph() != null) movieGraph.graph().showImplicitConcepts(false);
     }
 
     @Test
@@ -235,7 +236,7 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var().rel(x, var().has("name", "Michael Corleone"))).distinct();
 
         assertThat(query, variable("x", containsInAnyOrder(
-                type(Schema.MetaSchema.THING.getLabel()), role("role"), role("character-being-played"),
+                role("role"), role("character-being-played"),
                 role("has-name-owner")
         )));
     }
@@ -478,8 +479,8 @@ public class MatchQueryTest {
         assertThat(query, results(containsInAnyOrder(
                 allOf(hasEntry(is(x), godfather), hasEntry(is(y), production)),
                 allOf(hasEntry(is(x), godfather), hasEntry(is(y), movie)),
-                allOf(hasEntry(is(x), heat),      hasEntry(is(y), production)),
-                allOf(hasEntry(is(x), heat),      hasEntry(is(y), movie))
+                allOf(hasEntry(is(x), heat), hasEntry(is(y), production)),
+                allOf(hasEntry(is(x), heat), hasEntry(is(y), movie))
         )));
     }
 
@@ -604,12 +605,13 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchRuleRightHandSide() {
-        MatchQuery query = qb.match(x.lhs(qb.parsePattern("$x id 'expect-lhs'")).rhs(qb.parsePattern("$x id 'expect-rhs'")));
+        MatchQuery query = qb.match(x.when(qb.parsePattern("$x id 'expect-when'")).then(qb.parsePattern("$x id 'expect-then'")));
 
         expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage(MATCH_INVALID.getMessage(LhsProperty.class.getName()));
+        expectedException.expectMessage(MATCH_INVALID.getMessage(WhenProperty.class.getName()));
 
-        query.forEach(r -> {});
+        query.forEach(r -> {
+        });
     }
 
     @Test
@@ -661,7 +663,7 @@ public class MatchQueryTest {
             Collection<Role> graphAPIPlays;
 
             OntologyConcept ontologyConcept = graph.getOntologyConcept(type);
-            if(ontologyConcept.isType()){
+            if (ontologyConcept.isType()) {
                 graphAPIPlays = new HashSet<>(ontologyConcept.asType().plays());
             } else {
                 graphAPIPlays = Collections.EMPTY_SET;
@@ -713,9 +715,6 @@ public class MatchQueryTest {
         // Make sure there a reasonable number of results
         assertThat(query.execute(), hasSize(greaterThan(10)));
 
-        // Make sure results never contain castings
-        assertThat(query, variable("x", everyItem(not(isCasting()))));
-
         // Make sure results never contain shards
         assertThat(query, variable("x", everyItem(not(isShard()))));
     }
@@ -727,7 +726,7 @@ public class MatchQueryTest {
         // Make sure there a reasonable number of results
         assertThat(query.execute(), hasSize(greaterThan(10)));
 
-        assertThat(query, variable("x", everyItem(both(isInstance()).and(not(isCasting())))));
+        assertThat(query, variable("x", everyItem(isInstance())));
     }
 
     @Test
@@ -744,10 +743,15 @@ public class MatchQueryTest {
         int numConcepts = (int) qb.match(x).stream().count();
         MatchQuery pairs = qb.match(x.neq(y));
 
-        // Make sure there are no castings in results
-        assertThat(pairs, allVariables(everyItem(not(isCasting()))));
-
         // We expect there to be a result for every distinct pair of concepts
+        assertThat(pairs.execute(), hasSize(numConcepts * (numConcepts - 1)));
+    }
+
+    @Test
+    public void testMatchAllDistinctPairsOfACertainType() {
+        int numConcepts = (int) qb.match(x.isa("movie")).stream().count();
+        MatchQuery pairs = qb.match(x.isa("movie"), y.isa("movie"), x.neq(y));
+
         assertThat(pairs.execute(), hasSize(numConcepts * (numConcepts - 1)));
     }
 
@@ -774,6 +778,17 @@ public class MatchQueryTest {
         );
 
         assertThat(query, variable("x", contains(godfather)));
+    }
+
+    @Test
+    public void testMoviesHasHigherTmdbCount() {
+
+        MatchQuery query = qb.match(
+                x.has("tmdb-vote-count", lt(r)),
+                var().has("title", "The Muppets").has("tmdb-vote-count", r)
+        );
+
+        assertThat(query, variable("x", contains(chineseCoffee)));
     }
 
     @Test
@@ -816,12 +831,6 @@ public class MatchQueryTest {
     public void testNoInstancesOfRoleTypeUnselectedVariable() {
         MatchQuery query = qb.match(var().isa(y), y.label("actor"));
         assertThat(query.execute(), empty());
-    }
-
-    @Test
-    public void testNoInstancesOfRoleTypeStartingFromCasting() {
-        MatchQuery query = qb.match(x.isa(y));
-        assertThat(query, variable("y", everyItem(not(isCasting()))));
     }
 
     @Test
@@ -868,12 +877,6 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testHideImplicitTypes() {
-        MatchQuery query = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
-        assertThat(query, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
-    }
-
-    @Test
     public void testDontHideImplicitTypesIfExplicitlyMentioned() {
         MatchQuery query = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()).label(HAS.getLabel("title")));
         assertThat(query, variable("x", (Matcher) hasItem(hasTitle)));
@@ -889,26 +892,6 @@ public class MatchQueryTest {
         MatchQuery explicitQuery = qb.match(var().isa(hasTitle).rel(titleOwner, y).rel(titleValue, z));
 
         assertEquals(hasQuery.stream().collect(toSet()), explicitQuery.stream().collect(toSet()));
-    }
-
-    @Test
-    public void testDontHideImplicitTypesIfImplicitTypesOn() {
-        movieGraph.graph().showImplicitConcepts(true);
-        MatchQuery query = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
-        assertThat(query, variable("x", hasItems(movie, hasTitle)));
-    }
-
-    @Test
-    public void testHideImplicitTypesTwice() {
-        MatchQuery query1 = qb.match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
-        assertThat(query1, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
-        List<Answer> results1 = query1.execute();
-
-        movieGraph.graph().close();
-        GraknGraph graph2 = movieGraph.graph();
-
-        MatchQuery query2 = graph2.graql().match(x.sub(Schema.MetaSchema.THING.getLabel().getValue()));
-        assertEquals(results1, query2.execute());
     }
 
     @Test
@@ -981,6 +964,27 @@ public class MatchQueryTest {
 
         assertThat(query, variable("x", everyItem(not(isInstance()))));
         assertThat(query, variable("y", everyItem(not(isInstance()))));
+    }
+
+    @Test
+    public void whenQueryingForAResourceWhichHasItselfAsAResource_ReturnTheResource() {
+        MatchQuery query = weirdGraph.graph().graql().match(var("x").has("name", var("x")));
+
+        // There are actually two results expected here:
+        // This is because the semantics of `$x has foo $y` are "find all connected $x and $y where `$y isa foo`"
+        // Therefore, it's valid to arrive back at `$x` by following the binary relation in _either_ direction.
+        assertThat(query, variable("x", contains(hasValue("weird"), hasValue("weird"))));
+    }
+
+    @Test
+    public void whenQueryingForAnImplicitRelationById_TheRelationIsReturned() {
+        MatchQuery query = qb.match(var("x").isa(label(Schema.ImplicitType.HAS.getLabel("name"))));
+
+        Relation relation = query.get("x").findAny().get().asRelation();
+
+        MatchQuery queryById = qb.match(var("x").id(relation.getId()));
+
+        assertThat(queryById, variable("x", contains(MatchableConcept.of(relation))));
     }
 
     @Test
@@ -1114,7 +1118,7 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void whenExecutingGraqlTraversalFromGraph_ReturnExpectedResults(){
+    public void whenExecutingGraqlTraversalFromGraph_ReturnExpectedResults() {
         EntityType type = movieGraph.graph().putEntityType("Concept Type");
         Entity entity = type.addEntity();
 

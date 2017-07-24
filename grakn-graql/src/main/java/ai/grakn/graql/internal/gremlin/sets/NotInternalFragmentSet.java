@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
@@ -28,7 +29,7 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
  */
 class NotInternalFragmentSet extends EquivalentFragmentSet {
 
-    NotInternalFragmentSet(Var start) {
-        super(Fragments.notInternal(start));
+    NotInternalFragmentSet(VarProperty varProperty, Var start) {
+        super(Fragments.notInternal(varProperty, start));
     }
 }

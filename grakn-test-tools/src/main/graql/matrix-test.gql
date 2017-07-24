@@ -52,33 +52,33 @@ $e isa entity2, has index "e";
 ####################################################
 
 isa inference-rule,
-lhs {
+when {
 (R1-from: $x, R1-to: $y) isa R1;},
-rhs {
+then {
 (Q1-from: $x, Q1-to: $y) isa Q1;};
 
 isa inference-rule,
-lhs {
+when {
 (R1-from: $x, R1-to: $z) isa R1;
 (Q1-from: $z, Q1-to: $y) isa Q1;},
-rhs {
+then {
 (Q1-from: $x, Q1-to: $y) isa Q1;};
 
 isa inference-rule,
-lhs {
+when {
 (R2-from: $x, R2-to: $y) isa R2;},
-rhs {
+then {
 (Q2-from: $x, Q2-to: $y) isa Q2;};
 
 isa inference-rule,
-lhs {
+when {
 (R2-from: $x, R2-to: $z) isa R2;
 (Q2-from: $z, Q2-to: $y) isa Q2;},
-rhs {
+then {
 (Q2-from: $x, Q2-to: $y) isa Q2;};
 
 isa inference-rule,
-lhs {
+when {
 (Q1-from: $x, Q1-to: $y) isa Q1;},
-rhs {
+then {
 (P-from: $x, P-to: $y) isa P;};

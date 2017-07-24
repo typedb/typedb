@@ -28,7 +28,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
-import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.junit.After;
 import org.junit.Before;
@@ -238,26 +237,24 @@ public class DeleteQueryTest {
     }
 
     @Test
-    public void testDeleteResource() {
-        CommonUtil.withImplicitConceptsVisible(movieGraph.graph(), () -> {
-            MatchQuery godfather = qb.match(var().has("title", "Godfather"));
-            ConceptId id = qb.match(
-                    x.has("title", "Godfather"),
-                    var("a").rel(x).rel(y).isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-count").getValue())
-            ).get("a").findFirst().get().getId();
-            MatchQuery relation = qb.match(var().id(id));
-            MatchQuery voteCount = qb.match(var().val(1000L).isa("tmdb-vote-count"));
+    public void whenDeletingAResource_TheResourceAndImplicitRelationsAreDeleted() {
+        MatchQuery godfather = qb.match(var().has("title", "Godfather"));
+        ConceptId id = qb.match(
+                x.has("title", "Godfather"),
+                var("a").rel(x).rel(y).isa(Schema.ImplicitType.HAS.getLabel("tmdb-vote-count").getValue())
+        ).get("a").findFirst().get().getId();
+        MatchQuery relation = qb.match(var().id(id));
+        MatchQuery voteCount = qb.match(var().val(1000L).isa("tmdb-vote-count"));
 
-            assertTrue(exists(godfather));
-            assertTrue(exists(relation));
-            assertTrue(exists(voteCount));
+        assertTrue(exists(godfather));
+        assertTrue(exists(relation));
+        assertTrue(exists(voteCount));
 
-            qb.match(x.val(1000L).isa("tmdb-vote-count")).delete(x).execute();
+        qb.match(x.val(1000L).isa("tmdb-vote-count")).delete(x).execute();
 
-            assertTrue(exists(godfather));
-            assertFalse(exists(relation)); //Relation is implicit it was deleted
-            assertFalse(exists(voteCount));
-        });
+        assertTrue("When a resource is deleted, an owner of the resource should not be deleted", exists(godfather));
+        assertFalse("When a resource is deleted, any attached implicit relations should be deleted", exists(relation));
+        assertFalse("When a resource is deleted, it should no longer exist in the graph", exists(voteCount));
     }
 
     @Test

@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
-class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
+class DisjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements Disjunction<T> {
 
     private final Set<T> patterns;
 

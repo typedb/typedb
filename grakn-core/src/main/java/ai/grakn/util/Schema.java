@@ -35,12 +35,17 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
 
+import static ai.grakn.util.ErrorMessage.INVALID_IMPLICIT_TYPE;
+
 /**
  * A type enum which restricts the types of links/concepts which can be created
  *
  * @author Filipe Teixeira
  */
 public final class Schema {
+    public final static String PREFIX_VERTEX = "V";
+    public final static String PREFIX_EDGE = "E";
+
     private Schema() {
         throw new UnsupportedOperationException();
     }
@@ -57,6 +62,7 @@ public final class Schema {
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
         SHORTCUT("shortcut"),
+        RESOURCE("resource"),
         SHARD("shard");
 
         private final String label;
@@ -151,12 +157,12 @@ public final class Schema {
      */
     public enum VertexProperty {
         //Unique Properties
-        TYPE_LABEL(String.class), INDEX(String.class), ID(String.class), TYPE_ID(Integer.class),
+        ONTOLOGY_LABEL(String.class), INDEX(String.class), ID(String.class), LABEL_ID(Integer.class),
 
         //Other Properties
-        INSTANCE_TYPE_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
-        REGEX(String.class), DATA_TYPE(String.class), SHARD_COUNT(Long.class), CURRENT_TYPE_ID(Integer.class),
-        RULE_LHS(String.class), RULE_RHS(String.class), CURRENT_SHARD(String.class),
+        THING_TYPE_LABEL_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
+        REGEX(String.class), DATA_TYPE(String.class), SHARD_COUNT(Long.class), CURRENT_LABEL_ID(Integer.class),
+        RULE_WHEN(String.class), RULE_THEN(String.class), CURRENT_SHARD(String.class),
 
         //Supported Data Types
         VALUE_STRING(String.class), VALUE_LONG(Long.class),
@@ -180,8 +186,10 @@ public final class Schema {
      * A property enum defining the possible labels that can go on the edge label.
      */
     public enum EdgeProperty {
-        ROLE_TYPE_ID(Integer.class),
-        RELATION_TYPE_ID(Integer.class),
+        RELATION_ROLE_OWNER_LABEL_ID(Integer.class),
+        RELATION_ROLE_VALUE_LABEL_ID(Integer.class),
+        ROLE_LABEL_ID(Integer.class),
+        RELATION_TYPE_LABEL_ID(Integer.class),
         REQUIRED(Boolean.class);
 
         private final Class dataType;
@@ -244,6 +252,26 @@ public final class Schema {
         @CheckReturnValue
         public Label getLabel(String resourceType) {
             return Label.of(String.format(label, resourceType));
+        }
+
+        /**
+         * Helper method which converts the implicit type label back into the original label from which is was built.
+         *
+         * @param implicitType the implicit type label
+         * @return The original label which was used to build this type
+         */
+        @CheckReturnValue
+        public static Label explicitLabel(Label implicitType){
+            if(!implicitType.getValue().startsWith("key") && implicitType.getValue().startsWith("has")){
+                throw new IllegalArgumentException(INVALID_IMPLICIT_TYPE.getMessage(implicitType));
+            }
+
+            int endIndex = implicitType.getValue().length();
+            if(implicitType.getValue().endsWith("-value") || implicitType.getValue().endsWith("-owner")) {
+                endIndex = implicitType.getValue().lastIndexOf("-");
+            }
+
+            return Label.of(implicitType.getValue().substring(4, endIndex));
         }
     }
 

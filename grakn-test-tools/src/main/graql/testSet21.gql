@@ -9,10 +9,10 @@ entity2 sub entity;
 #Rules
 
 isa inference-rule
-	lhs {
+	when {
 		$x isa entity2;
 	}
-	rhs {
+	then {
 		$x isa sub-entity1;
 	};
 

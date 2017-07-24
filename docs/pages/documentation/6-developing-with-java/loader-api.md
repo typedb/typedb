@@ -148,7 +148,8 @@ The server response is describes more in deatils in the REST api documentation. 
 
 Migration uses this callback function to track status information about the number of batches that have completed for the running migration.
 
-```java
+<!-- Ignored because it contains a Java lambda, which Groovy doesn't support -->
+```java-test-ignore
 AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
 
 loader.setTaskCompletionConsumer((Json json) -> {

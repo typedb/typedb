@@ -74,6 +74,9 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
     private final boolean required;
 
+    /**
+     * @throws GraqlQueryException if no label is specified on {@code resourceType}
+     */
     public HasResourceTypeProperty(VarPatternAdmin resourceType, boolean required) {
         this.resourceType = resourceType;
         this.required = required;

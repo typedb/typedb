@@ -25,6 +25,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -33,6 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -63,11 +65,9 @@ final class ElementFactory {
         this.graknGraph = graknGraph;
     }
 
-    private <X extends ConceptImpl> X getOrBuildConcept(VertexElement v, Function<VertexElement, X> conceptBuilder){
-        ConceptId conceptId = ConceptId.of(v.id().toString());
-
+    private <X extends Concept, E extends AbstractElement> X getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder){
         if(!graknGraph.txCache().isConceptCached(conceptId)){
-            X newConcept = conceptBuilder.apply(v);
+            X newConcept = conceptBuilder.apply(element);
             graknGraph.txCache().cacheConcept(newConcept);
         }
 
@@ -81,14 +81,24 @@ final class ElementFactory {
         return concept;
     }
 
+    private <X extends Concept> X getOrBuildConcept(VertexElement element, Function<VertexElement, X> conceptBuilder){
+        ConceptId conceptId = ConceptId.of(element.property(Schema.VertexProperty.ID));
+        return getOrBuildConcept(element, conceptId, conceptBuilder);
+    }
+
+    private <X extends Concept> X getOrBuildConcept(EdgeElement element, Function<EdgeElement, X> conceptBuilder){
+        ConceptId conceptId = ConceptId.of(element.id().getValue());
+        return getOrBuildConcept(element, conceptId, conceptBuilder);
+    }
+
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
     <V> ResourceTypeImpl<V> buildResourceType(VertexElement vertex, ResourceType<V> type, ResourceType.DataType<V> dataType){
         return getOrBuildConcept(vertex, (v) -> new ResourceTypeImpl<>(v, type, dataType));
     }
 
     // ------------------------------------------ Building Resources
-    <V> ResourceImpl <V> buildResource(VertexElement vertex, ResourceType<V> type, V value){
-        return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(v, type, value));
+    <V> ResourceImpl <V> buildResource(VertexElement vertex, ResourceType<V> type, Object persitedValue){
+        return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(v, type, persitedValue));
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
@@ -98,7 +108,16 @@ final class ElementFactory {
 
     // -------------------------------------------- Building Relations
     RelationImpl buildRelation(VertexElement vertex, RelationType type){
-        return getOrBuildConcept(vertex, (v) -> new RelationImpl(v, type));
+        return getOrBuildConcept(vertex, (v) -> new RelationImpl(buildRelationReified(v, type)));
+    }
+    RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value){
+        return getOrBuildConcept(edge, (e) -> new RelationImpl(new RelationEdge(type, owner, value, edge)));
+    }
+    RelationImpl buildRelation(EdgeElement edge){
+        return getOrBuildConcept(edge, (e) -> new RelationImpl(new RelationEdge(edge)));
+    }
+    RelationReified buildRelationReified(VertexElement vertex, RelationType type){
+        return new RelationReified(vertex, type);
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
@@ -117,8 +136,8 @@ final class ElementFactory {
     }
 
     // -------------------------------------------- Building Rules
-    RuleImpl buildRule(VertexElement vertex, RuleType type, Pattern lhs, Pattern rhs){
-        return getOrBuildConcept(vertex, (v) -> new RuleImpl(v, type, lhs, rhs));
+    RuleImpl buildRule(VertexElement vertex, RuleType type, Pattern when, Pattern then){
+        return getOrBuildConcept(vertex, (v) -> new RuleImpl(v, type, when, then));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
@@ -133,10 +152,12 @@ final class ElementFactory {
      * @param v A vertex of an unknown type
      * @return A concept built to the correct type
      */
+    @Nullable
     <X extends Concept> X buildConcept(Vertex v){
         return buildConcept(buildVertexElement(v));
     }
 
+    @Nullable
     <X extends Concept> X buildConcept(VertexElement vertexElement){
         Schema.BaseType type;
 
@@ -147,12 +168,12 @@ final class ElementFactory {
             return null;
         }
 
-        ConceptId conceptId = ConceptId.of(vertexElement.id().getValue());
+        ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));
         if(!graknGraph.txCache().isConceptCached(conceptId)){
-            ConceptImpl concept;
+            Concept concept;
             switch (type) {
                 case RELATION:
-                    concept = new RelationImpl(vertexElement);
+                    concept = new RelationImpl(new RelationReified(vertexElement));
                     break;
                 case TYPE:
                     concept = new TypeImpl<>(vertexElement);
@@ -182,7 +203,46 @@ final class ElementFactory {
                     concept = new RuleTypeImpl(vertexElement);
                     break;
                 default:
-                    throw new RuntimeException("Unknown base type [" + vertexElement.label() + "]");
+                    throw GraphOperationException.unknownConcept(type.name());
+            }
+            graknGraph.txCache().cacheConcept(concept);
+        }
+        return graknGraph.txCache().getCachedConcept(conceptId);
+    }
+
+    /**
+     * Constructors are called directly because this is only called when reading a known {@link Edge} or {@link Concept}.
+     * Thus tracking the concept can be skipped.
+     *
+     * @param edge A {@link Edge} of an unknown type
+     * @return A concept built to the correct type
+     */
+    @Nullable
+    <X extends Concept> X buildConcept(Edge edge){
+        return buildConcept(buildEdgeElement(edge));
+    }
+
+    @Nullable
+    <X extends Concept> X buildConcept(EdgeElement edgeElement){
+        Schema.EdgeLabel label;
+
+        try {
+            label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase());
+        } catch (IllegalStateException e){
+            LOG.warn("Invalid edge [" + edgeElement + "] due to " + e.getMessage(), e);
+            return null;
+        }
+
+
+        ConceptId conceptId = ConceptId.of(edgeElement.id().getValue());
+        if(!graknGraph.txCache().isConceptCached(conceptId)){
+            Concept concept;
+            switch (label) {
+                case RESOURCE:
+                    concept = new RelationImpl(new RelationEdge(edgeElement));
+                    break;
+                default:
+                    throw GraphOperationException.unknownConcept(label.name());
             }
             graknGraph.txCache().cacheConcept(concept);
         }
@@ -216,15 +276,15 @@ final class ElementFactory {
     }
 
     // ---------------------------------------- Non Concept Construction -----------------------------------------------
-    EdgeElement buildEdge(Edge edge){
+    EdgeElement buildEdgeElement(Edge edge){
         return new EdgeElement(graknGraph, edge);
     }
 
-    Casting buildRolePlayer(Edge edge){
-        return buildRolePlayer(buildEdge(edge));
+    Casting buildCasting(Edge edge){
+        return buildCasting(buildEdgeElement(edge));
     }
 
-    Casting buildRolePlayer(EdgeElement edge) {
+    Casting buildCasting(EdgeElement edge) {
         return new Casting(edge);
     }
 
@@ -240,6 +300,7 @@ final class ElementFactory {
         return new Shard(buildVertexElement(vertex));
     }
 
+    @Nullable
     VertexElement buildVertexElement(Vertex vertex){
         try {
             graknGraph.validVertex(vertex);

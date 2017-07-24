@@ -24,7 +24,7 @@ This is a list of items that need to be created or extended in the GRAKN.AI docu
 
 #### Regular Items
 
-- Updates  as syntax changes in Graql (e.g. LHS/RHS)
+- Updates  as syntax changes in Graql (e.g. when/then)
 - Add FAQs as they are asked/answered on Discuss or Slack
 - Keep on top of daily updates and ask individuals about documentation needed (create tickets on TP as needed)
 - Create examples to illustrate new features/functionality, and update existing examples as needed

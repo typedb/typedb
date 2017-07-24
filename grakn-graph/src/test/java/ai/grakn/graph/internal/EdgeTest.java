@@ -37,14 +37,14 @@ public class EdgeTest extends GraphTestBase{
     public void createEdge(){
         entityType = (EntityTypeImpl) graknGraph.putEntityType("My Entity Type");
         entity = (EntityImpl) entityType.addEntity();
-        Edge tinkerEdge = graknGraph.getTinkerTraversal().hasId(entity.getId().getValue()).outE().next();
+        Edge tinkerEdge = graknGraph.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity.getId().getValue()).outE().next();
         edge = new EdgeElement(graknGraph, tinkerEdge);
     }
 
     @Test
     public void checkEqualityBetweenEdgesBasedOnID(){
         Entity entity2 = entityType.addEntity();
-        Edge tinkerEdge = graknGraph.getTinkerTraversal().hasId(entity2.getId().getValue()).outE().next();
+        Edge tinkerEdge = graknGraph.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity2.getId().getValue()).outE().next();
         EdgeElement edge2 = new EdgeElement(graknGraph, tinkerEdge);
 
         assertEquals(edge, edge);

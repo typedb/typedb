@@ -68,7 +68,7 @@ public class DataTypeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(dataType(start, datatype));
+        return ImmutableSet.of(dataType(this, start, datatype));
     }
 
     @Override

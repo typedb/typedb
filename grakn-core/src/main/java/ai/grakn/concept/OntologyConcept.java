@@ -19,6 +19,7 @@
 package ai.grakn.concept;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Collection;
 
 /**
@@ -37,15 +38,22 @@ import java.util.Collection;
  * @author fppt
  */
 public interface OntologyConcept extends Concept {
+    //------------------------------------- Modifiers ----------------------------------
+    /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    OntologyConcept setLabel(Label label);
+
     //------------------------------------- Accessors ---------------------------------
     /**
      * Returns the unique id of this Type.
      *
      * @return The unique id of this type
      */
-    //TODO: rename this ugly thing.
     @CheckReturnValue
-    LabelId getTypeId();
+    LabelId getLabelId();
 
     /**
      * Returns the unique label of this Type.
@@ -60,6 +68,7 @@ public interface OntologyConcept extends Concept {
      * @return The direct super of this concept
      */
     @CheckReturnValue
+    @Nullable
     OntologyConcept sup();
 
     /**
@@ -99,4 +108,19 @@ public interface OntologyConcept extends Concept {
      */
     @CheckReturnValue
     Collection<Rule> getRulesOfConclusion();
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default OntologyConcept asOntologyConcept(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isOntologyConcept(){
+        return true;
+    }
 }

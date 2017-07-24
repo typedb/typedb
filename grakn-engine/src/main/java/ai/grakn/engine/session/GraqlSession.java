@@ -69,7 +69,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  */
 class GraqlSession {
     private final Session session;
-    private final boolean showImplicitTypes;
     private final boolean infer;
     private final boolean materialise;
     private GraknGraph graph;
@@ -89,19 +88,18 @@ class GraqlSession {
 
     GraqlSession(
             Session session, GraknSession factory, String outputFormat,
-            boolean showImplicitTypes, boolean infer, boolean materialise
+            boolean infer, boolean materialise
     ) {
-        this.showImplicitTypes = showImplicitTypes;
         this.infer = infer;
         this.materialise = materialise;
         this.session = session;
         this.factory = factory;
         this.outputFormat = outputFormat;
-        this.printer = getPrinter();
 
         queryExecutor.execute(() -> {
             try {
                 refreshGraph();
+                this.printer = getPrinter();
                 sendTypes();
                 sendEnd();
             } catch (Throwable e) {
@@ -122,7 +120,6 @@ class GraqlSession {
     private void refreshGraph() {
         if (graph != null && !graph.isClosed()) graph.close();
         graph = factory.open(GraknTxType.WRITE);
-        graph.showImplicitConcepts(showImplicitTypes);
     }
 
     void handleMessage(Json json) {
@@ -370,7 +367,8 @@ class GraqlSession {
             case "json":
                 return Printers.json();
             case "hal":
-                return Printers.hal();
+                // TODO: Make this parameter configurable
+                return Printers.hal(graph.getKeyspace(), 100);
             case "graql":
             default:
                 return Printers.graql(true, resources);

@@ -22,8 +22,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 import java.util.Set;
 
@@ -34,14 +35,16 @@ class ValueFragment extends AbstractFragment {
 
     private final ValuePredicateAdmin predicate;
 
-    ValueFragment(Var start, ValuePredicateAdmin predicate) {
-        super(start);
+    ValueFragment(VarProperty varProperty, Var start, ValuePredicateAdmin predicate) {
+        super(varProperty, start);
         this.predicate = predicate;
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        predicate.applyPredicate(traversal);
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+
+        return predicate.applyPredicate(traversal);
     }
 
     @Override
@@ -50,18 +53,18 @@ class ValueFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
+    public double fragmentCost() {
         if (predicate.isSpecific()) {
-            return NUM_RESOURCES_PER_VALUE;
+            return COST_RESOURCES_PER_VALUE;
         } else {
             // Assume approximately half of values will satisfy a filter
-            return previousCost / 2.0;
+            return COST_UNSPECIFIC_PREDICATE;
         }
     }
 
     @Override
     public boolean hasFixedFragmentCost() {
-        return predicate.isSpecific();
+        return predicate.isSpecific() && getDependencies().isEmpty();
     }
 
     @Override

@@ -98,7 +98,6 @@ public interface PatternAdmin extends Pattern {
     default VarPatternAdmin asVar() {
         throw new UnsupportedOperationException();
     }
-
     /**
      * @return all variables referenced in the pattern
      */

@@ -85,9 +85,9 @@ public class ResourceTypeTest extends GraphTestBase{
 
     @Test
     public void whenSettingRegexOnResourceTypeWithResourceNotMatchingRegex_Throw(){
-        Resource<String> thing = resourceType.putResource("1");
+        resourceType.putResource("1");
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[abc]", thing.getId(), thing.getValue(), resourceType.getLabel()));
+        expectedException.expectMessage(GraphOperationException.regexFailure(resourceType, "1", "[abc]").getMessage());
         resourceType.setRegex("[abc]");
     }
 
@@ -129,7 +129,7 @@ public class ResourceTypeTest extends GraphTestBase{
         Resource<String> resource = t2.putResource("a");
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[b]", resource.getId(), resource.getValue(), resource.type().getLabel()));
+        expectedException.expectMessage(GraphOperationException.regexFailure(t2, "a", "[b]").getMessage());
         t2.sup(t1);
     }
 
@@ -140,7 +140,7 @@ public class ResourceTypeTest extends GraphTestBase{
         Resource<String> resource = t2.putResource("a");
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[b]", resource.getId(), resource.getValue(), resource.type().getLabel()));
+        expectedException.expectMessage(GraphOperationException.regexFailure(t1, "a", "[b]").getMessage());
         t1.setRegex("[b]");
     }
 

@@ -22,7 +22,8 @@ $y has identifier "Jacob J. Niesz";
 
 and then searched for relationships joining two of them using:
 
-```graql
+<!-- Ignoring because uses made-up IDs -->
+```graql-test-ignore
 compute path from "id1" to "id2";
 ```
 
@@ -37,7 +38,8 @@ If you are looking for more specific connections you can of course use the [subg
 In the following query only the blood relations (parent/child relations) are investigated and the resulting graph is shown below.
 We have excluded marriage in this subgraph and as a result the shortest path is longer than before - it turns out the Barbara Shafner and Jacob J. Niesz are cousins (their mothers, Mary Young and Catherine Young, are sisters, their father being Jacob Young).
 
-```graql
+<!-- Ignoring because uses made-up IDs -->
+```graql-test-ignore
 compute path from "id1" to "id2" in person, parentship;
 ```
 

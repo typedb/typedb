@@ -42,19 +42,17 @@ import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
-import ai.grakn.graql.internal.pattern.property.LhsProperty;
+import ai.grakn.graql.internal.pattern.property.WhenProperty;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.pattern.property.RhsProperty;
+import ai.grakn.graql.internal.pattern.property.ThenProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.CommonUtil;
-import ai.grakn.util.ErrorMessage;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -66,10 +64,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -78,7 +74,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Felix Chapman
  */
-public abstract class AbstractVarPattern implements VarPatternAdmin {
+public abstract class AbstractVarPattern extends AbstractPattern implements VarPatternAdmin {
 
     @Override
     public abstract Var getVarName();
@@ -287,27 +283,27 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
 
     @Override
     public final VarPattern rel(VarPattern roleplayer) {
-        return addCasting(RelationPlayerImpl.of(roleplayer.admin()));
+        return addCasting(RelationPlayer.of(roleplayer.admin()));
     }
 
     @Override
-    public final VarPattern rel(String roletype, String roleplayer) {
-        return rel(Graql.label(roletype), Graql.var(roleplayer));
+    public final VarPattern rel(String role, String roleplayer) {
+        return rel(Graql.label(role), Graql.var(roleplayer));
     }
 
     @Override
-    public final VarPattern rel(VarPattern roletype, String roleplayer) {
-        return rel(roletype, Graql.var(roleplayer));
+    public final VarPattern rel(VarPattern role, String roleplayer) {
+        return rel(role, Graql.var(roleplayer));
     }
 
     @Override
-    public final VarPattern rel(String roletype, VarPattern roleplayer) {
-        return rel(Graql.label(roletype), roleplayer);
+    public final VarPattern rel(String role, VarPattern roleplayer) {
+        return rel(Graql.label(role), roleplayer);
     }
 
     @Override
-    public final VarPattern rel(VarPattern roletype, VarPattern roleplayer) {
-        return addCasting(RelationPlayerImpl.of(roletype.admin(), roleplayer.admin()));
+    public final VarPattern rel(VarPattern role, VarPattern roleplayer) {
+        return addCasting(RelationPlayer.of(role.admin(), roleplayer.admin()));
     }
 
     @Override
@@ -326,13 +322,13 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final VarPattern lhs(Pattern lhs) {
-        return addProperty(new LhsProperty(lhs));
+    public final VarPattern when(Pattern when) {
+        return addProperty(new WhenProperty(when));
     }
 
     @Override
-    public final VarPattern rhs(Pattern rhs) {
-        return addProperty(new RhsProperty(rhs));
+    public final VarPattern then(Pattern then) {
+        return addProperty(new ThenProperty(then));
     }
 
     @Override
@@ -346,36 +342,25 @@ public abstract class AbstractVarPattern implements VarPatternAdmin {
     }
 
     @Override
-    public final VarPatternAdmin setVarName(Var name) {
-        Preconditions.checkState(getVarName().isUserDefinedName(), ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
-        return Patterns.varPattern(name, properties());
-    }
-
-    @Override
     public final String getPrintableName() {
-        if (getVarName().isUserDefinedName()) {
+        if (properties().size() == 0) {
+            // If there are no properties, we display the variable name
             return getVarName().toString();
-        } else {
-            return getTypeLabel().map(StringConverter::typeLabelToString).orElse("'" + toString() + "'");
+        } else if (properties().size() == 1) {
+            // If there is only a label, we display that
+            Optional<Label> label = getTypeLabel();
+            if (label.isPresent()) {
+                return StringConverter.typeLabelToString(label.get());
+            }
         }
+
+        // Otherwise, we print the entire pattern
+        return "`" + toString() + "`";
     }
 
     @Override
     public final Stream<VarProperty> getProperties() {
         return properties().stream();
-    }
-
-    @Override
-    public final <T extends VarProperty> VarPatternAdmin mapProperty(Class<T> type, UnaryOperator<T> mapper) {
-        ImmutableSet<VarProperty> newProperties = getProperties().map(property -> {
-            if (type.isInstance(property)) {
-                return mapper.apply(type.cast(property));
-            } else {
-                return property;
-            }
-        }).collect(toImmutableSet());
-
-        return Patterns.varPattern(getVarName(), newProperties);
     }
 
     private VarPattern addCasting(RelationPlayer relationPlayer) {

@@ -123,7 +123,7 @@ public class JsonMigratorMainTest {
             Entity address = getProperty(graph, person, "has-address").asEntity();
             Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
 
-            Resource number = getResource(graph, streetAddress, Label.of("number")).asResource();
+            Resource number = getResource(graph, streetAddress, Label.of("number"));
             assertEquals(21L, number.getValue());
 
             Collection<Thing> phoneNumbers = getProperties(graph, person, "has-phone");

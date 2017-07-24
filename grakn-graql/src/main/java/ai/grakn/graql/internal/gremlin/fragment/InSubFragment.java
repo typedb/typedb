@@ -20,18 +20,27 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
+
+import java.util.Map;
+import java.util.Set;
 
 class InSubFragment extends AbstractFragment {
 
-    InSubFragment(Var start, Var end) {
-        super(start, end);
+    InSubFragment(VarProperty varProperty, Var start, Var end) {
+        super(varProperty, start, end);
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        Fragments.inSubs(traversal);
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+        return Fragments.inSubs(Fragments.isVertex(traversal));
     }
 
     @Override
@@ -40,7 +49,13 @@ class InSubFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost * NUM_SUBTYPES_PER_TYPE;
+    public double fragmentCost() {
+        return COST_SUBTYPES_PER_TYPE;
+    }
+
+    @Override
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
+                                                              Map<Node, Map<Node, Fragment>> edges) {
+        return getDirectedEdges(NodeId.NodeType.SUB, nodes, edges);
     }
 }

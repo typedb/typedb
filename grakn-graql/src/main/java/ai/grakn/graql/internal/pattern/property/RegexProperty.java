@@ -71,7 +71,7 @@ public class RegexProperty extends AbstractVarProperty implements UniqueVarPrope
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.regex(start, regex));
+        return ImmutableSet.of(EquivalentFragmentSets.regex(this, start, regex));
     }
 
     @Override

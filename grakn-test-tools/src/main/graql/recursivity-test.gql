@@ -56,47 +56,47 @@ entity2 plays B5-role-A, plays B5-role-B;
 ##################################################
 
 isa inference-rule,
-lhs {
+when {
 ($x, $z) isa P1;
 ($z, $y) isa Q;},
-rhs {
+then {
 ($x, $y) isa P;};
 
 isa inference-rule,
-lhs {
+when {
 ($x, $z) isa P;
 ($z, $y) isa P2;},
-rhs {
+then {
 ($x, $y) isa Q;};
 
 isa inference-rule,
-lhs {
+when {
 ($x, $y) isa B3;},
-rhs {
+then {
 ($x, $y) isa P;};
 
 isa inference-rule,
-lhs {
+when {
 ($x, $z) isa B1;
 ($z, $y) isa P1;},
-rhs {
+then {
 ($x, $y) isa P1;};
 
 isa inference-rule,
-lhs {
+when {
 ($x, $y) isa B4;}
-rhs {
+then {
 ($x, $y) isa P1;};
 
 isa inference-rule,
-lhs {
+when {
 ($x, $z) isa B2;
 ($z, $y) isa P2;},
-rhs {
+then {
 ($x, $y) isa P2;};
 
 isa inference-rule,
-lhs {
+when {
 ($x, $y) isa B5;},
-rhs {
+then {
 ($x, $y) isa P2;};

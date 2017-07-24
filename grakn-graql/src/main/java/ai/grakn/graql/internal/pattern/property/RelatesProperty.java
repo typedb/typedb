@@ -76,7 +76,7 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(relates(start, role.getVarName()));
+        return ImmutableSet.of(relates(this, start, role.getVarName()));
     }
 
     @Override
@@ -91,7 +91,7 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Role role = insertQueryExecutor.getConcept(this.role).asRoleType();
+        Role role = insertQueryExecutor.getConcept(this.role).asRole();
         concept.asRelationType().relates(role);
     }
 

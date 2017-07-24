@@ -35,6 +35,7 @@ import java.util.Set;
 
 import static ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram.degreeStatisticsStepResourceOwner;
 import static ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram.degreeStatisticsStepResourceRelation;
+import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The vertex program for computing the median of given resource using quick select algorithm.
@@ -165,7 +166,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
                 degreeStatisticsStepResourceRelation(vertex, messenger);
                 break;
             case 2:
-                if (statisticsResourceLabelIds.contains(Utility.getVertexTypeId(vertex))) {
+                if (vertexHasSelectedTypeId(vertex, statisticsResourceLabelIds)) {
                     // put degree
                     long degree = getMessageCount(messenger);
                     vertex.property(degreePropertyKey, degree);
@@ -178,7 +179,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
                 }
                 break;
             case 3:
-                if (statisticsResourceLabelIds.contains(Utility.getVertexTypeId(vertex)) &&
+                if (vertexHasSelectedTypeId(vertex, statisticsResourceLabelIds) &&
                         (long) vertex.value(degreePropertyKey) > 0) {
                     Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));
                     if (value.doubleValue() < memory.<Number>get(PIVOT).doubleValue()) {
@@ -194,7 +195,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
 
             // default case is almost the same as case 5, except that in case 5 no vertex has label
             default:
-                if (statisticsResourceLabelIds.contains(Utility.getVertexTypeId(vertex)) &&
+                if (vertexHasSelectedTypeId(vertex, statisticsResourceLabelIds) &&
                         (long) vertex.value(degreePropertyKey) > 0 &&
                         (int) vertex.value(labelKey) == memory.<Integer>get(LABEL_SELECTED)) {
                     Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));

@@ -20,9 +20,18 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Map;
+import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 
@@ -30,19 +39,21 @@ class OutPlaysFragment extends AbstractFragment {
 
     private final boolean required;
 
-    OutPlaysFragment(Var start, Var end, boolean required) {
-        super(start, end);
+    OutPlaysFragment(VarProperty varProperty, Var start, Var end, boolean required) {
+        super(varProperty, start, end);
         this.required = required;
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        Fragments.outSubs(traversal);
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+
+        GraphTraversal<Element, Vertex> vertexTraversal = Fragments.outSubs(Fragments.isVertex(traversal));
 
         if (required) {
-            traversal.outE(PLAYS.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
+            return vertexTraversal.outE(PLAYS.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
         } else {
-            traversal.out(PLAYS.getLabel());
+            return vertexTraversal.out(PLAYS.getLabel());
         }
     }
 
@@ -56,8 +67,13 @@ class OutPlaysFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost * NUM_ROLES_PER_TYPE;
+    public double fragmentCost() {
+        return COST_ROLES_PER_TYPE;
     }
 
+    @Override
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
+                                                              Map<Node, Map<Node, Fragment>> edges) {
+        return getDirectedEdges(NodeId.NodeType.PLAYS, nodes, edges);
+    }
 }

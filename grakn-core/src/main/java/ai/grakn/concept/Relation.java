@@ -90,4 +90,19 @@ public interface Relation extends Thing {
      * @throws PropertyNotUniqueException if the concept is only allowed to play this role once.
      */
     Relation addRolePlayer(Role role, Thing thing);
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default Relation asRelation(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isRelation(){
+        return true;
+    }
 }

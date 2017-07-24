@@ -20,18 +20,6 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
-import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -54,10 +42,9 @@ import java.util.stream.Stream;
  *
  * @author fppt
  *
- * @param <T> The leaf interface of the object concept.
- *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
-abstract class ConceptImpl implements Concept {
+abstract class ConceptImpl implements Concept, ConceptVertex {
+    private final Cache<ConceptId> conceptId = new Cache<>(() -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
 
     @SuppressWarnings("unchecked")
@@ -69,6 +56,7 @@ abstract class ConceptImpl implements Concept {
         this.vertexElement = vertexElement;
     }
 
+    @Override
     public VertexElement vertex() {
         return vertexElement;
     }
@@ -117,12 +105,12 @@ abstract class ConceptImpl implements Concept {
         }
     }
 
-    EdgeElement putEdge(Concept to, Schema.EdgeLabel label){
-        return vertex().putEdge(((ConceptImpl) to).vertex(), label);
+    EdgeElement putEdge(ConceptVertex to, Schema.EdgeLabel label){
+        return vertex().putEdge(to.vertex(), label);
     }
 
-    EdgeElement addEdge(Concept to, Schema.EdgeLabel label){
-        return vertex().addEdge(((ConceptImpl) to).vertex(), label);
+    EdgeElement addEdge(ConceptVertex to, Schema.EdgeLabel label){
+        return vertex().addEdge(to.vertex(), label);
     }
 
     void deleteEdge(Direction direction, Schema.EdgeLabel label, Concept... to) {
@@ -151,14 +139,10 @@ abstract class ConceptImpl implements Concept {
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(vertex().id().getValue());
+        return conceptId.get();
     }
 
-    /**
-     *
-     * @return The hash code of the underlying vertex
-     */
-    public int hashCode() {
+    @Override public int hashCode() {
         return getId().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
     }
 
@@ -199,11 +183,10 @@ abstract class ConceptImpl implements Concept {
     }
 
     //----------------------------------- Sharding Functionality
-    Shard createShard(){
+    void createShard(){
         VertexElement shardVertex = vertex().graph().addVertex(Schema.BaseType.SHARD);
         Shard shard = vertex().graph().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
-        return shard;
     }
 
     Set<Shard> shards(){
@@ -213,7 +196,7 @@ abstract class ConceptImpl implements Concept {
 
     Shard currentShard(){
         String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
-        Vertex shardVertex = vertex().graph().getTinkerTraversal().has(Schema.VertexProperty.ID.name(), currentShardId).next();
+        Vertex shardVertex = vertex().graph().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
         return vertex().graph().factory().buildShard(shardVertex);
     }
 
@@ -225,236 +208,5 @@ abstract class ConceptImpl implements Concept {
 
     void setShardCount(Long instanceCount){
         vertex().property(Schema.VertexProperty.SHARD_COUNT, instanceCount);
-    }
-
-    /**
-     * Helper method to cast a concept to it's correct type
-     * @param type The type to cast to
-     * @param <E> The type of the interface we are casting to.
-     * @return The concept itself casted to the defined interface
-     * @throws GraphOperationException when casting an element incorrectly
-     */
-    private <E extends Concept> E castConcept(Class<E> type){
-        try {
-            return type.cast(this);
-        } catch(ClassCastException e){
-            throw GraphOperationException.invalidCasting(this, type);
-        }
-    }
-
-    /**
-     *
-     * @return An Ontology Element if the element is an Ontology Element
-     */
-    public OntologyConcept asOntologyConcept() {
-        return castConcept(OntologyConcept.class);
-    }
-
-    /**
-     *
-     * @return A Type if the element is a Type
-     */
-    @Override
-    public Type asType() {
-        return castConcept(Type.class);
-    }
-
-    /**
-     *
-     * @return An Thing if the element is an Thing
-     */
-    @Override
-    public Thing asInstance() {
-        return castConcept(Thing.class);
-    }
-
-    /**
-     *
-     * @return A Entity Type if the element is a Entity Type
-     */
-    @Override
-    public EntityType asEntityType() {
-        return castConcept(EntityType.class);
-    }
-
-    /**
-     *
-     * @return A Role Type if the element is a Role Type
-     */
-    @Override
-    public Role asRoleType() {
-        return castConcept(Role.class);
-    }
-
-    /**
-     *
-     * @return A Relation Type if the element is a Relation Type
-     */
-    @Override
-    public RelationType asRelationType() {
-        return castConcept(RelationType.class);
-    }
-
-    /**
-     *
-     * @return A Resource Type if the element is a Resource Type
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    public <D> ResourceType<D> asResourceType() {
-        return castConcept(ResourceType.class);
-    }
-
-    /**
-     *
-     * @return A Rule Type if the element is a Rule Type
-     */
-    @Override
-    public RuleType asRuleType() {
-        return castConcept(RuleType.class);
-    }
-
-    /**
-     *
-     * @return An Entity if the element is an Thing
-     */
-    @Override
-    public Entity asEntity() {
-        return castConcept(Entity.class);
-    }
-
-    /**
-     *
-     * @return A Relation if the element is a Relation
-     */
-    @Override
-    public Relation asRelation() {
-        return castConcept(Relation.class);
-    }
-
-    /**
-     *
-     * @return A Resource if the element is a Resource
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    public <D> Resource<D> asResource() {
-        return castConcept(Resource.class);
-    }
-
-    /**
-     *
-     * @return A Rule if the element is a Rule
-     */
-    @Override
-    public Rule asRule() {
-        return castConcept(Rule.class);
-    }
-
-    /**
-     *
-     * @return true if the element is an Ontology Element
-     */
-    public boolean isOntologyConcept() {
-        return this instanceof OntologyConcept;
-    }
-
-    /**
-     *
-     * @return true if the element is a Type
-     */
-    @Override
-    public boolean isType() {
-        return this instanceof Type;
-    }
-
-    /**
-     *
-     * @return true if the element is an Thing
-     */
-    @Override
-    public boolean isInstance() {
-        return this instanceof Thing;
-    }
-
-    /**
-     *
-     * @return true if the element is a Entity Type
-     */
-    @Override
-    public boolean isEntityType() {
-        return this instanceof EntityType;
-    }
-
-    /**
-     *
-     * @return true if the element is a Role Type
-     */
-    @Override
-    public boolean isRoleType() {
-        return this instanceof Role;
-    }
-
-    /**
-     *
-     * @return true if the element is a Relation Type
-     */
-    @Override
-    public boolean isRelationType() {
-        return this instanceof RelationType;
-    }
-
-    /**
-     *
-     * @return true if the element is a Resource Type
-     */
-    @Override
-    public boolean isResourceType() {
-        return this instanceof ResourceType;
-    }
-
-    /**
-     *
-     * @return true if the element is a Rule Type
-     */
-    @Override
-    public boolean isRuleType() {
-        return this instanceof RuleType;
-    }
-
-    /**
-     *
-     * @return true if the element is a Entity
-     */
-    @Override
-    public boolean isEntity() {
-        return this instanceof Entity;
-    }
-
-    /**
-     *
-     * @return true if the element is a Relation
-     */
-    @Override
-    public boolean isRelation() {
-        return this instanceof Relation;
-    }
-
-    /**
-     *
-     * @return true if the element is a Resource
-     */
-    @Override
-    public boolean isResource() {
-        return this instanceof Resource;
-    }
-
-    /**
-     *
-     * @return true if the element is a Rule
-     */
-    @Override
-    public boolean isRule() {
-        return this instanceof Rule;
     }
 }

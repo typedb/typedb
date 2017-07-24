@@ -32,6 +32,8 @@ GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WR
 We need to define our constructs before we can use them. We will begin by defining our resource types since they are used everywhere. In Graql, they were defined as follows:
 
 ```graql
+insert
+
 identifier sub resource datatype string;
 firstname sub resource datatype string;
 surname sub resource datatype string;
@@ -60,6 +62,8 @@ ResourceType gender = graph.putResourceType("gender", ResourceType.DataType.STRI
 Now the role and relation types. In Graql:
 
 ```graql
+insert
+
 marriage sub relation
   relates spouse1
   relates spouse2
@@ -96,6 +100,8 @@ RelationType parentship = graph.putRelationType("parentship")
 Now the entity types. First, in Graql:
 
 ```graql
+insert
+
 person sub entity
   has identifier
   has firstname
@@ -179,7 +185,7 @@ With the Graph API this would be:
 
 ```java
 //Create the resources
-Resource johnName = firstname.putResource("John"); 
+johnName = firstname.putResource("John");
 Resource maryName = firstname.putResource("Mary");
 
 //Create the entities
@@ -243,20 +249,22 @@ RuleType inferenceRule = graknGraph.getMetaRuleInference();
 Rule instances can be added to the graph both through the Graph API as well as through Graql. We will consider an example:
 
 ```graql
+insert
+
 $R1 isa inference-rule,
-lhs {
+when {
     (parent: $p, child: $c) isa Parent;
 },
-rhs {
+then {
     (ancestor: $p, descendant: $c) isa Ancestor;
 };
 
 $R2 isa inference-rule,
-lhs {
+when {
     (parent: $p, child: $c) isa Parent;
     (ancestor: $c, descendant: $d) isa Ancestor;
 },
-rhs {
+then {
     (ancestor: $p, descendant: $d) isa Ancestor;
 };
 ```
@@ -264,31 +272,31 @@ rhs {
 As there is more than one way to define Graql patterns through the API, there are several ways to construct rules. One options is through the Pattern factory:
 
 ```java
-Pattern rule1LHS = var().rel("parent", "p").rel("child", "c").isa("Parent");
-Pattern rule1RHS = var().rel("ancestor", "p").rel("descendant", "c").isa("Ancestor");
+Pattern rule1when = var().rel("parent", "p").rel("child", "c").isa("Parent");
+Pattern rule1then = var().rel("ancestor", "p").rel("descendant", "c").isa("Ancestor");
 
-Pattern rule2LHS = and(
+Pattern rule2when = and(
         var().rel("parent", "p").rel("child", "c").isa("Parent')"),
         var().rel("ancestor", "c").rel("descendant", "d").isa("Ancestor")
 );
-Pattern rule2RHS = var().rel("ancestor", "p").rel("descendant", "d").isa("Ancestor");
+Pattern rule2then = var().rel("ancestor", "p").rel("descendant", "d").isa("Ancestor");
 ```
 
 If we have a specific `GraknGraph graph` already defined, we can use the Graql pattern parser:
 
 ```java
-rule1LHS = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;"));
-rule1RHS = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $c) isa Ancestor;"));
+rule1when = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;"));
+rule1then = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $c) isa Ancestor;"));
 
-rule2LHS = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;(ancestor: $c, descendant: $d) isa Ancestor;"));
-rule2RHS = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $d) isa Ancestor;"));
+rule2when = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;(ancestor: $c, descendant: $d) isa Ancestor;"));
+rule2then = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $d) isa Ancestor;"));
 ```
 
 We conclude the rule creation with defining the rules from their constituent patterns:
 
 ```java
-Rule rule1 = inferenceRule.putRule(rule1LHS, rule1RHS);
-Rule rule2 = inferenceRule.putRule(rule2LHS, rule2RHS);
+Rule rule1 = inferenceRule.putRule(rule1when, rule1then);
+Rule rule2 = inferenceRule.putRule(rule2when, rule2then);
 ```
 
 

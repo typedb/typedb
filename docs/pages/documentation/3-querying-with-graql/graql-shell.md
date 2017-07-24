@@ -28,7 +28,6 @@ You can optionally pass arguments when starting the Graql shell, as follows:
 | `--execute <arg>`     | `-e`     | A query to execute.                              | The REPL does not open. <br/> The resulting graph is automatically committed. |
 | `--file <arg>`      | `-f`     | A path to a file containg a query to execute.    | The REPL does not open. <br/> The resulting graph is automatically committed. |
 | `--help`      | `-h`     | Print usage message.                             | |
-| `--implicit`  | `-i`     | Show implicit types.                             | | 
 | `--keyspace <arg>`  | `-k`     | The keyspace of the graph.                 | |
 | `--materialise` | `-m`   | Materialise inferred results.                    | Materialisation is not enabled by default at present, although as Grakn develops, we expect that to change.|
 | `--infer`     | `-n`     | Perform inference on results.                    | Reasoning is not enabled by default at present, although as Grakn develops, we expect that to change.|

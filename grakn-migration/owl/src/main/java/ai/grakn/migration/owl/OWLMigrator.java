@@ -39,6 +39,7 @@ import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.vocab.OWL2Datatype;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -129,6 +130,7 @@ public class OWLMigrator {
         return graph.putResourceType(OwlModel.IRI.owlname(), ResourceType.DataType.STRING);
     }
 
+    @Nullable
     public <T> Entity getEntity(T id, ResourceType<T> rtype){
         Resource<T> iri = rtype.getResource(id);
         Thing inst = iri != null? iri.ownerInstances().stream().findFirst().orElse(null) : null;

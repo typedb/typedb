@@ -76,18 +76,18 @@ $v isa entity2, has index "v";
 ################################################################
 
 isa inference-rule,
-lhs {
+when {
 (E-role-A: $x, E-role-B: $y) isa E;},
-rhs {
+then {
 (R-role-A: $x, R-role-B: $y) isa R;};
 
 isa inference-rule,
-lhs {
+when {
 (F-role-A: $x, F-role-B: $t) isa F;
 (R-role-A: $t, R-role-B: $u) isa R;
 (G-role-A: $u, G-role-B: $v) isa G;
 (R-role-A: $v, R-role-B: $w) isa R;
 (H-role-A: $w, H-role-B: $y) isa H;},
-rhs {
+then {
 (R-role-A: $x, R-role-B: $y) isa R;};
 

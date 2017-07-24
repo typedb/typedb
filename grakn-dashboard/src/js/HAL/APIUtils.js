@@ -84,6 +84,7 @@ export function defaultProperties(resource:Object) {
     baseType: resource[API.KEY_BASE_TYPE],
     label: buildLabel(resource),
     explore: resource[API.KEY_LINKS][API.KEY_EXPLORE][0][API.KEY_HREF],
+    implicit: resource[API.KEY_IMPLICIT] || false,
   };
 }
 

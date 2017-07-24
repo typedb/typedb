@@ -314,56 +314,56 @@ $81940536 (spouse2: $233568, spouse1: $41361488) has picture "http:\/\/1.bp.blog
 #############################################################################
 
 $genderizeMarriages isa inference-rule
-lhs
+when
 {(spouse1: $s1, spouse2: $s2) isa marriage;
 $s1 has gender "male";
 }
-rhs
+then
 {(husband: $s1, wife: $s2) isa marriage;};
 
 $genderizeMarriages2 isa inference-rule
-lhs
+when
 {(spouse1: $s1, spouse2: $s2) isa marriage;
 $s1 has gender "female";
 }
-rhs
+then
 {(husband: $s2, wife: $s1) isa marriage;};
 
 
 $genderizeParentships1 isa inference-rule
-lhs
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
 $c has gender "male";
 }
-rhs
+then
 {(father: $p, son: $c) isa parentship;};
 
 $genderizeParentships2 isa inference-rule
-lhs
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
 $c has gender "female";
 }
-rhs
+then
 {(father: $p, daughter: $c) isa parentship;};
 
 $genderizeParentships3 isa inference-rule
-lhs
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";
 $c has gender "male";
 }
-rhs
+then
 {(mother: $p, son: $c) isa parentship;};
 
 $genderizeParentships4 isa inference-rule
-lhs
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";
 $c has gender "female";
 }
-rhs
+then
 {(mother: $p, daughter: $c) isa parentship;};
 
 
@@ -375,83 +375,83 @@ rhs
 
 
 $grandParents1 isa inference-rule
-lhs
+when
 {($p, son: $gc) isa parentship;
 (father: $gp, $p) isa parentship;
 }
-rhs
+then
 {(grandfather: $gp, grandson: $gc) isa grandparentship;};
 
 $grandParents2 isa inference-rule
-lhs
+when
 {($p, daughter: $gc) isa parentship;
 (father: $gp, $p) isa parentship;
 }
-rhs
+then
 {(grandfather: $gp, granddaughter: $gc) isa grandparentship;};
 
 $grandParents3 isa inference-rule
-lhs
+when
 {($p, daughter: $gc) isa parentship;
 (mother: $gp, $p) isa parentship;
 }
-rhs
+then
 {(grandmother: $gp, granddaughter: $gc) isa grandparentship;};
 
 $grandParents4 isa inference-rule
-lhs
+when
 {($p, son: $gc) isa parentship;
 (mother: $gp, $p) isa parentship;
 }
-rhs
+then
 {(grandmother: $gp, grandson: $gc) isa grandparentship;};
 
 
 $peopleWithSameParentsAreSiblings isa inference-rule
-lhs
+when
 {(mother: $m, $x) isa parentship;
 (mother: $m, $y) isa parentship;
 (father: $f, $x) isa parentship;
 (father: $f, $y) isa parentship;
 $x != $y;
 }
-rhs
+then
 {(sibling1: $x, sibling2: $y) isa siblings;};
 
 $peopleWithSiblingsParentsAreCousins isa inference-rule
-lhs
+when
 {
 (parent: $p, child: $c1) isa parentship;
 ($p, $p2) isa siblings;
 (parent: $p2, child: $c2) isa parentship;
 }
-rhs
+then
 {(cousin1: $c1, cousin2: $c2) isa cousins;};
 
 $inLaws1 isa inference-rule
-lhs
+when
 {(husband: $x, wife: $y) isa marriage;
 (mother: $il, $y) isa parentship;}
-rhs
+then
 {(mother-in-law: $il, son-in-law: $x) isa in-laws;};
 
 $inLaws2 isa inference-rule
-lhs
+when
 {(husband: $x, wife: $y) isa marriage;
 (father: $il, $y) isa parentship;}
-rhs
+then
 {(father-in-law: $il, son-in-law: $x) isa in-laws;};
 
 $inLaws3 isa inference-rule
-lhs
+when
 {(husband: $x, wife: $y) isa marriage;
 (father: $il, child: $y) isa parentship;}
-rhs
+then
 {(father-in-law: $il, daughter-in-law: $y) isa in-laws;};
 
 $inLaws4 isa inference-rule
-lhs
+when
 {(husband: $x, wife: $y) isa marriage;
 (mother: $il, child: $y) isa parentship;}
-rhs
+then
 {(mother-in-law: $il, daughter-in-law: $y) isa in-laws;};

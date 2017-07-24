@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Role;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -59,6 +60,7 @@ class Cache<V> {
      *
      * @return The cached object.
      */
+    @Nullable
     public V get(){
         if(!isPresent()){
             V value = null;
@@ -82,7 +84,7 @@ class Cache<V> {
      *
      * @param value the value to be cached
      */
-    public void set(V value){
+    public void set(@Nullable V value){
         cachedValue.set(value);
     }
 

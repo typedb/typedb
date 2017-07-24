@@ -21,9 +21,16 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Thing;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -57,32 +64,31 @@ class TxCache {
     private final GraphCache graphCache;
 
     //Caches any concept which has been touched before
-    private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
-    private final Map<Label, OntologyConceptImpl> ontologyConceptCache = new HashMap<>();
+    private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
+    private final Map<Label, OntologyConcept> ontologyConceptCache = new HashMap<>();
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
-    private final Set<EntityImpl> modifiedEntities = new HashSet<>();
+    private final Set<Entity> modifiedEntities = new HashSet<>();
 
-    private final Set<RoleImpl> modifiedRoles = new HashSet<>();
+    private final Set<Role> modifiedRoles = new HashSet<>();
     private final Set<Casting> modifiedCastings = new HashSet<>();
 
-    private final Set<RelationTypeImpl> modifiedRelationTypes = new HashSet<>();
-    private final Set<RelationImpl> modifiedRelations = new HashSet<>();
+    private final Set<RelationType> modifiedRelationTypes = new HashSet<>();
+    private final Set<Relation> modifiedRelations = new HashSet<>();
 
-    private final Set<RuleImpl> modifiedRules = new HashSet<>();
+    private final Set<Rule> modifiedRules = new HashSet<>();
 
-    private final Set<ResourceImpl> modifiedResources = new HashSet<>();
+    private final Set<Resource> modifiedResources = new HashSet<>();
 
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
-    private final Map<String, RelationImpl> relationIndexCache = new HashMap<>();
+    private final Map<String, Relation> relationIndexCache = new HashMap<>();
 
     //We Track the number of concept connections which have been made which may result in a new shard
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
 
     //Transaction Specific Meta Data
     private boolean isTxOpen = false;
-    private boolean showImplicitTypes = false;
     private GraknTxType txType;
     private String closedReason = null;
 
@@ -132,24 +138,24 @@ class TxCache {
 
     /**
      *
-     * @param element The element to be later validated
+     * @param concept The element to be later validated
      */
-    void trackForValidation(ConceptImpl element) {
-        if (element.isEntity()) {
-            modifiedEntities.add((EntityImpl) element);
-        } else if (element.isRoleType()) {
-            modifiedRoles.add((RoleImpl) element);
-        } else if (element.isRelationType()) {
-            modifiedRelationTypes.add((RelationTypeImpl) element);
-        } else if (element.isRelation()){
-            RelationImpl relation = (RelationImpl) element;
+    void trackForValidation(Concept concept) {
+        if (concept.isEntity()) {
+            modifiedEntities.add(concept.asEntity());
+        } else if (concept.isRole()) {
+            modifiedRoles.add(concept.asRole());
+        } else if (concept.isRelationType()) {
+            modifiedRelationTypes.add(concept.asRelationType());
+        } else if (concept.isRelation()){
+            Relation relation = concept.asRelation();
             modifiedRelations.add(relation);
             //Caching of relations in memory so they can be retrieved without needing a commit
-            relationIndexCache.put(RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
-        } else if (element.isRule()){
-            modifiedRules.add((RuleImpl) element);
-        } else if (element.isResource()){
-            modifiedResources.add((ResourceImpl) element);
+            relationIndexCache.put(RelationReified.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
+        } else if (concept.isRule()){
+            modifiedRules.add(concept.asRule());
+        } else if (concept.isResource()){
+            modifiedResources.add(concept.asResource());
         }
     }
     void trackForValidation(Casting casting) {
@@ -160,7 +166,7 @@ class TxCache {
      *
      * @return All the relations which have been affected in the transaction
      */
-    Map<String, RelationImpl> getRelationIndexCache(){
+    Map<String, Relation> getRelationIndexCache(){
         return relationIndexCache;
     }
 
@@ -176,7 +182,7 @@ class TxCache {
      *
      * @return All the types currently cached in the transaction. Used for
      */
-    Map<Label, OntologyConceptImpl> getOntologyConceptCache(){
+    Map<Label, OntologyConcept> getOntologyConceptCache(){
         return ontologyConceptCache;
     }
 
@@ -192,16 +198,16 @@ class TxCache {
      *
      * @return All the concepts which have been accessed in this transaction
      */
-    Map<ConceptId, ConceptImpl> getConceptCache() {
+    Map<ConceptId, Concept> getConceptCache() {
         return conceptCache;
     }
 
     /**
      *
-     * @param concept The concept to nio longer track
+     * @param concept The concept to no longer track
      */
     @SuppressWarnings("SuspiciousMethodCalls")
-    void remove(ConceptImpl concept){
+    void remove(Concept concept){
         modifiedEntities.remove(concept);
         modifiedRoles.remove(concept);
         modifiedRelationTypes.remove(concept);
@@ -222,7 +228,7 @@ class TxCache {
      *
      * @param index The current index of the relation
      */
-    RelationImpl getCachedRelation(String index){
+    Relation getCachedRelation(String index){
         return relationIndexCache.get(index);
     }
 
@@ -231,12 +237,12 @@ class TxCache {
      *
      * @param concept The concept to be cached.
      */
-    void cacheConcept(ConceptImpl concept){
+    void cacheConcept(Concept concept){
         conceptCache.put(concept.getId(), concept);
         if(concept.isOntologyConcept()){
             OntologyConceptImpl ontologyElement = (OntologyConceptImpl) concept;
             ontologyConceptCache.put(ontologyElement.getLabel(), ontologyElement);
-            labelCache.put(ontologyElement.getLabel(), ontologyElement.getTypeId());
+            labelCache.put(ontologyElement.getLabel(), ontologyElement.getLabelId());
         }
     }
 
@@ -341,34 +347,34 @@ class TxCache {
 
         return formattedLog;
     }
-    private  <X extends ThingImpl> Json loadConceptsForFixing(Set<X> instances){
+    private  <X extends Thing> Json loadConceptsForFixing(Set<X> instances){
         Map<String, Set<String>> conceptByIndex = new HashMap<>();
-        instances.forEach(concept ->
-                conceptByIndex.computeIfAbsent(concept.getIndex(), (e) -> new HashSet<>()).add(concept.getId().getValue()));
+        instances.forEach(thing ->
+                conceptByIndex.computeIfAbsent(((ThingImpl) thing).getIndex(), (e) -> new HashSet<>()).add(thing.getId().getValue()));
         return Json.make(conceptByIndex);
     }
 
     //--------------------------------------- Concepts Needed For Validation -------------------------------------------
-    Set<EntityImpl> getModifiedEntities() {
+    Set<Entity> getModifiedEntities() {
         return modifiedEntities;
     }
 
-    Set<RoleImpl> getModifiedRoles() {
+    Set<Role> getModifiedRoles() {
         return modifiedRoles;
     }
 
-    Set<RelationTypeImpl> getModifiedRelationTypes() {
+    Set<RelationType> getModifiedRelationTypes() {
         return modifiedRelationTypes;
     }
-    Set<RelationImpl> getModifiedRelations() {
+    Set<Relation> getModifiedRelations() {
         return modifiedRelations;
     }
 
-    Set<RuleImpl> getModifiedRules() {
+    Set<Rule> getModifiedRules() {
         return modifiedRules;
     }
 
-    Set<ResourceImpl> getModifiedResources() {
+    Set<Resource> getModifiedResources() {
         return modifiedResources;
     }
 
@@ -400,13 +406,6 @@ class TxCache {
     }
     boolean isTxOpen(){
         return isTxOpen;
-    }
-
-    void showImplicitTypes(boolean flag){
-        showImplicitTypes = flag;
-    }
-    boolean implicitTypesVisible(){
-        return showImplicitTypes;
     }
 
     GraknTxType txType(){

@@ -65,7 +65,7 @@ public class LabelProperty extends AbstractVarProperty implements NamedProperty,
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.label(start, label));
+        return ImmutableSet.of(EquivalentFragmentSets.label(this, start, label));
     }
 
     @Override

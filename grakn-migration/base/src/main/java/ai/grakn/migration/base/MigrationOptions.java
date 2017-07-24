@@ -25,6 +25,7 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import javax.annotation.Nullable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -73,6 +74,7 @@ public class MigrationOptions {
         return command.getOptionValue("k");
     }
 
+    @Nullable
     public String getConfiguration() {
         return command.hasOption("c") ? command.getOptionValue("c") : null;
     }

@@ -31,14 +31,14 @@ creation-date sub resource datatype long;
 #Rules
 
 $rule2 isa inference-rule
-    lhs{
+    when{
         (original:$p, reply:$s) isa reply-of;
         $s has creation-date $d1;
         $d1 val < $d2;
         (original:$p, reply:$r) isa reply-of;
         $r has creation-date $d2;
     }
-    rhs {
+    then {
         (predecessor:$s, successor:$r) isa message-succession;
     };
 

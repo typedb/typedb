@@ -21,6 +21,8 @@ package ai.grakn.graph.internal;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
+import javax.annotation.Nullable;
+
 /**
  * <p>
  *     Represent an Edge in a Grakn Graph
@@ -35,7 +37,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 
     EdgeElement(AbstractGraknGraph graknGraph, Edge e){
-        super(graknGraph, e);
+        super(graknGraph, e, Schema.PREFIX_EDGE);
     }
 
     /**
@@ -64,6 +66,7 @@ class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
      *
      * @return The source of the edge.
      */
+    @Nullable
     public VertexElement source(){
         return graph().factory().buildVertexElement(element().outVertex());
     }
@@ -72,6 +75,7 @@ class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
      *
      * @return The target of the edge
      */
+    @Nullable
     public VertexElement target(){
         return graph().factory().buildVertexElement(element().inVertex());
     }

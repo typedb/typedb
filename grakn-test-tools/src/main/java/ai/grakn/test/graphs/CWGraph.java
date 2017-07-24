@@ -87,7 +87,11 @@ public class CWGraph extends TestGraph {
                 .resource(key)
                 .resource(nationality);
 
-        graph.putEntityType("criminal");
+        graph.putEntityType("criminal")
+                .plays(seller)
+                .plays(payee)
+                .resource(key)
+                .resource(nationality);
 
         weapon = graph.putEntityType("weapon")
                 .plays(transactionItem)
@@ -103,6 +107,7 @@ public class CWGraph extends TestGraph {
         graph.putEntityType("missile")
                 .sup(weapon)
                 .plays(transactionItem)
+                .resource(propulsion)
                 .resource(key);
 
         country = graph.putEntityType("country")

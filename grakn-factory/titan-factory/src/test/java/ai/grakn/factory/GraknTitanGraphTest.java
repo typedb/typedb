@@ -22,10 +22,12 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.GraknTitanGraph;
+import com.google.common.collect.Iterators;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -136,5 +138,20 @@ public class GraknTitanGraphTest extends TitanTestBase{
         LocalDateTime now = LocalDateTime.now();
         Resource<LocalDateTime> date = dateType.putResource(now);
         assertEquals(now, date.getValue());
+    }
+
+    @Test
+    public void whenLookingUpRelationEdgeViaConceptId_EnsureTheRelationEdgeIsReturned(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("Looky a resource type", ResourceType.DataType.STRING);
+        Resource<String> resource = resourceType.putResource("A Resource Thing");
+
+        EntityType entityType = graknGraph.putEntityType("My entity").resource(resourceType);
+        Relation relation = Iterators.getOnlyElement(entityType.addEntity().resource(resource).relations().iterator());
+
+        //Closing so the cache is not accessed when doing the lookup
+        graknGraph.commit();
+        graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
+
+        assertEquals(relation, graknGraph.getConcept(relation.getId()));
     }
 }

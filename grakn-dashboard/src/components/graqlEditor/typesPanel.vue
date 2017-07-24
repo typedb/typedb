@@ -32,7 +32,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
               <button @click="$emit('load-ontology','relation')" class="btn norightmargin">Relations</button>
               <button @click="updateCurrentTab('relations')" :class="{'active':currentTab==='relations'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
             </div>
-            <button @click="$emit('load-ontology','concept')" class="btn" style="margin-left:auto;">All Types</button>
+            <button @click="$emit('load-ontology','thing')" class="btn" style="margin-left:auto;">All Types</button>
         </div>
         <transition name="fade-in" v-for="k in Object.keys(typeInstances)">
             <div v-bind:id="k+'-tab'" class="tab-pane" v-show="currentTab===k">

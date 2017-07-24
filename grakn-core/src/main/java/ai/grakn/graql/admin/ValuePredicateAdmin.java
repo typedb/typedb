@@ -21,7 +21,6 @@ package ai.grakn.graql.admin;
 import ai.grakn.graql.ValuePredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Optional;
@@ -78,5 +77,5 @@ public interface ValuePredicateAdmin extends ValuePredicate {
      * Apply the predicate to the gremlin traversal, so the traversal will filter things that don't meet the predicate
      * @param traversal the traversal to apply the predicate to
      */
-    void applyPredicate(GraphTraversal<Vertex, Vertex> traversal);
+    <S, E> GraphTraversal<S, E> applyPredicate(GraphTraversal<S, E> traversal);
 }

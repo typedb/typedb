@@ -74,7 +74,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(hasScope(start, scope.getVarName()));
+        return ImmutableSet.of(hasScope(this, start, scope.getVarName()));
     }
 
     @Override
@@ -84,7 +84,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Thing scopeThing = insertQueryExecutor.getConcept(scope).asInstance();
+        Thing scopeThing = insertQueryExecutor.getConcept(scope).asThing();
         concept.asType().scope(scopeThing);
     }
 

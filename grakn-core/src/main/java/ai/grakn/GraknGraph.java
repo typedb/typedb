@@ -36,6 +36,7 @@ import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Collection;
 
 /**
@@ -200,6 +201,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws ClassCastException if the concept is not an instance of {@link T}
      */
     @CheckReturnValue
+    @Nullable
     <T extends Concept> T getConcept(ConceptId id);
 
     /**
@@ -212,6 +214,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws ClassCastException if the type is not an instance of {@link T}
      */
     @CheckReturnValue
+    @Nullable
     <T extends OntologyConcept> T getOntologyConcept(Label label);
 
     /**
@@ -224,6 +227,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws ClassCastException if the type is not an instance of {@link T}
      */
     @CheckReturnValue
+    @Nullable
     <T extends Type> T getType(Label label);
 
     /**
@@ -247,6 +251,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      */
     @CheckReturnValue
+    @Nullable
     EntityType getEntityType(String label);
 
     /**
@@ -258,6 +263,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      */
     @CheckReturnValue
+    @Nullable
     RelationType getRelationType(String label);
 
     /**
@@ -270,6 +276,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      */
     @CheckReturnValue
+    @Nullable
     <V> ResourceType<V> getResourceType(String label);
 
     /**
@@ -281,6 +288,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      */
     @CheckReturnValue
+    @Nullable
     Role getRole(String label);
 
     /**
@@ -292,6 +300,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      */
     @CheckReturnValue
+    @Nullable
     RuleType getRuleType(String label);
 
     //------------------------------------- Utilities ----------------------------------
@@ -312,22 +321,6 @@ public interface GraknGraph extends AutoCloseable{
      */
     @CheckReturnValue
     boolean isReadOnly();
-
-    // TODO: what does this do when the graph is closed?
-    /**
-     * Utility function to specify whether implicit and system-generated types should be returned.
-     * @param flag Specifies if implicit and system-generated types should be returned.
-     */
-    void showImplicitConcepts(boolean flag);
-
-    // TODO: what does this do when the graph is closed?
-    /**
-     * Utility function to specify whether implicit concepts should be exposed.
-     *
-     * @return true if implicit concepts are exposed.
-     */
-    @CheckReturnValue
-    boolean implicitConceptsVisible();
 
     // TODO: what does this do when the graph is closed?
     /**

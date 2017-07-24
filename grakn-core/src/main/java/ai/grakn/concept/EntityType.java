@@ -20,6 +20,8 @@ package ai.grakn.concept;
 
 import ai.grakn.exception.GraphOperationException;
 
+import javax.annotation.Nonnull;
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 
 /**
@@ -37,6 +39,13 @@ import java.util.Collection;
  */
 public interface EntityType extends Type{
     //------------------------------------- Modifiers ----------------------------------
+    /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    EntityType setLabel(Label label);
+
     /**
      * Sets the EntityType to be abstract - which prevents it from having any instances.
      *
@@ -140,6 +149,7 @@ public interface EntityType extends Type{
      * @return The supertype of this EntityType
      */
     @Override
+    @Nonnull
     EntityType sup();
 
     /**
@@ -159,4 +169,19 @@ public interface EntityType extends Type{
      */
     @Override
     Collection<Entity> instances();
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default EntityType asEntityType(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isEntityType(){
+        return true;
+    }
 }

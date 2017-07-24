@@ -26,6 +26,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -53,6 +54,11 @@ public class IsaAtom extends TypeAtom {
         );
     }
     protected IsaAtom(TypeAtom a) { super(a);}
+
+    @Override
+    public boolean isAllowedToFormRuleHead(){
+        return getOntologyConcept() != null;
+    }
 
     @Override
     public String toString(){

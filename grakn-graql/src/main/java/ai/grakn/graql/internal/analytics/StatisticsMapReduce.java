@@ -18,13 +18,15 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.ResourceType;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
+
+import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The abstract MapReduce program for computing statistics.
@@ -54,7 +56,6 @@ abstract class StatisticsMapReduce<T> extends GraknMapReduce<T> {
     }
 
     boolean resourceIsValid(Vertex vertex) {
-        boolean isSelected = selectedTypes.contains(Utility.getVertexTypeId(vertex));
-        return isSelected && vertex.<Long>value(degreePropertyKey) > 0;
+        return vertexHasSelectedTypeId(vertex, selectedTypes) && vertex.<Long>value(degreePropertyKey) > 0;
     }
 }

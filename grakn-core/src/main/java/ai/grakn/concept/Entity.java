@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * <p>
  *     An instance of Entity Type {@link EntityType}
@@ -50,4 +52,19 @@ public interface Entity extends Thing {
      */
     @Override
     Entity resource(Resource resource);
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default Entity asEntity(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isEntity(){
+        return true;
+    }
 }

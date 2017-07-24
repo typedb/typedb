@@ -25,14 +25,16 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
@@ -134,11 +136,11 @@ public class RelationTest extends GraphTestBase{
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
     private Set<Concept> followShortcutsToNeighbours(GraknGraph graph, Thing thing) {
-        List<Vertex> vertices = graph.admin().getTinkerTraversal().hasId(thing.getId().getRawValue()).
+        List<Vertex> vertices = graph.admin().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.getId().getValue()).
                 in(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 out(Schema.EdgeLabel.SHORTCUT.getLabel()).toList();
 
-        return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).asInstance()).collect(Collectors.toSet());
+        return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).asThing()).collect(Collectors.toSet());
     }
 
     @Test
@@ -174,7 +176,7 @@ public class RelationTest extends GraphTestBase{
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
-        assertEquals(getFakeId(relation.type(), roleMap), relation.getIndex());
+        assertEquals(getFakeId(relation.type(), roleMap), relation.reified().get().getIndex());
     }
     private String getFakeId(RelationType relationType, TreeMap<Role, Thing> roleMap){
         String itemIdentifier = "RelationType_" + relationType.getId() + "_Relation";
@@ -272,7 +274,20 @@ public class RelationTest extends GraphTestBase{
     @Test
     public void whenAddingNullRolePlayerToRelation_Throw(){
         expectedException.expect(NullPointerException.class);
-
         relationType.addRelation().addRolePlayer(null, rolePlayer1);
+    }
+
+    @Test
+    public void whenAttemptingToLinkTheInstanceOfAResourceRelationToTheResourceWhichCreatedIt_ThrowIfTheRelationTypeDoesNotHavePermissionToPlayTheNecessaryRole(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("what a pain", ResourceType.DataType.STRING);
+        Resource<String> resource = resourceType.putResource("a real pain");
+
+        EntityType entityType = graknGraph.putEntityType("yay").resource(resourceType);
+        Relation implicitRelation = Iterables.getOnlyElement(entityType.addEntity().resource(resource).relations());
+
+        expectedException.expect(GraphOperationException.class);
+        expectedException.expectMessage(GraphOperationException.hasNotAllowed(implicitRelation, resource).getMessage());
+
+        implicitRelation.resource(resource);
     }
 }

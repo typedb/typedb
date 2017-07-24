@@ -45,14 +45,14 @@ $ca isa Person, has name 'ca';
 ####################################################
 
 isa inference-rule,
-lhs {
+when {
 (parent: $x, child: $z) isa Parent;
 (ancestor: $z, descendant: $y) isa Ancestor;},
-rhs {
+then {
 (ancestor: $x, descendant: $y) isa Ancestor;};
 
 isa inference-rule,
-lhs {
+when {
 (parent: $x, child: $y) isa Parent;},
-rhs {
+then {
 (ancestor: $x, descendant: $y) isa Ancestor;};

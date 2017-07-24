@@ -51,6 +51,7 @@ The steps to migrate the CSV to GRAKN.AI are:
 
 As an example, let's take some JSON:
 
+<!-- TODO: Change this from pokemon examples -->
 ```json
 {
     "types": [

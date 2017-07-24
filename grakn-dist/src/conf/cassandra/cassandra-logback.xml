@@ -39,10 +39,11 @@
         </encoder>
     </appender>
 
-    <root level="ERROR">
-        <appender-ref ref="FILE" />
-        <appender-ref ref="STDOUT" />
-    </root>
+    <root level="ERROR"/>
+
+    <logger name="org.apache.cassandra" level="INFO">
+        <appender-ref ref="${cassandra.log.appender:-FILE}"/>
+    </logger>
 
     <logger name="com.thinkaurelius.thrift" level="ERROR"/>
 </configuration>

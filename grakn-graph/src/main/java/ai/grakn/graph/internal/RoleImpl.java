@@ -21,6 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -53,10 +54,6 @@ class RoleImpl extends OntologyConceptImpl<Role> implements Role {
 
     RoleImpl(VertexElement vertexElement) {
         super(vertexElement);
-    }
-
-    RoleImpl(VertexElement vertexElement, Role type) {
-        super(vertexElement, type);
     }
 
     RoleImpl(VertexElement vertexElement, Role type, Boolean isImplicit) {
@@ -132,7 +129,9 @@ class RoleImpl extends OntologyConceptImpl<Role> implements Role {
     public Stream<Casting> rolePlayers(){
         return relationTypes().stream().
                 flatMap(relationType -> relationType.instances().stream()).
-                flatMap(relation -> ((RelationImpl)relation).castingsRelation(this));
+                map(relation -> RelationImpl.from(relation).reified()).
+                flatMap(CommonUtil::optionalToStream).
+                flatMap(relation -> relation.castingsRelation(this));
     }
 
     @Override
@@ -144,7 +143,7 @@ class RoleImpl extends OntologyConceptImpl<Role> implements Role {
     }
 
     @Override
-    void trackSuperChange() {
+    void trackRolePlayers() {
         //TODO: track the super change when the role super changes
     }
 

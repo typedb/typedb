@@ -26,36 +26,55 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.GraknEngineConfig;
+import static ai.grakn.engine.GraknEngineConfig.FACTORY_ANALYTICS;
+import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
+import static ai.grakn.util.REST.GraphConfig.COMPUTER;
+import static ai.grakn.util.REST.GraphConfig.DEFAULT;
+import static ai.grakn.util.REST.Request.FORMAT;
+import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
+import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
+import static ai.grakn.util.REST.WebPath.System.DELETE_KEYSPACE;
+import static ai.grakn.util.REST.WebPath.System.INITIALISE;
+import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
+import static ai.grakn.util.REST.WebPath.System.METRICS;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.json.MetricsModule;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.exporter.common.TextFormat;
 import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 import javax.ws.rs.DELETE;
 import mjson.Json;
+import static org.apache.http.HttpHeaders.CACHE_CONTROL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Service;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import java.util.Collection;
-import java.util.Properties;
-
-import static ai.grakn.engine.GraknEngineConfig.FACTORY_ANALYTICS;
-import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
-import static ai.grakn.util.REST.GraphConfig.COMPUTER;
-import static ai.grakn.util.REST.GraphConfig.DEFAULT;
-import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
-import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
-import static ai.grakn.util.REST.WebPath.System.DELETE_KEYSPACE;
-import static ai.grakn.util.REST.WebPath.System.INITIALISE;
-import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 
 
 /**
@@ -73,16 +92,41 @@ import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
  * @author fppt
  */
 public class SystemController {
+
+    private static final String PROMETHEUS_CONTENT_TYPE = "text/plain; version=0.0.4";
+    private static final String PROMETHEUS = "prometheus";
+    public static final String JSON = "json";
+
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
     private final EngineGraknGraphFactory factory;
+    private final MetricRegistry metricRegistry;
+    private final ObjectMapper mapper;
+    private final DropwizardExports prometheusMetricWrapper;
+    private final CollectorRegistry prometheusRegistry;
 
-    public SystemController(EngineGraknGraphFactory factory , Service spark) {
+    public SystemController(EngineGraknGraphFactory factory , Service spark,
+            MetricRegistry metricRegistry) {
         this.factory = factory;
-
-        spark.get(INITIALISE,         this::initialiseSession);
-        spark.get(KEYSPACES,          this::getKeyspaces);
-        spark.get(CONFIGURATION,      this::getConfiguration);
+        this.metricRegistry = metricRegistry;
+        this.prometheusMetricWrapper = new DropwizardExports(metricRegistry);
+        this.prometheusRegistry = new CollectorRegistry();
+        prometheusRegistry.register(prometheusMetricWrapper);
+        spark.get(KEYSPACES,     this::getKeyspaces);
+        spark.get(CONFIGURATION, this::getConfiguration);
+        spark.get(METRICS, this::getMetrics);
+        spark.get(INITIALISE, this::initialiseSession);
         spark.delete(DELETE_KEYSPACE, this::deleteKeyspace);
+
+        final TimeUnit rateUnit = TimeUnit.SECONDS;
+        final TimeUnit durationUnit = TimeUnit.SECONDS;
+        final boolean showSamples = false;
+        MetricFilter filter = MetricFilter.ALL;
+
+        this.mapper = new ObjectMapper().registerModule(
+                new MetricsModule(rateUnit,
+                    durationUnit,
+                    showSamples,
+                    filter));
     }
 
     @GET
@@ -106,15 +150,14 @@ public class SystemController {
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
     private boolean deleteKeyspace(Request request, Response response){
         String keyspace = request.queryParams(KEYSPACE_PARAM);
-
         boolean deletionComplete = factory.systemKeyspace().deleteKeyspace(keyspace);
         if(deletionComplete){
+            LOG.info("Keyspace {} deleted", keyspace);
             response.status(200);
+            return true;
         } else {
             throw GraknServerException.couldNotDelete(keyspace);
         }
-
-        return deletionComplete;
     }
 
     @GET
@@ -172,4 +215,35 @@ public class SystemController {
             throw GraknServerException.serverException(500, e);
         }
     }
+
+    @GET
+    @Path("/metrics")
+    @ApiOperation(value = "Exposes internal metrics")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = FORMAT, value = "prometheus", dataType = "string", paramType = "path")
+    })
+    private String getMetrics(Request request, Response response) throws IOException {
+        response.header(CACHE_CONTROL, "must-revalidate,no-cache,no-store");
+        response.status(HttpServletResponse.SC_OK);
+        Optional<String> format = Optional.ofNullable(request.queryParams(FORMAT));
+        String dFormat = format.orElse(JSON);
+        if (dFormat.equals(PROMETHEUS)) {
+            // Prometheus format for the metrics
+            response.type(PROMETHEUS_CONTENT_TYPE);
+            final Writer writer1 = new StringWriter();
+            TextFormat.write004(writer1, this.prometheusRegistry.metricFamilySamples());
+            return writer1.toString();
+        } else if (dFormat.equals(JSON)) {
+            // Json/Dropwizard format
+            response.type(APPLICATION_JSON);
+            final ObjectWriter writer = mapper.writer();
+            try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+                writer.writeValue(output, this.metricRegistry);
+                return new String(output.toByteArray(), "UTF-8");
+            }
+        } else {
+            throw new IllegalArgumentException("Unexpected format " + dFormat);
+        }
+    }
+
 }

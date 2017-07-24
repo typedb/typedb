@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Thing;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -54,10 +55,10 @@ class Shard {
 
     /**
      *
-     * @return The id of this shard. String ares used because shards are looked up via the string index.
+     * @return The id of this shard. Strings are used because shards are looked up via the string index.
      */
     String id(){
-        return vertex().id().getValue().toString();
+        return vertex().property(Schema.VertexProperty.ID);
     }
 
     /**
@@ -81,7 +82,7 @@ class Shard {
      *
      * @return All the concept linked to this shard
      */
-    Stream<ConceptImpl> links(){
+    <V extends Thing> Stream<V> links(){
         return  vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).
                 map(EdgeElement::source).
                 map(vertexElement ->  vertex().graph().factory().buildConcept(vertexElement));

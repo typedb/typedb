@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
@@ -28,7 +29,7 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
  */
 class NeqFragmentSet extends EquivalentFragmentSet {
 
-    NeqFragmentSet(Var varA, Var varB) {
-        super(Fragments.neq(varA, varB), Fragments.neq(varB, varA));
+    NeqFragmentSet(VarProperty varProperty, Var varA, Var varB) {
+        super(Fragments.neq(varProperty, varA, varB), Fragments.neq(varProperty, varB, varA));
     }
 }

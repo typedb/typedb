@@ -17,15 +17,15 @@
  */
 package ai.grakn.test.engine.user;
 
-import org.junit.Assert;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.test.GraphContext;
 import mjson.Json;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 /**
  * Testing behavior of admin/super user.
@@ -34,13 +34,19 @@ import mjson.Json;
  *
  */
 public class SuperUserTest {
-    static EngineGraknGraphFactory graknFactory = EngineGraknGraphFactory.create(EngineTestHelper.config().getProperties());
+    static EngineGraknGraphFactory graknFactory;
     
     @ClassRule
     public static final GraphContext graph = GraphContext.empty();
 
     private static final String adminPassword = "top secret";
     private final UsersHandler users = UsersHandler.create(adminPassword, graknFactory);
+
+    @BeforeClass
+    public static void beforeClass() {
+        // TODO: Doing it here because it has to happen after Cassandra starts. Consider refactoring
+        graknFactory = EngineGraknGraphFactory.createAndLoadSystemOntology(EngineTestHelper.config().getProperties());
+    }
 
     @Test
     public void testSuperuserPresent() {

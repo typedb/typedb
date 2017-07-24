@@ -182,7 +182,7 @@ public class GraqlPrinterTest {
     public void whenPrintingRole_ShowLabel() {
         Printer printer = Printers.graql(true);
 
-        Role role = rule.graph().admin().getMetaRoleType();
+        Role role = rule.graph().admin().getMetaRole();
 
         String roleString = printer.graqlString(role);
 
@@ -207,5 +207,12 @@ public class GraqlPrinterTest {
 
         String productionString = printer.graqlString(production);
         assertThat(productionString, not(containsString("\u001B")));
+    }
+
+    @Test
+    public void whenPrintingNull_ResultIsNullString() {
+        Printer printer = Printers.graql(false);
+
+        assertEquals("null", printer.graqlString(null));
     }
 }

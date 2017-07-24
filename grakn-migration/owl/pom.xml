@@ -23,7 +23,7 @@
     <parent>
         <artifactId>grakn-migration</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.15.0</version>
+        <version>0.16.0-SNAPSHOT</version>
     </parent>
     <dependencies>
         <dependency>
@@ -39,7 +39,21 @@
                     <groupId>org.slf4j</groupId>
                     <artifactId>jcl-over-slf4j</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <artifactId>jackson-core</artifactId>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <artifactId>jackson-databind</artifactId>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>

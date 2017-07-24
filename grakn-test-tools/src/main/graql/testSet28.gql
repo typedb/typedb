@@ -33,11 +33,11 @@ res2 sub resource datatype string;
 #Rules
 
 $dummyRule isa inference-rule
-    lhs{
+    when {
         (role3: $x, role4: $y) isa relation3;
         (role3: $y, role4: $z) isa relation3;
     }
-    rhs {
+    then {
         (role3: $x, role4: $z) isa relation3;
     };
 

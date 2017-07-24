@@ -21,12 +21,18 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
@@ -47,6 +53,7 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
 import static ai.grakn.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
 import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
+import static ai.grakn.util.ErrorMessage.VALIDATION_TOO_MANY_KEYS;
 
 /**
  * <p>
@@ -148,7 +155,7 @@ class ValidateGlobalRules {
      * @return An error message indicating if the relation has an incorrect structure. This includes checking if there an equal
      * number of castings and roles as well as looping the structure to make sure castings lead to the same relation type.
      */
-    static Optional<String> validateRelationshipStructure(RelationImpl relation){
+    static Optional<String> validateRelationshipStructure(RelationReified relation){
         RelationType relationType = relation.type();
         Collection<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
         Collection<Role> roles = relationType.relates();
@@ -181,7 +188,7 @@ class ValidateGlobalRules {
      * @param relationType the relation type to be validated
      * @return Error messages if the role type sub structure does not match the relation type sub structure
      */
-    static Set<String> validateRelationTypesToRolesSchema(RelationTypeImpl relationType){
+    static Set<String> validateRelationTypesToRolesSchema(RelationType relationType){
         RelationTypeImpl superRelationType = (RelationTypeImpl) relationType.sup();
         if(Schema.MetaSchema.isMetaLabel(superRelationType.getLabel())){ //If super type is a meta type no validation needed
             return Collections.emptySet();
@@ -249,8 +256,12 @@ class ValidateGlobalRules {
                 if(playsEntry.getValue()){
                     Role role = playsEntry.getKey();
                     // Assert there is a relation for this type
-                    if (thing.relations(role).isEmpty()) {
+                    Collection<Relation> relations = thing.relations(role);
+                    if (relations.isEmpty()) {
                         return Optional.of(VALIDATION_INSTANCE.getMessage(thing.getId(), thing.type().getLabel(), role.getLabel()));
+                    } else if(relations.size() > 1){
+                        Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.getLabel());
+                        return Optional.of(VALIDATION_TOO_MANY_KEYS.getMessage(thing.getId(), resourceTypeLabel));
                     }
                 }
             }
@@ -261,28 +272,90 @@ class ValidateGlobalRules {
 
     /**
      * @param graph graph used to ensure the relation is unique
-     * @param relation The relation whose hash needs to be set.
+     * @param relationReified The relation whose hash needs to be set.
      * @return An error message if the relation is not unique.
      */
-    static Optional<String> validateRelationIsUnique(AbstractGraknGraph<?> graph, RelationImpl relation){
-        Relation foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers()));
+    static Optional<String> validateRelationIsUnique(AbstractGraknGraph<?> graph, RelationReified relationReified){
+        RelationImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, RelationReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers()));
         if(foundRelation == null){
-            relation.setHash();
-        } else if(!foundRelation.equals(relation)){
-            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relation));
+            relationReified.setHash();
+        } else if(foundRelation.reified().isPresent() && !foundRelation.reified().get().equals(relationReified)){
+            return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
         }
         return Optional.empty();
+    }
+
+
+    /**
+     * @param graph graph used to ensure the rule is a valid Horn clause
+     * @param rule the rule to be validated
+     * @return Error messages if the rule is not a valid Horn clause (in implication form, conjunction in the body, single-atom conjunction in the head)
+     */
+    static Set<String> validateRuleIsValidHornClause(GraknGraph graph, Rule rule){
+        Set<String> errors = new HashSet<>();
+        if (rule.getWhen().admin().isDisjunction()){
+            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
+        }
+        errors.addAll(checkRuleHeadInvalid(graph, rule, rule.getThen()));
+        return errors;
+    }
+
+    /**
+     * NB: this only gets checked if the rule obeys the Horn clause form
+     * @param graph graph used to ensure the rule is a valid Horn clause
+     * @param rule the rule to be validated ontologically
+     * @return Error messages if the rule has ontological inconsistencies
+     */
+    static Set<String> validateRuleOntologically(GraknGraph graph, Rule rule) {
+        Set<String> errors = new HashSet<>();
+
+        //both body and head refer to the same graph and have to be valid with respect to the ontology that governs it
+        //as a result the rule can be ontologically validated by combining them into a conjunction
+        //this additionally allows to cross check body-head references
+        ReasonerQuery combined = rule
+                .getWhen()
+                .and(rule.getThen())
+                .admin().getDisjunctiveNormalForm().getPatterns().iterator().next()
+                .toReasonerQuery(graph);
+        errors.addAll(combined.validateOntologically());
+        return errors;
+    }
+
+    /**
+     * @param graph graph used to ensure the rule head is valid
+     * @param rule the rule to be validated
+     * @param head head of the rule of interest
+     * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain  illegal atomics and is ontologically valid
+     */
+    private static Set<String> checkRuleHeadInvalid(GraknGraph graph, Rule rule, Pattern head) {
+        Set<String> errors = new HashSet<>();
+        Set<Conjunction<VarPatternAdmin>> patterns = head.admin().getDisjunctiveNormalForm().getPatterns();
+        if (patterns.size() != 1){
+            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getId(), rule.type().getLabel()));
+        } else {
+            ReasonerQuery headQuery = patterns.iterator().next().toReasonerQuery(graph);
+            Set<Atomic> allowed = headQuery.getAtoms().stream()
+                    .filter(Atomic::isAllowedToFormRuleHead).collect(Collectors.toSet());
+
+            if (allowed.size() > 1) {
+                errors.add(ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC.getMessage(rule.getId(), rule.type().getLabel()));
+            }
+            else if (allowed.isEmpty()){
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getId(), rule.type().getLabel()));
+            }
+        }
+        return errors;
     }
 
     /**
      *
      * @param rule The rule to be validated
-     * @return Error messages if the lhs or rhs of a rule refers to a non existent type
+     * @return Error messages if the when or then of a rule refers to a non existent type
      */
-    static Set<String> validateRuleOntologyElementsExist(GraknGraph graph, RuleImpl rule){
+    static Set<String> validateRuleOntologyElementsExist(GraknGraph graph, Rule rule){
         Set<String> errors = new HashSet<>();
-        errors.addAll(checkRuleSideInvalid(graph, rule, "LHS", rule.getLHS()));
-        errors.addAll(checkRuleSideInvalid(graph, rule, "RHS", rule.getRHS()));
+        errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_WHEN, rule.getWhen()));
+        errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_THEN, rule.getThen()));
         return errors;
     }
 
@@ -294,7 +367,7 @@ class ValidateGlobalRules {
      * @param pattern The pattern from which we will extract the types in the pattern
      * @return A list of errors if the pattern refers to any non-existent types in the graph
      */
-    private static Set<String> checkRuleSideInvalid(GraknGraph graph, RuleImpl rule, String side, Pattern pattern) {
+    private static Set<String> checkRuleSideInvalid(GraknGraph graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
         pattern.admin().getVars().stream()
@@ -304,10 +377,12 @@ class ValidateGlobalRules {
                     if(ontologyConcept == null){
                         errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
                     } else {
-                        if(side.equalsIgnoreCase("LHS")){
-                            rule.addHypothesis(ontologyConcept);
+                        if(Schema.VertexProperty.RULE_WHEN.equals(side)){
+                            RuleImpl.from(rule).addHypothesis(ontologyConcept);
+                        } else if (Schema.VertexProperty.RULE_THEN.equals(side)){
+                            RuleImpl.from(rule).addConclusion(ontologyConcept);
                         } else {
-                            rule.addConclusion(ontologyConcept);
+                            throw GraphOperationException.invalidPropertyUse(rule, side);
                         }
                     }
                 });

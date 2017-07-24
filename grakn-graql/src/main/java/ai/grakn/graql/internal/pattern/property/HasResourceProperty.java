@@ -20,12 +20,12 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -41,7 +41,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -93,12 +92,6 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         return resource;
     }
 
-    // TODO: If `VarPatternAdmin#setVarName` is removed, this may no longer be necessary
-    @CheckReturnValue
-    public HasResourceProperty setResource(VarPatternAdmin resource) {
-        return new HasResourceProperty(resourceType, resource);
-    }
-
     @Override
     public String getName() {
         return "has";
@@ -111,7 +104,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         repr.add(typeLabelToString(resourceType));
 
         if (resource.getVarName().isUserDefinedName()) {
-            repr.add(resource.getPrintableName());
+            repr.add(resource.getVarName().toString());
         } else {
             resource.getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.getPredicate().toString()));
         }
@@ -125,9 +118,9 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                shortcut(relation, edge1, start, Optional.empty()),
-                shortcut(relation, edge2, resource.getVarName(), Optional.empty()),
-                neq(edge1, edge2)
+                shortcut(this, relation, edge1, start, Optional.empty()),
+                shortcut(this, relation, edge2, resource.getVarName(), Optional.empty()),
+                neq(this, edge1, edge2)
         );
     }
 
@@ -147,7 +140,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
         Resource resourceConcept = insertQueryExecutor.getConcept(resource).asResource();
-        Thing thing = concept.asInstance();
+        Thing thing = concept.asThing();
         thing.resource(resourceConcept);
     }
 
@@ -159,7 +152,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
         Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
 
-        concept.asInstance().relations(owner).stream()
+        concept.asThing().relations(owner).stream()
                 .filter(relation -> testPredicate(predicate, relation, value))
                 .forEach(Concept::delete);
     }

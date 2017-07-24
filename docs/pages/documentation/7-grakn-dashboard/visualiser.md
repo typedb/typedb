@@ -161,7 +161,8 @@ match $x isa person has firstname "Susan" has surname "Dudley"; $y isa person ha
 3. Right click the mouse to bring up the Query Builder menu, and select *Shortest path* from the menu.
 4. The submission form will now contain the shortest path query for those two nodes, for example: 
 
-```graql
+<!-- Ignoring because uses made-up IDs -->
+```graql-test-ignore
 compute path from "102432" to "192584"; # (The ID values in the strings will be different for each graph)
 ```
  

@@ -32,20 +32,20 @@ entity2 plays Q-from plays Q-to;
 ####################################################
 
 isa inference-rule,
-lhs {
+when {
 (Q-from: $x, Q-to: $y) isa Q;},
-rhs {
+then {
 (P-from: $x, P-to: $y) isa P;};
 
 isa inference-rule,
-lhs {
+when {
 (Q-from: $x, Q-to: $z) isa Q;
 (P-from: $z, P-to: $y) isa P;},
-rhs {
+then {
 (P-from: $x, P-to: $y) isa P;};
 
 isa inference-rule,
-lhs {
+when {
 (P-from: $x, P-to: $y) isa P;},
-rhs {
+then {
 (S-from: $x, S-to: $y) isa S;};

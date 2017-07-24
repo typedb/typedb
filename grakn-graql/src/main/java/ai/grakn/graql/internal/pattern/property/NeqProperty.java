@@ -65,9 +65,9 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         return Sets.newHashSet(
-                EquivalentFragmentSets.notInternalFragmentSet(start),
-                EquivalentFragmentSets.notInternalFragmentSet(var.getVarName()),
-                EquivalentFragmentSets.neq(start, var.getVarName())
+                EquivalentFragmentSets.notInternalFragmentSet(this, start),
+                EquivalentFragmentSets.notInternalFragmentSet(this, var.getVarName()),
+                EquivalentFragmentSets.neq(this, start, var.getVarName())
         );
     }
 

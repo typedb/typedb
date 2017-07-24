@@ -15,7 +15,7 @@ import static org.junit.Assert.assertTrue;
 public class EngineGraknSessionTest {
     
     static { EngineTestHelper.engineWithGraphs(); }
-    static EngineGraknGraphFactory graknFactory = EngineGraknGraphFactory.create(EngineTestHelper.config().getProperties());
+    static EngineGraknGraphFactory graknFactory = EngineGraknGraphFactory.createAndLoadSystemOntology(EngineTestHelper.config().getProperties());
     
     String factoryUri = "localhost:" + EngineTestHelper.config().getProperty(GraknEngineConfig.SERVER_PORT_NUMBER);
     

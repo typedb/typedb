@@ -24,6 +24,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
 /**
@@ -45,7 +46,7 @@ import java.util.function.Consumer;
 public class GraphContext extends GraphLoader implements TestRule {
     private boolean assumption = true;
 
-    private GraphContext(Consumer<GraknGraph> preLoad){
+    private GraphContext(@Nullable Consumer<GraknGraph> preLoad){
         super(preLoad);
     }
 
@@ -65,7 +66,7 @@ public class GraphContext extends GraphLoader implements TestRule {
         });
     }
 
-    private static GraphContext getContext(Consumer<GraknGraph> preLoad){
+    private static GraphContext getContext(@Nullable Consumer<GraknGraph> preLoad){
         GraknTestSetup.startCassandraIfNeeded();
         return new GraphContext(preLoad);
     }

@@ -5,7 +5,7 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.15.0</version>
+        <version>0.16.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,7 +15,6 @@
 
     <properties>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
-        <skip-docker-tests>true</skip-docker-tests>
     </properties>
 
     <dependencies>
@@ -107,37 +106,6 @@
                     <scope>test</scope>
                 </dependency>
             </dependencies>
-        </profile>
-
-        <profile>
-            <id>docker</id>
-            <properties>
-                <skip-docker-tests>false</skip-docker-tests>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.19.1</version>
-                        <configuration>
-                          <excludes>
-                            <exclude>**/**</exclude>
-                          </excludes>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>2.19.1</version>
-                        <configuration>
-                          <excludes>
-                            <exclude>**/**</exclude>
-                          </excludes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <profile>

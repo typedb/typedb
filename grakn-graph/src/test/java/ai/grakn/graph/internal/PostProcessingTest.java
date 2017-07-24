@@ -116,18 +116,18 @@ public class PostProcessingTest extends GraphTestBase{
         RelationImpl rel5 = ((RelationImpl) relationType.addRelation().
                 addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e3)); //Absorb
 
-        rel1.setHash();
-        rel2.setHash();
-        rel3.setHash();
-        rel4.setHash();
-        rel5.setHash();
+        rel1.reified().get().setHash();
+        rel2.reified().get().setHash();
+        rel3.reified().get().setHash();
+        rel4.reified().get().setHash();
+        rel5.reified().get().setHash();
 
         //Check everything is broken
         assertEquals(3, resourceType.instances().size());
         assertEquals(1, r1.relations().size());
         assertEquals(2, r11.relations().size());
         assertEquals(1, r1.relations().size());
-        assertEquals(6, graknGraph.getTinkerTraversal().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(6, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
 
         r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().contains(e1)));
 
@@ -159,7 +159,7 @@ public class PostProcessingTest extends GraphTestBase{
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), type.currentShard().vertex().element());
         resourceVertex.property(Schema.VertexProperty.INDEX.name(), index);
         resourceVertex.property(Schema.VertexProperty.VALUE_STRING.name(), value);
-        resourceVertex.property(Schema.VertexProperty.ID.name(), resourceVertex.id().toString());
+        resourceVertex.property(Schema.VertexProperty.ID.name(), Schema.PREFIX_VERTEX + resourceVertex.id().toString());
 
         return new ResourceImpl<>(new VertexElement(graknGraph, resourceVertex));
     }

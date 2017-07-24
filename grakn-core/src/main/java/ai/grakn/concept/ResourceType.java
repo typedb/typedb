@@ -24,6 +24,8 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -50,6 +52,13 @@ import java.util.function.Function;
  */
 public interface ResourceType<D> extends Type {
     //------------------------------------- Modifiers ----------------------------------
+    /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    ResourceType setLabel(Label label);
+
     /**
      * Sets the ResourceType to be abstract - which prevents it from having any instances.
      *
@@ -153,18 +162,19 @@ public interface ResourceType<D> extends Type {
      * @return The supertype of this ResourceType,
      */
     @Override
+    @Nonnull
     ResourceType<D> sup();
 
     /**
      * Get the Resource with the value provided, and its type, or return NULL
      * @see Resource
      *
-     * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @param value A value which a Resource in the graph may be holding
      * @return The Resource with the provided value and type or null if no such Resource exists.
      */
     @CheckReturnValue
-    <V> Resource<V> getResource(V value);
+    @Nullable
+    Resource<D> getResource(D value);
 
     /**
      * Returns a collection of subtypes of this ResourceType.
@@ -199,7 +209,24 @@ public interface ResourceType<D> extends Type {
      * @return The regular expression to which instances of this ResourceType must conform.
      */
     @CheckReturnValue
+    @Nullable
     String getRegex();
+
+    //------------------------------------- Other ---------------------------------
+    @SuppressWarnings("unchecked")
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default ResourceType asResourceType(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isResourceType(){
+        return true;
+    }
 
     /**
      * A class used to hold the supported data types of resources and any other concepts.

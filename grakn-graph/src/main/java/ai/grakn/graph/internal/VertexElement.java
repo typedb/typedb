@@ -18,8 +18,6 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -29,7 +27,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -48,8 +45,9 @@ import java.util.stream.StreamSupport;
  * @author fppt
  */
 class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty>{
+
     VertexElement(AbstractGraknGraph graknGraph, Vertex element) {
-        super(graknGraph, element);
+        super(graknGraph, element, Schema.PREFIX_VERTEX);
     }
 
     /**
@@ -61,7 +59,7 @@ class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty>{
     Stream<EdgeElement> getEdgesOfType(Direction direction, Schema.EdgeLabel label){
         Iterable<Edge> iterable = () -> element().edges(direction, label.getLabel());
         return StreamSupport.stream(iterable.spliterator(), false).
-                map(edge -> graph().factory().buildEdge(edge));
+                map(edge -> graph().factory().buildEdgeElement(edge));
     }
 
     /**
@@ -71,7 +69,7 @@ class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty>{
      * @return The edge created
      */
     EdgeElement addEdge(VertexElement to, Schema.EdgeLabel type) {
-        return graph().factory().buildEdge(element().addEdge(type.getLabel(), to.element()));
+        return graph().factory().buildEdgeElement(element().addEdge(type.getLabel(), to.element()));
     }
 
     /**
@@ -79,11 +77,15 @@ class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty>{
      * @param type the type of the edge to create
      */
     EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type){
-        GraphTraversal<Vertex, Edge> traversal = graph().getTinkerPopGraph().traversal().V(id().getValue()).outE(type.getLabel()).as("edge").otherV().hasId(to.element().id()).select("edge");
+        GraphTraversal<Vertex, Edge> traversal = graph().getTinkerTraversal().V().
+                has(Schema.VertexProperty.ID.name(), id().getValue()).
+                outE(type.getLabel()).as("edge").otherV().
+                has(Schema.VertexProperty.ID.name(), to.id().getValue()).select("edge");
+
         if(!traversal.hasNext()) {
             return addEdge(to, type);
         } else {
-            return graph().factory().buildEdge(traversal.next());
+            return graph().factory().buildEdgeElement(traversal.next());
         }
     }
 
@@ -117,44 +119,6 @@ class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty>{
 
                 if(delete) edge.remove();
             });
-        }
-    }
-
-    /**
-     * Sets the value of a property with the added restriction that no other vertex can have that property.
-     *
-     * @param key The key of the unique property to mutate
-     * @param value The new value of the unique property
-     */
-    void propertyUnique(Schema.VertexProperty key, String value){
-        if(!graph().isBatchGraph()) {
-            GraphTraversal<Vertex, Vertex> traversal = graph().getTinkerTraversal().has(key.name(), value);
-            if(traversal.hasNext()) throw PropertyNotUniqueException.cannotChangeProperty(element(), traversal.next(), key, value);
-        }
-
-        property(key, value);
-    }
-
-
-    /**
-     * Sets a property which cannot be mutated
-     *
-     * @param vertexProperty The key of the immutable property to mutate
-     * @param newValue The new value to put on the property (if the property is not set)
-     * @param foundValue The current valud of the property
-     * @param converter Helper method to ensure data is persisted in the correct format
-     */
-    <X> void propertyImmutable(Schema.VertexProperty vertexProperty, X newValue, X foundValue, Function<X, Object> converter){
-        if(newValue == null){
-            throw GraphOperationException.settingNullProperty(vertexProperty);
-        }
-
-        if(foundValue != null){
-            if(!foundValue.equals(newValue)){
-                throw GraphOperationException.immutableProperty(foundValue, newValue, vertexProperty);
-            }
-        } else {
-            property(vertexProperty, converter.apply(newValue));
         }
     }
 

@@ -18,11 +18,8 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.util.Schema;
+import ai.grakn.concept.Concept;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Properties;
 
@@ -53,7 +50,7 @@ public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
      * {@link org.apache.tinkerpop.gremlin.orientdb.OrientElement} which helps us to determine this.
      */
     @Override
-    public boolean isConceptModified(ConceptImpl concept) {
+    public boolean isConceptModified(Concept concept) {
         return true;
     }
 
@@ -71,17 +68,5 @@ public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
     @Override
     protected void commitTransactionInternal(){
         getTinkerPopGraph().commit();
-    }
-
-    @Override
-    public GraphTraversal<Vertex, Vertex> getTinkerTraversal(){
-        Schema.BaseType[] baseTypes = Schema.BaseType.values();
-        String [] labels = new String [baseTypes.length];
-
-        for(int i = 0; i < labels.length; i ++){
-            labels[i] = baseTypes[i].name();
-        }
-
-        return getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance()).V().hasLabel(labels);
     }
 }

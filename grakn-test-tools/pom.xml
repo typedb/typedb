@@ -23,7 +23,7 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.15.0</version>
+        <version>0.16.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -69,24 +69,6 @@
             <artifactId>embedded-redis</artifactId>
             <version>${redis-test.version}</version>
         </dependency>
-
-        <!-- Used for creating an embedded Kafka for testing -->
-        <dependency>
-            <groupId>info.batey.kafka</groupId>
-            <artifactId>kafka-unit</artifactId>
-            <version>${kafka-unit.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>commons-io</groupId>
-                    <artifactId>commons-io</artifactId>
-                </exclusion>
-                <exclusion>
-                    <!--Cannot be present with log4j-over-slf4j-->
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         
         <dependency>
             <groupId>com.sparkjava</groupId>
@@ -99,6 +81,18 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        
+
+        <dependency>
+            <groupId>com.pholser</groupId>
+            <artifactId>junit-quickcheck-generators</artifactId>
+            <version>${quickcheck.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+        </dependency>
+
     </dependencies>
 </project>

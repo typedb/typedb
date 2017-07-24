@@ -26,14 +26,14 @@ start-vertex plays pathA, plays pathB;
 ####################################################
 
 isa inference-rule,
-lhs {
+when {
 ($x, $y) isa arc;},
-rhs {
+then {
 ($x, $y) isa path;};
 
 isa inference-rule,
-lhs {
+when {
 ($x, $z) isa path;
 ($z, y) isa path;},
-rhs {
+then {
 ($x, $y) isa path;};

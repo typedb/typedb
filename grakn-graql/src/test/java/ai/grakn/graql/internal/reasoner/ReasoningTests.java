@@ -24,8 +24,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.GraphContext;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -45,7 +45,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -265,6 +264,7 @@ public class ReasoningTests {
         assertEquals(answers.size(), 1);
     }
 
+    @Ignore // TODO: Fix (Bug #16195)
     @Test //Expected result: The query should return a unique match
     public void transRelationWithRelationGuardsAtBothEnds() {
         QueryBuilder qb = testSet11.graph().graql().infer(true);
@@ -303,8 +303,6 @@ public class ReasoningTests {
 
     @Test
     public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
-        assertFalse(testSet14.graph().implicitConceptsVisible());
-
         QueryBuilder withInference = testSet14.graph().graql().infer(true);
         QueryBuilder withoutInference = testSet14.graph().graql().infer(false);
 
@@ -348,6 +346,7 @@ public class ReasoningTests {
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources3() {
         QueryBuilder qb = testSet16.graph().graql().infer(true);
+
         String queryString1 = "match $x isa entity1, has res1 $y; $z isa relation1;";
         QueryAnswers answers1 = queryAnswers(qb.parse(queryString1));
         assertEquals(answers1.size(), 1);
@@ -358,6 +357,7 @@ public class ReasoningTests {
                     assertTrue(ans.get(var("z")).isRelation());
                 }
         );
+
         String queryString2 = "match $x isa relation1, has res1 $y;";
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers2.size(), 1);

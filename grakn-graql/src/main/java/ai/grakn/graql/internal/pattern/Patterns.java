@@ -74,7 +74,7 @@ public class Patterns {
         return new VarImpl(value, true);
     }
 
-    static VarPatternAdmin varPattern(Var name, Set<VarProperty> properties) {
+    public static VarPatternAdmin varPattern(Var name, Set<VarProperty> properties) {
         if (properties.isEmpty()) {
             return name.admin();
         } else {

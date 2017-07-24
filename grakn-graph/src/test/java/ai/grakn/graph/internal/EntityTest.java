@@ -21,13 +21,13 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
@@ -79,14 +79,14 @@ public class EntityTest extends GraphTestBase{
         Casting rp2 = rolePlayer2.castingsInstance().findAny().get();
         Casting rp3 = rolePlayer3.castingsInstance().findAny().get();
 
-        assertThat(relation.castingsRelation().collect(Collectors.toSet()), containsInAnyOrder(rp1, rp2, rp3));
+        assertThat(relation.reified().get().castingsRelation().collect(Collectors.toSet()), containsInAnyOrder(rp1, rp2, rp3));
 
         //Delete And Check Again
         ConceptId idOfDeleted = rolePlayer1.getId();
         rolePlayer1.delete();
 
         assertNull(graknGraph.getConcept(idOfDeleted));
-        assertThat(relation.castingsRelation().collect(Collectors.toSet()), containsInAnyOrder(rp2, rp3));
+        assertThat(relation.reified().get().castingsRelation().collect(Collectors.toSet()), containsInAnyOrder(rp2, rp3));
     }
 
     @Test
@@ -123,7 +123,7 @@ public class EntityTest extends GraphTestBase{
     }
 
     @Test
-    public void whenAddingResourceToEntityWitoutAllowingItBetweenTypes_Throw(){
+    public void whenAddingResourceToEntityWithoutAllowingItBetweenTypes_Throw(){
         EntityType entityType = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
 
@@ -132,7 +132,7 @@ public class EntityTest extends GraphTestBase{
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(
-                ErrorMessage.HAS_INVALID.getMessage(entityType.getLabel(), "resource", resourceType.getLabel())
+                ErrorMessage.HAS_INVALID.getMessage(entityType.getLabel(), resourceType.getLabel())
         );
 
         entity.resource(resource);
@@ -175,15 +175,16 @@ public class EntityTest extends GraphTestBase{
     }
 
     @Test
-    public void whenMissingKeyOnEntity_Throw() throws InvalidGraphException {
+    public void whenCreatingAnEntityAndNotLinkingARequiredKey_Throw() throws InvalidGraphException {
         String resourceTypeId = "A Resource Thing";
         EntityType entityType = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
         entityType.key(resourceType);
 
-        entityType.addEntity();
+        Entity entity = entityType.addEntity();
 
         expectedException.expect(InvalidGraphException.class);
+
         graknGraph.validateGraph();
     }
 
@@ -201,40 +202,6 @@ public class EntityTest extends GraphTestBase{
                 }
             });
         });
-    }
-
-    @Test
-    public void whenDeletingEntityInRelations_DeleteAllImplicitRelations(){
-        Role role1 = graknGraph.putRole("Role 1");
-        Role role2 = graknGraph.putRole("Role 2");
-        RelationType relationType = graknGraph.putRelationType("A Relation Type Thing").relates(role1).relates(role2);
-        EntityType entityType = graknGraph.putEntityType("A Thing").plays(role1).plays(role2);
-        ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
-        entityType.resource(resourceType);
-
-        Entity entityToDelete = entityType.addEntity();
-        Entity entityOther = entityType.addEntity();
-        Resource<String> resource1 = resourceType.putResource("1");
-        Resource<String> resource2 = resourceType.putResource("2");
-        Resource<String> resource3 = resourceType.putResource("3");
-
-        //Create Implicit Relations
-        entityToDelete.resource(resource1);
-        entityToDelete.resource(resource2);
-        entityToDelete.resource(resource3);
-
-        //Create Explicit Relation
-        relationType.addRelation().addRolePlayer(role1, entityToDelete).addRolePlayer(role2, entityOther);
-
-        //Check Relation Counts
-        RelationType implicitRelationType = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
-        assertEquals(1, relationType.instances().size());
-        assertEquals(3, implicitRelationType.instances().size());
-
-        entityToDelete.delete();
-
-        assertEquals(1, relationType.instances().size());
-        assertEquals(0, implicitRelationType.instances().size());
     }
 
     @Test

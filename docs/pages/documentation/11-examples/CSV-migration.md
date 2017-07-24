@@ -189,7 +189,7 @@ insert $p0 isa person has firstname "Mary" has identifier "Mary Guthrie" has sur
 insert $p0 isa person has firstname "Mary" has death-date "1946-05-10" has surname "Titus" has age 98 has identifier "Mary Melissa Titus" has middlename "Melissa" has gender "female" has birth-date "1847-08-12";
 insert $p0 has death-date "1872-03-06" has age 74 has identifier "John Niesz" isa person has birth-date "1798-01-02" has firstname "John" has gender "male" has surname "Niesz";
 insert $p0 has identifier "Mary Young" has birth-date "1798-04-09" isa person has firstname "Mary" has death-date "1868-10-28" has surname "Young" has gender "female" has age 70;
-...
+# ...
 ```
 
 #### births.csv
@@ -243,7 +243,7 @@ match $c0 isa person has identifier "Elizabeth Niesz"; $p0 has identifier "John 
 insert (child: $c0, parent: $p0) isa parentship;
 match $c0 isa person has identifier "Elizabeth Niesz"; $p0 has identifier "Mary Young" isa person;
 insert (child: $c0, parent: $p0) isa parentship;
-...
+# ...
 ```
 
 #### weddings.csv
@@ -289,7 +289,7 @@ match $x0 has identifier "John Niesz"; $y0 has identifier "Mary Young";
 insert has picture "http:\/\/1.bp.blogspot.com\/-Ty9Ox8v7LUw\/VKoGzIlsMII\/AAAAAAAAAZw\/UtkUvrujvBQ\/s1600\/johnandmary.jpg" (spouse1: $x0, spouse2: $y0) isa marriage;
 match $y0 has identifier "William Sanford Titus"; $x0 has identifier "Elizabeth Niesz";
 insert (spouse1: $x0, spouse2: $y0) isa marriage;
-...
+# ...
 ```
 
 

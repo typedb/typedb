@@ -21,12 +21,15 @@ package ai.grakn.matcher;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.Thing;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Optional;
+
+import static ai.grakn.util.StringUtil.valueToString;
 
 /**
  * Wraps a {@link Concept} in order to provide a prettier {@link Object#toString()} representation. This is done using
@@ -40,8 +43,12 @@ public class MatchableConcept {
 
     private final Concept concept;
 
-    MatchableConcept(Concept concept) {
+    private MatchableConcept(Concept concept) {
         this.concept = concept;
+    }
+
+    public static MatchableConcept of(Concept concept) {
+        return new MatchableConcept(concept);
     }
 
     Concept get() {
@@ -50,20 +57,37 @@ public class MatchableConcept {
 
     @Override
     public String toString() {
-        if (concept.isInstance()) {
-
-            Collection<Resource<?>> resources = concept.asInstance().resources();
+        if (concept.isResource()) {
+            return "hasValue(" + valueToString(concept.asResource().getValue()) + ")";
+        } else if (concept.isThing()) {
+            Thing thing = concept.asThing();
+            Collection<Resource<?>> resources = thing.resources();
             Optional<?> value = resources.stream()
                     .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
                     .map(Resource::getValue).findFirst();
 
-            return "instance(" + value.map(StringUtil::valueToString).orElse("") + ")";
+            return "instance(" + value.map(StringUtil::valueToString).orElse("") + ") isa " + thing.type().getLabel();
         } else if (concept.isType()) {
             return "type(" + concept.asType().getLabel() + ")";
-        } else if (concept.isRoleType()) {
-            return "role(" + concept.asRoleType().getLabel() + ")";
+        } else if (concept.isRole()) {
+            return "role(" + concept.asRole().getLabel() + ")";
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MatchableConcept that = (MatchableConcept) o;
+
+        return concept.equals(that.concept);
+    }
+
+    @Override
+    public int hashCode() {
+        return concept.hashCode();
     }
 }

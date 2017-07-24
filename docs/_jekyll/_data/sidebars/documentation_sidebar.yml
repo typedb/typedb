@@ -179,6 +179,9 @@ entries:
       - title: Reasoning with Graql
         output: web
         url: /documentation/examples/graql-reasoning.html
+      - title: Working With Tweets
+        output: web
+        url: /documentation/examples/working-with-tweets.html
       - title: Modern example
         output: web
         url: /documentation/examples/modern.html
@@ -193,12 +196,11 @@ entries:
         url: /documentation/examples/graph-api-example.html
       - title: Analytics using Java APIs
         output: web
-        url: /documentation/examples/java-analytics.html  
+        url: /documentation/examples/java-analytics.html
       - title: Example Projects
         output: web
-        url: /documentation/examples/projects.html  
+        url: /documentation/examples/projects.html
   items:
   - title: Contribute to GRAKN.AI
     output: web
     url: /contributors/index.html
-  

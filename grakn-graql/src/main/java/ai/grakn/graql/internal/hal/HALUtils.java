@@ -77,6 +77,7 @@ public class HALUtils {
 
     public final static String INFERRED_RELATION = "inferred-relation";
     public final static String GENERATED_RELATION = "generated-relation";
+    public final static String IMPLICIT_PROPERTY = "_implicit";
 
 
     static Schema.BaseType getBaseType(Thing thing) {
@@ -102,7 +103,7 @@ public class HALUtils {
             return Schema.BaseType.RESOURCE_TYPE;
         } else if (ontologyConcept.isRuleType()) {
             return Schema.BaseType.RULE_TYPE;
-        } else if (ontologyConcept.isRoleType()) {
+        } else if (ontologyConcept.isRole()) {
             return Schema.BaseType.ROLE;
         } else if (ontologyConcept.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             return Schema.BaseType.TYPE;
@@ -115,8 +116,8 @@ public class HALUtils {
 
         resource.withProperty(ID_PROPERTY, concept.getId().getValue());
 
-        if (concept.isInstance()) {
-            Thing thing = concept.asInstance();
+        if (concept.isThing()) {
+            Thing thing = concept.asThing();
             resource.withProperty(TYPE_PROPERTY, thing.type().getLabel().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(thing).name());
         } else {
@@ -128,6 +129,7 @@ public class HALUtils {
         }
         if (concept.isType()) {
             resource.withProperty(NAME_PROPERTY, concept.asType().getLabel().getValue());
+            resource.withProperty(IMPLICIT_PROPERTY, ((OntologyConcept)concept).isImplicit());
         }
     }
 
@@ -180,7 +182,7 @@ public class HALUtils {
                 var.getProperty(RelationProperty.class).get()
                         .getRelationPlayers().forEach(x -> {
                             tempMap.put(x.getRolePlayer().getVarName(),
-                                    (x.getRoleType().isPresent()) ? x.getRoleType().get().getPrintableName() : HAS_EMPTY_ROLE_EDGE);
+                                    (x.getRole().isPresent()) ? x.getRole().get().getPrintableName() : HAS_EMPTY_ROLE_EDGE);
                         }
                 );
                 String relationType = null;

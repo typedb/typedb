@@ -18,7 +18,6 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
@@ -27,6 +26,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -34,7 +34,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
@@ -57,17 +56,14 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  *           For example an {@link EntityType} or {@link RelationType} or {@link Role}
  */
 abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImpl implements OntologyConcept {
-    private final Label cachedLabel;
-    private final LabelId cachedLabelId;
-
-    private Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
-    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
+    private final Cache<Label> cachedLabel = new Cache<>(() ->  Label.of(vertex().property(Schema.VertexProperty.ONTOLOGY_LABEL)));
+    private final Cache<LabelId> cachedLabelId = new Cache<>(() -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
+    private final Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private final Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
     OntologyConceptImpl(VertexElement vertexElement) {
         super(vertexElement);
-        cachedLabel = Label.of(vertex().property(Schema.VertexProperty.TYPE_LABEL));
-        cachedLabelId = LabelId.of(vertex().property(Schema.VertexProperty.TYPE_ID));
     }
 
     OntologyConceptImpl(VertexElement vertexElement, T superType) {
@@ -77,8 +73,21 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
 
     OntologyConceptImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
         this(vertexElement, superType);
-        vertex().propertyImmutable(Schema.VertexProperty.IS_IMPLICIT, isImplicit, vertex().property(Schema.VertexProperty.IS_IMPLICIT), Function.identity());
+        vertex().propertyImmutable(Schema.VertexProperty.IS_IMPLICIT, isImplicit, vertex().property(Schema.VertexProperty.IS_IMPLICIT));
         cachedIsImplicit.set(isImplicit);
+    }
+
+    public T setLabel(Label label){
+        try {
+            vertex().graph().txCache().remove(this);
+            vertex().propertyUnique(Schema.VertexProperty.ONTOLOGY_LABEL, label.getValue());
+            cachedLabel.set(label);
+            vertex().graph().txCache().cacheConcept(this);
+            return getThis();
+        } catch (PropertyNotUniqueException exception){
+            vertex().graph().txCache().cacheConcept(this);
+            throw GraphOperationException.labelTaken(label);
+        }
     }
 
     /**
@@ -86,8 +95,8 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      * @return The internal id which is used for fast lookups
      */
     @Override
-    public LabelId getTypeId(){
-        return cachedLabelId;
+    public LabelId getLabelId(){
+        return cachedLabelId.get();
     }
 
     /**
@@ -96,7 +105,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      */
     @Override
     public Label getLabel() {
-        return cachedLabel;
+        return cachedLabel.get();
     }
 
     /**
@@ -174,7 +183,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
             //Clear Global Cache
             vertex().graph().txCache().remove(this);
         } else {
-            throw GraphOperationException.typeCannotBeDeleted(getLabel());
+            throw GraphOperationException.cannotBeDeleted(this);
         }
     }
 
@@ -189,14 +198,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      */
     @Override
     public Collection<T> subs(){
-        return Collections.unmodifiableCollection(filterImplicitStructures(nextSubLevel(this)));
-    }
-
-    <X extends Concept> Collection<X> filterImplicitStructures(Collection<X> types){
-        if (!vertex().graph().implicitConceptsVisible() && !types.isEmpty() && types.iterator().next().isOntologyConcept()) {
-            return types.stream().filter(t -> !t.asOntologyConcept().isImplicit()).collect(Collectors.toSet());
-        }
-        return types;
+        return Collections.unmodifiableCollection(nextSubLevel(this));
     }
 
     /**
@@ -280,7 +282,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
 
             //Modify the graph once we have checked no loop occurs
             deleteEdge(Direction.OUT, Schema.EdgeLabel.SUB);
-            putEdge(newSuperType, Schema.EdgeLabel.SUB);
+            putEdge(ConceptVertex.from(newSuperType), Schema.EdgeLabel.SUB);
 
             //Update the sub types of the old super type
             if(oldSuperType != null) {
@@ -293,7 +295,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
             ((OntologyConceptImpl<T>) newSuperType).addCachedDirectSubType(getThis());
 
             //Track any existing data if there is some
-            trackSuperChange();
+            trackRolePlayers();
         }
 
         return getThis();
@@ -302,7 +304,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     /**
      * Method which performs tasks needed in order to track super changes properly
      */
-    abstract void trackSuperChange();
+    abstract void trackRolePlayers();
 
     private boolean superLoops(){
         //Check For Loop
@@ -345,5 +347,9 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
         String message = super.innerToString();
         message = message + " - Label [" + getLabel() + "] - Abstract [" + isAbstract() + "] ";
         return message;
+    }
+
+    public static OntologyConceptImpl from(OntologyConcept ontologyConcept){
+        return (OntologyConceptImpl) ontologyConcept;
     }
 }

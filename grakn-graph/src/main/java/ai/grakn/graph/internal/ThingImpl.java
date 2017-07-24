@@ -20,14 +20,15 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -62,13 +63,13 @@ import java.util.stream.Stream;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
-    private Cache<Label> cachedInternalType = new Cache<>(() -> {
-        int typeId = vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID);
-        Type type = vertex().graph().getConcept(Schema.VertexProperty.TYPE_ID, typeId);
+    private final Cache<Label> cachedInternalType = new Cache<>(() -> {
+        int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
+        Type type = vertex().graph().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
         return type.getLabel();
     });
 
-    private Cache<V> cachedType = new Cache<>(() -> {
+    private final Cache<V> cachedType = new Cache<>(() -> {
         Optional<EdgeElement> typeEdge = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
                 flatMap(edge -> edge.target().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).findAny();
 
@@ -125,12 +126,21 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         Set<ConceptId> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
 
         Set<Resource<?>> resources = new HashSet<>();
+
+        //Get Resources Attached Via Implicit Relations
         getShortcutNeighbours().forEach(concept -> {
             if(concept.isResource() && !equals(concept)) {
                 Resource<?> resource = concept.asResource();
                 if(resourceTypesIds.isEmpty() || resourceTypesIds.contains(resource.type().getId())) {
                     resources.add(resource);
                 }
+            }
+        });
+
+        //Get Resources Attached Via resource edge
+        neighbours(Direction.OUT, Schema.EdgeLabel.RESOURCE).forEach(resource -> {
+            if(resourceTypesIds.isEmpty() || resourceTypesIds.contains(resource.asThing().type().getId())) {
+                resources.add(resource.asResource());
             }
         });
 
@@ -144,12 +154,12 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
      */
     Stream<Casting> castingsInstance(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).
-                map(edge -> vertex().graph().factory().buildRolePlayer(edge));
+                map(edge -> vertex().graph().factory().buildCasting(edge));
     }
 
     <X extends Thing> Set<X> getShortcutNeighbours(){
         Set<X> foundNeighbours = new HashSet<X>();
-        vertex().graph().getTinkerTraversal().
+        vertex().graph().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
                 in(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 out(Schema.EdgeLabel.SHORTCUT.getLabel()).
@@ -164,18 +174,43 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
      */
     @Override
     public Collection<Relation> relations(Role... roles) {
+        Set<Relation> relations = reifiedRelations(roles);
+        relations.addAll(edgeRelations(roles));
+
+        return relations;
+    }
+
+    private Set<Relation> reifiedRelations(Role... roles){
         Set<Relation> relations = new HashSet<>();
-        GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerTraversal().
+        GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue());
 
         if(roles.length == 0){
             traversal.in(Schema.EdgeLabel.SHORTCUT.getLabel());
         } else {
-            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
+            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getLabelId().getValue()).collect(Collectors.toSet());
             traversal.inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                    has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).outV();
+                    has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).outV();
         }
         traversal.forEachRemaining(v -> relations.add(vertex().graph().buildConcept(v)));
+
+        return relations;
+    }
+
+    private Set<Relation> edgeRelations(Role... roles){
+        Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
+        Set<Relation> relations = new HashSet<>();
+
+        vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.RESOURCE).forEach(edge -> {
+            if (roleSet.isEmpty()) {
+                relations.add(vertex().graph().factory().buildRelation(edge));
+            } else {
+                Role roleOwner = vertex().graph().getOntologyConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID)));
+                if(roleSet.contains(roleOwner)){
+                    relations.add(vertex().graph().factory().buildRelation(edge));
+                }
+            }
+        });
 
         return relations;
     }
@@ -197,14 +232,12 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
      */
     @Override
     public T resource(Resource resource){
-        String type = "resource";
         Schema.ImplicitType has = Schema.ImplicitType.HAS;
         Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_VALUE;
         Schema.ImplicitType hasOwner  = Schema.ImplicitType.HAS_OWNER;
 
         //Is this resource a key to me?
         if(type().keys().contains(resource.type())){
-            type = "key";
             has = Schema.ImplicitType.KEY;
             hasValue = Schema.ImplicitType.KEY_VALUE;
             hasOwner  = Schema.ImplicitType.KEY_OWNER;
@@ -213,16 +246,15 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
 
         Label label = resource.type().getLabel();
         RelationType hasResource = vertex().graph().getOntologyConcept(has.getLabel(label));
-        Role hasResourceTarget = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
+        Role hasResourceOwner = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
         Role hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
 
-        if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
-            throw GraphOperationException.hasNotAllowed(this, resource, type);
+        if(hasResource == null || hasResourceOwner == null || hasResourceValue == null || !type().plays().contains(hasResourceOwner)){
+            throw GraphOperationException.hasNotAllowed(this, resource);
         }
 
-        Relation relation = hasResource.addRelation();
-        relation.addRolePlayer(hasResourceTarget, this);
-        relation.addRolePlayer(hasResourceValue, resource);
+        EdgeElement resourceEdge = putEdge(ResourceImpl.from(resource), Schema.EdgeLabel.RESOURCE);
+        vertex().graph().factory().buildRelation(resourceEdge, hasResource, hasResourceOwner, hasResourceValue);
 
         return getThis();
     }
@@ -251,19 +283,18 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
     /**
      *
      * @param type The type of this concept
-     * @return The concept itself casted to the correct interface
      */
-    private T setInternalType(Type type){
+    private void setInternalType(Type type){
         cachedInternalType.set(type.getLabel());
-        vertex().property(Schema.VertexProperty.INSTANCE_TYPE_ID, type.getTypeId().getValue());
-        return getThis();
+        vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID, type.getLabelId().getValue());
     }
 
     /**
      *
      * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
      */
-    public Label getInternalType(){
+    Label getInternalType(){
         return cachedInternalType.get();
     }
+
 }

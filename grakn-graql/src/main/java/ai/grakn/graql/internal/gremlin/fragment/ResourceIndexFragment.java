@@ -22,9 +22,10 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 import static ai.grakn.util.Schema.VertexProperty.INDEX;
 
@@ -32,14 +33,16 @@ class ResourceIndexFragment extends AbstractFragment {
 
     private final String resourceIndex;
 
-    ResourceIndexFragment(Var start, Label label, Object value) {
-        super(start);
+    ResourceIndexFragment(VarProperty varProperty, Var start, Label label, Object value) {
+        super(varProperty, start);
         this.resourceIndex = Schema.generateResourceIndex(label, value.toString());
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.has(INDEX.name(), resourceIndex);
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+
+        return traversal.has(INDEX.name(), resourceIndex);
     }
 
     @Override
@@ -48,8 +51,8 @@ class ResourceIndexFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return 1;
+    public double fragmentCost() {
+        return COST_INDEX;
     }
 
     @Override

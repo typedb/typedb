@@ -22,27 +22,75 @@ import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 
 /**
- * A pair of role type and role player (where the role type may not be present)
+ * A pair of role and role player (where the role may not be present)
  *
  * @author Felix Chapman
  */
-public interface RelationPlayer {
+public class RelationPlayer {
+    private final int hashCode;
+    private final Optional<VarPatternAdmin> role;
+    private final VarPatternAdmin rolePlayer;
+
     /**
-     * @return the role type, if specified
+     * @param role the role of the role - role player pair
+     * @param rolePlayer the role player of the  role - role player pair
+     */
+    private RelationPlayer(Optional<VarPatternAdmin> role, VarPatternAdmin rolePlayer) {
+        this.role = role;
+        this.rolePlayer = rolePlayer;
+        hashCode = 31 * this.role.hashCode() + rolePlayer.hashCode();
+    }
+
+    /**
+     * A role - role player pair without a role specified
+     * @param rolePlayer the role player of the role - role player pair
+     */
+    public static RelationPlayer of(VarPatternAdmin rolePlayer) {
+        return new RelationPlayer(Optional.empty(), rolePlayer);
+    }
+
+    /**
+     * @param role the role of the role - role player pair
+     * @param rolePlayer the role player of the role - role player pair
+     */
+    public static RelationPlayer of(VarPatternAdmin role, VarPatternAdmin rolePlayer) {
+        return new RelationPlayer(Optional.of(role), rolePlayer);
+    }
+
+    /**
+     * @return the role, if specified
      */
     @CheckReturnValue
-    Optional<VarPatternAdmin> getRoleType();
+    public Optional<VarPatternAdmin> getRole() {
+        return role;
+    }
 
     /**
      * @return the role player
      */
     @CheckReturnValue
-    VarPatternAdmin getRolePlayer();
+    public VarPatternAdmin getRolePlayer() {
+        return rolePlayer;
+    }
 
-    // TODO: If `VarPatternAdmin#setVarName` is removed, this may no longer be necessary
-    /**
-     * Set the role player, returning a new {@link RelationPlayer} with that role player set
-     */
-    @CheckReturnValue
-    RelationPlayer setRolePlayer(VarPatternAdmin rolePlayer);
+    @Override
+    public String toString() {
+        return getRole().map(r -> r.getPrintableName() + ": ").orElse("") + getRolePlayer().getPrintableName();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RelationPlayer casting = (RelationPlayer) o;
+
+        return role.equals(casting.role) && rolePlayer.equals(casting.rolePlayer);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
 }

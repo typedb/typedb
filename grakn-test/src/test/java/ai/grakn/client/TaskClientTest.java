@@ -21,6 +21,7 @@ package ai.grakn.client;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
+import com.codahale.metrics.MetricRegistry;
 import static java.time.Instant.now;
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -37,9 +38,9 @@ import ai.grakn.client.TaskClient;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.controller.TasksController;
-import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.test.SparkContext;
@@ -63,7 +64,7 @@ public class TaskClientTest {
 
     @ClassRule
     public static final SparkContext ctx = SparkContext.withControllers(spark -> {
-        new TasksController(spark, manager);
+        new TasksController(spark, manager, new MetricRegistry());
     });
 
     @Before

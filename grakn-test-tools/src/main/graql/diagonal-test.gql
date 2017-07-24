@@ -22,12 +22,12 @@ rel-to sub role;
 name sub resource datatype string;
 
 isa inference-rule
-lhs {
+when {
     (rel-from:$x, rel-to:$y) isa horizontal;
     (rel-from:$y, rel-to:$z) isa horizontal;
     (rel-from:$z, rel-to:$u) isa vertical;
     (rel-from:$u, rel-to:$v) isa vertical;
 }
-rhs{
+then{
     (rel-from:$x, rel-to:$v) isa diagonal;
 };

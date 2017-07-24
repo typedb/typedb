@@ -104,10 +104,10 @@ public class JsonMigratorTest {
 
             Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
 
-            Resource number = getResource(graph, streetAddress, Label.of("number")).asResource();
+            Resource number = getResource(graph, streetAddress, Label.of("number"));
             assertEquals(21L, number.getValue());
 
-            Resource street = getResource(graph, streetAddress, Label.of("street")).asResource();
+            Resource street = getResource(graph, streetAddress, Label.of("street"));
             assertEquals("2nd Street", street.getValue());
 
             Resource city = getResource(graph, address, Label.of("city")).asResource();
@@ -149,7 +149,7 @@ public class JsonMigratorTest {
 
             Entity thing = things.iterator().next();
 
-            Collection<Object> integers = getResources(graph, thing, Label.of("a-int")).map(r -> r.asResource().getValue()).collect(toSet());
+            Collection<Object> integers = getResources(graph, thing, Label.of("a-int")).map(r -> r.getValue()).collect(toSet());
             assertEquals(Sets.newHashSet(1L, 2L, 3L), integers);
 
             Resource aBoolean = getResource(graph, thing, Label.of("a-boolean"));

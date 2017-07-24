@@ -56,7 +56,7 @@ We will look at the same ontology as is covered in the [Basic Ontology documenta
 First we need a [graph](../developing-with-java/java-setup.html#initialising-a-transaction-on-the-graph):
 
 ```java
-GraknSession session = Grakn.session(Grakn.DEFAULT_URI, keyspace);
+GraknSession session = Grakn.session(uri, keyspace);
 GraknGraph graph = session.open(GraknTxType.WRITE)
 ```
 
@@ -163,7 +163,9 @@ match $x isa person;
 In Java:
 
 ```java
-graph.getEntityType(“person”).instances().forEach(p->System.out.println(“ “ + p));
+for (Thing p: graph.getEntityType("person").instances()) {
+    System.out.println(" " + p);
+}
 ```
 
 ## Querying the Graph Using QueryBuilder
@@ -171,9 +173,10 @@ graph.getEntityType(“person”).instances().forEach(p->System.out.println(“ 
 It is also possible to interact with the graph using a separate Java API that forms Graql queries. This is via `GraknGraph.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
 
 ```java
-graph.graql().match(var(“x”).isa(“person”)).execute().stream().
-  map(Map::entrySet).forEach(p->System.out.println(“ “ + p));
-``` 
+for (Answer a: graph.graql().match(var("x").isa("person"))) {
+    System.out.println(" " + a);
+}
+```
 
 Which leads us to the common question...
 

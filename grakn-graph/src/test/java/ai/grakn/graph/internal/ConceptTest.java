@@ -52,7 +52,7 @@ public class ConceptTest extends GraphTestBase{
 
         assertEquals(v1_1, v1_2);
         assertNotEquals(v1_1, v2_1);
-        assertNotEquals(v1_1.getId().getRawValue(), v2_1.getId().getRawValue());
+        assertNotEquals(v1_1.getId(), v2_1.getId());
 
         HashSet<Concept> concepts = new HashSet<>();
         concepts.add(v1_1);

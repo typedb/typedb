@@ -51,13 +51,12 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -172,10 +171,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         inferredAtoms.forEach(this::addAtomic);
     }
 
+    @Override
     public GraknGraph graph() {
         return graph;
     }
 
+    @Override
     public Conjunction<PatternAdmin> getPattern() {
         Set<PatternAdmin> patterns = new HashSet<>();
         atomSet.stream()
@@ -183,6 +184,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .flatMap(p -> p.getVars().stream())
                 .forEach(patterns::add);
         return Patterns.conjunction(patterns);
+    }
+
+    @Override
+    public Set<String> validateOntologically() {
+        return getAtoms().stream()
+                .flatMap(at -> at.validateOntologically().stream())
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -213,53 +221,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     @Override
     public Set<Atomic> getAtoms() { return atomSet;}
-
-    /**
-     * compute the resolution plan - list of atomic queries ordered by their resolution priority
-     * @return list of prioritised atomic queries
-     */
-    LinkedList<ReasonerQueryImpl> getResolutionPlan(){
-        LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
-
-        LinkedList<Atom> atoms = selectAtoms().stream()
-                .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
-                .collect(Collectors.toCollection(LinkedList::new));
-
-        Atom top = atoms.getFirst();
-        Set<Atom> nonResolvableAtoms = new HashSet<>();
-        Set<Var> subbedVars = getIdPredicates().stream().map(IdPredicate::getVarName).collect(Collectors.toSet());
-        while (!atoms.isEmpty()) {
-
-            subbedVars.addAll(top.getVarNames());
-            atoms.remove(top);
-
-            if (top.isRuleResolvable()) {
-                if (!nonResolvableAtoms.isEmpty()){
-                    queries.add(ReasonerQueries.create(nonResolvableAtoms, graph()));
-                    nonResolvableAtoms.clear();
-                }
-                queries.add(new ReasonerAtomicQuery(top));
-            } else {
-                nonResolvableAtoms.add(top);
-                if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, graph()));
-            }
-
-            //look at neighbours up to two hops away
-            top = top.getNeighbours().filter(atoms::contains)
-                    .flatMap(at -> Stream.concat(Stream.of(at), at.getNeighbours().filter(atoms::contains)))
-                    .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                    .findFirst().orElse(null);
-
-            //top is disconnected atom
-            if (top == null) {
-                top = atoms.stream()
-                        .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                        .findFirst().orElse(null);
-            }
-        }
-
-        return queries;
-    }
 
     /**
      * @return set of predicates contained in this query
@@ -346,6 +307,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param var variable name
      * @return id predicate for the specified var name if any
      */
+    @Nullable
     public IdPredicate getIdPredicate(Var var) {
         Set<IdPredicate> relevantSubs = getIdPredicates().stream()
                 .filter(sub -> sub.getVarName().equals(var))

@@ -30,13 +30,16 @@ import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
+import ai.grakn.graql.internal.reasoner.query.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
+
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
@@ -61,7 +64,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint
 public class ResourceAtom extends Binary{
     private final Set<ValuePredicate> multiPredicate = new HashSet<>();
 
-    public ResourceAtom(VarPatternAdmin pattern, Var predicateVar, IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
+    public ResourceAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
         super(pattern, predicateVar, idPred, par);
         this.multiPredicate.addAll(ps);
     }
@@ -198,11 +201,34 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
+    public Set<String> validateOntologically() {
+        OntologyConcept type = getOntologyConcept();
+        if (type == null) {
+            return new HashSet<>();
+        }
+
+        Set<String> errors = new HashSet<>();
+        if (!type.isResourceType()){
+            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage(type.getLabel()));
+            return errors;
+        }
+
+        OntologyConcept ownerType = getParentQuery().getVarOntologyConceptMap().get(getVarName());
+
+        if (ownerType != null
+                && ownerType.isType()
+                && !ownerType.asType().resources().contains(type.asResourceType())){
+            errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(type.getLabel(), ownerType.getLabel()));
+        }
+        return errors;
+    }
+
+    @Override
     public boolean requiresMaterialisation(){ return true;}
 
     private boolean isSuperNode(){
         return graph().graql().match(getCombinedPattern()).admin().stream()
-                .skip(ResolutionStrategy.RESOURCE_SUPERNODE_SIZE)
+                .skip(ResolutionPlan.RESOURCE_SUPERNODE_SIZE)
                 .findFirst().isPresent();
     }
 
@@ -210,21 +236,21 @@ public class ResourceAtom extends Binary{
     public int computePriority(Set<Var> subbedVars){
         int priority = super.computePriority(subbedVars);
         Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(Collectors.toSet());
-        priority += ResolutionStrategy.IS_RESOURCE_ATOM;
+        priority += ResolutionPlan.IS_RESOURCE_ATOM;
 
         if (vps.isEmpty()) {
             if (subbedVars.contains(getVarName()) || subbedVars.contains(getPredicateVariable())
                     && !isSuperNode()) {
-                    priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+                    priority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
             } else{
-                    priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
+                    priority += ResolutionPlan.VARIABLE_VALUE_PREDICATE;
             }
         } else {
             int vpsPriority = 0;
             for (ValuePredicateAdmin vp : vps) {
                 //vp with a value
                 if (vp.isSpecific() && !isSuperNode()) {
-                    vpsPriority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+                    vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
                 } //vp with a variable
                 else if (vp.getInnerVar().isPresent()) {
                     VarPatternAdmin inner = vp.getInnerVar().orElse(null);
@@ -232,16 +258,16 @@ public class ResourceAtom extends Binary{
                     if (subbedVars.contains(getVarName())
                         || subbedVars.contains(inner.getVarName())
                             && !isSuperNode()) {
-                        vpsPriority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+                        vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
                     } //variable equality
                     else if (vp.equalsValue().isPresent()){
-                        vpsPriority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
+                        vpsPriority += ResolutionPlan.VARIABLE_VALUE_PREDICATE;
                     } //variable inequality
                     else {
-                        vpsPriority += ResolutionStrategy.COMPARISON_VARIABLE_VALUE_PREDICATE;
+                        vpsPriority += ResolutionPlan.COMPARISON_VARIABLE_VALUE_PREDICATE;
                     }
                 } else {
-                    vpsPriority += ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
+                    vpsPriority += ResolutionPlan.NON_SPECIFIC_VALUE_PREDICATE;
                 }
             }
             //normalise
@@ -254,7 +280,7 @@ public class ResourceAtom extends Binary{
                 .filter(at -> at.getVarName().equals(this.getVarName()))
                 .findFirst().isPresent();
 
-        priority += reifiesRelation ? ResolutionStrategy.RESOURCE_REIFIYING_RELATION : 0;
+        priority += reifiesRelation ? ResolutionPlan.RESOURCE_REIFYING_RELATION : 0;
 
         return priority;
     }

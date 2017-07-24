@@ -18,8 +18,16 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.PropertyNotUniqueException;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import javax.annotation.Nullable;
+import java.util.Objects;
+import java.util.function.Function;
 
 import static org.apache.tinkerpop.gremlin.structure.T.id;
 
@@ -37,12 +45,14 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
  *
  */
 abstract class AbstractElement<E extends Element, P extends Enum> {
+    private final String prefix;
     private final E element;
     private final AbstractGraknGraph graknGraph;
 
-    AbstractElement(AbstractGraknGraph graknGraph, E element){
+    AbstractElement(AbstractGraknGraph graknGraph, E element, String prefix){
         this.graknGraph = graknGraph;
         this.element = element;
+        this.prefix = prefix;
     }
 
     E element(){
@@ -50,7 +60,7 @@ abstract class AbstractElement<E extends Element, P extends Enum> {
     }
 
     ElementId id(){
-        return ElementId.of(element().id());
+        return ElementId.of(prefix + element().id());
     }
 
     /**
@@ -81,6 +91,7 @@ abstract class AbstractElement<E extends Element, P extends Enum> {
      * @param key The key of the non-unique property to retrieve
      * @return The value stored in the property
      */
+    @Nullable
     public <X> X property(P key){
         Property<X> property = element().property(key.name());
         if(property != null && property.isPresent()) {
@@ -119,6 +130,45 @@ abstract class AbstractElement<E extends Element, P extends Enum> {
         //Compare Concept
         //based on id because vertex comparisons are equivalent
         return this == object || object instanceof AbstractElement && ((AbstractElement) object).id().equals(id());
+    }
+
+    /**
+     * Sets the value of a property with the added restriction that no other vertex can have that property.
+     *
+     * @param key The key of the unique property to mutate
+     * @param value The new value of the unique property
+     */
+    void propertyUnique(P key, String value){
+        if(!graph().isBatchGraph()) {
+            GraphTraversal<Vertex, Vertex> traversal = graph().getTinkerTraversal().V().has(key.name(), value);
+            if(traversal.hasNext()) throw PropertyNotUniqueException.cannotChangeProperty(element(), traversal.next(), key, value);
+        }
+
+        property(key, value);
+    }
+
+    /**
+     * Sets a property which cannot be mutated
+     *
+     * @param property The key of the immutable property to mutate
+     * @param newValue The new value to put on the property (if the property is not set)
+     * @param foundValue The current value of the property
+     * @param converter Helper method to ensure data is persisted in the correct format
+     */
+    <X> void propertyImmutable(P property, X newValue, @Nullable X foundValue, Function<X, Object> converter){
+        Objects.requireNonNull(property);
+
+        if(foundValue != null){
+            if(!foundValue.equals(newValue)){
+                throw GraphOperationException.immutableProperty(foundValue, newValue, property);
+            }
+        } else {
+            property(property, converter.apply(newValue));
+        }
+    }
+
+    <X> void propertyImmutable(P property, X newValue, X foundValue){
+        propertyImmutable(property, newValue, foundValue, Function.identity());
     }
 
     /**

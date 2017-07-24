@@ -24,17 +24,17 @@ import ai.grakn.graql.internal.antlr.GraqlTemplateBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
 import ai.grakn.graql.macro.Macro;
 import ai.grakn.util.StringUtil;
-
 import com.google.common.collect.ImmutableMap;
-import java.util.Objects;
-import java.util.function.Function;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
@@ -76,12 +76,14 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         return (String) visitChildren(ctx);
     }
 
+    @Nullable
     @Override
     public Object visitForInStatement(GraqlTemplateParser.ForInStatementContext ctx) {
         String var = ctx.ID().getText();
         return runForLoop((object) -> ImmutableMap.of(var, object), ctx.list(), ctx.block());
     }
 
+    @Nullable
     @Override
     public Object visitForEachStatement(GraqlTemplateParser.ForEachStatementContext ctx) {
         return runForLoop((object) -> {
@@ -90,6 +92,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         }, ctx.list(), ctx.block());
     }
 
+    @Nullable
     private Object runForLoop(Function<Object, Map> contextSupplier, GraqlTemplateParser.ListContext listCtx, GraqlTemplateParser.BlockContext block) {
         List list = this.visitList(listCtx);
 
@@ -149,6 +152,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         return !this.visitBool(ctx.bool());
     }
 
+    @Nullable
     @Override
     public Boolean visitBooleanExpression(GraqlTemplateParser.BooleanExpressionContext ctx) {
         return this.visitUntypedExpression(ctx.untypedExpression(), Boolean.class);
@@ -159,6 +163,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         return Boolean.parseBoolean(ctx.getText());
     }
 
+    @Nullable
     @Override
     public String visitString(GraqlTemplateParser.StringContext ctx){
         if(ctx.STRING() != null) {
@@ -168,6 +173,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         }
     }
 
+    @Nullable
     @Override
     public Number visitNumber(GraqlTemplateParser.NumberContext ctx){
         if(ctx.int_() != null){
@@ -179,6 +185,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         }
     }
 
+    @Nullable
     @Override
     public Integer visitInt_(GraqlTemplateParser.Int_Context ctx) {
         if(ctx.INT() != null){
@@ -188,6 +195,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         }
     }
 
+    @Nullable
     @Override
     public Double visitDouble_(GraqlTemplateParser.Double_Context ctx) {
         if(ctx.DOUBLE() != null){
@@ -197,16 +205,19 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         }
     }
 
+    @Nullable
     @Override
     public Object visitNil(GraqlTemplateParser.NilContext ctx) {
         return null;
     }
 
+    @Nullable
     @Override
     public List visitList(GraqlTemplateParser.ListContext ctx){
         return this.visitUntypedExpression(ctx.untypedExpression(), List.class);
     }
 
+    @Nullable
     @Override
     public Object visitExpression(GraqlTemplateParser.ExpressionContext ctx){
         if(ctx.untypedExpression() != null){
@@ -330,6 +341,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         }
     }
 
+    @Nullable
     @Override
     public Object visitIdExpression(GraqlTemplateParser.IdExpressionContext ctx) {
         Object object = scope.resolve(this.visitId(ctx.id()));
@@ -363,6 +375,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         };
     }
 
+    @Nullable
     private <T> T visitUntypedExpression(GraqlTemplateParser.UntypedExpressionContext ctx, Class<T> clazz) {
         Object object = this.visit(ctx);
 
@@ -375,8 +388,9 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         return clazz.cast(object);
     }
 
+    @Nullable
     @Override
-    protected Object aggregateResult(Object aggregate, Object nextResult) {
+    protected Object aggregateResult(@Nullable Object aggregate, @Nullable Object nextResult) {
         if(nextResult == null){
             return aggregate;
         }

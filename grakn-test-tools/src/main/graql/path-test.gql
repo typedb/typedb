@@ -29,14 +29,14 @@ start-vertex plays path-from;
 ####################################################
 
 isa inference-rule,
-lhs {
+when {
 (arc-from: $x, arc-to: $y) isa arc;},
-rhs {
+then {
 (path-from: $x, path-to: $y) isa path;};
 
 isa inference-rule,
-lhs {
+when {
 (path-from: $x, path-to: $z) isa path;
 (path-from: $z, path-to: $y) isa path;},
-rhs {
+then {
 (path-from: $x, path-to: $y) isa path;};

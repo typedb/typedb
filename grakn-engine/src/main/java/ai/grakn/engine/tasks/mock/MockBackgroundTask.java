@@ -20,7 +20,7 @@ package ai.grakn.engine.tasks.mock;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 

@@ -22,19 +22,21 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
-import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -56,12 +58,22 @@ public interface GraknAdmin {
     <T extends Concept> T buildConcept(Vertex vertex);
 
     /**
+     *
+     * @param edge An {@link Edge} which contains properties necessary to build a {@link Concept} from.
+     * @param <T> The type of the {@link Concept} being built
+     * @return A {@link Concept} built using the provided {@link Edge}
+     */
+    @CheckReturnValue
+    <T extends Concept> T buildConcept(Edge edge);
+
+
+    /**
      * Utility function to get a read-only Tinkerpop traversal.
      *
      * @return A read-only Tinkerpop traversal for manually traversing the graph
      */
     @CheckReturnValue
-    GraphTraversal<Vertex, Vertex> getTinkerTraversal();
+    GraphTraversalSource getTinkerTraversal();
 
     /**
      * A flag to check if batch loading is enabled and consistency checks are switched off
@@ -94,7 +106,7 @@ public interface GraknAdmin {
      * @return The meta role type -> role-type.
      */
     @CheckReturnValue
-    Role getMetaRoleType();
+    Role getMetaRole();
 
     /**
      * Get the root of all the Resource Types.
@@ -191,6 +203,7 @@ public interface GraknAdmin {
      * @return A concept with the matching key and value
      */
     @CheckReturnValue
+    @Nullable
     <T extends Concept> T getConcept(Schema.VertexProperty key, Object value);
 
     /**

@@ -21,13 +21,17 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -54,9 +58,9 @@ public class GraqlTraversal {
     //             V            V
     private final ImmutableSet<ImmutableList<Fragment>> fragments;
 
-    // TODO: Find a better way to represent these values
     // Just a pretend big number
     private static final long NUM_VERTICES_ESTIMATE = 10_000;
+    private static final double COST_NEW_TRAVERSAL = Math.log1p(NUM_VERTICES_ESTIMATE);
 
     private GraqlTraversal(Set<? extends List<Fragment>> fragments) {
         this.fragments = fragments.stream().map(ImmutableList::copyOf).collect(toImmutableSet());
@@ -71,11 +75,11 @@ public class GraqlTraversal {
      */
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    public GraphTraversal<Vertex, Map<String, Vertex>> getGraphTraversal(GraknGraph graph) {
+    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(GraknGraph graph) {
         Traversal[] traversals =
                 fragments.stream().map(list -> getConjunctionTraversal(graph, list)).toArray(Traversal[]::new);
 
-        return graph.admin().getTinkerTraversal().limit(1).union(traversals);
+        return graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
     }
 
     public ImmutableSet<ImmutableList<Fragment>> fragments() {
@@ -85,11 +89,21 @@ public class GraqlTraversal {
     /**
      * @return a gremlin traversal that represents this inner query
      */
-    private GraphTraversal<Vertex, Map<String, Vertex>> getConjunctionTraversal(
+    private GraphTraversal<? extends Element, Map<String, Element>> getConjunctionTraversal(
             GraknGraph graph, ImmutableList<Fragment> fragmentList
     ) {
-        GraphTraversal<Vertex, Vertex> traversal = graph.admin().getTinkerTraversal();
+        GraphTraversal traversal = __.V();
 
+        // If the first fragment can operate on edges, then we have to navigate all edges as well
+        if (fragmentList.get(0).canOperateOnEdges()) {
+            traversal = __.union(traversal, __.V().outE(Schema.EdgeLabel.RESOURCE.getLabel()));
+        }
+
+        return applyFragments(graph, fragmentList, traversal);
+    }
+
+    private GraphTraversal<?, Map<String, Element>> applyFragments(
+            GraknGraph graph, ImmutableList<Fragment> fragmentList, GraphTraversal<Element, Element> traversal) {
         Set<Var> foundNames = new HashSet<>();
 
         // Apply fragments in order into one single traversal
@@ -114,8 +128,8 @@ public class GraqlTraversal {
      * @param names a set of variable names so far encountered in the query
      */
     private void applyFragment(
-            Fragment fragment, GraphTraversal<Vertex, Vertex> traversal, Var currentName, Set<Var> names,
-            GraknGraph graph
+            Fragment fragment, GraphTraversal<Element, ? extends Element> traversal,
+            @Nullable Var currentName, Set<Var> names, GraknGraph graph
     ) {
         Var start = fragment.getStart();
 
@@ -169,11 +183,11 @@ public class GraqlTraversal {
     static double fragmentListCost(List<Fragment> fragments) {
         Set<Var> names = new HashSet<>();
 
-        double cost = 1;
+        double cost = 0;
         double listCost = 0;
 
         for (Fragment fragment : fragments) {
-            cost = fragmentCost(fragment, cost, names);
+            cost = fragmentCost(fragment, names);
             names.addAll(fragment.getVariableNames());
             listCost += cost;
         }
@@ -181,12 +195,12 @@ public class GraqlTraversal {
         return listCost;
     }
 
-    static double fragmentCost(Fragment fragment, double previousCost, Collection<Var> names) {
+    static double fragmentCost(Fragment fragment, Collection<Var> names) {
         if (names.contains(fragment.getStart())) {
-            return fragment.fragmentCost(previousCost);
+            return fragment.fragmentCost();
         } else {
             // Restart traversal, meaning we are navigating from all vertices
-            return fragment.fragmentCost(NUM_VERTICES_ESTIMATE) * previousCost;
+            return COST_NEW_TRAVERSAL;
         }
     }
 

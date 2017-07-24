@@ -20,55 +20,79 @@ package ai.grakn.generator;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.connection.RedisConnection;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
+import ai.grakn.engine.tasks.manager.TaskManager;
+import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.EngineID;
+import com.codahale.metrics.MetricRegistry;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.util.Pool;
 
 /**
  * TaskManagers
- * 
+ *
  * @author alexandraorth
  */
 public class TaskManagers extends Generator<TaskManager> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(TaskManagers.class);
+
     @SuppressWarnings("unchecked")
     private Class<? extends TaskManager>[] taskManagerClasses = new Class[]{
-            StandaloneTaskManager.class, SingleQueueTaskManager.class
+            RedisTaskManager.class, RedisTaskManager.class
     };
 
     private static Map<Class<? extends TaskManager>, TaskManager> taskManagers = new HashMap<>();
-
-    public static void closeAndClear(){
-        taskManagers.values().forEach(TaskManager::close);
+    public static void closeAndClear() {
+        for (TaskManager taskManager : taskManagers.values()) {
+            try {
+                taskManager.close();
+            } catch (IOException e) {
+                LOG.error("Could not close task manager cleanly, some resources might be left open");
+            }
+        }
         taskManagers.clear();
     }
 
-    public TaskManagers(){
+    public TaskManagers() {
         super(TaskManager.class);
     }
 
     @Override
     public TaskManager generate(SourceOfRandomness random, GenerationStatus status) {
+        // TODO restore the use of taskManagerClasses
         Class<? extends TaskManager> taskManagerToReturn = random.choose(taskManagerClasses);
 
         GraknEngineConfig config = GraknEngineConfig.create();
-
-        if(!taskManagers.containsKey(taskManagerToReturn)){
+        JedisPoolConfig poolConfig = new JedisPoolConfig();
+        Pool<Jedis> jedisPool = new JedisPool(poolConfig,
+                config.getProperty(GraknEngineConfig.REDIS_SERVER_URL),
+                Integer.parseInt(config.getProperty(GraknEngineConfig.REDIS_SERVER_PORT)));
+        if (!taskManagers.containsKey(taskManagerToReturn)) {
             try {
                 Constructor<? extends TaskManager> constructor =
-                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class, RedisConnection.class, EngineGraknGraphFactory.class);
-                taskManagers.put(taskManagerToReturn, constructor.newInstance(EngineID.me(), config, null, null));
+                        taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class,
+                                Pool.class, EngineGraknGraphFactory.class,
+                                LockProvider.class, MetricRegistry.class);
+                // TODO this doesn't take a Redis connection. Make sure this is what we expect
+                taskManagers.put(taskManagerToReturn,
+                        constructor.newInstance(EngineID.me(), config, jedisPool, null,
+                                new ProcessWideLockProvider(), new MetricRegistry()));
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                LOG.error("Could not instantiate task manager", e);
                 throw new RuntimeException(e);
             }
         }

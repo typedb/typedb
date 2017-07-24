@@ -21,8 +21,8 @@ insert
 ####################################################
 
 isa inference-rule,
-lhs {
+when {
 (Q-from: $x, Q-to: $z) isa Q;
 (Q-from: $z, Q-to: $y) isa Q;},
-rhs {
+then {
 (Q-from: $x, Q-to: $y) isa Q;};

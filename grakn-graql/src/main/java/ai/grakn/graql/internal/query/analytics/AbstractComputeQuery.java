@@ -24,11 +24,11 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
@@ -131,11 +131,11 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         if (subGraph.isEmpty()) {
             EntityType metaEntityType = graph.admin().getMetaEntityType();
-            metaEntityType.subs().forEach(type -> this.subLabels.add(type.asType().getLabel()));
+            metaEntityType.subs().forEach(type -> this.subLabels.add(type.getLabel()));
             ResourceType<?> metaResourceType = graph.admin().getMetaResourceType(); //Yay for losing the type
-            metaResourceType.subs().forEach(type -> this.subLabels.add(type.asType().getLabel()));
+            metaResourceType.subs().forEach(type -> this.subLabels.add(type.getLabel()));
             RelationType metaRelationType = graph.admin().getMetaRelationType();
-            metaRelationType.subs().forEach(type -> this.subLabels.add(type.asType().getLabel()));
+            metaRelationType.subs().forEach(type -> this.subLabels.add(type.getLabel()));
             subLabels.remove(metaEntityType.getLabel());
             subLabels.remove(metaResourceType.getLabel());
             subLabels.remove(metaRelationType.getLabel());
@@ -206,7 +206,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
-        return labelSet.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+        return labelSet.stream()
+                .map(graph.get().admin()::convertToId)
+                .filter(LabelId::isValid)
+                .collect(Collectors.toSet());
     }
 
     static String getRandomJobId() {

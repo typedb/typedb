@@ -106,13 +106,13 @@ public class QueryToStringTest {
     }
 
     @Test
-    public void testQueryWithRhsToString() {
-        assertValidToString(qb.insert(var("x").isa("a-rule-type").rhs(and(qb.parsePatterns("$x isa movie;")))));
+    public void testQueryWithThenToString() {
+        assertValidToString(qb.insert(var("x").isa("a-rule-type").then(and(qb.parsePatterns("$x isa movie;")))));
     }
 
     @Test
-    public void testQueryWithLhsToString() {
-        assertValidToString(qb.insert(var("x").isa("a-rule-type").lhs(and(qb.parsePatterns("$x isa movie;")))));
+    public void testQueryWithWhenToString() {
+        assertValidToString(qb.insert(var("x").isa("a-rule-type").when(and(qb.parsePatterns("$x isa movie;")))));
     }
 
     private void assertValidToString(InsertQuery query){
@@ -211,12 +211,6 @@ public class QueryToStringTest {
     @Test
     public void testDecimalToString() {
         assertEquals("match $x val 0.0001;", qb.match(var("x").val(0.0001)).toString());
-    }
-
-    @Test(expected=UnsupportedOperationException.class)
-    public void testToStringUnsupported() {
-        //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa(var().val("abc"))).toString();
     }
 
     @Test

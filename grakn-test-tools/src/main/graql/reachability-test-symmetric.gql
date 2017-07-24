@@ -38,14 +38,14 @@ $d isa vertex, has index "d";
 ####################################################
 
 isa inference-rule,
-lhs {
+when {
 ($x, $y) isa link;},
-rhs {
+then {
 (reach-endA: $x, reach-endB: $y) isa reachable;};
 
 isa inference-rule,
-lhs {
+when {
 (link-endA: $x, link-endB: $z) isa link;
 (reach-endA: $z, reach-endB: $y) isa reachable;},
-rhs {
+then {
 (reach-endA: $x, reach-endB: $y) isa reachable;};

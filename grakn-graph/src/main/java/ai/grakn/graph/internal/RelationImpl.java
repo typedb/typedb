@@ -18,26 +18,22 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.structure.Direction;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
+import com.google.common.collect.Iterables;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -51,89 +47,100 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation {
-    RelationImpl(VertexElement vertexElement) {
-        super(vertexElement);
-    }
+class RelationImpl implements Relation, ConceptVertex {
+    private RelationStructure relationStructure;
 
-    RelationImpl(VertexElement vertexElement, RelationType type) {
-        super(vertexElement, type);
-    }
-
-    /**
-     * Sets the internal hash in order to perform a faster lookup
-     */
-    void setHash(){
-        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateNewHash(type(), allRolePlayers()));
+    RelationImpl(RelationStructure relationStructure) {
+        this.relationStructure = relationStructure;
     }
 
     /**
-     * Castings are retrieved from the perspective of the {@link Relation}
+     * Gets the {@link RelationReified} if the {@link Relation} has been reified.
+     * To reify the {@link Relation} you use {@link RelationImpl#reify()}.
      *
-     * @param roles The role which the instances are playing
-     * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relation}
-     */
-    Stream<Casting> castingsRelation(Role... roles){
-        if(roles.length == 0){
-            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).
-                    map(edge -> vertex().graph().factory().buildRolePlayer(edge));
-        }
-
-        //Traversal is used so we can potentially optimise on the index
-        Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getTypeId().getValue()).collect(Collectors.toSet());
-        return vertex().graph().getTinkerTraversal().
-                has(Schema.VertexProperty.ID.name(), getId().getValue()).
-                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_ID.name(), type().getTypeId().getValue()).
-                has(Schema.EdgeProperty.ROLE_TYPE_ID.name(), P.within(roleTypesIds)).
-                toStream().map(edge -> vertex().graph().factory().buildRolePlayer(edge));
-    }
-
-    /**
+     * NOTE: This approach is done to make sure that only write operations will cause the {@link Relation} to reify
      *
-     * @param relationType The type of this relation
-     * @param roleMap The roles and their corresponding role players
-     * @return A unique hash identifying this relation
+     * @return The {@link RelationReified} if the {@link Relation} has been reified
      */
-    static String generateNewHash(RelationType relationType, Map<Role, Set<Thing>> roleMap){
-        SortedSet<Role> sortedRoleIds = new TreeSet<>(roleMap.keySet());
-        StringBuilder hash = new StringBuilder();
-        hash.append("RelationType_").append(relationType.getId().getValue().replace("_", "\\_")).append("_Relation");
-
-        for(Role role: sortedRoleIds){
-            hash.append("_").append(role.getId().getValue().replace("_", "\\_"));
-
-            roleMap.get(role).forEach(instance -> {
-                if(instance != null){
-                    hash.append("_").append(instance.getId().getValue().replace("_", "\\_"));
-                }
-            });
-        }
-        return hash.toString();
+    Optional<RelationReified> reified(){
+        if(!relationStructure.isReified()) return Optional.empty();
+        return Optional.of(relationStructure.reify());
     }
 
     /**
-     * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
+     * Reifys and returns the {@link RelationReified}
+     */
+    RelationReified reify(){
+        if(relationStructure.isReified()) return relationStructure.reify();
+
+        //Get the role players to transfer
+        Map<Role, Set<Thing>> rolePlayers = structure().allRolePlayers();
+
+        //Now Reify
+        relationStructure = relationStructure.reify();
+
+        //Transfer relationships
+        rolePlayers.forEach((role, things) -> {
+            Thing thing = Iterables.getOnlyElement(things);
+            addRolePlayer(role, thing);
+        });
+
+        return relationStructure.reify();
+    }
+
+    RelationStructure structure(){
+        return relationStructure;
+    }
+
+    @Override
+    public Relation resource(Resource resource) {
+        reify().resource(resource);
+        return this;
+    }
+
+    @Override
+    public Collection<Resource<?>> resources(ResourceType[] resourceTypes) {
+        return readFromReified((relationReified) -> relationReified.resources(resourceTypes));
+    }
+
+    @Override
+    public RelationType type() {
+        return structure().type();
+    }
+
+    @Override
+    public Collection<Relation> relations(Role... roles) {
+        return readFromReified((relationReified) -> relationReified.relations(roles));
+    }
+
+    @Override
+    public Collection<Role> plays() {
+        return readFromReified(ThingImpl::plays);
+    }
+
+    /**
+     * Reads some data from a {@link RelationReified}. If the {@link Relation} has not been reified then an empty
+     * collection is returned.
+     */
+    private <X> Collection<X> readFromReified(Function<RelationReified, Collection<X>> producer){
+        return reified().map(producer).orElseGet(Collections::emptyList);
+    }
+
+    /**
+     * Retrieve a list of all {@link Thing} involved in the {@link Relation}, and the {@link Role} they play.
      * @see Role
      *
-     * @return A list of all the role types and the instances playing them in this relation.
+     * @return A list of all the {@link Role}s and the {@link Thing}s playing them in this {@link Relation}.
      */
     @Override
     public Map<Role, Set<Thing>> allRolePlayers(){
-        HashMap<Role, Set<Thing>> roleMap = new HashMap<>();
-
-        //We add the role types explicitly so we can return them when there are no roleplayers
-        type().relates().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
-        castingsRelation().forEach(rp -> roleMap.computeIfAbsent(rp.getRoleType(), (k) -> new HashSet<>()).add(rp.getInstance()));
-
-        return roleMap;
+       return structure().allRolePlayers();
     }
 
     @Override
     public Collection<Thing> rolePlayers(Role... roles) {
-        return castingsRelation(roles).map(Casting::getInstance).collect(Collectors.toSet());
+        return structure().rolePlayers(roles);
     }
-
 
     /**
      * Expands this Relation to include a new role player which is playing a specific role.
@@ -143,23 +150,8 @@ class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation
      */
     @Override
     public Relation addRolePlayer(Role role, Thing thing) {
-        Objects.requireNonNull(role);
-        Objects.requireNonNull(thing);
-
-        if(Schema.MetaSchema.isMetaLabel(role.getLabel())) throw GraphOperationException.metaTypeImmutable(role.getLabel());
-
-        //Do the actual put of the role and role player
-        return addNewRolePlayer(role, thing);
-    }
-
-    /**
-     * Adds a new role player to this relation
-     * @param role The role of the new role player.
-     * @param thing The new role player.
-     * @return The Relation itself
-     */
-    private Relation addNewRolePlayer(Role role, Thing thing){
-        vertex().graph().putShortcutEdge((ThingImpl) thing, this, (RoleImpl) role);
+        reify().addRolePlayer(role, thing);
+        vertex().graph().txCache().trackForValidation(this); //This is so we can reassign the hash if needed
         return this;
     }
 
@@ -182,21 +174,43 @@ class RelationImpl extends ThingImpl<Relation, RelationType> implements Relation
     }
 
     @Override
-    public String innerToString(){
-        StringBuilder description = new StringBuilder();
-        description.append("ID [").append(getId()).append("] Type [").append(type().getLabel()).append("] Roles and Role Players: \n");
-        for (Map.Entry<Role, Set<Thing>> entry : allRolePlayers().entrySet()) {
-            if(entry.getValue().isEmpty()){
-                description.append("    Role [").append(entry.getKey().getLabel()).append("] not played by any instance \n");
-            } else {
-                StringBuilder instancesString = new StringBuilder();
-                for (Thing thing : entry.getValue()) {
-                    instancesString.append(thing.getId()).append(",");
-                }
-                description.append("    Role [").append(entry.getKey().getLabel()).append("] played by [").
-                        append(instancesString.toString()).append("] \n");
-            }
-        }
-        return description.toString();
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+        return getId().equals(((RelationImpl) object).getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getId().hashCode();
+    }
+
+    @Override
+    public String toString(){
+        return structure().toString();
+    }
+
+    @Override
+    public ConceptId getId() {
+        return structure().getId();
+    }
+
+    @Override
+    public void delete() {
+        structure().delete();
+    }
+
+    @Override
+    public int compareTo(Concept o) {
+        return getId().compareTo(o.getId());
+    }
+
+    @Override
+    public VertexElement vertex() {
+        return reify().vertex();
+    }
+
+    public static RelationImpl from(Relation relation){
+        return (RelationImpl) relation;
     }
 }

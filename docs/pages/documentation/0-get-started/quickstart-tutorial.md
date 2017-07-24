@@ -210,6 +210,8 @@ We will move on to discuss the use of GRAKN.AI to infer new information about a 
 However, the `person` entity does have a gender resource, and we can use Grakn to infer more information about each relationship by using that property. The ontology accommodates the more specific roles of mother, father, daughter and son:
 
 ```graql
+insert
+
 person 
   plays son
   plays daughter
@@ -233,44 +235,46 @@ daughter sub child;
 Included in *basic-genealogy.gql* are a set of Graql rules to instruct Grakn's reasoner on how to label each parentship relation:
 
 ```graql
+insert
+
 $genderizeParentships1 isa inference-rule
-lhs
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
 $c has gender "male";
 }
-rhs
+then
 {(father: $p, son: $c) isa parentship;};
 
 $genderizeParentships2 isa inference-rule
-lhs
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
 $c has gender "female";
 }
-rhs
+then
 {(father: $p, daughter: $c) isa parentship;};
 
 $genderizeParentships3 isa inference-rule
-lhs
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";
 $c has gender "male";
 }
-rhs
+then
 {(mother: $p, son: $c) isa parentship;};
 
 $genderizeParentships4 isa inference-rule
-lhs
+when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";
 $c has gender "female";
 }
-rhs
+then
 {(mother: $p, daughter: $c) isa parentship;};
 ```
 
-If you're unfamiliar with the syntax of rules, don't worry too much about it too much just now. It is sufficient to know that, for each `parentship` relation, Graql checks whether the pattern in the first block (left hand side or lhs) can be verified and, if it can, infers the statement in the second block (right hand side or rhs) to be true, so inserts a relation between gendered parents and children. 
+If you're unfamiliar with the syntax of rules, don't worry too much about it too much just now. It is sufficient to know that, for each `parentship` relation, Graql checks whether the pattern in the first block (when) can be verified and, if it can, infers the statement in the second block (then) to be true, so inserts a relation between gendered parents and children.
 
 Let's test it out!
 
@@ -341,7 +345,8 @@ match $x has identifier "Barbara Shafner"; $y has identifier "Jacob J. Niesz";
 
 and then search for relationships joining two of them using:
 
-```graql
+<!-- Ignoring because uses fake IDs -->
+```graql-test-ignore
 compute path from "id1" to "id2"; # Use the actual values of identifier for each person
 # e.g. compute path from "114848" to "348264";
 ```
@@ -354,7 +359,8 @@ The path query uses a scalable shortest path algorithm to determine the smallest
 
 To narrow the path to specific relations between specific entities:
 
-```graql
+<!-- Ignoring because uses fake IDs -->
+```graql-test-ignore
 compute path from "id1" to "id2" in person, parentship;
 ```
 

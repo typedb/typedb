@@ -50,17 +50,17 @@ public class ShortcutFragmentSetTest {
     public void whenApplyingRoleOptimisation_ExpandRoleToAllSubs() {
         Label author = Label.of("author");
         Label director = Label.of("director");
-        EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(d, author);
+        EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null, d, author);
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
-                EquivalentFragmentSets.shortcut(a, b, c, Optional.of(d)),
+                EquivalentFragmentSets.shortcut(null, a, b, c, Optional.of(d)),
                 authorLabelFragmentSet
         );
 
         ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
-                new ShortcutFragmentSet(a, b, c, Optional.empty(), Optional.of(ImmutableSet.of(author, director)), Optional.empty()),
+                new ShortcutFragmentSet(null, a, b, c, Optional.empty(), Optional.of(ImmutableSet.of(author, director)), Optional.empty()),
                 authorLabelFragmentSet
         );
 
@@ -70,17 +70,17 @@ public class ShortcutFragmentSetTest {
     @Test
     public void whenApplyingRoleOptimisationToMetaRole_DoNotExpandRoleToAllSubs() {
         Label role = Label.of("role");
-        EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(d, role);
+        EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null,d, role);
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
-                EquivalentFragmentSets.shortcut(a, b, c, Optional.of(d)),
+                EquivalentFragmentSets.shortcut(null,a, b, c, Optional.of(d)),
                 authorLabelFragmentSet
         );
 
         ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
-                new ShortcutFragmentSet(a, b, c, Optional.empty(), Optional.empty(), Optional.empty()),
+                new ShortcutFragmentSet(null,a, b, c, Optional.empty(), Optional.empty(), Optional.empty()),
                 authorLabelFragmentSet
         );
 
