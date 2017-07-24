@@ -57,17 +57,14 @@ import org.junit.runner.RunWith;
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineServerIT {
 
-    private static final int PORT1 = 4567;
-    private static final int PORT2 = 5678;
-
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine1 = EngineContext.startSingleQueueServer().port(PORT1);
+    public static final EngineContext engine1 = EngineContext.startSingleQueueServer();
 
     @ClassRule
-    public static final EngineContext engine2 = EngineContext.startSingleQueueServer().port(PORT2);
+    public static final EngineContext engine2 = EngineContext.startSingleQueueServer();
 
     private TaskStateStorage storage;
 
@@ -101,7 +98,7 @@ public class GraknEngineServerIT {
     @Property(trials=10)
     @Ignore("Stop not implemented yet")
     public void whenEngine1StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
-        assertTrue(TaskClient.of("localhost", PORT1).stopTask(task.getId()));
+        assertTrue(TaskClient.of("localhost", engine1.port()).stopTask(task.getId()));
 
         engine1.getTaskManager().addTask(task, configuration(task));
 
@@ -113,7 +110,7 @@ public class GraknEngineServerIT {
     @Property(trials=10)
     @Ignore("Stop not implemented yet")
     public void whenEngine2StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
-        assertTrue(TaskClient.of("localhost", PORT2).stopTask(task.getId()));
+        assertTrue(TaskClient.of("localhost", engine2.port()).stopTask(task.getId()));
 
         engine1.getTaskManager().addTask(task, configuration(task));
 
@@ -126,7 +123,7 @@ public class GraknEngineServerIT {
     @Ignore("Stop not implemented yet")
     public void whenEngine1StopsATaskDuringExecution_TheTaskIsStopped(
             @WithClass(EndlessExecutionMockTask.class) TaskState task) {
-        whenTaskStarts(id -> TaskClient.of("localhost", PORT1).stopTask(task.getId()));
+        whenTaskStarts(id -> TaskClient.of("localhost", engine1.port()).stopTask(task.getId()));
 
         engine1.getTaskManager().addTask(task, configuration(task));
 
@@ -139,7 +136,7 @@ public class GraknEngineServerIT {
     @Ignore("Stop not implemented yet")
     public void whenEngine2StopsATaskDuringExecution_TheTaskIsStopped(
             @WithClass(EndlessExecutionMockTask.class) TaskState task) {
-        whenTaskStarts(id -> TaskClient.of("localhost", PORT2).stopTask(task.getId()));
+        whenTaskStarts(id -> TaskClient.of("localhost", engine2.port()).stopTask(task.getId()));
 
         engine1.getTaskManager().addTask(task, configuration(task));
 

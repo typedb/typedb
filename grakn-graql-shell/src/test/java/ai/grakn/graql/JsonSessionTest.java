@@ -19,6 +19,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.Grakn;
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import java.io.EOFException;
@@ -52,7 +53,7 @@ public class JsonSessionTest {
     public final ExpectedException exception = ExpectedException.none();
     private GraqlClient client;
     private RemoteEndpoint remote;
-    private final URI uri = URI.create("localhost:4567");
+    private final URI uri = URI.create(Grakn.DEFAULT_URI);
 
     @Before
     public void setUp() {
