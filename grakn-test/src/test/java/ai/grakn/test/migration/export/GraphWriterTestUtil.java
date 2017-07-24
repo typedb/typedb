@@ -96,7 +96,7 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static <V> Resource<V> getResourceFromGraph(GraknGraph graph, Resource<V> resource){
-        return graph.getResourceType(resource.type().getLabel().getValue()).getResource(resource.getValue());
+        return (Resource<V>) graph.getResourceType(resource.type().getLabel().getValue()).getResource(resource.getValue());
     }
 
     public static void assertRelationCopied(Relation relation1, GraknGraph two){

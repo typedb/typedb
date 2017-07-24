@@ -54,7 +54,7 @@ interface RelationStructure {
      *
      * @return The relation structure which has been reified
      */
-    RelationReified reified();
+    RelationReified reify();
 
     /**
      *

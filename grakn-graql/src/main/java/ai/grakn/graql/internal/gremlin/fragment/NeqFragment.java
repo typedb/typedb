@@ -24,7 +24,7 @@ import ai.grakn.graql.admin.VarProperty;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 class NeqFragment extends AbstractFragment {
 
@@ -36,8 +36,9 @@ class NeqFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.where(P.neq(other.getValue()));
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+        return traversal.where(P.neq(other.getValue()));
     }
 
     @Override

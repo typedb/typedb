@@ -89,7 +89,6 @@ class TxCache {
 
     //Transaction Specific Meta Data
     private boolean isTxOpen = false;
-    private boolean showImplicitTypes = false;
     private GraknTxType txType;
     private String closedReason = null;
 
@@ -149,7 +148,7 @@ class TxCache {
         } else if (concept.isRelationType()) {
             modifiedRelationTypes.add(concept.asRelationType());
         } else if (concept.isRelation()){
-            RelationImpl relation = (RelationImpl) concept;
+            Relation relation = concept.asRelation();
             modifiedRelations.add(relation);
             //Caching of relations in memory so they can be retrieved without needing a commit
             relationIndexCache.put(RelationReified.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
@@ -407,13 +406,6 @@ class TxCache {
     }
     boolean isTxOpen(){
         return isTxOpen;
-    }
-
-    void showImplicitTypes(boolean flag){
-        showImplicitTypes = flag;
-    }
-    boolean implicitTypesVisible(){
-        return showImplicitTypes;
     }
 
     GraknTxType txType(){

@@ -139,7 +139,7 @@ public class ScalingTestIT {
 
         // get a count before adding any data
         Long emptyCount = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)
-                .admin().getTinkerTraversal().count().next();
+                .admin().getTinkerTraversal().V().count().next();
         LOGGER.info("gremlin count before data is: " + emptyCount);
 
         Set<String> superNodes = makeSuperNodes(keyspace);
@@ -157,7 +157,7 @@ public class ScalingTestIT {
 
             Long gremlinCount = (long) (NUM_SUPER_NODES * (3 * graphSize + 1) + graphSize);
             LOGGER.info("gremlin count is: " +
-                    Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE).admin().getTinkerTraversal().count().next());
+                    Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE).admin().getTinkerTraversal().V().count().next());
             gremlinCount += emptyCount;
             LOGGER.info("expected gremlin count is: "+gremlinCount);
 
@@ -283,7 +283,7 @@ public class ScalingTestIT {
             loader.waitToFinish();
             LOGGER.info("stop loading data");
             GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
-            LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
+            LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().V().count().next());
             graph.close();
 
             for (String method : methods) {

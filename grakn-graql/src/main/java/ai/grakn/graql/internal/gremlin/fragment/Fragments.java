@@ -28,19 +28,21 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
-import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
-import static ai.grakn.util.Schema.VertexProperty.INSTANCE_TYPE_ID;
-import static ai.grakn.util.Schema.VertexProperty.TYPE_ID;
+import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
+import static ai.grakn.util.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -50,6 +52,10 @@ import static java.util.stream.Collectors.toSet;
  * @author Felix Chapman
  */
 public class Fragments {
+
+    // TODO: Make sure these never clash with a real Graql variable
+    static final String RELATION_EDGE = "!RELATION_EDGE";
+    static final String RELATION_DIRECTION = "!RELATION_DIRECTION";
 
     private Fragments() {
     }
@@ -145,16 +151,59 @@ public class Fragments {
         return new ResourceIndexFragment(varProperty, start, label, resourceValue);
     }
 
-    @SuppressWarnings("unchecked")
-    static GraphTraversal<Vertex, Vertex> outSubs(GraphTraversal<Vertex, Vertex> traversal) {
-        // These traversals make sure to only navigate types by checking they do not have a `INSTANCE_TYPE_ID` property
-        return traversal.union(__.<Vertex>not(__.has(INSTANCE_TYPE_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.repeat(__.out(SUB.getLabel())).emit()).unfold();
+    static <T> GraphTraversal<T, Vertex> outSubs(GraphTraversal<T, Vertex> traversal) {
+        // These traversals make sure to only navigate types by checking they do not have a `THING_TYPE_LABEL_ID` property
+        return union(traversal, ImmutableSet.of(
+                __.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())),
+                __.repeat(__.out(SUB.getLabel())).emit()
+        )).unfold();
     }
 
-    @SuppressWarnings("unchecked")
-    static GraphTraversal<Vertex, Vertex> inSubs(GraphTraversal<Vertex, Vertex> traversal) {
-        // These traversals make sure to only navigate types by checking they do not have a `INSTANCE_TYPE_ID` property
-        return traversal.union(__.<Vertex>not(__.has(INSTANCE_TYPE_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
+    static <T> GraphTraversal<T, Vertex> inSubs(GraphTraversal<T, Vertex> traversal) {
+        // These traversals make sure to only navigate types by checking they do not have a `THING_TYPE_LABEL_ID` property
+        return union(traversal, ImmutableSet.of(
+                __.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())),
+                __.repeat(__.in(SUB.getLabel())).emit()
+        )).unfold();
+    }
+
+    /**
+     * A type-safe way to do `__.union(a, b)`, as `Fragments.union(ImmutableSet.of(a, b))`.
+     * This avoids issues with unchecked varargs.
+     */
+    static <S, E> GraphTraversal<S, E> union(Iterable<GraphTraversal<? super S, ? extends E>> traversals) {
+        return union(__.identity(), traversals);
+    }
+
+    /**
+     * A type-safe way to do `a.union(b, c)`, as `Fragments.union(a, ImmutableSet.of(b, c))`.
+     * This avoids issues with unchecked varargs.
+     */
+    static <S, E1, E2> GraphTraversal<S, E2> union(
+            GraphTraversal<S, ? extends E1> start, Iterable<GraphTraversal<? super E1, ? extends E2>> traversals) {
+        // This is safe, because we know all the arguments are of the right type
+        //noinspection unchecked
+        GraphTraversal<E1, E2>[] array = (GraphTraversal<E1, E2>[]) Iterables.toArray(traversals, GraphTraversal.class);
+
+        return start.union(array);
+    }
+
+    /**
+     * Create a traversal that filters to only vertices
+     */
+    static <T> GraphTraversal<T, Vertex> isVertex(GraphTraversal<T, ? extends Element> traversal) {
+        // This cast is safe because we filter only to vertices
+        //noinspection unchecked
+        return (GraphTraversal<T, Vertex>) traversal.has(Schema.VertexProperty.ID.name());
+    }
+
+    /**
+     * Create a traversal that filters to only edges
+     */
+    static <T> GraphTraversal<T, Edge> isEdge(GraphTraversal<T, ? extends Element> traversal) {
+        // This cast is safe because we filter only to edges
+        //noinspection unchecked
+        return (GraphTraversal<T, Edge>) traversal.hasNot(Schema.VertexProperty.ID.name());
     }
 
     static String displayOptionalTypeLabels(String name, Optional<Set<Label>> typeLabels) {
@@ -164,7 +213,7 @@ public class Fragments {
     }
 
     static void applyTypeLabelsToTraversal(
-            GraphTraversal<Vertex, Edge> traversal, Schema.EdgeProperty property, Optional<Set<Label>> typeLabels, GraknGraph graph) {
+            GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property, Optional<Set<Label>> typeLabels, GraknGraph graph) {
         typeLabels.ifPresent(labels -> {
             Set<Integer> typeIds = labels.stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
             traversal.has(property.name(), P.within(typeIds));
@@ -176,23 +225,26 @@ public class Fragments {
      *
      * @param traversal the traversal, starting from the shortcut edge
      * @param role the variable to assign to the role. If not present, do nothing
+     * @param edgeProperty the edge property to look up the role label ID
      */
-    static void traverseRoleFromShortcutEdge(GraphTraversal<Vertex, Edge> traversal, Optional<Var> role) {
+    static void traverseRoleFromShortcutEdge(GraphTraversal<?, Edge> traversal, Optional<Var> role, Schema.EdgeProperty edgeProperty) {
         role.ifPresent(var -> {
-            // Access role-type ID from edge
-            Var roleIdProperty = Graql.var();
             Var edge = Graql.var();
-            traversal.as(edge.getValue()).values(ROLE_TYPE_ID.name()).as(roleIdProperty.getValue());
-
-            // Look up direct role-type using ID
-            GraphTraversal<Vertex, Vertex> vertexTraversal =
-                    traversal.V().has(TYPE_ID.name(), __.where(P.eq(roleIdProperty.getValue())));
-
-            // Navigate up type hierarchy
-            Fragments.outSubs(vertexTraversal).as(var.getValue());
-
-            traversal.select(edge.getValue());
+            traversal.as(edge.getValue());
+            Fragments.outSubs(traverseOntologyConceptFromEdge(traversal, edgeProperty));
+            traversal.as(var.getValue()).select(edge.getValue());
         });
+    }
+
+    static <S> GraphTraversal<S, Vertex> traverseOntologyConceptFromEdge(
+            GraphTraversal<S, Edge> traversal, Schema.EdgeProperty edgeProperty) {
+
+        // Access label ID from edge
+        Var labelId = Graql.var();
+        traversal.values(edgeProperty.name()).as(labelId.getValue());
+
+        // Look up ontology concept using ID
+        return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
     }
 
 }

@@ -42,6 +42,7 @@ import static ai.grakn.util.ErrorMessage.LABEL_TAKEN;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.NO_TYPE;
 import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
+import static ai.grakn.util.ErrorMessage.UNKNOWN_CONCEPT;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 
 /**
@@ -83,15 +84,15 @@ public class GraphOperationException extends GraknException{
      * Thrown when an {@code thing} is not allowed to have {@code resource} of the type {@code hasType}.
      * {@code hasType} can be resources or keys.
      */
-    public static GraphOperationException hasNotAllowed(Thing thing, Resource resource, String hasType){
-        return new GraphOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), hasType, resource.type().getLabel()));
+    public static GraphOperationException hasNotAllowed(Thing thing, Resource resource){
+        return new GraphOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), resource.type().getLabel()));
     }
 
     /**
      * Thrown when a {@link Type} has incoming edges and therefore cannot be deleted
      */
-    public static GraphOperationException typeCannotBeDeleted(Label label){
-        return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(label));
+    public static GraphOperationException cannotBeDeleted(OntologyConcept ontologyConcept){
+        return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(ontologyConcept.getLabel()));
     }
 
     /**
@@ -134,29 +135,15 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when attempting to mutate a property which is immutable
      */
-    public static GraphOperationException immutableProperty(Object oldValue, Object newValue, Schema.VertexProperty vertexProperty){
+    public static GraphOperationException immutableProperty(Object oldValue, Object newValue, Enum vertexProperty){
         return new GraphOperationException(ErrorMessage.IMMUTABLE_VALUE.getMessage(oldValue, newValue, vertexProperty.name()));
-    }
-
-    /**
-     * Thrown when attempting to set a property to null
-     */
-    public static GraphOperationException settingNullProperty(Schema.VertexProperty property){
-        return new GraphOperationException(ErrorMessage.NULL_VALUE.getMessage(property.name()));
-    }
-
-    /**
-     * Thrown when trying to make the keysoace null
-     */
-    public static GraphOperationException nullKeyspace(){
-        return new GraphOperationException(ErrorMessage.NULL_VALUE.getMessage("keyspace"));
     }
 
     /**
      * Thrown when trying to set a {@code value} on the {@code resource} which does not conform to it's regex
      */
-    public static GraphOperationException regexFailure(Resource resource, String value, String regex){
-        return new GraphOperationException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.getId(), value, resource.type().getLabel()));
+    public static GraphOperationException regexFailure(ResourceType resourceType, String value, String regex){
+        return new GraphOperationException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resourceType.getLabel(), value));
     }
 
     /**
@@ -246,6 +233,13 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException invalidPropertyUse(Concept concept, Schema.VertexProperty property) {
         return new GraphOperationException(INVALID_PROPERTY_USE.getMessage(concept, property));
+    }
+
+    /**
+     * Thrown when trying to build a {@link Concept} using an invalid graph construct
+     */
+    public static GraphOperationException unknownConcept(String type){
+        return new GraphOperationException(UNKNOWN_CONCEPT.getMessage(type));
     }
 
     /**

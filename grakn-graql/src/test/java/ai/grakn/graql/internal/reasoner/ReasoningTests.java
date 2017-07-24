@@ -24,8 +24,8 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.GraphContext;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -45,7 +45,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -139,6 +138,9 @@ public class ReasoningTests {
 
     @ClassRule
     public static final GraphContext testSet27 = GraphContext.preLoad("testSet27.gql").assumeTrue(GraknTestSetup.usingTinker());
+
+    @ClassRule
+    public static final GraphContext testSet28 = GraphContext.preLoad("testSet28.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @Before
     public void onStartup() throws Exception {
@@ -262,6 +264,7 @@ public class ReasoningTests {
         assertEquals(answers.size(), 1);
     }
 
+    @Ignore // TODO: Fix (Bug #16195)
     @Test //Expected result: The query should return a unique match
     public void transRelationWithRelationGuardsAtBothEnds() {
         QueryBuilder qb = testSet11.graph().graql().infer(true);
@@ -300,8 +303,6 @@ public class ReasoningTests {
 
     @Test
     public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
-        assertFalse(testSet14.graph().implicitConceptsVisible());
-
         QueryBuilder withInference = testSet14.graph().graql().infer(true);
         QueryBuilder withoutInference = testSet14.graph().graql().infer(false);
 
@@ -583,6 +584,19 @@ public class ReasoningTests {
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         QueryAnswers exact = queryAnswers(qb.parse("match $s isa state, has name 's2';"));
         assertEquals(answers, exact);
+    }
+
+    @Test //Expected result: number of answers equal to specified limit (no duplicates produced)
+    public void duplicatesNotProducedWhenResolvingNonResolvableConjunctionsWithoutType(){
+        QueryBuilder qb = testSet28.graph().graql().infer(true);
+        String queryString = "match " +
+                "(role1: $x, role2: $y);" +
+                "(role1: $y, role2: $z);" +
+                "(role3: $z, role4: $w) isa relation3;" +
+                "limit 3;";
+
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        assertEquals(answers.size(), 3);
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {

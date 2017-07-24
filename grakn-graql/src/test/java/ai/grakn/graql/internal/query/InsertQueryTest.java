@@ -97,18 +97,12 @@ public class InsertQueryTest {
 
     @Before
     public void setUp() {
-        movieGraph.graph().showImplicitConcepts(true);
         qb = movieGraph.graph().graql();
     }
 
     @After
     public void clear(){
         movieGraph.rollback();
-    }
-
-    @After
-    public void tearDown() {
-        if (movieGraph.graph() != null) movieGraph.graph().showImplicitConcepts(false);
     }
 
     @Test
@@ -477,8 +471,6 @@ public class InsertQueryTest {
                 label("an-unconnected-resource-type").sub("resource").datatype(ResourceType.DataType.LONG)
         ).execute();
 
-        movieGraph.graph().showImplicitConcepts(true);
-
         // Make sure a-new-type can have the given resource type, but not other resource types
         assertTrue(qb.match(label("a-new-type").sub("entity").has(resourceType)).ask().execute());
         assertFalse(qb.match(label("a-new-type").has("title")).ask().execute());
@@ -541,7 +533,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testKeyUniqueOwner() throws InvalidGraphException {
+    public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidGraphException {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(

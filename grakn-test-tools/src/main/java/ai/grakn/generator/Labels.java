@@ -19,14 +19,11 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
-import ai.grakn.util.CommonUtil;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.function.Function;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
@@ -51,23 +48,20 @@ public class Labels extends FromGraphGenerator<Label> {
     @Override
     public Label generateFromGraph() {
         if (mustBeUnused) {
-            Function<GraknGraph,Label> function = graph -> {
-                Label label;
+            Label label;
 
-                int attempts = 0;
-                do {
-                    // After a certain number of attempts, generate truly random strings instead
-                    if (attempts < 100) {
-                        label = metaSyntacticLabel();
-                    } else {
-                        label = trueRandomLabel();
-                    }
-                    attempts += 1;
-                } while (graph.getOntologyConcept(label) != null);
+            int attempts = 0;
+            do {
+                // After a certain number of attempts, generate truly random strings instead
+                if (attempts < 100) {
+                    label = metaSyntacticLabel();
+                } else {
+                    label = trueRandomLabel();
+                }
+                attempts += 1;
+            } while (graph().getOntologyConcept(label) != null);
 
-                return label;
-            };
-            return CommonUtil.withImplicitConceptsVisible(graph(), function);
+            return label;
         } else {
             return metaSyntacticLabel();
         }

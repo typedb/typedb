@@ -29,6 +29,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.PutOntologyConceptFunctions;
@@ -111,7 +112,7 @@ public class GraknGraphPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.ONTOLOGY_LABEL, type.getLabel()).getMessage());
         }
         graph.putEntityType(type.getLabel());
     }
@@ -154,7 +155,7 @@ public class GraknGraphPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.ONTOLOGY_LABEL, type.getLabel()).getMessage());
         }
         graph.putResourceType(type.getLabel(), dataType);
     }
@@ -198,7 +199,7 @@ public class GraknGraphPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.ONTOLOGY_LABEL, type.getLabel()).getMessage());
         }
 
         graph.putRuleType(type.getLabel());
@@ -215,7 +216,6 @@ public class GraknGraphPutPropertyTest {
     public void whenCallingPutRelationType_CreateATypeThatOwnsNoRoles(
             @Open GraknGraph graph, @Unused Label label) {
         RelationType relationType = graph.putRelationType(label);
-        graph.showImplicitConcepts(true);
         assertThat(relationType.relates(), empty());
     }
 
@@ -235,7 +235,7 @@ public class GraknGraphPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.ONTOLOGY_LABEL, type.getLabel()).getMessage());
         }
         graph.putRelationType(type.getLabel());
     }
@@ -243,7 +243,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRoleType_CreateATypeWithSuperTypeRole(@Open GraknGraph graph, @Unused Label label) {
         Role role = graph.putRole(label);
-        assertEquals(graph.admin().getMetaRoleType(), role.sup());
+        assertEquals(graph.admin().getMetaRole(), role.sup());
     }
 
     @Property
@@ -271,7 +271,7 @@ public class GraknGraphPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(ErrorMessage.UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.TYPE_LABEL.name(), type.getLabel(), type));
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.ONTOLOGY_LABEL, type.getLabel()).getMessage());
         }
         graph.putRole(type.getLabel());
     }
