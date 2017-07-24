@@ -599,6 +599,17 @@ public class ReasoningTests {
         assertEquals(answers.size(), 3);
     }
 
+    @Test //Expected result: no answers (if types were incorrectly inferred the query would yield answers)
+    public void relationTypesAreCorrectlyInferredInConjunctionWhenTypeIsPresent(){
+        QueryBuilder qb = testSet28.graph().graql().infer(true);
+        String queryString = "match " +
+                "(role1: $x, role2: $y) isa relation1;" +
+                "(role1: $y, role2: $z) isa relation1;" +
+                "(role3: $z, role4: $w) isa relation3;";
+
+        assertThat(qb.<MatchQuery>parse(queryString).execute(), empty());
+    }
+
     private QueryAnswers queryAnswers(MatchQuery query) {
         return new QueryAnswers(query.admin().stream().collect(toSet()));
     }
