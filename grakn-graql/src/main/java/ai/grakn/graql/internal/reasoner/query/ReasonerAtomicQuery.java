@@ -362,14 +362,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     private Stream<ReasonerAtomicQuery> getQueryStream(Answer sub){
         Atom atom = getAtom();
-        if (!atom.isRelation() || atom.getOntologyConcept() != null) return Stream.of(this);
-        else{
+        if (atom.isRelation() && atom.getOntologyConcept() == null){
             List<RelationType> relationTypes = ((RelationAtom) atom).inferPossibleRelationTypes(sub);
             LOG.trace("AQ: " + this + ": inferred rel types for: " + relationTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
             return relationTypes.stream()
                     .map(((RelationAtom) atom)::addType)
                     .sorted(Comparator.comparing(Atom::isRuleResolvable))
                     .map(ReasonerAtomicQuery::new);
+        }
+        else{
+            return Stream.of(this);
         }
     }
 
