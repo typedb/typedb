@@ -19,7 +19,6 @@
 
 package ai.grakn.property;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -29,7 +28,6 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
-import ai.grakn.generator.GraknGraphs.Open;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
@@ -126,8 +124,7 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void whenGettingIndirectInstances_ReturnDirectInstancesAndIndirectInstancesOfDirectSubTypes(
-            @Open GraknGraph graph, @FromGraph Type type) {
+    public void whenGettingIndirectInstances_ReturnDirectInstancesAndIndirectInstancesOfDirectSubTypes(Type type) {
         Collection<Type> directSubTypes = directSubs(type);
         Thing[] expected = Stream.concat(
             directInstances(type).stream(),
