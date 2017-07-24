@@ -21,6 +21,7 @@ package ai.grakn.test.engine.tasks.connection;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.MockRedisRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -45,11 +46,15 @@ public class RedisCountStorageTest {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
+
+    @ClassRule
+    public static final MockRedisRule mockRedisRule = new MockRedisRule();
+
     private static RedisCountStorage redis;
 
     @BeforeClass
     public static void getConnection(){
-        redis = engine.redis();
+        redis = engine.redis(mockRedisRule.getServer().getHost(), mockRedisRule.getServer().getBindPort());
     }
 
     @Test
