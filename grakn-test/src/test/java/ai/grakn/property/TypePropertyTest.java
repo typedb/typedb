@@ -47,7 +47,6 @@ import static ai.grakn.property.PropertyUtil.choose;
 import static ai.grakn.property.PropertyUtil.directInstances;
 import static ai.grakn.property.PropertyUtil.directSubs;
 import static ai.grakn.property.PropertyUtil.indirectSupers;
-import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
@@ -103,7 +102,7 @@ public class TypePropertyTest {
         assumeThat(type.instances(), not(empty()));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(type.getLabel()));
+        exception.expectMessage(GraphOperationException.cannotBeDeleted(type).getMessage());
         type.delete();
     }
 

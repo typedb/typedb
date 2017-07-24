@@ -40,9 +40,7 @@ import java.util.stream.Stream;
 import static ai.grakn.property.PropertyUtil.choose;
 import static ai.grakn.property.PropertyUtil.directSubs;
 import static ai.grakn.property.PropertyUtil.indirectSupers;
-import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
-import static ai.grakn.util.ErrorMessage.SUPER_LOOP_DETECTED;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -72,7 +70,7 @@ public class OntologyConceptPropertyTest {
         exception.expect(GraphOperationException.class);
         exception.expectMessage(isOneOf(
                 META_TYPE_IMMUTABLE.getMessage(ontologyConcept.getLabel()),
-                CANNOT_DELETE.getMessage(ontologyConcept.getLabel())
+                GraphOperationException.cannotBeDeleted(ontologyConcept).getMessage()
         ));
         ontologyConcept.delete();
     }
@@ -83,7 +81,7 @@ public class OntologyConceptPropertyTest {
         assumeFalse(isMetaLabel(superConcept.getLabel()));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(superConcept.getLabel()));
+        exception.expectMessage(GraphOperationException.cannotBeDeleted(superConcept).getMessage());
         superConcept.delete();
     }
 
@@ -159,7 +157,7 @@ public class OntologyConceptPropertyTest {
         OntologyConcept newSuperConcept = choose(concept.subs(), seed);
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(SUPER_LOOP_DETECTED.getMessage(concept.getLabel(), newSuperConcept.getLabel()));
+        exception.expectMessage(GraphOperationException.loopCreated(concept, newSuperConcept).getMessage());
         setDirectSuper(concept, newSuperConcept);
     }
 
@@ -190,7 +188,7 @@ public class OntologyConceptPropertyTest {
         OntologyConcept concept = choose(newSubConcept.subs(), seed);
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(SUPER_LOOP_DETECTED.getMessage(newSubConcept.getLabel(), concept.getLabel()));
+        exception.expectMessage(GraphOperationException.loopCreated(newSubConcept, concept).getMessage());
         addDirectSub(concept, newSubConcept);
     }
 
@@ -211,7 +209,7 @@ public class OntologyConceptPropertyTest {
         assumeThat(concept.getRulesOfHypothesis(), not(empty()));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(concept.getLabel()));
+        exception.expectMessage(GraphOperationException.cannotBeDeleted(concept).getMessage());
         concept.delete();
     }
 
@@ -221,7 +219,7 @@ public class OntologyConceptPropertyTest {
         assumeThat(concept.getRulesOfConclusion(), not(empty()));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(concept.getLabel()));
+        exception.expectMessage(GraphOperationException.cannotBeDeleted(concept).getMessage());
         concept.delete();
     }
 
