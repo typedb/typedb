@@ -79,8 +79,7 @@ public class GraqlDocsTest {
     private static int numFound = 0;
 
     @ClassRule
-    // TODO: Don't set port once bug #15130 is fixed
-    public static EngineContext engine = EngineContext.startInMemoryServer().port(4567);
+    public static EngineContext engine = EngineContext.startInMemoryServer();
 
     @Parameterized.Parameters(name = "{1}")
     public static Collection files() {
