@@ -82,7 +82,7 @@ public abstract class CommonOLAP {
     public void loadState(final Graph graph, final Configuration configuration) {
         // load selected types
         configuration.subset(PREFIX_SELECTED_TYPE_KEY).getKeys().forEachRemaining(key ->
-                selectedTypes.add(LabelId.of(configuration.getInt(PREFIX_SELECTED_TYPE_KEY + "." + key))));
+                selectedTypes.add((LabelId) configuration.getProperty(PREFIX_SELECTED_TYPE_KEY + "." + key)));
 
         // load user specified properties
         configuration.subset(PREFIX_PERSISTENT_PROPERTIES).getKeys().forEachRemaining(key ->
