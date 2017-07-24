@@ -26,6 +26,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import com.google.common.collect.Iterables;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -63,15 +64,28 @@ class RelationImpl implements Relation, ConceptVertex {
      */
     Optional<RelationReified> reified(){
         if(!relationStructure.isReified()) return Optional.empty();
-        return Optional.of(relationStructure.reified());
+        return Optional.of(relationStructure.reify());
     }
 
     /**
      * Reifys and returns the {@link RelationReified}
      */
     RelationReified reify(){
-        if(relationStructure.isReified()) return relationStructure.reified();
-        throw new UnsupportedOperationException("Reification is not yet supported");
+        if(relationStructure.isReified()) return relationStructure.reify();
+
+        //Get the role players to transfer
+        Map<Role, Set<Thing>> rolePlayers = structure().allRolePlayers();
+
+        //Now Reify
+        relationStructure = relationStructure.reify();
+
+        //Transfer relationships
+        rolePlayers.forEach((role, things) -> {
+            Thing thing = Iterables.getOnlyElement(things);
+            addRolePlayer(role, thing);
+        });
+
+        return relationStructure.reify();
     }
 
     RelationStructure structure(){
@@ -136,7 +150,8 @@ class RelationImpl implements Relation, ConceptVertex {
      */
     @Override
     public Relation addRolePlayer(Role role, Thing thing) {
-        reify().addRolePlayer(this, role, thing);
+        reify().addRolePlayer(role, thing);
+        vertex().graph().txCache().trackForValidation(this); //This is so we can reassign the hash if needed
         return this;
     }
 

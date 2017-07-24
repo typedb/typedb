@@ -18,12 +18,20 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
+import ai.grakn.exception.GraphOperationException;
+import ai.grakn.util.Schema;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 public class RelationTypeTest extends GraphTestBase{
@@ -49,5 +57,39 @@ public class RelationTypeTest extends GraphTestBase{
 
         relationType.deleteRelates(role1);
         assertThat(relationType.relates(), containsInAnyOrder(role2));
+    }
+
+    @Test
+    public void whenCallingInstancesOnImplicitRelationType_RelationEdgesAreReturned(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("My Special Resource Type", ResourceType.DataType.STRING);
+        Resource<String> resource = resourceType.putResource("Ad thing");
+
+        EntityType entityType = graknGraph.putEntityType("My Special Entity Type").resource(resourceType);
+        Entity entity = entityType.addEntity();
+
+        RelationType implicitRelationType = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
+
+        assertNotNull(implicitRelationType);
+        assertThat(implicitRelationType.instances(), empty());
+
+        entity.resource(resource);
+
+        assertEquals(1, implicitRelationType.instances().size());
+    }
+
+    @Test
+    public void whenSettingAnImplicitRelationTypeWithInstancesAbstract_Throw(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("My Special Resource Type", ResourceType.DataType.STRING);
+        Resource<String> resource = resourceType.putResource("Ad thing");
+
+        EntityType entityType = graknGraph.putEntityType("My Special Entity Type").resource(resourceType);
+        entityType.addEntity().resource(resource);
+
+        RelationType implicitRelationType = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
+
+        expectedException.expect(GraphOperationException.class);
+        expectedException.expectMessage(GraphOperationException.addingInstancesToAbstractType(implicitRelationType).getMessage());
+
+        implicitRelationType.setAbstract(true);
     }
 }

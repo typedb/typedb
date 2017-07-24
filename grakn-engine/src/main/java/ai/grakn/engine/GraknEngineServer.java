@@ -50,7 +50,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import java.util.concurrent.locks.Lock;
 import javax.annotation.Nullable;
 import mjson.Json;
@@ -101,12 +101,12 @@ public class GraknEngineServer implements AutoCloseable {
         this.prop = prop;
         int redisPort = Integer.parseInt(prop.tryProperty(REDIS_SERVER_PORT).orElse("6379"));
         String redisUrl = prop.tryProperty(REDIS_SERVER_URL).orElse("localhost");
-        this.jedisPool = instantiateRedis(prop, redisUrl, redisPort);
-        this.redisCountStorage = RedisCountStorage.create(jedisPool);
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
         this.inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
         this.lockProvider = this.inMemoryQueue ? new ProcessWideLockProvider()
                 : instantiateRedissonLockProvider(redisPort, redisUrl);
+        this.jedisPool = instantiateRedis(prop, redisUrl, redisPort);
+        this.redisCountStorage = RedisCountStorage.create(jedisPool);
         this.factory = EngineGraknGraphFactory.create(prop.getProperties());
         this.metricRegistry = new MetricRegistry();
         this.taskManager = startTaskManager(inMemoryQueue, redisCountStorage, jedisPool, lockProvider);
@@ -124,10 +124,10 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void start() {
-        lockAndInitializeSystemOntology();
-        startHTTP();
         printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
+        lockAndInitializeSystemOntology();
+        startHTTP();
     }
 
     @Override
@@ -139,7 +139,7 @@ public class GraknEngineServer implements AutoCloseable {
     private void lockAndInitializeSystemOntology() {
         try {
             Lock lock = lockProvider.getLock(LOAD_SYSTEM_ONTOLOGY_LOCK_NAME);
-            if (lock.tryLock(2, TimeUnit.MINUTES)) {
+            if (lock.tryLock(2, MINUTES)) {
                 loadAndUnlock(lock);
             } else {
                 LOG.info("{} could not acquire lock within timeout", this.engineId.value());
@@ -340,17 +340,17 @@ public class GraknEngineServer implements AutoCloseable {
     private Pool<Jedis> instantiateRedis(GraknEngineConfig prop, String redisUrl, int redisPort) {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         // TODO Make this configurable in property file
-        poolConfig.setMaxTotal(128);
+        poolConfig.setMaxTotal(32);
         Optional<String> sentinelMaster = prop.tryProperty(REDIS_SENTINEL_MASTER);
         // If sentinel is configured use a sentinel pool
         // TODO Sentinel not fully supported yet
+        LOG.info("Connecting Jedis client to {}:{}", redisUrl, redisPort);
         return sentinelMaster
                 .<Pool<Jedis>>map(s -> new JedisSentinelPool(s, ImmutableSet.of(String.format("%s:%s", redisUrl, redisPort)), poolConfig))
                 .orElseGet(() -> new JedisPool(poolConfig, redisUrl, redisPort));
     }
 
     private RedissonLockProvider instantiateRedissonLockProvider(int redisPort, String redisUrl) {
-        LOG.info("Connecting redisCountStorage client to {}:{}", redisUrl, redisPort);
         Config redissonConfig = new Config();
         redissonConfig.useSingleServer()
                 .setAddress(String.format("redis://%s:%d", redisUrl, redisPort));

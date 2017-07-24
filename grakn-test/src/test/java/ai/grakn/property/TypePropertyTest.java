@@ -30,6 +30,7 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
@@ -47,10 +48,8 @@ import static ai.grakn.property.PropertyUtil.choose;
 import static ai.grakn.property.PropertyUtil.directInstances;
 import static ai.grakn.property.PropertyUtil.directSubs;
 import static ai.grakn.property.PropertyUtil.indirectSuperTypes;
-import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
-import static ai.grakn.util.ErrorMessage.SUPER_LOOP_DETECTED;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -59,7 +58,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -110,7 +108,7 @@ public class TypePropertyTest {
         exception.expect(GraphOperationException.class);
         exception.expectMessage(isOneOf(
                 META_TYPE_IMMUTABLE.getMessage(type.getLabel()),
-                CANNOT_DELETE.getMessage(type.getLabel())
+                GraphOperationException.cannotBeDeleted(type).getMessage()
         ));
         type.delete();
     }
@@ -121,16 +119,17 @@ public class TypePropertyTest {
         assumeFalse(isMetaLabel(superType.getLabel()));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(superType.getLabel()));
+        exception.expectMessage(GraphOperationException.cannotBeDeleted(superType).getMessage());
         superType.delete();
     }
 
+    @Ignore // TODO: Fails very rarely and only remotely
     @Property
     public void whenDeletingATypeWithIndirectInstances_Throw(@Meta(false) Type type) {
         assumeThat(type.instances(), not(empty()));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(type.getLabel()));
+        exception.expectMessage(GraphOperationException.cannotBeDeleted(type).getMessage());
         type.delete();
     }
 
@@ -140,7 +139,7 @@ public class TypePropertyTest {
         assumeThat(type.getRulesOfHypothesis(), not(empty()));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(type.getLabel()));
+        exception.expectMessage(GraphOperationException.cannotBeDeleted(type).getMessage());
         type.delete();
     }
 
@@ -150,7 +149,7 @@ public class TypePropertyTest {
         assumeThat(type.getRulesOfConclusion(), not(empty()));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(type.getLabel()));
+        exception.expectMessage(GraphOperationException.cannotBeDeleted(type).getMessage());
         type.delete();
     }
 
@@ -189,8 +188,9 @@ public class TypePropertyTest {
     @Property
     public void whenAnOntologyElementHasADirectSuper_ItIsADirectSubOfThatSuper(
             @Open GraknGraph graph, @FromGraph OntologyConcept ontologyConcept) {
+        assumeFalse(Schema.MetaSchema.ROLE.getLabel().equals(ontologyConcept.getLabel()));
         OntologyConcept superType = ontologyConcept.sup();
-        assertThat(directSubs(graph, superType), hasItem(ontologyConcept));
+        assertThat(directSubs(superType), hasItem(ontologyConcept));
     }
 
     @Property
@@ -213,7 +213,7 @@ public class TypePropertyTest {
     @Property
     public void whenGettingIndirectSubTypes_ReturnSelfAndIndirectSubTypesOfDirectSubTypes(
             @Open GraknGraph graph, @FromGraph Type type) {
-        Collection<Type> directSubTypes = directSubs(graph, type);
+        Collection<Type> directSubTypes = directSubs(type);
         Type[] expected = Stream.concat(
                 Stream.of(type),
                 directSubTypes.stream().flatMap(subType -> subType.subs().stream())
@@ -225,15 +225,6 @@ public class TypePropertyTest {
     @Property
     public void whenGettingTheIndirectSubTypes_TheyContainTheType(Type type) {
         assertThat((Collection<Type>) type.subs(), hasItem(type));
-    }
-
-    @Property
-    public void whenGettingTheIndirectSubTypesWithoutImplicitConceptsVisible_TheyDoNotContainImplicitConcepts(
-            @Open GraknGraph graph, @FromGraph Type type) {
-        assumeFalse(graph.implicitConceptsVisible());
-        type.subs().forEach(subType -> {
-            assertFalse(subType + " should not be implicit", subType.isImplicit());
-        });
     }
 
     @Property
@@ -252,7 +243,7 @@ public class TypePropertyTest {
         Type newSuperType = choose(type.subs(), seed);
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(SUPER_LOOP_DETECTED.getMessage(type.getLabel(), newSuperType.getLabel()));
+        exception.expectMessage(GraphOperationException.loopCreated(type, newSuperType).getMessage());
         setDirectSuperType(type, newSuperType);
     }
 
@@ -283,7 +274,7 @@ public class TypePropertyTest {
         Type type = choose(newSubType.subs(), seed);
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(SUPER_LOOP_DETECTED.getMessage(newSubType.getLabel(), type.getLabel()));
+        exception.expectMessage(GraphOperationException.loopCreated(newSubType, type).getMessage());
         addDirectSubType(type, newSubType);
     }
 
@@ -295,13 +286,13 @@ public class TypePropertyTest {
 
         addDirectSubType(superType, subType);
 
-        assertThat(directSubs(graph, superType), hasItem(subType));
+        assertThat(directSubs(superType), hasItem(subType));
     }
 
     @Property
     public void whenGettingIndirectInstances_ReturnDirectInstancesAndIndirectInstancesOfDirectSubTypes(
             @Open GraknGraph graph, @FromGraph Type type) {
-        Collection<Type> directSubTypes = directSubs(graph, type);
+        Collection<Type> directSubTypes = directSubs(type);
         Thing[] expected = Stream.concat(
             directInstances(type).stream(),
             directSubTypes.stream().flatMap(subType -> subType.instances().stream())

@@ -217,7 +217,6 @@
             <groupId>com.github.rholder</groupId>
             <artifactId>guava-retrying</artifactId>
             <version>${guava-retrying.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

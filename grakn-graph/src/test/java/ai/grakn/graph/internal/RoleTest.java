@@ -25,7 +25,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -72,7 +71,7 @@ public class RoleTest extends GraphTestBase {
         graknGraph.putEntityType("Entity Type").plays(role);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(role.getLabel()));
+        expectedException.expectMessage(GraphOperationException.cannotBeDeleted(role).getMessage());
 
         role.delete();
     }
@@ -83,7 +82,7 @@ public class RoleTest extends GraphTestBase {
         graknGraph.putRelationType("Thing").relates(role2).relates(role);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(role2.getLabel()));
+        expectedException.expectMessage(GraphOperationException.cannotBeDeleted(role2).getMessage());
 
         role2.delete();
     }
@@ -101,7 +100,7 @@ public class RoleTest extends GraphTestBase {
         relationType.addRelation().addRolePlayer(roleA, a).addRolePlayer(roleB, b);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleA.getLabel()));
+        expectedException.expectMessage(GraphOperationException.cannotBeDeleted(roleA).getMessage());
 
         roleA.delete();
     }

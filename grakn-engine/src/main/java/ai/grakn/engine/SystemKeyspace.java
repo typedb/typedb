@@ -168,8 +168,9 @@ public class SystemKeyspace {
             graph.getResourceType(SYSTEM_VERSION).putResource(GraknVersion.VERSION);
             graph.admin().commitNoLogs();
             LOG.info("Loaded system ontology to system keyspace. Took: {}", timer.stop());
-        } catch (InvalidGraphException | NullPointerException e) {
-            LOG.error("Could not load system ontology. The error was: {}", e.getMessage(), e);
+        } catch (Exception e) {
+            LOG.error("Error while loading system ontology in {}. The error was: {}", timer.stop(), e.getMessage(), e);
+            throw e;
         }
     }
 

@@ -21,6 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -52,6 +53,7 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
 import static ai.grakn.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
 import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
+import static ai.grakn.util.ErrorMessage.VALIDATION_TOO_MANY_KEYS;
 
 /**
  * <p>
@@ -254,8 +256,12 @@ class ValidateGlobalRules {
                 if(playsEntry.getValue()){
                     Role role = playsEntry.getKey();
                     // Assert there is a relation for this type
-                    if (thing.relations(role).isEmpty()) {
+                    Collection<Relation> relations = thing.relations(role);
+                    if (relations.isEmpty()) {
                         return Optional.of(VALIDATION_INSTANCE.getMessage(thing.getId(), thing.type().getLabel(), role.getLabel()));
+                    } else if(relations.size() > 1){
+                        Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.getLabel());
+                        return Optional.of(VALIDATION_TOO_MANY_KEYS.getMessage(thing.getId(), resourceTypeLabel));
                     }
                 }
             }

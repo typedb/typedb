@@ -19,7 +19,6 @@
 
 package ai.grakn.util;
 
-import ai.grakn.GraknGraph;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
@@ -45,29 +44,6 @@ import java.util.stream.Stream;
 public class CommonUtil {
 
     private CommonUtil() {}
-
-    public static void withImplicitConceptsVisible(GraknGraph graph, Runnable function) {
-        withImplicitConceptsVisible(graph, g -> {
-            function.run();
-            return null;
-        });
-    }
-
-    public static <T> T withImplicitConceptsVisible(GraknGraph graph, Supplier<T> function) {
-        return withImplicitConceptsVisible(graph, g -> function.get());
-    }
-
-    public static <T> T withImplicitConceptsVisible(GraknGraph graph, Function<GraknGraph, T> function) {
-        boolean implicitFlag = graph.implicitConceptsVisible();
-        graph.showImplicitConcepts(true);
-        T result;
-        try {
-            result = function.apply(graph);
-        } finally {
-            graph.showImplicitConcepts(implicitFlag);
-        }
-        return result;
-    }
 
     /**
      * @param optional the optional to change into a stream
