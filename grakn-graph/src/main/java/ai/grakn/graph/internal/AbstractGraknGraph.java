@@ -98,7 +98,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //----------------------------- Graph Shared Variable
     private final String keyspace;
-    private final String engine;
+    private final String engineUri;
     private final Properties properties;
     private final G graph;
     private final ElementFactory elementFactory;
@@ -116,10 +116,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
 
-    public AbstractGraknGraph(G graph, String keyspace, String engine, Properties properties) {
+    public AbstractGraknGraph(G graph, String keyspace, String engineUri, Properties properties) {
         this.graph = graph;
         this.keyspace = keyspace;
-        this.engine = engine;
+        this.engineUri = engineUri;
         this.properties = properties;
         elementFactory = new ElementFactory(this);
 
@@ -185,8 +185,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         txCache().openTx(txType);
     }
 
-    String getEngineUrl(){
-        return engine;
+    @Override
+    public String getEngineUrl(){
+        return engineUri;
     }
 
     Properties getProperties(){
@@ -820,17 +821,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     private String getCommitLogEndPoint(){
-        if(Grakn.IN_MEMORY.equals(engine)) {
+        if(Grakn.IN_MEMORY.equals(engineUri)) {
             return Grakn.IN_MEMORY;
         }
-        return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
+        return engineUri + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
     private String getDeleteKeyspaceEndpoint(){
-        if(Grakn.IN_MEMORY.equals(engine)) {
+        if(Grakn.IN_MEMORY.equals(engineUri)) {
             return Grakn.IN_MEMORY;
         }
-        return engine + REST.WebPath.System.DELETE_KEYSPACE + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
+        return engineUri + REST.WebPath.System.DELETE_KEYSPACE + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
     public void validVertex(Vertex vertex){

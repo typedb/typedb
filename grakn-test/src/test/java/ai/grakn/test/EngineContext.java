@@ -21,29 +21,31 @@ package ai.grakn.test;
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_URL;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static ai.grakn.test.GraknTestEngineSetup.startEngine;
-import static ai.grakn.test.GraknTestEngineSetup.startRedis;
-import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
-import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
-import static ai.grakn.util.GraphLoader.randomKeyspace;
 import com.jayway.restassured.RestAssured;
-import javax.annotation.Nullable;
 import org.junit.rules.ExternalResource;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+
+import javax.annotation.Nullable;
+
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_URL;
+import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static ai.grakn.test.GraknTestEngineSetup.startEngine;
+import static ai.grakn.test.GraknTestEngineSetup.startRedis;
+import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
+import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
+import static ai.grakn.util.GraphLoader.randomKeyspace;
 
 /**
  * <p>
@@ -78,9 +80,8 @@ public class EngineContext extends ExternalResource {
         return new EngineContext( false, true);
     }
 
-    public EngineContext port(int port) {
-        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(port));
-        return this;
+    public int port() {
+        return config.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER);
     }
 
     public GraknEngineServer server() {
@@ -103,10 +104,6 @@ public class EngineContext extends ExternalResource {
 
     public String uri() {
         return config.uri();
-    }
-
-    public int port() {
-        return config.getPropertyAsInt(GraknEngineConfig.SERVER_PORT_NUMBER);
     }
 
     //TODO Rename this method to "sessionWithNewKeyspace"

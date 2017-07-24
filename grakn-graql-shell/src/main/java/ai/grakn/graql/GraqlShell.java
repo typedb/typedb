@@ -18,6 +18,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.Grakn;
 import ai.grakn.client.BatchMutatorClient;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.graql.internal.shell.ErrorMessage;
@@ -108,7 +109,6 @@ public class GraqlShell {
     private static final String LICENSE_LOCATION = "LICENSE.txt";
 
     public static final String DEFAULT_KEYSPACE = "grakn";
-    private static final String DEFAULT_URI = "localhost:4567";
     private static final String DEFAULT_OUTPUT_FORMAT = "graql";
 
     private static final String PROMPT = ">>> ";
@@ -215,7 +215,7 @@ public class GraqlShell {
         }
 
         String keyspace = cmd.getOptionValue("k", DEFAULT_KEYSPACE);
-        String uriString = cmd.getOptionValue("r", DEFAULT_URI);
+        String uriString = cmd.getOptionValue("r", Grakn.DEFAULT_URI);
         String outputFormat = cmd.getOptionValue("o", DEFAULT_OUTPUT_FORMAT);
         Optional<String> username = Optional.ofNullable(cmd.getOptionValue("u"));
         Optional<String> password = Optional.ofNullable(cmd.getOptionValue("p"));
