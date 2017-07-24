@@ -39,7 +39,7 @@ public class GraknEngineServerTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public final EngineContext kafka = EngineContext.startNoQueue();
+    public final EngineContext engineContext = EngineContext.startNoQueue();
 
 
     @Test

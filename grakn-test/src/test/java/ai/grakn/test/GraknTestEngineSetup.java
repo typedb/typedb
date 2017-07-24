@@ -20,9 +20,14 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
+import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import ai.grakn.engine.GraknEngineServer;
+import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.util.JWTHandler;
+import ai.grakn.engine.util.SimpleURI;
+import static ai.grakn.graql.Graql.var;
 import ai.grakn.util.EmbeddedRedis;
 import com.jayway.restassured.RestAssured;
 import org.slf4j.LoggerFactory;
@@ -30,13 +35,9 @@ import spark.Service;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
-
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
-import static ai.grakn.graql.Graql.var;
 
 /**
  * <p>
@@ -68,7 +69,7 @@ public abstract class GraknTestEngineSetup {
     }
 
     /**
-     * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
+     * To run engine we must ensure Cassandra and the Grakn HTTP endpoint are running
      */
     static GraknEngineServer startEngine(GraknEngineConfig config) throws Exception {
         // To ensure consistency b/w test profiles and configuration files, when not using Titan
@@ -94,8 +95,8 @@ public abstract class GraknTestEngineSetup {
         return server;
     }
 
-    static void startRedis(GraknEngineConfig config){
-        EmbeddedRedis.start(config.getPropertyAsInt(REDIS_SERVER_PORT));
+    static void startRedis(GraknEngineConfig config) throws URISyntaxException {
+        EmbeddedRedis.start(new SimpleURI(config.getProperty(REDIS_HOST)).getPort());
     }
 
     static void stopRedis(){
