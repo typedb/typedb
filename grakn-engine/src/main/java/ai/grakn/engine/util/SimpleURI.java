@@ -54,4 +54,12 @@ public class SimpleURI {
     public String toString() {
         return String.format("%s:%d", host, port);
     }
+
+    public static SimpleURI withDefaultPort(String uri, int defaultPort) {
+        if (uri.contains(":")) {
+            return new SimpleURI(uri);
+        } else {
+            return new SimpleURI(uri, defaultPort);
+        }
+    }
 }

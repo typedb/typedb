@@ -22,39 +22,28 @@ import com.google.common.base.Preconditions;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import org.redisson.Redisson;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.util.Pool;
 
 /**
- * This class just wraps a Jedis and Redisson pool so it's transparent whether
+ * This class just wraps a Jedis  pool so it's transparent whether
  * we use Sentinel or not (and TODO partitioning)
- *
- * It also keeps Jedis and Redisson in the same place. We are using both because jedis is
- * supported by Jesque, while Redisson supports distributed locks.
  *
  * @author pluraliseseverythings
  */
 public class RedisWrapper {
 
     private Pool<Jedis> jedisPool;
-    private RedissonClient redissonClient;
 
-    private RedisWrapper(Pool<Jedis> jedisPool, RedissonClient redissonClient) {
+    private RedisWrapper(Pool<Jedis> jedisPool) {
         this.jedisPool = jedisPool;
-        this.redissonClient = redissonClient;
     }
 
     public Pool<Jedis> getJedisPool() {
         return jedisPool;
-    }
-
-    public RedissonClient getRedissonClient() {
-        return redissonClient;
     }
 
     public static Builder builder() {
@@ -65,6 +54,10 @@ public class RedisWrapper {
      * Builder for the wrapper
      */
     public static class Builder {
+
+        public static final int DEFAULT_PORT = 6379;
+        public static final int TIMEOUT = 5000;
+
         private boolean useSentinel = false;
         private Set<String> uriSet = new HashSet<>();
         private String masterName = null;
@@ -95,20 +88,17 @@ public class RedisWrapper {
             Preconditions.checkState(!(!useSentinel && uriSet.size() > 1), "More than one URL provided but Sentinel not used");
             Preconditions.checkState(!(useSentinel && masterName == null), "Using Sentinel but master name not provided");
             Pool<Jedis> jedisPool;
-            Config redissonConfig = new Config();
+            JedisPoolConfig poolConfig = new JedisPoolConfig();
+            poolConfig.setTestOnBorrow(true);
+            poolConfig.setTestOnReturn(true);
             if (useSentinel) {
-                jedisPool = new JedisSentinelPool(masterName, uriSet);
-                redissonConfig.useSentinelServers()
-                        .setMasterName(masterName)
-                        .addSentinelAddress(uriSet.toArray(new String[uriSet.size()]));
+                jedisPool = new JedisSentinelPool(masterName, uriSet, poolConfig, TIMEOUT);
             } else {
                 String uri = uriSet.stream().findFirst().get();
-                SimpleURI simpleURI = new SimpleURI(uri);
-                jedisPool = new JedisPool(simpleURI.getHost(), simpleURI.getPort());
-                redissonConfig.useSingleServer()
-                        .setAddress(uri);
+                SimpleURI simpleURI = SimpleURI.withDefaultPort(uri, DEFAULT_PORT);
+                jedisPool = new JedisPool(poolConfig, simpleURI.getHost(), simpleURI.getPort(), TIMEOUT);
             }
-            return new RedisWrapper(jedisPool, Redisson.create(redissonConfig));
+            return new RedisWrapper(jedisPool);
         }
     }
 

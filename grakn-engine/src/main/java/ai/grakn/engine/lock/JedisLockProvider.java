@@ -18,23 +18,24 @@
 package ai.grakn.engine.lock;
 
 import java.util.concurrent.locks.Lock;
-import org.redisson.api.RedissonClient;
+import redis.clients.jedis.Jedis;
+import redis.clients.util.Pool;
 
 /**
- * Proxy for Redisson lock
+ * Provider for Jedis lock
  *
  * @author Domenico Corapi
  */
-public class RedissonLockProvider implements LockProvider {
+public class JedisLockProvider implements LockProvider {
 
-    private RedissonClient redissonClient;
+    private Pool<Jedis> client;
 
-    public RedissonLockProvider(RedissonClient redissonClient) {
-        this.redissonClient = redissonClient;
+    public JedisLockProvider(Pool<Jedis> client) {
+        this.client = client;
     }
 
     @Override
     public Lock getLock(String lockName) {
-        return redissonClient.getLock(lockName);
+        return new JedisLock(client, lockName);
     }
 }

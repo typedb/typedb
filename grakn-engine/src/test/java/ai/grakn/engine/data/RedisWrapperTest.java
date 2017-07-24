@@ -37,7 +37,6 @@ public class RedisWrapperTest {
                 .addURI(new SimpleURI(server.getHost(), server.getBindPort()).toString())
                 .build();
         assertTrue(redisWrapper.getJedisPool() != null);
-        assertTrue(redisWrapper.getRedissonClient() != null);
     }
 
     @Test(expected = JedisConnectionException.class)

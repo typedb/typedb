@@ -34,7 +34,7 @@ import ai.grakn.engine.data.RedisWrapper.Builder;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.lock.RedissonLockProvider;
+import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
@@ -47,6 +47,7 @@ import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.base.Stopwatch;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -100,7 +101,7 @@ public class GraknEngineServer implements AutoCloseable {
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
         boolean inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
         this.lockProvider = inMemoryQueue ? new ProcessWideLockProvider()
-                : new RedissonLockProvider(redisWrapper.getRedissonClient());
+                : new JedisLockProvider(redisWrapper.getJedisPool());
         // Graph
         this.factory = EngineGraknGraphFactory.create(prop.getProperties());
         // Task manager
@@ -118,11 +119,13 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void start() {
+        Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
         lockAndInitializeSystemOntology();
         startHTTP();
+        LOG.info("Engine started in {}s", timer.stop());
     }
 
     @Override

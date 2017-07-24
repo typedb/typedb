@@ -101,7 +101,6 @@
         <jesque.version>2.1.2</jesque.version>
         <auto-value.version>1.4.1</auto-value.version>
         <main.basedir>${project.parent.basedir}</main.basedir>
-        <redisson.version>3.4.4</redisson.version>
         <spark-gremlin.version>3.1.1-incubating</spark-gremlin.version>
         <netty-all.version>4.0.42.Final</netty-all.version>
     </properties>

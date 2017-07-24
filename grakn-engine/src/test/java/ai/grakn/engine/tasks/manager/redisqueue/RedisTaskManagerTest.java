@@ -109,7 +109,6 @@ public class RedisTaskManagerTest {
         executor.awaitTermination(3, TimeUnit.SECONDS);
         jedisPool.close();
         EmbeddedRedis.stop();
-
     }
 
     @Ignore // TODO: Fix (Bug #16193)

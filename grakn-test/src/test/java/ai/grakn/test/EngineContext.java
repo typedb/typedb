@@ -39,9 +39,6 @@ import static ai.grakn.util.GraphLoader.randomKeyspace;
 import com.jayway.restassured.RestAssured;
 import javax.annotation.Nullable;
 import org.junit.rules.ExternalResource;
-import org.redisson.Redisson;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -59,7 +56,7 @@ public class EngineContext extends ExternalResource {
     private final boolean startSingleQueueEngine;
     private final boolean startStandaloneEngine;
     private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
-    private RedissonClient redissonClient;
+    private JedisPool jedisPool;
 
     private EngineContext(boolean startSingleQueueEngine, boolean startStandaloneEngine){
         this.startSingleQueueEngine = startSingleQueueEngine;
@@ -102,7 +99,7 @@ public class EngineContext extends ExternalResource {
 
     public RedisCountStorage redis(String host, int port) {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
-        JedisPool jedisPool = new JedisPool(poolConfig, host, port);
+        this.jedisPool = new JedisPool(poolConfig, host, port);
         return RedisCountStorage.create(jedisPool);
     }
 
@@ -132,10 +129,6 @@ public class EngineContext extends ExternalResource {
 
         try {
             startRedis(config);
-            Config rConfig = new Config();
-            rConfig.useSingleServer().setAddress(config.tryProperty(REDIS_HOST).orElse("127.0.0.1:6379" ));
-
-            this.redissonClient = Redisson.create(rConfig);
 
             @Nullable Class<? extends TaskManager> taskManagerClass = null;
 
@@ -176,7 +169,7 @@ public class EngineContext extends ExternalResource {
         }
     }
 
-    public RedissonClient getRedissonClient() {
-        return redissonClient;
+    public JedisPool getJedisPool() {
+        return jedisPool;
     }
 }
