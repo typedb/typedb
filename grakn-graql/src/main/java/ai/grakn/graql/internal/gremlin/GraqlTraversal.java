@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import com.google.auto.value.AutoValue;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -49,25 +50,16 @@ import static java.util.stream.Collectors.joining;
  *
  * @author Felix Chapman
  */
-public class GraqlTraversal {
-
-    //            Set of disjunctions
-    //             |
-    //             |           List of fragments in order of execution
-    //             |            |
-    //             V            V
-    private final ImmutableSet<ImmutableList<Fragment>> fragments;
+@AutoValue
+public abstract class GraqlTraversal {
 
     // Just a pretend big number
     private static final long NUM_VERTICES_ESTIMATE = 10_000;
     private static final double COST_NEW_TRAVERSAL = Math.log1p(NUM_VERTICES_ESTIMATE);
 
-    private GraqlTraversal(Set<? extends List<Fragment>> fragments) {
-        this.fragments = fragments.stream().map(ImmutableList::copyOf).collect(toImmutableSet());
-    }
-
     static GraqlTraversal create(Set<? extends List<Fragment>> fragments) {
-        return new GraqlTraversal(fragments);
+        ImmutableSet<ImmutableList<Fragment>> copy = fragments.stream().map(ImmutableList::copyOf).collect(toImmutableSet());
+        return new AutoValue_GraqlTraversal(copy);
     }
 
     /**
@@ -77,14 +69,17 @@ public class GraqlTraversal {
     @SuppressWarnings("unchecked")
     public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(GraknGraph graph) {
         Traversal[] traversals =
-                fragments.stream().map(list -> getConjunctionTraversal(graph, list)).toArray(Traversal[]::new);
+                fragments().stream().map(list -> getConjunctionTraversal(graph, list)).toArray(Traversal[]::new);
 
         return graph.admin().getTinkerTraversal().V().limit(1).union(traversals);
     }
 
-    public ImmutableSet<ImmutableList<Fragment>> fragments() {
-        return fragments;
-    }
+    //       Set of disjunctions
+    //        |
+    //        |           List of fragments in order of execution
+    //        |            |
+    //        V            V
+    public abstract ImmutableSet<ImmutableList<Fragment>> fragments();
 
     /**
      * @return a gremlin traversal that represents this inner query
@@ -173,7 +168,7 @@ public class GraqlTraversal {
 
         double totalCost = 0;
 
-        for (List<Fragment> list : fragments) {
+        for (List<Fragment> list : fragments()) {
             totalCost += fragmentListCost(list);
         }
 
@@ -206,7 +201,7 @@ public class GraqlTraversal {
 
     @Override
     public String toString() {
-        return "{" + fragments.stream().map(list -> {
+        return "{" + fragments().stream().map(list -> {
             StringBuilder sb = new StringBuilder();
             Var currentName = null;
 
@@ -229,20 +224,5 @@ public class GraqlTraversal {
 
             return sb.toString();
         }).collect(joining(", ")) + "}";
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        GraqlTraversal that = (GraqlTraversal) o;
-
-        return fragments.equals(that.fragments);
-    }
-
-    @Override
-    public int hashCode() {
-        return fragments.hashCode();
     }
 }

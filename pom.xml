@@ -202,6 +202,12 @@
             <version>${guava.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.google.auto.value</groupId>
+            <artifactId>auto-value</artifactId>
+            <version>${auto-value.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <!-- SLF4J is the logging API all modules should use -->
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>

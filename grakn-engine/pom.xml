@@ -32,12 +32,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.google.auto.value</groupId>
-            <artifactId>auto-value</artifactId>
-            <version>${auto-value.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>net.greghaines</groupId>
             <artifactId>jesque</artifactId>
             <version>${jesque.version}</version>
