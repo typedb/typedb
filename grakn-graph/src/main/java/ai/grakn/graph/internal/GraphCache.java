@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -59,7 +60,7 @@ class GraphCache {
         int cacheTimeout = Integer.parseInt(properties.get(AbstractGraknGraph.NORMAL_CACHE_TIMEOUT_MS).toString());
         cachedTypes = CacheBuilder.newBuilder()
                 .maximumSize(1000)
-                //.expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
+                .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
                 .build();
     }
 
