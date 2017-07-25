@@ -18,15 +18,19 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.AskQuery;
@@ -41,7 +45,6 @@ import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.GraphLoader;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -61,6 +64,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.gt;
@@ -836,43 +842,27 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void deleteMe(){
-        GraphLoader loader = GraphLoader.empty();
+    public void deleteMe() throws ExecutionException, InterruptedException {
+        GraknSession session = Grakn.session(Grakn.IN_MEMORY, "hi");
 
-        //Resources
-        loader.graph().graql().parse("# The resources as defined in the ldbc-snb benchmark\n" +
-                "insert\n" +
-                "\n" +
-                "# proxy for all integers\n" +
-                "\"Integer\" sub resource is-abstract datatype long;\n" +
-                "\"integer-32\" sub Integer;\n" +
-                "\n" +
-                "# resources\n" +
-                "\"length\" sub integer-32;\n" +
-                "\"work-from\" sub integer-32;\n" +
-                "\n").execute();
-        loader.graph().commit();
+        ExecutorService executor = Executors.newCachedThreadPool();
+
+        executor.submit(() -> {
+            //Resources
+            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+                ResourceType<Long> int_ = graph.putResourceType("int", ResourceType.DataType.LONG);
+                ResourceType<Long> foo = graph.putResourceType("foo", ResourceType.DataType.LONG).sup(int_);
+                graph.putResourceType("bar", ResourceType.DataType.LONG).sup(int_);
+                graph.putEntityType("FOO").resource(foo);
+
+                graph.commit();
+            }
+        }).get();
 
         //Relation Which Has Resources
-        loader.graph().graql().parse("# The relationships defined in the ldbc-snb benchmark\n" +
-                "insert\n" +
-                "\n" +
-                "\"employee\" sub role;\n" +
-                "\"employer\" sub role;\n" +
-                "\"work-at\" sub relation\n" +
-                "\thas work-from\n" +
-                "\trelates employer,\n" +
-                "\trelates employee;\n").execute();
-        loader.graph().commit();
-
-        //Entities Which Has Resourced
-        loader.graph().graql().parse("# The entities defined in the ldbc-snb benchmark\n" +
-                "insert\n" +
-                "\n" +
-                "\"message\" sub entity\n" +
-                "\tis-abstract\n" +
-                "\thas length;\n" +
-                "\n").execute();
-        loader.graph().commit();
+        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            graph.putEntityType("BAR").resource(graph.getResourceType("bar"));
+            graph.commit();
+        }
     }
 }
