@@ -125,7 +125,7 @@ public class GraknEngineServer implements AutoCloseable {
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
         lockAndInitializeSystemOntology();
         startHTTP();
-        LOG.info("Engine started in {}s", timer.stop());
+        LOG.info("Engine started in {}", timer.stop());
     }
 
     @Override

@@ -35,19 +35,12 @@ import redis.clients.util.Pool;
 public class JedisLock implements Lock {
 
     private static final long TIMEOUT_MS = 10 * 1000;
-    /**
-     * Lock key path.
-     */
+    // Name of the lock
     private String lockName;
 
-    /**
-     * Lock expiration in miliseconds.
-     */
+    // Lock expiration in miliseconds.
     private int expireMsecs = 60 * 1000;
 
-    /**
-     * Acquire timeout in miliseconds.
-     */
     private boolean locked = false;
     private Pool<Jedis> jedis;
     private Lock lock = new ReentrantLock();
@@ -104,12 +97,6 @@ public class JedisLock implements Lock {
         throw new RuntimeException("Not implemented");
     }
 
-    /**
-     * Acquire lock.
-     *
-     * @return true if lock is acquired, false acquire timeouted
-     * @throws InterruptedException in case of thread interruption
-     */
     private boolean acquire(Jedis jedis, long timeout) throws InterruptedException {
             while (timeout >= 0) {
                 lock.lock();
@@ -160,9 +147,6 @@ public class JedisLock implements Lock {
         return false;
     }
 
-    /**
-     * Acqurired lock release.
-     */
     private  void release(Jedis jedis) {
         lock.lock();
         try {
