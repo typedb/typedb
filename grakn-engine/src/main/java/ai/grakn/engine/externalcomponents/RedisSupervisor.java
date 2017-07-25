@@ -38,12 +38,11 @@ public class RedisSupervisor {
     public RedisSupervisor(OperatingSystemCalls osCalls, String baseWorkDir) {
         this.osCalls = osCalls;
 
-        if (osCalls.isMac()) {
+        if (osCalls.isMac()) { // use OSX binary, if the system is OSX
             this.startRedisCmd = baseWorkDir + "bin/redis-server-osx " + baseWorkDir + "conf/redis/redis.conf";
             this.stopRedisCmd = baseWorkDir + "bin/redis-cli-osx shutdown";
 
-        }
-        else {
+        } else { // otherwise assume it's Linux. TODO: Support Windows?
             this.startRedisCmd = baseWorkDir + "bin/redis-server-linux " + baseWorkDir + "conf/redis/redis.conf";
             this.stopRedisCmd = baseWorkDir + "bin/redis-cli-linux shutdown";
         }
