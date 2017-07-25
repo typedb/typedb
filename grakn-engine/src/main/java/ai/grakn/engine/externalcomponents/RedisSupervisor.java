@@ -18,6 +18,8 @@
 
 package ai.grakn.engine.externalcomponents;
 
+import ai.grakn.exception.GraknBackendException;
+
 import java.io.IOException;
 import java.util.logging.Logger;
 
@@ -74,20 +76,20 @@ public class RedisSupervisor {
 
 
     public void start() throws IOException, InterruptedException {
-        int status = osCalls.execAndReturn(new String[] { "sh", "-c", startRedisCmd } );
-        if (status != 0) throw new ExternalComponentException("unable to start redis - " + startRedisCmd);
+        osCalls.execAndReturn(new String[] { "sh", "-c", startRedisCmd });
     }
 
     public void stop() throws IOException, InterruptedException {
-        int status = osCalls.execAndReturn(new String[] { "sh", "-c", stopRedisCmd} );
-        if (status != 0) throw new ExternalComponentException("unable to stop redis - " + stopRedisCmd);
+        osCalls.execAndReturn(new String[] { "sh", "-c", stopRedisCmd} );
     }
 
     public boolean isRunning() throws IOException, InterruptedException {
-        Process isRedisRunning = osCalls.exec(new String[] { "sh", "-c", isRedisRunningCmd } );
-
-        int status = isRedisRunning.waitFor();
-        if (status != 0) throw new ExternalComponentException("unable to run redis cli - " + isRedisRunningCmd);
+        String[] cmd = new String[] { "sh", "-c", isRedisRunningCmd };
+        Process isRedisRunning = osCalls.exec(cmd);
+        int exitCode = isRedisRunning.waitFor();
+        if (exitCode != 0) {
+            throw GraknBackendException.operatingSystemCallException(String.join("", cmd), exitCode);
+        }
 
         String output = osCalls.readStdoutFromProcess(isRedisRunning);
         boolean running = !output.equals("");

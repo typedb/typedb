@@ -19,6 +19,8 @@
 
 package ai.grakn.engine.externalcomponents;
 
+import ai.grakn.exception.GraknBackendException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -32,8 +34,6 @@ import java.util.stream.Collectors;
  *
  * @author Ganeshwara Herawan Hananda
  */
-
-
 public class OperatingSystemCalls {
     public boolean fileExists(String path) {
         return Files.exists(Paths.get(path));
@@ -62,9 +62,12 @@ public class OperatingSystemCalls {
         return Runtime.getRuntime().exec(args);
     }
 
-    public int execAndReturn(String[] args) throws IOException, InterruptedException {
+    public void execAndReturn(String[] args) throws IOException, InterruptedException {
         Process process = Runtime.getRuntime().exec(args);
-        return process.waitFor();
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw GraknBackendException.operatingSystemCallException(String.join("", args), exitCode);
+        }
     }
 
     public boolean isMac() {

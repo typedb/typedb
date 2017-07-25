@@ -98,8 +98,8 @@ public class GraknBackendException extends GraknException {
     /**
      * Thrown when unable to execute a process
      */
-    public static GraknBackendException operatingSystemCallException(String cmd) {
-        return new GraknBackendException("unable to invoke process '" + cmd + "'");
+    public static GraknBackendException operatingSystemCallException(String cmd, int exitCode) {
+        return new GraknBackendException("process '" + cmd + "' exited with status code " + exitCode);
     }
 
     public static GraknBackendException cassandraStartException() {

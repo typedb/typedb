@@ -1,8 +1,8 @@
 package ai.grakn.engine.supervision;
 
-import ai.grakn.engine.externalcomponents.ExternalComponentException;
 import ai.grakn.engine.externalcomponents.OperatingSystemCalls;
 import ai.grakn.engine.externalcomponents.RedisSupervisor;
+import ai.grakn.exception.GraknBackendException;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -10,18 +10,19 @@ import java.io.IOException;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 
 public class RedisSupervisorTest {
     @Test
     public void redisStartShouldWorkProperly() throws IOException, InterruptedException {
-        final int SUCCESS_EXIT_CODE = 0;
         OperatingSystemCalls osCallsMockitoSpy = spy(OperatingSystemCalls.class);
         RedisSupervisor redisSupervisor = new RedisSupervisor(osCallsMockitoSpy, "");
         RedisSupervisor redisSupervisorMockitoSpy = spy(redisSupervisor);
 
-        doReturn(SUCCESS_EXIT_CODE).when(osCallsMockitoSpy).execAndReturn(any());
+        doNothing().when(osCallsMockitoSpy).execAndReturn(any());
         doCallRealMethod().when(redisSupervisorMockitoSpy).start();
 
         // it should execute successfully
@@ -33,32 +34,31 @@ public class RedisSupervisorTest {
     }
 
     @Test
-    public void redisStartShouldThrowIfExecReturnsNonZero() throws IOException, InterruptedException {
-        final int NON_ZERO_EXIT_CODE = 1;
+    public void redisStartShouldThrowIfExecThrows() throws IOException, InterruptedException {
         OperatingSystemCalls osCallsMockitoSpy = spy(OperatingSystemCalls.class);
         RedisSupervisor redisSupervisor = new RedisSupervisor(osCallsMockitoSpy, "");
         RedisSupervisor redisSupervisorMockitoSpy = spy(redisSupervisor);
-
-        doReturn(NON_ZERO_EXIT_CODE).when(osCallsMockitoSpy).execAndReturn(any());
+        final int NON_ZERO_EXIT_CODE = 1;
+        Exception t = GraknBackendException.operatingSystemCallException("", NON_ZERO_EXIT_CODE);
+        doThrow(t).when(osCallsMockitoSpy).execAndReturn(any());
         doCallRealMethod().when(redisSupervisorMockitoSpy).start();
 
         // if should throw an ExternalComponentException
         try {
             redisSupervisorMockitoSpy.start();
             assertTrue(false);
-        } catch (ExternalComponentException e) {
+        } catch (GraknBackendException e) {
             assertTrue(true);
         }
     }
 
     @Test
     public void redisStopShouldWorkProperly() throws IOException, InterruptedException {
-        final int SUCCESS_EXIT_CODE = 0;
         OperatingSystemCalls osCallsMockitoSpy = spy(OperatingSystemCalls.class);
         RedisSupervisor redisSupervisor = new RedisSupervisor(osCallsMockitoSpy, "");
         RedisSupervisor redisSupervisorMockitoSpy = spy(redisSupervisor);
 
-        doReturn(0).when(osCallsMockitoSpy).execAndReturn(any());
+        doNothing().when(osCallsMockitoSpy).execAndReturn(any());
         doCallRealMethod().when(redisSupervisorMockitoSpy).stop();
 
         try {
@@ -70,18 +70,18 @@ public class RedisSupervisorTest {
 
     @Test
     public void redisStopShouldThrowIfExecReturnsNonZero() throws IOException, InterruptedException {
-        final int NON_ZERO_EXIT_CODE = 1;
         OperatingSystemCalls osCallsMockitoSpy = spy(OperatingSystemCalls.class);
         RedisSupervisor redisSupervisor = new RedisSupervisor(osCallsMockitoSpy, "");
         RedisSupervisor redisSupervisorMockitoSpy = spy(redisSupervisor);
-
-        doReturn(NON_ZERO_EXIT_CODE).when(osCallsMockitoSpy).execAndReturn(any());
+        final int NON_ZERO_EXIT_CODE = 1;
+        Exception t = GraknBackendException.operatingSystemCallException("", NON_ZERO_EXIT_CODE);
+        doThrow(t).when(osCallsMockitoSpy).execAndReturn(any());
         doCallRealMethod().when(redisSupervisorMockitoSpy).stop();
 
         try {
             redisSupervisorMockitoSpy.stop();
             assertTrue(false);
-        } catch (ExternalComponentException e) {
+        } catch (GraknBackendException e) {
             assertTrue(true);
         }
     }

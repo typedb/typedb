@@ -76,9 +76,9 @@ public class CassandraSupervisor {
     public boolean isRunning() throws IOException, InterruptedException {
         String[] cmd = new String[] { "sh", "-c", nodeToolCheckRunningCmd };
         Process nodeTool = osCalls.exec(cmd);
-        int status = nodeTool.waitFor();
-        if (status != 0) {
-            throw GraknBackendException.operatingSystemCallException(String.join("", cmd));
+        int exitCode = nodeTool.waitFor();
+        if (exitCode != 0) {
+            throw GraknBackendException.operatingSystemCallException(String.join("", cmd), exitCode);
         }
         String lines = osCalls.readStdoutFromProcess(nodeTool);
         return lines.equals(NODETOOL_RESPONSE_IF_RUNNING);
@@ -86,10 +86,7 @@ public class CassandraSupervisor {
 
     public void start() throws IOException, InterruptedException {
         String[] cmd = new String[] { "sh", "-c", cassandraStartCmd };
-        int status = osCalls.execAndReturn(cmd);
-        if (status != 0) {
-            throw GraknBackendException.operatingSystemCallException(String.join("", cmd));
-        }
+        osCalls.execAndReturn(cmd);
         waitForCassandraStarted();
     }
 
@@ -100,12 +97,8 @@ public class CassandraSupervisor {
             if (processRunning) {
                 // process found, stop it
                 String[] cmd = new String[] { "sh", "-c", "kill " + pid };
-                int status  = osCalls.execAndReturn(cmd);
+                osCalls.execAndReturn(cmd);
                 waitForCassandraStopped();
-
-                if (status != 0) {
-                    throw GraknBackendException.operatingSystemCallException(String.join("", cmd));
-                }
             }
         }
     }
