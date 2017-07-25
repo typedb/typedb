@@ -161,8 +161,12 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         Set<X> foundNeighbours = new HashSet<X>();
         vertex().graph().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
-                in(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                out(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                as("edge").
+                outV().
+                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                where(P.neq("edge")).
+                inV().
                 forEachRemaining(vertex -> foundNeighbours.add(vertex().graph().buildConcept(vertex)));
         return foundNeighbours;
     }

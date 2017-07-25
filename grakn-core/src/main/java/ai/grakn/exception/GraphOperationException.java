@@ -203,7 +203,7 @@ public class GraphOperationException extends GraknException{
      * Thrown when an thing does not have a type
      */
     public static GraphOperationException noType(Thing thing){
-        return new GraphOperationException(NO_TYPE.getMessage(thing));
+        return new GraphOperationException(NO_TYPE.getMessage(thing.getId()));
     }
 
     /**

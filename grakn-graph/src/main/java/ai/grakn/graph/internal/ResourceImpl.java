@@ -25,8 +25,8 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -69,9 +69,7 @@ class ResourceImpl<D> extends ThingImpl<Resource<D>, ResourceType<D>> implements
     @Override
     public Collection<Thing> ownerInstances() {
         //Get Owner via implicit structure
-        Set<Thing> owners = getShortcutNeighbours().stream().
-                filter(concept -> !concept.isResource()).
-                collect(Collectors.toSet());
+        Set<Thing> owners = new HashSet<>(getShortcutNeighbours());
 
         //Get owners via edges
         neighbours(Direction.IN, Schema.EdgeLabel.RESOURCE).forEach(concept -> owners.add(concept.asThing()));
