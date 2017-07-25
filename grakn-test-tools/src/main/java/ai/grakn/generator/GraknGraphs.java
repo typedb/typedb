@@ -170,7 +170,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 Label label = typeLabel();
-                Role superType = roleType();
+                Role superType = role();
                 Role role = graph.putRole(label).sup(superType);
                 summaryAssign(role, "graph", "putRole", label);
                 summary(role, "superType", superType);
@@ -184,7 +184,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 Type type = type();
-                Role role = roleType();
+                Role role = role();
                 type.plays(role);
                 summary(type, "plays", role);
             },
@@ -218,8 +218,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summaryAssign(entity, entityType, "addEntity");
             },
             () -> {
-                Role role1 = roleType();
-                Role role2 = roleType();
+                Role role1 = role();
+                Role role2 = role();
                 role1.sup(role2);
                 summary(role1, "superType", role2);
             },
@@ -236,7 +236,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 RelationType relationType = relationType();
-                Role role = roleType();
+                Role role = role();
                 relationType.relates(role);
                 summary(relationType, "relates", role);
             },
@@ -272,17 +272,14 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary(thing, "resource", resource);
             },
             () -> {
-                OntologyConcept type = ontologyConcept();
+                Type type = type();
                 Thing thing = instance();
-                //TODO: Clean this up
-                if(type instanceof Type) {
-                    ((Type)type).scope(thing);
-                }
+                type.scope(thing);
                 summary(type, "scope", thing);
             },
             () -> {
                 Relation relation = relation();
-                Role role = roleType();
+                Role role = role();
                 Thing thing = instance();
                 relation.addRolePlayer(role, thing);
                 summary(relation, "addRolePlayer", role, thing);
@@ -320,13 +317,10 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return gen().make(Labels.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
     }
 
-    private OntologyConcept ontologyConcept() {
-        return random.choose(graph.admin().getMetaConcept().subs());
-    }
-
     private Type type() {
+        // TODO: Revise this when meta concept is a type
         Collection<? extends Type> candidates = graph.admin().getMetaConcept().subs().stream().
-                filter(o -> !o.isRole()).map(o -> (Type) o).collect(Collectors.toSet());
+                map(o -> (Type) o).collect(Collectors.toSet());
         return random.choose(candidates);
     }
 
@@ -334,7 +328,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return random.choose(graph.admin().getMetaEntityType().subs());
     }
 
-    private Role roleType() {
+    private Role role() {
         return random.choose(graph.admin().getMetaRole().subs());
     }
 
@@ -351,11 +345,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private Thing instance() {
-        Set<? extends Thing> candidates = graph.admin().getMetaConcept().subs().stream().
-                filter(element -> !element.isRole()).
-                flatMap(element -> ((Type) element).instances().stream()).
-                collect(Collectors.toSet());
-        return chooseOrThrow(candidates);
+        return chooseOrThrow(allInstancesFrom(graph));
     }
 
     private Relation relation() {
@@ -393,8 +383,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     public static Collection<? extends Thing> allInstancesFrom(GraknGraph graph) {
+        // TODO: Revise this when meta concept is a type
         return graph.admin().getMetaConcept().subs().stream().
-                filter(element -> !element.isRole()).
                 flatMap(element -> ((Type) element).instances().stream()).
                 collect(Collectors.toSet());
     }

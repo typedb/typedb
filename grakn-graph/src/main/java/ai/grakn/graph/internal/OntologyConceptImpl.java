@@ -250,14 +250,14 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     }
 
     /**
-     * Adds another subtype to this type
+     * Adds another sub to this ontology concept
      *
-     * @param type The sub type of this type
-     * @return The Type itself
+     * @param concept The sub concept of this ontology concept
+     * @return The ontology concept itself
      */
-    public T sub(T type){
+    public T sub(T concept){
         //noinspection unchecked
-        ((TypeImpl) type).sup(this);
+        ((OntologyConceptImpl) concept).sup(this);
         return getThis();
     }
 

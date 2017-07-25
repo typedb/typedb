@@ -19,27 +19,28 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
+import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
 
 /**
- * A generator that produces {@link RelationType}s
+ * This is a generator that just produces the top-level meta-type `thing`.
+ *
+ * Other meta types are still handled from their respective generators, e.g. `EntityTypes`
  *
  * @author Felix Chapman
  */
-public class RelationTypes extends AbstractTypeGenerator<RelationType> {
+public class MetaTypes extends FromGraphGenerator<OntologyConcept> {
 
-    public RelationTypes() {
-        super(RelationType.class);
+    public MetaTypes() {
+        // TODO: This should generate `Type`, not `OntologyConcept`
+        super(OntologyConcept.class);
     }
 
     @Override
-    protected RelationType newOntologyConcept(Label label) {
-        return graph().putRelationType(label);
+    protected OntologyConcept generateFromGraph() {
+        return graph().admin().getMetaConcept();
     }
 
-    @Override
-    protected RelationType metaOntologyConcept() {
-        return graph().admin().getMetaRelationType();
+    public final void configure(Meta meta) {
     }
 }
