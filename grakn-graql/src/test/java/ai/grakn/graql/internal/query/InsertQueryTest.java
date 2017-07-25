@@ -41,6 +41,7 @@ import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.GraphLoader;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -832,5 +833,46 @@ public class InsertQueryTest {
         for (VarPattern var : vars) {
             assertFalse(qb.match(var).ask().execute());
         }
+    }
+
+    @Test
+    public void deleteMe(){
+        GraphLoader loader = GraphLoader.empty();
+
+        //Resources
+        loader.graph().graql().parse("# The resources as defined in the ldbc-snb benchmark\n" +
+                "insert\n" +
+                "\n" +
+                "# proxy for all integers\n" +
+                "\"Integer\" sub resource is-abstract datatype long;\n" +
+                "\"integer-32\" sub Integer;\n" +
+                "\n" +
+                "# resources\n" +
+                "\"length\" sub integer-32;\n" +
+                "\"work-from\" sub integer-32;\n" +
+                "\n").execute();
+        loader.graph().commit();
+
+        //Relation Which Has Resources
+        loader.graph().graql().parse("# The relationships defined in the ldbc-snb benchmark\n" +
+                "insert\n" +
+                "\n" +
+                "\"employee\" sub role;\n" +
+                "\"employer\" sub role;\n" +
+                "\"work-at\" sub relation\n" +
+                "\thas work-from\n" +
+                "\trelates employer,\n" +
+                "\trelates employee;\n").execute();
+        loader.graph().commit();
+
+        //Entities Which Has Resourced
+        loader.graph().graql().parse("# The entities defined in the ldbc-snb benchmark\n" +
+                "insert\n" +
+                "\n" +
+                "\"message\" sub entity\n" +
+                "\tis-abstract\n" +
+                "\thas length;\n" +
+                "\n").execute();
+        loader.graph().commit();
     }
 }

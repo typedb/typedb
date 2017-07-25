@@ -562,6 +562,13 @@ public class GraqlShellIT {
     }
 
     @Test
+    public void whenLoadingSeparateGraqlFilesWhichSubResources_EnsureValidationHolds() throws Exception {
+        testShell("", "-k", "breaking", "-f", "src/test/graql/ldbc-snb-1-resources.gql");
+        testShell("", "-k", "breaking", "-f", "src/test/graql/ldbc-snb-2-relations.gql");
+        testShell("", "-k", "breaking", "-f", "src/test/graql/ldbc-snb-3-entities.gql");
+    }
+
+    @Test
     @Ignore("Causes Travis build to halt")
     public void whenRunningBatchLoadAndAnErrorOccurs_PrintStatus() throws Exception {
         testShell("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");

@@ -1,0 +1,11 @@
+# The resources as defined in the ldbc-snb benchmark
+insert
+
+# proxy for all integers
+"Integer" sub resource is-abstract datatype long;
+"integer-32" sub Integer;
+
+# resources
+"length" sub integer-32;
+"work-from" sub integer-32;
+

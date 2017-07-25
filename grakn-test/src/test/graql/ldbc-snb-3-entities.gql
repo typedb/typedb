@@ -1,0 +1,7 @@
+# The entities defined in the ldbc-snb benchmark
+insert
+
+"message" sub entity
+	is-abstract
+	has length;
+
