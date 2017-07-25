@@ -53,6 +53,8 @@ public class JedisLock implements Lock {
     private Lock lock = new ReentrantLock();
 
     public JedisLock(Pool<Jedis> jedis, String lockName) {
+        Preconditions.checkNotNull(jedis,"JedisPool used in lock cannot be null");
+        Preconditions.checkArgument(lockName != null && !lockName.isEmpty(),"Lock name not valid");
         this.jedis = jedis;
         this.lockName = lockName;
     }

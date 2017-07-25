@@ -125,7 +125,9 @@ public class EngineContext extends ExternalResource {
         }
 
         try {
-            startRedis(config);
+            SimpleURI redisURI = new SimpleURI(config.getProperty(REDIS_HOST));
+            startRedis(redisURI.getPort());
+            jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
 
             @Nullable Class<? extends TaskManager> taskManagerClass = null;
 
@@ -159,7 +161,7 @@ public class EngineContext extends ExternalResource {
             if(startSingleQueueEngine | startStandaloneEngine){
                 noThrow(() -> stopEngine(server), "Error closing engine");
             }
-
+            getJedisPool().close();
             stopRedis();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
