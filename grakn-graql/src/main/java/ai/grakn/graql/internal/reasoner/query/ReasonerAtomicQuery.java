@@ -45,6 +45,9 @@ import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
+import ai.grakn.graql.internal.reasoner.state.AtomicState;
+import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
+import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
@@ -357,6 +360,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return Iterators.concat(qIterator);
     }
 
+    @Override
+    public ResolutionState subGoal(Answer sub, Unifier u, ResolutionState parent, QueryCache<ReasonerAtomicQuery> cache){
+        return new AtomicState(this, sub, u, parent, cache);
+    }
+
     /**
      * @return stream of atomic query obtained by inserting all inferred possible types (if ambiguous)
      */
@@ -376,7 +384,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * @return iterator of all rules applicable to this atomic query including permuted cases when the role types are meta roles
      */
-    Iterator<RuleTuple> getRuleIterator(){
+    public Iterator<RuleTuple> getRuleIterator(){
         return getAtom().getApplicableRules().stream()
                 .flatMap(r -> {
                     r.rewriteToUserDefined(getAtom());

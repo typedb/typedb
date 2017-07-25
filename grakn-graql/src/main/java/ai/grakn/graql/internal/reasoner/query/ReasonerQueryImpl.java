@@ -46,6 +46,8 @@ import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 
+import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
+import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -409,7 +411,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return substitution obtained from all id predicates (including internal) in the query
      */
-    Answer getSubstitution(){
+    public Answer getSubstitution(){
         Set<IdPredicate> predicates = this.getTypeConstraints().stream()
                 .map(TypeAtom::getPredicate)
                 .filter(Objects::nonNull)
@@ -563,6 +565,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(q -> new ReasonerQueryImplIterator(q, sub, subGoals, cache))
                 .iterator();
         return Iterators.concat(qIterator);
+    }
+
+    /**
+     *
+     * @param sub
+     * @param u
+     * @param parent
+     * @param cache
+     * @return
+     */
+    public ResolutionState subGoal(Answer sub, Unifier u, ResolutionState parent, QueryCache<ReasonerAtomicQuery> cache){
+        return new ConjunctiveState(this, sub, u, parent, cache);
     }
 
     /**

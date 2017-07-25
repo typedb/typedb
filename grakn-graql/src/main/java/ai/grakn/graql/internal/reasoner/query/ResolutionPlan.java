@@ -134,7 +134,7 @@ public final class ResolutionPlan {
      * compute the resolution plan - list of atomic queries ordered by their cost as computed by the graql traversal planner
      * @return list of prioritised queries
      */
-    static LinkedList<ReasonerQueryImpl> getResolutionPlanFromTraversal(ReasonerQueryImpl query){
+    public static LinkedList<ReasonerQueryImpl> getResolutionPlanFromTraversal(ReasonerQueryImpl query){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
         GraknGraph graph = query.graph();
 
@@ -177,7 +177,7 @@ public final class ResolutionPlan {
      * compute the resolution plan - list of atomic queries ordered by their resolution priority
      * @return list of prioritised queries
      */
-    static LinkedList<ReasonerQueryImpl> getResolutionPlan(ReasonerQueryImpl query){
+    public static LinkedList<ReasonerQueryImpl> getResolutionPlan(ReasonerQueryImpl query){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
         GraknGraph graph = query.graph();
 
