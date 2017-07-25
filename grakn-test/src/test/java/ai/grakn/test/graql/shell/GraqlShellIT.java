@@ -563,9 +563,9 @@ public class GraqlShellIT {
 
     @Test
     public void whenLoadingSeparateGraqlFilesWhichSubResources_EnsureValidationHolds() throws Exception {
-        testShell("", "-k", "breaking", "-f", "src/test/graql/ldbc-snb-1-resources.gql");
-        testShell("", "-k", "breaking", "-f", "src/test/graql/ldbc-snb-2-relations.gql");
-        testShell("", "-k", "breaking", "-f", "src/test/graql/ldbc-snb-3-entities.gql");
+        testShell("", "-k", "breaking", "-f", "src/test/graql/ldbc-snb-1.gql");
+        testShell("", "-k", "breaking", "-f", "src/test/graql/ldbc-snb-2.gql");
+        testShell("", "-k", "breaking", "-f", "src/test/graql/ldbc-snb-3.gql");
     }
 
     @Test
