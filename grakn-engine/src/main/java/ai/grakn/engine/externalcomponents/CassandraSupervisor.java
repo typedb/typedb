@@ -18,7 +18,9 @@
 
 package ai.grakn.engine.externalcomponents;
 
+import ai.grakn.Grakn;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.exception.GraknBackendException;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -72,16 +74,22 @@ public class CassandraSupervisor {
     }
 
     public boolean isRunning() throws IOException, InterruptedException {
-        Process nodeTool = osCalls.exec(new String[]{ "sh", "-c", nodeToolCheckRunningCmd});
+        String[] cmd = new String[] { "sh", "-c", nodeToolCheckRunningCmd };
+        Process nodeTool = osCalls.exec(cmd);
         int status = nodeTool.waitFor();
-        if (status != 0) throw new ExternalComponentException("unable to run nodetool - " + nodeToolCheckRunningCmd);
+        if (status != 0) {
+            throw GraknBackendException.operatingSystemCallException(String.join("", cmd));
+        }
         String lines = osCalls.readStdoutFromProcess(nodeTool);
         return lines.equals(NODETOOL_RESPONSE_IF_RUNNING);
     }
 
     public void start() throws IOException, InterruptedException {
-        int status = osCalls.execAndReturn(new String[]{ "sh", "-c", cassandraStartCmd });;
-        if (status != 0) throw new ExternalComponentException("unable to start cassandra - " + cassandraStartCmd);
+        String[] cmd = new String[] { "sh", "-c", cassandraStartCmd };
+        int status = osCalls.execAndReturn(cmd);
+        if (status != 0) {
+            throw GraknBackendException.operatingSystemCallException(String.join("", cmd));
+        }
         waitForCassandraStarted();
     }
 
@@ -91,11 +99,12 @@ public class CassandraSupervisor {
             boolean processRunning = osCalls.psP(pid) == 0;
             if (processRunning) {
                 // process found, stop it
-                int status  = osCalls.execAndReturn(new String[]{"sh", "-c", "kill " + pid});
-
+                String[] cmd = new String[] { "sh", "-c", "kill " + pid };
+                int status  = osCalls.execAndReturn(cmd);
                 waitForCassandraStopped();
+
                 if (status != 0) {
-                    throw new ExternalComponentException("unable to stop cassandra with PID " + pid);
+                    throw GraknBackendException.operatingSystemCallException(String.join("", cmd));
                 }
             }
         }
@@ -115,7 +124,7 @@ public class CassandraSupervisor {
             }
         }
         LOG.info("unable to start grakn-cassandra!");
-        throw new ExternalComponentException("unable to start grakn-cassandra!");
+        throw GraknBackendException.cassandraStartException();
     }
 
     public void waitForCassandraStopped() throws IOException, InterruptedException {
@@ -132,6 +141,6 @@ public class CassandraSupervisor {
             }
         }
         LOG.info("unable to stop grakn-cassandra!");
-        throw new ExternalComponentException("unable to stop grakn-cassandra!");
+        throw GraknBackendException.cassandraStopException();
     }
 }

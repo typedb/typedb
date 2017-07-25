@@ -94,4 +94,19 @@ public class GraknBackendException extends GraknException {
     public static GraknBackendException engineUnavailable(String host, int port, IOException e){
         return new GraknBackendException(ENGINE_UNAVAILABLE.getMessage(host, port), e);
     }
+
+    /**
+     * Thrown when unable to execute a process
+     */
+    public static GraknBackendException operatingSystemCallException(String cmd) {
+        return new GraknBackendException("unable to invoke process '" + cmd + "'");
+    }
+
+    public static GraknBackendException cassandraStartException() {
+        return new GraknBackendException("unable to start grakn-cassandra!");
+    }
+
+    public static GraknBackendException cassandraStopException() {
+        return new GraknBackendException("unable to stop grakn-cassandra!");
+    }
 }
