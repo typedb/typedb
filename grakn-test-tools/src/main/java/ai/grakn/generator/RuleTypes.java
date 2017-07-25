@@ -30,7 +30,7 @@ import java.util.Collection;
  *
  * @author Felix Chapman
  */
-public class RuleTypes extends AbstractOntologyConceptGenerator<RuleType> {
+public class RuleTypes extends AbstractTypeGenerator<RuleType> {
 
     public RuleTypes() {
         super(RuleType.class);

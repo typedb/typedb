@@ -216,4 +216,10 @@ public interface GraknAdmin {
      * Should be used with caution as this will invalidate any pending transactions
      */
     void delete();
+
+    /**
+     * Get the URL where the graph is located
+     * @return the URL where the graph is located
+     */
+    String getEngineUrl();
 }

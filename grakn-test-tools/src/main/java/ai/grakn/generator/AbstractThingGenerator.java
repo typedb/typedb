@@ -21,7 +21,7 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
+import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
 
 import java.util.Collection;
 
@@ -35,16 +35,16 @@ import java.util.Collection;
  */
 public abstract class AbstractThingGenerator<T extends Thing, S extends Type> extends FromGraphGenerator<T> {
 
-    private final Class<? extends AbstractOntologyConceptGenerator<S>> generatorClass;
+    private final Class<? extends AbstractTypeGenerator<S>> generatorClass;
 
-    AbstractThingGenerator(Class<T> type, Class<? extends AbstractOntologyConceptGenerator<S>> generatorClass) {
+    AbstractThingGenerator(Class<T> type, Class<? extends AbstractTypeGenerator<S>> generatorClass) {
         super(type);
         this.generatorClass = generatorClass;
     }
 
     @Override
     protected final T generateFromGraph() {
-        S type = genFromGraph(generatorClass).excludeMeta().excludeAbstract().generate(random, status);
+        S type = genFromGraph(generatorClass).makeExcludeAbstractTypes().excludeMeta().generate(random, status);
 
         Collection<T> instances = (Collection<T>) type.instances();
         if (instances.isEmpty()) {
@@ -54,11 +54,7 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
         }
     }
 
-    public final void configure(Meta meta) {
-        // Instances are never meta types
-        if (meta.value()) {
-            throw new IllegalArgumentException("Cannot generate meta instances");
-        }
+    public final void configure(NonMeta nonMeta) {
     }
 
     protected abstract T newInstance(S type);
