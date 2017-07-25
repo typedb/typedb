@@ -18,10 +18,6 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
-import ai.grakn.GraknSession;
-import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -64,9 +60,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.gt;
@@ -838,31 +831,6 @@ public class InsertQueryTest {
         // Make sure vars don't exist
         for (VarPattern var : vars) {
             assertFalse(qb.match(var).ask().execute());
-        }
-    }
-
-    @Test
-    public void deleteMe() throws ExecutionException, InterruptedException {
-        GraknSession session = Grakn.session(Grakn.IN_MEMORY, "hi");
-
-        ExecutorService executor = Executors.newCachedThreadPool();
-
-        executor.submit(() -> {
-            //Resources
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
-                ResourceType<Long> int_ = graph.putResourceType("int", ResourceType.DataType.LONG);
-                ResourceType<Long> foo = graph.putResourceType("foo", ResourceType.DataType.LONG).sup(int_);
-                graph.putResourceType("bar", ResourceType.DataType.LONG).sup(int_);
-                graph.putEntityType("FOO").resource(foo);
-
-                graph.commit();
-            }
-        }).get();
-
-        //Relation Which Has Resources
-        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
-            graph.putEntityType("BAR").resource(graph.getResourceType("bar"));
-            graph.commit();
         }
     }
 }

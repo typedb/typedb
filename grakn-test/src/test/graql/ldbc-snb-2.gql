@@ -1,9 +1,0 @@
-# The relationships defined in the ldbc-snb benchmark
-insert
-
-"employee" sub role;
-"employer" sub role;
-"work-at" sub relation
-	has work-from
-	relates employer,
-	relates employee;
