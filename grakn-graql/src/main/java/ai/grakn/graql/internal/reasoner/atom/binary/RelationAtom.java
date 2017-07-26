@@ -391,6 +391,8 @@ public class RelationAtom extends IsaAtom {
      * @return list of relation types this atom can have ordered by the number of compatible role types
      */
     public List<RelationType> inferPossibleRelationTypes(Answer sub) {
+        if (getPredicate() != null) return Collections.singletonList(getOntologyConcept().asRelationType());
+
         //look at available role types
         Multimap<RelationType, Role> compatibleTypesFromRoles = getCompatibleRelationTypesWithRoles(getExplicitRoleTypes(), new RoleTypeConverter());
 
@@ -432,6 +434,7 @@ public class RelationAtom extends IsaAtom {
      */
     private RelationAtom inferRelationType(Answer sub){
         if (getPredicate() != null) return this;
+
         List<RelationType> relationTypes = inferPossibleRelationTypes(sub);
         if (relationTypes.size() == 1){
             return addType(relationTypes.iterator().next());
