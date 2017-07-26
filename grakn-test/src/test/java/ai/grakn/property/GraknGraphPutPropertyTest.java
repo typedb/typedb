@@ -180,7 +180,7 @@ public class GraknGraphPutPropertyTest {
         if(isMetaLabel(label)) {
             exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(label));
         } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE.name()));
+            exception.expectMessage(GraphOperationException.immutableProperty(resourceType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE).getMessage());
         }
 
         graph.putResourceType(label, dataType);
