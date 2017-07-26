@@ -15,26 +15,36 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package ai.grakn.engine.lock;
+package ai.grakn.util;
 
-import java.util.concurrent.locks.Lock;
-import org.redisson.api.RedissonClient;
+import com.github.zxl0714.redismock.RedisServer;
+import org.junit.rules.ExternalResource;
 
 /**
- * Proxy for Redisson lock
+ * Rule class for executing tests that require a Redis mock
  *
- * @author Domenico Corapi
+ * @author pluraliseseverythings
  */
-public class RedissonLockProvider implements LockProvider {
+public class MockRedisRule extends ExternalResource {
+    private RedisServer server;
 
-    private RedissonClient redissonClient;
+    public MockRedisRule() {}
 
-    public RedissonLockProvider(RedissonClient redissonClient) {
-        this.redissonClient = redissonClient;
+    @Override
+    protected void before() throws Throwable {
+        server = RedisServer.newRedisServer();
+        server.start();
     }
 
     @Override
-    public Lock getLock(String lockName) {
-        return redissonClient.getLock(lockName);
+    protected void after() {
+        if (server != null) {
+            server.stop();
+            server = null;
+        }
+    }
+
+    public RedisServer getServer() {
+        return server;
     }
 }

@@ -69,7 +69,12 @@
             <artifactId>embedded-redis</artifactId>
             <version>${redis-test.version}</version>
         </dependency>
-        
+        <dependency>
+            <groupId>com.github.zxl0714</groupId>
+            <artifactId>redis-mock</artifactId>
+            <version>${redis-mock.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>com.sparkjava</groupId>
             <artifactId>spark-core</artifactId>

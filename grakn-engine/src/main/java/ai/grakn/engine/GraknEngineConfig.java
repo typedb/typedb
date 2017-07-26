@@ -22,15 +22,17 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.StandardSystemProperty;
-import static java.lang.Math.min;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.FileInputStream;
 import java.io.IOException;
+import static java.lang.Math.min;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -59,9 +61,9 @@ public class GraknEngineConfig {
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
 
-    public static final String REDIS_SERVER_URL = "redis.host";
-    public static final String REDIS_SERVER_PORT = "redis.port";
-    public static final String REDIS_SENTINEL_MASTER = "redis.sentinel-master";
+    public static final String REDIS_HOST = "redis.host";
+    public static final String REDIS_SENTINEL_HOST = "redis.sentinel.host";
+    public static final String REDIS_SENTINEL_MASTER = "redis.sentinel.master";
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
 
@@ -214,6 +216,10 @@ public class GraknEngineConfig {
 
     public String uri() {
         return getProperty(SERVER_HOST_NAME) + ":" + getProperty(SERVER_PORT_NUMBER);
+    }
+
+    static List<String> parseCSValue(String s) {
+        return Arrays.stream(s.split(",")).map(String::trim).filter(t -> !t.isEmpty()).collect(Collectors.toList());
     }
 
     static final String GRAKN_ASCII =
