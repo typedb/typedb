@@ -39,7 +39,6 @@ import org.junit.runner.RunWith;
 
 import java.util.Set;
 
-import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
@@ -74,7 +73,7 @@ public class RelationTypePropertyTest {
     @Property
     public void whenAddingARelationOfAMetaType_Throw(@Meta RelationType type) {
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
+        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.addRelation();
     }
 
@@ -116,7 +115,7 @@ public class RelationTypePropertyTest {
     @Property
     public void whenMakingTheMetaRelationTypeRelateARole_Throw(@Meta RelationType relationType, @FromGraph Role role) {
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getLabel()));
+        exception.expectMessage(GraphOperationException.metaTypeImmutable(relationType.getLabel()).getMessage());
         relationType.relates(role);
     }
 
@@ -159,7 +158,7 @@ public class RelationTypePropertyTest {
     public void whenDeletingARelatedRoleFromTheMetaRelationType_Throw(
             @Meta RelationType relationType, @FromGraph Role role) {
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getLabel()));
+        exception.expectMessage(GraphOperationException.metaTypeImmutable(relationType.getLabel()).getMessage());
         relationType.deleteRelates(role);
     }
 

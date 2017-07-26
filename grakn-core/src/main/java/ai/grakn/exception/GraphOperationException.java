@@ -41,6 +41,7 @@ import static ai.grakn.util.ErrorMessage.INVALID_PROPERTY_USE;
 import static ai.grakn.util.ErrorMessage.LABEL_TAKEN;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.NO_TYPE;
+import static ai.grakn.util.ErrorMessage.REGEX_NOT_STRING;
 import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
 import static ai.grakn.util.ErrorMessage.UNKNOWN_CONCEPT;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
@@ -81,11 +82,18 @@ public class GraphOperationException extends GraknException{
     }
 
     /**
-     * Thrown when an {@code thing} is not allowed to have {@code resource} of the type {@code hasType}.
-     * {@code hasType} can be resources or keys.
+     * Thrown when a {@link Thing} is not allowed to have {@link Resource} of that {@link ResourceType}
      */
     public static GraphOperationException hasNotAllowed(Thing thing, Resource resource){
         return new GraphOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), resource.type().getLabel()));
+    }
+
+    /**
+     * Thrown when attempting to set a regex on a {@link Resource} whose type {@link ResourceType} is not of the
+     * data type {@link ResourceType.DataType#STRING}
+     */
+    public static GraphOperationException cannotSetRegex(ResourceType resourceType){
+        return new GraphOperationException(REGEX_NOT_STRING.getMessage(resourceType.getLabel()));
     }
 
     /**

@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 import static ai.grakn.property.PropertyUtil.choose;
 import static ai.grakn.property.PropertyUtil.directSubs;
 import static ai.grakn.property.PropertyUtil.indirectSupers;
-import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -69,7 +68,7 @@ public class OntologyConceptPropertyTest {
     public void whenDeletingAMetaConcept_Throw(@Meta OntologyConcept ontologyConcept) {
         exception.expect(GraphOperationException.class);
         exception.expectMessage(isOneOf(
-                META_TYPE_IMMUTABLE.getMessage(ontologyConcept.getLabel()),
+                GraphOperationException.metaTypeImmutable(ontologyConcept.getLabel()).getMessage(),
                 GraphOperationException.cannotBeDeleted(ontologyConcept).getMessage()
         ));
         ontologyConcept.delete();
@@ -147,7 +146,7 @@ public class OntologyConceptPropertyTest {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subConcept.getLabel()));
+        exception.expectMessage(GraphOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
         setDirectSuper(subConcept, superConcept);
     }
 
@@ -178,7 +177,7 @@ public class OntologyConceptPropertyTest {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subConcept.getLabel()));
+        exception.expectMessage(GraphOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
         addDirectSub(superConcept, subConcept);
     }
 

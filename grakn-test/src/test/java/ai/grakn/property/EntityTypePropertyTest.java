@@ -34,7 +34,6 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
-import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
@@ -67,7 +66,7 @@ public class EntityTypePropertyTest {
     @Property
     public void whenAddingAnEntityOfTheMetaEntityType_Throw(@Meta EntityType type) {
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
+        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.addEntity();
     }
 

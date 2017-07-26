@@ -36,7 +36,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.util.ErrorMessage.INVALID_DATATYPE;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -115,10 +114,11 @@ public class ResourceTest extends GraphTestBase{
     @SuppressWarnings("unchecked")
     @Test
     public void whenCreatingResourceWithAnInvalidDataType_Throw(){
+        String invalidThing = "Invalid Thing";
         ResourceType longResourceType = graknGraph.putResourceType("long", ResourceType.DataType.LONG);
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(INVALID_DATATYPE.getMessage("Invalid Thing", Long.class.getName()));
-        longResourceType.putResource("Invalid Thing");
+        expectedException.expectMessage(GraphOperationException.invalidResourceValue(invalidThing, ResourceType.DataType.LONG).getMessage());
+        longResourceType.putResource(invalidThing);
     }
 
     // this is deliberately an incorrect type for the test

@@ -25,7 +25,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.util.ErrorMessage;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,8 +68,8 @@ public class ResourceTypeTest extends GraphTestBase{
     @Test
     public void whenSettingRegexOnNonStringResourceType_Throw(){
         ResourceType<Long> thing = graknGraph.putResourceType("Random ID", ResourceType.DataType.LONG);
-        expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage(ErrorMessage.REGEX_NOT_STRING.getMessage(thing.getLabel()));
+        expectedException.expect(GraphOperationException.class);
+        expectedException.expectMessage(GraphOperationException.cannotSetRegex(thing).getMessage());
         thing.setRegex("blab");
     }
 

@@ -67,12 +67,4 @@ public class GraknTestSetup {
     public static boolean usingTitan() {
         return "titan".equals(CONFIG);
     }
-
-    /**
-     *
-     * @return true if the tests are running on orient graph
-     */
-    public static boolean usingOrientDB() {
-        return "orientdb".equals(CONFIG);
-    }
 }
