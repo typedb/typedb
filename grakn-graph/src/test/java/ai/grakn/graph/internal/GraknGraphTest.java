@@ -358,4 +358,29 @@ public class GraknGraphTest extends GraphTestBase {
         assertThat(s2.links().collect(Collectors.toSet()), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
         assertThat(s3.links().collect(Collectors.toSet()), containsInAnyOrder(s3_e1, s3_e2));
     }
+
+    @Test
+    public void whenCreatingAValidOntologyInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
+        GraknSession session = Grakn.session(Grakn.IN_MEMORY, "hi");
+
+        ExecutorService executor = Executors.newCachedThreadPool();
+
+        executor.submit(() -> {
+            //Resources
+            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+                ResourceType<Long> int_ = graph.putResourceType("int", ResourceType.DataType.LONG);
+                ResourceType<Long> foo = graph.putResourceType("foo", ResourceType.DataType.LONG).sup(int_);
+                graph.putResourceType("bar", ResourceType.DataType.LONG).sup(int_);
+                graph.putEntityType("FOO").resource(foo);
+
+                graph.commit();
+            }
+        }).get();
+
+        //Relation Which Has Resources
+        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            graph.putEntityType("BAR").resource(graph.getResourceType("bar"));
+            graph.commit();
+        }
+    }
 }

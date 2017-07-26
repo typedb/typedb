@@ -245,7 +245,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
      *
      * @param oldSubType The old sub type which should not be cached anymore
      */
-    void deleteCachedDirectedSubType(T oldSubType){
+    private void deleteCachedDirectedSubType(T oldSubType){
         cachedDirectSubTypes.ifPresent(set -> set.remove(oldSubType));
     }
 
