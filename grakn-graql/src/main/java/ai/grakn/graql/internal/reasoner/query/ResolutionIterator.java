@@ -48,18 +48,20 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
-    public ResolutionIterator(ReasonerQueryImpl q){
+    ResolutionIterator(ReasonerQueryImpl q){
         this.query = q;
         this.cache = new QueryCache<>();
-        states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, cache));
+        states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
     }
 
     private ResolutionState findNextAnswerState(){
         while(!states.isEmpty()) {
             ResolutionState state = states.pop();
-            if (state.isTopState()) {
+
+            if (state.isAnswerState() && state.isTopState()) {
                 return state;
             }
+
             ResolutionState newState = state.generateSubGoal();
             if (newState != null) {
                 if (!state.isAnswerState()) states.push(state);
@@ -90,7 +92,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         if (dAns != 0 || iter == 0) {
             LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
             iter++;
-            states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, cache));
+            states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
             oldAns = answers.size();
             return hasNext();
         }

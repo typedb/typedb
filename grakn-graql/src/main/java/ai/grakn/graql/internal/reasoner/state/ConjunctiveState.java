@@ -23,11 +23,13 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.ResolutionPlan;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,22 +39,31 @@ import org.slf4j.LoggerFactory;
  */
 public class ConjunctiveState extends ResolutionState {
 
+    private final ReasonerQueryImpl query;
     private final LinkedList<ReasonerQueryImpl> subQueries;
     private final Iterator<Answer> dbIterator;
 
-    private final QueryCache<ReasonerAtomicQuery> cache;
-
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
-    public ConjunctiveState(ReasonerQueryImpl query,
+    public ConjunctiveState(ReasonerQueryImpl q,
                             Answer sub,
                             Unifier u,
                             ResolutionState parent,
+                            Set<ReasonerAtomicQuery> subGoals,
                             QueryCache<ReasonerAtomicQuery> cache) {
-        super(query, sub, u, parent);
-        this.cache = cache;
+        super(
+                sub,
+                u,
+                parent,
+                subGoals,
+                cache
+        );
 
-        if (!getQuery().isRuleResolvable()){
+        this.query = ReasonerQueries
+                    .create(q)
+                    .addSubstitution(sub);
+
+        if (!query.isRuleResolvable()){
             dbIterator = query.getMatchQuery().stream()
                     .map(at -> at.explain(new JoinExplanation(query, at)))
                     .iterator();
@@ -71,9 +82,9 @@ public class ConjunctiveState extends ResolutionState {
 
     private ConjunctiveState(ConjunctiveState state){
         super(state);
+        this.query = state.query;
         this.subQueries = state.subQueries;
         this.dbIterator = Collections.emptyIterator();
-        this.cache = state.cache;
     }
 
     @Override
@@ -82,17 +93,24 @@ public class ConjunctiveState extends ResolutionState {
     }
 
     @Override
+    public ResolutionState propagateAnswer(AnswerState state) {
+        return new AnswerState(
+                getSubstitution().merge(state.getSubstitution(), true),
+                getUnifier(),
+                getParentState(),
+                getSubGoals(),
+                getCache()
+        );
+    }
+
+    @Override
     public ResolutionState generateSubGoal(){
         if (dbIterator.hasNext())
-            return new AnswerState(getQuery(), dbIterator.next(), getUnifier(), this);
+            return new AnswerState(dbIterator.next(), getUnifier(), getParentState(), getSubGoals(), getCache());
 
         if (!subQueries.isEmpty()){
-            LinkedList<ReasonerQueryImpl> queries = new LinkedList<>(subQueries);
-            ReasonerQueryImpl subQuery = queries.removeFirst();
-            ResolutionState cumulativeState = new CumulativeState(getQuery(), queries, getSubstitution(), getUnifier(), this, cache);
-            return subQuery.subGoal(getSubstitution(), getUnifier(), cumulativeState, cache);
+            return new CumulativeState(subQueries, getSubstitution(), getUnifier(), this, getSubGoals(), getCache());
         }
-
         return null;
     }
 }

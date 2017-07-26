@@ -20,7 +20,10 @@ package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import java.util.Set;
 
 /**
  *
@@ -30,21 +33,29 @@ public abstract class ResolutionState {
     private final Answer sub;
     private final Unifier unifier;
 
-    private final ReasonerQueryImpl query;
     private final ResolutionState parentState;
 
-    ResolutionState(ReasonerQueryImpl query, Answer sub, Unifier u, ResolutionState parent){
-        this.query = query;
+    private final Set<ReasonerAtomicQuery> subGoals;
+    private final QueryCache<ReasonerAtomicQuery> cache;
+
+    ResolutionState(Answer sub,
+                    Unifier u,
+                    ResolutionState parent,
+                    Set<ReasonerAtomicQuery> subGoals,
+                    QueryCache<ReasonerAtomicQuery> cache){
         this.sub = sub;
         this.unifier = u;
         this.parentState = parent;
+        this.subGoals = subGoals;
+        this.cache = cache;
     }
 
     ResolutionState(ResolutionState state){
-        this.query = state.query;
         this.sub = state.sub;
         this.unifier = state.unifier;
         this.parentState = state.parentState;
+        this.subGoals = state.subGoals;
+        this.cache = state.cache;
     }
 
     public abstract ResolutionState copy();
@@ -53,18 +64,19 @@ public abstract class ResolutionState {
 
     public Answer getSubstitution(){ return sub;}
 
-    public ResolutionState merge(AnswerState state){
+    public ResolutionState propagateAnswer(AnswerState state){
         throw new IllegalStateException("dupa");
     }
 
     public Unifier getUnifier(){ return unifier;}
-    public ReasonerQueryImpl getQuery(){ return query;}
+
     ResolutionState getParentState(){ return parentState;}
+    Set<ReasonerAtomicQuery> getSubGoals(){ return subGoals;}
+    QueryCache<ReasonerAtomicQuery> getCache(){ return cache;}
 
     public boolean isAnswerState(){ return false;}
-    public boolean isAtomicState(){ return false;}
 
     public boolean isTopState(){
-        return parentState == null && !isAnswerState();
+        return parentState == null;
     }
 }

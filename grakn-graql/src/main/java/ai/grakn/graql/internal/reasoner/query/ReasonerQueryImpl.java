@@ -426,7 +426,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         );
     }
 
-    ReasonerQueryImpl addSubstitution(Answer sub){
+    public ReasonerQueryImpl addSubstitution(Answer sub){
         Set<Var> varNames = getVarNames();
 
         //skip predicates from types
@@ -441,7 +441,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return this;
     }
 
-    boolean hasFullSubstitution(){
+    public boolean hasFullSubstitution(){
         return getSubstitution().keySet().containsAll(getVarNames());
     }
 
@@ -512,7 +512,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         if (materialise) {
             return resolveAndMaterialise(new LazyQueryCache<>(), new LazyQueryCache<>());
         } else {
-            return new QueryAnswerIterator(this).hasStream();
+            return new ResolutionIterator(this).hasStream();
+            //return new QueryAnswerIterator(this).hasStream();
         }
     }
 
@@ -575,8 +576,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache
      * @return
      */
-    public ResolutionState subGoal(Answer sub, Unifier u, ResolutionState parent, QueryCache<ReasonerAtomicQuery> cache){
-        return new ConjunctiveState(this, sub, u, parent, cache);
+    public ResolutionState subGoal(Answer sub, Unifier u, ResolutionState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
     }
 
     /**

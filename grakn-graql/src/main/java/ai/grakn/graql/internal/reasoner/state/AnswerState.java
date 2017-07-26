@@ -20,15 +20,22 @@ package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import java.util.Set;
 
 /**
  *
  */
 class AnswerState extends ResolutionState {
 
-    AnswerState(ReasonerQueryImpl q, Answer sub, Unifier u, ResolutionState parent) {
-        super(q, sub, u, parent);
+    AnswerState(
+                Answer sub,
+                Unifier u,
+                ResolutionState parent,
+                Set<ReasonerAtomicQuery> subGoals,
+                QueryCache<ReasonerAtomicQuery> cache) {
+        super(sub, u, parent, subGoals, cache);
     }
 
     private AnswerState(AnswerState state){
@@ -41,24 +48,21 @@ class AnswerState extends ResolutionState {
     }
 
     @Override
+    public boolean isAnswerState(){ return true;}
+
+    @Override
     public ResolutionState generateSubGoal() {
         ResolutionState parentState = getParentState();
 
-        //generate answer state to parent query
-        if (parentState.isAtomicState()) {
-            return new AnswerState(
-                    parentState.getQuery(),
-                    getSubstitution()
-                            .unify(getUnifier())
-                            .filterVars(getQuery().getVarNames()),
-                    parentState.getUnifier(),
-                    parentState.getParentState()
-            );
-        } else {
-            return parentState.merge(this);
+        //TODO save to cache
+
+        if (parentState instanceof AtomicState){
+            getCache().recordAnswer(((AtomicState) parentState).getQuery(), getSubstitution());
         }
+
+        //generate answer state to parent query
+        return parentState.propagateAnswer(this);
     }
 
-    @Override
-    public boolean isAnswerState(){ return true;}
+
 }

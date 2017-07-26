@@ -199,7 +199,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return match.isEmpty()? new QueryAnswer() : match.iterator().next();
     }
 
-    Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
+    public Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
         boolean queryVisited = cache.contains(this);
         return queryVisited ? cache.getAnswerStreamWithUnifier(this) : new Pair<>(DBlookup(), new UnifierImpl());
     }
@@ -361,8 +361,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ResolutionState subGoal(Answer sub, Unifier u, ResolutionState parent, QueryCache<ReasonerAtomicQuery> cache){
-        return new AtomicState(this, sub, u, parent, cache);
+    public ResolutionState subGoal(Answer sub, Unifier u, ResolutionState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return new AtomicState(this, sub, u, parent, subGoals, cache);
     }
 
     /**

@@ -24,6 +24,7 @@ import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import java.util.LinkedList;
+import java.util.Set;
 
 /**
  *
@@ -31,18 +32,24 @@ import java.util.LinkedList;
 class CumulativeState extends ResolutionState{
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
-    private final QueryCache<ReasonerAtomicQuery> cache;
 
-    CumulativeState(ReasonerQueryImpl query, LinkedList<ReasonerQueryImpl> qs, Answer sub, Unifier u, ResolutionState parent, QueryCache<ReasonerAtomicQuery> cache) {
-        super(query, sub, u, parent);
-        this.subQueries = qs;
-        this.cache = cache;
+    private final ResolutionState feederGoal;
+
+    CumulativeState(LinkedList<ReasonerQueryImpl> qs,
+                    Answer sub,
+                    Unifier u,
+                    ResolutionState parent,
+                    Set<ReasonerAtomicQuery> subGoals,
+                    QueryCache<ReasonerAtomicQuery> cache) {
+        super(sub, u, parent, subGoals, cache);
+        this.subQueries = new LinkedList<>(qs);
+        this.feederGoal = !subQueries.isEmpty()? subQueries.removeFirst().subGoal(sub, u, this, subGoals, cache) : null;
     }
 
     private CumulativeState(CumulativeState state){
         super(state);
         this.subQueries = state.subQueries;
-        this.cache = state.cache;
+        this.feederGoal = state.feederGoal;
     }
 
     @Override
@@ -51,31 +58,29 @@ class CumulativeState extends ResolutionState{
     }
 
     @Override
-    public ResolutionState merge(AnswerState state) {
+    public ResolutionState propagateAnswer(AnswerState state) {
         return new CumulativeState(
-                getQuery(),
                 subQueries,
                 getSubstitution().merge(state.getSubstitution(), true),
                 getUnifier(),
                 getParentState(),
-                cache
+                getSubGoals(),
+                getCache()
         );
     }
 
     @Override
     public ResolutionState generateSubGoal(){
-        if (!subQueries.isEmpty()){
-            /*
-
-
-             */
-            LinkedList<ReasonerQueryImpl> queries = new LinkedList<>(subQueries);
-            ReasonerQueryImpl subQuery = queries.removeFirst();
-            ResolutionState cumulativeState = new CumulativeState(getQuery(), queries, getSubstitution(), getUnifier(), this, cache);
-            return subQuery.subGoal(getSubstitution(), getUnifier(), cumulativeState, cache);
+        if (feederGoal != null) {
+            return feederGoal;
         } else {
-            //this is always an answer to parent conjunctive query
-            return new AnswerState(getQuery(), getSubstitution(), getUnifier(), getParentState());
+            return new AnswerState(
+                    getSubstitution(),
+                    getUnifier(),
+                    getParentState(),
+                    getSubGoals(),
+                    getCache()
+            );
         }
     }
 }
