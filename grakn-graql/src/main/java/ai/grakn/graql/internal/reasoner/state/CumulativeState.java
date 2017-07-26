@@ -32,8 +32,9 @@ import java.util.Set;
 class CumulativeState extends ResolutionState{
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
-
     private final ResolutionState feederGoal;
+
+    private boolean visited = false;
 
     CumulativeState(LinkedList<ReasonerQueryImpl> qs,
                     Answer sub,
@@ -46,22 +47,21 @@ class CumulativeState extends ResolutionState{
         this.feederGoal = !subQueries.isEmpty()? subQueries.removeFirst().subGoal(sub, u, this, subGoals, cache) : null;
     }
 
-    private CumulativeState(CumulativeState state){
-        super(state);
-        this.subQueries = state.subQueries;
-        this.feederGoal = state.feederGoal;
-    }
-
-    @Override
-    public ResolutionState copy() {
-        return new CumulativeState(this);
-    }
-
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
+        Answer sub = getSubstitution().merge(state.getSubstitution(), true);
+        if (subQueries.isEmpty()){
+            return new AnswerState(
+                    sub,
+                    getUnifier(),
+                    getParentState(),
+                    getSubGoals(),
+                    getCache()
+            );
+        }
         return new CumulativeState(
                 subQueries,
-                getSubstitution().merge(state.getSubstitution(), true),
+                sub,
                 getUnifier(),
                 getParentState(),
                 getSubGoals(),
@@ -71,16 +71,10 @@ class CumulativeState extends ResolutionState{
 
     @Override
     public ResolutionState generateSubGoal(){
-        if (feederGoal != null) {
+        if (!visited){
+            visited = true;
             return feederGoal;
-        } else {
-            return new AnswerState(
-                    getSubstitution(),
-                    getUnifier(),
-                    getParentState(),
-                    getSubGoals(),
-                    getCache()
-            );
         }
+        return null;
     }
 }

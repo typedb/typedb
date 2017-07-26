@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -81,25 +80,12 @@ public class AtomicState extends ResolutionState{
         if (ruleIterator.hasNext()) subGoals.add(query);
     }
 
-    private AtomicState(AtomicState state){
-        super(state);
-        this.query = state.query;
-        this.cacheUnifier = state.cacheUnifier;
-        this.dbIterator = Collections.emptyIterator();
-        this.ruleIterator = Collections.emptyIterator();
-    }
-
-    @Override
-    public ResolutionState copy() {
-        return new AtomicState(this);
-    }
-
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
+        Answer answer = state.getSubstitution().unify(state.getUnifier()).filterVars(query.getVarNames());
+        getCache().recordAnswerWithUnifier(query, answer, cacheUnifier);
         return new AnswerState(
-                state.getSubstitution()
-                        .unify(state.getUnifier())
-                        .filterVars(query.getVarNames()),
+                answer,
                 getUnifier(),
                 getParentState(),
                 getSubGoals(),
@@ -109,15 +95,16 @@ public class AtomicState extends ResolutionState{
 
     @Override
     public ResolutionState generateSubGoal() {
-        if (dbIterator.hasNext())
-            return new AnswerState(dbIterator.next(), getUnifier(), getParentState(), getSubGoals(), getCache());
+        if (dbIterator.hasNext()) {
+            Answer answer = dbIterator.next();
+            getCache().recordAnswerWithUnifier(query, answer, cacheUnifier);
+            return new AnswerState(answer, getUnifier(), getParentState(), getSubGoals(), getCache());
+        }
 
         if(ruleIterator.hasNext())
             return generateSubGoalFromRule(ruleIterator.next());
         return null;
     }
-
-    public ReasonerAtomicQuery getQuery(){ return query;}
 
     private ResolutionState generateSubGoalFromRule(RuleTuple ruleTuple){
         InferenceRule rule = ruleTuple.getRule();

@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-public class ResolutionIterator extends ReasonerQueryIterator {
+class ResolutionIterator extends ReasonerQueryIterator {
 
     private int iter = 0;
     private long oldAns = 0;
@@ -88,6 +88,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         if (answerState != null) return true;
 
         //iter finished
+
         long dAns = answers.size() - oldAns;
         if (dAns != 0 || iter == 0) {
             LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
@@ -96,6 +97,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             oldAns = answers.size();
             return hasNext();
         }
-        else return false;
+
+        return false;
     }
 }

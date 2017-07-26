@@ -38,31 +38,12 @@ class AnswerState extends ResolutionState {
         super(sub, u, parent, subGoals, cache);
     }
 
-    private AnswerState(AnswerState state){
-        super(state);
-    }
-
-    @Override
-    public ResolutionState copy() {
-        return new AnswerState(this);
-    }
-
     @Override
     public boolean isAnswerState(){ return true;}
 
     @Override
     public ResolutionState generateSubGoal() {
-        ResolutionState parentState = getParentState();
-
-        //TODO save to cache
-
-        if (parentState instanceof AtomicState){
-            getCache().recordAnswer(((AtomicState) parentState).getQuery(), getSubstitution());
-        }
-
-        //generate answer state to parent query
-        return parentState.propagateAnswer(this);
+        return getParentState().propagateAnswer(this);
     }
-
 
 }

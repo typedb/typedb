@@ -22,7 +22,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import java.util.Set;
 
 /**
@@ -49,16 +48,6 @@ public abstract class ResolutionState {
         this.subGoals = subGoals;
         this.cache = cache;
     }
-
-    ResolutionState(ResolutionState state){
-        this.sub = state.sub;
-        this.unifier = state.unifier;
-        this.parentState = state.parentState;
-        this.subGoals = state.subGoals;
-        this.cache = state.cache;
-    }
-
-    public abstract ResolutionState copy();
 
     public abstract ResolutionState generateSubGoal();
 

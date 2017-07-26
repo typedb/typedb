@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -42,6 +43,8 @@ public class ConjunctiveState extends ResolutionState {
     private final ReasonerQueryImpl query;
     private final LinkedList<ReasonerQueryImpl> subQueries;
     private final Iterator<Answer> dbIterator;
+
+    private boolean visited = false;
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
@@ -80,22 +83,10 @@ public class ConjunctiveState extends ResolutionState {
 
     }
 
-    private ConjunctiveState(ConjunctiveState state){
-        super(state);
-        this.query = state.query;
-        this.subQueries = state.subQueries;
-        this.dbIterator = Collections.emptyIterator();
-    }
-
-    @Override
-    public ResolutionState copy() {
-        return new ConjunctiveState(this);
-    }
-
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
         return new AnswerState(
-                getSubstitution().merge(state.getSubstitution(), true),
+                state.getSubstitution(),
                 getUnifier(),
                 getParentState(),
                 getSubGoals(),
@@ -108,8 +99,9 @@ public class ConjunctiveState extends ResolutionState {
         if (dbIterator.hasNext())
             return new AnswerState(dbIterator.next(), getUnifier(), getParentState(), getSubGoals(), getCache());
 
-        if (!subQueries.isEmpty()){
-            return new CumulativeState(subQueries, getSubstitution(), getUnifier(), this, getSubGoals(), getCache());
+        if (!visited) {
+            visited = true;
+            return new CumulativeState(subQueries, new QueryAnswer(), getUnifier(), this, getSubGoals(), getCache());
         }
         return null;
     }
