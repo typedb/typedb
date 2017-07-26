@@ -34,7 +34,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
-import static ai.grakn.util.ErrorMessage.SCHEMA_LOCKED;
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
 
 public class OntologyMutationTest extends GraphTestBase{
@@ -110,7 +109,7 @@ public class OntologyMutationTest extends GraphTestBase{
     @Test
     public void whenAddingEntityTypeUsingBatchLoadingGraph_Throw(){
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
+        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putEntityType("This Will Fail");
@@ -119,7 +118,7 @@ public class OntologyMutationTest extends GraphTestBase{
     @Test
     public void whenAddingRoleTypeUsingBatchLoadingGraph_Throw(){
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
+        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putRole("This Will Fail");
@@ -128,7 +127,7 @@ public class OntologyMutationTest extends GraphTestBase{
     @Test
     public void whenAddingResourceTypeUsingBatchLoadingGraph_Throw(){
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
+        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putResourceType("This Will Fail", ResourceType.DataType.STRING);
@@ -137,7 +136,7 @@ public class OntologyMutationTest extends GraphTestBase{
     @Test
     public void whenAddingRuleTypeUsingBatchLoadingGraph_Throw(){
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
+        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putRuleType("This Will Fail");
@@ -146,7 +145,7 @@ public class OntologyMutationTest extends GraphTestBase{
     @Test
     public void whenAddingRelationTypeUsingBatchLoadingGraph_Throw(){
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
+        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putRelationType("This Will Fail");
@@ -164,7 +163,7 @@ public class OntologyMutationTest extends GraphTestBase{
         RelationType relationType = graknGraphBatch.getRelationType(relationTypeId);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
+        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         relationType.relates(role);
     }
@@ -181,7 +180,7 @@ public class OntologyMutationTest extends GraphTestBase{
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
+        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         entityType.plays(role);
     }
@@ -199,7 +198,7 @@ public class OntologyMutationTest extends GraphTestBase{
         EntityType entityType2 = graknGraphBatch.getEntityType(entityTypeId2);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
+        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         entityType1.sup(entityType2);
     }
@@ -217,7 +216,7 @@ public class OntologyMutationTest extends GraphTestBase{
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
+        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         entityType.deletePlays(role);
     }
@@ -235,7 +234,7 @@ public class OntologyMutationTest extends GraphTestBase{
         RelationType relationType = graknGraphBatch.getRelationType(relationTypeId);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
+        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         relationType.deleteRelates(role);
     }

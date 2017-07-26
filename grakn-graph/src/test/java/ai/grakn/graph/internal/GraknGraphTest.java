@@ -19,6 +19,7 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -152,19 +153,13 @@ public class GraknGraphTest extends GraphTestBase {
         ExecutorService pool = Executors.newSingleThreadExecutor();
         GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "testing").open(GraknTxType.WRITE);
 
-        final boolean[] errorThrown = {false};
+        expectedException.expectCause(IsInstanceOf.instanceOf(GraphOperationException.class));
+        expectedException.expectMessage(GraphOperationException.transactionClosed(graph, null).getMessage());
+
         Future future = pool.submit(() -> {
-            try{
-                graph.putEntityType("A Thing");
-            } catch (GraphOperationException e){
-                if(e.getMessage().equals(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()))){
-                    errorThrown[0] = true;
-                }
-            }
+            graph.putEntityType("A Thing");
         });
         future.get();
-
-        assertTrue("Error not thrown when graph is closed in another thread", errorThrown[0]);
     }
 
     @Test
@@ -357,5 +352,30 @@ public class GraknGraphTest extends GraphTestBase {
         assertThat(s1.links().collect(Collectors.toSet()), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
         assertThat(s2.links().collect(Collectors.toSet()), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
         assertThat(s3.links().collect(Collectors.toSet()), containsInAnyOrder(s3_e1, s3_e2));
+    }
+
+    @Test
+    public void whenCreatingAValidOntologyInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
+        GraknSession session = Grakn.session(Grakn.IN_MEMORY, "hi");
+
+        ExecutorService executor = Executors.newCachedThreadPool();
+
+        executor.submit(() -> {
+            //Resources
+            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+                ResourceType<Long> int_ = graph.putResourceType("int", ResourceType.DataType.LONG);
+                ResourceType<Long> foo = graph.putResourceType("foo", ResourceType.DataType.LONG).sup(int_);
+                graph.putResourceType("bar", ResourceType.DataType.LONG).sup(int_);
+                graph.putEntityType("FOO").resource(foo);
+
+                graph.commit();
+            }
+        }).get();
+
+        //Relation Which Has Resources
+        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            graph.putEntityType("BAR").resource(graph.getResourceType("bar"));
+            graph.commit();
+        }
     }
 }

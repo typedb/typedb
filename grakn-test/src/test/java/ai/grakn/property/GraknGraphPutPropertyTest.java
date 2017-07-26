@@ -178,9 +178,9 @@ public class GraknGraphPutPropertyTest {
 
         exception.expect(GraphOperationException.class);
         if(isMetaLabel(label)) {
-            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(label));
+            exception.expectMessage(GraphOperationException.metaTypeImmutable(label).getMessage());
         } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE.name()));
+            exception.expectMessage(GraphOperationException.immutableProperty(resourceType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE).getMessage());
         }
 
         graph.putResourceType(label, dataType);
