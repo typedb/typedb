@@ -65,6 +65,8 @@ public class GraknEngineConfig {
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
 
+    public static final String STORAGE_CASSANDRA_PID_FILE = "storage.cassandra.pid-file";
+
     // Engine Config
     public static final String TASK_MANAGER_IMPLEMENTATION = "taskmanager.implementation";
 

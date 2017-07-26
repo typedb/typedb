@@ -29,11 +29,14 @@ import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
+import ai.grakn.engine.externalcomponents.RedisSupervisor;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.RedissonLockProvider;
 import ai.grakn.engine.session.RemoteSession;
+import ai.grakn.engine.externalcomponents.CassandraSupervisor;
+import ai.grakn.engine.externalcomponents.OperatingSystemCalls;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
@@ -46,6 +49,8 @@ import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableSet;
+
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
@@ -112,15 +117,29 @@ public class GraknEngineServer implements AutoCloseable {
         this.taskManager = startTaskManager(inMemoryQueue, redisCountStorage, jedisPool, lockProvider);
     }
 
-
     public static void main(String[] args) {
         GraknEngineConfig prop = GraknEngineConfig.create();
-        // Start Engine
+
+        // Start external components (Cassandra and Redis)
+        OperatingSystemCalls osCalls = new OperatingSystemCalls();
+        CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(prop, osCalls, "");
+        RedisSupervisor redisSupervisor = new RedisSupervisor(osCalls, "");
+
+        // Start Grakn Engine
         GraknEngineServer graknEngineServer = new GraknEngineServer(prop);
         graknEngineServer.start();
-        // close GraknEngineServer on SIGTERM
-        Thread closeThread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
-        Runtime.getRuntime().addShutdownHook(closeThread);
+
+        // close  on SIGTERM
+        Runnable shutdownExternalComponentsAndEngine = () -> {
+            try {
+                cassandraSupervisor.stopIfRunning();
+                redisSupervisor.stopIfRunning();
+                graknEngineServer.close();
+            } catch (IOException | InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        Runtime.getRuntime().addShutdownHook(new Thread(shutdownExternalComponentsAndEngine, "GraknEngineServer-shutdown"));
     }
 
     public void start() {
