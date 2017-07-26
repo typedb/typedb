@@ -104,6 +104,10 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     public String getProperty() {
         Stream.Builder<String> repr = Stream.builder();
 
+        if (hasReifiedRelation()) {
+            repr.add("REIFIED").add("{{").add(relation.getPrintableName()).add("}}");
+        }
+
         repr.add(typeLabelToString(resourceType));
 
         if (resource.getVarName().isUserDefinedName()) {
@@ -193,19 +197,36 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         if (!resourceType.equals(that.resourceType)) return false;
         if (!resource.equals(that.resource)) return false;
-        return relation.equals(that.relation);
+
+        boolean hasReifiedRelation =
+                hasReifiedRelation();
+
+        return !hasReifiedRelation || relation.equals(that.relation);
     }
 
     @Override
     public int hashCode() {
         int result = resourceType.hashCode();
         result = 31 * result + resource.hashCode();
-        result = 31 * result + relation.hashCode();
+
+        if (hasReifiedRelation()) {
+            result = 31 * result + relation.hashCode();
+        }
+
         return result;
+    }
+
+    private boolean hasReifiedRelation() {
+        // TODO: Having to check this is pretty dodgy
+        // This check is necessary for `equals` and `hashCode` because `VarPattern` equality is defined
+        // s.t. `var() != var()`, but `var().label("movie") == var().label("movie")`
+        // i.e., a `Var` is compared by name, but a `VarPattern` ignores the name if the var is not user-defined
+        return relation.getProperties().findAny().isPresent() || relation.getVarName().isUserDefinedName();
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
+        // TODO: Support relation variable in reasoner
         Var varName = var.getVarName().asUserDefined();
 
         Label type = this.getType();
