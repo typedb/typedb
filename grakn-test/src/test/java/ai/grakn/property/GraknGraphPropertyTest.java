@@ -296,8 +296,8 @@ public class GraknGraphPropertyTest {
     public void whenSetRegexOnMetaResourceType_Throw(@Open GraknGraph graph, String regex) {
         ResourceType resource = graph.admin().getMetaResourceType();
 
-        exception.expect(UnsupportedOperationException.class);
-        exception.expectMessage(ErrorMessage.REGEX_NOT_STRING.getMessage(resource.getLabel()));
+        exception.expect(GraphOperationException.class);
+        exception.expectMessage(GraphOperationException.cannotSetRegex(resource).getMessage());
 
         resource.setRegex(regex);
     }
