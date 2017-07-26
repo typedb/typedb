@@ -51,7 +51,6 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 public class DegreeTest {
 
@@ -62,9 +61,6 @@ public class DegreeTest {
 
     @Before
     public void setUp() {
-        // TODO: Make orientdb support analytics
-        assumeFalse(GraknTestSetup.usingOrientDB());
-
         factory = context.factoryWithNewKeyspace();
         graph = factory.open(GraknTxType.WRITE);
     }
