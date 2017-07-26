@@ -23,6 +23,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.Test;
@@ -31,7 +32,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.ErrorMessage.INVALID_OBJECT_TYPE;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
@@ -103,8 +103,8 @@ public class ConceptTest extends GraphTestBase{
         EntityType thingType = graknGraph.putEntityType("thing type");
         Entity thing = thingType.addEntity();
 
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(INVALID_OBJECT_TYPE.getMessage(thing, Type.class));
+        expectedException.expect(GraphOperationException.class);
+        expectedException.expectMessage(GraphOperationException.invalidCasting(thing, Type.class).getMessage());
 
         //noinspection ResultOfMethodCallIgnored
         thing.asType();

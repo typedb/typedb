@@ -70,8 +70,6 @@
         <websocket.version>1.1</websocket.version>
         <jetty.version>9.3.6.v20151106</jetty.version>
         <mjson.version>1.4.0</mjson.version>
-        <orientdb.version>3.2.3.0</orientdb.version>
-        <orientdb-gremlin-core.version>3.2.1</orientdb-gremlin-core.version>
         <logback.version>1.1.7</logback.version>
         <redis-mock.version>0.1</redis-mock.version>
         <janino.version>2.7.8</janino.version>

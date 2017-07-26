@@ -21,7 +21,6 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
 import javax.annotation.Nullable;
@@ -74,8 +73,8 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      */
     @Override
     public ResourceType<D> setRegex(String regex) {
-        if(getDataType() == null || !getDataType().equals(DataType.STRING)){
-            throw new UnsupportedOperationException(ErrorMessage.REGEX_NOT_STRING.getMessage(getLabel()));
+        if(getDataType() == null || !getDataType().equals(DataType.STRING)) {
+            throw GraphOperationException.cannotSetRegex(this);
         }
 
         checkInstancesMatchRegex(regex);
