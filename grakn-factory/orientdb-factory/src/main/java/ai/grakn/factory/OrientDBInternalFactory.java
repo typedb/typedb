@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.GraknOrientDBGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -35,8 +36,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
-
-import static ai.grakn.util.ErrorMessage.INVALID_DATATYPE;
 
 /**
  * <p>
@@ -158,9 +157,7 @@ public class OrientDBInternalFactory extends AbstractInternalFactory<GraknOrient
         } else if(propertyDataType.equals(Boolean.class)){
             return OType.BOOLEAN;
         } else {
-            String options = String.class.getName() + ", " + Long.class.getName() + ", " +
-                    Double.class.getName() + ", or " + Boolean.class.getName();
-            throw new RuntimeException(INVALID_DATATYPE.getMessage(propertyDataType.getName(), options));
+            throw GraphOperationException.unsupportedDataType(propertyDataType);
         }
     }
 

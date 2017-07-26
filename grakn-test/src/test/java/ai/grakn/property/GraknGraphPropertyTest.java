@@ -58,7 +58,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
 import static ai.grakn.generator.GraknGraphs.allOntologyElementsFrom;
@@ -202,9 +201,8 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingGetResourcesByValueWithAnUnsupportedDataType_Throw(@Open GraknGraph graph, List value) {
-        String supported = ResourceType.DataType.SUPPORTED_TYPES.keySet().stream().collect(Collectors.joining(","));
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(ErrorMessage.INVALID_DATATYPE.getMessage(value.getClass().getName(), supported));
+        exception.expectMessage(GraphOperationException.unsupportedDataType(value).getMessage());
         //noinspection ResultOfMethodCallIgnored
         graph.getResourcesByValue(value);
     }
