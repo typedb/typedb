@@ -37,7 +37,6 @@ import org.junit.Test;
 import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE;
-import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -234,7 +233,7 @@ public class EntityTypeTest extends GraphTestBase{
         Type meta = graknGraph.getMetaRuleType();
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(META_TYPE_IMMUTABLE.getMessage(meta.getLabel()));
+        expectedException.expectMessage(GraphOperationException.metaTypeImmutable(meta.getLabel()).getMessage());
 
         meta.setAbstract(true);
     }
@@ -245,7 +244,7 @@ public class EntityTypeTest extends GraphTestBase{
         Role role = graknGraph.putRole("A Role");
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(META_TYPE_IMMUTABLE.getMessage(meta.getLabel()));
+        expectedException.expectMessage(GraphOperationException.metaTypeImmutable(meta.getLabel()).getMessage());
 
         meta.plays(role);
     }

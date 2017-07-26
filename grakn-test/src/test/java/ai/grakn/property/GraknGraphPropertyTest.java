@@ -308,7 +308,7 @@ public class GraknGraphPropertyTest {
         ResourceType resource = graph.admin().getMetaResourceType();
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resource.getLabel()));
+        exception.expectMessage(GraphOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
 
         resource.putResource(value);
     }
@@ -332,9 +332,9 @@ public class GraknGraphPropertyTest {
 
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())) {
-            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
+            exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         } else {
-            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resource.getLabel()));
+            exception.expectMessage(GraphOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
         }
         type.resource(resource);
     }

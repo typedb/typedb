@@ -46,7 +46,6 @@ import static ai.grakn.property.PropertyUtil.directInstances;
 import static ai.grakn.property.PropertyUtil.directSubs;
 import static ai.grakn.property.PropertyUtil.indirectSupers;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
-import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -69,28 +68,28 @@ public class TypePropertyTest {
     @Property
     public void whenSettingAMetaTypeAsAbstract_Throw(@Meta Type type, boolean isAbstract) {
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
+        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.setAbstract(isAbstract);
     }
 
     @Property
     public void whenMakingAMetaTypePlayRole_Throw(@Meta Type type, Role role) {
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
+        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.plays(role);
     }
 
     @Property
     public void whenGivingAMetaTypeAKey_Throw(@Meta Type type, ResourceType resourceType) {
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
+        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.key(resourceType);
     }
 
     @Property
     public void whenGivingAMetaTypeAResource_Throw(@Meta Type type, ResourceType resourceType) {
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
+        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.resource(resourceType);
     }
 
