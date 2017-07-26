@@ -33,7 +33,6 @@
 
     <modules>
         <module>titan-factory</module>
-        <module>orientdb-factory</module>
     </modules>
 
     <properties>
