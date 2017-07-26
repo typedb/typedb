@@ -81,7 +81,7 @@ public enum ErrorMessage {
 
     VALIDATION_TOO_MANY_KEYS("Thing [%s] has more than one key of type [%s] \n"),
 
-    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type [%s] which is connected to Relation Type [%s] " +
+    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role [%s] which is connected to Relation Type [%s] " +
             "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),
 
     VALIDATION_RELATION_DUPLICATE("You have created one or more relations with the following roles and role player [%s] \n"),
