@@ -59,6 +59,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -68,7 +69,7 @@ import static org.junit.Assume.assumeFalse;
 public class GraqlShellIT {
 
     @ClassRule
-    public static final DistributionContext dist = DistributionContext.startInMemoryEngineProcess().inheritIO(false);
+    public static final DistributionContext dist = DistributionContext.startInMemoryEngineProcess().inheritIO(true);
 
     private static InputStream trueIn;
     private static PrintStream trueOut;
@@ -584,6 +585,19 @@ public class GraqlShellIT {
 
         assertThat(err.toString(), not(containsString("error")));
         assertThat(out, containsString("True"));
+    }
+
+    @Test
+    public void whenUserMakesAMistake_SubsequentErrorsAreTheSame() throws Exception {
+        String query = "insert r sub resource datatype string; e sub entity has r has nothing;";
+
+        ByteArrayOutputStream err1 = new ByteArrayOutputStream();
+        testShell("", err1, "-e", query);
+        assertThat(err1.toString(), not(isEmptyString()));
+
+        ByteArrayOutputStream err2 = new ByteArrayOutputStream();
+        testShell("", err2, "-e", query);
+        assertEquals(err1.toString(), err2.toString());
     }
 
     @Test
