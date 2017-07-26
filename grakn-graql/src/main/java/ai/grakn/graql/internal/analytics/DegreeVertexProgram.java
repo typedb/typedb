@@ -72,7 +72,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(OF_LABELS).getKeys().forEachRemaining(key ->
-                ofLabelIds.add(LabelId.of(configuration.getInt(OF_LABELS + "." + key))));
+                ofLabelIds.add((LabelId) configuration.getProperty(OF_LABELS + "." + key)));
         degreePropertyKey = (String) this.persistentProperties.get(DEGREE);
     }
 

@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -119,10 +120,10 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      * @return A new or already existing instance
      */
     V putInstance(Schema.BaseType instanceBaseType, Supplier<V> finder, BiFunction<VertexElement, T, V> producer) {
-        vertex().graph().checkMutationAllowed();
+        preCheckForInstanceCreation();
 
         V instance = finder.get();
-        if(instance == null) instance = addInstance(instanceBaseType, producer);
+        if(instance == null) instance = addInstance(instanceBaseType, producer, false);
         return instance;
     }
 
@@ -131,14 +132,11 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      *
      * @param instanceBaseType The base type of the instances of this type
      * @param producer The factory method to produce the instance
+     * @param checkNeeded indicates if a check is necessary before adding the instance
      * @return A new instance
      */
-    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer){
-        vertex().graph().checkMutationAllowed();
-
-        if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
-            throw GraphOperationException.metaTypeImmutable(getLabel());
-        }
+    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean checkNeeded){
+        if(checkNeeded) preCheckForInstanceCreation();
 
         if(isAbstract()) throw GraphOperationException.addingInstancesToAbstractType(this);
 
@@ -147,6 +145,19 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
             vertex().graph().txCache().addedInstance(getId());
         }
         return producer.apply(instanceVertex, getThis());
+    }
+
+    /**
+     * Checks if an {@link Thing} is allowed to be created and linked to this {@link Type}.
+     * This can fail is the {@link ai.grakn.GraknTxType} is read only.
+     * It can also fail when attempting to attach a resource to a meta type
+     */
+    void preCheckForInstanceCreation(){
+        vertex().graph().checkMutationAllowed();
+
+        if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
+            throw GraphOperationException.metaTypeImmutable(getLabel());
+        }
     }
 
     /**
@@ -245,17 +256,17 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         for (OntologyConcept sub : subs()) {
             if (!sub.isRole()) {
                 TypeImpl<?, V> typeImpl = (TypeImpl) sub;
-                instances.addAll(typeImpl.directInstances());
+                typeImpl.instancesDirect().forEach(instances::add);
             }
         }
 
         return Collections.unmodifiableCollection(instances);
     }
 
-    Collection<V> directInstances(){
+    Stream<V> instancesDirect(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
                 map(edge -> vertex().graph().factory().buildShard(edge.source())).
-                flatMap(Shard::<V>links).collect(Collectors.toSet());
+                flatMap(Shard::<V>links);
     }
 
     /**
@@ -355,7 +366,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
      * @return The Type itself.
      */
     public T setAbstract(Boolean isAbstract) {
-        if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract && currentShard().links().findAny().isPresent()){
+        if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract && instancesDirect().findAny().isPresent()){
             throw GraphOperationException.addingInstancesToAbstractType(this);
         }
 

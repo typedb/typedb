@@ -139,6 +139,9 @@ public class ReasoningTests {
     @ClassRule
     public static final GraphContext testSet27 = GraphContext.preLoad("testSet27.gql").assumeTrue(GraknTestSetup.usingTinker());
 
+    @ClassRule
+    public static final GraphContext testSet28 = GraphContext.preLoad("testSet28.gql").assumeTrue(GraknTestSetup.usingTinker());
+
     @Before
     public void onStartup() throws Exception {
         assumeTrue(GraknTestSetup.usingTinker());
@@ -261,6 +264,7 @@ public class ReasoningTests {
         assertEquals(answers.size(), 1);
     }
 
+    @Ignore // TODO: Fix (Bug #16195)
     @Test //Expected result: The query should return a unique match
     public void transRelationWithRelationGuardsAtBothEnds() {
         QueryBuilder qb = testSet11.graph().graql().infer(true);
@@ -580,6 +584,19 @@ public class ReasoningTests {
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         QueryAnswers exact = queryAnswers(qb.parse("match $s isa state, has name 's2';"));
         assertEquals(answers, exact);
+    }
+
+    @Test //Expected result: number of answers equal to specified limit (no duplicates produced)
+    public void duplicatesNotProducedWhenResolvingNonResolvableConjunctionsWithoutType(){
+        QueryBuilder qb = testSet28.graph().graql().infer(true);
+        String queryString = "match " +
+                "(role1: $x, role2: $y);" +
+                "(role1: $y, role2: $z);" +
+                "(role3: $z, role4: $w) isa relation3;" +
+                "limit 3;";
+
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        assertEquals(answers.size(), 3);
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {

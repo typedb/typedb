@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
@@ -46,6 +47,7 @@ import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -540,7 +542,52 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(a -> a.filterVars(vars));
     }
 
-    public Iterator<Answer> iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    /**
+     * @param sub partial substitution if any
+     * @param subGoals visited subGoals
+     * @param cache query cache
+     * @return answer iterator from this query
+     */
+    public Iterator<Answer> iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
         return new ReasonerQueryImplIterator(this, sub, subGoals, cache);
+    }
+
+    /**
+     * @param sub partial substitution if any
+     * @param subGoals visited subGoals
+     * @param cache query cache
+     * @return answer iterator from this query obtained by expanding the query by inferred types
+     */
+    public Iterator<Answer> extendedIterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        Iterator<ReasonerQueryImplIterator> qIterator = getQueryStream(sub)
+                .map(q -> new ReasonerQueryImplIterator(q, sub, subGoals, cache))
+                .iterator();
+        return Iterators.concat(qIterator);
+    }
+
+    /**
+     * @return stream of queries obtained by inserting all inferred possible types (if ambiguous)
+     */
+    private Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
+        List<Set<Atom>> atomOptions = getAtoms().stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .map(at -> {
+                    if (at.isRelation()) {
+                        RelationAtom rel = (RelationAtom) at;
+                        Set<Atom> possibleRels = new HashSet<>();
+                        rel.inferPossibleRelationTypes(sub).stream().map(rel::addType).forEach(possibleRels::add);
+                        return possibleRels;
+                    } else {
+                        return Collections.singleton(at);
+                    }
+                })
+                .collect(Collectors.toList());
+
+        if (atomOptions.stream().mapToInt(Set::size).sum() == atomOptions.size()) {
+            return Stream.of(this);
+        }
+
+        return Sets.cartesianProduct(atomOptions).stream()
+                .map(atomList -> ReasonerQueries.create(new HashSet<>(atomList), graph()));
     }
 }

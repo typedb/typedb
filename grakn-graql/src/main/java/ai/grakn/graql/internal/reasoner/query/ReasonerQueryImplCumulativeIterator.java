@@ -45,7 +45,7 @@ class ReasonerQueryImplCumulativeIterator extends ReasonerQueryIterator{
     private final QueryCache<ReasonerAtomicQuery> cache;
     private final Set<ReasonerAtomicQuery> subGoals;
 
-    private final Iterator<Answer> atomicQueryIterator;
+    private final Iterator<Answer> feederIterator;
     private Iterator<Answer> queryIterator;
 
     ReasonerQueryImplCumulativeIterator(Answer sub, LinkedList<ReasonerQueryImpl> qs,
@@ -56,18 +56,18 @@ class ReasonerQueryImplCumulativeIterator extends ReasonerQueryIterator{
         this.partialSub = sub;
         this.nextList = Lists.newLinkedList(qs);
 
-        Iterator<Answer> iterator = nextList.removeFirst().iterator(sub, subGoals, cache);
+        Iterator<Answer> iterator = nextList.removeFirst().extendedIterator(sub, subGoals, cache);
 
         this.queryIterator = nextList.isEmpty()? iterator : Collections.emptyIterator();
-        this.atomicQueryIterator = nextList.isEmpty()? Collections.emptyIterator() : iterator;
+        this.feederIterator = nextList.isEmpty()? Collections.emptyIterator() : iterator;
     }
 
     @Override
     public boolean hasNext() {
         if (queryIterator.hasNext()) return true;
 
-        if (atomicQueryIterator.hasNext() && !nextList.isEmpty()) {
-            Answer feederSub  = atomicQueryIterator.next();
+        if (feederIterator.hasNext() && !nextList.isEmpty()) {
+            Answer feederSub  = feederIterator.next();
             queryIterator = new ReasonerQueryImplCumulativeIterator(feederSub.merge(partialSub, true), nextList, subGoals, cache);
             return hasNext();
         }

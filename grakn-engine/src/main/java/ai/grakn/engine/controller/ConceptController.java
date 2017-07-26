@@ -131,7 +131,7 @@ public class ConceptController {
         validateRequest(request, APPLICATION_ALL, APPLICATION_JSON);
         try(GraknGraph graph = factory.getGraph(keyspace, READ); Context context = ontologyGetTimer.time()){
             Json responseObj = Json.object();
-            responseObj.set(ROLES_JSON_FIELD, subLabels(graph.admin().getMetaRoleType()));
+            responseObj.set(ROLES_JSON_FIELD, subLabels(graph.admin().getMetaRole()));
             responseObj.set(ENTITIES_JSON_FIELD, subLabels(graph.admin().getMetaEntityType()));
             responseObj.set(RELATIONS_JSON_FIELD, subLabels(graph.admin().getMetaRelationType()));
             responseObj.set(RESOURCES_JSON_FIELD, subLabels(graph.admin().getMetaResourceType()));

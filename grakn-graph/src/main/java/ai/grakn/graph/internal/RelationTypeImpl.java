@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -57,7 +58,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public Relation addRelation() {
         return addInstance(Schema.BaseType.RELATION,
-                (vertex, type) -> vertex().graph().factory().buildRelation(vertex, type));
+                (vertex, type) -> vertex().graph().factory().buildRelation(vertex, type), true);
     }
 
     @Override
@@ -164,29 +165,29 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     }
 
     @Override
-    public Collection<Relation> directInstances(){
-        Collection<Relation> instances = super.directInstances();
+    public Stream<Relation> instancesDirect(){
+        Stream<Relation> instances = super.instancesDirect();
 
-        if(isImplicit()){
-            //If the relation type is implicit then we need to get any relation edges it may have.
-            //Unfortunately this is a slow process
-
-            relates().stream().
-                    flatMap(role -> role.playedByTypes().stream()).
-                    forEach(type ->{
-                        //Traversal is used here to take advantage of vertex centric index
-                        vertex().graph().getTinkerTraversal().V().
-                                has(Schema.VertexProperty.ID.name(), type.getId().getValue()).
-                                in(Schema.EdgeLabel.SHARD.getLabel()).
-                                in(Schema.EdgeLabel.ISA.getLabel()).
-                                outE(Schema.EdgeLabel.RESOURCE.getLabel()).
-                                has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), getLabelId().getValue()).
-                                toStream().
-                                map(edge -> vertex().graph().factory().buildConcept(edge).asRelation()).
-                                forEach(instances::add);
-                    });
-        }
+        //If the relation type is implicit then we need to get any relation edges it may have.
+        if(isImplicit()) instances = Stream.concat(instances, relationEdges());
 
         return instances;
+    }
+
+    private Stream<Relation> relationEdges(){
+        //Unfortunately this is a slow process
+        return relates().stream().
+                flatMap(role -> role.playedByTypes().stream()).
+                flatMap(type ->{
+                    //Traversal is used here to take advantage of vertex centric index
+                    return  vertex().graph().getTinkerTraversal().V().
+                            has(Schema.VertexProperty.ID.name(), type.getId().getValue()).
+                            in(Schema.EdgeLabel.SHARD.getLabel()).
+                            in(Schema.EdgeLabel.ISA.getLabel()).
+                            outE(Schema.EdgeLabel.RESOURCE.getLabel()).
+                            has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), getLabelId().getValue()).
+                            toStream().
+                            map(edge -> vertex().graph().factory().buildConcept(edge).asRelation());
+                });
     }
 }

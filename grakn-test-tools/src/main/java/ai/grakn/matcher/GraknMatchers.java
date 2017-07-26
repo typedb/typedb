@@ -157,23 +157,6 @@ public class GraknMatchers {
     }
 
     /**
-     * Create a matcher to test that the concept is a casting.
-     */
-    public static Matcher<MatchableConcept> isCasting() {
-        return new TypeSafeMatcher<MatchableConcept>() {
-            @Override
-            public boolean matchesSafely(MatchableConcept concept) {
-                return concept.get().isThing() && concept.get().asThing().type().isRole();
-            }
-
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("isCasting()");
-            }
-        };
-    }
-
-    /**
      * Create a matcher to test that the concept is a shard.
      */
     public static Matcher<MatchableConcept> isShard() {

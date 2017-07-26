@@ -23,6 +23,8 @@ import ai.grakn.concept.OntologyConcept;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.util.Schema;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -79,7 +81,11 @@ public class GraphWriter {
      * @return a stream of all types with non-reserved IDs
      */
     private Stream<? extends OntologyConcept> types(){
-        return graph.admin().getMetaConcept().subs().stream()
+        Set<OntologyConcept> types = new HashSet<>();
+        types.addAll(graph.admin().getMetaConcept().subs());
+        types.addAll(graph.admin().getMetaRole().subs());
+
+        return types.stream()
                 .filter(t -> !Schema.MetaSchema.isMetaLabel(t.getLabel()));
     }
 }

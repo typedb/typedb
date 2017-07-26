@@ -519,7 +519,7 @@ public class RelationAtom extends IsaAtom {
         if (getExplicitRoleTypes().size() == getRelationPlayers().size() || getOntologyConcept() == null) return this;
 
         GraknGraph graph = getParentQuery().graph();
-        Role metaRole = graph.admin().getMetaRoleType();
+        Role metaRole = graph.admin().getMetaRole();
         RelationType relType = (RelationType) getOntologyConcept();
         Map<Var, OntologyConcept> varOntologyConceptMap = getParentQuery().getVarOntologyConceptMap();
 

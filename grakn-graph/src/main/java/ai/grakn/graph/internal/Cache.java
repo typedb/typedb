@@ -62,13 +62,15 @@ class Cache<V> {
      */
     @Nullable
     public V get(){
-        if(!isPresent()){
-            V value = null;
-            if(sharedValue.isPresent()) value = sharedValue.get();
-            if(value == null) value = databaseReader.get();
-            if(value == null) return null;
-            cachedValue.set(value);
-        }
+        V value = cachedValue.get();
+
+        if(value != null) return value;
+        if(sharedValue.isPresent()) value = sharedValue.get();
+        if(value == null) value = databaseReader.get();
+        if(value == null) return null;
+
+        cachedValue.set(value);
+
         return cachedValue.get();
     }
 
@@ -93,7 +95,7 @@ class Cache<V> {
      * @return true if there is anything stored in the cache
      */
     public boolean isPresent(){
-        return cachedValue.get() != null;
+        return cachedValue.get() != null || sharedValue.isPresent();
     }
 
     /**
@@ -103,7 +105,7 @@ class Cache<V> {
      */
     void ifPresent(Consumer<V> modifier){
         if(isPresent()){
-            modifier.accept(cachedValue.get());
+            modifier.accept(get());
         }
     }
 

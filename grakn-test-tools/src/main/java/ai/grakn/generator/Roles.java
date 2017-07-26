@@ -40,6 +40,6 @@ public class Roles extends AbstractOntologyConceptGenerator<Role> {
 
     @Override
     protected Role metaOntologyConcept() {
-        return graph().admin().getMetaRoleType();
+        return graph().admin().getMetaRole();
     }
 }

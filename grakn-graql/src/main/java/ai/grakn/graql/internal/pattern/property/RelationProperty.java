@@ -237,7 +237,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         //id part
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
         IdPredicate predicate = null;
-        Var typeVariable = Graql.var().asUserDefined();
+        Var typeVariable = isaProp != null? isaProp.getType().getVarName().asUserDefined() : Graql.var().asUserDefined();
         //Isa present
         if (isaProp != null) {
             VarPatternAdmin isaVar = isaProp.getType();

@@ -106,7 +106,7 @@ public interface GraknAdmin {
      * @return The meta role type -> role-type.
      */
     @CheckReturnValue
-    Role getMetaRoleType();
+    Role getMetaRole();
 
     /**
      * Get the root of all the Resource Types.
@@ -216,4 +216,10 @@ public interface GraknAdmin {
      * Should be used with caution as this will invalidate any pending transactions
      */
     void delete();
+
+    /**
+     * Get the URL where the graph is located
+     * @return the URL where the graph is located
+     */
+    String getEngineUrl();
 }

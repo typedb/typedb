@@ -19,34 +19,30 @@
 
 package ai.grakn.engine;
 
-import java.util.UUID;
-import javax.annotation.CheckReturnValue;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.auto.value.AutoValue;
+
+import javax.annotation.CheckReturnValue;
+import java.util.UUID;
 
 /**
  * An identifier for a task
  *
  * @author Felix Chapman
  */
-public final class TaskId {
-    private String value;
+@AutoValue
+public abstract class TaskId {
 
     @CheckReturnValue
-    public static TaskId of(String value) {
-        return new TaskId(value);
+    @JsonCreator
+    public static TaskId of(@JsonProperty("value") String value) {
+        return new AutoValue_TaskId(value);
     }
 
     @CheckReturnValue
     public static TaskId generate() {
-        return new TaskId(UUID.randomUUID().toString());
-    }
-
-    public TaskId() {}
-
-    @JsonCreator
-    public TaskId(@JsonProperty("value") String value) {
-        this.value = value;
+        return new AutoValue_TaskId(UUID.randomUUID().toString());
     }
 
     /**
@@ -54,26 +50,5 @@ public final class TaskId {
      */
     @CheckReturnValue
     @JsonProperty("value")
-    public String getValue() {
-        return value;
-    }
-
-    public String toString() {
-        return value;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        TaskId varName = (TaskId) o;
-
-        return value.equals(varName.value);
-    }
-
-    @Override
-    public int hashCode() {
-        return value.hashCode();
-    }
+    public abstract String getValue();
 }

@@ -26,6 +26,7 @@ import ai.grakn.util.Schema;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -96,7 +97,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
                 String value = (String) resource.getValue();
                 matcher = pattern.matcher(value);
                 if(!matcher.matches()){
-                    throw GraphOperationException.regexFailure(resource, value, regex);
+                    throw GraphOperationException.regexFailure(this, value, regex);
                 }
             }
         }
@@ -106,12 +107,60 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @Override
     public Resource<D> putResource(D value) {
         Objects.requireNonNull(value);
+
+        BiFunction<VertexElement, ResourceType<D>, Resource<D>> instanceBuilder = (vertex, type) -> {
+            if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
+            Object persistenceValue = castValue(value);
+            ResourceImpl<D> resource = vertex().graph().factory().buildResource(vertex, type, persistenceValue);
+            resource.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateResourceIndex(getLabel(), value.toString()));
+            return resource;
+        };
+
         return putInstance(Schema.BaseType.RESOURCE,
-                () -> getResource(value), (vertex, type) -> vertex().graph().factory().buildResource(vertex, type, value));
+                () -> getResource(value), instanceBuilder);
+    }
+
+    /**
+     * This is to handle casting longs and doubles when the type allows for the data type to be a number
+     * @param value The value of the resource
+     * @return The value casted to the correct type
+     */
+    private Object castValue(D value){
+        ResourceType.DataType<D> dataType = getDataType();
+        try {
+            if (dataType.equals(ResourceType.DataType.DOUBLE)) {
+                return ((Number) value).doubleValue();
+            } else if (dataType.equals(ResourceType.DataType.LONG)) {
+                if (value instanceof Double) {
+                    throw new ClassCastException();
+                }
+                return ((Number) value).longValue();
+            } else {
+                return dataType.getPersistenceValue(value);
+            }
+        } catch (ClassCastException e) {
+            throw GraphOperationException.invalidResourceValue(value, dataType);
+        }
+    }
+
+    /**
+     * Checks if all the regex's of the types of this resource conforms to the value provided.
+     *
+     * @throws GraphOperationException when the value does not conform to the regex of its types
+     * @param value The value to check the regexes against.
+     */
+    private void checkConformsToRegexes(D value){
+        //Not checking the datatype because the regex will always be null for non strings.
+        for (ResourceType rt : superSet()) {
+            String regex = rt.getRegex();
+            if (regex != null && !Pattern.matches(regex, (String) value)) {
+                throw GraphOperationException.regexFailure(this, (String) value, regex);
+            }
+        }
     }
 
     @Override
-    public <V> Resource<V> getResource(V value) {
+    public Resource<D> getResource(D value) {
         String index = Schema.generateResourceIndex(getLabel(), value.toString());
         return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
     }

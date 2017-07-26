@@ -54,6 +54,8 @@ import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -79,6 +81,8 @@ import static java.util.stream.Collectors.toSet;
 // This class performs a lot of unchecked casts, because ANTLR's visit methods only return 'object'
 @SuppressWarnings("unchecked")
 class QueryVisitor extends GraqlBaseVisitor {
+
+    protected final Logger LOG = LoggerFactory.getLogger(QueryVisitor.class);
 
     private final QueryBuilder queryBuilder;
     private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
@@ -435,6 +439,20 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<VarPattern> visitPropThen(GraqlParser.PropThenContext ctx) {
+        return var -> var.then(and(visitVarPatterns(ctx.varPatterns())));
+    }
+
+    @Deprecated // will be removed in 0.17.0
+    @Override
+    public UnaryOperator<VarPattern> visitPropLhs(GraqlParser.PropLhsContext ctx) {
+        LOG.warn("Support for keyword `lhs` will be removed in the next release. Please use `when`.");
+        return var -> var.when(and(visitPatterns(ctx.patterns())));
+    }
+
+    @Deprecated // will be removed in 0.17.0
+    @Override
+    public UnaryOperator<VarPattern> visitPropRhs(GraqlParser.PropRhsContext ctx) {
+        LOG.warn("Support for keyword `rhs` will be removed in the next release. Please use `then`.");
         return var -> var.then(and(visitVarPatterns(ctx.varPatterns())));
     }
 

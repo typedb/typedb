@@ -91,8 +91,8 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when a {@link Type} has incoming edges and therefore cannot be deleted
      */
-    public static GraphOperationException typeCannotBeDeleted(Label label){
-        return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(label));
+    public static GraphOperationException cannotBeDeleted(OntologyConcept ontologyConcept){
+        return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(ontologyConcept.getLabel()));
     }
 
     /**
@@ -142,8 +142,8 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when trying to set a {@code value} on the {@code resource} which does not conform to it's regex
      */
-    public static GraphOperationException regexFailure(Resource resource, String value, String regex){
-        return new GraphOperationException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.getId(), value, resource.type().getLabel()));
+    public static GraphOperationException regexFailure(ResourceType resourceType, String value, String regex){
+        return new GraphOperationException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resourceType.getLabel(), value));
     }
 
     /**
@@ -203,7 +203,7 @@ public class GraphOperationException extends GraknException{
      * Thrown when an thing does not have a type
      */
     public static GraphOperationException noType(Thing thing){
-        return new GraphOperationException(NO_TYPE.getMessage(thing));
+        return new GraphOperationException(NO_TYPE.getMessage(thing.getId()));
     }
 
     /**

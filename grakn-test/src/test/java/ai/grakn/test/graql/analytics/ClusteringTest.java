@@ -70,8 +70,7 @@ public class ClusteringTest {
     private ConceptId entityId4;
 
     @ClassRule
-    // TODO: Don't set port once bug #15130 is fixed
-    public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
+    public static final EngineContext context = EngineContext.startInMemoryServer();
     private GraknSession factory;
 
     @Before

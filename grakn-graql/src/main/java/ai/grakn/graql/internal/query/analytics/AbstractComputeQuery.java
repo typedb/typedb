@@ -63,6 +63,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     GraknComputer graknComputer = null;
     String keySpace;
     Set<Label> subLabels = new HashSet<>();
+    private String url;
 
     @Override
     public ComputeQuery<T> withGraph(GraknGraph graph) {
@@ -114,6 +115,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     void initSubGraph() {
         GraknGraph theGraph = graph.orElseThrow(GraqlQueryException::noGraph);
         keySpace = theGraph.getKeyspace();
+        url = theGraph.admin().getEngineUrl();
 
         getAllSubTypes(theGraph);
     }
@@ -146,7 +148,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     GraknComputer getGraphComputer() {
         if (graknComputer == null) {
-            graknComputer = Grakn.session(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
+            graknComputer = Grakn.session(url, keySpace).getGraphComputer();
         }
         return graknComputer;
     }
