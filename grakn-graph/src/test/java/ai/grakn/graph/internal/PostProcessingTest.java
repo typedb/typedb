@@ -31,6 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -203,17 +204,50 @@ public class PostProcessingTest extends GraphTestBase{
     @Test
     public void whenMergingDuplicateResourceEdges_EnsureNoDuplicatesRemain(){
         ResourceTypeImpl<String> resourceType = (ResourceTypeImpl <String>) graknGraph.putResourceType("My Sad Resource", ResourceType.DataType.STRING);
-        EntityType entityType = graknGraph.putEntityType("My Happy EntityType");
+        EntityType entityType = graknGraph.putEntityType("My Happy EntityType").resource(resourceType);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
-        Entity e3 = entityType.addEntity();
 
-        ResourceImpl<String> r1dup1 = createFakeResource(resourceType, "1");
-        ResourceImpl<String> r1dup2 = createFakeResource(resourceType, "1");
-        ResourceImpl<String> r1dup3 = createFakeResource(resourceType, "1");
+        ResourceImpl<?> r1dup1 = createFakeResource(resourceType, "1");
+        ResourceImpl<?> r1dup2 = createFakeResource(resourceType, "1");
+        ResourceImpl<?> r1dup3 = createFakeResource(resourceType, "1");
 
-        Resource<String> r2dup1 = resourceType.putResource("2");
-        Resource<String> r2dup2 = resourceType.putResource("2");
-        Resource<String> r2dup3 = resourceType.putResource("2");
+        ResourceImpl<?> r2dup1 = createFakeResource(resourceType, "2");
+        ResourceImpl<?> r2dup2 = createFakeResource(resourceType, "2");
+        ResourceImpl<?> r2dup3 = createFakeResource(resourceType, "2");
+
+        e1.resource(r1dup1);
+        e1.resource(r1dup2);
+        e1.resource(r1dup3);
+
+        e2.resource(r1dup1);
+        e2.resource(r1dup2);
+        e2.resource(r1dup3);
+
+        e1.resource(r2dup1);
+
+        //Check everything is broken
+        //Entities Too Many Resources
+        assertEquals(4, e1.resources().size());
+        assertEquals(3, e2.resources().size());
+
+        //There are too many resources
+        assertEquals(6, graknGraph.admin().getMetaResourceType().instances().size());
+
+        //Now fix everything for resource 1
+        graknGraph.fixDuplicateResources(r1dup1.getIndex(), new HashSet<>(Arrays.asList(r1dup1.getId(), r1dup2.getId(), r1dup3.getId())));
+
+        //Check resource one has been sorted out
+        assertEquals(2, e1.resources().size());
+        assertEquals(2, e1.resources().size());
+        assertEquals(4, graknGraph.admin().getMetaResourceType().instances().size()); // 4 because we still have 2 dups on r2
+
+        //Now fix everything for resource 2
+        graknGraph.fixDuplicateResources(r2dup1.getIndex(), new HashSet<>(Arrays.asList(r2dup1.getId(), r2dup2.getId(), r2dup3.getId())));
+
+        //Check resource one has been sorted out
+        assertEquals(2, e1.resources().size());
+        assertEquals(2, e1.resources().size());
+        assertEquals(2, graknGraph.admin().getMetaResourceType().instances().size()); // 4 because we still have 2 dups on r2
     }
 }
