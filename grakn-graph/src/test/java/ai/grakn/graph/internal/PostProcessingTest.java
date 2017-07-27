@@ -147,7 +147,7 @@ public class PostProcessingTest extends GraphTestBase{
 
         assertNotNull(foundR1);
         assertThat(foundR1.ownerInstances(), containsInAnyOrder(e1, e2, e3));
-        assertEquals(4, graknGraph.admin().getMetaRelationType().instances().size());
+        assertEquals(3, graknGraph.admin().getMetaRelationType().instances().size());
     }
 
     private void addEdgeRelation(Entity entity, Resource<?> resource) {
