@@ -42,7 +42,7 @@ import java.util.Set;
  * @author fppt
  *
  */
-interface RelationStructure {
+interface RelationStructure extends ContainsTxCache {
 
     /**
      *
@@ -80,11 +80,6 @@ interface RelationStructure {
      * @return The {@link Thing}s which play those {@link Role}s
      */
     Collection<Thing> rolePlayers(Role... roles);
-
-    /**
-     * Clears the internal {@link Cache}
-     */
-    void txCacheClear();
 
     /**
      * Deletes the {@link VertexElement} or {@link EdgeElement} used to represent this {@link Relation}

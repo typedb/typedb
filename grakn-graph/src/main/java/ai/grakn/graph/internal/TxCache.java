@@ -388,14 +388,7 @@ class TxCache {
         this.closedReason = closedReason;
 
         //Clear Concept Caches
-        conceptCache.values().forEach(concept -> {
-            if(concept.isRelation()){
-                RelationImpl relation = RelationImpl.from(concept.asRelation());
-                relation.structure().txCacheClear();
-            } else {
-                ((ConceptImpl) concept).txCacheClear();
-            }
-        });
+        conceptCache.values().forEach(concept -> ((ContainsTxCache) concept).txCacheClear());
 
         //Clear Collection Caches
         modifiedEntities.clear();

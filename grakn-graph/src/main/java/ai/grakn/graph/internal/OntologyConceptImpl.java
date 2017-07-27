@@ -118,7 +118,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     }
 
     @Override
-    void txCacheClear(){
+    public void txCacheClear(){
         cachedSuperType.clear();
         cachedDirectSubTypes.clear();
         cachedIsImplicit.clear();

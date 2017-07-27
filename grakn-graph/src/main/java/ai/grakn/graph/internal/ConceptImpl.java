@@ -43,7 +43,7 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-abstract class ConceptImpl implements Concept, ConceptVertex {
+abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxCache {
     private final Cache<ConceptId> conceptId = new Cache<>(() -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
 
@@ -77,11 +77,6 @@ abstract class ConceptImpl implements Concept, ConceptVertex {
         vertex().graph().txCache().remove(this);
         vertex().delete();
     }
-
-    /**
-     * Clears the internal transaction {@link Cache} of this {@link Concept}
-     */
-    abstract void txCacheClear();
 
     /**
      *
