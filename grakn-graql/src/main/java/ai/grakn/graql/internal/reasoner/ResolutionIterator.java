@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -50,7 +49,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     private final QueryCache<ReasonerAtomicQuery> cache;
 
-    private ResolutionState answerState = null;
+    private Answer nextAnswer = null;
     private final Stack<ResolutionState> states = new Stack<>();
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
@@ -61,12 +60,12 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
     }
 
-    private ResolutionState findNextAnswerState(){
+    private Answer findNextAnswer(){
         while(!states.isEmpty()) {
             ResolutionState state = states.pop();
 
             if (state.isAnswerState() && state.isTopState()) {
-                return state;
+                return state.getSubstitution();
             }
 
             ResolutionState newState = state.generateSubGoal();
@@ -80,9 +79,8 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     @Override
     public Answer next(){
-        Answer ans = answerState.getSubstitution();
-        answers.add(ans);
-        return ans;
+        answers.add(nextAnswer);
+        return nextAnswer;
     }
 
     /**
@@ -91,8 +89,8 @@ public class ResolutionIterator extends ReasonerQueryIterator {
      */
     @Override
     public boolean hasNext() {
-        answerState = findNextAnswerState();
-        if (answerState != null) return true;
+        nextAnswer = findNextAnswer();
+        if (nextAnswer != null) return true;
 
         //iter finished
         long dAns = answers.size() - oldAns;
