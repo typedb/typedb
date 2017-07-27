@@ -51,16 +51,16 @@ class RelationEdge implements RelationStructure{
     private final EdgeElement edgeElement;
 
     private final Cache<RelationType> relationType = new Cache<>(() ->
-            edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
+            edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))), Cacheable.relationType());
 
     private final Cache<Role> ownerRole = new Cache<>(() -> edge().graph().getOntologyConcept(LabelId.of(
-            edge().property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
+            edge().property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))), Cacheable.role());
 
     private final Cache<Role> valueRole = new Cache<>(() -> edge().graph().getOntologyConcept(LabelId.of(
-            edge().property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
+            edge().property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))), Cacheable.role());
 
-    private final Cache<Thing> owner = new Cache<>(() -> edge().graph().factory().buildConcept(edge().source()));
-    private final Cache<Thing> value = new Cache<>(() -> edge().graph().factory().buildConcept(edge().target()));
+    private final Cache<Thing> owner = new Cache<>(() -> edge().graph().factory().buildConcept(edge().source()), Cacheable.thing());
+    private final Cache<Thing> value = new Cache<>(() -> edge().graph().factory().buildConcept(edge().target()), Cacheable.thing());
 
     RelationEdge(EdgeElement edgeElement) {
         this.edgeElement = edgeElement;

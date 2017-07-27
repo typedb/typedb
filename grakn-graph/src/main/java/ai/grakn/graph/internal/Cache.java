@@ -45,14 +45,18 @@ class Cache<V> {
     //If no cache can produce the data then the database is read
     private final Supplier<V> databaseReader;
 
+    //Use to copy the cached value safely
+    private final Cacheable<V> cacheable;
+
     //Transaction bound. If this is not set it does not yet exist in the scope of the transaction.
     private ThreadLocal<V> valueTx = new ThreadLocal<>();
 
     //Graph bound value which has already been persisted and acts as a shared component cache
     private Optional<V> valueGlobal = Optional.empty();
 
-    Cache(Supplier<V> databaseReader){
+    Cache(Supplier<V> databaseReader, Cacheable<V> cacheable){
         this.databaseReader = databaseReader;
+        this.cacheable = cacheable;
     }
 
     /**
@@ -65,23 +69,13 @@ class Cache<V> {
         V value = valueTx.get();
 
         if(value != null) return value;
-        if(valueGlobal.isPresent()) value = copyGlobal();
+        if(valueGlobal.isPresent()) value = cacheable.copy(valueGlobal.get());
         if(value == null) value = databaseReader.get();
         if(value == null) return null;
 
         valueTx.set(value);
 
         return valueTx.get();
-    }
-
-    /**
-     * Copies the global value so it can be safely used in another variable.
-     * This method is overridden by {@link CacheSet}
-     *
-     * @return The new value to store in the transaction bound cached value.
-     */
-    V copyGlobal(){
-        return valueGlobal.get();
     }
 
     /**

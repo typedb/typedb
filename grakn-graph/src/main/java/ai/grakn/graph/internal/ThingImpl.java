@@ -67,7 +67,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
         Type type = vertex().graph().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
         return type.getLabel();
-    });
+    }, Cacheable.label());
 
     private final Cache<V> cachedType = new Cache<>(() -> {
         Optional<EdgeElement> typeEdge = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
@@ -78,7 +78,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         }
 
         return vertex().graph().factory().buildConcept(typeEdge.get().target());
-    });
+    }, Cacheable.type());
 
     ThingImpl(VertexElement vertexElement) {
         super(vertexElement);
