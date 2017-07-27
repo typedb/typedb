@@ -29,15 +29,15 @@ Grakn’s ontology functions as a data schema constraint that guarantees the log
 
 ## Flexible data model
 
-> Grakn allows your business model to evolve regularly.
+> Grakn allows your database model to evolve regularly.
 
 Grakn’s schema/ontology is flexible. You can add new data and relation types, update type names, delete unused types, all while storing and retrieving data to and from the database. This allows your business model to evolve regularly even when you have lots of data, building a lasting advantage as your business “learns”. In Grakn’s Enterprise solution, you can have a machine learning system to automatically adapt and grow your Grakn ontology.
 
 ##  Machine reasoning query language
 
-> Graql allows you to discover deeply hidden and implicit associations within the data.
+> Graql provides an intelligent higher level abstraction over complex relationships.
 
-Graql is a polymorphic, knowledge-oriented query language. It allows you to query many different types simultaneously through a common supertype, and it takes into account deep contextualisation of data. Graql uses machine reasoning to perform inference over data types, relation types, context disambiguation, implicit relationships and dynamic relationships. This allows you to discover deeply hidden and implicit association between data instances through short and concise statements.
+Graql is a polymorphic, knowledge-oriented query language. It allows you to query many different types simultaneously through a common supertype, and it takes into account deep contextualisation of data. Graql uses machine reasoning to perform inference over data types, relation types, context disambiguation, implicit relationships and dynamic relationships. This allows you to discover deeply hidden and implicit association between data instances through short and concise statements, as Graql provides an intelligent higher level abstraction over complex relationships.
 
 ## Optimised query execution
 
