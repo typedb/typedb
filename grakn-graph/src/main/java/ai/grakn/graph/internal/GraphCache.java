@@ -59,7 +59,7 @@ class GraphCache {
 
         int cacheTimeout = Integer.parseInt(properties.get(AbstractGraknGraph.NORMAL_CACHE_TIMEOUT_MS).toString());
         cachedTypes = CacheBuilder.newBuilder()
-                //.maximumSize(1000)
+                .maximumSize(1000)
                 .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
                 .build();
     }

@@ -18,6 +18,8 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
+
 /**
  * <p>
  *     Indicates a {@link Cache} is contained within the class
@@ -36,4 +38,11 @@ interface ContainsTxCache {
      * Clears the internal {@link Cache}
      */
     void txCacheClear();
+
+    /**
+     * Helper method to cast {@link Concept} into {@link ContainsTxCache}
+     */
+    static ContainsTxCache from(Concept concept){
+        return (ContainsTxCache) concept;
+    }
 }

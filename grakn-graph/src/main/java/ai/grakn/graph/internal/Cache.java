@@ -74,6 +74,12 @@ class Cache<V> {
         return cachedValue.get();
     }
 
+    /**
+     * Copies the shared value so it can be safely used in another variable.
+     * This method is overriden by {@link CacheSet}
+     *
+     * @return The new value to store in the transaction bound cached value.
+     */
     V copyShared(){
         return sharedValue.get();
     }
@@ -118,7 +124,7 @@ class Cache<V> {
      * that it can be accessed via all transactions.
      */
     void flush(){
-        if(isPresent() && !sharedValue.equals(get())) {
+        if(isPresent() && !sharedValue.get().equals(get())) {
             this.sharedValue = Optional.of(get());
         }
     }

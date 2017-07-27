@@ -388,7 +388,7 @@ class TxCache {
         this.closedReason = closedReason;
 
         //Clear Concept Caches
-        conceptCache.values().forEach(concept -> ((ContainsTxCache) concept).txCacheClear());
+        conceptCache.values().forEach(concept -> ContainsTxCache.from(concept).txCacheClear());
 
         //Clear Collection Caches
         modifiedEntities.clear();
