@@ -134,6 +134,15 @@ class RelationEdge implements RelationStructure{
         return result;
     }
 
+    @Override
+    public void txCacheClear() {
+        relationType.clear();
+        ownerRole.clear();
+        valueRole.clear();
+        owner.clear();
+        value.clear();
+    }
+
     private Role ownerRole(){
         return ownerRole.get();
     }

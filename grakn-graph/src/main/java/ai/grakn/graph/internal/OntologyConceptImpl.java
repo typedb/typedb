@@ -59,7 +59,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
     private final Cache<Label> cachedLabel = new Cache<>(() ->  Label.of(vertex().property(Schema.VertexProperty.ONTOLOGY_LABEL)));
     private final Cache<LabelId> cachedLabelId = new Cache<>(() -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
     private final Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private final CacheSet<T> cachedDirectSubTypes = new CacheSet<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
     private final Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
     OntologyConceptImpl(VertexElement vertexElement) {
@@ -117,9 +117,7 @@ abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImp
         cachedIsImplicit.flush();
     }
 
-    /**
-     * Clears the internal transaction caches
-     */
+    @Override
     void txCacheClear(){
         cachedSuperType.clear();
         cachedDirectSubTypes.clear();

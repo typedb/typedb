@@ -75,6 +75,11 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         return castingsRelation(roles).map(Casting::getInstance).collect(Collectors.toSet());
     }
 
+    @Override
+    public void txCacheClear() {
+         super.txCacheClear();
+    }
+
     public void addRolePlayer(Role role, Thing thing) {
         Objects.requireNonNull(role);
         Objects.requireNonNull(thing);

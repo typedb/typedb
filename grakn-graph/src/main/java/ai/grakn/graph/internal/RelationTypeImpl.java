@@ -69,7 +69,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
 
     @Override
     public void txCacheClear(){
-        super.txCacheFlush();
+        super.txCacheClear();
         cachedRelates.clear();
     }
 

@@ -79,6 +79,11 @@ abstract class ConceptImpl implements Concept, ConceptVertex {
     }
 
     /**
+     * Clears the internal transaction {@link Cache} of this {@link Concept}
+     */
+    abstract void txCacheClear();
+
+    /**
      *
      * @param direction the direction of the neigouring concept to get
      * @param label The edge label to traverse

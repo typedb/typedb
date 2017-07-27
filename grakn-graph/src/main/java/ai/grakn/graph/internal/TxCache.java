@@ -129,7 +129,7 @@ class TxCache {
 
         //Read central cache into txCache cloning only base concepts. Sets clones later
         for (OntologyConcept type : cachedOntologySnapshot.values()) {
-            cacheConcept((ConceptImpl) type);
+            cacheConcept(type);
         }
 
         //Load Labels Separately. We do this because the TypeCache may have expired.
@@ -386,6 +386,18 @@ class TxCache {
     void closeTx(String closedReason){
         isTxOpen = false;
         this.closedReason = closedReason;
+
+        //Clear Concept Caches
+        conceptCache.values().forEach(concept -> {
+            if(concept.isRelation()){
+                RelationImpl relation = RelationImpl.from(concept.asRelation());
+                relation.structure().txCacheClear();
+            } else {
+                ((ConceptImpl) concept).txCacheClear();
+            }
+        });
+
+        //Clear Collection Caches
         modifiedEntities.clear();
         modifiedRoles.clear();
         modifiedRelationTypes.clear();

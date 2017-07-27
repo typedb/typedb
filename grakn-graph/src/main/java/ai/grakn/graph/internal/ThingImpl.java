@@ -110,6 +110,13 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         });
     }
 
+    @Override
+    void txCacheClear(){
+        //TODO: Clearing the caches at th Thing Level may not be needed. Need to experiment
+        cachedInternalType.clear();
+        cachedType.clear();
+    }
+
     /**
      * This index is used by concepts such as casting and relations to speed up internal lookups
      * @return The inner index value of some concepts.

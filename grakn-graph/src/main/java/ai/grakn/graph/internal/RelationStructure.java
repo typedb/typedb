@@ -82,6 +82,11 @@ interface RelationStructure {
     Collection<Thing> rolePlayers(Role... roles);
 
     /**
+     * Clears the internal {@link Cache}
+     */
+    void txCacheClear();
+
+    /**
      * Deletes the {@link VertexElement} or {@link EdgeElement} used to represent this {@link Relation}
      */
     void delete();

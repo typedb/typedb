@@ -65,13 +65,17 @@ class Cache<V> {
         V value = cachedValue.get();
 
         if(value != null) return value;
-        if(sharedValue.isPresent()) value = sharedValue.get();
+        if(sharedValue.isPresent()) value = copyShared();
         if(value == null) value = databaseReader.get();
         if(value == null) return null;
 
         cachedValue.set(value);
 
         return cachedValue.get();
+    }
+
+    V copyShared(){
+        return sharedValue.get();
     }
 
     /**
@@ -114,6 +118,23 @@ class Cache<V> {
      * that it can be accessed via all transactions.
      */
     void flush(){
-        if(isPresent()) sharedValue = Optional.of(get());
+        if(isPresent()) sharedValue(get());
+    }
+
+    /**
+     * Sets the value which is shared between transactions
+     *
+     * @param sharedValue the new value to be shared between transactions
+     */
+    void sharedValue(V sharedValue){
+        this.sharedValue = Optional.of(sharedValue);
+    }
+
+    /**
+     *
+     * @return The current value which is shared between transactions
+     */
+    Optional<V> sharedValue(){
+        return sharedValue;
     }
 }
