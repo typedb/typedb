@@ -21,6 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -105,29 +106,30 @@ public class PostProcessingTest extends GraphTestBase{
         resourceIds.add(r111.getId());
 
         //Give resources some relationships
-        RelationImpl rel1 = ((RelationImpl) relationType.addRelation().
-                addRolePlayer(roleResource, r1).addRolePlayer(roleEntity, e1));
-        RelationImpl rel2 = ((RelationImpl) relationType.addRelation().
-                addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e1)); //When merging this relation should not be absorbed
-        RelationImpl rel3 = ((RelationImpl) relationType.addRelation().
-                addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e2)); //Absorb
-        RelationImpl rel4 = ((RelationImpl) relationType.addRelation().
-                addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e2)); //Don't Absorb
-        RelationImpl rel5 = ((RelationImpl) relationType.addRelation().
-                addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e3)); //Absorb
+        Relation rel1 = relationType.addRelation().
+                addRolePlayer(roleResource, r1).addRolePlayer(roleEntity, e1);
+        Relation rel2 = relationType.addRelation().
+                addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e1); //When merging this relation should not be absorbed
+        Relation rel3 = relationType.addRelation().
+                addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e2); //Absorb
+        Relation rel4 = relationType.addRelation().
+                addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e2); //Don't Absorb
 
-        rel1.reified().get().setHash();
-        rel2.reified().get().setHash();
-        rel3.reified().get().setHash();
-        rel4.reified().get().setHash();
-        rel5.reified().get().setHash();
+        EdgeElement resourceEdge = EntityImpl.from(e3).putEdge(r111, Schema.EdgeLabel.RESOURCE);
+        new RelationImpl(new RelationEdge(relationType, roleEntity, roleResource, resourceEdge)); // Absorb
+
+        RelationImpl.from(rel1).reified().get().setHash();
+        RelationImpl.from(rel2).reified().get().setHash();
+        RelationImpl.from(rel3).reified().get().setHash();
+        RelationImpl.from(rel4).reified().get().setHash();
 
         //Check everything is broken
         assertEquals(3, resourceType.instances().size());
         assertEquals(1, r1.relations().size());
         assertEquals(2, r11.relations().size());
         assertEquals(1, r1.relations().size());
-        assertEquals(6, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(5, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(1, graknGraph.getTinkerTraversal().E().hasLabel(Schema.EdgeLabel.RESOURCE.getLabel()).toList().size());
 
         r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().contains(e1)));
 
