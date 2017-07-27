@@ -33,7 +33,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /**
  * <p>
@@ -51,9 +51,9 @@ import java.util.function.Function;
  * @param <V>
  */
 public class Cacheable<V> {
-    private final Function<V, V> copier;
+    private final UnaryOperator<V> copier;
 
-    private Cacheable(Function<V, V> copier){
+    private Cacheable(UnaryOperator<V> copier){
         this.copier = copier;
     }
 

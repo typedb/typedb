@@ -40,10 +40,10 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  */
 class Casting {
     private final EdgeElement edgeElement;
-    private final Cache<Role> cachedRoleType = new Cache<>(() -> (Role) edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))), Cacheable.role());
-    private final Cache<RelationType> cachedRelationType = new Cache<>(() -> (RelationType) edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))), Cacheable.relationType());
-    private final Cache<Thing> cachedInstance = new Cache<>(() -> edge().graph().factory().buildConcept(edge().target()), Cacheable.thing());
-    private final Cache<Relation> cachedRelation = new Cache<>(() -> edge().graph().factory().buildConcept(edge().source()), Cacheable.relation());
+    private final Cache<Role> cachedRoleType = new Cache<>(Cacheable.role(), () -> (Role) edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
+    private final Cache<RelationType> cachedRelationType = new Cache<>(Cacheable.relationType(), () -> (RelationType) edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
+    private final Cache<Thing> cachedInstance = new Cache<>(Cacheable.thing(), () -> edge().graph().factory().buildConcept(edge().target()));
+    private final Cache<Relation> cachedRelation = new Cache<>(Cacheable.relation(), () -> edge().graph().factory().buildConcept(edge().source()));
 
     Casting(EdgeElement edgeElement){
         this.edgeElement = edgeElement;

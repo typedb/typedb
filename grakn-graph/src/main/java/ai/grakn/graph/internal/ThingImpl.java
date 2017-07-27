@@ -63,13 +63,13 @@ import java.util.stream.Stream;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
-    private final Cache<Label> cachedInternalType = new Cache<>(() -> {
+    private final Cache<Label> cachedInternalType = new Cache<>(Cacheable.label(), () -> {
         int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
         Type type = vertex().graph().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
         return type.getLabel();
-    }, Cacheable.label());
+    });
 
-    private final Cache<V> cachedType = new Cache<>(() -> {
+    private final Cache<V> cachedType = new Cache<>(Cacheable.type(), () -> {
         Optional<EdgeElement> typeEdge = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
                 flatMap(edge -> edge.target().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).findAny();
 
@@ -78,7 +78,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         }
 
         return vertex().graph().factory().buildConcept(typeEdge.get().target());
-    }, Cacheable.type());
+    });
 
     ThingImpl(VertexElement vertexElement) {
         super(vertexElement);

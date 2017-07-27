@@ -54,9 +54,9 @@ class Cache<V> {
     //Graph bound value which has already been persisted and acts as a shared component cache
     private Optional<V> valueGlobal = Optional.empty();
 
-    Cache(Supplier<V> databaseReader, Cacheable<V> cacheable){
-        this.databaseReader = databaseReader;
+    Cache(Cacheable<V> cacheable, Supplier<V> databaseReader){
         this.cacheable = cacheable;
+        this.databaseReader = databaseReader;
     }
 
     /**

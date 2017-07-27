@@ -56,11 +56,11 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  *           For example an {@link EntityType} or {@link RelationType} or {@link Role}
  */
 abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImpl implements OntologyConcept {
-    private final Cache<Label> cachedLabel = new Cache<>(() ->  Label.of(vertex().property(Schema.VertexProperty.ONTOLOGY_LABEL)), Cacheable.label());
-    private final Cache<LabelId> cachedLabelId = new Cache<>(() -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)), Cacheable.labelId());
-    private final Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null), Cacheable.ontologyConcept());
-    private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()), Cacheable.set());
-    private final Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT), Cacheable.bool());
+    private final Cache<Label> cachedLabel = new Cache<>(Cacheable.label(), () ->  Label.of(vertex().property(Schema.VertexProperty.ONTOLOGY_LABEL)));
+    private final Cache<LabelId> cachedLabelId = new Cache<>(Cacheable.labelId(), () -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
+    private final Cache<T> cachedSuperType = new Cache<>(Cacheable.ontologyConcept(), () -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(Cacheable.set(), () -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private final Cache<Boolean> cachedIsImplicit = new Cache<>(Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
     OntologyConceptImpl(VertexElement vertexElement) {
         super(vertexElement);

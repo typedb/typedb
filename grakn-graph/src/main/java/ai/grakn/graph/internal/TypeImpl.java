@@ -61,11 +61,11 @@ import java.util.stream.Stream;
 class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
-    private final Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT), Cacheable.bool());
-    private final Cache<Set<T>> cachedShards = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()), Cacheable.set());
+    private final Cache<Boolean> cachedIsAbstract = new Cache<>(Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
+    private final Cache<Set<T>> cachedShards = new Cache<>(Cacheable.set(), () -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
 
     //This cache is different in order to keep track of which plays are required
-    private final Cache<Map<Role, Boolean>> cachedDirectPlays = new Cache<>(() -> {
+    private final Cache<Map<Role, Boolean>> cachedDirectPlays = new Cache<>(Cacheable.map(), () -> {
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
@@ -75,7 +75,7 @@ class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> i
         });
 
         return roleTypes;
-    }, Cacheable.map());
+    });
 
     TypeImpl(VertexElement vertexElement) {
         super(vertexElement);

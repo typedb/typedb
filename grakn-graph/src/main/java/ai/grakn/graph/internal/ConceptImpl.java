@@ -44,7 +44,7 @@ import java.util.stream.Stream;
  *
  */
 abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxCache {
-    private final Cache<ConceptId> conceptId = new Cache<>(() -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)), Cacheable.conceptId());
+    private final Cache<ConceptId> conceptId = new Cache<>(Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
 
     @SuppressWarnings("unchecked")
