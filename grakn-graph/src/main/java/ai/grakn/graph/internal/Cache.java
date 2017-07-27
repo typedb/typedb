@@ -49,7 +49,7 @@ class Cache<V> {
     private ThreadLocal<V> valueTx = new ThreadLocal<>();
 
     //Graph bound value which has already been persisted and acts as a shared component cache
-    private Optional<V> valueShared = Optional.empty();
+    private Optional<V> valueGlobal = Optional.empty();
 
     Cache(Supplier<V> databaseReader){
         this.databaseReader = databaseReader;
@@ -65,7 +65,7 @@ class Cache<V> {
         V value = valueTx.get();
 
         if(value != null) return value;
-        if(valueShared.isPresent()) value = copyShared();
+        if(valueGlobal.isPresent()) value = copyGlobal();
         if(value == null) value = databaseReader.get();
         if(value == null) return null;
 
@@ -75,13 +75,13 @@ class Cache<V> {
     }
 
     /**
-     * Copies the shared value so it can be safely used in another variable.
+     * Copies the global value so it can be safely used in another variable.
      * This method is overridden by {@link CacheSet}
      *
      * @return The new value to store in the transaction bound cached value.
      */
-    V copyShared(){
-        return valueShared.get();
+    V copyGlobal(){
+        return valueGlobal.get();
     }
 
     /**
@@ -105,7 +105,7 @@ class Cache<V> {
      * @return true if there is anything stored in the cache
      */
     public boolean isPresent(){
-        return valueTx.get() != null || valueShared.isPresent();
+        return valueTx.get() != null || valueGlobal.isPresent();
     }
 
     /**
@@ -120,12 +120,12 @@ class Cache<V> {
     }
 
     /**
-     * Takes the current value in the transaction cache if it is present and puts it in the valueShared reference so
+     * Takes the current value in the transaction cache if it is present and puts it in the valueGlobal reference so
      * that it can be accessed via all transactions.
      */
     void flush(){
-        if(isPresent() && !valueShared.get().equals(get())) {
-            this.valueShared = Optional.of(get());
+        if(isPresent() && !valueGlobal.get().equals(get())) {
+            this.valueGlobal = Optional.of(get());
         }
     }
 

@@ -31,7 +31,7 @@ import java.util.function.Supplier;
  *     An internal cached object which hits the database only when it needs to.
  *     This is used to expand on the functionality provided by {@link Cache}.
  *     This particular class ensures that no cache leaks can occur when dealing with {@link java.util.Set}
- *     which can be accidentally leak due to {@link Cache#sharedValue} being shared between transactions.
+ *     which can be accidentally leak due to {@link Cache#valueGlobal} being shared between transactions.
  *
  *     This class facilitates the deep cloning of {@link java.util.Set} to prevent such leaks.
  * </p>
@@ -50,7 +50,7 @@ class CacheSet<V> extends Cache<Set<V>> {
      * @return The newly copied cached {@link Set}
      */
     @Override
-    Set<V> copyShared(){
-        return new HashSet<>(super.copyShared());
+    Set<V> copyGlobal(){
+        return new HashSet<>(super.copyGlobal());
     }
 }
