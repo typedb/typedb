@@ -46,10 +46,10 @@ class Cache<V> {
     private final Supplier<V> databaseReader;
 
     //Transaction bound. If this is not set it does not yet exist in the scope of the transaction.
-    private ThreadLocal<V> cachedValue = new ThreadLocal<>();
+    private ThreadLocal<V> valueTx = new ThreadLocal<>();
 
     //Graph bound value which has already been persisted and acts as a shared component cache
-    private Optional<V> sharedValue = Optional.empty();
+    private Optional<V> valueShared = Optional.empty();
 
     Cache(Supplier<V> databaseReader){
         this.databaseReader = databaseReader;
@@ -62,33 +62,33 @@ class Cache<V> {
      */
     @Nullable
     public V get(){
-        V value = cachedValue.get();
+        V value = valueTx.get();
 
         if(value != null) return value;
-        if(sharedValue.isPresent()) value = copyShared();
+        if(valueShared.isPresent()) value = copyShared();
         if(value == null) value = databaseReader.get();
         if(value == null) return null;
 
-        cachedValue.set(value);
+        valueTx.set(value);
 
-        return cachedValue.get();
+        return valueTx.get();
     }
 
     /**
      * Copies the shared value so it can be safely used in another variable.
-     * This method is overriden by {@link CacheSet}
+     * This method is overridden by {@link CacheSet}
      *
      * @return The new value to store in the transaction bound cached value.
      */
     V copyShared(){
-        return sharedValue.get();
+        return valueShared.get();
     }
 
     /**
      * Clears the cache.
      */
     public void clear(){
-        cachedValue.remove();
+        valueTx.remove();
     }
 
     /**
@@ -97,7 +97,7 @@ class Cache<V> {
      * @param value the value to be cached
      */
     public void set(@Nullable V value){
-        cachedValue.set(value);
+        valueTx.set(value);
     }
 
     /**
@@ -105,7 +105,7 @@ class Cache<V> {
      * @return true if there is anything stored in the cache
      */
     public boolean isPresent(){
-        return cachedValue.get() != null || sharedValue.isPresent();
+        return valueTx.get() != null || valueShared.isPresent();
     }
 
     /**
@@ -120,12 +120,12 @@ class Cache<V> {
     }
 
     /**
-     * Takes the current value in the transaction cache if it is present and puts it in the sharedValue reference so
+     * Takes the current value in the transaction cache if it is present and puts it in the valueShared reference so
      * that it can be accessed via all transactions.
      */
     void flush(){
-        if(isPresent() && !sharedValue.get().equals(get())) {
-            this.sharedValue = Optional.of(get());
+        if(isPresent() && !valueShared.get().equals(get())) {
+            this.valueShared = Optional.of(get());
         }
     }
 
