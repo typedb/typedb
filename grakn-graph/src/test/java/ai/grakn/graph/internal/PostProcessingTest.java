@@ -193,4 +193,21 @@ public class PostProcessingTest extends GraphTestBase{
         assertEquals(4L, t2.getShardCount());
         assertEquals(5L, t3.getShardCount());
     }
+
+    @Test
+    public void whenMergingDuplicateResourceEdges_EnsureNoDuplicatesRemain(){
+        ResourceTypeImpl<String> resourceType = (ResourceTypeImpl <String>) graknGraph.putResourceType("My Sad Resource", ResourceType.DataType.STRING);
+        EntityType entityType = graknGraph.putEntityType("My Happy EntityType");
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+        Entity e3 = entityType.addEntity();
+
+        ResourceImpl<String> r1dup1 = createFakeResource(resourceType, "1");
+        ResourceImpl<String> r1dup2 = createFakeResource(resourceType, "1");
+        ResourceImpl<String> r1dup3 = createFakeResource(resourceType, "1");
+
+        Resource<String> r2dup1 = resourceType.putResource("2");
+        Resource<String> r2dup2 = resourceType.putResource("2");
+        Resource<String> r2dup3 = resourceType.putResource("2");
+    }
 }
