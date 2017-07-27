@@ -69,7 +69,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         return type.getLabel();
     });
 
-    private final Cache<V> cachedType = new Cache<>(Cacheable.type(), () -> {
+    private final Cache<V> cachedType = new Cache<>(Cacheable.concept(), () -> {
         Optional<EdgeElement> typeEdge = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
                 flatMap(edge -> edge.target().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).findAny();
 

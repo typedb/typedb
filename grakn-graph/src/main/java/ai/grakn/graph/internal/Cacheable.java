@@ -19,15 +19,10 @@
 package ai.grakn.graph.internal;
 
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -74,27 +69,7 @@ public class Cacheable<V> {
         return new Cacheable<>((o) -> o);
     }
 
-    static <T extends OntologyConcept> Cacheable<T> ontologyConcept(){
-        return new Cacheable<>((o) -> o);
-    }
-
-    static <T extends Type> Cacheable<T> type(){
-        return new Cacheable<>((o) -> o);
-    }
-
-    static Cacheable<Role> role(){
-        return new Cacheable<>((o) -> o);
-    }
-
-    static Cacheable<RelationType> relationType(){
-        return new Cacheable<>((o) -> o);
-    }
-
-    static Cacheable<Thing> thing(){
-        return new Cacheable<>((o) -> o);
-    }
-
-    static Cacheable<Relation> relation(){
+    static <T extends Concept> Cacheable<T> concept(){
         return new Cacheable<>((o) -> o);
     }
 
