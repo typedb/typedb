@@ -47,7 +47,7 @@ import java.util.function.Function;
  * @author fppt
  *
  */
-class RelationImpl implements Relation, ConceptVertex {
+class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     private RelationStructure relationStructure;
 
     RelationImpl(RelationStructure relationStructure) {
@@ -212,5 +212,10 @@ class RelationImpl implements Relation, ConceptVertex {
 
     public static RelationImpl from(Relation relation){
         return (RelationImpl) relation;
+    }
+
+    @Override
+    public void txCacheClear() {
+        structure().txCacheClear();
     }
 }
