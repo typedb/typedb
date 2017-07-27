@@ -49,6 +49,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class GraknTitanGraphTest extends TitanTestBase{
+
     private GraknGraph graknGraph;
 
     @Before
@@ -159,13 +160,18 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Test //This test is performed here because it depends on actual transaction behaviour which tinker does not exhibit
     public void whenClosingTransaction_EnsureConceptTransactionCachesAreCleared(){
-        EntityType entityType = graknGraph.admin().getMetaEntityType();
-        EntityType newEntityType = graknGraph.putEntityType("New Entity Type");
+        TitanInternalFactory factory = newFactory();
+        GraknTitanGraph graph = factory.open(GraknTxType.WRITE);
+
+        EntityType entityType = graph.admin().getMetaEntityType();
+        EntityType newEntityType = graph.putEntityType("New Entity Type");
         assertThat(entityType.subs(), containsInAnyOrder(entityType, newEntityType));
 
-        graknGraph.close();
+        graph.close();
 
-        graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
+        graph = factory.open(GraknTxType.WRITE);
         assertThat(entityType.subs(), containsInAnyOrder(entityType));
+
+        graph.close();
     }
 }
