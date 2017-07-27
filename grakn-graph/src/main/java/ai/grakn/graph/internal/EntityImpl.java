@@ -42,4 +42,8 @@ class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
     EntityImpl(VertexElement vertexElement, EntityType type) {
         super(vertexElement, type);
     }
+
+    public static EntityImpl from(Entity entity){
+        return (EntityImpl) entity;
+    }
 }
