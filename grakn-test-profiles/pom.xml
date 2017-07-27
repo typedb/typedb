@@ -5,7 +5,7 @@
     <parent>
         <artifactId>grakn</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.16.0-SNAPSHOT</version>
+        <version>0.17.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -103,21 +103,6 @@
                             <artifactId>slf4j-nop</artifactId>
                         </exclusion>
                     </exclusions>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
-            <id>orientdb</id>
-            <properties>
-                <grakn.test-profile>orientdb</grakn.test-profile>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>ai.grakn</groupId>
-                    <artifactId>orientdb-factory</artifactId>
-                    <version>${project.version}</version>
                     <scope>test</scope>
                 </dependency>
             </dependencies>

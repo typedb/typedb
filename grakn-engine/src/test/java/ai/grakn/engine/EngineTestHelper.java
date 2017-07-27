@@ -1,5 +1,6 @@
 package ai.grakn.engine;
 
+import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.GraknTestSetup;
 
 import java.io.IOException;
@@ -54,6 +55,7 @@ public class EngineTestHelper {
         if (server != null) {
             return;
         }
+        GraknTestSetup.startRedisIfNeeded(new SimpleURI(config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
         server = new GraknEngineServer(config());
         server.start();
     }

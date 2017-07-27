@@ -21,7 +21,7 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.util.Schema;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
@@ -48,7 +48,6 @@ import static java.util.stream.Collectors.toSet;
 public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept> extends FromGraphGenerator<T> {
 
     private Optional<Boolean> meta = Optional.empty();
-    private Optional<Boolean> includeAbstract = Optional.empty();
 
     AbstractOntologyConceptGenerator(Class<T> type) {
         super(type);
@@ -70,17 +69,6 @@ public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept
         if (!includeMeta()) {
             ontologyConcepts.remove(metaOntologyConcept());
             ontologyConcepts.removeAll(otherMetaOntologyConcepts());
-        }
-
-        // TODO: We should have an AbstractTypeGenerator with this annotation, not here
-        if(!includeAbstract()){
-            ontologyConcepts = ontologyConcepts.stream()
-                    .filter(ontologyConcept -> {
-                        boolean isMeta = Schema.MetaSchema.isMetaLabel(ontologyConcept.getLabel());
-                        boolean nonAbstract = ontologyConcept.isType() && !ontologyConcept.asType().isAbstract();
-                        return isMeta || nonAbstract;
-                    })
-                    .collect(toSet());
         }
 
         if (ontologyConcepts.isEmpty() && includeNonMeta()) {
@@ -112,26 +100,21 @@ public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept
         return !meta.orElse(false);
     }
 
-    private final boolean includeAbstract(){
-        return includeAbstract.orElse(true);
-    }
-
     final AbstractOntologyConceptGenerator<T> excludeMeta() {
         meta = Optional.of(false);
         return this;
     }
 
-    final AbstractOntologyConceptGenerator<T> excludeAbstract() {
-        includeAbstract = Optional.of(false);
-        return this;
-    }
-
     public final void configure(Meta meta) {
-        this.meta = Optional.of(meta.value());
+        Preconditions.checkArgument(
+                !this.meta.isPresent() || this.meta.get(), "Cannot specify parameter is both meta and non-meta");
+        this.meta = Optional.of(true);
     }
 
-    public final void configure(Abstract includeAbstract) {
-        this.includeAbstract = Optional.of(includeAbstract.value());
+    public final void configure(NonMeta nonMeta) {
+        Preconditions.checkArgument(
+                !this.meta.isPresent() || !this.meta.get(), "Cannot specify parameter is both meta and non-meta");
+        this.meta = Optional.of(false);
     }
 
     /**
@@ -141,16 +124,14 @@ public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept
     @Retention(RUNTIME)
     @GeneratorConfiguration
     public @interface Meta {
-        boolean value() default true;
     }
 
     /**
-     * Specify whether the generated {@link OntologyConcept} should be abstract
+     * Specify whether the generated {@link OntologyConcept} should not be a meta concept
      */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
-    public @interface Abstract {
-        boolean value() default true;
+    public @interface NonMeta {
     }
 }

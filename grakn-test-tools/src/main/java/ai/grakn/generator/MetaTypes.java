@@ -14,27 +14,33 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
-package ai.grakn.engine.lock;
 
-import java.util.concurrent.locks.Lock;
-import org.redisson.api.RedissonClient;
+package ai.grakn.generator;
+
+import ai.grakn.concept.OntologyConcept;
+import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
 
 /**
- * Proxy for Redisson lock
+ * This is a generator that just produces the top-level meta-type `thing`.
  *
- * @author Domenico Corapi
+ * Other meta types are still handled from their respective generators, e.g. `EntityTypes`
+ *
+ * @author Felix Chapman
  */
-public class RedissonLockProvider implements LockProvider {
+public class MetaTypes extends FromGraphGenerator<OntologyConcept> {
 
-    private RedissonClient redissonClient;
-
-    public RedissonLockProvider(RedissonClient redissonClient) {
-        this.redissonClient = redissonClient;
+    public MetaTypes() {
+        // TODO: This should generate `Type`, not `OntologyConcept`
+        super(OntologyConcept.class);
     }
 
     @Override
-    public Lock getLock(String lockName) {
-        return redissonClient.getLock(lockName);
+    protected OntologyConcept generateFromGraph() {
+        return graph().admin().getMetaConcept();
+    }
+
+    public final void configure(Meta meta) {
     }
 }

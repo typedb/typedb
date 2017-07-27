@@ -32,8 +32,9 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
-import ai.grakn.generator.PutOntologyConceptFunctions;
 import ai.grakn.generator.Labels.Unused;
+import ai.grakn.generator.PutOntologyConceptFunctions;
+import ai.grakn.generator.PutTypeFunctions;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.pholser.junit.quickcheck.From;
@@ -64,29 +65,37 @@ public class GraknGraphPutPropertyTest {
     public ExpectedException exception = ExpectedException.none();
 
     @Property
-    public void whenCallingAnyPutMethod_CreateAnOntologyElementWithTheGivenName(
-            @Open GraknGraph graph,
-            @Unused Label label, @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, OntologyConcept> putOntologyElement) {
-        OntologyConcept type = putOntologyElement.apply(graph, label);
+    public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyConceptWithTheGivenLabel(
+            @Open GraknGraph graph, @Unused Label label,
+            @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, OntologyConcept> putOntologyConcept
+    ) {
+        OntologyConcept type = putOntologyConcept.apply(graph, label);
         assertEquals(label, type.getLabel());
     }
 
     @Property
-    public void whenCallingAnyPutTypeMethod_CreateATypeWithDefaultProperties(
-            @Open GraknGraph graph,
-            @Unused Label label, @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, OntologyConcept> putOntologyElement) {
-        OntologyConcept ontologyConcept = putOntologyElement.apply(graph, label);
+    public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyConceptWithDefaultProperties(
+            @Open GraknGraph graph, @Unused Label label,
+            @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, OntologyConcept> putOntologyConcept
+    ) {
+        OntologyConcept concept = putOntologyConcept.apply(graph, label);
 
-        assertThat("Type should only have one sub-type: itself", ontologyConcept.subs(), contains(ontologyConcept));
-        if(ontologyConcept.isType()) {
-            Type type = ontologyConcept.asType();
-            assertThat("Type should not play any roles", type.plays(), empty());
-            assertThat("Type should not have any scopes", type.scopes(), empty());
-            assertFalse("Type should not be abstract", type.isAbstract());
-            assertFalse("Type should not be implicit", type.isImplicit());
-            assertThat("Rules of hypotheses should be empty", type.getRulesOfHypothesis(), empty());
-            assertThat("Rules of conclusion should be empty", type.getRulesOfConclusion(), empty());
-        }
+        assertThat("Concept should only have one sub-type: itself", concept.subs(), contains(concept));
+        assertFalse("Concept should not be implicit", concept.isImplicit());
+        assertThat("Rules of hypotheses should be empty", concept.getRulesOfHypothesis(), empty());
+        assertThat("Rules of conclusion should be empty", concept.getRulesOfConclusion(), empty());
+    }
+
+    @Property
+    public void whenCallingAnyPutTypeMethod_CreateATypeWithDefaultProperties(
+            @Open GraknGraph graph, @Unused Label label,
+            @From(PutTypeFunctions.class) BiFunction<GraknGraph, Label, Type> putType
+    ) {
+        Type type = putType.apply(graph, label);
+
+        assertThat("Type should not play any roles", type.plays(), empty());
+        assertThat("Type should not have any scopes", type.scopes(), empty());
+        assertFalse("Type should not be abstract", type.isAbstract());
     }
 
     @Property
@@ -169,9 +178,9 @@ public class GraknGraphPutPropertyTest {
 
         exception.expect(GraphOperationException.class);
         if(isMetaLabel(label)) {
-            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(label));
+            exception.expectMessage(GraphOperationException.metaTypeImmutable(label).getMessage());
         } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE.name()));
+            exception.expectMessage(GraphOperationException.immutableProperty(resourceType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE).getMessage());
         }
 
         graph.putResourceType(label, dataType);
@@ -241,32 +250,30 @@ public class GraknGraphPutPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRoleType_CreateATypeWithSuperTypeRole(@Open GraknGraph graph, @Unused Label label) {
+    public void whenCallingPutRole_CreateATypeWithSuperRole(@Open GraknGraph graph, @Unused Label label) {
         Role role = graph.putRole(label);
         assertEquals(graph.admin().getMetaRole(), role.sup());
     }
 
     @Property
-    public void whenCallingPutRoleType_CreateATypeWithDefaultProperties(
+    public void whenCallingPutRole_CreateARoleWithDefaultProperties(
             @Open GraknGraph graph, @Unused Label label) {
         Role role = graph.putRole(label);
 
-        assertThat("The role type should be played by no types", role.playedByTypes(), empty());
-        assertThat("The role type should be owned by no relation types", role.relationTypes(), empty());
+        assertThat("The role should be played by no types", role.playedByTypes(), empty());
+        assertThat("The role should be owned by no relation types", role.relationTypes(), empty());
     }
 
     @Property
-    public void whenCallingPutRoleTypeWithAnExistingRoleTypeLabel_ItReturnsThatType(
+    public void whenCallingPutRoleWithAnExistingRoleLabel_ItReturnsThatRole(
             @Open GraknGraph graph, @FromGraph Role role) {
         Role newType = graph.putRole(role.getLabel());
         assertEquals(role, newType);
     }
 
     @Property
-    public void whenCallingPutRoleTypeWithAnExistingNonRoleTypeLabel_Throw(
+    public void whenCallingPutRoleWithAnExistingTypeLabel_Throw(
             @Open GraknGraph graph, @FromGraph Type type) {
-        assumeFalse(type.isRole());
-
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));

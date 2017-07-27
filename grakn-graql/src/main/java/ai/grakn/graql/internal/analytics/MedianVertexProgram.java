@@ -129,7 +129,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(RESOURCE_TYPE).getKeys().forEachRemaining(key ->
-                statisticsResourceLabelIds.add(LabelId.of(configuration.getInt(RESOURCE_TYPE + "." + key))));
+                statisticsResourceLabelIds.add((LabelId) configuration.getProperty(RESOURCE_TYPE + "." + key)));
 
         degreePropertyKey = (String) this.persistentProperties.get(DegreeVertexProgram.DEGREE);
         labelKey = (String) this.persistentProperties.get(LABEL);

@@ -25,6 +25,7 @@ import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.engine.util.SimpleURI;
 import com.codahale.metrics.MetricRegistry;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
@@ -78,9 +79,8 @@ public class TaskManagers extends Generator<TaskManager> {
 
         GraknEngineConfig config = GraknEngineConfig.create();
         JedisPoolConfig poolConfig = new JedisPoolConfig();
-        Pool<Jedis> jedisPool = new JedisPool(poolConfig,
-                config.getProperty(GraknEngineConfig.REDIS_SERVER_URL),
-                Integer.parseInt(config.getProperty(GraknEngineConfig.REDIS_SERVER_PORT)));
+        SimpleURI simpleURI = new SimpleURI(config.getProperty(GraknEngineConfig.REDIS_HOST));
+        Pool<Jedis> jedisPool = new JedisPool(poolConfig, simpleURI.getHost(), simpleURI.getPort());
         if (!taskManagers.containsKey(taskManagerToReturn)) {
             try {
                 Constructor<? extends TaskManager> constructor =

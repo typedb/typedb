@@ -27,7 +27,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
+import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.Methods.MethodOf;
@@ -62,7 +62,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 
 @RunWith(JUnitQuickcheck.class)
-public class VertexPropertyTest {
+public class ConceptPropertyTest {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -70,7 +70,7 @@ public class VertexPropertyTest {
     @Ignore // TODO: Either fix this, remove test or add exceptions to this rule
     @Property
     public void whenCallingAnyMethodOnADeletedConcept_Throw(
-            @Meta(false) Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
+            @NonMeta Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
         concept.delete();
 
         Object[] params = mockParamsOf(method);
@@ -98,7 +98,7 @@ public class VertexPropertyTest {
 
     @Property
     public void whenCallingToStringOnADeletedConcept_TheStringContainsTheId(
-            @Open GraknGraph graph, @FromGraph @Meta(false) Concept concept) {
+            @Open GraknGraph graph, @FromGraph @NonMeta Concept concept) {
         assumeDeletable(graph, concept);
         concept.delete();
         assertThat(concept.toString(), containsString(concept.getId().getValue()));
@@ -119,7 +119,7 @@ public class VertexPropertyTest {
 
     @Property
     public void whenCallingDelete_TheConceptIsNoLongerInTheGraph(
-            @Open GraknGraph graph, @Meta(false) @FromGraph Concept concept) {
+            @Open GraknGraph graph, @NonMeta @FromGraph Concept concept) {
         assumeDeletable(graph, concept);
 
         assertThat(allConceptsFrom(graph), hasItem(concept));
@@ -130,6 +130,8 @@ public class VertexPropertyTest {
     @Property
     public void whenConceptIsASubClass_TheConceptCanBeConvertedToThatSubClass(Concept concept) {
         // These are all in one test only because they are trivial
+
+        if (concept.isOntologyConcept()) assertEquals(concept, concept.asOntologyConcept());
 
         if (concept.isType()) assertEquals(concept, concept.asType());
 
@@ -163,6 +165,14 @@ public class VertexPropertyTest {
     }
 
     @Property
+    public void whenConceptIsNotAnOntologyConcept_TheConceptCannotBeConvertedToAnOntologyConcept(Concept concept) {
+        assumeFalse(concept.isOntologyConcept());
+        exception.expect(GraphOperationException.class);
+        //noinspection ResultOfMethodCallIgnored
+        concept.asOntologyConcept();
+    }
+
+    @Property
     public void whenConceptIsNotAnEntityType_TheConceptCannotBeConvertedToAnEntityType(Concept concept) {
         assumeFalse(concept.isEntityType());
         exception.expect(GraphOperationException.class);
@@ -179,7 +189,7 @@ public class VertexPropertyTest {
     }
 
     @Property
-    public void whenConceptIsNotARoleType_TheConceptCannotBeConvertedToARoleType(Concept concept) {
+    public void whenConceptIsNotARole_TheConceptCannotBeConvertedToARole(Concept concept) {
         assumeFalse(concept.isRole());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored

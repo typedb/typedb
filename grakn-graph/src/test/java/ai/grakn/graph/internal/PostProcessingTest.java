@@ -90,7 +90,7 @@ public class PostProcessingTest extends GraphTestBase{
         Role roleResource = graknGraph.putRole("Resource Role");
         RelationType relationType = graknGraph.putRelationType("Relation Type").relates(roleEntity).relates(roleResource);
         ResourceTypeImpl<String> resourceType = (ResourceTypeImpl<String>) graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).plays(roleResource);
-        EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity);
+        EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity).resource(resourceType);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
         Entity e3 = entityType.addEntity();
@@ -106,30 +106,27 @@ public class PostProcessingTest extends GraphTestBase{
         resourceIds.add(r111.getId());
 
         //Give resources some relationships
-        Relation rel1 = relationType.addRelation().
-                addRolePlayer(roleResource, r1).addRolePlayer(roleEntity, e1);
-        Relation rel2 = relationType.addRelation().
-                addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e1); //When merging this relation should not be absorbed
-        Relation rel3 = relationType.addRelation().
-                addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e2); //Absorb
-        Relation rel4 = relationType.addRelation().
-                addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e2); //Don't Absorb
+        addReifiedRelation(roleEntity, roleResource, relationType, e1, r1);
 
-        EdgeElement resourceEdge = EntityImpl.from(e3).putEdge(r111, Schema.EdgeLabel.RESOURCE);
-        new RelationImpl(new RelationEdge(relationType, roleEntity, roleResource, resourceEdge)); // Absorb
+        //When merging this relation should not be absorbed
+        addReifiedRelation(roleEntity, roleResource, relationType, e1, r11);
 
-        RelationImpl.from(rel1).reified().get().setHash();
-        RelationImpl.from(rel2).reified().get().setHash();
-        RelationImpl.from(rel3).reified().get().setHash();
-        RelationImpl.from(rel4).reified().get().setHash();
+        //Absorb
+        addReifiedRelation(roleEntity, roleResource, relationType, e2, r11);
+
+        //Don't Absorb
+        addEdgeRelation(e2, r111);
+
+        // Absorb
+        addEdgeRelation(e3, r111);
 
         //Check everything is broken
         assertEquals(3, resourceType.instances().size());
         assertEquals(1, r1.relations().size());
         assertEquals(2, r11.relations().size());
         assertEquals(1, r1.relations().size());
-        assertEquals(5, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
-        assertEquals(1, graknGraph.getTinkerTraversal().E().hasLabel(Schema.EdgeLabel.RESOURCE.getLabel()).toList().size());
+        assertEquals(4, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(2, graknGraph.getTinkerTraversal().E().hasLabel(Schema.EdgeLabel.RESOURCE.getLabel()).toList().size());
 
         r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().contains(e1)));
 
@@ -151,6 +148,15 @@ public class PostProcessingTest extends GraphTestBase{
         assertNotNull(foundR1);
         assertThat(foundR1.ownerInstances(), containsInAnyOrder(e1, e2, e3));
         assertEquals(3, graknGraph.admin().getMetaRelationType().instances().size());
+    }
+
+    private void addEdgeRelation(Entity entity, Resource<?> resource) {
+        entity.resource(resource);
+    }
+
+    private void addReifiedRelation(Role roleEntity, Role roleResource, RelationType relationType, Entity entity, Resource<?> resource) {
+        Relation relation = relationType.addRelation().addRolePlayer(roleResource, resource).addRolePlayer(roleEntity, entity);
+        RelationImpl.from(relation).reify().setHash();
     }
 
 
