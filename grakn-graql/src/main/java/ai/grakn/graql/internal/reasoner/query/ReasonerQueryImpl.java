@@ -513,7 +513,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             return resolveAndMaterialise(new LazyQueryCache<>(), new LazyQueryCache<>());
         } else {
             return new ResolutionIterator(this).hasStream();
-            //return new QueryAnswerIterator(this).hasStream();
         }
     }
 
@@ -546,29 +545,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @param sub partial substitution if any
-     * @param subGoals visited subGoals
-     * @param cache query cache
-     * @return answer iterator from this query
-     */
-    public Iterator<Answer> iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
-        return new ReasonerQueryImplIterator(this, sub, subGoals, cache);
-    }
-
-    /**
-     * @param sub partial substitution if any
-     * @param subGoals visited subGoals
-     * @param cache query cache
-     * @return answer iterator from this query obtained by expanding the query by inferred types
-     */
-    public Iterator<Answer> extendedIterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        Iterator<ReasonerQueryImplIterator> qIterator = getQueryStream(sub)
-                .map(q -> new ReasonerQueryImplIterator(q, sub, subGoals, cache))
-                .iterator();
-        return Iterators.concat(qIterator);
-    }
-
-    /**
      *
      * @param sub
      * @param u
@@ -581,9 +557,24 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
+     *
+     * @param sub
+     * @param u
+     * @param parent
+     * @param subGoals
+     * @param cache
+     * @return
+     */
+    public List<QueryState> subGoals(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return getQueryStream(sub)
+                .map(q -> q.subGoal(sub, u, parent, subGoals, cache))
+                .collect(Collectors.toList());
+    }
+
+    /**
      * @return stream of queries obtained by inserting all inferred possible types (if ambiguous)
      */
-    private Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
+    protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         List<Set<Atom>> atomOptions = getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .map(at -> {

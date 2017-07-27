@@ -347,19 +347,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Iterator<Answer> iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return extendedIterator(sub, subGoals, cache);
-    }
-
-    @Override
-    public Iterator<Answer> extendedIterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        Iterator<ReasonerAtomicQueryIterator> qIterator = getQueryStream(sub)
-                .map(q -> new ReasonerAtomicQueryIterator(q, sub, subGoals, cache))
-                .iterator();
-        return Iterators.concat(qIterator);
-    }
-
-    @Override
     public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return new AtomicState(this, sub, u, parent, subGoals, cache);
     }
@@ -367,7 +354,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * @return stream of atomic query obtained by inserting all inferred possible types (if ambiguous)
      */
-    private Stream<ReasonerAtomicQuery> getQueryStream(Answer sub){
+    @Override
+    protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         Atom atom = getAtom();
         if (atom.isRelation() && atom.getOntologyConcept() == null){
             List<RelationType> relationTypes = ((RelationAtom) atom).inferPossibleRelationTypes(sub);

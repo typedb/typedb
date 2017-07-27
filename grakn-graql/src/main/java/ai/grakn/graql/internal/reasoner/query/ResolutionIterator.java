@@ -88,7 +88,6 @@ class ResolutionIterator extends ReasonerQueryIterator {
         if (answerState != null) return true;
 
         //iter finished
-
         long dAns = answers.size() - oldAns;
         if (dAns != 0 || iter == 0) {
             LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
