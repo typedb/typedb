@@ -34,7 +34,7 @@ import javafx.util.Pair;
 /**
  *
  */
-public class AtomicState extends ResolutionState{
+public class AtomicState extends QueryState{
 
     private final ReasonerAtomicQuery query;
     private final Iterator<Answer> dbIterator;
@@ -45,17 +45,12 @@ public class AtomicState extends ResolutionState{
     public AtomicState(ReasonerAtomicQuery q,
                        Answer sub,
                        Unifier u,
-                       ResolutionState parent,
+                       QueryState parent,
                        Set<ReasonerAtomicQuery> subGoals,
                        QueryCache<ReasonerAtomicQuery> cache) {
 
-        super(
-                sub,
-                u,
-                parent,
-                subGoals,
-                cache
-        );
+        super(sub, u, parent, subGoals, cache);
+
         this.query = ReasonerQueries.atomic(q);
         query.addSubstitution(sub);
 
@@ -84,13 +79,7 @@ public class AtomicState extends ResolutionState{
     public ResolutionState propagateAnswer(AnswerState state) {
         Answer answer = state.getSubstitution().unify(state.getUnifier()).filterVars(query.getVarNames());
         getCache().recordAnswerWithUnifier(query, answer, cacheUnifier);
-        return new AnswerState(
-                answer,
-                getUnifier(),
-                getParentState(),
-                getSubGoals(),
-                getCache()
-        );
+        return new AnswerState(answer, getUnifier(), getParentState());
     }
 
     @Override
@@ -98,7 +87,7 @@ public class AtomicState extends ResolutionState{
         if (dbIterator.hasNext()) {
             Answer answer = dbIterator.next();
             getCache().recordAnswerWithUnifier(query, answer, cacheUnifier);
-            return new AnswerState(answer, getUnifier(), getParentState(), getSubGoals(), getCache());
+            return new AnswerState(answer, getUnifier(), getParentState());
         }
 
         if(ruleIterator.hasNext())

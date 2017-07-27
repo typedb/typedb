@@ -20,23 +20,37 @@ package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import java.util.Set;
 
+public abstract class QueryState extends ResolutionState {
 
-/**
- *
- */
-class AnswerState extends ResolutionState {
+    private final Set<ReasonerAtomicQuery> subGoals;
+    private final QueryCache<ReasonerAtomicQuery> cache;
 
-    AnswerState(Answer sub, Unifier u, QueryState parent) {
+    QueryState(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent);
+        this.subGoals = subGoals;
+        this.cache = cache;
     }
 
-    @Override
-    public boolean isAnswerState(){ return true;}
+    /**
+     *
+     * @return
+     */
+    Set<ReasonerAtomicQuery> getSubGoals(){ return subGoals;}
 
-    @Override
-    public ResolutionState generateSubGoal() {
-        return getParentState().propagateAnswer(this);
-    }
+    /**
+     *
+     * @return
+     */
+    QueryCache<ReasonerAtomicQuery> getCache(){ return cache;}
 
+    /**
+     *
+     * @param state
+     * @return
+     */
+    abstract ResolutionState propagateAnswer(AnswerState state);
 }

@@ -20,9 +20,6 @@ package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import java.util.Set;
 
 /**
  *
@@ -31,41 +28,49 @@ public abstract class ResolutionState {
 
     private final Answer sub;
     private final Unifier unifier;
+    private final QueryState parentState;
 
-    private final ResolutionState parentState;
-
-    private final Set<ReasonerAtomicQuery> subGoals;
-    private final QueryCache<ReasonerAtomicQuery> cache;
-
-    ResolutionState(Answer sub,
-                    Unifier u,
-                    ResolutionState parent,
-                    Set<ReasonerAtomicQuery> subGoals,
-                    QueryCache<ReasonerAtomicQuery> cache){
+    ResolutionState(Answer sub, Unifier u, QueryState parent){
         this.sub = sub;
         this.unifier = u;
         this.parentState = parent;
-        this.subGoals = subGoals;
-        this.cache = cache;
     }
 
+    /**
+     *
+     * @return
+     */
     public abstract ResolutionState generateSubGoal();
 
+    /**
+     *
+     * @return
+     */
     public Answer getSubstitution(){ return sub;}
 
-    public ResolutionState propagateAnswer(AnswerState state){
-        throw new IllegalStateException("dupa");
-    }
-
+    /**
+     *
+     * @return
+     */
     public Unifier getUnifier(){ return unifier;}
 
-    ResolutionState getParentState(){ return parentState;}
-    Set<ReasonerAtomicQuery> getSubGoals(){ return subGoals;}
-    QueryCache<ReasonerAtomicQuery> getCache(){ return cache;}
-
+    /**
+     *
+     * @return
+     */
     public boolean isAnswerState(){ return false;}
 
+    /**
+     *
+     * @return
+     */
     public boolean isTopState(){
         return parentState == null;
     }
+
+    /**
+     *
+     * @return
+     */
+    QueryState getParentState(){ return parentState;}
 }

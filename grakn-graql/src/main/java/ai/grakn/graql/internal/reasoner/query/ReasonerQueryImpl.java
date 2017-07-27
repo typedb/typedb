@@ -47,7 +47,7 @@ import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 
 import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
-import ai.grakn.graql.internal.reasoner.state.ResolutionState;
+import ai.grakn.graql.internal.reasoner.state.QueryState;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -576,7 +576,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache
      * @return
      */
-    public ResolutionState subGoal(Answer sub, Unifier u, ResolutionState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
     }
 

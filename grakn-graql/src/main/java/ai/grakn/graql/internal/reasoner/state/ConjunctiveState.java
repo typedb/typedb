@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-public class ConjunctiveState extends ResolutionState {
+public class ConjunctiveState extends QueryState {
 
     private final ReasonerQueryImpl query;
     private final LinkedList<ReasonerQueryImpl> subQueries;
@@ -51,16 +51,10 @@ public class ConjunctiveState extends ResolutionState {
     public ConjunctiveState(ReasonerQueryImpl q,
                             Answer sub,
                             Unifier u,
-                            ResolutionState parent,
+                            QueryState parent,
                             Set<ReasonerAtomicQuery> subGoals,
                             QueryCache<ReasonerAtomicQuery> cache) {
-        super(
-                sub,
-                u,
-                parent,
-                subGoals,
-                cache
-        );
+        super(sub, u, parent, subGoals, cache);
 
         this.query = ReasonerQueries
                     .create(q)
@@ -85,19 +79,13 @@ public class ConjunctiveState extends ResolutionState {
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        return new AnswerState(
-                state.getSubstitution(),
-                getUnifier(),
-                getParentState(),
-                getSubGoals(),
-                getCache()
-        );
+        return new AnswerState(state.getSubstitution(), getUnifier(), getParentState());
     }
 
     @Override
     public ResolutionState generateSubGoal(){
         if (dbIterator.hasNext())
-            return new AnswerState(dbIterator.next(), getUnifier(), getParentState(), getSubGoals(), getCache());
+            return new AnswerState(dbIterator.next(), getUnifier(), getParentState());
 
         if (!visited) {
             visited = true;

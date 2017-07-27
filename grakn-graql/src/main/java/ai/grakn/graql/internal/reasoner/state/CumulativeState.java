@@ -29,7 +29,7 @@ import java.util.Set;
 /**
  *
  */
-class CumulativeState extends ResolutionState{
+class CumulativeState extends QueryState{
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
     private final ResolutionState feederGoal;
@@ -39,7 +39,7 @@ class CumulativeState extends ResolutionState{
     CumulativeState(LinkedList<ReasonerQueryImpl> qs,
                     Answer sub,
                     Unifier u,
-                    ResolutionState parent,
+                    QueryState parent,
                     Set<ReasonerAtomicQuery> subGoals,
                     QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
@@ -49,19 +49,13 @@ class CumulativeState extends ResolutionState{
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        Answer sub = getSubstitution().merge(state.getSubstitution(), true);
+        Answer answer = getSubstitution().merge(state.getSubstitution(), true);
         if (subQueries.isEmpty()){
-            return new AnswerState(
-                    sub,
-                    getUnifier(),
-                    getParentState(),
-                    getSubGoals(),
-                    getCache()
-            );
+            return new AnswerState(answer, getUnifier(), getParentState());
         }
         return new CumulativeState(
                 subQueries,
-                sub,
+                answer,
                 getUnifier(),
                 getParentState(),
                 getSubGoals(),
