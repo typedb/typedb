@@ -26,6 +26,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import java.util.HashSet;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
 import org.slf4j.Logger;
@@ -47,16 +48,15 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final ReasonerQueryImpl query;
     private final Set<Answer> answers = new HashSet<>();
 
-    private final QueryCache<ReasonerAtomicQuery> cache;
+    private final QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+    private final Stack<ResolutionState> states = new Stack<>();
 
     private Answer nextAnswer = null;
-    private final Stack<ResolutionState> states = new Stack<>();
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
     public ResolutionIterator(ReasonerQueryImpl q){
         this.query = q;
-        this.cache = new QueryCache<>();
         states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
     }
 
@@ -79,6 +79,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     @Override
     public Answer next(){
+        if (nextAnswer == null) throw new NoSuchElementException();
         answers.add(nextAnswer);
         return nextAnswer;
     }
