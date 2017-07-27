@@ -574,7 +574,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return stream of queries obtained by inserting all inferred possible types (if ambiguous)
      */
-    protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
+    Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         List<Set<Atom>> atomOptions = getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .map(at -> {
