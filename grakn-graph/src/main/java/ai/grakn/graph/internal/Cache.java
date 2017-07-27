@@ -118,23 +118,9 @@ class Cache<V> {
      * that it can be accessed via all transactions.
      */
     void flush(){
-        if(isPresent()) sharedValue(get());
+        if(isPresent() && !sharedValue.equals(get())) {
+            this.sharedValue = Optional.of(get());
+        }
     }
 
-    /**
-     * Sets the value which is shared between transactions
-     *
-     * @param sharedValue the new value to be shared between transactions
-     */
-    void sharedValue(V sharedValue){
-        this.sharedValue = Optional.of(sharedValue);
-    }
-
-    /**
-     *
-     * @return The current value which is shared between transactions
-     */
-    Optional<V> sharedValue(){
-        return sharedValue;
-    }
 }
