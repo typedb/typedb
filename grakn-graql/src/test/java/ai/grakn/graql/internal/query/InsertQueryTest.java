@@ -630,7 +630,8 @@ public class InsertQueryTest {
     @Test
     public void whenAddingAResourceRelationWithProvenance_TheResourceAndProvenanceAreAdded() {
         InsertQuery query = qb.insert(
-                w.isa("movie").has(title, x.val("My Movie"), y.has("provenance", z.val("Someone told me")))
+                y.has("provenance", z.val("Someone told me")),
+                w.isa("movie").has(title, x.val("My Movie"), y)
         );
 
         Answer answer = Iterables.getOnlyElement(query.execute());
