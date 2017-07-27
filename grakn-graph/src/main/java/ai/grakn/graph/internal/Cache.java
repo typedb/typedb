@@ -124,8 +124,9 @@ class Cache<V> {
      * that it can be accessed via all transactions.
      */
     void flush(){
-        if(isPresent() && !valueGlobal.get().equals(get())) {
-            this.valueGlobal = Optional.of(get());
+        if(isPresent()) {
+            V newValue = get();
+            if(!valueGlobal.isPresent() || !valueGlobal.get().equals(newValue)) valueGlobal = Optional.of(get());
         }
     }
 
