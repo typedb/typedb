@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -226,6 +227,26 @@ public class ResourceTest extends GraphTestBase{
         expectedException.expect(InvalidGraphException.class);
 
         graknGraph.commit();
+    }
+
+    @Test
+    public void whenGettingTheRelationsOfResources_EnsureIncomingResourceEdgesAreTakingIntoAccount(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type Thingy", ResourceType.DataType.STRING);
+        Resource<String> resource = resourceType.putResource("Thingy");
+
+        EntityType entityType = graknGraph.putEntityType("Entity Type Thingy").key(resourceType);
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+
+        assertThat(resource.relations(), empty());
+
+        e1.resource(resource);
+        e2.resource(resource);
+
+        Relation rel1 = Iterables.getOnlyElement(e1.relations());
+        Relation rel2 = Iterables.getOnlyElement(e2.relations());
+
+        assertThat(resource.relations(), containsInAnyOrder(rel1, rel2));
     }
 
 }
