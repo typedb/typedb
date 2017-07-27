@@ -65,6 +65,8 @@ public class GraknEngineConfig {
     public static final String REDIS_SENTINEL_HOST = "redis.sentinel.host";
     public static final String REDIS_SENTINEL_MASTER = "redis.sentinel.master";
 
+    public static final String QUEUE_CONSUMERS = "queue.consumers";
+
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
 
     // Engine Config

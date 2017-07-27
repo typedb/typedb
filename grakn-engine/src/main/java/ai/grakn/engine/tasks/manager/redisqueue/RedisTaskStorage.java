@@ -76,10 +76,11 @@ public class RedisTaskStorage implements TaskStateStorage {
     public Boolean updateState(TaskState state) {
         try(Jedis jedis = redis.getResource(); Context ignore = updateTimer.time()){
             // TODO find a better way to represent the state
-            String value = state.getId().getValue();
-            LOG.debug("Updating state {}", value);
-            String status = jedis.set(value, new String(Base64.getEncoder().encode(SerializationUtils.serialize(state)),
-                    Charsets.UTF_8));
+            String key = state.getId().getValue();
+            LOG.debug("Updating state {}", key);
+            String value = new String(Base64.getEncoder().encode(SerializationUtils.serialize(state)),
+                    Charsets.UTF_8);
+            String status = jedis.setex(key, 60*60/*expire time in seconds*/, value);
             return status.equalsIgnoreCase("OK");
         }
     }

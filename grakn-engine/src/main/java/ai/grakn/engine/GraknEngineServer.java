@@ -17,6 +17,7 @@
  */
 package ai.grakn.engine;
 
+import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
@@ -168,7 +169,10 @@ public class GraknEngineServer implements AutoCloseable {
             LockProvider lockProvider) {
         TaskManager taskManager;
         if (!inMemoryQueue) {
-            taskManager = new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry);
+            Optional<String> consumers = prop.tryProperty(QUEUE_CONSUMERS);
+            taskManager = consumers
+                    .map(s -> new RedisTaskManager(engineId, prop, jedisPool, Integer.parseInt(s), factory, lockProvider, metricRegistry))
+                    .orElseGet(() -> new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry));
         } else  {
             // Redis storage for counts, in the RedisTaskManager it's created in consumers
             RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool);
