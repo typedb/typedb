@@ -53,14 +53,7 @@ class CumulativeState extends QueryState{
         if (subQueries.isEmpty()){
             return new AnswerState(answer, getUnifier(), getParentState());
         }
-        return new CumulativeState(
-                subQueries,
-                answer,
-                getUnifier(),
-                getParentState(),
-                getSubGoals(),
-                getCache()
-        );
+        return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getSubGoals(), getCache());
     }
 
     @Override

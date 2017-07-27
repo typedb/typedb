@@ -48,11 +48,6 @@ public abstract class ResolutionState {
      */
     public Answer getSubstitution(){ return sub;}
 
-    /**
-     *
-     * @return
-     */
-    public Unifier getUnifier(){ return unifier;}
 
     /**
      *
@@ -67,6 +62,12 @@ public abstract class ResolutionState {
     public boolean isTopState(){
         return parentState == null;
     }
+
+    /**
+     *
+     * @return
+     */
+    Unifier getUnifier(){ return unifier;}
 
     /**
      *

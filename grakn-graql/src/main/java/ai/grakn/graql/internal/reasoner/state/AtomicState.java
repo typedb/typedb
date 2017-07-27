@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.state;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -39,6 +40,8 @@ public class AtomicState extends QueryState{
     private final ReasonerAtomicQuery query;
     private final Iterator<Answer> dbIterator;
     private final Iterator<RuleTuple> ruleIterator;
+
+    private InferenceRule currentRule = null;
 
     private final Unifier cacheUnifier;
 
@@ -77,8 +80,19 @@ public class AtomicState extends QueryState{
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        Answer answer = state.getSubstitution().unify(state.getUnifier()).filterVars(query.getVarNames());
+        //answer from rule
+        Answer answer = state
+                .getSubstitution()
+                .unify(state.getUnifier());
+        if (answer.isEmpty()) return null;
+
+        answer = answer
+                .merge(query.getSubstitution())
+                .filterVars(query.getVarNames())
+                .explain(new RuleExplanation(query, currentRule));
+
         getCache().recordAnswerWithUnifier(query, answer, cacheUnifier);
+
         return new AnswerState(answer, getUnifier(), getParentState());
     }
 
@@ -96,7 +110,7 @@ public class AtomicState extends QueryState{
     }
 
     private ResolutionState generateSubGoalFromRule(RuleTuple ruleTuple){
-        InferenceRule rule = ruleTuple.getRule();
+        currentRule = ruleTuple.getRule();
         Unifier ruleUnifier = ruleTuple.getRuleUnifier();
         Unifier permutationUnifier = ruleTuple.getPermutationUnifier();
 
@@ -109,6 +123,6 @@ public class AtomicState extends QueryState{
 
         Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
 
-        return rule.getBody().subGoal(partialSubPrime, combinedUnifier, this, getSubGoals(), getCache());
+        return currentRule.getBody().subGoal(partialSubPrime, combinedUnifier, this, getSubGoals(), getCache());
     }
 }
