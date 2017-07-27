@@ -37,6 +37,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  *
+ * <p>
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
  */
 public class ConjunctiveState extends QueryState {
 
@@ -84,8 +89,9 @@ public class ConjunctiveState extends QueryState {
 
     @Override
     public ResolutionState generateSubGoal(){
-        if (dbIterator.hasNext())
+        if (dbIterator.hasNext()){
             return new AnswerState(dbIterator.next(), getUnifier(), getParentState());
+        }
 
         if (!visited) {
             visited = true;

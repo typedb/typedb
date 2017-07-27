@@ -31,6 +31,11 @@ import java.util.Set;
 
 /**
  *
+ * <p>
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
  */
 class AnswerState extends ResolutionState {
 

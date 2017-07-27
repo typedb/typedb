@@ -24,6 +24,14 @@ import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import java.util.Set;
 
+/**
+ *
+ * <p>
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public abstract class QueryState extends ResolutionState {
 
     private final Set<ReasonerAtomicQuery> subGoals;

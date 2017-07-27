@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.state;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -33,6 +32,11 @@ import java.util.stream.Stream;
 import javafx.util.Pair;
 
 /**
+ *
+ * <p>
+ * </p>
+ *
+ * @author Kasper Piskorski
  *
  */
 public class AtomicState extends QueryState{

@@ -28,6 +28,11 @@ import java.util.Set;
 
 /**
  *
+ * <p>
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
  */
 class CumulativeState extends QueryState{
 

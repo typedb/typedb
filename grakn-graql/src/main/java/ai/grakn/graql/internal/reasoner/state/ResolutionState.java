@@ -23,6 +23,11 @@ import ai.grakn.graql.admin.Unifier;
 
 /**
  *
+ * <p>
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
  */
 public abstract class ResolutionState {
 
