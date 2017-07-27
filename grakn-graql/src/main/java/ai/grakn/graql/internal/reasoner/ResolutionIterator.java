@@ -16,13 +16,15 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import java.util.HashSet;
 import java.util.Set;
@@ -39,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * @author Kasper Piskorski
  *
  */
-class ResolutionIterator extends ReasonerQueryIterator {
+public class ResolutionIterator extends ReasonerQueryIterator {
 
     private int iter = 0;
     private long oldAns = 0;
@@ -48,12 +50,12 @@ class ResolutionIterator extends ReasonerQueryIterator {
 
     private final QueryCache<ReasonerAtomicQuery> cache;
 
-    private ResolutionState answerState;
+    private ResolutionState answerState = null;
     private final Stack<ResolutionState> states = new Stack<>();
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
-    ResolutionIterator(ReasonerQueryImpl q){
+    public ResolutionIterator(ReasonerQueryImpl q){
         this.query = q;
         this.cache = new QueryCache<>();
         states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
