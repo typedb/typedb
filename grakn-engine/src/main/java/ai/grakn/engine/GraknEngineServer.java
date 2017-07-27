@@ -76,7 +76,7 @@ import spark.Response;
 import spark.Service;
 
 /**
- * Main class in charge to start a web server and all the REST controllers.
+ * In charge of starting a web server and all the REST controllers.
  *
  * @author Marco Scoppetta
  */
@@ -115,31 +115,6 @@ public class GraknEngineServer implements AutoCloseable {
         this.factory = EngineGraknGraphFactory.create(prop.getProperties());
         this.metricRegistry = new MetricRegistry();
         this.taskManager = startTaskManager(inMemoryQueue, redisCountStorage, jedisPool, lockProvider);
-    }
-
-    public static void main(String[] args) {
-        GraknEngineConfig prop = GraknEngineConfig.create();
-
-        // Start external components (Cassandra and Redis)
-        OperatingSystemCalls osCalls = new OperatingSystemCalls();
-        CassandraSupervisor cassandraSupervisor = new CassandraSupervisor(prop, osCalls, "");
-        RedisSupervisor redisSupervisor = new RedisSupervisor(osCalls, "");
-
-        // Start Grakn Engine
-        GraknEngineServer graknEngineServer = new GraknEngineServer(prop);
-        graknEngineServer.start();
-
-        // close  on SIGTERM
-        Runnable shutdownExternalComponentsAndEngine = () -> {
-            try {
-                cassandraSupervisor.stopIfRunning();
-                redisSupervisor.stopIfRunning();
-                graknEngineServer.close();
-            } catch (IOException | InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        };
-        Runtime.getRuntime().addShutdownHook(new Thread(shutdownExternalComponentsAndEngine, "GraknEngineServer-shutdown"));
     }
 
     public void start() {

@@ -18,11 +18,13 @@
 
 package ai.grakn.engine.externalcomponents;
 
-import ai.grakn.Grakn;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.exception.GraknBackendException;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 /**
@@ -40,6 +42,7 @@ public class CassandraSupervisor {
     private final String nodeToolCheckRunningCmd;
     private final String NODETOOL_RESPONSE_IF_RUNNING = "running";
     private final String cassandraStartCmd;
+    private final String cassandraStartCmdSync;
     private final String cassandraPidFile;
 
     public CassandraSupervisor(GraknEngineConfig prop, OperatingSystemCalls osCalls, String baseWorkDir) {
@@ -48,6 +51,8 @@ public class CassandraSupervisor {
         this.cassandraPidFile = prop.getProperty(GraknEngineConfig.STORAGE_CASSANDRA_PID_FILE);
 
         this.cassandraStartCmd = baseWorkDir + "bin/cassandra -p " + this.cassandraPidFile;
+        this.cassandraStartCmdSync = baseWorkDir + "bin/cassandra -f -p " + this.cassandraPidFile;
+
         this.nodeToolCheckRunningCmd = baseWorkDir + "bin/nodetool statusthrift 2>/dev/null | tr -d '\\n\\r'";
     }
 
@@ -90,6 +95,28 @@ public class CassandraSupervisor {
         waitForCassandraStarted();
     }
 
+    public Map.Entry<Process, CompletableFuture<Void>> startSync() throws IOException {
+        try {
+            String[] cmd = new String[] { "sh", "-c", cassandraStartCmdSync };
+            LOG.info("starting cassandra...");
+            Process p = osCalls.exec(cmd);
+
+            CompletableFuture<Void> f = CompletableFuture.supplyAsync(() -> {
+                try {
+                    LOG.info("cassandra stopped.");
+                    p.waitFor();
+                    return null;
+                } catch (InterruptedException e) {
+                    throw GraknBackendException.cassandraStartException(e);
+                }
+            });
+
+            return new HashMap.SimpleImmutableEntry<>(p, f);
+        } catch (IOException e) {
+            throw GraknBackendException.cassandraStartException(e);
+        }
+    }
+
     public void stop() throws IOException, InterruptedException {
         if (osCalls.fileExists(cassandraPidFile)) {
             int pid = osCalls.catPidFile(cassandraPidFile);
@@ -104,7 +131,7 @@ public class CassandraSupervisor {
     }
 
     public void waitForCassandraStarted() throws IOException, InterruptedException {
-        final int MAX_CHECK_ATTEMPT = 3;
+        final int MAX_CHECK_ATTEMPT = 15;
         int attempt = 0;
         while (attempt < MAX_CHECK_ATTEMPT) {
             if (isRunning()) {

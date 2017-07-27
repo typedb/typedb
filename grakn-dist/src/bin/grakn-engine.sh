@@ -71,9 +71,9 @@ start)
         echo -n "Starting engine"
         cd "${GRAKN_HOME}"
         if [[ "$FOREGROUND" = true ]]; then
-            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.engine.GraknEngineServer
+            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.engine.Grakn
         else
-            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.engine.GraknEngineServer &
+            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.engine.Grakn &
             echo $!>$ENGINE_PS
         fi
 
@@ -92,7 +92,7 @@ stop)
 
 status)
 
-    ENGINE_PIDS=$(ps ax | grep -i 'ai\.grakn\.engine\.GraknEngineServer' | grep java | grep -v grep | awk '{print $1}')
+    ENGINE_PIDS=$(ps ax | grep -i 'ai\.grakn\.engine\.Grakn' | grep java | grep -v grep | awk '{print $1}')
     if [ -e "$ENGINE_PS" ] && ps -p `cat $ENGINE_PS` > /dev/null ; then
         echo "Engine is $(cat $ENGINE_PS)"
     elif [ -n "$ENGINE_PIDS" ]; then

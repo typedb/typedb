@@ -102,11 +102,31 @@ public class GraknBackendException extends GraknException {
         return new GraknBackendException("process '" + cmd + "' exited with status code " + exitCode);
     }
 
+    /**
+     * Thrown when unable to start cassandra
+     */
     public static GraknBackendException cassandraStartException() {
         return new GraknBackendException("unable to start grakn-cassandra!");
     }
 
+    /**
+     * Thrown when unable to start cassandra
+     */
+    public static GraknBackendException cassandraStartException(Exception cause) {
+        return new GraknBackendException("unable to start grakn-cassandra!", cause);
+    }
+
+    /**
+     * Thrown when unable to stop cassandra
+     */
     public static GraknBackendException cassandraStopException() {
         return new GraknBackendException("unable to stop grakn-cassandra!");
+    }
+
+    /**
+     * Thrown when unable to start redis
+     */
+    public static GraknBackendException redisStartException(Exception cause) {
+        return new GraknBackendException("unable to start redis!", cause);
     }
 }

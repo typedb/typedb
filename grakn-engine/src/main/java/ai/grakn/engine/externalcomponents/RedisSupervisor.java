@@ -21,6 +21,9 @@ package ai.grakn.engine.externalcomponents;
 import ai.grakn.exception.GraknBackendException;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 /**
@@ -34,6 +37,7 @@ public class RedisSupervisor {
     private OperatingSystemCalls osCalls;
 
     private final String startRedisCmd;
+    private final String startRedisCmdSync;
     private final String stopRedisCmd;
     private final String isRedisRunningCmd;
 
@@ -42,10 +46,12 @@ public class RedisSupervisor {
 
         if (osCalls.isMac()) { // use OSX binary, if the system is OSX
             this.startRedisCmd = baseWorkDir + "bin/redis-server-osx " + baseWorkDir + "conf/redis/redis.conf";
+            this.startRedisCmdSync = this.startRedisCmd + " --daemonize no";
             this.stopRedisCmd = baseWorkDir + "bin/redis-cli-osx shutdown";
 
         } else { // otherwise assume it's Linux. TODO: Support Windows?
             this.startRedisCmd = baseWorkDir + "bin/redis-server-linux " + baseWorkDir + "conf/redis/redis.conf";
+            this.startRedisCmdSync = baseWorkDir + "bin/redis-server-linux " + baseWorkDir + "conf/redis/redis.conf --daemonize no";
             this.stopRedisCmd = baseWorkDir + "bin/redis-cli-linux shutdown";
         }
 
@@ -77,6 +83,26 @@ public class RedisSupervisor {
 
     public void start() throws IOException, InterruptedException {
         osCalls.execAndReturn(new String[] { "sh", "-c", startRedisCmd });
+    }
+
+    public Map.Entry<Process, CompletableFuture<Void>> startSync() {
+        try {
+            String[] cmd = new String[]{"sh", "-c", startRedisCmdSync};
+            LOG.info("starting redis...");
+            Process p = osCalls.exec(cmd);
+            CompletableFuture<Void> f = CompletableFuture.supplyAsync(() -> {
+                try {
+                    p.waitFor();
+                    LOG.info("redis stopped.");
+                    return null;
+                } catch (InterruptedException e) {
+                    throw GraknBackendException.redisStartException(e);
+                }
+            });
+            return new HashMap.SimpleImmutableEntry<>(p, f);
+        } catch (IOException e) {
+            throw GraknBackendException.redisStartException(e);
+        }
     }
 
     public void stop() throws IOException, InterruptedException {
