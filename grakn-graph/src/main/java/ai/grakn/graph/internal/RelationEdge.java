@@ -134,17 +134,17 @@ class RelationEdge implements RelationStructure{
         return result;
     }
 
-    private Role ownerRole(){
+    Role ownerRole(){
         return ownerRole.get();
     }
-    private Thing owner(){
+    Thing owner(){
         return owner.get();
     }
 
-    private Role valueRole(){
+    Role valueRole(){
         return valueRole.get();
     }
-    private Thing value(){
+    Thing value(){
         return value.get();
     }
 

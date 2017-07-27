@@ -921,15 +921,23 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //This allows us to find relations far more quickly.
         Optional<RelationReified> reifiedRelation = ((RelationImpl) otherRelation).reified();
 
-        //TODO: Figure out how to merge relations which are not reified
-        if(!reifiedRelation.isPresent()) throw new UnsupportedOperationException("Merging non reified relations is not supported");
+        if(reifiedRelation.isPresent()) {
+            copyRelation(main, other, otherRelation, reifiedRelation.get());
+        } else {
+            copyRelation(main, other, otherRelation, (RelationEdge) RelationImpl.from(otherRelation).structure());
+        }
+    }
 
-        String newIndex = reifiedRelation.get().getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
+    /**
+     * Copy a relation which has been reified - {@link RelationReified}
+     */
+    private void copyRelation(Resource main, Resource other, Relation otherRelation, RelationReified reifiedRelation){
+        String newIndex = reifiedRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
         Relation foundRelation = txCache().getCachedRelation(newIndex);
         if(foundRelation == null) foundRelation = getConcept(Schema.VertexProperty.INDEX, newIndex);
 
         if (foundRelation != null) {//If it exists delete the other one
-            reifiedRelation.get().deleteNode(); //Raw deletion because the castings should remain
+            reifiedRelation.deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelation = otherRelation;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
@@ -941,6 +949,23 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //Explicitly track this new relation so we don't create duplicates
         txCache().getRelationIndexCache().put(newIndex, foundRelation);
+    }
+
+    /**
+     * Copy a relation which is an edge - {@link RelationEdge}
+     */
+    private void copyRelation(Resource main, Resource other, Relation otherRelation, RelationEdge relationEdge){
+        EdgeElement element;
+        Role newOwnerRole;
+        Role newValueRole;
+        Thing newOwner;
+        Thing newValue;
+
+        if(relationEdge.owner().equals(other)){//The resource owns another resource which it needs to replace
+            element = ResourceImpl.from(main).vertex().putEdge((Thing) relationEdge.value())
+        } else {//The resource is owned by another Entity
+
+        }
     }
 
     @Override
