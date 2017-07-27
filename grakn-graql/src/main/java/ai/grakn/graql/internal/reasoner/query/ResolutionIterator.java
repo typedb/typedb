@@ -16,7 +16,6 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.graql.admin.Answer;
@@ -32,6 +31,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ *
+ * <p>
+ * Iterator for query answers maintaining the iterative behaviour of the QSQ scheme.
+ * </p>
+ *
+ * @author Kasper Piskorski
  *
  */
 class ResolutionIterator extends ReasonerQueryIterator {

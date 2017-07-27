@@ -187,7 +187,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @param sub specific answer
      * @return found answer if any, otherwise empty answer
      */
-    Answer lookupAnswer(QueryCache<ReasonerAtomicQuery> cache, Answer sub) {
+    public Answer lookupAnswer(QueryCache<ReasonerAtomicQuery> cache, Answer sub) {
         boolean queryVisited = cache.contains(this);
         if (queryVisited){
             Answer answer = cache.getAnswer(this, sub);

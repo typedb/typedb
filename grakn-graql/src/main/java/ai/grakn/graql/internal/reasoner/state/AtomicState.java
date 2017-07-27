@@ -41,9 +41,8 @@ public class AtomicState extends QueryState{
     private final Iterator<Answer> dbIterator;
     private final Iterator<RuleTuple> ruleIterator;
 
-    private InferenceRule currentRule = null;
-
     private final Unifier cacheUnifier;
+    private InferenceRule currentRule = null;
 
     public AtomicState(ReasonerAtomicQuery q,
                        Answer sub,
@@ -80,32 +79,14 @@ public class AtomicState extends QueryState{
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        //answer from rule
-        Answer answer = state
-                .getSubstitution()
-                .unify(state.getUnifier());
-        if (answer.isEmpty()) return null;
-
-        answer = answer
-                .merge(query.getSubstitution())
-                .filterVars(query.getVarNames())
-                .explain(new RuleExplanation(query, currentRule));
-
-        getCache().recordAnswerWithUnifier(query, answer, cacheUnifier);
-
-        return new AnswerState(answer, getUnifier(), getParentState());
+        Answer answer = state.getAnswer(query, currentRule, cacheUnifier, getCache());
+        return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState()) : null;
     }
 
     @Override
     public ResolutionState generateSubGoal() {
-        if (dbIterator.hasNext()) {
-            Answer answer = dbIterator.next();
-            getCache().recordAnswerWithUnifier(query, answer, cacheUnifier);
-            return new AnswerState(answer, getUnifier(), getParentState());
-        }
-
-        if(ruleIterator.hasNext())
-            return generateSubGoalFromRule(ruleIterator.next());
+        if (dbIterator.hasNext()) return new AnswerState(dbIterator.next(), getUnifier(), this);
+        if (ruleIterator.hasNext()) return generateSubGoalFromRule(ruleIterator.next());
         return null;
     }
 
