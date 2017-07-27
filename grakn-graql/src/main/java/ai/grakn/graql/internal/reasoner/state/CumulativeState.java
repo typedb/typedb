@@ -23,7 +23,9 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -37,9 +39,7 @@ import java.util.Set;
 class CumulativeState extends QueryState{
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
-    private final ResolutionState feederGoal;
-
-    private boolean visited = false;
+    private final LinkedList<QueryState> feederGoals;
 
     CumulativeState(LinkedList<ReasonerQueryImpl> qs,
                     Answer sub,
@@ -49,7 +49,9 @@ class CumulativeState extends QueryState{
                     QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
         this.subQueries = new LinkedList<>(qs);
-        this.feederGoal = !subQueries.isEmpty()? subQueries.removeFirst().subGoal(sub, u, this, subGoals, cache) : null;
+        this.feederGoals = !subQueries.isEmpty()?
+               subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache) :
+               new LinkedList<>();
     }
 
     @Override
@@ -63,10 +65,6 @@ class CumulativeState extends QueryState{
 
     @Override
     public ResolutionState generateSubGoal(){
-        if (!visited){
-            visited = true;
-            return feederGoal;
-        }
-        return null;
+        return !feederGoals.isEmpty()? feederGoals.removeFirst() : null;
     }
 }
