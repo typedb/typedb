@@ -27,6 +27,7 @@ import java.util.Set;
 /**
  *
  * <p>
+ * Base abstract class for resolution states corresponding to different forms of queries.
  * </p>
  *
  * @author Kasper Piskorski
@@ -44,21 +45,19 @@ public abstract class QueryState extends ResolutionState {
     }
 
     /**
-     *
-     * @return
+     * @return set of already visited subGoals (atomic queries)
      */
     Set<ReasonerAtomicQuery> getSubGoals(){ return subGoals;}
 
     /**
-     *
-     * @return
+     * @return query cache
      */
     QueryCache<ReasonerAtomicQuery> getCache(){ return cache;}
 
     /**
-     *
-     * @param state
-     * @return
+     * propagates the answer state up the tree and acknowledges (caches) its substitution
+     * @param state to propagate
+     * @return new resolution state obtained by propagating the answer up the resolution tree
      */
     abstract ResolutionState propagateAnswer(AnswerState state);
 }

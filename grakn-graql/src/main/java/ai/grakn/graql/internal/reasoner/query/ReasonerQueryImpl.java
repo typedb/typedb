@@ -546,25 +546,24 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     *
-     * @param sub
-     * @param u
-     * @param parent
-     * @param cache
-     * @return
+     * @param sub partial substitution
+     * @param u unifier with parent state
+     * @param parent parent state
+     * @param subGoals set of visited sub goals
+     * @param cache query cache
+     * @return resolution subGoal formed from this query
      */
     public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
     }
 
     /**
-     *
-     * @param sub
-     * @param u
-     * @param parent
-     * @param subGoals
-     * @param cache
-     * @return
+     * @param sub partial substitution
+     * @param u unifier with parent state
+     * @param parent parent state
+     * @param subGoals set of visited sub goals
+     * @param cache query cache
+     * @return resolution subGoals formed from this query obtained by expanding the inferred types contained in the query
      */
     public LinkedList<QueryState> subGoals(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return getQueryStream(sub)

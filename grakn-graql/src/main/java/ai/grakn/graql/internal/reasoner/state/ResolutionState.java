@@ -24,6 +24,7 @@ import ai.grakn.graql.admin.Unifier;
 /**
  *
  * <p>
+ * Base abstract class for resolution states.
  * </p>
  *
  * @author Kasper Piskorski
@@ -42,41 +43,34 @@ public abstract class ResolutionState {
     }
 
     /**
-     *
-     * @return
+     * @return new sub goal generated from this state
      */
     public abstract ResolutionState generateSubGoal();
 
     /**
-     *
-     * @return
+     * @return substitution this state has
      */
     public Answer getSubstitution(){ return sub;}
 
-
     /**
-     *
-     * @return
+     * @return true if this resolution state is an answer state
      */
     public boolean isAnswerState(){ return false;}
 
     /**
-     *
-     * @return
+     * @return true if this state is a top resolution state
      */
     public boolean isTopState(){
         return parentState == null;
     }
 
     /**
-     *
-     * @return
+     * @return unifier of this state with parent state
      */
     Unifier getUnifier(){ return unifier;}
 
     /**
-     *
-     * @return
+     * @return parent state of this state
      */
     QueryState getParentState(){ return parentState;}
 }

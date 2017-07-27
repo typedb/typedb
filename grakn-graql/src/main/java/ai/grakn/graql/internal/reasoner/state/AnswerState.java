@@ -32,6 +32,7 @@ import java.util.Set;
 /**
  *
  * <p>
+ * Resolution state holding an answer ({@link Answer}) to the parent state.
  * </p>
  *
  * @author Kasper Piskorski

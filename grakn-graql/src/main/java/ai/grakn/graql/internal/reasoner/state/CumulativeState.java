@@ -31,6 +31,7 @@ import java.util.Set;
 /**
  *
  * <p>
+ * Query state corresponding to a an intermediate state obtained from decomposing a conjunctive query ({@link ReasonerQueryImpl}) in the resolution tree.
  * </p>
  *
  * @author Kasper Piskorski

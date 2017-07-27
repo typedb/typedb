@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * <p>
+ * Query state corresponding to a conjunctive query ({@link ReasonerQueryImpl}) in the resolution tree.
  * </p>
  *
  * @author Kasper Piskorski

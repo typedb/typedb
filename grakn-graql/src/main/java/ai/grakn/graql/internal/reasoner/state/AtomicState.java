@@ -34,6 +34,7 @@ import javafx.util.Pair;
 /**
  *
  * <p>
+ * Query state corresponding to an atomic query ({@link ReasonerAtomicQuery}) in the resolution tree.
  * </p>
  *
  * @author Kasper Piskorski
