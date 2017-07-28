@@ -42,7 +42,7 @@ import java.util.Set;
  * @author fppt
  *
  */
-interface RelationStructure {
+interface RelationStructure extends ContainsTxCache {
 
     /**
      *

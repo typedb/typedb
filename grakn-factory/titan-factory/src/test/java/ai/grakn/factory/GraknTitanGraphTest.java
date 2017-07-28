@@ -42,11 +42,14 @@ import java.util.concurrent.Future;
 
 import static ai.grakn.util.ErrorMessage.GRAPH_CLOSED_ON_ACTION;
 import static junit.framework.TestCase.assertNotNull;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class GraknTitanGraphTest extends TitanTestBase{
+
     private GraknGraph graknGraph;
 
     @Before
@@ -153,5 +156,22 @@ public class GraknTitanGraphTest extends TitanTestBase{
         graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
 
         assertEquals(relation, graknGraph.getConcept(relation.getId()));
+    }
+
+    @Test //This test is performed here because it depends on actual transaction behaviour which tinker does not exhibit
+    public void whenClosingTransaction_EnsureConceptTransactionCachesAreCleared(){
+        TitanInternalFactory factory = newFactory();
+        GraknTitanGraph graph = factory.open(GraknTxType.WRITE);
+
+        EntityType entityType = graph.admin().getMetaEntityType();
+        EntityType newEntityType = graph.putEntityType("New Entity Type");
+        assertThat(entityType.subs(), containsInAnyOrder(entityType, newEntityType));
+
+        graph.close();
+
+        graph = factory.open(GraknTxType.WRITE);
+        assertThat(entityType.subs(), containsInAnyOrder(entityType));
+
+        graph.close();
     }
 }

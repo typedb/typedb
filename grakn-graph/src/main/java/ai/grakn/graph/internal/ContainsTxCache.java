@@ -18,32 +18,31 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Concept;
 
 /**
  * <p>
- *     An instance of Entity Type {@link EntityType}
+ *     Indicates a {@link Cache} is contained within the class
  * </p>
  *
  * <p>
- *     This represents an entity in the graph.
- *     Entities are objects which are defined by their {@link ai.grakn.concept.Resource} and their links to
- *     other entities via {@link ai.grakn.concept.Relation}
+ *     Wraps up behaviour which needs to be handled whenever a {@link Cache} is used in a class
  * </p>
  *
  * @author fppt
+ *
  */
-class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
-    EntityImpl(VertexElement vertexElement) {
-        super(vertexElement);
-    }
+interface ContainsTxCache {
 
-    EntityImpl(VertexElement vertexElement, EntityType type) {
-        super(vertexElement, type);
-    }
+    /**
+     * Clears the internal {@link Cache}
+     */
+    void txCacheClear();
 
-    public static EntityImpl from(Entity entity){
-        return (EntityImpl) entity;
+    /**
+     * Helper method to cast {@link Concept} into {@link ContainsTxCache}
+     */
+    static ContainsTxCache from(Concept concept){
+        return (ContainsTxCache) concept;
     }
 }

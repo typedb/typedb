@@ -63,13 +63,13 @@ import java.util.stream.Stream;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
-    private final Cache<Label> cachedInternalType = new Cache<>(() -> {
+    private final Cache<Label> cachedInternalType = new Cache<>(Cacheable.label(), () -> {
         int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
         Type type = vertex().graph().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
         return type.getLabel();
     });
 
-    private final Cache<V> cachedType = new Cache<>(() -> {
+    private final Cache<V> cachedType = new Cache<>(Cacheable.concept(), () -> {
         Optional<EdgeElement> typeEdge = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
                 flatMap(edge -> edge.target().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).findAny();
 
@@ -108,6 +108,13 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
                 rel.cleanUp();
             }
         });
+    }
+
+    @Override
+    public void txCacheClear(){
+        //TODO: Clearing the caches at th Thing Level may not be needed. Need to experiment
+        cachedInternalType.clear();
+        cachedType.clear();
     }
 
     /**
@@ -205,7 +212,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
         Set<Relation> relations = new HashSet<>();
 
-        vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.RESOURCE).forEach(edge -> {
+        vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.RESOURCE).forEach(edge -> {
             if (roleSet.isEmpty()) {
                 relations.add(vertex().graph().factory().buildRelation(edge));
             } else {
