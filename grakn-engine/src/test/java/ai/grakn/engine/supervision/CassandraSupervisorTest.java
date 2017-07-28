@@ -29,11 +29,11 @@ public class CassandraSupervisorTest {
 
         doNothing().when(osCallsMockitoSpy).execAndReturn(any());
         doNothing().when(cassandraSupervisorMockitoSpy).waitForCassandraStarted();
-        doCallRealMethod().when(cassandraSupervisorMockitoSpy).start();
+        doCallRealMethod().when(cassandraSupervisorMockitoSpy).startAsync();
 
         // it should execute successfully
         try {
-            cassandraSupervisorMockitoSpy.start();
+            cassandraSupervisorMockitoSpy.startAsync();
         } catch (IOException | InterruptedException e) {
             assertTrue(false);
         }
@@ -49,11 +49,11 @@ public class CassandraSupervisorTest {
         Exception t = GraknBackendException.operatingSystemCallException("", 1);
         doThrow(t).when(osCallsMockitoSpy).execAndReturn(any());
         doNothing().when(cassandraSupervisorMockitoSpy).waitForCassandraStarted();
-        doCallRealMethod().when(cassandraSupervisorMockitoSpy).start();
+        doCallRealMethod().when(cassandraSupervisorMockitoSpy).startAsync();
 
         // if should throw an ExternalComponentException
         try {
-            cassandraSupervisorMockitoSpy.start();
+            cassandraSupervisorMockitoSpy.startAsync();
             assertTrue(false);
         } catch (GraknBackendException e) {
             assertTrue(true);

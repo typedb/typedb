@@ -19,10 +19,9 @@
 package ai.grakn.engine.externalcomponents;
 
 import ai.grakn.exception.GraknBackendException;
+import org.javatuples.Pair;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
@@ -59,16 +58,18 @@ public class RedisSupervisor {
 
     }
 
+    // TODO: remove
     public void startIfNotRunning() throws IOException, InterruptedException {
         LOG.info("checking if there exists a running redis process...");
         if (!isRunning()) {
             LOG.info("redis isn't yet running. attempting to start...");
-            start();
+            startAsync();
         } else {
             LOG.info("found an existing redis process.");
         }
     }
 
+    // TODO: remove
     public void stopIfRunning() throws IOException, InterruptedException {
         LOG.info("checking if there exists a running redis process...");
         if (isRunning()) {
@@ -81,11 +82,12 @@ public class RedisSupervisor {
     }
 
 
-    public void start() throws IOException, InterruptedException {
+    // TODO: remove
+    public void startAsync() throws IOException, InterruptedException {
         osCalls.execAndReturn(new String[] { "sh", "-c", startRedisCmd });
     }
 
-    public Map.Entry<Process, CompletableFuture<Void>> startSync() {
+    public Pair<Process, CompletableFuture<Void>> start() {
         try {
             String[] cmd = new String[]{"sh", "-c", startRedisCmdSync};
             LOG.info("starting redis...");
@@ -99,12 +101,13 @@ public class RedisSupervisor {
                     throw GraknBackendException.redisStartException(e);
                 }
             });
-            return new HashMap.SimpleImmutableEntry<>(p, f);
+            return new Pair<>(p, f);
         } catch (IOException e) {
             throw GraknBackendException.redisStartException(e);
         }
     }
 
+    // TODO: remove
     public void stop() throws IOException, InterruptedException {
         osCalls.execAndReturn(new String[] { "sh", "-c", stopRedisCmd} );
     }

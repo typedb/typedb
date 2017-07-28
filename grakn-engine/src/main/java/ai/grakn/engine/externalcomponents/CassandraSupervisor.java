@@ -20,10 +20,10 @@ package ai.grakn.engine.externalcomponents;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.exception.GraknBackendException;
-
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+
+import org.javatuples.Pair;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
@@ -56,16 +56,18 @@ public class CassandraSupervisor {
         this.nodeToolCheckRunningCmd = baseWorkDir + "bin/nodetool statusthrift 2>/dev/null | tr -d '\\n\\r'";
     }
 
+    // TODO: remove
     public void startIfNotRunning() throws IOException, InterruptedException {
         LOG.info("checking if there exists a running grakn-cassandra process...");
         if (!isRunning()) {
             LOG.info("grakn-cassandra isn't yet running. attempting to start...");
-            start();
+            startAsync();
         } else {
             LOG.info("found an existing grakn-cassandra process.");
         }
     }
 
+    // TODO: remove
     public void stopIfRunning() throws IOException, InterruptedException {
         LOG.info("checking if there exists a running grakn-cassandra process...");
         if (isRunning()) {
@@ -89,29 +91,31 @@ public class CassandraSupervisor {
         return lines.equals(NODETOOL_RESPONSE_IF_RUNNING);
     }
 
-    public void start() throws IOException, InterruptedException {
+    // TODO: remove
+    public void startAsync() throws IOException, InterruptedException {
         String[] cmd = new String[] { "sh", "-c", cassandraStartCmd };
         osCalls.execAndReturn(cmd);
         waitForCassandraStarted();
     }
 
-    public Map.Entry<Process, CompletableFuture<Void>> startSync() throws IOException {
+    public Pair<Process, CompletableFuture<Void>> start() throws IOException {
         try {
             String[] cmd = new String[] { "sh", "-c", cassandraStartCmdSync };
             LOG.info("starting cassandra...");
             Process p = osCalls.exec(cmd);
 
-            CompletableFuture<Void> f = CompletableFuture.supplyAsync(() -> {
+            CompletableFuture<Void> cassandraStarted = CompletableFuture.supplyAsync(() -> {
                 try {
                     LOG.info("cassandra stopped.");
                     p.waitFor();
+                    waitForCassandraStarted();
                     return null;
-                } catch (InterruptedException e) {
+                } catch (IOException | InterruptedException e) {
                     throw GraknBackendException.cassandraStartException(e);
                 }
             });
 
-            return new HashMap.SimpleImmutableEntry<>(p, f);
+            return new Pair<>(p, cassandraStarted);
         } catch (IOException e) {
             throw GraknBackendException.cassandraStartException(e);
         }

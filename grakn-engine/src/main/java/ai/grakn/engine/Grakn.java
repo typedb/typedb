@@ -21,9 +21,9 @@ package ai.grakn.engine;
 import ai.grakn.engine.externalcomponents.CassandraSupervisor;
 import ai.grakn.engine.externalcomponents.OperatingSystemCalls;
 import ai.grakn.engine.externalcomponents.RedisSupervisor;
+import org.javatuples.Pair;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -44,8 +44,8 @@ public class Grakn {
         GraknEngineServer graknEngineServer = new GraknEngineServer(prop);
 
         // start major components: cassandra, redis and engine
-        Map.Entry<Process, CompletableFuture<Void>> cassandra = cassandraSupervisor.startSync();
-        Map.Entry<Process, CompletableFuture<Void>> redis = redisSupervisor.startSync();
+        Pair<Process, CompletableFuture<Void>> cassandra = cassandraSupervisor.start();
+        Pair<Process, CompletableFuture<Void>> redis = redisSupervisor.start();
 
         cassandraSupervisor.waitForCassandraStarted();
         System.out.println("Cassandra started. Starting engine...");
@@ -53,17 +53,17 @@ public class Grakn {
         System.out.println("Cassandra started. Engine started");
         // shutdown major components: cassandra, redis and engine
         Supplier<Void> shutdownGrakn = () -> {
-            cassandra.getKey().destroy();
-            redis.getKey().destroy();
+            cassandra.getValue0().destroy();
+            redis.getValue0().destroy();
             Runtime.getRuntime().halt(0);
             return null;
         };
 
-        cassandra.getValue().whenComplete((result, t) -> {
+        cassandra.getValue1().whenComplete((result, t) -> {
             System.out.println("Cassandra process is shutting down.");
             shutdownGrakn.get();
         });
-        redis.getValue().whenComplete((result, t) -> {
+        redis.getValue1().whenComplete((result, t) -> {
             System.out.println("Redis process is shutting down.");
             shutdownGrakn.get();
         });

@@ -23,11 +23,11 @@ public class RedisSupervisorTest {
         RedisSupervisor redisSupervisorMockitoSpy = spy(redisSupervisor);
 
         doNothing().when(osCallsMockitoSpy).execAndReturn(any());
-        doCallRealMethod().when(redisSupervisorMockitoSpy).start();
+        doCallRealMethod().when(redisSupervisorMockitoSpy).startAsync();
 
         // it should execute successfully
         try {
-            redisSupervisorMockitoSpy.start();
+            redisSupervisorMockitoSpy.startAsync();
         } catch (IOException | InterruptedException e) {
             assertTrue(false);
         }
@@ -41,11 +41,11 @@ public class RedisSupervisorTest {
         final int NON_ZERO_EXIT_CODE = 1;
         Exception t = GraknBackendException.operatingSystemCallException("", NON_ZERO_EXIT_CODE);
         doThrow(t).when(osCallsMockitoSpy).execAndReturn(any());
-        doCallRealMethod().when(redisSupervisorMockitoSpy).start();
+        doCallRealMethod().when(redisSupervisorMockitoSpy).startAsync();
 
         // if should throw an ExternalComponentException
         try {
-            redisSupervisorMockitoSpy.start();
+            redisSupervisorMockitoSpy.startAsync();
             assertTrue(false);
         } catch (GraknBackendException e) {
             assertTrue(true);
