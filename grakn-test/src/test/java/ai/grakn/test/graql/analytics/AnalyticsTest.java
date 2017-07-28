@@ -66,9 +66,6 @@ public class AnalyticsTest {
 
     @Before
     public void setUp() {
-        // TODO: Make orientdb support analytics
-        assumeFalse(GraknTestSetup.usingOrientDB());
-
         factory = context.factoryWithNewKeyspace();
     }
 

@@ -102,7 +102,7 @@ class RedisTaskQueue {
         timer.cancel();
         synchronized(this) {
             if (workerPool != null) {
-                workerPool.end(false);
+                workerPool.end(true);
             }
         }
         redisClient.end();

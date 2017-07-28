@@ -50,7 +50,8 @@ public class EmbeddedCassandra {
         if(CASSANDRA_RUNNING.compareAndSet(false, true)) {
             try {
                 LOG.info("starting cassandra...");
-                EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
+                EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml", 30_000L);
+                EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
                 //This thread sleep is to give time for cass to startup
                 //TODO: Determine if this is still needed
                 try {

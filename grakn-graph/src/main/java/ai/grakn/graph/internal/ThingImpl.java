@@ -161,8 +161,12 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         Set<X> foundNeighbours = new HashSet<X>();
         vertex().graph().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
-                in(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                out(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                as("edge").
+                outV().
+                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                where(P.neq("edge")).
+                inV().
                 forEachRemaining(vertex -> foundNeighbours.add(vertex().graph().buildConcept(vertex)));
         return foundNeighbours;
     }
@@ -201,7 +205,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
         Set<Relation> relations = new HashSet<>();
 
-        vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.RESOURCE).forEach(edge -> {
+        vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.RESOURCE).forEach(edge -> {
             if (roleSet.isEmpty()) {
                 relations.add(vertex().graph().factory().buildRelation(edge));
             } else {

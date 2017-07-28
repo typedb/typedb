@@ -35,8 +35,8 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Abstract;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
+import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
+import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.MetaLabels;
@@ -58,7 +58,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
 import static ai.grakn.generator.GraknGraphs.allOntologyElementsFrom;
@@ -132,14 +131,15 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetTypeWithAnExistingTypeLabel_ItReturnsThatType(
-            @Open GraknGraph graph, @FromGraph Type type) {
-        Label label = type.getLabel();
-        assertEquals(type, graph.getOntologyConcept(label));
+    public void whenCallingGetOntologyConceptWithAnExistingLabel_ItReturnsThatConcept(
+            @Open GraknGraph graph, @FromGraph OntologyConcept concept) {
+        Label label = concept.getLabel();
+        assertEquals(concept, graph.getOntologyConcept(label));
     }
 
     @Property
-    public void whenCallingGetTypeWithANonExistingTypeLabel_ItReturnsNull(@Open GraknGraph graph, Label label) {
+    public void whenCallingGetOntologyConceptWithANonExistingTypeLabel_ItReturnsNull(
+            @Open GraknGraph graph, Label label) {
         Set<Label> allTypes = allOntologyElementsFrom(graph).stream().map(OntologyConcept::getLabel).collect(toSet());
         assumeThat(allTypes, not(hasItem(label)));
 
@@ -147,7 +147,8 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetTypeWithAnIncorrectGeneric_ItThrows(@Open GraknGraph graph, @FromGraph Type type) {
+    public void whenCallingGetOntologyConceptWithAnIncorrectGeneric_ItThrows(
+            @Open GraknGraph graph, @FromGraph Type type) {
         assumeFalse(type.isRole());
         Label label = type.getLabel();
 
@@ -161,7 +162,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingGetResourcesByValueAfterAddingAResource_TheResultIncludesTheResource(
             @Open GraknGraph graph,
-            @FromGraph @Meta(false) @Abstract(false)  ResourceType resourceType, @From(ResourceValues.class) Object value) {
+            @FromGraph @NonMeta @NonAbstract ResourceType resourceType, @From(ResourceValues.class) Object value) {
         assumeThat(value.getClass().getName(), is(resourceType.getDataType().getName()));
 
         Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(value);
@@ -200,39 +201,43 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingGetResourcesByValueWithAnUnsupportedDataType_Throw(@Open GraknGraph graph, List value) {
-        String supported = ResourceType.DataType.SUPPORTED_TYPES.keySet().stream().collect(Collectors.joining(","));
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(ErrorMessage.INVALID_DATATYPE.getMessage(value.getClass().getName(), supported));
+        exception.expectMessage(GraphOperationException.unsupportedDataType(value).getMessage());
         //noinspection ResultOfMethodCallIgnored
         graph.getResourcesByValue(value);
     }
 
     @Property
-    public void whenCallingGetEntityType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph EntityType type) {
+    public void whenCallingGetEntityType_TheResultIsTheSameAsGetOntologyConcept(
+            @Open GraknGraph graph, @FromGraph EntityType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getEntityType(label.getValue()));
     }
 
     @Property
-    public void whenCallingGetRelationType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph RelationType type) {
+    public void whenCallingGetRelationType_TheResultIsTheSameAsGetOntologyConcept(
+            @Open GraknGraph graph, @FromGraph RelationType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getRelationType(label.getValue()));
     }
 
     @Property
-    public void whenCallingGetResourceType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph ResourceType type) {
+    public void whenCallingGetResourceType_TheResultIsTheSameAsGetOntologyConcept(
+            @Open GraknGraph graph, @FromGraph ResourceType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getResourceType(label.getValue()));
     }
 
     @Property
-    public void whenCallingGetRoleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph Role type) {
-        Label label = type.getLabel();
+    public void whenCallingGetRole_TheResultIsTheSameAsGetOntologyConcept(
+            @Open GraknGraph graph, @FromGraph Role role) {
+        Label label = role.getLabel();
         assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getRole(label.getValue()));
     }
 
     @Property
-    public void whenCallingGetRuleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph RuleType type) {
+    public void whenCallingGetRuleType_TheResultIsTheSameAsGetOntologyConcept(
+            @Open GraknGraph graph, @FromGraph RuleType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getRuleType(label.getValue()));
     }
@@ -291,8 +296,8 @@ public class GraknGraphPropertyTest {
     public void whenSetRegexOnMetaResourceType_Throw(@Open GraknGraph graph, String regex) {
         ResourceType resource = graph.admin().getMetaResourceType();
 
-        exception.expect(UnsupportedOperationException.class);
-        exception.expectMessage(ErrorMessage.REGEX_NOT_STRING.getMessage(resource.getLabel()));
+        exception.expect(GraphOperationException.class);
+        exception.expectMessage(GraphOperationException.cannotSetRegex(resource).getMessage());
 
         resource.setRegex(regex);
     }
@@ -303,7 +308,7 @@ public class GraknGraphPropertyTest {
         ResourceType resource = graph.admin().getMetaResourceType();
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resource.getLabel()));
+        exception.expectMessage(GraphOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
 
         resource.putResource(value);
     }
@@ -327,9 +332,9 @@ public class GraknGraphPropertyTest {
 
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())) {
-            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
+            exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         } else {
-            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resource.getLabel()));
+            exception.expectMessage(GraphOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
         }
         type.resource(resource);
     }

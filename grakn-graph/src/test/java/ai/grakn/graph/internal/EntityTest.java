@@ -30,7 +30,6 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.junit.Test;
 
@@ -131,9 +130,7 @@ public class EntityTest extends GraphTestBase{
         Resource resource = resourceType.putResource("A resource thing");
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(
-                ErrorMessage.HAS_INVALID.getMessage(entityType.getLabel(), resourceType.getLabel())
-        );
+        expectedException.expectMessage(GraphOperationException.hasNotAllowed(entity, resource).getMessage());
 
         entity.resource(resource);
     }

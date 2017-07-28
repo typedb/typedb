@@ -21,7 +21,9 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
-import ai.grakn.engine.TaskStatus;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
@@ -32,35 +34,34 @@ import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.EmbeddedRedis;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import com.codahale.metrics.MetricRegistry;
 import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
-import mjson.Json;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
-
+import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertNotSame;
 import static junit.framework.TestCase.fail;
+import mjson.Json;
+import org.junit.AfterClass;
+import static org.junit.Assert.assertTrue;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 public class RedisTaskManagerTest {
 
@@ -108,7 +109,6 @@ public class RedisTaskManagerTest {
         executor.awaitTermination(3, TimeUnit.SECONDS);
         jedisPool.close();
         EmbeddedRedis.stop();
-
     }
 
     @Ignore // TODO: Fix (Bug #16193)
@@ -118,14 +118,14 @@ public class RedisTaskManagerTest {
         TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), TaskSchedule.now(), Priority.LOW);
         taskManager.addTask(state, testConfig(generate));
         RETRY_STRATEGY.call(() -> taskManager.storage().getState(state.getId()) != null);
-        assertEquals(TaskStatus.COMPLETED, taskManager.storage().getState(state.getId()).status());
+        assertEquals(COMPLETED, taskManager.storage().getState(state.getId()).status());
     }
 
     @Test(expected = RetryException.class)
     public void whenNotAddingTask_TastStateIsNotRetrievable() throws ExecutionException, RetryException {
         TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), TaskSchedule.now(), Priority.LOW);
         RETRY_STRATEGY.call(() -> taskManager.storage().getState(state.getId()) != null);
-        assertNotSame(TaskStatus.COMPLETED, taskManager.storage().getState(state.getId()).status());
+        assertNotSame(COMPLETED, taskManager.storage().getState(state.getId()).status());
     }
 
     @Test
@@ -151,9 +151,8 @@ public class RedisTaskManagerTest {
             } catch (Exception e) {
                 fail("Failed to retrieve task in time");
             }
-            assertEquals(TaskStatus.COMPLETED, taskManager.storage().getState(state.getId()).status());
+            assertTrue("Task retrieved but with unexpected state", ImmutableSet.of(COMPLETED, RUNNING).contains(taskManager.storage().getState(state.getId()).status()));
         });
-
     }
 
     private TaskConfiguration testConfig(TaskId generate) {

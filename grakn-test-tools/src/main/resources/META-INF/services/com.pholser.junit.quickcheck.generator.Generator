@@ -25,6 +25,7 @@ ai.grakn.generator.EntityTypes
 ai.grakn.generator.RelationTypes
 ai.grakn.generator.RuleTypes
 ai.grakn.generator.ResourceTypes
+ai.grakn.generator.MetaTypes
 ai.grakn.generator.Roles
 ai.grakn.generator.Entities
 ai.grakn.generator.Relations

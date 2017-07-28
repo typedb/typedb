@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -36,7 +37,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.util.ErrorMessage.INVALID_DATATYPE;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -115,10 +115,11 @@ public class ResourceTest extends GraphTestBase{
     @SuppressWarnings("unchecked")
     @Test
     public void whenCreatingResourceWithAnInvalidDataType_Throw(){
+        String invalidThing = "Invalid Thing";
         ResourceType longResourceType = graknGraph.putResourceType("long", ResourceType.DataType.LONG);
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(INVALID_DATATYPE.getMessage("Invalid Thing", Long.class.getName()));
-        longResourceType.putResource("Invalid Thing");
+        expectedException.expectMessage(GraphOperationException.invalidResourceValue(invalidThing, ResourceType.DataType.LONG).getMessage());
+        longResourceType.putResource(invalidThing);
     }
 
     // this is deliberately an incorrect type for the test
@@ -226,6 +227,26 @@ public class ResourceTest extends GraphTestBase{
         expectedException.expect(InvalidGraphException.class);
 
         graknGraph.commit();
+    }
+
+    @Test
+    public void whenGettingTheRelationsOfResources_EnsureIncomingResourceEdgesAreTakingIntoAccount(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type Thingy", ResourceType.DataType.STRING);
+        Resource<String> resource = resourceType.putResource("Thingy");
+
+        EntityType entityType = graknGraph.putEntityType("Entity Type Thingy").key(resourceType);
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+
+        assertThat(resource.relations(), empty());
+
+        e1.resource(resource);
+        e2.resource(resource);
+
+        Relation rel1 = Iterables.getOnlyElement(e1.relations());
+        Relation rel2 = Iterables.getOnlyElement(e2.relations());
+
+        assertThat(resource.relations(), containsInAnyOrder(rel1, rel2));
     }
 
 }

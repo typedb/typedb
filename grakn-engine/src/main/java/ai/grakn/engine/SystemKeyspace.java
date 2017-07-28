@@ -30,10 +30,10 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.util.GraknVersion;
+import com.google.common.base.Stopwatch;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p>
@@ -157,18 +157,20 @@ public class SystemKeyspace {
      * multiple times.
      */
     public void loadSystemOntology() {
+        Stopwatch timer = Stopwatch.createStarted();
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             if (graph.getOntologyConcept(KEYSPACE_ENTITY) != null) {
                 checkVersion(graph);
                 return;
             }
+            LOG.info("No other version found, loading ontology for version {}", GraknVersion.VERSION);
             loadSystemOntology(graph);
             graph.getResourceType(SYSTEM_VERSION).putResource(GraknVersion.VERSION);
             graph.admin().commitNoLogs();
-            LOG.info("Loaded system ontology to system keyspace.");
-        } catch (InvalidGraphException | NullPointerException e) {
-            e.printStackTrace(System.err);
-            LOG.error("Could not load system ontology. The error was: " + e);
+            LOG.info("Loaded system ontology to system keyspace. Took: {}", timer.stop());
+        } catch (Exception e) {
+            LOG.error("Error while loading system ontology in {}. The error was: {}", timer.stop(), e.getMessage(), e);
+            throw e;
         }
     }
 
@@ -182,6 +184,8 @@ public class SystemKeyspace {
         Resource existingVersion = graph.getResourceType(SYSTEM_VERSION).instances().iterator().next();
         if(!GraknVersion.VERSION.equals(existingVersion.getValue())) {
             throw GraphOperationException.versionMistmatch(existingVersion);
+        } else {
+            LOG.info("Found version {}", existingVersion.getValue());
         }
     }
 

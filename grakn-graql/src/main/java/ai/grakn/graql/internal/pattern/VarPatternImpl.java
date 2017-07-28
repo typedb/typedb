@@ -24,6 +24,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
+import com.google.auto.value.AutoValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,31 +34,20 @@ import java.util.Set;
 /**
  * Implementation of {@link VarPattern} interface
  */
-class VarPatternImpl extends AbstractVarPattern {
+@AutoValue
+abstract class VarPatternImpl extends AbstractVarPattern {
 
     protected final Logger LOG = LoggerFactory.getLogger(VarPatternImpl.class);
 
-    private final Var name;
-
-    private final Set<VarProperty> properties;
-
-    VarPatternImpl(Var name, Set<VarProperty> properties) {
-        this.name = name;
-        this.properties = properties;
-    }
+    @Override
+    public abstract Var getVarName();
 
     @Override
-    public Var getVarName() {
-        return name;
-    }
-
-    @Override
-    protected Set<VarProperty> properties() {
-        return properties;
-    }
+    protected abstract Set<VarProperty> properties();
 
     @Override
     public final boolean equals(Object o) {
+        // This equals implementation is special: it considers all non-user-defined vars as equivalent
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
@@ -75,6 +65,7 @@ class VarPatternImpl extends AbstractVarPattern {
 
     @Override
     public final int hashCode() {
+        // This hashCode implementation is special: it considers all non-user-defined vars as equivalent
         int result = properties().hashCode();
         if (getVarName().isUserDefinedName()) result = 31 * result + getVarName().hashCode();
         result = 31 * result + (getVarName().isUserDefinedName() ? 1 : 0);
