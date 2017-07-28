@@ -39,7 +39,21 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graph.admin.GraknAdmin;
+import ai.grakn.graph.internal.cache.GraphCache;
+import ai.grakn.graph.internal.cache.TxCache;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
+import ai.grakn.graph.internal.concept.ConceptImpl;
+import ai.grakn.graph.internal.concept.ConceptVertex;
+import ai.grakn.graph.internal.concept.ElementFactory;
+import ai.grakn.graph.internal.concept.OntologyConceptImpl;
+import ai.grakn.graph.internal.concept.RelationEdge;
+import ai.grakn.graph.internal.concept.RelationImpl;
+import ai.grakn.graph.internal.concept.RelationReified;
+import ai.grakn.graph.internal.concept.ResourceImpl;
+import ai.grakn.graph.internal.concept.ThingImpl;
+import ai.grakn.graph.internal.concept.TypeImpl;
+import ai.grakn.graph.internal.structure.EdgeElement;
+import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
@@ -199,7 +213,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return keyspace;
     }
 
-    TxCache txCache() {
+    public TxCache txCache() {
         TxCache txCache = localConceptLog.get();
         if(txCache == null){
             localConceptLog.set(txCache = new TxCache(getGraphCache()));
@@ -332,7 +346,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    ElementFactory factory(){
+    public ElementFactory factory(){
         return elementFactory;
     }
 
@@ -359,12 +373,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return concepts;
     }
 
-    void checkOntologyMutationAllowed(){
+    public void checkOntologyMutationAllowed(){
         checkMutationAllowed();
         if(isBatchGraph()) throw GraphOperationException.ontologyMutation();
     }
 
-    void checkMutationAllowed(){
+    public void checkMutationAllowed(){
         if(isReadOnly()) throw GraphOperationException.transactionReadOnly(this);
     }
 
@@ -372,13 +386,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
     @Nullable
-    VertexElement addVertex(Schema.BaseType baseType){
+    public VertexElement addVertex(Schema.BaseType baseType){
         Vertex vertex = operateOnOpenGraph(() -> getTinkerPopGraph().addVertex(baseType.name()));
         vertex.property(Schema.VertexProperty.ID.name(), Schema.PREFIX_VERTEX + vertex.id().toString());
         return factory().buildVertexElement(vertex);
     }
 
-    VertexElement addVertex(Schema.BaseType baseType, ConceptId conceptId){
+    public VertexElement addVertex(Schema.BaseType baseType, ConceptId conceptId){
         Vertex vertex = operateOnOpenGraph(() -> getTinkerPopGraph().addVertex(baseType.name()));
         vertex.property(Schema.VertexProperty.ID.name(), conceptId.getValue());
         return factory().buildVertexElement(vertex);
@@ -489,7 +503,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE));
     }
 
-    RelationType putRelationTypeImplicit(Label label) {
+    public RelationType putRelationTypeImplicit(Label label) {
         return putOntologyElement(label, Schema.BaseType.RELATION_TYPE,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE));
     }
@@ -505,7 +519,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 v -> factory().buildRole(v, getMetaRole(), Boolean.FALSE));
     }
 
-    Role putRoleTypeImplicit(Label label) {
+    public Role putRoleTypeImplicit(Label label) {
         return putOntologyElement(label, Schema.BaseType.ROLE,
                 v -> factory().buildRole(v, getMetaRole(), Boolean.TRUE));
     }
@@ -575,7 +589,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return validateOntologyElement(ontologyConcept, baseType, () -> null);
     }
     @Nullable
-    <T extends OntologyConcept> T getOntologyConcept(LabelId id){
+    public <T extends OntologyConcept> T getOntologyConcept(LabelId id){
         if(!id.isValid()) return null;
         return getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
     }
@@ -678,7 +692,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return getOntologyConcept(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
-    void putShortcutEdge(Thing toThing, RelationReified fromRelation, Role roleType){
+    public void putShortcutEdge(Thing toThing, RelationReified fromRelation, Role roleType){
         boolean exists  = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
