@@ -54,6 +54,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import javax.annotation.Nullable;
@@ -124,15 +125,18 @@ public class GraknEngineServer implements AutoCloseable {
         logStartMessage(
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
-        lockAndInitializeSystemOntology();
-        startHTTP();
+        synchronized (this){
+            CompletableFuture.allOf(CompletableFuture.runAsync(this::lockAndInitializeSystemOntology), CompletableFuture.runAsync(this::startHTTP));
+        }
         LOG.info("Engine started in {}", timer.stop());
     }
 
     @Override
     public void close() {
-        stopHTTP();
-        stopTaskManager();
+        synchronized (this) {
+            stopTaskManager();
+            stopHTTP();
+        }
     }
 
     private void lockAndInitializeSystemOntology() {
@@ -239,10 +243,8 @@ public class GraknEngineServer implements AutoCloseable {
 
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
-        //Register filter to check authentication token in each request
-        boolean isPasswordProtected = passwordProtected;
-
-        if (isPasswordProtected) {
+        // Register filter to check authentication token in each request
+        if (passwordProtected) {
             spark.before((req, res) -> checkAuthorization(spark, req, jwtHandler));
         }
 

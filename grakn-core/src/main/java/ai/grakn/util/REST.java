@@ -77,7 +77,7 @@ public class REST {
         public static class Dashboard {
             public static final String TYPES = "/dashboard/types/";
             public static final String EXPLORE = "/dashboard/explore/";
-            public static final String EXPLAIN = "/dashboard/explain/";
+            public static final String EXPLAIN = "/dashboard/explain";
         }
 
         public static final String NEW_SESSION_URI="/auth/session/";

@@ -66,9 +66,8 @@ public class RedisInflightTaskConsumerTest {
                 BuilderFactory.STRING));
         when(jedis.multi()).thenReturn(transaction);
         RedisInflightTaskConsumer redisInflightTaskConsumer =
-                new RedisInflightTaskConsumer(jedisPool,
-                        Duration.ofSeconds(2), new ConfigBuilder().build(), QUEUE_NAME,
-                        METRIC_REGISTRY);
+                new RedisInflightTaskConsumer(jedisPool, Duration.ofSeconds(30),
+                        new ConfigBuilder().build(), QUEUE_NAME, METRIC_REGISTRY);
         redisInflightTaskConsumer.run();
         verify(transaction, times( ITERATIONS)).rpoplpush(anyString(), anyString());
     }

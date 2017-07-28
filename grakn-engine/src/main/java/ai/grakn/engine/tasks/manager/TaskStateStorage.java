@@ -86,9 +86,9 @@ public interface TaskStateStorage {
      * @return Set<TaskState> of TaskStates corresponding to search
      */
     Set<TaskState> getTasks(TaskStatus taskStatus,
-                                          String taskClassName,
-                                          String createdBy,
-                                          EngineID runningOnEngine,
-                                          int limit,
-                                          int offset);
+                            String taskClassName,
+                            String createdBy,
+                            EngineID runningOnEngine,
+                            int limit,
+                            int offset);
 }
