@@ -5,12 +5,11 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.util.ErrorMessage;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,7 +34,7 @@ public class GraphTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void whencCommitting_EnsureGraphTransactionIsClosed() throws Exception {
+    public void whenCommitting_EnsureGraphTransactionIsClosed() throws Exception {
         GraknGraph graph = engine.factoryWithNewKeyspace().open(GraknTxType.WRITE);
         String keyspace = graph.getKeyspace();
         graph.putEntityType("thingy");
@@ -59,17 +58,6 @@ public class GraphTest {
         } catch (Exception e){
             throw new RuntimeException(e);
         }
-    }
-
-    @Test
-    public void whenFetchingGraphsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureGraphsAreTheSame() throws InvalidGraphException {
-        String key = "mykeyspace";
-        GraknGraph graph1 = Grakn.session(engine.uri(), key).open(GraknTxType.WRITE);
-        graph1.close();
-        GraknGraph graph2 = engine.server().factory().getGraph(key, GraknTxType.WRITE);
-        assertEquals(graph1, graph2);
-        graph1.close();
-        graph2.close();
     }
 
     @Test

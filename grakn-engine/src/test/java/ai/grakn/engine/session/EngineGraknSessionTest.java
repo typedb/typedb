@@ -20,7 +20,7 @@ public class EngineGraknSessionTest {
     String factoryUri = "localhost:" + EngineTestHelper.config().getProperty(GraknEngineConfig.SERVER_PORT_NUMBER);
     
     @Test
-    public void testDifferentFactoriesReturnTheSameGraph(){
+    public void whenFetchingGraphsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureGraphsAreTheSame(){
         String keyspace = "mykeyspace";
 
         GraknGraph graph1 = Grakn.session(factoryUri, keyspace).open(GraknTxType.WRITE);
