@@ -212,7 +212,7 @@ abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl im
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
         Set<Relation> relations = new HashSet<>();
 
-        vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.RESOURCE).forEach(edge -> {
+        vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.RESOURCE).forEach(edge -> {
             if (roleSet.isEmpty()) {
                 relations.add(vertex().graph().factory().buildRelation(edge));
             } else {
