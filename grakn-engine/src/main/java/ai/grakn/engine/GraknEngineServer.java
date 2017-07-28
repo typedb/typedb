@@ -118,6 +118,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void start() {
+        LOG.info("Starting Engine...");
         lockAndInitializeSystemOntology();
         startHTTP();
         printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),

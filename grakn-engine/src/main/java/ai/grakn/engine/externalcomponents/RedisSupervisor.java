@@ -20,10 +20,11 @@ package ai.grakn.engine.externalcomponents;
 
 import ai.grakn.exception.GraknBackendException;
 import org.javatuples.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
-import java.util.logging.Logger;
 
 /**
  * Responsible for supervising cassandra.
@@ -32,7 +33,7 @@ import java.util.logging.Logger;
  */
 
 public class RedisSupervisor {
-    private final Logger LOG = Logger.getLogger(RedisSupervisor.class.getName());
+    private final Logger LOG = LoggerFactory.getLogger(RedisSupervisor.class.getName());
     private OperatingSystemCalls osCalls;
 
     private final String startRedisCmd;
@@ -92,18 +93,19 @@ public class RedisSupervisor {
             String[] cmd = new String[]{"sh", "-c", startRedisCmdSync};
             LOG.info("starting redis...");
             Process p = osCalls.exec(cmd);
-            CompletableFuture<Void> f = CompletableFuture.supplyAsync(() -> {
+            LOG.info("redis started.");
+            CompletableFuture<Void> redisStopped = CompletableFuture.supplyAsync(() -> {
                 try {
                     p.waitFor();
                     LOG.info("redis stopped.");
                     return null;
                 } catch (InterruptedException e) {
-                    throw GraknBackendException.redisStartException(e);
+                    throw GraknBackendException.redisException(e);
                 }
             });
-            return new Pair<>(p, f);
+            return new Pair<>(p, redisStopped);
         } catch (IOException e) {
-            throw GraknBackendException.redisStartException(e);
+            throw GraknBackendException.redisException(e);
         }
     }
 

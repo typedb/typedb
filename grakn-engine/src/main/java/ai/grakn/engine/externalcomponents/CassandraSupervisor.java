@@ -22,10 +22,11 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.exception.GraknBackendException;
 import java.io.IOException;
 
-import org.javatuples.Pair;
+import org.javatuples.Triplet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.logging.Logger;
 
 /**
  * Responsible for supervising cassandra.
@@ -35,7 +36,7 @@ import java.util.logging.Logger;
 
 public class CassandraSupervisor {
     private OperatingSystemCalls osCalls;
-    private final Logger LOG = Logger.getLogger(CassandraSupervisor.class.getName());
+    private final Logger LOG = LoggerFactory.getLogger(CassandraSupervisor.class.getName());
     private final long WAIT_TIME_BETWEEN_ATTEMPT_MS = 2000;
 
     // commands
@@ -98,26 +99,35 @@ public class CassandraSupervisor {
         waitForCassandraStarted();
     }
 
-    public Pair<Process, CompletableFuture<Void>> start() throws IOException {
+    public Triplet<Process, CompletableFuture<Void>, CompletableFuture<Void>> start() throws IOException {
         try {
             String[] cmd = new String[] { "sh", "-c", cassandraStartCmdSync };
             LOG.info("starting cassandra...");
             Process p = osCalls.exec(cmd);
 
-            CompletableFuture<Void> cassandraStarted = CompletableFuture.supplyAsync(() -> {
+            CompletableFuture<Void> cassandraReady = CompletableFuture.supplyAsync(() -> {
                 try {
-                    LOG.info("cassandra stopped.");
-                    p.waitFor();
                     waitForCassandraStarted();
+                    LOG.info("cassandra started.");
                     return null;
                 } catch (IOException | InterruptedException e) {
-                    throw GraknBackendException.cassandraStartException(e);
+                    throw GraknBackendException.cassandraException(e);
                 }
             });
 
-            return new Pair<>(p, cassandraStarted);
+            CompletableFuture<Void> cassandraStopped = CompletableFuture.supplyAsync(() -> {
+                try {
+                    p.waitFor();
+                    LOG.info("cassandra stopped.");
+                    return null;
+                } catch (InterruptedException e) {
+                    throw GraknBackendException.cassandraException(e);
+                }
+            });
+
+            return new Triplet<>(p, cassandraReady, cassandraStopped);
         } catch (IOException e) {
-            throw GraknBackendException.cassandraStartException(e);
+            throw GraknBackendException.cassandraException(e);
         }
     }
 
@@ -148,7 +158,7 @@ public class CassandraSupervisor {
             }
         }
         LOG.info("unable to start grakn-cassandra!");
-        throw GraknBackendException.cassandraStartException();
+        throw GraknBackendException.cassandraException();
     }
 
     public void waitForCassandraStopped() throws IOException, InterruptedException {
@@ -165,6 +175,6 @@ public class CassandraSupervisor {
             }
         }
         LOG.info("unable to stop grakn-cassandra!");
-        throw GraknBackendException.cassandraStopException();
+        throw GraknBackendException.cassandraException();
     }
 }

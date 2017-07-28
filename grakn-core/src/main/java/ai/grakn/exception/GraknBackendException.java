@@ -103,30 +103,23 @@ public class GraknBackendException extends GraknException {
     }
 
     /**
-     * Thrown when unable to start cassandra
+     * Thrown when cassandra encounters an error
      */
-    public static GraknBackendException cassandraStartException() {
-        return new GraknBackendException("unable to start grakn-cassandra!");
+    public static GraknBackendException cassandraException() {
+        return new GraknBackendException("cassandra encounters an error!");
     }
 
     /**
-     * Thrown when unable to start cassandra
+     * Thrown when cassandra encounters an error
      */
-    public static GraknBackendException cassandraStartException(Exception cause) {
-        return new GraknBackendException("unable to start grakn-cassandra!", cause);
+    public static GraknBackendException cassandraException(Exception cause) {
+        return new GraknBackendException("cassandra encounters an error!", cause);
     }
 
     /**
-     * Thrown when unable to stop cassandra
+     * Thrown when redis encounters an error
      */
-    public static GraknBackendException cassandraStopException() {
-        return new GraknBackendException("unable to stop grakn-cassandra!");
-    }
-
-    /**
-     * Thrown when unable to start redis
-     */
-    public static GraknBackendException redisStartException(Exception cause) {
-        return new GraknBackendException("unable to start redis!", cause);
+    public static GraknBackendException redisException(Exception cause) {
+        return new GraknBackendException("redis encounters an error!", cause);
     }
 }
