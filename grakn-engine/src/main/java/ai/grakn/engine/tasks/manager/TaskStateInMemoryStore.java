@@ -113,4 +113,9 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
 
         return res;
     }
+
+    @Override
+    public void clear() {
+        storage.clear();
+    }
 }

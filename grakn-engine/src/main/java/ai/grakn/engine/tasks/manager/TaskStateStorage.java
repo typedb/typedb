@@ -93,4 +93,6 @@ public interface TaskStateStorage {
             @Nullable EngineID runningOnEngine,
             int limit,
             int offset);
+
+    void clear();
 }

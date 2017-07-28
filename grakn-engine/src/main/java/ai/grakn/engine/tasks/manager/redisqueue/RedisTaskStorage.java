@@ -78,10 +78,11 @@ public class RedisTaskStorage implements TaskStateStorage {
             String value = new String(Base64.getEncoder().encode(SerializationUtils.serialize(state)),
                     Charsets.UTF_8);
             String status = jedis.set(key, value, "nx", "ex", 60*60/*expire time in seconds*/);
-            if (status.equalsIgnoreCase("OK")) {
+            if (status != null && status.equalsIgnoreCase("OK")) {
                 return state.getId();
             } else {
-                throw GraknBackendException.stateStorage();
+                LOG.error("Could not write state {} to redis. Returned: {}", key, status);
+                throw new GraknBackendException("Could not save task state " + key);
             }
         }
     }
@@ -125,11 +126,12 @@ public class RedisTaskStorage implements TaskStateStorage {
     public Set<TaskState> getTasks(@Nullable TaskStatus taskStatus, @Nullable String taskClassName,
             @Nullable String createdBy, @Nullable EngineID runningOnEngine, int limit, int offset) {
         try (Jedis jedis = redis.getResource()) {
-            Stream<TaskState> stream = jedis.keys(PREFIX + "*").stream().map(value -> {
+            Stream<TaskState> stream = jedis.keys(PREFIX + "*").stream().map(key -> {
+                String v = jedis.get(key);
                 try {
-                    return (TaskState) deserialize(Base64.getDecoder().decode(value));
+                    return (TaskState) deserialize(Base64.getDecoder().decode(v));
                 } catch (IllegalArgumentException e) {
-                    LOG.error("Could not decode value {}", value);
+                    LOG.error("Could not decode key:value {}:{}", key, v);
                     throw e;
                 }
             });
@@ -155,6 +157,16 @@ public class RedisTaskStorage implements TaskStateStorage {
             return results;
         } catch (Exception e) {
             throw GraknBackendException.stateStorageTaskRetrievalFailure(e);
+        }
+    }
+
+    @Override
+    public void clear() {
+        try (Jedis jedis = redis.getResource()) {
+            Set<String> keys = jedis.keys(PREFIX + "*");
+            for (String key : keys) {
+                jedis.del(key);
+            }
         }
     }
 

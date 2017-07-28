@@ -47,7 +47,7 @@ public class GraknBackendException extends GraknException {
         super(error, e);
     }
 
-    protected GraknBackendException(String error){
+    public GraknBackendException(String error){
         super(error);
     }
 
