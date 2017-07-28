@@ -97,3 +97,4 @@ isa inference-rule
     	(role1:$x, role2:$y) isa relation3;
     };
 
+

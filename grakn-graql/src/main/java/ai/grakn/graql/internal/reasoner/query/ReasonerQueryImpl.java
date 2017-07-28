@@ -121,7 +121,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                         .filter(Atomic::isSelectable)
                         .map(Atomic::toString)
                         .collect(Collectors.joining(";\n")) +
-                "\n}";
+                "\n}\n";
     }
 
     @Override

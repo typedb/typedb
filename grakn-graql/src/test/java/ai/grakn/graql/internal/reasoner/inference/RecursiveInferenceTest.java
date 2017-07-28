@@ -230,16 +230,14 @@ public class RecursiveInferenceTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    /*from Vieille - Recursive Query Processing: The power of logic p. 25*/
-    /** SG(X, X) :- H(X) doesn't get applied*/
-    @Ignore
+    /**from Vieille - Recursive Query Processing: The power of logic p. 25*/
     @Test
     public void testSameGeneration(){
         QueryBuilder qb = recursivitySGContext.graph().graql().infer(false);
         QueryBuilder iqb = recursivitySGContext.graph().graql().infer(true);
 
         String queryString = "match ($x, $y) isa SameGen; $x has name 'a'; select $y;";
-        String explicitQuery = "match $y has name $name;{$name val 'f';} or {$name val 'h';};select $y;";
+        String explicitQuery = "match $y has name $name;{$name val 'f';} or {$name val 'a';};select $y;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));

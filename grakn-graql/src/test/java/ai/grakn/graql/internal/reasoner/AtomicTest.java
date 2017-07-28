@@ -41,7 +41,6 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
@@ -70,7 +69,6 @@ import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -569,7 +567,7 @@ public class AtomicTest {
         assertEquals(4, relation.getApplicableRules().size());
     }
 
-    @Test //should assign (role1: $x, role: $y, role1: $z) which is incompatible with any of the rule heads
+    @Test //should assign (role: $x, role1: $y, role1: $z) which is incompatible with any of the rule heads
     public void testRuleApplicability_WithWildcard_MissingMappings(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$y isa entity1; $z isa entity5;}";
