@@ -14,7 +14,7 @@ Copyright (C) 2016-2017  Grakn Labs Limited.
 
 ## Licensing
 
-This product includes software developed by [Grakn Labs](http://grakn.ai/).  It's released under the GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For licence information, please see LICENCE.txt.
+This product includes software developed by [Grakn Labs](http://grakn.ai/).  It's released under the GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For licence information, please see [LICENCE.txt](https://github.com/graknlabs/grakn/blob/master/LICENSE.txt).
 
 ## Useful links
 
