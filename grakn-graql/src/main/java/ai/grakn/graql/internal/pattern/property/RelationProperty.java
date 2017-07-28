@@ -47,8 +47,10 @@ import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
@@ -225,7 +227,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 .filter(prop -> !IsaProperty.class.isInstance(prop))
                 .count() > 0;
         VarPattern relVar = (var.getVarName().isUserDefinedName() || isReified)? var.getVarName().asUserDefined() : Graql.var();
-        Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(toSet());
+        List<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(Collectors.toList());
 
         for (RelationPlayer rp : relationPlayers) {
             VarPatternAdmin role = rp.getRole().orElse(null);
@@ -253,5 +255,4 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         relVar = relVar.isa(typeVariable);
         return new RelationAtom(relVar.admin(), typeVariable, predicate, parent);
     }
-
 }

@@ -106,7 +106,7 @@ public abstract class Binary extends Atom {
                 && hasEquivalentPredicatesWith(a2);
     }
 
-    protected boolean hasEquivalentPredicatesWith(Binary atom) {
+    boolean hasEquivalentPredicatesWith(Binary atom) {
         Predicate pred = getPredicate();
         Predicate objPredicate = atom.getPredicate();
         return (pred == null && objPredicate == null)
