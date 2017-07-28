@@ -14,10 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.property;
+package ai.grakn.test.property;
 
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.ResourceType;
@@ -41,10 +40,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.property.PropertyUtil.choose;
-import static ai.grakn.property.PropertyUtil.directInstances;
-import static ai.grakn.property.PropertyUtil.directSubs;
-import static ai.grakn.property.PropertyUtil.indirectSupers;
+import static ai.grakn.test.property.PropertyUtil.choose;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -106,7 +102,7 @@ public class TypePropertyTest {
     @Ignore // TODO: Fix this (Bug #16191)
     @Property
     public void whenATypeWithDirectInstancesIsSetToAbstract_Throw(Type type) {
-        assumeThat(directInstances(type), not(empty()));
+        assumeThat(PropertyUtil.directInstances(type), not(empty()));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(IS_ABSTRACT.getMessage(type.getLabel()));
@@ -116,7 +112,7 @@ public class TypePropertyTest {
 
     @Property
     public void whenSettingATypeAbstractFlag_TheTypesAbstractFlagIsSet(@NonMeta Type type, boolean isAbstract) {
-        assumeThat(directInstances(type), empty());
+        assumeThat(PropertyUtil.directInstances(type), empty());
 
         type.setAbstract(isAbstract);
         assertEquals(isAbstract, type.isAbstract());
@@ -124,9 +120,9 @@ public class TypePropertyTest {
 
     @Property
     public void whenGettingIndirectInstances_ReturnDirectInstancesAndIndirectInstancesOfDirectSubTypes(Type type) {
-        Collection<Type> directSubTypes = directSubs(type);
+        Collection<Type> directSubTypes = PropertyUtil.directSubs(type);
         Thing[] expected = Stream.concat(
-            directInstances(type).stream(),
+            PropertyUtil.directInstances(type).stream(),
             directSubTypes.stream().flatMap(subType -> subType.instances().stream())
         ).toArray(Thing[]::new);
 
@@ -157,7 +153,7 @@ public class TypePropertyTest {
     @Property
     public void whenAddingAPlaysToATypesIndirectSuperType_TheTypePlaysThatRole(
             Type type, @FromGraph Role role, long seed) {
-        OntologyConcept superConcept = choose(indirectSupers(type), seed);
+        OntologyConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(type), seed);
         assumeTrue(superConcept.isType());
         assumeFalse(isMetaLabel(superConcept.getLabel()));
 
@@ -181,7 +177,7 @@ public class TypePropertyTest {
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypePlaysThatRole_TheTypeStillPlaysThatRole(
             @NonMeta Type type, long seed) {
-        Role role = choose(type.sup() + " plays no roles", type.sup().plays(), seed);
+        Role role = PropertyUtil.choose(type.sup() + " plays no roles", type.sup().plays(), seed);
         type.deletePlays(role);
         assertThat(type.plays(), hasItem(role));
     }

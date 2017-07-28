@@ -14,10 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.property;
+package ai.grakn.test.property;
 
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Thing;
@@ -27,8 +26,7 @@ import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
-import static ai.grakn.property.PropertyUtil.choose;
-import static ai.grakn.property.PropertyUtil.directInstances;
+import static ai.grakn.test.property.PropertyUtil.choose;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertThat;
@@ -42,13 +40,13 @@ public class ThingPropertyTest {
     @Property
     public void whenGettingTheDirectTypeOfAThing_TheThingIsADirectInstanceOfThatType(Thing thing) {
         Type type = thing.type();
-        assertThat(directInstances(type), hasItem(thing));
+        assertThat(PropertyUtil.directInstances(type), hasItem(thing));
     }
 
     @Ignore
     @Property
     public void whenGettingTheResourceOfAThing_TheResourcesOwnerIsTheThing(Thing thing, long seed) {
-        Resource<?> resource = choose(thing.resources(), seed);
+        Resource<?> resource = PropertyUtil.choose(thing.resources(), seed);
         assertTrue("[" + thing + "] is connected to resource [" + resource + "] but is not in it's owner set", resource.ownerInstances().contains(thing));
     }
 }
