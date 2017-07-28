@@ -26,7 +26,7 @@ GRAKN.AI is the database solution for working with complex data that intelligent
 
 ## Grakn
 
-Grakn is a hyper-relational database, that provides an [Enhandced-Entity-Relational (EER)](https://en.wikipedia.org/wiki/Enhanced_entity–relationship_model) schema to model extremely complex datasets. Grakn uses the EER model to understand the complete context of their relationships. Consequently, Grakn allows computers to process complex information more intelligently, through a higher level of abstraction.
+Grakn is a hyper-relational database, that provides an [Enhanced-Entity-Relational (EER)](https://en.wikipedia.org/wiki/Enhanced_entity–relationship_model) schema to model extremely complex datasets. Grakn uses the EER model to understand the complete context of their relationships. Consequently, Grakn allows computers to process complex information more intelligently, through a higher level of abstraction.
 
 > Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained in it.
 
