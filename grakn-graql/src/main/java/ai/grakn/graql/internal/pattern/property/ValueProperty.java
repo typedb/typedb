@@ -26,6 +26,7 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableSet;
@@ -68,6 +69,21 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(EquivalentFragmentSets.value(this, start, predicate));
+    }
+
+    @Override
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        executor.builder(var).value(predicate.equalsValue().get()); // TODO
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of();
+    }
+
+    @Override
+    public Set<Var> producedVars(Var var) {
+        return ImmutableSet.of(var);
     }
 
     @Override

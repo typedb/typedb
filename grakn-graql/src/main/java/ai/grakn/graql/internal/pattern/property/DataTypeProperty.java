@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -26,6 +27,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.parser.QueryParser;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
 import com.google.common.collect.ImmutableSet;
 
@@ -69,6 +71,21 @@ public class DataTypeProperty extends AbstractVarProperty implements NamedProper
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(dataType(this, start, datatype));
+    }
+
+    @Override
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        executor.builder(var).dataType(datatype);
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of();
+    }
+
+    @Override
+    public Set<Var> producedVars(Var var) {
+        return ImmutableSet.of(var);
     }
 
     @Override

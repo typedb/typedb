@@ -18,12 +18,14 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import com.google.common.collect.Sets;
 
@@ -69,6 +71,16 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
                 EquivalentFragmentSets.notInternalFragmentSet(this, var.getVarName()),
                 EquivalentFragmentSets.neq(this, start, var.getVarName())
         );
+    }
+
+    @Override
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        // TODO: Throw
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

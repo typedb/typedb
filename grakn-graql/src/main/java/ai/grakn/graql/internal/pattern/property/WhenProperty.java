@@ -18,7 +18,10 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
 
 /**
  * Represents the {@code when} property on a {@link ai.grakn.concept.Rule}.
@@ -39,5 +42,10 @@ public class WhenProperty extends RuleProperty {
     @Override
     public String getName(){
         return "when";
+    }
+
+    @Override
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        executor.builder(var).when(pattern);
     }
 }

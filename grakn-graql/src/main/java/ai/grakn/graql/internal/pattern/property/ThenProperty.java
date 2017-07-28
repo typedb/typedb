@@ -18,7 +18,10 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
 
 
 /**
@@ -42,4 +45,8 @@ public class ThenProperty extends RuleProperty {
         return "then";
     }
 
+    @Override
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        executor.builder(var).then(pattern);
+    }
 }

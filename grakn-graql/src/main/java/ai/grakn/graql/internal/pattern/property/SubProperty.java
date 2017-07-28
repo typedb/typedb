@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.Concept;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -30,7 +30,6 @@ import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.SubAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -87,22 +86,19 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Concept superConcept = insertQueryExecutor.getConcept(superType);
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        OntologyConcept superConcept = executor.get(superType.getVarName()).asOntologyConcept();
+        executor.builder(var).sub(superConcept);
+    }
 
-        if (concept.isEntityType()) {
-            concept.asEntityType().sup(superConcept.asEntityType());
-        } else if (concept.isRelationType()) {
-            concept.asRelationType().sup(superConcept.asRelationType());
-        } else if (concept.isRole()) {
-            concept.asRole().sup(superConcept.asRole());
-        } else if (concept.isResourceType()) {
-            concept.asResourceType().sup(superConcept.asResourceType());
-        } else if (concept.isRuleType()) {
-            concept.asRuleType().sup(superConcept.asRuleType());
-        } else {
-            throw CommonUtil.unreachableStatement("Can't recognize type " + concept);
-        }
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of(superType.getVarName());
+    }
+
+    @Override
+    public Set<Var> producedVars(Var var) {
+        return ImmutableSet.of(var);
     }
 
     @Override

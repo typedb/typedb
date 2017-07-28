@@ -19,9 +19,11 @@
 
 package ai.grakn.util;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -152,6 +154,49 @@ public class CommonUtil {
             @Override
             public Function<ImmutableMultiset.Builder<T>, ImmutableMultiset<T>> finisher() {
                 return ImmutableMultiset.Builder::build;
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return ImmutableSet.of();
+            }
+        };
+    }
+
+    public static <T, K, V> Collector<T, ?, HashMultimap<K, V>> flatteningToMultimap(
+            Function<? super T, ? extends K> keyFunction,
+            Function<? super T, ? extends Stream<? extends V>> valueFunction) {
+        return flatteningToMultimap(keyFunction, valueFunction, HashMultimap::create);
+    }
+
+    public static <T, K, V, M extends Multimap<K, V>> Collector<T, ?, M> flatteningToMultimap(
+            Function<? super T, ? extends K> keyFunction,
+            Function<? super T, ? extends Stream<? extends V>> valueFunction, Supplier<M> multimapSupplier) {
+        return new Collector<T, M, M>() {
+            @Override
+            public Supplier<M> supplier() {
+                return multimapSupplier;
+            }
+
+            @Override
+            public BiConsumer<M, T> accumulator() {
+                return (builder, val) -> {
+                    ImmutableList<? extends V> values = valueFunction.apply(val).collect(toImmutableList());
+                    builder.putAll(keyFunction.apply(val), values);
+                };
+            }
+
+            @Override
+            public BinaryOperator<M> combiner() {
+                return (b1, b2) -> {
+                    b1.putAll(b2);
+                    return b1;
+                };
+            }
+
+            @Override
+            public Function<M, M> finisher() {
+                return map -> map;
             }
 
             @Override

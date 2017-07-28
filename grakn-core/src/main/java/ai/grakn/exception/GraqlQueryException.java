@@ -27,7 +27,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.macro.Macro;
@@ -46,8 +45,8 @@ import static ai.grakn.util.ErrorMessage.INSERT_NEW_TYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_NO_DATATYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
 import static ai.grakn.util.ErrorMessage.INSERT_RESOURCE_WITHOUT_VALUE;
-import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_WHEN;
 import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_THEN;
+import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_WHEN;
 import static ai.grakn.util.ErrorMessage.INSERT_TYPE_WITHOUT_LABEL;
 import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
 import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
@@ -156,7 +155,7 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
     }
 
-    public static GraqlQueryException createInstanceOfMetaConcept(VarPatternAdmin var, Type type) {
+    public static GraqlQueryException createInstanceOfMetaConcept(Var var, Type type) {
         return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.getLabel());
     }
 
@@ -164,8 +163,8 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, ontologyConcept.getLabel()));
     }
 
-    public static GraqlQueryException insertMultipleValues(ValuePredicateAdmin predicate, Object value) {
-        return new GraqlQueryException(INSERT_MULTIPLE_VALUES.getMessage(value, predicate));
+    public static GraqlQueryException insertMultipleValues(Object value1, Object value2) {
+        return new GraqlQueryException(INSERT_MULTIPLE_VALUES.getMessage(value1, value2));
     }
 
     public static GraqlQueryException insertResourceWithoutValue() {

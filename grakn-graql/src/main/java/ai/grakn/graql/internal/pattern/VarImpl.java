@@ -76,21 +76,4 @@ abstract class VarImpl extends AbstractVarPattern implements Var {
     public String toString() {
         return "$" + getValue();
     }
-
-    @Override
-    public final boolean equals(Object o) {
-        // This equals implementation is special: it ignores whether a variable is user-defined
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        VarImpl varName = (VarImpl) o;
-
-        return getValue().equals(varName.getValue());
-    }
-
-    @Override
-    public final int hashCode() {
-        // This hashCode implementation is special: it ignores whether a variable is user-defined
-        return getValue().hashCode();
-     }
 }
