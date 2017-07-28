@@ -42,6 +42,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
@@ -93,6 +94,11 @@ public class GraknEngineServerIT {
         waitForStatus(storage, allTasks, COMPLETED, STOPPED, FAILED);
 
         assertEquals(completableTasks(allTasks), completedTasks());
+
+        Set<TaskState> tasks = engine1.getTaskManager().storage()
+                .getTasks(null, null, null, null, 0, 0);
+
+        assertThat(tasks.size(), equalTo(tasks1.size() + tasks2.size()));
     }
 
     @Property(trials=10)

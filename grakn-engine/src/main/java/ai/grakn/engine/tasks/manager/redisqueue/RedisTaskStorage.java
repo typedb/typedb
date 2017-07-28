@@ -31,6 +31,7 @@ import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import java.util.Base64;
 import java.util.Set;
+import java.util.function.Function;
 import static java.util.stream.Collectors.toSet;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -56,6 +57,9 @@ public class RedisTaskStorage implements TaskStateStorage {
 
     private Pool<Jedis> redis;
 
+    private static final String PREFIX = "state:";
+    private static final Function<String, String> encodeKey = o -> PREFIX + o;
+
     private RedisTaskStorage(Pool<Jedis> redis, MetricRegistry metricRegistry) {
         this.redis = redis;
         this.updateTimer = metricRegistry.timer(name(RedisTaskStorage.class, "update"));
@@ -68,15 +72,24 @@ public class RedisTaskStorage implements TaskStateStorage {
 
     @Override
     public TaskId newState(TaskState state) throws GraknBackendException {
-        updateState(state);
-        return state.getId();
+        try(Jedis jedis = redis.getResource(); Context ignore = updateTimer.time()){
+            String key = encodeKey.apply(state.getId().getValue());
+            LOG.debug("New state {}", key);
+            String value = new String(Base64.getEncoder().encode(SerializationUtils.serialize(state)),
+                    Charsets.UTF_8);
+            String status = jedis.set(key, value, "nx", "ex", 60*60/*expire time in seconds*/);
+            if (status.equalsIgnoreCase("OK")) {
+                return state.getId();
+            } else {
+                throw GraknBackendException.stateStorage();
+            }
+        }
     }
 
     @Override
     public Boolean updateState(TaskState state) {
         try(Jedis jedis = redis.getResource(); Context ignore = updateTimer.time()){
-            // TODO find a better way to represent the state
-            String key = state.getId().getValue();
+            String key = encodeKey.apply(state.getId().getValue());
             LOG.debug("Updating state {}", key);
             String value = new String(Base64.getEncoder().encode(SerializationUtils.serialize(state)),
                     Charsets.UTF_8);
@@ -89,7 +102,7 @@ public class RedisTaskStorage implements TaskStateStorage {
     @Nullable
     public TaskState getState(TaskId id) throws GraknBackendException {
         try(Jedis jedis = redis.getResource(); Context ignore = getTimer.time()){
-            String value = jedis.get(id.getValue());
+            String value = jedis.get(encodeKey.apply(id.getValue()));
             if (value != null) {
                 return (TaskState) deserialize(Base64.getDecoder().decode(value));
             } else {
@@ -103,17 +116,23 @@ public class RedisTaskStorage implements TaskStateStorage {
     @Override
     public boolean containsTask(TaskId id) {
         try(Jedis jedis = redis.getResource()){
-            String value = jedis.get(id.getValue());
+            String value = jedis.get(encodeKey.apply(id.getValue()));
             return value != null;
         }
     }
 
     @Override
-    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy,
-            EngineID runningOnEngine, int limit, int offset) {
+    public Set<TaskState> getTasks(@Nullable TaskStatus taskStatus, @Nullable String taskClassName,
+            @Nullable String createdBy, @Nullable EngineID runningOnEngine, int limit, int offset) {
         try (Jedis jedis = redis.getResource()) {
-            // TODO change structure of task keys with a prefix. Can we do better than filtering?
-            Stream<TaskState> stream = jedis.keys("*-*-*-*").stream().map(value -> (TaskState) deserialize(Base64.getDecoder().decode(value)));
+            Stream<TaskState> stream = jedis.keys(PREFIX + "*").stream().map(value -> {
+                try {
+                    return (TaskState) deserialize(Base64.getDecoder().decode(value));
+                } catch (IllegalArgumentException e) {
+                    LOG.error("Could not decode value {}", value);
+                    throw e;
+                }
+            });
             if (taskStatus != null) {
                 stream = stream.filter(t -> t.status().equals(taskStatus));
             }
@@ -131,7 +150,9 @@ public class RedisTaskStorage implements TaskStateStorage {
             if (limit > 0) {
                 stream = stream.limit(limit);
             }
-            return stream.collect(toSet());
+            Set<TaskState> results = stream.collect(toSet());
+            LOG.debug("getTasks returning {} results", results.size());
+            return results;
         } catch (Exception e) {
             throw GraknBackendException.stateStorageTaskRetrievalFailure(e);
         }
