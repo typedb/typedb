@@ -1,6 +1,6 @@
 ![GRAKN.AI](https://grakn.ai/img/Grakn%20logo%20-%20transparent.png)
 
-AI systems process knowledge that is too complex for current databases. Grakn is a _hyper-relational_ database for _knowledge-oriented_ systems. Grakn enables machines to store complex data that serves as a knowledge base to cognitive systems. Graql is Grakn's Reasoning (through OLTP) and Analytics (through OLAP) Query Language. Graql is a much higher level abstraction over traditional query language - SQL, NoSQL, or Graphs.
+AI systems process knowledge that is too complex for current databases. Grakn is a **hyper-relational** database for **knowledge-oriented** systems. Grakn enables machines to store complex data that serves as a knowledge base to cognitive systems. Graql is Grakn's Reasoning (through OLTP) and Analytics (through OLAP) Query Language. Graql is a much higher level abstraction over traditional query language - SQL, NoSQL, or Graphs.
 
 ---
 [![GitHub release](https://img.shields.io/github/release/graknlabs/grakn.svg)](https://github.com/graknlabs/grakn/releases/latest)
