@@ -24,6 +24,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 import static ai.grakn.property.PropertyUtil.choose;
@@ -38,6 +39,7 @@ import static org.junit.Assert.assertThat;
 @RunWith(JUnitQuickcheck.class)
 public class ThingPropertyTest {
 
+    @Ignore
     @Property
     public void whenGettingTheDirectTypeOfAThing_TheThingIsADirectInstanceOfThatType(Thing thing) {
         Type type = thing.type();
