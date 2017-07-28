@@ -29,9 +29,9 @@ Grakn’s ontology functions as a data schema constraint that guarantees the log
 
 ## Flexible data model
 
-> Grakn allows your database model to evolve regularly.
+> Grakn allows your database model to constantly evolve.
 
-Grakn’s schema/ontology is flexible. You can add new data and relation types, update type names, delete unused types, all while storing and retrieving data to and from the database. This allows your business model to evolve regularly even when you have lots of data, building a lasting advantage as your business “learns”. In Grakn’s Enterprise solution, you can have a machine learning system to automatically adapt and grow your Grakn ontology.
+Grakn’s schema/ontology is flexible. You can add new data and relation types, update type names, delete unused types, all while storing and retrieving data to and from the database. This allows your database model to constantly even when you have lots of data, building a lasting advantage as your business “learns”. In Grakn’s Enterprise solution, you can have a machine learning system to automatically adapt and grow your Grakn ontology.
 
 ##  Machine reasoning query language
 
