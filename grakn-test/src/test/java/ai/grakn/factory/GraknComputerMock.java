@@ -18,7 +18,7 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.GraknComputerImpl;
+import ai.grakn.graph.internal.computer.GraknComputerImpl;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;

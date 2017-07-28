@@ -88,9 +88,8 @@ public class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @param ontologyConcept The {@link OntologyConcept} which this {@link Rule} applies to.
      * @return The {@link Rule} itself
      */
-    public Rule addHypothesis(OntologyConcept ontologyConcept) {
+    public void addHypothesis(OntologyConcept ontologyConcept) {
         putEdge(ConceptVertex.from(ontologyConcept), Schema.EdgeLabel.HYPOTHESIS);
-        return getThis();
     }
 
     /**
@@ -98,9 +97,8 @@ public class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @param ontologyConcept The {@link OntologyConcept} which is the conclusion of this {@link Rule}.
      * @return The {@link Rule} itself
      */
-    public Rule addConclusion(OntologyConcept ontologyConcept) {
+    public void addConclusion(OntologyConcept ontologyConcept) {
         putEdge(ConceptVertex.from(ontologyConcept), Schema.EdgeLabel.CONCLUSION);
-        return getThis();
     }
 
     /**

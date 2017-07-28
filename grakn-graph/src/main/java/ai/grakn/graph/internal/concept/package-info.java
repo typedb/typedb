@@ -17,7 +17,7 @@
  */
 
 /**
- * Internal implementation of {@link ai.grakn.GraknGraph}.
+ * Internal implementation of {@link ai.grakn.concept.Concept}s
  */
 
-package ai.grakn.graph.internal;
+package ai.grakn.graph.internal.concept;

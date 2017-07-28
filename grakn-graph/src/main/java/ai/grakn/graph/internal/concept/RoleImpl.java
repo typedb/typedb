@@ -53,8 +53,8 @@ import java.util.stream.Stream;
  *
  */
 public class RoleImpl extends OntologyConceptImpl<Role> implements Role {
-    private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(Cacheable.set(), () -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(Cacheable.set(), () -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private final Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(Cacheable.set(), () -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
+    private final Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(Cacheable.set(), () -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RoleImpl(VertexElement vertexElement) {
         super(vertexElement);

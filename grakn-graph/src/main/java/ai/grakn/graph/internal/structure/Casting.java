@@ -18,16 +18,13 @@
 
 package ai.grakn.graph.internal.structure;
 
-import ai.grakn.graph.internal.cache.Cacheable;
-
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.graph.internal.cache.Cache;
 import ai.grakn.graph.internal.cache.Cacheable;
-import ai.grakn.graph.internal.structure.EdgeElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
@@ -54,7 +51,7 @@ public class Casting {
         this.edgeElement = edgeElement;
     }
 
-    EdgeElement edge(){
+    private EdgeElement edge(){
         return edgeElement;
     }
 

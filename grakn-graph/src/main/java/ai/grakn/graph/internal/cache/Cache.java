@@ -49,7 +49,7 @@ public class Cache<V> {
     private final Cacheable<V> cacheable;
 
     //Transaction bound. If this is not set it does not yet exist in the scope of the transaction.
-    private ThreadLocal<V> valueTx = new ThreadLocal<>();
+    private final ThreadLocal<V> valueTx = new ThreadLocal<>();
 
     //Graph bound value which has already been persisted and acts as a shared component cache
     private Optional<V> valueGlobal = Optional.empty();
@@ -98,7 +98,7 @@ public class Cache<V> {
      *
      * @return true if there is anything stored in the cache
      */
-    public boolean isPresent(){
+    private boolean isPresent(){
         return valueTx.get() != null || valueGlobal.isPresent();
     }
 

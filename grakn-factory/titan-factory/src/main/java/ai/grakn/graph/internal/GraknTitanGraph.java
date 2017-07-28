@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.graph.internal.concept.ConceptImpl;
+import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -101,7 +102,7 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    VertexElement addVertex(Schema.BaseType baseType){
+    public VertexElement addVertex(Schema.BaseType baseType){
         return executeLockingMethod(() -> super.addVertex(baseType));
     }
 

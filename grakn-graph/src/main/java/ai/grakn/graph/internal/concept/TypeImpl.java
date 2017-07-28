@@ -157,7 +157,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
      * This can fail is the {@link ai.grakn.GraknTxType} is read only.
      * It can also fail when attempting to attach a resource to a meta type
      */
-    void preCheckForInstanceCreation(){
+    private void preCheckForInstanceCreation(){
         vertex().graph().checkMutationAllowed();
 
         if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
@@ -395,7 +395,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
      * @param required Indicates if the resource is required on the entity
      * @return The Type itself
      */
-    public T has(ResourceType resourceType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
+    private T has(ResourceType resourceType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
         //Check if this is a met type
         checkOntologyMutationAllowed();
 

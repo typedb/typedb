@@ -48,7 +48,7 @@ import java.util.stream.Stream;
  *
  */
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private Cache<Set<Role>> cachedRelates = new Cache<>(Cacheable.set(), () -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private final Cache<Set<Role>> cachedRelates = new Cache<>(Cacheable.set(), () -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RelationTypeImpl(VertexElement vertexElement) {
         super(vertexElement);

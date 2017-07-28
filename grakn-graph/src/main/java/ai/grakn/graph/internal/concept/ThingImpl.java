@@ -286,14 +286,12 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     /**
      *
      * @param type The type of this concept
-     * @return The concept itself casted to the correct interface
      */
-    protected T type(TypeImpl type) {
+    private void type(TypeImpl type) {
         if(type != null){
             type.currentShard().link(this);
             setInternalType(type());
         }
-        return getThis();
     }
 
     /**

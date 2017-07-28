@@ -102,7 +102,7 @@ import static java.util.stream.Collectors.toSet;
  * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
  */
 public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin {
-    protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
+    final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
 
     //TODO: Is this the correct place for these config paths
@@ -826,7 +826,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    void validateGraph() throws InvalidGraphException {
+    private void validateGraph() throws InvalidGraphException {
         Validator validator = new Validator(this);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();

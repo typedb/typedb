@@ -42,6 +42,10 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
  *     and hidden constructs such as {@link EdgeElement} and {@link Casting}
  * </p>
  *
+ * @param <E> The type of the element. Either {@link VertexElement} of {@link EdgeElement}
+ * @param <P> Enum indicating the allowed properties on each type. Either {@link ai.grakn.util.Schema.VertexProperty} or
+ *           {@link ai.grakn.util.Schema.EdgeProperty}
+ *
  * @author fppt
  *
  */

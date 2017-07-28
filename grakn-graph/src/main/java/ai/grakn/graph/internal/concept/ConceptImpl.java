@@ -174,7 +174,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         }
     }
 
-    protected String innerToString() {
+    String innerToString() {
         String message = "Base Type [" + baseType() + "] ";
         if(getId() != null) {
             message = message + "- Id [" + getId() + "] ";

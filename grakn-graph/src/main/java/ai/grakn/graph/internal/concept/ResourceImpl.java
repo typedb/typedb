@@ -91,13 +91,11 @@ public class ResourceImpl<D> extends ThingImpl<Resource<D>, ResourceType<D>> imp
     /**
      *
      * @param value The value to store on the resource
-     * @return The Resource itself
      */
-    private Resource<D> setValue(Object value) {
+    private void setValue(Object value) {
         Schema.VertexProperty property = dataType().getVertexProperty();
         //noinspection unchecked
         vertex().propertyImmutable(property, value, vertex().property(property));
-        return getThis();
     }
 
     /**

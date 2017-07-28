@@ -36,7 +36,7 @@ import java.io.Serializable;
 public class ElementId implements Serializable {
 
     private static final long serialVersionUID = 6688475951939464790L;
-    private String elementId;
+    private final String elementId;
     private int hashCode = 0;
 
     private ElementId(String conceptId){

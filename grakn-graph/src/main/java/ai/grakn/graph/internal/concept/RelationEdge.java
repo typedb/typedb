@@ -82,7 +82,7 @@ public class RelationEdge implements RelationStructure{
         this.valueRole.set(valueRole);
     }
 
-    EdgeElement edge(){
+    private EdgeElement edge(){
         return edgeElement;
     }
 
