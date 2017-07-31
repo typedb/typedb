@@ -14,10 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.property;
+package ai.grakn.test.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
@@ -37,9 +36,7 @@ import org.junit.runner.RunWith;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-import static ai.grakn.property.PropertyUtil.choose;
-import static ai.grakn.property.PropertyUtil.directSubs;
-import static ai.grakn.property.PropertyUtil.indirectSupers;
+import static ai.grakn.test.property.PropertyUtil.choose;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -102,7 +99,7 @@ public class OntologyConceptPropertyTest {
         OntologyConcept superConcept = ontologyConcept.sup();
         assumeTrue(superConcept != null);
 
-        assertThat(directSubs(superConcept), hasItem(ontologyConcept));
+        assertThat(PropertyUtil.directSubs(superConcept), hasItem(ontologyConcept));
     }
 
     @Property
@@ -113,20 +110,20 @@ public class OntologyConceptPropertyTest {
     @Property
     public void whenAnOntologyConceptHasAnIndirectSuper_ItIsAnIndirectSubOfThatSuper(
             OntologyConcept subConcept, long seed) {
-        OntologyConcept superConcept = choose(indirectSupers(subConcept), seed);
+        OntologyConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(subConcept), seed);
         assertThat((Collection<OntologyConcept>) superConcept.subs(), hasItem(subConcept));
     }
 
     @Property
     public void whenAnOntologyConceptHasAnIndirectSub_ItIsAnIndirectSuperOfThatSub(
             OntologyConcept superConcept, long seed) {
-        OntologyConcept subConcept = choose(superConcept.subs(), seed);
-        assertThat(indirectSupers(subConcept), hasItem(superConcept));
+        OntologyConcept subConcept = PropertyUtil.choose(superConcept.subs(), seed);
+        assertThat(PropertyUtil.indirectSupers(subConcept), hasItem(superConcept));
     }
 
     @Property
     public void whenGettingIndirectSub_ReturnSelfAndIndirectSubsOfDirectSub(@FromGraph OntologyConcept concept) {
-        Collection<OntologyConcept> directSubs = directSubs(concept);
+        Collection<OntologyConcept> directSubs = PropertyUtil.directSubs(concept);
         OntologyConcept[] expected = Stream.concat(
                 Stream.of(concept),
                 directSubs.stream().flatMap(subConcept -> subConcept.subs().stream())
@@ -153,7 +150,7 @@ public class OntologyConceptPropertyTest {
     @Property
     public void whenSettingTheDirectSuperToAnIndirectSub_Throw(
             @NonMeta OntologyConcept concept, long seed) {
-        OntologyConcept newSuperConcept = choose(concept.subs(), seed);
+        OntologyConcept newSuperConcept = PropertyUtil.choose(concept.subs(), seed);
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.loopCreated(concept, newSuperConcept).getMessage());
@@ -184,7 +181,7 @@ public class OntologyConceptPropertyTest {
     @Property
     public void whenAddingADirectSubWhichIsAnIndirectSuper_Throw(
             @NonMeta OntologyConcept newSubConcept, long seed) {
-        OntologyConcept concept = choose(newSubConcept.subs(), seed);
+        OntologyConcept concept = PropertyUtil.choose(newSubConcept.subs(), seed);
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.loopCreated(newSubConcept, concept).getMessage());
@@ -199,7 +196,7 @@ public class OntologyConceptPropertyTest {
 
         addDirectSub(superConcept, subConcept);
 
-        assertThat(directSubs(superConcept), hasItem(subConcept));
+        assertThat(PropertyUtil.directSubs(superConcept), hasItem(subConcept));
     }
 
     @Ignore // TODO: Find a way to generate linked rules

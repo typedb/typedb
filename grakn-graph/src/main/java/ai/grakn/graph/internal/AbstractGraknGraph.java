@@ -969,15 +969,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * Copy a relation which is an edge - {@link RelationEdge}
      */
     private void copyRelation(Resource main, Resource other, Relation otherRelation, RelationEdge relationEdge){
-        ThingImpl newOwner;
-        ThingImpl newValue;
+        ConceptVertex newOwner;
+        ConceptVertex newValue;
 
         if(relationEdge.owner().equals(other)){//The resource owns another resource which it needs to replace
-            newOwner = (ThingImpl) main;
-            newValue = (ThingImpl) relationEdge.value();
+            newOwner = ConceptVertex.from(main);
+            newValue = ConceptVertex.from(relationEdge.value());
         } else {//The resource is owned by another Entity
-            newOwner = (ThingImpl) relationEdge.owner();
-            newValue = (ThingImpl) main;
+            newOwner = ConceptVertex.from(relationEdge.owner());
+            newValue = ConceptVertex.from(main);
         }
 
         EdgeElement edge = newOwner.vertex().putEdge(newValue.vertex(), Schema.EdgeLabel.RESOURCE);
