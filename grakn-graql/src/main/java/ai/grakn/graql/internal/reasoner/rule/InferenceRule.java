@@ -77,7 +77,7 @@ public class InferenceRule {
 
     @Override
     public String toString(){
-        return  "\n" + this.body.toString() + "->" + this.head.toString() + "[" + resolutionPriority() +"]";
+        return  "\n" + this.body.toString() + "->\n" + this.head.toString() + "[" + resolutionPriority() +"]\n";
     }
 
     @Override
