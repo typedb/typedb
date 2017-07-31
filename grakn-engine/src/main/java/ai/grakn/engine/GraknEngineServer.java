@@ -126,7 +126,7 @@ public class GraknEngineServer implements AutoCloseable {
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
         synchronized (this){
-            CompletableFuture.allOf(CompletableFuture.runAsync(this::lockAndInitializeSystemOntology), CompletableFuture.runAsync(this::startHTTP));
+            CompletableFuture.allOf(CompletableFuture.runAsync(this::lockAndInitializeSystemOntology), CompletableFuture.runAsync(this::startHTTP)).join();
         }
         LOG.info("Engine started in {}", timer.stop());
     }
