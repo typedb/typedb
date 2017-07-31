@@ -1,0 +1,55 @@
+insert
+
+#Roles
+
+symmetricRole sub role;
+role1 sub role;
+role2 sub role;
+
+#Entities
+
+entity1 sub entity
+    plays symmetricRole
+	plays role1
+	plays role2;
+
+entity2 sub entity
+    plays symmetricRole
+	plays role1
+	plays role2;
+
+#Relations
+
+relation1 sub relation
+	relates symmetricRole;
+
+relation2 sub relation
+	relates role1
+	relates role2;
+
+#Rules
+
+isa inference-rule
+	when {
+		$x isa entity1;
+	}
+	then {
+		(symmetricRole: $x, symmetricRole: $x) isa relation1;
+	};
+
+isa inference-rule
+    when {
+        (role1: $c, role2: $m) isa relation2;
+        (symmetricRole: $m, symmetricRole: $op) isa relation1;
+    }
+    then {
+        (symmetricRole: $c, symmetricRole: $op) isa relation1;
+    };
+
+#Data
+
+$a isa entity2;
+$b isa entity1;
+$c isa entity2;
+(role1: $a, role2: $b) isa relation2;
+(symmetricRole: $b, symmetricRole: $c) isa relation1;
