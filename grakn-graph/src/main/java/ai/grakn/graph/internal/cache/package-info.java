@@ -17,7 +17,7 @@
  */
 
 /**
- * Internal implementation of {@link ai.grakn.GraknGraph}.
+ * Internal implementation of caching mechanism used by any {@link ai.grakn.GraknGraph}
  */
 
-package ai.grakn.graph.internal;
+package ai.grakn.graph.internal.cache;

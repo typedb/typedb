@@ -16,8 +16,33 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-/**
- * Internal implementation of {@link ai.grakn.GraknGraph}.
- */
+package ai.grakn.graph.internal.cache;
 
-package ai.grakn.graph.internal;
+import ai.grakn.concept.Concept;
+
+/**
+ * <p>
+ *     Indicates a {@link Cache} is contained within the class
+ * </p>
+ *
+ * <p>
+ *     Wraps up behaviour which needs to be handled whenever a {@link Cache} is used in a class
+ * </p>
+ *
+ * @author fppt
+ *
+ */
+public interface ContainsTxCache {
+
+    /**
+     * Clears the internal {@link Cache}
+     */
+    void txCacheClear();
+
+    /**
+     * Helper method to cast {@link Concept} into {@link ContainsTxCache}
+     */
+    static ContainsTxCache from(Concept concept){
+        return (ContainsTxCache) concept;
+    }
+}

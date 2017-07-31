@@ -25,7 +25,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.graph.internal.GraknComputerImpl;
+import ai.grakn.graph.internal.computer.GraknComputerImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import org.apache.tinkerpop.gremlin.structure.Graph;
