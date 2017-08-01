@@ -33,8 +33,12 @@ import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -46,68 +50,82 @@ public class ConceptBuilder {
 
     private final Var var;
 
-    private @Nullable Type type = null;
-    private @Nullable OntologyConcept superConcept = null;
-    private @Nullable Label label = null;
-    private @Nullable ConceptId id = null;
-    private @Nullable Object value = null;
-    private @Nullable ResourceType.DataType<?> dataType = null;
-    private @Nullable Pattern when = null;
-    private @Nullable Pattern then = null;
+    private static class BuilderParam<T> {
+    }
+
+    private static final BuilderParam<Type> TYPE = new BuilderParam<>();
+    private static final BuilderParam<OntologyConcept> SUPER_CONCEPT = new BuilderParam<>();
+    private static final BuilderParam<Label> LABEL = new BuilderParam<>();
+    private static final BuilderParam<ConceptId> ID = new BuilderParam<>();
+    private static final BuilderParam<Object> VALUE = new BuilderParam<>();
+    private static final BuilderParam<ResourceType.DataType<?>> DATA_TYPE = new BuilderParam<>();
+    private static final BuilderParam<Pattern> WHEN = new BuilderParam<>();
+    private static final BuilderParam<Pattern> THEN = new BuilderParam<>();
+
+    private final Map<BuilderParam<?>, Object> params = new HashMap<>();
 
     ConceptBuilder(Var var) {
         this.var = var;
     }
 
-    public ConceptBuilder isa(Type type) {
-        // TODO: Handle set isa twice
-        this.type = type;
+    private <T> T get(BuilderParam<T> param) {
+        // This is safe, assuming we only add to the map with the `set` method
+        //noinspection unchecked
+        return checkNotNull((T) params.get(param));
+    }
+
+    private <T> Optional<T> tryGet(BuilderParam<T> param) {
+        // This is safe, assuming we only add to the map with the `set` method
+        //noinspection unchecked
+        return Optional.ofNullable((T) params.get(param));
+    }
+
+    private boolean has(BuilderParam<?> param) {
+        return params.containsKey(param);
+    }
+
+    private <T> ConceptBuilder set(BuilderParam<T> param, T value) {
+        // TODO: Better error if set twice
+        checkArgument(!params.containsKey(param) || params.get(param).equals(value));
+        params.put(param, checkNotNull(value));
         return this;
+    }
+
+    public ConceptBuilder isa(Type type) {
+        return set(TYPE, type);
     }
 
     public ConceptBuilder sub(OntologyConcept superConcept) {
-        // TODO: Handle set sub twice
-        this.superConcept = superConcept;
-        return this;
+        return set(SUPER_CONCEPT, superConcept);
     }
 
     public ConceptBuilder label(Label label) {
-        // TODO: Handle set label twice
-        this.label = label;
-        return this;
+        return set(LABEL, label);
     }
 
     public ConceptBuilder id(ConceptId id) {
-        // TODO: Handle set id twice
-        this.id = id;
-        return this;
+        return set(ID, id);
     }
 
     public ConceptBuilder value(Object value) {
-        if (this.value != null && this.value != value) {
-            throw GraqlQueryException.insertMultipleValues(this.value, value);
+        // TODO: Handle in `set`
+        if (has(VALUE) && get(VALUE) != value) {
+            throw GraqlQueryException.insertMultipleValues(get(VALUE), value);
         }
 
-        this.value = value;
-        return this;
+        return set(VALUE, value);
     }
 
     public ConceptBuilder dataType(ResourceType.DataType<?> dataType) {
-        // TODO: Handle set datatype twice
-        this.dataType = dataType;
-        return this;
+        return set(DATA_TYPE, dataType);
     }
 
     public ConceptBuilder when(Pattern when) {
-        // TODO: Handle set `when` twice
-        this.when = when;
-        return this;
+        return set(WHEN, when);
     }
 
     public ConceptBuilder then(Pattern then) {
-        // TODO: Handle set `then` twice
-        this.then = then;
-        return this;
+        return set(THEN, then);
     }
 
     /**
@@ -116,26 +134,26 @@ public class ConceptBuilder {
      * @throws GraqlQueryException if the properties provided are inconsistent
      */
     Concept build(InsertQueryExecutor executor) {
-        if (type != null && superConcept != null) {
+        if (has(TYPE) && has(SUPER_CONCEPT)) {
             throw GraqlQueryException.insertIsaAndSub("hello"); // TODO
         }
 
-        if (label != null && type != null) {
-            throw GraqlQueryException.insertInstanceWithLabel(label);
+        if (has(LABEL) && has(TYPE)) {
+            throw GraqlQueryException.insertInstanceWithLabel(get(LABEL));
         }
 
         // If type provided, then 'put' the concept, else 'get' it by ID or label
-        if (superConcept != null) {
+        if (has(SUPER_CONCEPT)) {
             return putOntologyConcept(executor);
-        } else if (type != null) {
+        } else if (has(TYPE)) {
             return putInstance(executor);
-        } else if (id != null) {
-            Concept concept = executor.graph().getConcept(id);
-            if (concept == null) throw GraqlQueryException.insertWithoutType(id);
+        } else if (has(ID)) {
+            Concept concept = executor.graph().getConcept(get(ID));
+            if (concept == null) throw GraqlQueryException.insertWithoutType(get(ID));
             return concept;
-        } else if (label != null) {
-            Concept concept = executor.graph().getOntologyConcept(label);
-            if (concept == null) throw GraqlQueryException.labelNotFound(label);
+        } else if (has(LABEL)) {
+            Concept concept = executor.graph().getOntologyConcept(get(LABEL));
+            if (concept == null) throw GraqlQueryException.labelNotFound(get(LABEL));
             return concept;
         } else {
             throw GraqlQueryException.insertUndefinedVariable(executor.printableRepresentation(var));
@@ -143,7 +161,8 @@ public class ConceptBuilder {
     }
 
     private Thing putInstance(InsertQueryExecutor executor) {
-        checkNotNull(type);
+        Type type = get(TYPE);
+        @Nullable ConceptId id = tryGet(ID).orElse(null);
 
         if (type.isEntityType()) {
             checkNotRule();
@@ -155,19 +174,17 @@ public class ConceptBuilder {
             checkNotRule();
             return addOrGetInstance(executor, id,
                     () -> {
-                        if (value == null) {
+                        if (!has(VALUE)) {
                             throw GraqlQueryException.insertResourceWithoutValue();
                         }
-                        return type.asResourceType().putResource(value);
+                        return type.asResourceType().putResource(get(VALUE));
                     }
             );
         } else if (type.isRuleType()) {
             return addOrGetInstance(executor, id, () -> {
-                if (when == null) throw GraqlQueryException.insertRuleWithoutLhs(executor.printableRepresentation(var));
-                if (then == null) throw GraqlQueryException.insertRuleWithoutRhs(executor.printableRepresentation(var));
-                checkNotNull(when); // TODO: proper errors
-                checkNotNull(then);
-                return type.asRuleType().putRule(when, then);
+                if (!has(WHEN)) throw GraqlQueryException.insertRuleWithoutLhs(executor.printableRepresentation(var));
+                if (!has(THEN)) throw GraqlQueryException.insertRuleWithoutRhs(executor.printableRepresentation(var));
+                return type.asRuleType().putRule(get(WHEN), get(THEN));
             });
         } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
@@ -177,11 +194,11 @@ public class ConceptBuilder {
     }
 
     private void checkNotRule() {
-        if (when != null) {
+        if (has(WHEN)) {
             throw GraqlQueryException.insertUnsupportedProperty("when", Schema.MetaSchema.RULE);
         }
 
-        if (then != null) {
+        if (has(THEN)) {
             throw GraqlQueryException.insertUnsupportedProperty("then", Schema.MetaSchema.RULE);
         }
     }
@@ -190,8 +207,10 @@ public class ConceptBuilder {
      * @return a concept with the given ID and the specified type
      */
     private OntologyConcept putOntologyConcept(InsertQueryExecutor executor) {
-        if (label == null) throw GraqlQueryException.insertTypeWithoutLabel();
-        checkNotNull(superConcept);
+        if (!has(LABEL)) throw GraqlQueryException.insertTypeWithoutLabel();
+
+        OntologyConcept superConcept = get(SUPER_CONCEPT);
+        Label label = get(LABEL);
 
         checkNotRule();
 
@@ -203,6 +222,7 @@ public class ConceptBuilder {
             return executor.graph().putRole(label).sup(superConcept.asRole());
         } else if (superConcept.isResourceType()) {
             ResourceType resourceType = superConcept.asResourceType();
+            @Nullable ResourceType.DataType<?> dataType = tryGet(DATA_TYPE).orElse(null);
             if (dataType == null) {
                 dataType = resourceType.getDataType();
             } // TODO: What if set twice?
