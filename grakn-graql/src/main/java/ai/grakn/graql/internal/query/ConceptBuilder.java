@@ -187,6 +187,16 @@ public class ConceptBuilder {
         return concept;
     }
 
+    /**
+     * Describes a parameter that can be set on a {@link ConceptBuilder}.
+     * <p>
+     *     We could instead just represent these parameters as fields of {@link ConceptBuilder}. Instead, we use a
+     *     {@code Map<BuilderParam<?>, Object>}. This allows us to do clever stuff like iterate over the parameters,
+     *     or check for unexpected parameters without lots of boilerplate.
+     * </p>
+     */
+    // The generic is technically unused, but is useful to constrain the values of the parameter
+    @SuppressWarnings("unused")
     @FunctionalInterface
     private interface BuilderParam<T> {
         String name();
