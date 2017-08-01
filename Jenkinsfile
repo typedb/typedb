@@ -1,8 +1,8 @@
-//Everything is wrapped in a try catch so we can handle any test failures
-//If one test fails then all the others will stop. I.e. we fail fast
-try {
-  def workspace = pwd()
-  node {
+node {
+  //Everything is wrapped in a try catch so we can handle any test failures
+  //If one test fails then all the others will stop. I.e. we fail fast
+  try {
+    def workspace = pwd()
     //Always wrap each test block in a timeout
     //This first block sets up engine within 15 minutes
     timeout(15) {
@@ -31,20 +31,20 @@ try {
         }
       }
     }
-  }
-  slackSend channel: "#github", message: "Periodic Build Success on "+buildBranch+": ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
-} catch (error) {
-  slackSend channel: "#github", message: "Periodic Build Failed on "+buildBranch+": ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
-  throw error
-} finally { // Tears down test environment
-  timeout(5) {
-    stage('Tear Down Grakn') {
-      sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
-      sh 'cp grakn-package/logs/grakn.log ${env.BRANCH_NAME}.log'
-      archiveArtifacts artifacts: '${env.BRANCH_NAME}.log'
-      sh 'grakn-package/bin/grakn.sh stop'
-      sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
-      sh 'ps -e | grep grakn'
+    slackSend channel: "#github", message: "Periodic Build Success on " + buildBranch + ": ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
+  } catch (error) {
+    slackSend channel: "#github", message: "Periodic Build Failed on " + buildBranch + ": ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
+    throw error
+  } finally { // Tears down test environment
+    timeout(5) {
+      stage('Tear Down Grakn') {
+        sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
+        sh 'cp grakn-package/logs/grakn.log ${env.BRANCH_NAME}.log'
+        archiveArtifacts artifacts: '${env.BRANCH_NAME}.log'
+        sh 'grakn-package/bin/grakn.sh stop'
+        sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
+        sh 'ps -e | grep grakn'
+      }
     }
   }
 }
