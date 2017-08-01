@@ -45,6 +45,8 @@ import java.util.Set;
  */
 public class LabelProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
+    public static final String NAME = "label";
+
     private final Label label;
 
     public LabelProperty(Label label) {
@@ -57,7 +59,7 @@ public class LabelProperty extends AbstractVarProperty implements NamedProperty,
 
     @Override
     public String getName() {
-        return "label";
+        return NAME;
     }
 
     @Override

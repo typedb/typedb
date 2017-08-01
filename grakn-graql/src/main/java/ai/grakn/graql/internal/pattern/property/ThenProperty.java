@@ -36,13 +36,15 @@ import ai.grakn.graql.internal.query.InsertQueryExecutor;
  */
 public class ThenProperty extends RuleProperty {
 
+    public static final String NAME = "then";
+
     public ThenProperty(Pattern then) {
         super(then);
     }
 
     @Override
     public String getName() {
-        return "then";
+        return NAME;
     }
 
     @Override

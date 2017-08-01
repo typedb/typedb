@@ -56,6 +56,8 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  */
 public class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
+    public static final String NAME = "isa";
+
     private final VarPatternAdmin type;
 
     public IsaProperty(VarPatternAdmin type) {
@@ -68,7 +70,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public String getName() {
-        return "isa";
+        return NAME;
     }
 
     @Override

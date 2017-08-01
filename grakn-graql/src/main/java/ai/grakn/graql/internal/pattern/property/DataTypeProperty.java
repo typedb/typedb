@@ -48,6 +48,8 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.dataTy
  */
 public class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
+    public static final String NAME = "datatype";
+
     private final ResourceType.DataType<?> datatype;
 
     public DataTypeProperty(ResourceType.DataType<?> datatype) {
@@ -60,7 +62,7 @@ public class DataTypeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public String getName() {
-        return "datatype";
+        return NAME;
     }
 
     @Override

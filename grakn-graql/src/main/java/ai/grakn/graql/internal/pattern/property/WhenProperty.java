@@ -35,13 +35,15 @@ import ai.grakn.graql.internal.query.InsertQueryExecutor;
  */
 public class WhenProperty extends RuleProperty {
 
+    public static final String NAME = "when";
+
     public WhenProperty(Pattern pattern) {
         super(pattern);
     }
 
     @Override
     public String getName(){
-        return "when";
+        return NAME;
     }
 
     @Override

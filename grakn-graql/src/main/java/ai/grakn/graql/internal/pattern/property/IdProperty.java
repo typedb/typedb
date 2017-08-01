@@ -45,6 +45,8 @@ import java.util.Set;
  */
 public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
+    public static final String NAME = "id";
+
     private final ConceptId id;
 
     public IdProperty(ConceptId id) {
@@ -57,7 +59,7 @@ public class IdProperty extends AbstractVarProperty implements NamedProperty, Un
 
     @Override
     public String getName() {
-        return "id";
+        return NAME;
     }
 
     @Override

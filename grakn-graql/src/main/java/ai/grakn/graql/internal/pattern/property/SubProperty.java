@@ -50,6 +50,8 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  */
 public class SubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
+    public static final String NAME = "sub";
+
     private final VarPatternAdmin superType;
 
     public SubProperty(VarPatternAdmin superType) {
@@ -62,7 +64,7 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
 
     @Override
     public String getName() {
-        return "sub";
+        return NAME;
     }
 
     @Override

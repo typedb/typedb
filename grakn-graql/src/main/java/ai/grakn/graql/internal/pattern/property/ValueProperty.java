@@ -46,6 +46,8 @@ import java.util.stream.Stream;
  */
 public class ValueProperty extends AbstractVarProperty implements NamedProperty {
 
+    public static final String NAME = "val";
+
     private final ValuePredicateAdmin predicate;
 
     public ValueProperty(ValuePredicateAdmin predicate) {
@@ -58,7 +60,7 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public String getName() {
-        return "val";
+        return NAME;
     }
 
     @Override
