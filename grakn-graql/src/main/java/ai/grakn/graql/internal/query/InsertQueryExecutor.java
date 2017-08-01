@@ -329,7 +329,8 @@ public class InsertQueryExecutor {
     VarPatternAdmin printableRepresentation(Var var) {
         ImmutableSet.Builder<VarProperty> propertiesOfVar = ImmutableSet.builder();
 
-        // TODO: probs slow
+        // This could be faster if we built a dedicated map Var -> VarPattern
+        // However, this method is only used for displaying errors, so it's not worth the cost
         for (VarAndProperty vp : properties) {
             if (vp.var().equals(var)) {
                 propertiesOfVar.add(vp.property());
