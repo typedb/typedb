@@ -157,15 +157,15 @@ public class GraknJanusGraphTest extends JanusTestBase {
 
         //Closing so the cache is not accessed when doing the lookup
         graknGraph.commit();
-        graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
+        graknGraph = janusGraphFactory.open(GraknTxType.WRITE);
 
         assertEquals(relation, graknGraph.getConcept(relation.getId()));
     }
 
     @Test //This test is performed here because it depends on actual transaction behaviour which tinker does not exhibit
     public void whenClosingTransaction_EnsureConceptTransactionCachesAreCleared(){
-        TitanInternalFactory factory = newFactory();
-        GraknTitanGraph graph = factory.open(GraknTxType.WRITE);
+        JanusInternalFactory factory = newFactory();
+        GraknGraph graph = factory.open(GraknTxType.WRITE);
 
         EntityType entityType = graph.admin().getMetaEntityType();
         EntityType newEntityType = graph.putEntityType("New Entity Type");
@@ -181,8 +181,8 @@ public class GraknJanusGraphTest extends JanusTestBase {
 
     @Test
     public void whenCommitting_EnsureGraphTransactionIsClosed() throws Exception {
-        TitanInternalFactory factory = newFactory();
-        GraknTitanGraph graph = factory.open(GraknTxType.WRITE);
+        JanusInternalFactory factory = newFactory();
+        GraknGraph graph = factory.open(GraknTxType.WRITE);
         graph.putEntityType("thingy");
         graph.commit();
         assertTrue(graph.isClosed());
@@ -197,7 +197,7 @@ public class GraknJanusGraphTest extends JanusTestBase {
         assertTrue(graph.isClosed());
     }
 
-    private void addThingToBatch(TitanInternalFactory factory){
+    private void addThingToBatch(JanusInternalFactory factory){
         try(GraknGraph graphBatchLoading = factory.open(GraknTxType.WRITE)) {
             graphBatchLoading.getEntityType("thingy").addEntity();
             graphBatchLoading.commit();
@@ -208,7 +208,7 @@ public class GraknJanusGraphTest extends JanusTestBase {
 
     @Test
     public void checkNumberOfOpenTransactionsChangesAsExpected() throws ExecutionException, InterruptedException {
-        TitanInternalFactory factory = newFactory();
+        JanusInternalFactory factory = newFactory();
         GraknGraph graph = factory.open(GraknTxType.WRITE);
         graph.close();
         GraknGraph batchGraph = factory.open(GraknTxType.BATCH);
@@ -230,7 +230,7 @@ public class GraknJanusGraphTest extends JanusTestBase {
 
     @Test
     public void afterCommitting_NumberOfOpenTransactionsDecrementsOnce() {
-        TitanInternalFactory factory = newFactory();
+        JanusInternalFactory factory = newFactory();
         GraknGraph graph = factory.open(GraknTxType.READ);
         assertEquals(1, openTransactions(graph));
         graph.commit();
@@ -244,7 +244,7 @@ public class GraknJanusGraphTest extends JanusTestBase {
 
     @Test
     public void whenAddingEntitiesToAbstractTypeCreatedInDifferentTransaction_Throw(){
-        TitanInternalFactory factory = newFactory();
+        JanusInternalFactory factory = newFactory();
 
         String label = "An Abstract thingy";
 

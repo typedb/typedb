@@ -53,7 +53,7 @@ public abstract class JanusTestBase {
         janusGraphFactory = new JanusInternalFactory(TEST_SHARED, Grakn.IN_MEMORY, TEST_PROPERTIES);
     }
 
-    TitanInternalFactory newFactory(){
-        return new TitanInternalFactory(UUID.randomUUID().toString().replace("-", ""), Grakn.IN_MEMORY, TEST_PROPERTIES);
+    JanusInternalFactory newFactory(){
+        return new JanusInternalFactory(UUID.randomUUID().toString().replace("-", ""), Grakn.IN_MEMORY, TEST_PROPERTIES);
     }
 }
