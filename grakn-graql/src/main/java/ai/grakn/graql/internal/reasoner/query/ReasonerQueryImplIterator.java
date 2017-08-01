@@ -71,7 +71,7 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
         LinkedList<ReasonerQueryImpl> queries = ResolutionPlan.getResolutionPlanFromTraversal(query);
 
-        LOG.trace("CQ plan:\n" + queries.stream()
+        LOG.debug("CQ plan:\n" + queries.stream()
                 .map(aq -> aq.toString() + (aq.isRuleResolvable()? "*" : ""))
                 .collect(Collectors.joining("\n"))
         );

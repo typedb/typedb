@@ -72,7 +72,7 @@ class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         query.addSubstitution(sub);
 
-        LOG.trace("AQ: " + query);
+        LOG.debug("AQ: " + query);
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
         this.queryIterator = streamUnifierPair.getKey()
