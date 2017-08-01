@@ -344,6 +344,12 @@ public class InsertQueryExecutor {
         return graph;
     }
 
+    /**
+     * Represents a pairing of a {@link VarProperty} and its subject {@link Var}.
+     * <p>
+     *     e.g. {@code $x} and {@code isa $y}, together are {@code $x isa $y}.
+     * </p>
+     */
     @AutoValue
     static abstract class VarAndProperty {
         abstract Var var();
