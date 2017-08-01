@@ -85,7 +85,7 @@ public interface Thing extends Concept{
      * @param resource The resource to which a relationship is created
      * @return The relation connecting the thing and the resource
      */
-    Relation theMethodFormerlyKnownAsResource(Resource resource);
+    Relation resourceRelation(Resource resource);
 
     /**
      * Retrieves a collection of Resources attached to this Instances

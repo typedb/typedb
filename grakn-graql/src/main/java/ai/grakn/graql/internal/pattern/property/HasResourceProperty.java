@@ -147,7 +147,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         Resource resourceConcept = executor.get(resource.getVarName()).asResource();
         Thing thing = executor.get(var).asThing();
-        ConceptId relationId = thing.theMethodFormerlyKnownAsResource(resourceConcept).getId();
+        ConceptId relationId = thing.resourceRelation(resourceConcept).getId();
         executor.builder(relation.getVarName()).id(relationId);
     }
 

@@ -247,12 +247,12 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public T resource(Resource resource){
-        theMethodFormerlyKnownAsResource(resource);
+        resourceRelation(resource);
         return getThis();
     }
 
     @Override
-    public Relation theMethodFormerlyKnownAsResource(Resource resource) {
+    public Relation resourceRelation(Resource resource) {
         Schema.ImplicitType has = Schema.ImplicitType.HAS;
         Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_VALUE;
         Schema.ImplicitType hasOwner  = Schema.ImplicitType.HAS_OWNER;
