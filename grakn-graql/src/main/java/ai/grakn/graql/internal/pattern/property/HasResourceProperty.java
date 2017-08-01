@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
@@ -142,12 +143,18 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         Resource resourceConcept = executor.get(resource.getVarName()).asResource();
         Thing thing = executor.get(var).asThing();
-        thing.resource(resourceConcept);
+        ConceptId relationId = thing.theMethodFormerlyKnownAsResource(resourceConcept).getId();
+        executor.builder(relation.getVarName()).id(relationId);
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
         return ImmutableSet.of(var, resource.getVarName());
+    }
+
+    @Override
+    public Set<Var> producedVars(Var var) {
+        return ImmutableSet.of(relation.getVarName());
     }
 
     @Override
