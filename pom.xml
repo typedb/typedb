@@ -106,6 +106,7 @@
         <redisson.version>3.1.0</redisson.version>
         <spark-gremlin.version>3.1.1-incubating</spark-gremlin.version>
         <netty-all.version>4.0.42.Final</netty-all.version>
+        <ldbc-driver.version>0.3-SNAPSHOT</ldbc-driver.version>
     </properties>
 
     <organization>

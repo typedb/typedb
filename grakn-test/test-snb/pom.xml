@@ -11,5 +11,12 @@
 
     <artifactId>test-snb</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.ldbc.driver</groupId>
+            <artifactId>jeeves</artifactId>
+            <version>${ldbc-driver.version}</version>
+        </dependency>
+    </dependencies>
 
 </project>
