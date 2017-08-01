@@ -30,9 +30,9 @@ node {
         }
       }
     }
-    slackSend channel: "#github", message: "Periodic Build Success on " + buildBranch + ": ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
+    slackSend channel: "#github", message: "Periodic Build Success on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
   } catch (error) {
-    slackSend channel: "#github", message: "Periodic Build Failed on " + buildBranch + ": ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
+    slackSend channel: "#github", message: "Periodic Build Failed on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
     throw error
   } finally { // Tears down test environment
     timeout(5) {
