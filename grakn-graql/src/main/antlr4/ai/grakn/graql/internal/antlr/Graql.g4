@@ -83,8 +83,6 @@ property       : 'isa' variable                     # isa
                | 'datatype' DATATYPE                # propDatatype
                | 'regex' REGEX                      # propRegex
                | '!=' variable                      # propNeq
-               | 'lhs' '{' patterns '}'             # propLhs  // deprecated, will be removed in 0.17.0
-               | 'rhs' '{' varPatterns '}'          # propRhs  // deprecated, will be removed in 0.17.0
                ;
 
 casting        : variable (':' VARIABLE)?

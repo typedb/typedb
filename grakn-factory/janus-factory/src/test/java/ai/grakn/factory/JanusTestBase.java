@@ -29,6 +29,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.UUID;
 
 public abstract class JanusTestBase {
     private final static String CONFIG_LOCATION = "../../conf/main/grakn.properties";
@@ -50,5 +51,9 @@ public abstract class JanusTestBase {
         }
 
         janusGraphFactory = new JanusInternalFactory(TEST_SHARED, Grakn.IN_MEMORY, TEST_PROPERTIES);
+    }
+
+    TitanInternalFactory newFactory(){
+        return new TitanInternalFactory(UUID.randomUUID().toString().replace("-", ""), Grakn.IN_MEMORY, TEST_PROPERTIES);
     }
 }

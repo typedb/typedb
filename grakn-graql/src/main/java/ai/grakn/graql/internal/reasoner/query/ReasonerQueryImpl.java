@@ -121,7 +121,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                         .filter(Atomic::isSelectable)
                         .map(Atomic::toString)
                         .collect(Collectors.joining(";\n")) +
-                "\n}";
+                "\n}\n";
     }
 
     @Override
@@ -572,10 +572,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         List<Set<Atom>> atomOptions = getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .map(at -> {
-                    if (at.isRelation()) {
+                    if (at.isRelation() && at.getOntologyConcept() == null) {
                         RelationAtom rel = (RelationAtom) at;
                         Set<Atom> possibleRels = new HashSet<>();
-                        rel.inferPossibleRelationTypes(sub).stream().map(rel::addType).forEach(possibleRels::add);
+                        rel.inferPossibleRelationTypes(sub).stream()
+                                .map(rel::addType)
+                                .forEach(possibleRels::add);
                         return possibleRels;
                     } else {
                         return Collections.singleton(at);

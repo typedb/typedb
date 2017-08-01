@@ -33,8 +33,6 @@ This dependency will give you access to the Core API. Your Java application will
 </dependency>
 ```
 
-If you want your server to run against a OrientDB backend instead, substitute `orientdb-factory` within `<artifactId></artifactId>` instead of `janus-factory`. Please note that, at this time, OrientDB support is still in early stages of development.
-
 ### Grakn Engine
 
 First, make sure that you have an instance of Grakn engine running, which means that you need to run the following in the terminal:

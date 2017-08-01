@@ -45,18 +45,7 @@ Depending on the configuration of the Grakn server, your Java application will r
 </dependency>
 ```    
 
-When your server is running against a OrientDB backend:
-
-```xml
-<dependency>
-    <groupId>ai.grakn</groupId>
-    <artifactId>orientdb-factory</artifactId>
-    <version>${grakn.version}</version>
-</dependency>
-```    
-    
-
-{% include note.html content="The distribution package comes with a Janus backend configured out of the box. OrientDB support is still in early stages of development. " %}
+{% include note.html content="The distribution package comes with a Janus backend configured out of the box." %}
 
 
 The JAR files you will need to develop with Grakn can be found inside the `lib` directory of the distribution zip file. All the JARs are provided with no dependencies, so using these requires you to use Maven to acquire dependencies.

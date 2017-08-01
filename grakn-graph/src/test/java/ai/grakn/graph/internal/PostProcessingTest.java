@@ -21,15 +21,25 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
+import ai.grakn.graph.internal.concept.ConceptImpl;
+import ai.grakn.graph.internal.concept.EntityTypeImpl;
+import ai.grakn.graph.internal.concept.RelationImpl;
+import ai.grakn.graph.internal.concept.RelationTypeImpl;
+import ai.grakn.graph.internal.concept.ResourceImpl;
+import ai.grakn.graph.internal.concept.ResourceTypeImpl;
+import ai.grakn.graph.internal.concept.ThingImpl;
+import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -89,7 +99,7 @@ public class PostProcessingTest extends GraphTestBase{
         Role roleResource = graknGraph.putRole("Resource Role");
         RelationType relationType = graknGraph.putRelationType("Relation Type").relates(roleEntity).relates(roleResource);
         ResourceTypeImpl<String> resourceType = (ResourceTypeImpl<String>) graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).plays(roleResource);
-        EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity);
+        EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity).resource(resourceType);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
         Entity e3 = entityType.addEntity();
@@ -105,29 +115,27 @@ public class PostProcessingTest extends GraphTestBase{
         resourceIds.add(r111.getId());
 
         //Give resources some relationships
-        RelationImpl rel1 = ((RelationImpl) relationType.addRelation().
-                addRolePlayer(roleResource, r1).addRolePlayer(roleEntity, e1));
-        RelationImpl rel2 = ((RelationImpl) relationType.addRelation().
-                addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e1)); //When merging this relation should not be absorbed
-        RelationImpl rel3 = ((RelationImpl) relationType.addRelation().
-                addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e2)); //Absorb
-        RelationImpl rel4 = ((RelationImpl) relationType.addRelation().
-                addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e2)); //Don't Absorb
-        RelationImpl rel5 = ((RelationImpl) relationType.addRelation().
-                addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e3)); //Absorb
+        addReifiedRelation(roleEntity, roleResource, relationType, e1, r1);
 
-        rel1.reified().get().setHash();
-        rel2.reified().get().setHash();
-        rel3.reified().get().setHash();
-        rel4.reified().get().setHash();
-        rel5.reified().get().setHash();
+        //When merging this relation should not be absorbed
+        addReifiedRelation(roleEntity, roleResource, relationType, e1, r11);
+
+        //Absorb
+        addReifiedRelation(roleEntity, roleResource, relationType, e2, r11);
+
+        //Don't Absorb
+        addEdgeRelation(e2, r111);
+
+        // Absorb
+        addEdgeRelation(e3, r111);
 
         //Check everything is broken
         assertEquals(3, resourceType.instances().size());
         assertEquals(1, r1.relations().size());
         assertEquals(2, r11.relations().size());
         assertEquals(1, r1.relations().size());
-        assertEquals(6, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(4, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(2, graknGraph.getTinkerTraversal().E().hasLabel(Schema.EdgeLabel.RESOURCE.getLabel()).toList().size());
 
         r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().contains(e1)));
 
@@ -148,7 +156,16 @@ public class PostProcessingTest extends GraphTestBase{
 
         assertNotNull(foundR1);
         assertThat(foundR1.ownerInstances(), containsInAnyOrder(e1, e2, e3));
-        assertEquals(4, graknGraph.admin().getMetaRelationType().instances().size());
+        assertEquals(5, graknGraph.admin().getMetaRelationType().instances().size());
+    }
+
+    private void addEdgeRelation(Entity entity, Resource<?> resource) {
+        entity.resource(resource);
+    }
+
+    private void addReifiedRelation(Role roleEntity, Role roleResource, RelationType relationType, Entity entity, Resource<?> resource) {
+        Relation relation = relationType.addRelation().addRolePlayer(roleResource, resource).addRolePlayer(roleEntity, entity);
+        RelationImpl.from(relation).reify().setHash();
     }
 
 
@@ -178,8 +195,7 @@ public class PostProcessingTest extends GraphTestBase{
         types.put(t3.getId(), 2L);
 
         graknGraph.admin().updateConceptCounts(types);
-        types.entrySet().forEach(entry ->
-                assertEquals((long) entry.getValue(), ((ConceptImpl) graknGraph.getConcept(entry.getKey())).getShardCount()));
+        types.forEach((key, value) -> assertEquals((long) value, ((ConceptImpl) graknGraph.getConcept(key)).getShardCount()));
 
         //Lets Set Some Counts
         types.put(t1.getId(), -5L);
@@ -190,5 +206,56 @@ public class PostProcessingTest extends GraphTestBase{
         assertEquals(0L, t1.getShardCount());
         assertEquals(4L, t2.getShardCount());
         assertEquals(5L, t3.getShardCount());
+    }
+
+    @Test
+    public void whenMergingDuplicateResourceEdges_EnsureNoDuplicatesRemain(){
+        ResourceTypeImpl<String> resourceType = (ResourceTypeImpl <String>) graknGraph.putResourceType("My Sad Resource", ResourceType.DataType.STRING);
+        EntityType entityType = graknGraph.putEntityType("My Happy EntityType").resource(resourceType);
+        RelationType relationType = graknGraph.putRelationType("My Miserable RelationType").resource(resourceType);
+        Entity entity = entityType.addEntity();
+        Relation relation = relationType.addRelation();
+
+        ResourceImpl<?> r1dup1 = createFakeResource(resourceType, "1");
+        ResourceImpl<?> r1dup2 = createFakeResource(resourceType, "1");
+        ResourceImpl<?> r1dup3 = createFakeResource(resourceType, "1");
+
+        ResourceImpl<?> r2dup1 = createFakeResource(resourceType, "2");
+        ResourceImpl<?> r2dup2 = createFakeResource(resourceType, "2");
+        ResourceImpl<?> r2dup3 = createFakeResource(resourceType, "2");
+
+        entity.resource(r1dup1);
+        entity.resource(r1dup2);
+        entity.resource(r1dup3);
+
+        relation.resource(r1dup1);
+        relation.resource(r1dup2);
+        relation.resource(r1dup3);
+
+        entity.resource(r2dup1);
+
+        //Check everything is broken
+        //Entities Too Many Resources
+        assertEquals(4, entity.resources().size());
+        assertEquals(3, relation.resources().size());
+
+        //There are too many resources
+        assertEquals(6, graknGraph.admin().getMetaResourceType().instances().size());
+
+        //Now fix everything for resource 1
+        graknGraph.fixDuplicateResources(r1dup1.getIndex(), new HashSet<>(Arrays.asList(r1dup1.getId(), r1dup2.getId(), r1dup3.getId())));
+
+        //Check resource one has been sorted out
+        assertEquals(2, entity.resources().size());
+        assertEquals(2, entity.resources().size());
+        assertEquals(4, graknGraph.admin().getMetaResourceType().instances().size()); // 4 because we still have 2 dups on r2
+
+        //Now fix everything for resource 2
+        graknGraph.fixDuplicateResources(r2dup1.getIndex(), new HashSet<>(Arrays.asList(r2dup1.getId(), r2dup2.getId(), r2dup3.getId())));
+
+        //Check resource one has been sorted out
+        assertEquals(2, entity.resources().size());
+        assertEquals(2, entity.resources().size());
+        assertEquals(2, graknGraph.admin().getMetaResourceType().instances().size()); // 4 because we still have 2 dups on r2
     }
 }

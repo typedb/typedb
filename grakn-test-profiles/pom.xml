@@ -109,21 +109,6 @@
         </profile>
 
         <profile>
-            <id>orientdb</id>
-            <properties>
-                <grakn.test-profile>orientdb</grakn.test-profile>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>ai.grakn</groupId>
-                    <artifactId>orientdb-factory</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
             <id>scaling</id>
             <properties>
                 <grakn.test-profile>janus</grakn.test-profile>

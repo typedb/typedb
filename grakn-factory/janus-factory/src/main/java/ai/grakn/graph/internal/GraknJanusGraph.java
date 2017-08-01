@@ -22,6 +22,8 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.TemporaryWriteException;
+import ai.grakn.graph.internal.concept.ConceptImpl;
+import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraph;
@@ -100,7 +102,7 @@ public class GraknJanusGraph extends AbstractGraknGraph<JanusGraph> {
     }
 
     @Override
-    VertexElement addVertex(Schema.BaseType baseType){
+    public VertexElement addVertex(Schema.BaseType baseType){
         return executeLockingMethod(() -> super.addVertex(baseType));
     }
 

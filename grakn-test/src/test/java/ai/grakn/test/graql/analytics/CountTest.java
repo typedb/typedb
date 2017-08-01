@@ -25,7 +25,6 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.GraknTestSetup;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -36,8 +35,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.junit.Assume.assumeFalse;
-
 public class CountTest {
 
     @ClassRule
@@ -47,9 +44,6 @@ public class CountTest {
 
     @Before
     public void setUp() {
-        // TODO: Make orientdb support analytics
-        assumeFalse(GraknTestSetup.usingOrientDB());
-
         factory = rule.factoryWithNewKeyspace();
     }
 

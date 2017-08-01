@@ -20,9 +20,15 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.RelationType;
+import ai.grakn.graph.internal.concept.EntityImpl;
+import ai.grakn.graph.internal.concept.EntityTypeImpl;
+import ai.grakn.graph.internal.concept.RelationImpl;
+import ai.grakn.graph.internal.concept.RoleImpl;
+import ai.grakn.graph.internal.concept.ThingImpl;
+import ai.grakn.graph.internal.structure.Casting;
 import org.junit.Test;
 
 import java.util.stream.Collectors;

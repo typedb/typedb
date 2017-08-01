@@ -96,7 +96,7 @@ public class RecursiveInferenceTest {
         QueryBuilder iqb = transitivityContext.graph().graql().infer(true);
         String queryString = "match ($x, $y) isa R;$x has index 'i'; select $y;";
         String explicitQuery = "match $y has index $ind;" +
-                            "{$ind val 'j';} or {$ind val 's';} or {$ind val 'v';}; select $y;";
+                "{$ind val 'j';} or {$ind val 's';} or {$ind val 'v';}; select $y;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
@@ -110,7 +110,7 @@ public class RecursiveInferenceTest {
         QueryBuilder iqb = ancestorContext.graph().graql().infer(true);
 
         String queryString = "match (ancestor: $X, descendant: $Y) isa Ancestor;$X has name 'aa';" +
-                            "$Y has name $name;select $Y, $name;";
+                "$Y has name $name;select $Y, $name;";
         String explicitQuery = "match $Y isa Person, has name $name;" +
                 "{$name val 'aaa';} or {$name val 'aab';} or {$name val 'aaaa';};select $Y, $name;";
 
@@ -230,16 +230,14 @@ public class RecursiveInferenceTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    /*from Vieille - Recursive Query Processing: The power of logic p. 25*/
-    /** SG(X, X) :- H(X) doesn't get applied*/
-    @Ignore
+    /**from Vieille - Recursive Query Processing: The power of logic p. 25*/
     @Test
     public void testSameGeneration(){
         QueryBuilder qb = recursivitySGContext.graph().graql().infer(false);
         QueryBuilder iqb = recursivitySGContext.graph().graql().infer(true);
 
         String queryString = "match ($x, $y) isa SameGen; $x has name 'a'; select $y;";
-        String explicitQuery = "match $y has name $name;{$name val 'f';} or {$name val 'h';};select $y;";
+        String explicitQuery = "match $y has name $name;{$name val 'f';} or {$name val 'a';};select $y;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
@@ -485,7 +483,7 @@ public class RecursiveInferenceTest {
 
         String queryString = "match (RSG-from: $x, RSG-to: $y) isa RevSG;$x has name 'a'; select $y;";
         String explicitQuery = "match $y isa person, has name $name;" +
-                                "{$name val 'b';} or {$name val 'c';} or {$name val 'd';};select $y;";
+                "{$name val 'b';} or {$name val 'c';} or {$name val 'd';};select $y;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
