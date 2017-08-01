@@ -80,6 +80,14 @@ public interface Thing extends Concept{
     Thing resource(Resource resource);
 
     /**
+     * Creates a relation from this instance to the provided resource.
+     *
+     * @param resource The resource to which a relationship is created
+     * @return The relation connecting the thing and the resource
+     */
+    Relation theMethodFormerlyKnownAsResource(Resource resource);
+
+    /**
      * Retrieves a collection of Resources attached to this Instances
      * @see Resource
      *

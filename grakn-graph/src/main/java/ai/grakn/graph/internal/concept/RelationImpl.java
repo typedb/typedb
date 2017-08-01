@@ -96,8 +96,13 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
 
     @Override
     public Relation resource(Resource resource) {
-        reify().resource(resource);
+        theMethodFormerlyKnownAsResource(resource);
         return this;
+    }
+
+    @Override
+    public Relation theMethodFormerlyKnownAsResource(Resource resource) {
+        return reify().theMethodFormerlyKnownAsResource(resource);
     }
 
     @Override

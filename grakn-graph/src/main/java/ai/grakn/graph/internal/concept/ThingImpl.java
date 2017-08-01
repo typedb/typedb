@@ -240,7 +240,6 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return castingsInstance().map(Casting::getRoleType).collect(Collectors.toSet());
     }
 
-
     /**
      * Creates a relation from this instance to the provided resource.
      * @param resource The resource to creating a relationship to
@@ -248,6 +247,12 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public T resource(Resource resource){
+        theMethodFormerlyKnownAsResource(resource);
+        return getThis();
+    }
+
+    @Override
+    public Relation theMethodFormerlyKnownAsResource(Resource resource) {
         Schema.ImplicitType has = Schema.ImplicitType.HAS;
         Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_VALUE;
         Schema.ImplicitType hasOwner  = Schema.ImplicitType.HAS_OWNER;
@@ -270,9 +275,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         }
 
         EdgeElement resourceEdge = putEdge(ResourceImpl.from(resource), Schema.EdgeLabel.RESOURCE);
-        vertex().graph().factory().buildRelation(resourceEdge, hasResource, hasResourceOwner, hasResourceValue);
-
-        return getThis();
+        return vertex().graph().factory().buildRelation(resourceEdge, hasResource, hasResourceOwner, hasResourceValue);
     }
 
     /**
