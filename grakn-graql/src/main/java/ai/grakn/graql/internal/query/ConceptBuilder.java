@@ -23,7 +23,9 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -43,8 +45,9 @@ import ai.grakn.util.Schema;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -147,50 +150,83 @@ public class ConceptBuilder {
             throw GraqlQueryException.insertInstanceWithLabel(get(LABEL));
         }
 
-        // If type provided, then 'put' the concept, else 'get' it by ID or label
+        Concept concept = null;
+
+        // If a label or ID is provided, attempt to `get` the concept
+        if (has(ID)) {
+            concept = executor.graph().getConcept(get(ID));
+            if (concept == null) throw GraqlQueryException.insertWithoutType(get(ID));
+        } else if (has(LABEL)) {
+            concept = executor.graph().getOntologyConcept(get(LABEL));
+        }
+
+        if (concept != null) {
+            validate(concept);
+            return concept;
+        }
+
+        // Else, attempt to `put` the concept
         if (has(SUPER_CONCEPT)) {
             return putOntologyConcept(executor);
         } else if (has(TYPE)) {
             return putInstance(executor);
-        } else if (has(ID)) {
-            Concept concept = executor.graph().getConcept(get(ID));
-            if (concept == null) throw GraqlQueryException.insertWithoutType(get(ID));
-            return concept;
-        } else if (has(LABEL)) {
-            Concept concept = executor.graph().getOntologyConcept(get(LABEL));
-            if (concept == null) throw GraqlQueryException.labelNotFound(get(LABEL));
-            return concept;
         } else {
             throw GraqlQueryException.insertUndefinedVariable(executor.printableRepresentation(var));
         }
     }
 
+    /**
+     * Check if this pre-existing concept conforms to any parameters that have been specified
+     *
+     * @throws GraqlQueryException if any parameter does not match
+     */
+    private void validate(Concept concept) {
+        validateParam(concept, TYPE, Thing.class, Thing::type);
+        validateParam(concept, SUPER_CONCEPT, OntologyConcept.class, OntologyConcept::sup);
+        validateParam(concept, LABEL, OntologyConcept.class, OntologyConcept::getLabel);
+        validateParam(concept, ID, Concept.class, Concept::getId);
+        validateParam(concept, VALUE, Resource.class, Resource::getValue);
+        validateParam(concept, DATA_TYPE, ResourceType.class, ResourceType::getDataType);
+        validateParam(concept, WHEN, Rule.class, Rule::getWhen);
+        validateParam(concept, THEN, Rule.class, Rule::getThen);
+    }
+
+    /**
+     * Check if the concept is of the given type and has a property that matches the given parameter.
+     *
+     * @throws GraqlQueryException if the concept does not satisfy the parameter
+     */
+    private <S extends Concept, T> void validateParam(
+            Concept concept, BuilderParam<T> param, Class<S> conceptType, Function<S, T> getter) {
+
+        tryGet(param).ifPresent(value -> {
+            boolean isInstance = conceptType.isInstance(concept);
+
+            if (!isInstance || !Objects.equals(getter.apply(conceptType.cast(concept)), value)) {
+                throw GraqlQueryException.insertPropertyOnExistingConcept(param.name(), value, concept);
+            }
+        });
+    }
+
     private Thing putInstance(InsertQueryExecutor executor) {
         Type type = get(TYPE);
-        @Nullable ConceptId id = tryGet(ID).orElse(null);
 
         if (type.isEntityType()) {
             checkNotRule();
-            return addOrGetInstance(executor, id, type.asEntityType()::addEntity);
+            return type.asEntityType().addEntity();
         } else if (type.isRelationType()) {
             checkNotRule();
-            return addOrGetInstance(executor, id, type.asRelationType()::addRelation);
+            return type.asRelationType().addRelation();
         } else if (type.isResourceType()) {
             checkNotRule();
-            return addOrGetInstance(executor, id,
-                    () -> {
-                        if (!has(VALUE)) {
-                            throw GraqlQueryException.insertResourceWithoutValue();
-                        }
-                        return type.asResourceType().putResource(get(VALUE));
-                    }
-            );
+            if (!has(VALUE)) {
+                throw GraqlQueryException.insertResourceWithoutValue();
+            }
+            return type.asResourceType().putResource(get(VALUE));
         } else if (type.isRuleType()) {
-            return addOrGetInstance(executor, id, () -> {
-                if (!has(WHEN)) throw GraqlQueryException.insertRuleWithoutLhs(executor.printableRepresentation(var));
-                if (!has(THEN)) throw GraqlQueryException.insertRuleWithoutRhs(executor.printableRepresentation(var));
-                return type.asRuleType().putRule(get(WHEN), get(THEN));
-            });
+            if (!has(WHEN)) throw GraqlQueryException.insertRuleWithoutLhs(executor.printableRepresentation(var));
+            if (!has(THEN)) throw GraqlQueryException.insertRuleWithoutRhs(executor.printableRepresentation(var));
+            return type.asRuleType().putRule(get(WHEN), get(THEN));
         } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
         } else {
@@ -244,15 +280,4 @@ public class ConceptBuilder {
         }
     }
 
-    /**
-     * Put an instance of a type which may or may not have an ID specified
-     * @param id the ID of the instance to create, or null to not specify an ID
-     * @param addInstance an 'add' method on a GraknGraph such a graph::addEntity
-     * @param <S> the class of the instance, e.g. Entity
-     * @return an instance of the specified type, with the given ID if one was specified
-     */
-    private <S extends Thing> S addOrGetInstance(
-            InsertQueryExecutor executor, @Nullable ConceptId id, Supplier<S> addInstance) {
-        return id != null ? executor.graph().getConcept(id) : addInstance.get();
-    }
 }

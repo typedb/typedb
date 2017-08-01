@@ -18,6 +18,7 @@
 
 package ai.grakn.exception;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
@@ -168,6 +169,10 @@ public class GraqlQueryException extends GraknException{
 
     public static GraqlQueryException insertMultipleProperties(String property, Object value1, Object value2) {
         return create("a concept cannot have multiple properties `%s` and `%s` for `%s`", value1, value2, property);
+    }
+
+    public static GraqlQueryException insertPropertyOnExistingConcept(String property, Object value, Concept concept) {
+        return create("cannot insert property `%s %s` on existing concept `%s`", property, value, concept);
     }
 
     public static GraqlQueryException insertResourceWithoutValue() {

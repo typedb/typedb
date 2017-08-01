@@ -62,6 +62,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.concept.ResourceType.DataType.BOOLEAN;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
@@ -827,6 +828,35 @@ public class InsertQueryTest {
         ));
 
         movieGraph.graph().graql().insert(var("x").isa("movie"), var("x").isa("person")).execute();
+    }
+
+    @Test
+    public void whenSpecifyingExistingConceptIdWithIncorrectType_Throw() {
+        EntityType movie = movieGraph.graph().getEntityType("movie");
+        EntityType person = movieGraph.graph().getEntityType("person");
+
+        Concept aMovie = movie.instances().iterator().next();
+
+        exception.expect(GraqlQueryException.class);
+
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
+
+        movieGraph.graph().graql().insert(var("x").id(aMovie.getId()).isa("person")).execute();
+    }
+
+    @Test
+    public void whenSpecifyingExistingTypeWithIncorrectDataType_Throw() {
+        ResourceType name = movieGraph.graph().getResourceType("name");
+
+        exception.expect(GraqlQueryException.class);
+
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(
+                GraqlQueryException.insertPropertyOnExistingConcept("datatype", BOOLEAN, name).getMessage()
+        );
+
+        movieGraph.graph().graql().insert(label("name").datatype(BOOLEAN)).execute();
     }
 
     private void assertInsert(VarPattern... vars) {
