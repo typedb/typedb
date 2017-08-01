@@ -39,7 +39,21 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graph.admin.GraknAdmin;
+import ai.grakn.graph.internal.cache.GraphCache;
+import ai.grakn.graph.internal.cache.TxCache;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
+import ai.grakn.graph.internal.concept.ConceptImpl;
+import ai.grakn.graph.internal.concept.ConceptVertex;
+import ai.grakn.graph.internal.concept.ElementFactory;
+import ai.grakn.graph.internal.concept.OntologyConceptImpl;
+import ai.grakn.graph.internal.concept.RelationEdge;
+import ai.grakn.graph.internal.concept.RelationImpl;
+import ai.grakn.graph.internal.concept.RelationReified;
+import ai.grakn.graph.internal.concept.ResourceImpl;
+import ai.grakn.graph.internal.concept.ThingImpl;
+import ai.grakn.graph.internal.concept.TypeImpl;
+import ai.grakn.graph.internal.structure.EdgeElement;
+import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
@@ -88,7 +102,7 @@ import static java.util.stream.Collectors.toSet;
  * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
  */
 public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin {
-    protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
+    final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
 
     //TODO: Is this the correct place for these config paths
@@ -199,7 +213,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return keyspace;
     }
 
-    TxCache txCache() {
+    public TxCache txCache() {
         TxCache txCache = localConceptLog.get();
         if(txCache == null){
             localConceptLog.set(txCache = new TxCache(getGraphCache()));
@@ -332,7 +346,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    ElementFactory factory(){
+    public ElementFactory factory(){
         return elementFactory;
     }
 
@@ -359,12 +373,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return concepts;
     }
 
-    void checkOntologyMutationAllowed(){
+    public void checkOntologyMutationAllowed(){
         checkMutationAllowed();
         if(isBatchGraph()) throw GraphOperationException.ontologyMutation();
     }
 
-    void checkMutationAllowed(){
+    public void checkMutationAllowed(){
         if(isReadOnly()) throw GraphOperationException.transactionReadOnly(this);
     }
 
@@ -372,13 +386,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
     @Nullable
-    VertexElement addVertex(Schema.BaseType baseType){
+    public VertexElement addVertex(Schema.BaseType baseType){
         Vertex vertex = operateOnOpenGraph(() -> getTinkerPopGraph().addVertex(baseType.name()));
         vertex.property(Schema.VertexProperty.ID.name(), Schema.PREFIX_VERTEX + vertex.id().toString());
         return factory().buildVertexElement(vertex);
     }
 
-    VertexElement addVertex(Schema.BaseType baseType, ConceptId conceptId){
+    public VertexElement addVertex(Schema.BaseType baseType, ConceptId conceptId){
         Vertex vertex = operateOnOpenGraph(() -> getTinkerPopGraph().addVertex(baseType.name()));
         vertex.property(Schema.VertexProperty.ID.name(), conceptId.getValue());
         return factory().buildVertexElement(vertex);
@@ -489,7 +503,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE));
     }
 
-    RelationType putRelationTypeImplicit(Label label) {
+    public RelationType putRelationTypeImplicit(Label label) {
         return putOntologyElement(label, Schema.BaseType.RELATION_TYPE,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE));
     }
@@ -505,7 +519,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 v -> factory().buildRole(v, getMetaRole(), Boolean.FALSE));
     }
 
-    Role putRoleTypeImplicit(Label label) {
+    public Role putRoleTypeImplicit(Label label) {
         return putOntologyElement(label, Schema.BaseType.ROLE,
                 v -> factory().buildRole(v, getMetaRole(), Boolean.TRUE));
     }
@@ -575,7 +589,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return validateOntologyElement(ontologyConcept, baseType, () -> null);
     }
     @Nullable
-    <T extends OntologyConcept> T getOntologyConcept(LabelId id){
+    public <T extends OntologyConcept> T getOntologyConcept(LabelId id){
         if(!id.isValid()) return null;
         return getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
     }
@@ -678,7 +692,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return getOntologyConcept(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
-    void putShortcutEdge(Thing toThing, RelationReified fromRelation, Role roleType){
+    public void putShortcutEdge(Thing toThing, RelationReified fromRelation, Role roleType){
         boolean exists  = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
@@ -812,7 +826,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    void validateGraph() throws InvalidGraphException {
+    private void validateGraph() throws InvalidGraphException {
         Validator validator = new Validator(this);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();
@@ -921,15 +935,23 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //This allows us to find relations far more quickly.
         Optional<RelationReified> reifiedRelation = ((RelationImpl) otherRelation).reified();
 
-        //TODO: Figure out how to merge relations which are not reified
-        if(!reifiedRelation.isPresent()) throw new UnsupportedOperationException("Merging non reified relations is not supported");
+        if(reifiedRelation.isPresent()) {
+            copyRelation(main, other, otherRelation, reifiedRelation.get());
+        } else {
+            copyRelation(main, other, otherRelation, (RelationEdge) RelationImpl.from(otherRelation).structure());
+        }
+    }
 
-        String newIndex = reifiedRelation.get().getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
+    /**
+     * Copy a relation which has been reified - {@link RelationReified}
+     */
+    private void copyRelation(Resource main, Resource other, Relation otherRelation, RelationReified reifiedRelation){
+        String newIndex = reifiedRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
         Relation foundRelation = txCache().getCachedRelation(newIndex);
         if(foundRelation == null) foundRelation = getConcept(Schema.VertexProperty.INDEX, newIndex);
 
         if (foundRelation != null) {//If it exists delete the other one
-            reifiedRelation.get().deleteNode(); //Raw deletion because the castings should remain
+            reifiedRelation.deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelation = otherRelation;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
@@ -941,6 +963,25 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //Explicitly track this new relation so we don't create duplicates
         txCache().getRelationIndexCache().put(newIndex, foundRelation);
+    }
+
+    /**
+     * Copy a relation which is an edge - {@link RelationEdge}
+     */
+    private void copyRelation(Resource main, Resource other, Relation otherRelation, RelationEdge relationEdge){
+        ConceptVertex newOwner;
+        ConceptVertex newValue;
+
+        if(relationEdge.owner().equals(other)){//The resource owns another resource which it needs to replace
+            newOwner = ConceptVertex.from(main);
+            newValue = ConceptVertex.from(relationEdge.value());
+        } else {//The resource is owned by another Entity
+            newOwner = ConceptVertex.from(relationEdge.owner());
+            newValue = ConceptVertex.from(main);
+        }
+
+        EdgeElement edge = newOwner.vertex().putEdge(newValue.vertex(), Schema.EdgeLabel.RESOURCE);
+        factory().buildRelation(edge, relationEdge.type(), relationEdge.ownerRole(), relationEdge.valueRole());
     }
 
     @Override

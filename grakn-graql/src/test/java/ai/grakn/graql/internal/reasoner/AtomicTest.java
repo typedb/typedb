@@ -569,7 +569,7 @@ public class AtomicTest {
         assertEquals(4, relation.getApplicableRules().size());
     }
 
-    @Test //should assign (role1: $x, role: $y, role1: $z) which is incompatible with any of the rule heads
+    @Test //should assign (role: $x, role1: $y, role1: $z) which is incompatible with any of the rule heads
     public void testRuleApplicability_WithWildcard_MissingMappings(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$y isa entity1; $z isa entity5;}";

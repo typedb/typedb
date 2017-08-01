@@ -2,7 +2,7 @@
 title: Introduction to GRAKN.AI
 keywords: intro
 last_updated: January 2017database
-summary: GRAKN.AI is the database for AI. It is a HYPER-RELATIONAL Database to store complex data, with a reasoning query language that interprets complex relationships into a higher level abstraction.
+summary: GRAKN.AI is the database for AI. It is a hyper-relational database for knowledge-oriented systems. Grakn enables machines to manage complex data that serves as a knowledge base for cognitive/AI systems.
 tags: [overview]
 sidebar: overview_sidebar
 permalink: ./overview/index.html
@@ -26,11 +26,11 @@ GRAKN.AI is the database solution for working with complex data that intelligent
 
 ## Grakn
 
-Grakn is a hyper-relational database, that provides an [Enhandced-Entity-Relational (EER)](https://en.wikipedia.org/wiki/Enhanced_entity–relationship_model) schema to model extremely complex datasets. Grakn uses the EER model to understand the complete context of their relationships. Consequently, Grakn allows computers to process complex information more intelligently, through a higher level of abstraction.
+Grakn is a hyper-relational database, that provides an [Enhanced-Entity-Relational (EER)](https://en.wikipedia.org/wiki/Enhanced_entity–relationship_model) schema to model extremely complex datasets. Grakn uses the EER model to understand the complete context of their relationships. Consequently, Grakn allows computers to process complex information more intelligently, through a higher level of abstraction.
 
 > Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained in it.
 
-Grakn’s ontology modelling constructs include, but are not limited to, data type hierarchy, relation type hierarchy, bi-directional relationships, multi-type relationships, N-ary relationships, relationships in relationships, conditional relationships, virtual relationships, dynamic relationships, and so on. In other words, Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained within it.
+Grakn’s schema/ontology modelling constructs include, but are not limited to, data type hierarchy, relation type hierarchy, bi-directional relationships, multi-type relationships, N-ary relationships, relationships in relationships, conditional relationships, virtual relationships, dynamic relationships, and so on. In other words, Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained within it.
 
 > Grakn’s ontology functions as a data schema constraint that guarantees information consistency.
 
