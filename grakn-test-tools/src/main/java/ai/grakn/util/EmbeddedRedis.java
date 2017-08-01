@@ -72,7 +72,7 @@ public class EmbeddedRedis {
                 } catch (Exception e) {
                     LOG.warn("Exception while trying to start Redis on port {}. Will attempt to continue.", port, e);
                 }
-                LOG.info("Redis started.");
+                LOG.info("Redis started on {}", port);
             } else {
                 LOG.warn("Redis already running.");
             }

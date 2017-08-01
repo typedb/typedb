@@ -154,7 +154,7 @@ public class GraknEngineServer implements AutoCloseable {
 
     private void loadAndUnlock(Lock lock) {
         try {
-            LOG.info("{} is initializing the system ontology", this.engineId);
+            LOG.info("{} is checking the system ontology", this.engineId);
             factory.systemKeyspace().loadSystemOntology();
         } finally {
             lock.unlock();

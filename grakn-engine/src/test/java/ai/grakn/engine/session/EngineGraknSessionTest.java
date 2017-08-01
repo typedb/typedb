@@ -25,15 +25,15 @@ public class EngineGraknSessionTest {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    
 
-    private static EngineGraknGraphFactory graknFactory = EngineGraknGraphFactory.createAndLoadSystemOntology(EngineTestHelper.config().getProperties());
+    private static EngineGraknGraphFactory graknFactory;
     
     private String factoryUri = "localhost:" + EngineTestHelper.config().getProperty(GraknEngineConfig.SERVER_PORT_NUMBER);
 
     @BeforeClass
     public static void beforeClass() {
         EngineTestHelper.engineWithGraphs();
+        graknFactory = EngineGraknGraphFactory.createAndLoadSystemOntology(EngineTestHelper.config().getProperties());
     }
 
     @AfterClass
