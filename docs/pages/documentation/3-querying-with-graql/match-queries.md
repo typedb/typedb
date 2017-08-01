@@ -82,6 +82,8 @@ qb.match(var("x").val(contains("Bar")))
 
 ### has
 
+<!-- TODO: Describe new reified syntax -->
+
 Match things that have the resource specified. If a [predicate](#predicates) is provided, the resource must also match that predicate.
 
 <ul id="profileTabs" class="nav nav-tabs">

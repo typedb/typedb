@@ -118,6 +118,8 @@ qb.insert(var().val("Ash").isa("surname")).execute();
 
 ### has
 
+<!-- TODO: Describe new reified syntax -->
+
 Add a resource of the given type to the concept.
 
 <ul id="profileTabs" class="nav nav-tabs">
