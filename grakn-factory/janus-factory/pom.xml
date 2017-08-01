@@ -276,6 +276,19 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Big Table Related -->
+        <dependency>
+            <groupId>com.google.cloud.bigtable</groupId>
+            <artifactId>bigtable-hbase-1.0</artifactId>
+            <version>${google-bigtable.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-boringssl-static</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
     </dependencies>
 
 </project>

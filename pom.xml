@@ -101,6 +101,8 @@
         <main.basedir>${project.parent.basedir}</main.basedir>
         <spark-gremlin.version>3.1.1-incubating</spark-gremlin.version>
         <netty-all.version>4.0.42.Final</netty-all.version>
+        <google-bigtable.version>0.9.5.1</google-bigtable.version>
+        <netty.version>1.1.33.Fork19</netty.version>
     </properties>
 
     <organization>
