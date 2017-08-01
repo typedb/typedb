@@ -19,7 +19,6 @@
 package ai.grakn.exception;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.ResourceType;
@@ -37,14 +36,8 @@ import java.util.List;
 import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
-import static ai.grakn.util.ErrorMessage.INSERT_NO_DATATYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
-import static ai.grakn.util.ErrorMessage.INSERT_RESOURCE_WITHOUT_VALUE;
-import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_THEN;
-import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_WHEN;
-import static ai.grakn.util.ErrorMessage.INSERT_TYPE_WITHOUT_LABEL;
 import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
-import static ai.grakn.util.ErrorMessage.INSERT_WITHOUT_TYPE;
 import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
 import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
 import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
@@ -133,10 +126,6 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(INSERT_RECURSIVE.getMessage(var.getPrintableName()));
     }
 
-    public static GraqlQueryException insertWithoutType(ConceptId conceptId) {
-        return new GraqlQueryException(INSERT_WITHOUT_TYPE.getMessage(conceptId));
-    }
-
     public static GraqlQueryException insertUndefinedVariable(VarPatternAdmin var) {
         return new GraqlQueryException(INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
     }
@@ -163,10 +152,6 @@ public class GraqlQueryException extends GraknException{
 
     public static GraqlQueryException insertNoExpectedProperty(String property, VarPatternAdmin var) {
         return create("missing expected property `%s` in `%s`", property, var);
-    }
-
-    public static GraqlQueryException insertResourceWithoutValue() {
-        return new GraqlQueryException(INSERT_RESOURCE_WITHOUT_VALUE.getMessage());
     }
 
     public static GraqlQueryException varNotInQuery(Var var) {
@@ -278,23 +263,7 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage());
     }
 
-    public static GraqlQueryException insertRuleWithoutLhs(VarPatternAdmin var) {
-        return new GraqlQueryException(INSERT_RULE_WITHOUT_WHEN.getMessage(var));
-    }
-
-    public static GraqlQueryException insertRuleWithoutRhs(VarPatternAdmin var) {
-        return new GraqlQueryException(INSERT_RULE_WITHOUT_THEN.getMessage(var));
-    }
-
-    public static GraqlQueryException insertTypeWithoutLabel() {
-        return new GraqlQueryException(INSERT_TYPE_WITHOUT_LABEL.getMessage());
-    }
-
     public static GraqlQueryException insertAbstractOnNonType(OntologyConcept concept){
         return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.getLabel()));
-    }
-
-    public static GraqlQueryException insertResourceTypeWithoutDataType(VarPatternAdmin var) {
-        return new GraqlQueryException(INSERT_NO_DATATYPE.getMessage(var.getPrintableName()));
     }
 }
