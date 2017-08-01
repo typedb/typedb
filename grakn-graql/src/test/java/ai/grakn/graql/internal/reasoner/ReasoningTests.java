@@ -280,8 +280,7 @@ public class ReasoningTests {
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         assertEquals(answers.size(), 1);
     }
-
-    @Ignore // TODO: Fix (Bug #16195)
+    
     @Test //Expected result: The query should return a unique match
     public void transRelationWithRelationGuardsAtBothEnds() {
         QueryBuilder qb = testSet11.graph().graql().infer(true);
