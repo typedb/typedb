@@ -44,9 +44,11 @@ import ai.grakn.util.Schema;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -96,13 +98,6 @@ public class ConceptBuilder {
      * @throws GraqlQueryException if the properties provided are inconsistent
      */
     Concept build(InsertQueryExecutor executor) {
-        if (has(TYPE) && has(SUPER_CONCEPT)) {
-            throw GraqlQueryException.insertIsaAndSub("hello"); // TODO
-        }
-
-        if (has(LABEL) && has(TYPE)) {
-            throw GraqlQueryException.insertInstanceWithLabel(get(LABEL));
-        }
 
         Concept concept = null;
 
@@ -116,24 +111,32 @@ public class ConceptBuilder {
 
         if (concept != null) {
             validate(concept);
-            return concept;
+        } else {
+            expectedParams.clear();
+
+            if (has(SUPER_CONCEPT)) {
+                concept = putOntologyConcept(executor);
+            } else if (has(TYPE)) {
+                concept = putInstance(executor);
+            } else {
+                throw GraqlQueryException.insertUndefinedVariable(executor.printableRepresentation(var));
+            }
+
+            // Check for any unexpected parameters
+            Concept finalConcept = concept;
+            params.forEach((param, value) -> {
+                if (!expectedParams.contains(param)) {
+                    throw GraqlQueryException.insertUnexpectedProperty(param.name(), value, finalConcept);
+                }
+            });
         }
 
-        // Else, attempt to `put` the concept
-        if (has(SUPER_CONCEPT)) {
-            return putOntologyConcept(executor);
-        } else if (has(TYPE)) {
-            return putInstance(executor);
-        } else {
-            throw GraqlQueryException.insertUndefinedVariable(executor.printableRepresentation(var));
-        }
+        return concept;
     }
 
     static ConceptBuilder of(Var var) {
         return new ConceptBuilder(var);
     }
-
-    private final Var var;
 
     @FunctionalInterface
     private interface BuilderParam<T> {
@@ -149,19 +152,25 @@ public class ConceptBuilder {
     private static final BuilderParam<Pattern> WHEN = () -> WhenProperty.NAME;
     private static final BuilderParam<Pattern> THEN = () -> ThenProperty.NAME;
 
+    private final Var var;
+
     private final Map<BuilderParam<?>, Object> params = new HashMap<>();
+
+    private final Set<BuilderParam<?>> expectedParams = new HashSet<>();
 
     private ConceptBuilder(Var var) {
         this.var = var;
     }
 
     private <T> T get(BuilderParam<T> param) {
+        expectedParams.add(param);
         // This is safe, assuming we only add to the map with the `set` method
         //noinspection unchecked
         return checkNotNull((T) params.get(param));
     }
 
     private <T> Optional<T> tryGet(BuilderParam<T> param) {
+        expectedParams.add(param);
         // This is safe, assuming we only add to the map with the `set` method
         //noinspection unchecked
         return Optional.ofNullable((T) params.get(param));
@@ -216,13 +225,10 @@ public class ConceptBuilder {
         Type type = get(TYPE);
 
         if (type.isEntityType()) {
-            checkNotRule();
             return type.asEntityType().addEntity();
         } else if (type.isRelationType()) {
-            checkNotRule();
             return type.asRelationType().addRelation();
         } else if (type.isResourceType()) {
-            checkNotRule();
             if (!has(VALUE)) {
                 throw GraqlQueryException.insertResourceWithoutValue();
             }
@@ -238,16 +244,6 @@ public class ConceptBuilder {
         }
     }
 
-    private void checkNotRule() {
-        if (has(WHEN)) {
-            throw GraqlQueryException.insertUnsupportedProperty("when", Schema.MetaSchema.RULE);
-        }
-
-        if (has(THEN)) {
-            throw GraqlQueryException.insertUnsupportedProperty("then", Schema.MetaSchema.RULE);
-        }
-    }
-
     /**
      * @return a concept with the given ID and the specified type
      */
@@ -256,8 +252,6 @@ public class ConceptBuilder {
 
         OntologyConcept superConcept = get(SUPER_CONCEPT);
         Label label = get(LABEL);
-
-        checkNotRule();
 
         if (superConcept.isEntityType()) {
             return executor.graph().putEntityType(label).sup(superConcept.asEntityType());

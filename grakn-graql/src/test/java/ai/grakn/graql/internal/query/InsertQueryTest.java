@@ -66,7 +66,6 @@ import static ai.grakn.concept.ResourceType.DataType.BOOLEAN;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
 import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
@@ -656,14 +655,14 @@ public class InsertQueryTest {
     @Test
     public void testErrorInsertInstanceWithName() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("instance"), containsString("name"), containsString("abc")));
+        exception.expectMessage(allOf(containsString("label"), containsString("abc")));
         qb.insert(label("abc").isa("movie")).execute();
     }
 
     @Test
     public void testErrorInsertResourceWithName() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("instance"), containsString("name"), containsString("bobby")));
+        exception.expectMessage(allOf(containsString("label"), containsString("bobby")));
         qb.insert(label("bobby").val("bob").isa("name")).execute();
     }
 
@@ -733,14 +732,14 @@ public class InsertQueryTest {
     @Test
     public void testInsertNonRuleWithWhen() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("when", RULE.getLabel()));
+        exception.expectMessage(allOf(containsString("unexpected property"), containsString("when")));
         qb.insert(var().isa("movie").when(var("x"))).execute();
     }
 
     @Test
     public void testInsertNonRuleWithThen() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("then", RULE.getLabel()));
+        exception.expectMessage(allOf(containsString("unexpected property"), containsString("then")));
         qb.insert(label("thingy").sub("movie").then(var("x"))).execute();
     }
 
@@ -838,8 +837,6 @@ public class InsertQueryTest {
         Concept aMovie = movie.instances().iterator().next();
 
         exception.expect(GraqlQueryException.class);
-
-        exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
 
         movieGraph.graph().graql().insert(var("x").id(aMovie.getId()).isa("person")).execute();
@@ -850,13 +847,21 @@ public class InsertQueryTest {
         ResourceType name = movieGraph.graph().getResourceType("name");
 
         exception.expect(GraqlQueryException.class);
-
-        exception.expect(GraqlQueryException.class);
         exception.expectMessage(
                 GraqlQueryException.insertPropertyOnExistingConcept("datatype", BOOLEAN, name).getMessage()
         );
 
         movieGraph.graph().graql().insert(label("name").datatype(BOOLEAN)).execute();
+    }
+
+    @Test
+    public void whenSpecifyingDataTypeOnAnEntityType_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(
+                allOf(containsString("unexpected property"), containsString("datatype"), containsString("my-type"))
+        );
+
+        movieGraph.graph().graql().insert(label("my-type").sub("entity").datatype(BOOLEAN)).execute();
     }
 
     private void assertInsert(VarPattern... vars) {
