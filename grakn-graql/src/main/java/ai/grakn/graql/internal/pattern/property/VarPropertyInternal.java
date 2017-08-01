@@ -75,15 +75,20 @@ public interface VarPropertyInternal extends VarProperty {
      * When calling {@link #insert}, the method can expect any entry returned here to be in the
      * map of concepts.
      *
-     * @param var the subject var of the property. This is assumed to be required by default.
+     * @param var the subject var of the property.
      */
     Set<Var> requiredVars(Var var);
 
     /**
      * Get all {@link Var}s whose {@link Concept} can only be created after this property is applied.
      *
-     * When calling {@link #insert}, the method must add an entry for every {@link Var} returned
-     * from this method.
+     * <p>
+     *     When calling {@link #insert}, the method must add an entry for every {@link Var} returned
+     *     from this method.
+     * </p>
+     * <p>
+     *     The default implementation returns an empty set.
+     * </p>
      *
      * @param var the subject var of the property.
      */
