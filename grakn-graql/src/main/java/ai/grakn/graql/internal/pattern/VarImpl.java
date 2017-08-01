@@ -19,7 +19,6 @@
 
 package ai.grakn.graql.internal.pattern;
 
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import com.google.auto.value.AutoValue;
@@ -27,7 +26,6 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Set;
-import java.util.function.Function;
 
 /**
  * Default implementation of {@link Var}.
@@ -39,11 +37,6 @@ abstract class VarImpl extends AbstractVarPattern implements Var {
 
     @Override
     public abstract String getValue();
-
-    @Override
-    public Var map(Function<String, String> mapper) {
-        return Graql.var(mapper.apply(getValue()));
-    }
 
     @Override
     public abstract boolean isUserDefinedName();
