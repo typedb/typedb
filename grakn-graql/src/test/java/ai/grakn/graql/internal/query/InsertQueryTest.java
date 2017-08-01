@@ -641,14 +641,14 @@ public class InsertQueryTest {
     @Test
     public void testErrorTypeWithoutLabel() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("type"), containsString("label")));
+        exception.expectMessage(allOf(containsString("entity"), containsString("label")));
         qb.insert(var().sub("entity")).execute();
     }
 
     @Test
     public void testErrorInsertResourceWithoutValue() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("resource"), containsString("value")));
+        exception.expectMessage(allOf(containsString("name"), containsString("val")));
         qb.insert(var("x").isa("name")).execute();
     }
 

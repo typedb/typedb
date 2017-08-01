@@ -161,6 +161,10 @@ public class GraqlQueryException extends GraknException{
         return create("unexpected property `%s %s` for concept `%s`", property, value, concept);
     }
 
+    public static GraqlQueryException insertNoExpectedProperty(String property, VarPatternAdmin var) {
+        return create("missing expected property `%s` in `%s`", property, var);
+    }
+
     public static GraqlQueryException insertResourceWithoutValue() {
         return new GraqlQueryException(INSERT_RESOURCE_WITHOUT_VALUE.getMessage());
     }

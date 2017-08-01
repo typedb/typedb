@@ -211,7 +211,7 @@ public class InsertQueryExecutor {
 
         sortProperties().forEach(property -> property.insert(this));
 
-        conceptBuilders.forEach((var, builder) -> concepts.put(var, builder.build(this)));
+        conceptBuilders.forEach((var, builder) -> concepts.put(var, builder.build()));
 
         Map<Var, Concept> namedConcepts = Maps.filterKeys(concepts, Var::isUserDefinedName);
         return new QueryAnswer(namedConcepts);
@@ -291,7 +291,7 @@ public class InsertQueryExecutor {
             return builder;
         }
 
-        builder = ConceptBuilder.of(var);
+        builder = ConceptBuilder.of(this, var);
         conceptBuilders.put(var, builder);
         return builder;
     }
@@ -314,7 +314,7 @@ public class InsertQueryExecutor {
             ConceptBuilder builder = conceptBuilders.remove(var);
 
             if (builder != null) {
-                concept = builder.build(this);
+                concept = builder.build();
                 concepts.put(var, concept);
             }
         }
