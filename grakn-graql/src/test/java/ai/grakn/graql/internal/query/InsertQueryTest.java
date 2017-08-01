@@ -21,7 +21,9 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Relation;
+import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
@@ -43,6 +45,7 @@ import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterables;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -78,6 +81,8 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.isOneOf;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -90,6 +95,13 @@ import static org.junit.Assume.assumeTrue;
 public class InsertQueryTest {
 
     private QueryBuilder qb;
+
+    private static final Var w = var("w");
+    private static final Var x = var("x");
+    private static final Var y = var("y");
+    private static final Var z = var("z");
+
+    private static final Label title = Label.of("title");
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -611,8 +623,42 @@ public class InsertQueryTest {
         EntityType movie = movieGraph.graph().getEntityType("movie");
 
         qb.match(var("x").label("a-new-type")).insert(var("x").sub("movie")).execute();
-        
+
         assertEquals(movie, newType.sup());
+    }
+
+    @Test
+    public void whenAddingAResourceRelationWithProvenance_TheResourceAndProvenanceAreAdded() {
+        InsertQuery query = qb.insert(
+                w.isa("movie").has(title, x.val("My Movie"), y.has("provenance", z.val("Someone told me")))
+        );
+
+        Answer answer = Iterables.getOnlyElement(query.execute());
+
+        Entity movie = answer.get(w).asEntity();
+        Resource<String> theTitle = answer.get(x).asResource();
+        Relation hasTitle = answer.get(y).asRelation();
+        Resource<String> provenance = answer.get(z).asResource();
+
+        assertThat(hasTitle.rolePlayers(), containsInAnyOrder(movie, theTitle));
+        assertThat(hasTitle.resources(), contains(provenance));
+    }
+
+    @Test
+    public void whenAddingProvenanceToAnExistingRelation_TheProvenanceIsAdded() {
+        InsertQuery query = qb
+                .match(w.isa("movie").has(title, x.val("The Muppets"), y))
+                .insert(y.has("provenance", z.val("Someone told me")));
+
+        Answer answer = Iterables.getOnlyElement(query.execute());
+
+        Entity movie = answer.get(w).asEntity();
+        Resource<String> theTitle = answer.get(x).asResource();
+        Relation hasTitle = answer.get(y).asRelation();
+        Resource<String> provenance = answer.get(z).asResource();
+
+        assertThat(hasTitle.rolePlayers(), containsInAnyOrder(movie, theTitle));
+        assertThat(hasTitle.resources(), contains(provenance));
     }
 
     @Test

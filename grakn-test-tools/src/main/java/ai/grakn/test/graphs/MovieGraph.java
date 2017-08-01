@@ -28,6 +28,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
+import ai.grakn.util.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,7 +41,7 @@ import java.util.function.Consumer;
 public class MovieGraph extends TestGraph {
 
     private static EntityType production, movie, person, genre, character, cluster, language;
-    private static ResourceType<String> title, gender, realName, name;
+    private static ResourceType<String> title, gender, realName, name, provenance;
     private static ResourceType<Long> tmdbVoteCount, runtime;
     private static ResourceType<Double> tmdbVoteAverage;
     private static ResourceType<LocalDateTime> releaseDate;
@@ -99,6 +100,7 @@ public class MovieGraph extends TestGraph {
         gender = graph.putResourceType("gender", ResourceType.DataType.STRING).setRegex("(fe)?male");
         realName = graph.putResourceType("real-name", ResourceType.DataType.STRING);
         name = graph.putResourceType("name", ResourceType.DataType.STRING);
+        provenance = graph.putResourceType("provenance", ResourceType.DataType.STRING);
 
         production = graph.putEntityType("production")
                 .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast)
@@ -136,6 +138,8 @@ public class MovieGraph extends TestGraph {
 
         cluster = graph.putEntityType("cluster").plays(clusterOfProduction);
         cluster.resource(name);
+
+        graph.getType(Schema.ImplicitType.HAS.getLabel("title")).resource(provenance);
     }
 
     @Override
