@@ -154,6 +154,10 @@ public class GraqlQueryException extends GraknException{
         return create("missing expected property `%s` in `%s`", property, var);
     }
 
+    public static GraqlQueryException insertExistingConcept(VarPatternAdmin pattern, Concept concept) {
+        return create("cannot overwrite properties `%s` on  concept `%s`", pattern, concept);
+    }
+
     public static GraqlQueryException varNotInQuery(Var var) {
         return new GraqlQueryException(VARIABLE_NOT_IN_QUERY.getMessage(var));
     }

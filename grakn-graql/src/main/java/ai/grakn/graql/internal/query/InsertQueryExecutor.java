@@ -30,7 +30,6 @@ import ai.grakn.graql.internal.gremlin.spanningtree.util.Pair;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
@@ -281,7 +280,9 @@ public class InsertQueryExecutor {
     public ConceptBuilder builder(Var var) {
         var = equivalentVars.componentOf(var);
 
-        Preconditions.checkArgument(!concepts.containsKey(var));
+        if (concepts.containsKey(var)) {
+            throw GraqlQueryException.insertExistingConcept(printableRepresentation(var), concepts.get(var));
+        }
 
         ConceptBuilder builder;
 

@@ -153,7 +153,6 @@ public enum ErrorMessage {
     INSERT_RECURSIVE("%s should not refer to itself"),
     INSERT_ABSTRACT_NOT_TYPE("the concept [%s] is not a type and cannot be set to abstract"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
-    INSERT_NEW_TYPE("instance '%s' already has a type. cannot set new type '%s'"),
 
     DELETE_UNSUPPORTED_PROPERTY("deleting property '%s' is not supported"),
 

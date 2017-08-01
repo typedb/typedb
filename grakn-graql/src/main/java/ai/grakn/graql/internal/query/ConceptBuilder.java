@@ -165,6 +165,8 @@ public class ConceptBuilder {
     }
 
     private Concept tryPutConcept() {
+        expectedParams.clear();
+
         Concept concept;
 
         if (has(SUPER_CONCEPT)) {
