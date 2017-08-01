@@ -68,7 +68,9 @@ public class EmbeddedRedis {
                 try {
                     redisServer.start();
                 } catch (EmbeddedRedisException e) {
-                    LOG.warn("Unexpected Redis instance already running on port {}", port);
+                    LOG.warn("Unexpected Redis instance already running on port {}", port, e);
+                } catch (Exception e) {
+                    LOG.warn("Exception while trying to start Redis on port {}. Will attempt to continue.", port, e);
                 }
                 LOG.info("Redis started.");
             } else {
