@@ -24,10 +24,15 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
+import java.util.Enumeration;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -35,6 +40,8 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
@@ -288,11 +295,14 @@ public class ReasoningTests {
 
         System.out.println("rel1: ");
         qb.<MatchQuery>parse("match (role1: $x, role2: $y) isa relation1;").execute().forEach(System.out::println);
+
         System.out.println("rel2: ");
         qb.<MatchQuery>parse("match (role1: $x, role2: $y) isa relation2;").execute().forEach(System.out::println);
 
-        QueryAnswers answers = queryAnswers(qb.parse(queryString));
-        assertEquals(answers.size(), 1);
+        System.out.println("rel3: ");
+        List<Answer> execute = qb.<MatchQuery>parse(queryString).execute();
+        execute.forEach(System.out::println);
+        assertEquals(execute.size(), 1);
     }
 
     @Test //Expected result: The query should return two unique matches
@@ -617,8 +627,8 @@ public class ReasoningTests {
                 "(role3: $z, role4: $w) isa relation3;" +
                 "limit 3;";
 
-        QueryAnswers answers = queryAnswers(qb.parse(queryString));
-        assertEquals(answers.size(), 3);
+        //QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        assertEquals(qb.<MatchQuery>parse(queryString).execute().size(), 3);
     }
 
     @Test //Expected result: no answers (if types were incorrectly inferred the query would yield answers)
