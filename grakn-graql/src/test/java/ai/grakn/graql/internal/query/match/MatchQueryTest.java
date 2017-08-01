@@ -26,6 +26,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -966,6 +967,24 @@ public class MatchQueryTest {
 
         assertThat(query, variable(x, everyItem(not(isInstance()))));
         assertThat(query, variable(y, everyItem(not(isInstance()))));
+    }
+
+    @Test
+    public void whenQueryingForHas_AllowReferringToTheImplicitRelation() {
+        Label title = Label.of("title");
+
+        RelationType hasTitle = movieGraph.graph().getType(HAS.getLabel(title));
+        Role titleOwner = movieGraph.graph().getOntologyConcept(HAS_OWNER.getLabel(title));
+        Role titleValue = movieGraph.graph().getOntologyConcept(HAS_VALUE.getLabel(title));
+
+        Relation implicitRelation = hasTitle.instances().iterator().next();
+
+        ConceptId owner = implicitRelation.rolePlayers(titleOwner).iterator().next().getId();
+        ConceptId value = implicitRelation.rolePlayers(titleValue).iterator().next().getId();
+
+        MatchQuery query = qb.match(x.id(owner).has(title, y.id(value), r));
+
+        assertThat(query, variable(r, contains(MatchableConcept.of(implicitRelation))));
     }
 
     @Test

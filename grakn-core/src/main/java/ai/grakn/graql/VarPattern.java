@@ -124,6 +124,18 @@ public interface VarPattern extends Pattern {
     VarPattern has(Label type, VarPattern varPattern);
 
     /**
+     * the variable must have a resource of the given type that matches {@code resource}. The relation associating
+     * the two must match {@code relation}.
+     *
+     * @param type a resource type in the ontology
+     * @param resource a variable pattern representing a resource
+     * @param relation a variable pattern representing a relation
+     * @return this
+     */
+    @CheckReturnValue
+    VarPattern has(Label type, VarPattern resource, VarPattern relation);
+
+    /**
      * @param type a concept type id that the variable must be of this type
      * @return this
      */

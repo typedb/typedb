@@ -73,15 +73,17 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     private final Label resourceType;
     private final VarPatternAdmin resource;
+    private final VarPatternAdmin relation;
 
-    private HasResourceProperty(Label resourceType, VarPatternAdmin resource) {
+    private HasResourceProperty(Label resourceType, VarPatternAdmin resource, VarPatternAdmin relation) {
         this.resourceType = resourceType;
         this.resource = resource;
+        this.relation = relation;
     }
 
-    public static HasResourceProperty of(Label resourceType, VarPatternAdmin resource) {
+    public static HasResourceProperty of(Label resourceType, VarPatternAdmin resource, VarPatternAdmin relation) {
         resource = resource.isa(label(resourceType)).admin();
-        return new HasResourceProperty(resourceType, resource);
+        return new HasResourceProperty(resourceType, resource, relation);
     }
 
     public Label getType() {
@@ -113,20 +115,19 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        Var relation = Graql.var();
         Var edge1 = Graql.var();
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                shortcut(this, relation, edge1, start, Optional.empty()),
-                shortcut(this, relation, edge2, resource.getVarName(), Optional.empty()),
+                shortcut(this, relation.getVarName(), edge1, start, Optional.empty()),
+                shortcut(this, relation.getVarName(), edge2, resource.getVarName(), Optional.empty()),
                 neq(this, edge1, edge2)
         );
     }
 
     @Override
     public Stream<VarPatternAdmin> getInnerVars() {
-        return Stream.of(resource);
+        return Stream.of(resource, relation);
     }
 
     @Override
@@ -183,13 +184,16 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         HasResourceProperty that = (HasResourceProperty) o;
 
-        return resourceType.equals(that.resourceType) && resource.equals(that.resource);
+        if (!resourceType.equals(that.resourceType)) return false;
+        if (!resource.equals(that.resource)) return false;
+        return relation.equals(that.relation);
     }
 
     @Override
     public int hashCode() {
         int result = resourceType.hashCode();
         result = 31 * result + resource.hashCode();
+        result = 31 * result + relation.hashCode();
         return result;
     }
 
