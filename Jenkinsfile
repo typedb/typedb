@@ -9,14 +9,14 @@ node {
       stage('Build Grakn') {//Stages allow you to organise and group things within Jenkins
         sh 'npm config set registry http://registry.npmjs.org/'
         checkout scm
-        sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
+        sh '#!/bin/bash if [ -d maven ] ;  then rm -rf maven ; fi'
         sh "mvn versions:set -DnewVersion=${env.BRANCH_NAME} -DgenerateBackupPoms=false"
         sh 'mvn clean package -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT'
         archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
       }
       stage('Init Grakn') {
-        sh 'ps -e | grep grakn' // record what processes are running currently
-        sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
+        sh '#!/bin/bash ps -e | grep grakn' // record what processes are running currently
+        sh '#!/bin/bash if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
         sh 'mkdir grakn-package'
         sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
         sh 'grakn-package/bin/grakn.sh start'
@@ -38,11 +38,11 @@ node {
   } finally { // Tears down test environment
     timeout(5) {
       stage('Tear Down Grakn') {
-        sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
+        sh '#!/bin/bash if [ -d maven ] ;  then rm -rf maven ; fi'
         archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
         sh 'grakn-package/bin/grakn.sh stop'
-        sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
-        sh 'ps -e | grep grakn'
+        sh '#!/bin/bash if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
+        sh '#!/bin/bash ps -e | grep grakn'
       }
     }
   }
