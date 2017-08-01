@@ -40,7 +40,6 @@ import java.util.Set;
 import static ai.grakn.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_INSTANCE_WITH_NAME;
 import static ai.grakn.util.ErrorMessage.INSERT_ISA_AND_SUB;
-import static ai.grakn.util.ErrorMessage.INSERT_MULTIPLE_VALUES;
 import static ai.grakn.util.ErrorMessage.INSERT_NEW_TYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_NO_DATATYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
@@ -76,6 +75,10 @@ public class GraqlQueryException extends GraknException{
 
     private GraqlQueryException(String error, Exception cause) {
         super(error, cause);
+    }
+
+    private static GraqlQueryException create(String formatString, Object... args) {
+        return new GraqlQueryException(String.format(formatString, args));
     }
 
     public static GraqlQueryException noPatterns() {
@@ -163,8 +166,8 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, ontologyConcept.getLabel()));
     }
 
-    public static GraqlQueryException insertMultipleValues(Object value1, Object value2) {
-        return new GraqlQueryException(INSERT_MULTIPLE_VALUES.getMessage(value1, value2));
+    public static GraqlQueryException insertMultipleProperties(String property, Object value1, Object value2) {
+        return create("a concept cannot have multiple properties `%s` and `%s` for `%s`", value1, value2, property);
     }
 
     public static GraqlQueryException insertResourceWithoutValue() {

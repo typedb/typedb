@@ -76,6 +76,7 @@ import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -381,7 +382,11 @@ public class InsertQueryTest {
     @Test
     public void testErrorWhenInsertWithMultipleValues() {
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("value"), containsString("123"), containsString("456")));
+        exception.expectMessage(isOneOf(
+                GraqlQueryException.insertMultipleProperties("val", "123", "456").getMessage(),
+                GraqlQueryException.insertMultipleProperties("val", "456", "123").getMessage()
+        ));
+
         qb.insert(var().val("123").val("456").isa("title")).execute();
     }
 
@@ -807,6 +812,21 @@ public class InsertQueryTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
         movieGraph.graph().graql().insert(Collections.EMPTY_SET).execute();
+    }
+
+    @Test
+    public void whenSettingTwoTypes_Throw() {
+        EntityType movie = movieGraph.graph().getEntityType("movie");
+        EntityType person = movieGraph.graph().getEntityType("person");
+
+        // We don't know in what order the message will be
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(isOneOf(
+                GraqlQueryException.insertMultipleProperties("isa", movie, person).getMessage(),
+                GraqlQueryException.insertMultipleProperties("isa", person, movie).getMessage()
+        ));
+
+        movieGraph.graph().graql().insert(var("x").isa("movie"), var("x").isa("person")).execute();
     }
 
     private void assertInsert(VarPattern... vars) {

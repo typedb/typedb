@@ -153,7 +153,6 @@ public enum ErrorMessage {
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
     INSERT_PREDICATE("cannot insert a concept with a predicate"),
     INSERT_RELATION_WITHOUT_ISA("cannot insert a relation without an isa edge"),
-    INSERT_MULTIPLE_VALUES("a concept cannot have multiple values %s and '%s'"),
     INSERT_ISA_AND_SUB("cannot insert %s with an isa and a sub"),
     INSERT_NO_DATATYPE("resource type %s must have a datatype defined"),
     INSERT_METATYPE("'%s' cannot be a subtype of '%s'"),

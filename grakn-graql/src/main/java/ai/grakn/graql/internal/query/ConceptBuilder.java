@@ -29,6 +29,14 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
+import ai.grakn.graql.internal.pattern.property.IdProperty;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
+import ai.grakn.graql.internal.pattern.property.LabelProperty;
+import ai.grakn.graql.internal.pattern.property.SubProperty;
+import ai.grakn.graql.internal.pattern.property.ThenProperty;
+import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.internal.pattern.property.WhenProperty;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 
@@ -38,7 +46,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -50,17 +57,19 @@ public class ConceptBuilder {
 
     private final Var var;
 
-    private static class BuilderParam<T> {
+    @FunctionalInterface
+    private interface BuilderParam<T> {
+        String name();
     }
 
-    private static final BuilderParam<Type> TYPE = new BuilderParam<>();
-    private static final BuilderParam<OntologyConcept> SUPER_CONCEPT = new BuilderParam<>();
-    private static final BuilderParam<Label> LABEL = new BuilderParam<>();
-    private static final BuilderParam<ConceptId> ID = new BuilderParam<>();
-    private static final BuilderParam<Object> VALUE = new BuilderParam<>();
-    private static final BuilderParam<ResourceType.DataType<?>> DATA_TYPE = new BuilderParam<>();
-    private static final BuilderParam<Pattern> WHEN = new BuilderParam<>();
-    private static final BuilderParam<Pattern> THEN = new BuilderParam<>();
+    private static final BuilderParam<Type> TYPE = () -> IsaProperty.NAME;
+    private static final BuilderParam<OntologyConcept> SUPER_CONCEPT = () -> SubProperty.NAME;
+    private static final BuilderParam<Label> LABEL = () -> LabelProperty.NAME;
+    private static final BuilderParam<ConceptId> ID = () -> IdProperty.NAME;
+    private static final BuilderParam<Object> VALUE = () -> ValueProperty.NAME;
+    private static final BuilderParam<ResourceType.DataType<?>> DATA_TYPE = () -> DataTypeProperty.NAME;
+    private static final BuilderParam<Pattern> WHEN = () -> WhenProperty.NAME;
+    private static final BuilderParam<Pattern> THEN = () -> ThenProperty.NAME;
 
     private final Map<BuilderParam<?>, Object> params = new HashMap<>();
 
@@ -85,8 +94,9 @@ public class ConceptBuilder {
     }
 
     private <T> ConceptBuilder set(BuilderParam<T> param, T value) {
-        // TODO: Better error if set twice
-        checkArgument(!params.containsKey(param) || params.get(param).equals(value));
+        if (params.containsKey(param) && !params.get(param).equals(value)) {
+            throw GraqlQueryException.insertMultipleProperties(param.name(), value, params.get(param));
+        }
         params.put(param, checkNotNull(value));
         return this;
     }
@@ -108,11 +118,6 @@ public class ConceptBuilder {
     }
 
     public ConceptBuilder value(Object value) {
-        // TODO: Handle in `set`
-        if (has(VALUE) && get(VALUE) != value) {
-            throw GraqlQueryException.insertMultipleValues(get(VALUE), value);
-        }
-
         return set(VALUE, value);
     }
 
