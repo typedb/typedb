@@ -180,7 +180,7 @@ public class LockTestIT {
 
     @Theory
     public void whenGettingLockWithDoubleDotInPath_LockIsAcquired(Locks locks){
-        String lockPath = "/..";
+        String lockPath = "/src/main";
 
         Lock lock = getLock(locks, lockPath);
 
