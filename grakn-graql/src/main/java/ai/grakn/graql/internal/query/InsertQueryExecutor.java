@@ -291,7 +291,7 @@ public class InsertQueryExecutor {
             return builder;
         }
 
-        builder = new ConceptBuilder(var);
+        builder = ConceptBuilder.of(var);
         conceptBuilders.put(var, builder);
         return builder;
     }

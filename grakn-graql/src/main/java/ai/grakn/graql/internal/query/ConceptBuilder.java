@@ -58,52 +58,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class ConceptBuilder {
 
-    private final Var var;
-
-    @FunctionalInterface
-    private interface BuilderParam<T> {
-        String name();
-    }
-
-    private static final BuilderParam<Type> TYPE = () -> IsaProperty.NAME;
-    private static final BuilderParam<OntologyConcept> SUPER_CONCEPT = () -> SubProperty.NAME;
-    private static final BuilderParam<Label> LABEL = () -> LabelProperty.NAME;
-    private static final BuilderParam<ConceptId> ID = () -> IdProperty.NAME;
-    private static final BuilderParam<Object> VALUE = () -> ValueProperty.NAME;
-    private static final BuilderParam<ResourceType.DataType<?>> DATA_TYPE = () -> DataTypeProperty.NAME;
-    private static final BuilderParam<Pattern> WHEN = () -> WhenProperty.NAME;
-    private static final BuilderParam<Pattern> THEN = () -> ThenProperty.NAME;
-
-    private final Map<BuilderParam<?>, Object> params = new HashMap<>();
-
-    ConceptBuilder(Var var) {
-        this.var = var;
-    }
-
-    private <T> T get(BuilderParam<T> param) {
-        // This is safe, assuming we only add to the map with the `set` method
-        //noinspection unchecked
-        return checkNotNull((T) params.get(param));
-    }
-
-    private <T> Optional<T> tryGet(BuilderParam<T> param) {
-        // This is safe, assuming we only add to the map with the `set` method
-        //noinspection unchecked
-        return Optional.ofNullable((T) params.get(param));
-    }
-
-    private boolean has(BuilderParam<?> param) {
-        return params.containsKey(param);
-    }
-
-    private <T> ConceptBuilder set(BuilderParam<T> param, T value) {
-        if (params.containsKey(param) && !params.get(param).equals(value)) {
-            throw GraqlQueryException.insertMultipleProperties(param.name(), value, params.get(param));
-        }
-        params.put(param, checkNotNull(value));
-        return this;
-    }
-
     public ConceptBuilder isa(Type type) {
         return set(TYPE, type);
     }
@@ -173,6 +127,56 @@ public class ConceptBuilder {
         } else {
             throw GraqlQueryException.insertUndefinedVariable(executor.printableRepresentation(var));
         }
+    }
+
+    static ConceptBuilder of(Var var) {
+        return new ConceptBuilder(var);
+    }
+
+    private final Var var;
+
+    @FunctionalInterface
+    private interface BuilderParam<T> {
+        String name();
+    }
+
+    private static final BuilderParam<Type> TYPE = () -> IsaProperty.NAME;
+    private static final BuilderParam<OntologyConcept> SUPER_CONCEPT = () -> SubProperty.NAME;
+    private static final BuilderParam<Label> LABEL = () -> LabelProperty.NAME;
+    private static final BuilderParam<ConceptId> ID = () -> IdProperty.NAME;
+    private static final BuilderParam<Object> VALUE = () -> ValueProperty.NAME;
+    private static final BuilderParam<ResourceType.DataType<?>> DATA_TYPE = () -> DataTypeProperty.NAME;
+    private static final BuilderParam<Pattern> WHEN = () -> WhenProperty.NAME;
+    private static final BuilderParam<Pattern> THEN = () -> ThenProperty.NAME;
+
+    private final Map<BuilderParam<?>, Object> params = new HashMap<>();
+
+    private ConceptBuilder(Var var) {
+        this.var = var;
+    }
+
+    private <T> T get(BuilderParam<T> param) {
+        // This is safe, assuming we only add to the map with the `set` method
+        //noinspection unchecked
+        return checkNotNull((T) params.get(param));
+    }
+
+    private <T> Optional<T> tryGet(BuilderParam<T> param) {
+        // This is safe, assuming we only add to the map with the `set` method
+        //noinspection unchecked
+        return Optional.ofNullable((T) params.get(param));
+    }
+
+    private boolean has(BuilderParam<?> param) {
+        return params.containsKey(param);
+    }
+
+    private <T> ConceptBuilder set(BuilderParam<T> param, T value) {
+        if (params.containsKey(param) && !params.get(param).equals(value)) {
+            throw GraqlQueryException.insertMultipleProperties(param.name(), value, params.get(param));
+        }
+        params.put(param, checkNotNull(value));
+        return this;
     }
 
     /**
