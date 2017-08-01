@@ -53,7 +53,7 @@ class AnswerState extends ResolutionState {
     }
 
 
-    Answer getAnswer(ReasonerAtomicQuery query, InferenceRule rule, Unifier cacheUnifier, QueryCache<ReasonerAtomicQuery> cache){
+    Answer getAtomicAnswer(ReasonerAtomicQuery query, InferenceRule rule, Unifier cacheUnifier, QueryCache<ReasonerAtomicQuery> cache){
         Answer answer;
         if (rule == null){
             answer = getSubstitution();

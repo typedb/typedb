@@ -84,7 +84,7 @@ public class AtomicState extends QueryState{
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        Answer answer = state.getAnswer(query, currentRule, cacheUnifier, getCache());
+        Answer answer = state.getAtomicAnswer(query, currentRule, cacheUnifier, getCache());
         return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState()) : null;
     }
 
