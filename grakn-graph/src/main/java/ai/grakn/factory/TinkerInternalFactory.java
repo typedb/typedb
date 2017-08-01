@@ -43,7 +43,7 @@ public class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGr
         super(keyspace, engineUrl, properties);
     }
 
-    boolean isClosed(TinkerGraph innerGraph) {
+    private boolean isClosed(TinkerGraph innerGraph) {
         return !innerGraph.traversal().V().has(Schema.VertexProperty.ONTOLOGY_LABEL.name(), Schema.MetaSchema.ENTITY.getLabel().getValue()).hasNext();
     }
 
