@@ -285,9 +285,7 @@ public class ReasoningTests {
     public void transRelationWithRelationGuardsAtBothEnds() {
         QueryBuilder qb = testSet11.graph().graql().infer(true);
         String queryString = "match (role1:$x, role2:$y) isa relation3;";
-        List<Answer> execute = qb.<MatchQuery>parse(queryString).execute();
-        execute.forEach(System.out::println);
-        assertEquals(execute.size(), 1);
+        assertEquals(qb.<MatchQuery>parse(queryString).execute().size(), 1);
     }
 
     @Test //Expected result: The query should return two unique matches
