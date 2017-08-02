@@ -627,7 +627,6 @@ public class ReasoningTests {
                 "(role3: $z, role4: $w) isa relation3;" +
                 "limit 3;";
 
-        //QueryAnswers answers = queryAnswers(qb.parse(queryString));
         assertEquals(qb.<MatchQuery>parse(queryString).execute().size(), 3);
     }
 
