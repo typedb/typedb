@@ -97,7 +97,7 @@ public class ConceptBuilder {
      * is present in the field {@link #params}, then an error is thrown.
      * </p>
      */
-    private final Set<BuilderParam<?>> expectedParams = new HashSet<>();
+    private final Set<BuilderParam<?>> usedParams = new HashSet<>();
 
     public ConceptBuilder isa(Type type) {
         return set(TYPE, type);
@@ -165,7 +165,7 @@ public class ConceptBuilder {
     }
 
     private Concept tryPutConcept() {
-        expectedParams.clear();
+        usedParams.clear();
 
         Concept concept;
 
@@ -179,7 +179,7 @@ public class ConceptBuilder {
 
         // Check for any unexpected parameters
         params.forEach((param, value) -> {
-            if (!expectedParams.contains(param)) {
+            if (!usedParams.contains(param)) {
                 throw GraqlQueryException.insertUnexpectedProperty(param.name(), value, concept);
             }
         });
@@ -217,7 +217,7 @@ public class ConceptBuilder {
     }
 
     private <T> T expectOrDefault(BuilderParam<T> param, @Nullable T defaultValue) {
-        expectedParams.add(param);
+        usedParams.add(param);
 
         // This is safe, assuming we only add to the map with the `set` method
         //noinspection unchecked
