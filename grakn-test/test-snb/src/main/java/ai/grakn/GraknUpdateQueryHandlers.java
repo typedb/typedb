@@ -1,19 +1,50 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
 package ai.grakn;
 
 import ai.grakn.graql.InsertQuery;
-import com.ldbc.driver.*;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.*;
+import com.ldbc.driver.DbException;
+import com.ldbc.driver.OperationHandler;
+import com.ldbc.driver.ResultReporter;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcNoResult;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate1AddPerson;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate2AddPostLike;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate3AddCommentLike;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate4AddForum;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate5AddForumMembership;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate6AddPost;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate7AddComment;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate8AddFriendship;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
-
 /**
- * Created by miko on 10/04/2017.
+ * Implementations of the LDBC SNB Update Queries
+ *
+ * @author sheldon, miko
  */
 public class GraknUpdateQueryHandlers {
 
+    /**
+     * Update Query 1
+     */
     public static class LdbcUpdate1AddPersonHandler implements OperationHandler<LdbcUpdate1AddPerson, GraknDbConnectionState> {
         @Override
         public void executeOperation(LdbcUpdate1AddPerson operation,
@@ -81,8 +112,10 @@ public class GraknUpdateQueryHandlers {
         }
     }
 
+    /**
+     * Update Query 2
+     */
     public static class LdbcUpdate2AddPostLikeHandler implements OperationHandler<LdbcUpdate2AddPostLike, GraknDbConnectionState> {
-
 
         @Override
         public void executeOperation(LdbcUpdate2AddPostLike operation,
@@ -105,8 +138,10 @@ public class GraknUpdateQueryHandlers {
         }
     }
 
+    /**
+     * Update Query 3
+     */
     public static class LdbcUpdate3AddCommentLikeHandler implements OperationHandler<LdbcUpdate3AddCommentLike, GraknDbConnectionState> {
-
 
         @Override
         public void executeOperation(LdbcUpdate3AddCommentLike operation,
@@ -130,6 +165,9 @@ public class GraknUpdateQueryHandlers {
         }
     }
 
+    /**
+     * Update Query 4
+     */
     public static class LdbcUpdate4AddForumHandler implements OperationHandler<LdbcUpdate4AddForum, GraknDbConnectionState> {
 
         @Override
@@ -167,6 +205,9 @@ public class GraknUpdateQueryHandlers {
         }
     }
 
+    /**
+     * Update Query 5
+     */
     public static class LdbcUpdate5AddForumMembershipHandler implements OperationHandler<LdbcUpdate5AddForumMembership, GraknDbConnectionState> {
 
         @Override
@@ -189,6 +230,9 @@ public class GraknUpdateQueryHandlers {
         }
     }
 
+    /**
+     * Update Query 6
+     */
     public static class LdbcUpdate6AddPostHandler implements OperationHandler<LdbcUpdate6AddPost, GraknDbConnectionState> {
 
         @Override
@@ -242,6 +286,9 @@ public class GraknUpdateQueryHandlers {
 
     }
 
+    /**
+     * Update Query 7
+     */
     public static class LdbcUpdate7AddCommentHandler implements OperationHandler<LdbcUpdate7AddComment, GraknDbConnectionState> {
 
         @Override
@@ -293,6 +340,9 @@ public class GraknUpdateQueryHandlers {
 
     }
 
+    /**
+     * Update Query 8
+     */
     public static class LdbcUpdate8AddFriendshipHandler implements OperationHandler<LdbcUpdate8AddFriendship, GraknDbConnectionState> {
 
         @Override

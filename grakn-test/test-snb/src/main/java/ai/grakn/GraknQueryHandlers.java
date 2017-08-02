@@ -1,3 +1,20 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
 package ai.grakn;
 
 import ai.grakn.concept.Concept;
@@ -40,7 +57,9 @@ import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 
 /**
+ * Implementations of the LDBC SNB complex queries.
  *
+ * @author sheldon
  */
 public class GraknQueryHandlers {
 
@@ -79,14 +98,32 @@ public class GraknQueryHandlers {
     static Var aFriendLastName = var("aFriendLastName");
     static Var aFriendGender = var("aFriendGender");
 
-    // method to get the value of a resource from an answer
+    /**
+     * Retrieves the value of a resource and infers the type.
+     *
+     * @param result a single result of a graql query
+     * @param resource a var representing the resource
+     * @param <T> the data type of the resource value
+     * @return the resource value
+     */
     private static <T> T resource(Answer result, Var resource) {
         return result.get(resource).<T>asResource().getValue();
     }
 
+    /**
+     * Retrieves the LocalDateTime value of a resource and returns the epoch milli using UTC time.
+     *
+     * @param result a single result of a graql query
+     * @param resource a var representing the resource
+     * @return the time as an epoch milli
+     */
     private static long timeResource(Answer result, Var resource) {
         return result.get(resource).<LocalDateTime>asResource().getValue().toInstant(ZoneOffset.UTC).toEpochMilli();
     }
+
+    /**
+     * Complex Query 2
+     */
     public static class LdbcQuery2Handler implements OperationHandler<LdbcQuery2, GraknDbConnectionState> {
 
         @Override
@@ -140,6 +177,9 @@ public class GraknQueryHandlers {
 
     }
 
+    /**
+     * Complex Query 8
+     */
     public static class LdbcQuery8Handler implements OperationHandler<LdbcQuery8, GraknDbConnectionState> {
         @Override
         public void executeOperation(LdbcQuery8 ldbcQuery8, GraknDbConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
@@ -191,6 +231,9 @@ public class GraknQueryHandlers {
         }
     }
 
+    /**
+     * Complex Query 1
+     */
     public static class LdbcQuery1Handler implements OperationHandler<LdbcQuery1, GraknDbConnectionState> {
         @Override
         public void executeOperation(LdbcQuery1 ldbcQuery1, GraknDbConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
@@ -249,6 +292,15 @@ public class GraknQueryHandlers {
             }
         }
 
+        /**
+         * Populate the LdbcQuery1Result object from graql results. As part of this extra queries are executed to fetch related information.
+         *
+         * @param graqlResults the graql results used to populate the ldbc results
+         * @param ldbcQuery1 the ldbc query parameters
+         * @param graknGraph the graph for additional queries
+         * @param distance the number of knows relations between initial person and these results
+         * @return the ldbc results
+         */
         private static List<LdbcQuery1Result> populateResults(Stream<Answer> graqlResults, LdbcQuery1 ldbcQuery1, GraknGraph graknGraph, int distance) {
             return graqlResults.limit(ldbcQuery1.limit()).map(map -> {
                 // these queries get all of the additional related material, excluding resources
@@ -319,6 +371,9 @@ public class GraknQueryHandlers {
         }
     }
 
+    /**
+     * Complex Query 13
+     */
     public static class LdbcQuery13Handler implements OperationHandler<LdbcQuery13, GraknDbConnectionState> {
         @Override
         public void executeOperation(LdbcQuery13 ldbcQuery13, GraknDbConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
