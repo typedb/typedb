@@ -380,7 +380,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testErrorWhenInsertWithMultipleValues() {
+    public void whenInsertingAResourceWithMultipleValues_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(isOneOf(
                 GraqlQueryException.insertMultipleProperties("val", "123", "456").getMessage(),
@@ -639,28 +639,28 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testErrorTypeWithoutLabel() {
+    public void whenInsertingAnOntologyConceptWithoutALabel_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("entity"), containsString("label")));
         qb.insert(var().sub("entity")).execute();
     }
 
     @Test
-    public void testErrorInsertResourceWithoutValue() {
+    public void whenInsertingAResourceWithoutAValue_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("name"), containsString("val")));
         qb.insert(var("x").isa("name")).execute();
     }
 
     @Test
-    public void testErrorInsertInstanceWithName() {
+    public void whenInsertingAnInstanceWithALabel_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("label"), containsString("abc")));
         qb.insert(label("abc").isa("movie")).execute();
     }
 
     @Test
-    public void testErrorInsertResourceWithName() {
+    public void whenInsertingAResourceWithALabel_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("label"), containsString("bobby")));
         qb.insert(label("bobby").val("bob").isa("name")).execute();
@@ -730,14 +730,14 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testInsertNonRuleWithWhen() {
+    public void whenInsertingANonRuleWithAWhenPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("unexpected property"), containsString("when")));
         qb.insert(var().isa("movie").when(var("x"))).execute();
     }
 
     @Test
-    public void testInsertNonRuleWithThen() {
+    public void whenInsertingANonRuleWithAThenPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("unexpected property"), containsString("then")));
         qb.insert(label("thingy").sub("movie").then(var("x"))).execute();
