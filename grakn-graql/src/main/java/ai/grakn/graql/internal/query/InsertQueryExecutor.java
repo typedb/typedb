@@ -139,21 +139,23 @@ public class InsertQueryExecutor {
         /*
             Equivalent vars are variables that must represent the same concept as another var.
 
-                 $x label movie, sub entity;
-                 $y label movie;
-                 $z isa $y;
+                 $X label movie, sub entity;
+                 $Y label movie;
+                 $z isa $Y;
 
-            In this example, `$z isa $y` must not be inserted before `$y` is. However, `$y` does not have enough
-            information to insert on its own! We know `$y` must represent the same concept as `$x`, because they
-            both share the same label property. Therefore, we can share their dependencies, such that:
+            In this example, `$z isa $Y` must not be inserted before `$Y` is. However, `$Y` does not have enough
+            information to insert on its own. It also needs a super type!
 
-                varDependencies.containsEntry($x, prop) <=> varDependencies.containsEntry($y, prop)
+            We know `$Y` must represent the same concept as `$X`, because they both share the same label property.
+            Therefore, we can share their dependencies, such that:
+
+                varDependencies.containsEntry($X, prop) <=> varDependencies.containsEntry($Y, prop)
 
             Therefore:
 
-                varDependencies.containsEntry($x, `$x sub entity`) => varDependencies.containsEntry($y, `$x sub entity`)
+                varDependencies.containsEntry($X, `$X sub entity`) => varDependencies.containsEntry($Y, `$X sub entity`)
 
-            Now we know that `$y` depends on `$x sub entity` as well as `$x label movie`, which is enough information to
+            Now we know that `$Y` depends on `$X sub entity` as well as `$X label movie`, which is enough information to
             insert the type!
          */
 
@@ -249,6 +251,7 @@ public class InsertQueryExecutor {
 
         VarAndProperty property;
 
+        // Retrieve the next property without any dependencies
         while ((property = propertiesWithoutDependencies.poll()) != null) {
             sorted.add(property);
 
@@ -256,6 +259,7 @@ public class InsertQueryExecutor {
             Collection<VarAndProperty> dependents = Lists.newArrayList(invertedDependencies.get(property));
 
             for (VarAndProperty dependent : dependents) {
+                // Because the property has been removed, the dependent no longer needs to depend on it
                 dependencies.remove(dependent, property);
                 invertedDependencies.remove(property, dependent);
 

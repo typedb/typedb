@@ -90,12 +90,36 @@ public class ConceptBuilder {
     private final Map<BuilderParam<?>, Object> params = new HashMap<>();
 
     /**
-     * A set of expected parameters, used when executing {@link #build()}.
+     * A set of parameters that were used for building the concept. Modified while executing {@link #build()}.
      * <p>
-     * Every time {@link #expect(BuilderParam)} or {@link #expectOrDefault(BuilderParam, Object)} is called, the argument is
-     * added to this set. After the concept is built, any parameter not in this set is considered "unexpected". If it
-     * is present in the field {@link #params}, then an error is thrown.
+     * This set starts empty. Every time {@link #expect(BuilderParam)} or {@link #expectOrDefault(BuilderParam, Object)}
+     * is called, the parameter is added to this set. After the concept is built, any parameter not in this set is
+     * considered "unexpected". If it is present in the field {@link #params}, then an error is thrown.
      * </p>
+     *
+     * <p>
+     *     Simplified example of how this operates:
+     * </p>
+     *
+     * <pre>
+     * // params = {LABEL: actor, SUPER_CONCEPT: role, VALUE: "Bob"}
+     * // usedParams = {}
+     *
+     * if (has(LABEL)) {
+     *      Label label = expect(LABEL);                          // usedParams = {LABEL}
+     *      // Retrieve SUPER_CONCEPT and adds it to usedParams
+     *      OntologyConcept superConcept = expect(SUPER_CONCEPT); // usedParams = {LABEL, SUPER_CONCEPT}
+     *      return graph.putEntityType(label).sup(superConcept.asRole());
+     * }
+     *
+     * // Check for any unexpected parameters
+     * params.forEach((param, value) -> {
+     *     if (!usedParams.contains(param)) {
+     *         // param = VALUE
+     *         // Throws because VALUE was provided, but not used!
+     *     }
+     * });
+     * </pre>
      */
     private final Set<BuilderParam<?>> usedParams = new HashSet<>();
 
