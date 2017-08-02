@@ -45,7 +45,8 @@ import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
-import com.google.common.collect.Iterators;
+import ai.grakn.graql.internal.reasoner.state.AtomicState;
+import ai.grakn.graql.internal.reasoner.state.QueryState;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 import org.slf4j.Logger;
@@ -185,7 +186,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @param sub specific answer
      * @return found answer if any, otherwise empty answer
      */
-    Answer lookupAnswer(QueryCache<ReasonerAtomicQuery> cache, Answer sub) {
+    public Answer lookupAnswer(QueryCache<ReasonerAtomicQuery> cache, Answer sub) {
         boolean queryVisited = cache.contains(this);
         if (queryVisited){
             Answer answer = cache.getAnswer(this, sub);
@@ -196,7 +197,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return match.isEmpty()? new QueryAnswer() : match.iterator().next();
     }
 
-    Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
+    public Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
         boolean queryVisited = cache.contains(this);
         return queryVisited ? cache.getAnswerStreamWithUnifier(this) : new Pair<>(DBlookup(), new UnifierImpl());
     }
@@ -345,22 +346,15 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Iterator<Answer> iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return extendedIterator(sub, subGoals, cache);
-    }
-
-    @Override
-    public Iterator<Answer> extendedIterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        Iterator<ReasonerAtomicQueryIterator> qIterator = getQueryStream(sub)
-                .map(q -> new ReasonerAtomicQueryIterator(q, sub, subGoals, cache))
-                .iterator();
-        return Iterators.concat(qIterator);
+    public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return new AtomicState(this, sub, u, parent, subGoals, cache);
     }
 
     /**
      * @return stream of atomic query obtained by inserting all inferred possible types (if ambiguous)
      */
-    private Stream<ReasonerAtomicQuery> getQueryStream(Answer sub){
+    @Override
+    protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         Atom atom = getAtom();
         if (atom.isRelation() && atom.getOntologyConcept() == null){
             List<RelationType> relationTypes = ((RelationAtom) atom).inferPossibleRelationTypes(sub);
@@ -378,7 +372,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * @return iterator of all rules applicable to this atomic query including permuted cases when the role types are meta roles
      */
-    Iterator<RuleTuple> getRuleIterator(){
+    public Iterator<RuleTuple> getRuleIterator(){
         return getAtom().getApplicableRules().stream()
                 .flatMap(r -> {
                     r.rewriteToUserDefined(getAtom());

@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.test.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
@@ -192,6 +193,7 @@ public class GeoInferenceTest {
         answers.forEach(ans -> assertEquals(ans.get(Graql.var("y")).getId().getValue(), poland.getId().getValue()));
         assertEquals(answers.size(), 6);
 
+
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
         answers2.forEach(ans -> assertEquals(ans.size(), 2));
         answers2.forEach(ans -> assertEquals(ans.get(Graql.var("y")).getId().getValue(), europe.getId().getValue()));
@@ -309,7 +311,11 @@ public class GeoInferenceTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().stream().collect(toSet()));
+        long startTime = System.currentTimeMillis();
+        QueryAnswers answers = new QueryAnswers(query.admin().stream().map(QueryAnswer::new).collect(toSet()));
+        System.out.println("time: " + (System.currentTimeMillis() - startTime));
+        System.out.println(answers.size());
+        return answers;
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

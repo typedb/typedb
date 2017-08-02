@@ -35,7 +35,7 @@ import static ai.grakn.migration.base.MigrationCLI.printWholeCompletionMessage;
  * arguments are an OWL file and a Grakn Engine URL. At a minimum an OWL file must be provided.
  * Note that the OWLAPI is not very good at intelligently resolving imports, such as looking in the
  * same folder etc. To import a large ontology made up of multiple imports scattered around in files, 
- * the easiest thing is to use protege to "merge" them into a single ontology file with all axioms 
+ * the easiest thing is to use protege to "merge" them into a single ontology file with all axioms
  * inside it.
  * </p>
  * 
