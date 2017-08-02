@@ -40,7 +40,7 @@ import static org.junit.Assert.fail;
 
 public class DocTestUtil {
 
-    public static final File PAGES = new File("../docs/pages/");
+    public static final File PAGES = new File("../../docs/pages/");
 
     public static GraknSession getTestGraph(String uri) {
         String keyspace = UUID.randomUUID().toString().replaceAll("-", "");
