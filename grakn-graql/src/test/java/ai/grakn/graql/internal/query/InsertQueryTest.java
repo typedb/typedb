@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
@@ -35,6 +34,7 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraknTestSetup;
@@ -43,7 +43,7 @@ import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
+import com.google.common.collect.Iterables;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -76,6 +76,7 @@ import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
@@ -321,7 +322,7 @@ public class InsertQueryTest {
         Set<Answer> results = insert.stream().collect(Collectors.toSet());
         assertEquals(1, results.size());
         Answer result = results.iterator().next();
-        assertEquals(ImmutableSet.of(Graql.var("x"), Graql.var("z")), result.keySet());
+        assertEquals(ImmutableSet.of(var("x"), var("z")), result.keySet());
         assertThat(result.values(), Matchers.everyItem(notNullValue(Concept.class)));
     }
 
@@ -341,7 +342,7 @@ public class InsertQueryTest {
         assertFalse(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
 
         Answer result1 = results.next();
-        assertEquals(ImmutableSet.of(Graql.var("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(var("x")), result1.keySet());
 
         AskQuery query123 = qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask();
         AskQuery query456 = qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask();
@@ -357,7 +358,7 @@ public class InsertQueryTest {
 
         //Check that both are inserted correctly
         Answer result2 = results.next();
-        assertEquals(ImmutableSet.of(Graql.var("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(var("x")), result1.keySet());
         assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
         assertTrue(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
         assertFalse(results.hasNext());
@@ -590,15 +591,18 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testInsertExecuteResult() {
-        InsertQuery query = qb.insert(var("x").isa("movie"));
+    public void whenExecutingAnInsertQuery_ResultContainsAllInsertedVars() {
+        Var x = var("x");
+        Var type = var("type");
+        Var type2 = var("type2");
 
-        List<Answer> results = query.execute();
-        assertEquals(1, results.size());
-        Answer result = results.get(0);
-        assertEquals(Sets.newHashSet(Graql.var("x")), result.keySet());
-        Entity x = result.get("x").asEntity();
-        assertEquals("movie", x.type().getLabel().getValue());
+        // Note that two variables refer to the same type. They should both be in the result
+        InsertQuery query = qb.insert(x.isa(type), type.label("my-type").sub("entity"), type2.label("my-type"));
+
+        Answer result = Iterables.getOnlyElement(query);
+        assertThat(result.keySet(), containsInAnyOrder(x, type, type2));
+        assertEquals(result.get(type), result.get(x).asEntity().type());
+        assertEquals(result.get(type), result.get(type2));
     }
 
     @Test

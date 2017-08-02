@@ -25,13 +25,14 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.util.Partition;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Pair;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
+import ai.grakn.graql.internal.util.Partition;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -226,7 +227,14 @@ public class InsertQueryExecutor {
 
         conceptBuilders.forEach((var, builder) -> concepts.put(var, builder.build()));
 
-        Map<Var, Concept> namedConcepts = Maps.filterKeys(concepts, Var::isUserDefinedName);
+        ImmutableMap.Builder<Var, Concept> allConcepts = ImmutableMap.<Var, Concept>builder().putAll(concepts);
+
+        // Make sure to include all equivalent vars in the result
+        for (Var var: equivalentVars.getNodes()) {
+            allConcepts.put(var, concepts.get(equivalentVars.componentOf(var)));
+        }
+
+        Map<Var, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Var::isUserDefinedName);
         return new QueryAnswer(namedConcepts);
     }
 
