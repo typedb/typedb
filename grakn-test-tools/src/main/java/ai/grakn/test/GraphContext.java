@@ -77,7 +77,7 @@ public class GraphContext extends GraphLoader implements TestRule {
     }
 
     public static void loadFromFile(GraknGraph graph, String file) {
-        GraphLoader.loadFromFile(graph, "../../grakn-test-tools/src/main/graql/" + file);
+        GraphLoader.loadFromFile(graph, System.getProperty("main.basedir")+"/grakn-test-tools/src/main/graql/" + file);
     }
 
     @Override

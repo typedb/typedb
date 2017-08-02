@@ -13,10 +13,6 @@
 
     <packaging>pom</packaging>
 
-    <properties>
-        <main.basedir>${project.parent.parent.basedir}</main.basedir>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
@@ -38,6 +34,7 @@
                         <grakn.conf>${user.dir}/conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
                         <logback.configurationFile>${user.dir}/conf/test/logback-test.xml</logback.configurationFile>
+                        <main.basedir>${user.dir}</main.basedir>
                     </systemPropertyVariables>
                     <!-- uncomment the following to be able to run only specific packages with
                         for example -DtestGroup=ai/grakn/test/migration/sql
@@ -61,6 +58,7 @@
                         <grakn.conf>${user.dir}/conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
                         <logback.configurationFile>${user.dir}/conf/test/logback-test.xml</logback.configurationFile>
+                        <main.basedir>${user.dir}</main.basedir>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
