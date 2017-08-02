@@ -44,7 +44,7 @@ import java.util.Map;
  */
 public class GraknDb extends Db {
 
-    private static GraknDbConnectionState connectionState = null;
+    private GraknDbConnectionState connectionState = null;
 
     @Override
     protected void onInit(Map<String, String> properties, LoggingService loggingService) throws DbException {

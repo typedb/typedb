@@ -221,7 +221,7 @@ public class GraknUpdateQueryHandlers {
                         " $person has person-id " + operation.personId() + "; " +
                         " insert (member: $person, group: $forum) isa has-member has join-date " + LocalDateTime.ofInstant(Instant.ofEpochMilli(operation.joinDate().getTime()), ZoneOffset.UTC).toString() + ";";
 
-                graph.graql().<InsertQuery>parse(query.toString()).execute();
+                graph.graql().<InsertQuery>parse(query).execute();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);
@@ -356,7 +356,7 @@ public class GraknUpdateQueryHandlers {
                         "; $y has person-id " + operation.person2Id() + ";" +
                         "insert (friend: $x, friend: $y) isa knows has creation-date " + LocalDateTime.ofInstant(Instant.ofEpochMilli(operation.creationDate().getTime()), ZoneOffset.UTC).toString() + ";";
 
-                graph.graql().<InsertQuery>parse(query.toString()).execute();
+                graph.graql().<InsertQuery>parse(query).execute();
                 graph.commit();
 
                 reporter.report(0, LdbcNoResult.INSTANCE, operation);
