@@ -96,7 +96,6 @@ public class GraknQueryHandlers {
     static Var aFriend = var("aFriend");
     static Var aFriendId = var("aFriendID");
     static Var aFriendLastName = var("aFriendLastName");
-    static Var aFriendGender = var("aFriendGender");
 
     /**
      * Retrieves the value of a resource and infers the type.
