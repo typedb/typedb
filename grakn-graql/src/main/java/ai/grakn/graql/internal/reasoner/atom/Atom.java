@@ -72,20 +72,22 @@ public abstract class Atom extends AtomicBase {
     @Override
     public boolean isAtom(){ return true;}
 
-    /**
-     * @return true if the atom corresponds to a atom
-     * */
-    public boolean isType(){ return false;}
+    @Override
+    public boolean isRuleResolvable() {
+        return !getApplicableRules().isEmpty();
+    }
 
-    /**
-     * @return true if the atom corresponds to a non-unary atom
-     * */
-    public boolean isRelation(){return false;}
-
-    /**
-     * @return true if the atom corresponds to a resource atom
-     * */
-    public boolean isResource(){ return false;}
+    @Override
+    public boolean isRecursive(){
+        if (isResource() || getOntologyConcept() == null) return false;
+        OntologyConcept ontologyConcept = getOntologyConcept();
+        return getApplicableRules().stream()
+                .filter(rule -> rule.getBody().selectAtoms().stream()
+                        .filter(at -> Objects.nonNull(at.getOntologyConcept()))
+                        .filter(at -> checkCompatible(ontologyConcept, at.getOntologyConcept())).findFirst().isPresent())
+                .filter(this::isRuleApplicable)
+                .findFirst().isPresent();
+    }
 
     /**
      * @return var properties this atom (its pattern) contains
@@ -167,23 +169,6 @@ public abstract class Atom extends AtomicBase {
                     .collect(Collectors.toSet());
         }
         return applicableRules;
-    }
-
-    @Override
-    public boolean isRuleResolvable() {
-        return !getApplicableRules().isEmpty();
-    }
-
-    @Override
-    public boolean isRecursive(){
-        if (isResource() || getOntologyConcept() == null) return false;
-        OntologyConcept ontologyConcept = getOntologyConcept();
-        return getApplicableRules().stream()
-                .filter(rule -> rule.getBody().selectAtoms().stream()
-                        .filter(at -> Objects.nonNull(at.getOntologyConcept()))
-                        .filter(at -> checkCompatible(ontologyConcept, at.getOntologyConcept())).findFirst().isPresent())
-                .filter(this::isRuleApplicable)
-                .findFirst().isPresent();
     }
 
     /**
