@@ -1,3 +1,20 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
 package ai.grakn;
 
 import ai.grakn.graql.AskQuery;
@@ -6,21 +23,38 @@ import ai.grakn.graql.admin.Answer;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.OperationHandler;
 import com.ldbc.driver.ResultReporter;
-import com.ldbc.driver.workloads.ldbc.snb.interactive.*;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery1PersonProfile;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery1PersonProfileResult;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery2PersonPosts;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery2PersonPostsResult;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery3PersonFriends;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery3PersonFriendsResult;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery4MessageContent;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery4MessageContentResult;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery5MessageCreator;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery5MessageCreatorResult;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery6MessageForum;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery6MessageForumResult;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageReplies;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageRepliesResult;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Created by miko on 06/04/2017.
- * Ruined by felix on 06/04/2017.
+ * Implementations of the LDBC SNB short queries.
+ *
+ * @author sheldon, miko
  */
-
-
 public class GraknShortQueryHandlers {
 
+    /**
+     * Short Query 1
+     */
     public static class LdbcShortQuery1PersonProfileHandler
             implements OperationHandler<LdbcShortQuery1PersonProfile, GraknDbConnectionState> {
 
@@ -69,6 +103,9 @@ public class GraknShortQueryHandlers {
         }
     }
 
+    /**
+     * Short Query 2
+     */
     // The following requires a rule to properly work
     public static class LdbcShortQuery2PersonPostsHandler implements
             OperationHandler<LdbcShortQuery2PersonPosts, GraknDbConnectionState> {
@@ -137,6 +174,9 @@ public class GraknShortQueryHandlers {
     }
 
 
+    /**
+     * Short Query 3
+     */
     public static class LdbcShortQuery3PersonFriendsHandler implements
             OperationHandler<LdbcShortQuery3PersonFriends, GraknDbConnectionState> {
 
@@ -180,6 +220,9 @@ public class GraknShortQueryHandlers {
     }
 
 
+    /**
+     * Short Query 4
+     */
     public static class LdbcShortQuery4MessageContentHandler implements
             OperationHandler<LdbcShortQuery4MessageContent, GraknDbConnectionState> {
 
@@ -218,6 +261,9 @@ public class GraknShortQueryHandlers {
 
     }
 
+    /**
+     * Short Query 5
+     */
     public static class LdbcShortQuery5MessageCreatorHandler implements
             OperationHandler<LdbcShortQuery5MessageCreator, GraknDbConnectionState> {
 
@@ -256,6 +302,9 @@ public class GraknShortQueryHandlers {
     }
 
 
+    /**
+     * Short Query 6
+     */
     // The following requires a rule to properly work
     public static class LdbcShortQuery6MessageForumHandler implements
             OperationHandler<LdbcShortQuery6MessageForum, GraknDbConnectionState> {
@@ -299,6 +348,9 @@ public class GraknShortQueryHandlers {
         }
 
 
+    /**
+     * Short Query 7
+     */
     public static class LdbcShortQuery7MessageRepliesHandler implements
             OperationHandler<LdbcShortQuery7MessageReplies, GraknDbConnectionState> {
 
