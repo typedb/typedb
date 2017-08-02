@@ -77,7 +77,7 @@ import spark.Service;
  */
 public class GraknEngineServer implements AutoCloseable {
 
-    private static final String LOAD_SYSTEM_ONTOLOGY_LOCK_NAME = "load-system-ontology";
+    public static final String LOAD_SYSTEM_ONTOLOGY_LOCK_NAME = "load-system-ontology";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
             REST.WebPath.NEW_SESSION_URI,
@@ -92,6 +92,7 @@ public class GraknEngineServer implements AutoCloseable {
     private final EngineGraknGraphFactory factory;
     private final MetricRegistry metricRegistry;
     private final LockProvider lockProvider;
+    private final GraknEngineStatus graknEngineStatus = new GraknEngineStatus();
 
     public GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
@@ -128,6 +129,7 @@ public class GraknEngineServer implements AutoCloseable {
         synchronized (this){
             CompletableFuture.allOf(CompletableFuture.runAsync(this::lockAndInitializeSystemOntology), CompletableFuture.runAsync(this::startHTTP)).join();
         }
+        graknEngineStatus.setReady(true);
         LOG.info("Engine started in {}", timer.stop());
     }
 
@@ -207,7 +209,7 @@ public class GraknEngineServer implements AutoCloseable {
         new GraqlController(factory, spark, metricRegistry);
         new ConceptController(factory, spark, metricRegistry);
         new DashboardController(factory, spark);
-        new SystemController(factory, spark, metricRegistry);
+        new SystemController(factory, spark, graknEngineStatus, metricRegistry);
         new AuthController(spark, passwordProtected, jwtHandler, usersHandler);
         new UserController(spark, usersHandler);
         new CommitLogController(spark, defaultKeyspace, postProcessingDelay, taskManager);
@@ -284,6 +286,10 @@ public class GraknEngineServer implements AutoCloseable {
 
     public EngineGraknGraphFactory factory() {
         return factory;
+    }
+
+    public GraknEngineStatus getGraknEngineStatus() {
+        return graknEngineStatus;
     }
 
     /**

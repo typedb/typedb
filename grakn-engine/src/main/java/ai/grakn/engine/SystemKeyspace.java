@@ -98,6 +98,9 @@ public class SystemKeyspace {
 
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getOntologyConcept(KEYSPACE_RESOURCE);
+            if (keyspaceName == null) {
+                throw new RuntimeException("Graph for keyspace [" + keyspace + "] not properly initialized. Missing keyspace name resource");
+            }
             Resource<String> resource = keyspaceName.putResource(keyspace);
             if (resource.owner() == null) {
                 graph.<EntityType>getOntologyConcept(KEYSPACE_ENTITY).addEntity().resource(resource);

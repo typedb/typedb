@@ -64,24 +64,59 @@ public class GraknEngineStartIT {
         for(int port : PORTS) {
             cfs
                     .add(CompletableFuture.supplyAsync(() -> {
-                        GraknEngineConfig graknEngineConfig = GraknEngineConfig.create();
-                        Properties properties = graknEngineConfig.getProperties();
-                        properties.setProperty(SERVER_PORT_NUMBER, String.valueOf(port));
-                        properties.setProperty(REDIS_HOST, new SimpleURI("localhost", REDIS_PORT).toString());
-                        properties.setProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
-                        GraknEngineServer engine = new GraknEngineServer(graknEngineConfig);
-                        engine.start();
+                        GraknEngineServer engine = startEngine(String.valueOf(port));
                         return engine;
                     })
                     .thenAccept(GraknEngineServer::close)
-                    .handle((result, exception) -> {
-                        if (exception != null) {
-                            exception.printStackTrace();
-                            fail("Could not initialize engine successfully");
-                        }
-                        return null;
-                    }));
+                    .handle((result, exception) -> handleException(exception)));
         }
         CompletableFuture.allOf(cfs.toArray(new CompletableFuture[cfs.size()])).join();
+    }
+
+    @Test
+    public void whenStartingAndCreatingKeyspace_InitializationSucceeds() throws InterruptedException {
+        HashSet<CompletableFuture<Void>> cfs = new HashSet<>();
+        cfs
+                .add(CompletableFuture.supplyAsync(() -> {
+                    GraknEngineServer engine = startEngine(String.valueOf(PORTS[0]));
+                    return engine;
+                })
+                .thenAccept(GraknEngineServer::close)
+                .handle((result, exception) -> handleException(exception)));
+        cfs
+                .add(CompletableFuture.supplyAsync(() -> {
+                    GraknEngineServer engine = startEngine(String.valueOf(PORTS[1]));
+                    while(!engine.getGraknEngineStatus().isReady()) {
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    engine.factory().systemKeyspace().ensureKeyspaceInitialised("grakn");
+                    return engine;
+                })
+                .thenAccept(GraknEngineServer::close)
+                .handle((result, exception) -> handleException(exception)));
+        CompletableFuture.allOf(cfs.toArray(new CompletableFuture[cfs.size()])).join();
+    }
+
+    private Void handleException(Throwable exception) {
+        if (exception != null) {
+            exception.printStackTrace();
+            fail("Could not initialize engine successfully");
+        }
+        return null;
+    }
+
+    private GraknEngineServer startEngine(String port) {
+        GraknEngineConfig graknEngineConfig = GraknEngineConfig.create();
+        Properties properties = graknEngineConfig.getProperties();
+        properties.setProperty(SERVER_PORT_NUMBER, port);
+        properties.setProperty(REDIS_HOST, new SimpleURI("localhost", REDIS_PORT).toString());
+        properties.setProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
+        GraknEngineServer engine = new GraknEngineServer(graknEngineConfig);
+        engine.start();
+        return engine;
     }
 }

@@ -58,6 +58,7 @@ public class REST {
         public static class System {
             public static final String DELETE_KEYSPACE = "/deleteKeyspace";
             public static final String INITIALISE = "/initialise";
+            public static final String STATUS = "/status";
             public static final String CONFIGURATION = "/configuration";
             public static final String METRICS = "/metrics";
             public static final String KEYSPACES = "/keyspaces";
