@@ -99,7 +99,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return partial substitutions for this atom (NB: instances)
      */
-    public Set<IdPredicate> getPartialSubstitutions(){ return new HashSet<>();}
+    protected Set<IdPredicate> getPartialSubstitutions(){ return new HashSet<>();}
 
     /**
      * compute base resolution priority of this atom
@@ -146,7 +146,7 @@ public abstract class Atom extends AtomicBase {
         return basePriority;
     }
 
-    public abstract boolean isRuleApplicable(InferenceRule child);
+    protected abstract boolean isRuleApplicable(InferenceRule child);
 
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
