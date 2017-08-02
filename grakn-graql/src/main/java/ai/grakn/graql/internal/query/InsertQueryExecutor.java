@@ -46,6 +46,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -300,25 +301,48 @@ public class InsertQueryExecutor {
      * <p>
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
      * </p>
+     *
+     * @throws GraqlQueryException if the concept in question has already been created
      */
     public ConceptBuilder builder(Var var) {
+        return tryBuilder(var).orElseThrow(() -> {
+            Concept concept = concepts.get(equivalentVars.componentOf(var));
+            return GraqlQueryException.insertExistingConcept(printableRepresentation(var), concept);
+        });
+    }
+
+    /**
+     * Return a {@link ConceptBuilder} for given {@link Var}. This can be used to provide information for how to create
+     * the concept that the variable represents.
+     *
+     * <p>
+     * This method is expected to be called from implementations of
+     * {@link VarPropertyInternal#insert(Var, InsertQueryExecutor)}, provided they return the given {@link Var} in the
+     * response to {@link VarPropertyInternal#producedVars(Var)}.
+     * </p>
+     * <p>
+     * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
+     * </p>
+     * <p>
+     *     If the concept has already been created, this will return empty.
+     * </p>
+     */
+    public Optional<ConceptBuilder> tryBuilder(Var var) {
         var = equivalentVars.componentOf(var);
 
         if (concepts.containsKey(var)) {
-            throw GraqlQueryException.insertExistingConcept(printableRepresentation(var), concepts.get(var));
+            return Optional.empty();
         }
 
-        ConceptBuilder builder;
-
-        builder = conceptBuilders.get(var);
+        ConceptBuilder builder = conceptBuilders.get(var);
 
         if (builder != null) {
-            return builder;
+            return Optional.of(builder);
         }
 
         builder = ConceptBuilder.of(this, var);
         conceptBuilders.put(var, builder);
-        return builder;
+        return Optional.of(builder);
     }
 
     /**

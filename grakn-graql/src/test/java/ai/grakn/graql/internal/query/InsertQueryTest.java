@@ -606,6 +606,16 @@ public class InsertQueryTest {
     }
 
     @Test
+    public void whenChangingTheSuperOfAnExistingConcept_ApplyTheChange() {
+        EntityType newType = movieGraph.graph().putEntityType("a-new-type");
+        EntityType movie = movieGraph.graph().getEntityType("movie");
+
+        qb.match(var("x").label("a-new-type")).insert(var("x").sub("movie")).execute();
+        
+        assertEquals(movie, newType.sup());
+    }
+
+    @Test
     public void testErrorWhenInsertRelationWithEmptyRolePlayer() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(

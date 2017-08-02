@@ -170,7 +170,6 @@ public class ConceptBuilder {
         Concept concept = tryGetConcept();
 
         if (concept != null) {
-            validate(concept);
             return concept;
         } else {
             return tryPutConcept();
@@ -179,13 +178,25 @@ public class ConceptBuilder {
 
     @Nullable
     private Concept tryGetConcept() {
+        Concept concept = null;
+
         if (has(ID)) {
-            return executor.graph().getConcept(expect(ID));
+            concept = executor.graph().getConcept(expect(ID));
         } else if (has(LABEL)) {
-            return executor.graph().getOntologyConcept(expect(LABEL));
-        } else {
-            return null;
+            concept = executor.graph().getOntologyConcept(expect(LABEL));
         }
+
+        if (concept != null) {
+            // The super can be changed on an existing concept
+            if (has(SUPER_CONCEPT)) {
+                OntologyConcept superConcept = expect(SUPER_CONCEPT);
+                setSuper(concept.asOntologyConcept(), superConcept);
+            }
+
+            validate(concept);
+        }
+
+        return concept;
     }
 
     private Concept tryPutConcept() {
@@ -338,21 +349,47 @@ public class ConceptBuilder {
         OntologyConcept superConcept = expect(SUPER_CONCEPT);
         Label label = expect(LABEL);
 
+        OntologyConcept concept;
+
         if (superConcept.isEntityType()) {
-            return executor.graph().putEntityType(label).sup(superConcept.asEntityType());
+            concept = executor.graph().putEntityType(label);
         } else if (superConcept.isRelationType()) {
-            return executor.graph().putRelationType(label).sup(superConcept.asRelationType());
+            concept = executor.graph().putRelationType(label);
         } else if (superConcept.isRole()) {
-            return executor.graph().putRole(label).sup(superConcept.asRole());
+            concept = executor.graph().putRole(label);
         } else if (superConcept.isResourceType()) {
             ResourceType resourceType = superConcept.asResourceType();
             ResourceType.DataType<?> dataType = expectOrDefault(DATA_TYPE, resourceType.getDataType());
-            return executor.graph().putResourceType(label, dataType).sup(resourceType);
+            concept = executor.graph().putResourceType(label, dataType);
         } else if (superConcept.isRuleType()) {
-            return executor.graph().putRuleType(label).sup(superConcept.asRuleType());
+            concept = executor.graph().putRuleType(label);
         } else {
             throw GraqlQueryException.insertMetaType(label, superConcept);
         }
+
+        setSuper(concept, superConcept);
+
+        return concept;
     }
 
+    /**
+     * Make the second argument the super of the first argument
+     *
+     * @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
+     */
+    public static void setSuper(OntologyConcept subConcept, OntologyConcept superConcept) {
+        if (superConcept.isEntityType()) {
+            subConcept.asEntityType().sup(superConcept.asEntityType());
+        } else if (superConcept.isRelationType()) {
+            subConcept.asRelationType().sup(superConcept.asRelationType());
+        } else if (superConcept.isRole()) {
+            subConcept.asRole().sup(superConcept.asRole());
+        } else if (superConcept.isResourceType()) {
+            subConcept.asResourceType().sup(superConcept.asResourceType());
+        } else if (superConcept.isRuleType()) {
+            subConcept.asRuleType().sup(superConcept.asRuleType());
+        } else {
+            throw GraqlQueryException.insertMetaType(subConcept.getLabel(), superConcept);
+        }
+    }
 }

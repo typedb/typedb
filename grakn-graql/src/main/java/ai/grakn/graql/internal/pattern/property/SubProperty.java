@@ -27,12 +27,14 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import ai.grakn.graql.internal.query.ConceptBuilder;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.SubAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -90,7 +92,14 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         OntologyConcept superConcept = executor.get(superType.getVarName()).asOntologyConcept();
-        executor.builder(var).sub(superConcept);
+
+        Optional<ConceptBuilder> builder = executor.tryBuilder(var);
+
+        if (builder.isPresent()) {
+            builder.get().sub(superConcept);
+        } else {
+            ConceptBuilder.setSuper(executor.get(var).asOntologyConcept(), superConcept);
+        }
     }
 
     @Override
