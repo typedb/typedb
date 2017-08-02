@@ -24,7 +24,7 @@ The ontology we will be building will be used for a genealogy graph used for map
 ## Identifying Entity Types
 
 The first step is about identifying the categories of things that will be in your graph.
-For example if you are modelling a retail store, valid categories may be `product`, `electronics`, `books`, etc.  It is up to you to decide the granularity of your categories. 
+For example if you are modelling a retail store, valid categories may be `product`, `electronics`, `books`, etc.  It is up to you to decide the granularity of your categories.
 
 For our genealogy graph we know that it will mostly be filled with people. So we can create an entity type:
 
@@ -32,14 +32,14 @@ For our genealogy graph we know that it will mostly be filled with people. So we
 insert
   person sub entity;
 ```
-    
+
 Naturally, we could break this up into `man` and `woman` but for this example we are going to keep things simple.  
 
 ## Describing Entity Types
 
 Grakn provides you with the ability to attach resources to entity types. For example a `car` could have an `engine`, a `licence number`, and a `transmission type` as resources that help to describe it.
 
-So what helps describe a `person`? 
+So what helps describe a `person`?
 Philosophical debates aside let us go with something simple. A `person` typically has a `firstname`, a `lastname`, and a `gender`. We can model this and other resources that identify a person with:
 
 ```graql
@@ -55,7 +55,7 @@ person sub entity
   has birth-date
   has death-date
   has gender;
-    
+
   identifier sub resource datatype string;
   firstname sub resource datatype string;
   surname sub resource datatype string;
@@ -67,15 +67,17 @@ person sub entity
   gender sub resource datatype string;    
 ```	    
 
+## Supported Resource Types
+The following resource types are supported: `string`, `boolean`, `long`, `double`, `date`.
 
 ## Identifying Relationships and Roles
 
-The next step is to ask how your data is connected, that is, what are the relationships between your data? 
+The next step is to ask how your data is connected, that is, what are the relationships between your data?
 
 This can be between different entity types, for example, a `person` **drives** a `car`, or even between the same entity types, for example, a `person` **marries** another `person`.
 
 In a Grakn, N-ary relationships are also possible. For example, a `person` has a `child` with another `person`.
- 
+
 In our example, we will add `marriage` and `parentship` relationships. A `marriage` has two roles: `spouse1` and `spouse2`, while `parentship` has a `parent` role and a `child` role.
 
 ```graql
@@ -100,7 +102,7 @@ child sub role;
 ## Allowing Roles to be Played
 
 The next step is to give our entity types permission to play specific roles.  We do this explicitly so that we don't accidentally relate data which should not be related. For example, this will prevent us from accidentally saying that a `dog` and a `person` can have a child.
- 
+
 For this current example we only have one entity type, which can play all our current roles, so we explicitly state that with:  
 
 ```graql
@@ -112,7 +114,7 @@ person sub entity
   plays spouse1
   plays spouse2;
 ```    
-	    
+
 We have now completed our basic genealogy ontology.
 
 ## The Complete Ontology
@@ -121,9 +123,9 @@ The final ontology will now look something like this:
 
 ```graql
 insert
- 
+
  # Entities
- 
+
   person sub entity
     has identifier
     has firstname
@@ -167,14 +169,14 @@ insert
 
   parent sub role;
   child sub role;
-  
+
 ```
 
 ![Ontology](/images/basic-ontology1.png)
 
 ## Summary
 
-In this tutorial we described our entity type `person` across separate steps. This was done to demonstrate the typical thought process when creating an ontology. It is typically good practice to group entity type definitions together as above. 
+In this tutorial we described our entity type `person` across separate steps. This was done to demonstrate the typical thought process when creating an ontology. It is typically good practice to group entity type definitions together as above.
 
 {% include note.html content="It is worth noting that the ontology does not need to be completely finalised before loading data. The ontology of a Grakn graph can be expanded even after loading data." %}
 
