@@ -139,7 +139,7 @@ public class DistributionContext extends ExternalResource {
         properties.setProperty(REDIS_HOST, new SimpleURI("localhost", redisPort).toString());
         properties.setProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
         // To speed up tests of failure cases
-        properties.setProperty(TASKS_RETRY_DELAY, "15");
+        properties.setProperty(TASKS_RETRY_DELAY, "60");
 
         // Write new properties to disk
         File propertiesFile = new File("grakn-engine-" + port + ".properties");
