@@ -292,14 +292,6 @@ public class ReasoningTests {
     public void transRelationWithRelationGuardsAtBothEnds() {
         QueryBuilder qb = testSet11.graph().graql().infer(true);
         String queryString = "match (role1:$x, role2:$y) isa relation3;";
-
-        System.out.println("rel1: ");
-        qb.<MatchQuery>parse("match (role1: $x, role2: $y) isa relation1;").execute().forEach(System.out::println);
-
-        System.out.println("rel2: ");
-        qb.<MatchQuery>parse("match (role1: $x, role2: $y) isa relation2;").execute().forEach(System.out::println);
-
-        System.out.println("rel3: ");
         List<Answer> execute = qb.<MatchQuery>parse(queryString).execute();
         execute.forEach(System.out::println);
         assertEquals(execute.size(), 1);
