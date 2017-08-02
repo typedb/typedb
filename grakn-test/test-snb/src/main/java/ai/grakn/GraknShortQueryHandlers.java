@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
 /**
  * Implementations of the LDBC SNB short queries.
  *
- * @author sheldon, miko
+ * @author sheldon, miko, felix
  */
 public class GraknShortQueryHandlers {
 
