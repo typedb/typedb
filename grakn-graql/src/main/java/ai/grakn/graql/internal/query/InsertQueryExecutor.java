@@ -49,9 +49,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.flatteningToMultimap;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
-import static java.util.function.Function.identity;
 
 /**
  * A class for executing insert queries.
@@ -116,9 +114,13 @@ public class InsertQueryExecutor {
 
             For example, the property `$x isa $y` depends on the existence of the concept represented by `$y`.
          */
+        Multimap<VarAndProperty, Var> propDependencies = HashMultimap.create();
 
-        Multimap<VarAndProperty, Var> propDependencies =
-                properties.stream().collect(flatteningToMultimap(identity(), VarAndProperty::requiredVars));
+        for (VarAndProperty property : properties) {
+            for (Var requiredVar : property.requiredVars()) {
+                propDependencies.put(property, requiredVar);
+            }
+        }
 
         /*
             `varDependencies.containsEntry(var, prop)` indicates that the concept represented by the variable `var`
@@ -128,10 +130,11 @@ public class InsertQueryExecutor {
          */
         Multimap<Var, VarAndProperty> varDependencies = HashMultimap.create();
 
-        Multimap<VarAndProperty, Var> producedVars =
-                properties.stream().collect(flatteningToMultimap(identity(), VarAndProperty::producedVars));
-
-        Multimaps.invertFrom(producedVars, varDependencies);
+        for (VarAndProperty property : properties) {
+            for (Var producedVar : property.producedVars()) {
+                varDependencies.put(producedVar, property);
+            }
+        }
 
         /*
             Equivalent vars are variables that must represent the same concept as another var.
@@ -200,9 +203,18 @@ public class InsertQueryExecutor {
      * treating them like many-to-many relations.
      */
     private static <K, T, V> Multimap<K, V> composeMultimaps(Multimap<K, T> map1, Multimap<T, V> map2) {
-        return map1.entries()
-                .stream()
-                .collect(flatteningToMultimap(Map.Entry::getKey, e -> map2.get(e.getValue()).stream()));
+        Multimap<K, V> composed = HashMultimap.create();
+
+        for (Map.Entry<K, T> entry1 : map1.entries()) {
+            K key = entry1.getKey();
+            T intermediateValue = entry1.getValue();
+
+            for (V value : map2.get(intermediateValue)) {
+                composed.put(key, value);
+            }
+        }
+
+        return composed;
     }
 
     private Answer insertAll(Answer results) {
@@ -368,12 +380,12 @@ public class InsertQueryExecutor {
             property().insert(var(), executor);
         }
 
-        Stream<Var> requiredVars() {
-            return property().requiredVars(var()).stream();
+        Set<Var> requiredVars() {
+            return property().requiredVars(var());
         }
 
-        Stream<Var> producedVars() {
-            return property().producedVars(var()).stream();
+        Set<Var> producedVars() {
+            return property().producedVars(var());
         }
 
         boolean uniquelyIdentifiesConcept() {
