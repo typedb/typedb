@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -64,7 +65,8 @@ public class GraknEngineStartIT {
         for(int port : PORTS) {
             cfs
                     .add(CompletableFuture.supplyAsync(() -> {
-                        GraknEngineServer engine = startEngine(String.valueOf(port));
+                        GraknEngineServer engine = makeEngine(String.valueOf(port));
+                        engine.start();
                         return engine;
                     })
                     .thenAccept(GraknEngineServer::close)
@@ -76,29 +78,24 @@ public class GraknEngineStartIT {
     @Test
     public void whenStartingAndCreatingKeyspace_InitializationSucceeds() throws InterruptedException {
         HashSet<CompletableFuture<Void>> cfs = new HashSet<>();
+        final GraknEngineServer engine = makeEngine(String.valueOf(PORTS[0]));
         cfs
-                .add(CompletableFuture.supplyAsync(() -> {
-                    GraknEngineServer engine = startEngine(String.valueOf(PORTS[0]));
-                    return engine;
-                })
-                .thenAccept(GraknEngineServer::close)
-                .handle((result, exception) -> handleException(exception)));
+                .add(CompletableFuture.runAsync(engine::start));
         cfs
-                .add(CompletableFuture.supplyAsync(() -> {
-                    GraknEngineServer engine = startEngine(String.valueOf(PORTS[1]));
+                .add(CompletableFuture.runAsync(() -> {
                     while(!engine.getGraknEngineStatus().isReady()) {
                         try {
                             Thread.sleep(500);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
+                            fail();
                         }
                     }
-                    engine.factory().systemKeyspace().ensureKeyspaceInitialised("grakn");
-                    return engine;
-                })
-                .thenAccept(GraknEngineServer::close)
-                .handle((result, exception) -> handleException(exception)));
+                    boolean success = engine.factory().systemKeyspace().ensureKeyspaceInitialised("grakn");
+                    assertTrue(success);
+                }));
         CompletableFuture.allOf(cfs.toArray(new CompletableFuture[cfs.size()])).join();
+        engine.close();
     }
 
     private Void handleException(Throwable exception) {
@@ -109,14 +106,12 @@ public class GraknEngineStartIT {
         return null;
     }
 
-    private GraknEngineServer startEngine(String port) {
+    private GraknEngineServer makeEngine(String port) {
         GraknEngineConfig graknEngineConfig = GraknEngineConfig.create();
         Properties properties = graknEngineConfig.getProperties();
         properties.setProperty(SERVER_PORT_NUMBER, port);
         properties.setProperty(REDIS_HOST, new SimpleURI("localhost", REDIS_PORT).toString());
         properties.setProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
-        GraknEngineServer engine = new GraknEngineServer(graknEngineConfig);
-        engine.start();
-        return engine;
+        return new GraknEngineServer(graknEngineConfig);
     }
 }

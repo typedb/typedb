@@ -106,9 +106,9 @@ public class SystemController {
     private static final String JSON = "json";
 
     private static final Retryer<Boolean> RETRY_STRATEGY = RetryerBuilder.<Boolean>newBuilder()
-            .withStopStrategy(StopStrategies.stopAfterAttempt(10))
-            .retryIfResult(aBoolean -> false)
-            .withWaitStrategy(WaitStrategies.exponentialWait(10, 60, TimeUnit.SECONDS))
+            .withStopStrategy(StopStrategies.stopAfterAttempt(30))
+            .withWaitStrategy(WaitStrategies.fixedWait(5, TimeUnit.SECONDS))
+            .retryIfResult(aBoolean -> aBoolean != null && !aBoolean)
             .build();
 
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
