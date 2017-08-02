@@ -12,6 +12,7 @@ import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery3PersonFrien
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.sql.Date;
@@ -26,8 +27,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- *
+ * These LDBC SNB tests are not unit tests. They are for debugging the queries while they are being constructed. In
+ * order to return answers they need to be executed against a running instance of Grakn with the SNB validation graph
+ * loaded.
  */
+@Ignore
 public class GraknQueryHandlersTest extends TestCase {
 
     GraknDbConnectionState mockConnectionState;
