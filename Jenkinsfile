@@ -29,7 +29,7 @@ node {
                'KEYSPACE=snb',
                'ENGINE=localhost:4567',
                'ACTIVE_TASKS=1000',
-               'PATH+EXTRA=' + workspace + '/grakn/grakn-package/bin',
+               'PATH+EXTRA=' + workspace + '/grakn-package/bin',
                'LDBC_DRIVER=' + workspace + '/ldbc-driver/target/jeeves-0.3-SNAPSHOT.jar',
                'LDBC_CONNECTOR=' + workspace + '/benchmarking/snb-interactive-grakn/target/snb-interactive-grakn-stable-jar-with-dependencies.jar',
                'LDBC_VALIDATION_CONFIG=readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
@@ -37,7 +37,7 @@ node {
           dir('generate-SNB') {
             stage('Load Validation Data') {
               sh 'wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz'
-              sh './load-SNB.sh arch validate'
+              sh '../grakn-test/test-snb/src/generate-SNB/load-SNB.sh arch validate'
             }
           }
           stage('Measure Size') {
