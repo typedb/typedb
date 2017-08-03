@@ -364,7 +364,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
             Set<Role> superPlays = new HashSet<>(oldSuperType.plays());
 
             //Get everything that this can play bot including the supers
-            Set<Role> plays = directPlays().keySet();
+            Set<Role> plays = new HashSet<>(directPlays().keySet());
             subs().stream().flatMap(sub -> TypeImpl.from(sub).directPlays().keySet().stream()).
                     forEach(play -> plays.add((Role) play));
 
