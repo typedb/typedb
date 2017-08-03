@@ -319,17 +319,17 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
     private Type type() {
         // TODO: Revise this when meta concept is a type
-        Collection<? extends Type> candidates = graph.admin().getMetaConcept().subs().stream().
-                map(o -> (Type) o).collect(Collectors.toSet());
+        Collection<? extends Type> candidates = graph.admin().getMetaConcept().subs().
+                map(Concept::asType).collect(Collectors.toSet());
         return random.choose(candidates);
     }
 
     private EntityType entityType() {
-        return random.choose(graph.admin().getMetaEntityType().subs());
+        return random.choose(graph.admin().getMetaEntityType().subs().collect(Collectors.toSet()));
     }
 
     private Role role() {
-        return random.choose(graph.admin().getMetaRole().subs());
+        return random.choose(graph.admin().getMetaRole().subs().collect(Collectors.toSet()));
     }
 
     private ResourceType resourceType() {
@@ -337,11 +337,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private RelationType relationType() {
-        return random.choose(graph.admin().getMetaRelationType().subs());
+        return random.choose(graph.admin().getMetaRelationType().subs().collect(Collectors.toSet()));
     }
 
     private RuleType ruleType() {
-        return random.choose(graph.admin().getMetaRuleType().subs());
+        return random.choose(graph.admin().getMetaRuleType().subs().collect(Collectors.toSet()));
     }
 
     private Thing instance() {
@@ -377,15 +377,15 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
     public static Collection<? extends OntologyConcept> allOntologyElementsFrom(GraknGraph graph) {
         Set<OntologyConcept> allOntologyConcepts = new HashSet<>();
-        allOntologyConcepts.addAll(graph.admin().getMetaConcept().subs());
-        allOntologyConcepts.addAll(graph.admin().getMetaRole().subs());
+        allOntologyConcepts.addAll(graph.admin().getMetaConcept().subs().collect(Collectors.toSet()));
+        allOntologyConcepts.addAll(graph.admin().getMetaRole().subs().collect(Collectors.toSet()));
         return allOntologyConcepts;
     }
 
     public static Collection<? extends Thing> allInstancesFrom(GraknGraph graph) {
         // TODO: Revise this when meta concept is a type
-        return graph.admin().getMetaConcept().subs().stream().
-                flatMap(element -> ((Type) element).instances().stream()).
+        return graph.admin().getMetaConcept().subs().
+                flatMap(element -> element.asType().instances().stream()).
                 collect(Collectors.toSet());
     }
 
