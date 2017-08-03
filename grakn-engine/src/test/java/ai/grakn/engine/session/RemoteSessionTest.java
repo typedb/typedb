@@ -158,7 +158,7 @@ public class RemoteSessionTest {
 
         Json response;
         do {
-            response = responses.poll(60, TimeUnit.SECONDS);
+            response = responses.poll(120, TimeUnit.SECONDS);
             list.add(response);
         } while (!response.at(ACTION).asString().equals(ACTION_END));
 

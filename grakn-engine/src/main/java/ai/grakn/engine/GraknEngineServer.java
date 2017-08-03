@@ -33,9 +33,9 @@ import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.data.RedisWrapper.Builder;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.lock.ProcessWideLockProvider;
-import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.JedisLockProvider;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
@@ -54,7 +54,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import javax.annotation.Nullable;
@@ -127,7 +126,8 @@ public class GraknEngineServer implements AutoCloseable {
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
         synchronized (this){
-            CompletableFuture.allOf(CompletableFuture.runAsync(this::lockAndInitializeSystemOntology), CompletableFuture.runAsync(this::startHTTP)).join();
+            lockAndInitializeSystemOntology();
+            startHTTP();
         }
         graknEngineStatus.setReady(true);
         LOG.info("Engine started in {}", timer.stop());

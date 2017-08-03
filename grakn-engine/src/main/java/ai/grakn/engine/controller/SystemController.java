@@ -51,11 +51,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.json.MetricsModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.github.rholder.retry.RetryException;
-import com.github.rholder.retry.Retryer;
-import com.github.rholder.retry.RetryerBuilder;
-import com.github.rholder.retry.StopStrategies;
-import com.github.rholder.retry.WaitStrategies;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.common.TextFormat;
@@ -69,7 +64,6 @@ import java.io.Writer;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.DELETE;
@@ -104,12 +98,6 @@ public class SystemController {
     private static final String PROMETHEUS_CONTENT_TYPE = "text/plain; version=0.0.4";
     private static final String PROMETHEUS = "prometheus";
     private static final String JSON = "json";
-
-    private static final Retryer<Boolean> RETRY_STRATEGY = RetryerBuilder.<Boolean>newBuilder()
-            .withStopStrategy(StopStrategies.stopAfterAttempt(30))
-            .withWaitStrategy(WaitStrategies.fixedWait(5, TimeUnit.SECONDS))
-            .retryIfResult(aBoolean -> aBoolean != null && !aBoolean)
-            .build();
 
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
     private final EngineGraknGraphFactory factory;
@@ -151,13 +139,6 @@ public class SystemController {
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
     private String initialiseSession(Request request, Response response){
         String keyspace = request.queryParams(KEYSPACE_PARAM);
-        try {
-            RETRY_STRATEGY.call(graknEngineStatus::isReady);
-        } catch (ExecutionException e) {
-            LOG.error("Could not initialise keyspace {}", keyspace, e);
-        } catch (RetryException e) {
-            LOG.error("Could not initialise keyspace {}, engine is not ready", keyspace, e);
-        }
         boolean keyspaceInitialised = factory.systemKeyspace().ensureKeyspaceInitialised(keyspace);
 
         if(keyspaceInitialised) {
