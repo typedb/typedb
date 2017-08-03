@@ -16,9 +16,12 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.graph.internal.concept.EntityTypeImpl;
+import ai.grakn.graph.internal.structure.Shard;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -152,19 +155,13 @@ public class GraknGraphTest extends GraphTestBase {
         ExecutorService pool = Executors.newSingleThreadExecutor();
         GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "testing").open(GraknTxType.WRITE);
 
-        final boolean[] errorThrown = {false};
+        expectedException.expectCause(IsInstanceOf.instanceOf(GraphOperationException.class));
+        expectedException.expectMessage(GraphOperationException.transactionClosed(graph, null).getMessage());
+
         Future future = pool.submit(() -> {
-            try{
-                graph.putEntityType("A Thing");
-            } catch (GraphOperationException e){
-                if(e.getMessage().equals(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()))){
-                    errorThrown[0] = true;
-                }
-            }
+            graph.putEntityType("A Thing");
         });
         future.get();
-
-        assertTrue("Error not thrown when graph is closed in another thread", errorThrown[0]);
     }
 
     @Test

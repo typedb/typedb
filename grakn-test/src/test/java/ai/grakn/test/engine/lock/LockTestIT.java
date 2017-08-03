@@ -18,6 +18,7 @@
 
 package ai.grakn.test.engine.lock;
 
+import ai.grakn.engine.lock.JedisLock;
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.test.EngineContext;
 import java.util.UUID;
@@ -36,7 +37,6 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import org.redisson.RedissonLock;
 
 @RunWith(Theories.class)
 public class LockTestIT {
@@ -47,7 +47,7 @@ public class LockTestIT {
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static EngineContext engineContext = EngineContext.startNoQueue();
+    public static EngineContext engineContext = EngineContext.startSingleQueueServer();
 
     @DataPoints
     public static Locks[] configValues = Locks.values();
@@ -59,7 +59,7 @@ public class LockTestIT {
     private Lock getLock(Locks lock, String lockPath){
         switch (lock){
             case REDIS:
-                return engineContext.getRedissonClient().getLock(lockPath);
+                return new JedisLock(engineContext.getJedisPool(), lockPath);
             case NONREENTRANT:
                 return new NonReentrantLock();
         }
@@ -67,8 +67,8 @@ public class LockTestIT {
     }
 
     private Lock copy(Lock lock){
-        if(lock instanceof RedissonLock){
-            return engineContext.getRedissonClient().getLock(((RedissonLock) lock).getName());
+        if(lock instanceof JedisLock){
+            return new JedisLock(engineContext.getJedisPool(), ((JedisLock) lock).getLockName());
         } else if(lock instanceof NonReentrantLock){
             return lock;
         }

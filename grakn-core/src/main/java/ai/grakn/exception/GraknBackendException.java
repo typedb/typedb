@@ -36,7 +36,6 @@ import static ai.grakn.util.ErrorMessage.TASK_STATE_RETRIEVAL_FAILURE;
  *
  * <p>
  *     Failures which occur server side are wrapped in this exception. This can include but is not limited to:
- *     - Kafka timeouts
  *     - Cassandra Timeouts
  *     - Malformed Requests
  * </p>

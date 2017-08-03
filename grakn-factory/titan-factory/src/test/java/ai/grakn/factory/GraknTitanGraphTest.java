@@ -26,6 +26,7 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import com.google.common.collect.Iterators;
 import org.junit.After;
@@ -41,23 +42,30 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static ai.grakn.util.ErrorMessage.GRAPH_CLOSED_ON_ACTION;
+import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static junit.framework.TestCase.assertNotNull;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class GraknTitanGraphTest extends TitanTestBase{
+
     private GraknGraph graknGraph;
 
     @Before
     public void setup(){
-        graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
+        if(graknGraph == null || graknGraph.isClosed()) {
+            graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
+        }
     }
 
     @After
     public void cleanup(){
-        if(!graknGraph.isClosed())
+        if(!graknGraph.isClosed()) {
             graknGraph.close();
+        }
     }
 
     @Test
@@ -153,5 +161,104 @@ public class GraknTitanGraphTest extends TitanTestBase{
         graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
 
         assertEquals(relation, graknGraph.getConcept(relation.getId()));
+    }
+
+    @Test //This test is performed here because it depends on actual transaction behaviour which tinker does not exhibit
+    public void whenClosingTransaction_EnsureConceptTransactionCachesAreCleared(){
+        TitanInternalFactory factory = newFactory();
+        GraknTitanGraph graph = factory.open(GraknTxType.WRITE);
+
+        EntityType entityType = graph.admin().getMetaEntityType();
+        EntityType newEntityType = graph.putEntityType("New Entity Type");
+        assertThat(entityType.subs(), containsInAnyOrder(entityType, newEntityType));
+
+        graph.close();
+
+        graph = factory.open(GraknTxType.WRITE);
+        assertThat(entityType.subs(), containsInAnyOrder(entityType));
+
+        graph.close();
+    }
+
+    @Test
+    public void whenCommitting_EnsureGraphTransactionIsClosed() throws Exception {
+        TitanInternalFactory factory = newFactory();
+        GraknTitanGraph graph = factory.open(GraknTxType.WRITE);
+        graph.putEntityType("thingy");
+        graph.commit();
+        assertTrue(graph.isClosed());
+
+        HashSet<Future> futures = new HashSet<>();
+        futures.add(Executors.newCachedThreadPool().submit(() -> addThingToBatch(factory)));
+
+        for (Future future : futures) {
+            future.get();
+        }
+
+        assertTrue(graph.isClosed());
+    }
+
+    private void addThingToBatch(TitanInternalFactory factory){
+        try(GraknGraph graphBatchLoading = factory.open(GraknTxType.WRITE)) {
+            graphBatchLoading.getEntityType("thingy").addEntity();
+            graphBatchLoading.commit();
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void checkNumberOfOpenTransactionsChangesAsExpected() throws ExecutionException, InterruptedException {
+        TitanInternalFactory factory = newFactory();
+        GraknGraph graph = factory.open(GraknTxType.WRITE);
+        graph.close();
+        GraknGraph batchGraph = factory.open(GraknTxType.BATCH);
+
+        for(int i = 0; i < 6; i ++){
+            Executors.newSingleThreadExecutor().submit(() -> factory.open(GraknTxType.WRITE)).get();
+        }
+
+        for(int i = 0; i < 2; i ++){
+            Executors.newSingleThreadExecutor().submit(() -> factory.open(GraknTxType.BATCH)).get();
+        }
+
+        assertEquals(6, openTransactions(graph));
+        assertEquals(3, openTransactions(batchGraph));
+
+        graph.close();
+        batchGraph.close();
+    }
+
+    @Test
+    public void afterCommitting_NumberOfOpenTransactionsDecrementsOnce() {
+        TitanInternalFactory factory = newFactory();
+        GraknGraph graph = factory.open(GraknTxType.READ);
+        assertEquals(1, openTransactions(graph));
+        graph.commit();
+        assertEquals(0, openTransactions(graph));
+    }
+
+    private int openTransactions(GraknGraph graph){
+        if(graph == null) return 0;
+        return ((AbstractGraknGraph) graph).numOpenTx();
+    }
+
+    @Test
+    public void whenAddingEntitiesToAbstractTypeCreatedInDifferentTransaction_Throw(){
+        TitanInternalFactory factory = newFactory();
+
+        String label = "An Abstract thingy";
+
+        try(GraknGraph graph = factory.open(GraknTxType.WRITE)){
+            graph.putEntityType(label).setAbstract(true);
+            graph.commit();
+        }
+
+        expectedException.expect(GraphOperationException.class);
+        expectedException.expectMessage(IS_ABSTRACT.getMessage(label));
+
+        try(GraknGraph graph = factory.open(GraknTxType.WRITE)){
+            graph.getEntityType(label).addEntity();
+        }
     }
 }

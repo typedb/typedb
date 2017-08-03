@@ -442,20 +442,6 @@ class QueryVisitor extends GraqlBaseVisitor {
         return var -> var.then(and(visitVarPatterns(ctx.varPatterns())));
     }
 
-    @Deprecated // will be removed in 0.17.0
-    @Override
-    public UnaryOperator<VarPattern> visitPropLhs(GraqlParser.PropLhsContext ctx) {
-        LOG.warn("Support for keyword `lhs` will be removed in the next release. Please use `when`.");
-        return var -> var.when(and(visitPatterns(ctx.patterns())));
-    }
-
-    @Deprecated // will be removed in 0.17.0
-    @Override
-    public UnaryOperator<VarPattern> visitPropRhs(GraqlParser.PropRhsContext ctx) {
-        LOG.warn("Support for keyword `rhs` will be removed in the next release. Please use `then`.");
-        return var -> var.then(and(visitVarPatterns(ctx.varPatterns())));
-    }
-
     @Override
     public UnaryOperator<VarPattern> visitPropHas(GraqlParser.PropHasContext ctx) {
         Label type = visitLabel(ctx.label());

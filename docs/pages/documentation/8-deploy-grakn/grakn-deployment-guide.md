@@ -22,7 +22,7 @@ This guide offers advice on how to:
 Grakn releases from our [GitHub repository](https://github.com/graknlabs/grakn) are self-contained packages (tar.gz/zip) containing all the components you need to run Grakn:
 
 * Grakn stack
-* Kafka and Zookeeper
+* Redis
 * Cassandra
 
 You can run all these components separately depending on the redundancy levels you require.
@@ -69,19 +69,12 @@ This provides the highest level of redundancy and availability; you will want th
 
 The database layer will need to be configured similarly to the [Clustered database](#clustered-database) setup.
 
-Grakn Engine uses the [Apache Kafka](https://kafka.apache.org/) streaming platform for distributed task execution. Kafka keeps track of its brokers' state in [Zookeeper](https://zookeeper.apache.org/).
+Grakn Engine uses [Redis](https://redis.io/) for distributed task execution.
 
-Kafka version: 2.11-0.10.1.0
-
-Zookeeper version: 3.4.9
-
-Configure Grakn to use an external Kafka and Zookeeper cluster in `conf/main/grakn.properties`:
-
-* `bootstrap-servers`: eg. 10.0.20.1:9092,10.0.20.2:9092,10.0.20.3:9092
-* `tasks.zookeeper.servers`: eg. 10.0.30.1:2181,10.0.30.2:2181,10.0.3.30:2181
+Redis version: 3.2.9
 
 Once the configuration files are correct, you can start Grakn Engine only with `bin/grakn-engine.sh start`.
-Multiple instances of Grakn Engine can be started that will make use of the shared Cassandra/Kafka/Zookeeper clusters.
+Multiple instances of Grakn Engine can be started that will make use of the shared Cassandra/Redis clusters.
 
 ## Upgrading Grakn
 
@@ -110,7 +103,7 @@ You will need to amend these variables with every new version of Grakn.
 Upgrading Grakn in a distributed setup is very simple:
 
 - stop and remove old Grakn Engine (`./bin/grakn-engine.sh stop`)
-- roll out the latest Grakn package with the correct Cassandra/Kafka/Zookeeper variables in the configuration files
+- roll out the latest Grakn package with the correct Redis variables in the configuration files
 - start new Grakn Engine (`./bin/grakn-engine.sh start`)
 
 You can perform a rolling deployment in this fashion with minimum impact on your services.

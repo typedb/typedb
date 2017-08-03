@@ -27,7 +27,7 @@ import ai.grakn.concept.Label;
  *
  * @author Felix Chapman
  */
-public class EntityTypes extends AbstractOntologyConceptGenerator<EntityType> {
+public class EntityTypes extends AbstractTypeGenerator<EntityType> {
 
     public EntityTypes() {
         super(EntityType.class);

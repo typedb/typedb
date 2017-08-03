@@ -24,12 +24,13 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import mjson.Json;
@@ -90,6 +91,8 @@ class GraqlSession {
             Session session, GraknSession factory, String outputFormat,
             boolean infer, boolean materialise
     ) {
+        Preconditions.checkNotNull(session);
+
         this.infer = infer;
         this.materialise = materialise;
         this.session = session;
@@ -219,10 +222,10 @@ class GraqlSession {
 
                 // Return results unless query is cancelled
                 queries.stream().flatMap(query -> query.resultsString(printer)).forEach(this::sendQueryResult);
-            } catch (IllegalArgumentException | IllegalStateException | GraphOperationException e) {
+            } catch (GraknException e) {
                 errorMessage = e.getMessage();
                 LOG.error(errorMessage,e);
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 errorMessage = getFullStackTrace(e);
                 LOG.error(errorMessage,e);
             } finally {

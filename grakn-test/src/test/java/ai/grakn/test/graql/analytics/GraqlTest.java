@@ -41,7 +41,6 @@ import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import org.junit.Before;
@@ -61,7 +60,6 @@ import java.util.stream.Collectors;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 public class GraqlTest {
 
@@ -83,9 +81,6 @@ public class GraqlTest {
 
     @Before
     public void setUp() {
-        // TODO: Make orientdb support analytics
-        assumeFalse(GraknTestSetup.usingOrientDB());
-
         factory = context.factoryWithNewKeyspace();
     }
 
