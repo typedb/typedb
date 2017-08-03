@@ -30,8 +30,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graph.internal.GraphTestBase;
-import ai.grakn.graph.internal.concept.EntityTypeImpl;
-import ai.grakn.graph.internal.concept.TypeImpl;
 import ai.grakn.graph.internal.structure.Shard;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -39,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE;
 import static ai.grakn.util.ErrorMessage.RESERVED_WORD;
@@ -154,10 +153,10 @@ public class EntityTypeTest extends GraphTestBase {
         EntityType c2 = graknGraph.putEntityType("c2").sup(parent);
         EntityType c3 = graknGraph.putEntityType("c3").sup(c1);
 
-        assertThat(parent.subs(), containsInAnyOrder(parent, c1, c2, c3));
-        assertThat(c1.subs(), containsInAnyOrder(c1, c3));
-        assertThat(c2.subs(), containsInAnyOrder(c2));
-        assertThat(c3.subs(), containsInAnyOrder(c3));
+        assertThat(parent.subs().collect(Collectors.toSet()), containsInAnyOrder(parent, c1, c2, c3));
+        assertThat(c1.subs().collect(Collectors.toSet()), containsInAnyOrder(c1, c3));
+        assertThat(c2.subs().collect(Collectors.toSet()), containsInAnyOrder(c2));
+        assertThat(c3.subs().collect(Collectors.toSet()), containsInAnyOrder(c3));
     }
 
     @Test
@@ -329,15 +328,15 @@ public class EntityTypeTest extends GraphTestBase {
         EntityType e5 = graknGraph.putEntityType("entityType5");
         EntityType e6 = graknGraph.putEntityType("entityType6").sup(e5);
 
-        assertThat(e1.subs(), containsInAnyOrder(e1, e2, e3, e4));
-        assertThat(e5.subs(), containsInAnyOrder(e6, e5));
+        assertThat(e1.subs().collect(Collectors.toSet()), containsInAnyOrder(e1, e2, e3, e4));
+        assertThat(e5.subs().collect(Collectors.toSet()), containsInAnyOrder(e6, e5));
 
         //Now change subtypes
         e6.sup(e1);
         e3.sup(e5);
 
-        assertThat(e1.subs(), containsInAnyOrder(e1, e2, e4, e6));
-        assertThat(e5.subs(), containsInAnyOrder(e3, e5));
+        assertThat(e1.subs().collect(Collectors.toSet()), containsInAnyOrder(e1, e2, e4, e6));
+        assertThat(e5.subs().collect(Collectors.toSet()), containsInAnyOrder(e3, e5));
     }
 
     @Test

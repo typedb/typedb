@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
 
@@ -198,8 +199,8 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      * @return All the subs of this concept including itself
      */
     @Override
-    public Collection<T> subs(){
-        return Collections.unmodifiableCollection(nextSubLevel(this));
+    public Stream<T> subs(){
+        return nextSubLevel(getThis());
     }
 
     /**
@@ -217,16 +218,9 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      * @return All the sub children of the root. Effectively calls  the cache {@link OntologyConceptImpl#cachedDirectSubTypes} recursively
      */
     @SuppressWarnings("unchecked")
-    private Set<T> nextSubLevel(OntologyConceptImpl<T> root){
-        Set<T> results = new HashSet<>();
-        results.add((T) root);
-
-        Set<T> children = root.cachedDirectSubTypes.get();
-        for(T child: children){
-            results.addAll(nextSubLevel((OntologyConceptImpl<T>) child));
-        }
-
-        return results;
+    private Stream<T> nextSubLevel(T root){
+        return Stream.concat(Stream.of(root),
+                OntologyConceptImpl.<T>from(root).cachedDirectSubTypes.get().stream().flatMap(this::nextSubLevel));
     }
 
     /**
@@ -350,7 +344,8 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
         return message;
     }
 
-    public static OntologyConceptImpl from(OntologyConcept ontologyConcept){
-        return (OntologyConceptImpl) ontologyConcept;
+    public static <X extends OntologyConcept> OntologyConceptImpl<X> from(OntologyConcept ontologyConcept){
+        //noinspection unchecked
+        return (OntologyConceptImpl<X>) ontologyConcept;
     }
 }

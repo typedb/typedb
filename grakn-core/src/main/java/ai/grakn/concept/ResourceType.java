@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -182,7 +183,7 @@ public interface ResourceType<D> extends Type {
      * @return The subtypes of this ResourceType
      */
     @Override
-    Collection<ResourceType<D>> subs();
+    Stream<ResourceType<D>> subs();
 
     /**
      * Returns a collection of all Resource Instances of this ResourceType.

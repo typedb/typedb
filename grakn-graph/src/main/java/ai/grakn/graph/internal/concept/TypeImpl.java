@@ -20,7 +20,6 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -240,15 +239,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
 
     /**
      *
-     * @return All the subs of this concept including itself
-     */
-    @Override
-    public Collection<T> subs(){
-        return Collections.unmodifiableCollection(super.subs());
-    }
-
-    /**
-     *
      * @return All the instances of this type.
      */
     @SuppressWarnings("unchecked")
@@ -258,12 +248,12 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
         //TODO: Clean this up. Maybe remove role from the meta ontology
         //OntologyConcept is used here because when calling `graph.admin().getMataConcept().instances()` a role can appear
         //When that happens this leads to a crash
-        for (OntologyConcept sub : subs()) {
+        subs().forEach(sub -> {
             if (!sub.isRole()) {
                 TypeImpl<?, V> typeImpl = (TypeImpl) sub;
                 typeImpl.instancesDirect().forEach(instances::add);
             }
-        }
+        });
 
         return Collections.unmodifiableCollection(instances);
     }

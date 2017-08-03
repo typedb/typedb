@@ -106,7 +106,7 @@ public class GraknGraphTest extends GraphTestBase {
         EntityType sampleEntityType = graknGraph.putEntityType("Sample Entity Type");
         RelationType sampleRelationType = graknGraph.putRelationType("Sample Relation Type");
 
-        assertThat(graknGraph.admin().getMetaConcept().subs(), containsInAnyOrder(
+        assertThat(graknGraph.admin().getMetaConcept().subs().collect(Collectors.toSet()), containsInAnyOrder(
                 graknGraph.admin().getMetaConcept(),
                 graknGraph.admin().getMetaRelationType(),
                 graknGraph.admin().getMetaEntityType(),
@@ -130,7 +130,7 @@ public class GraknGraphTest extends GraphTestBase {
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.READ);
 
         Set<OntologyConcept> finalTypes = new HashSet<>();
-        finalTypes.addAll(graknGraph.getMetaConcept().subs());
+        finalTypes.addAll(graknGraph.getMetaConcept().subs().collect(Collectors.toSet()));
         finalTypes.add(graknGraph.admin().getMetaRole());
 
         graknGraph.abort();

@@ -114,7 +114,7 @@ public class RoleImpl extends OntologyConceptImpl<Role> implements Role {
     @Override
     public Collection<Type> playedByTypes() {
         Set<Type> playedByTypes = new HashSet<>();
-        cachedDirectPlayedByTypes.get().forEach(type -> playedByTypes.addAll(type.subs()));
+        cachedDirectPlayedByTypes.get().forEach(type -> playedByTypes.addAll(type.subs().collect(Collectors.toSet())));
         return Collections.unmodifiableCollection(playedByTypes);
     }
 

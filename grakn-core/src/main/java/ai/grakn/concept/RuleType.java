@@ -24,6 +24,7 @@ import ai.grakn.graql.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -131,7 +132,7 @@ public interface RuleType extends Type {
      * @return All the sub types of this rule type
      */
     @Override
-    Collection<RuleType> subs();
+    Stream<RuleType> subs();
 
     /**
      *

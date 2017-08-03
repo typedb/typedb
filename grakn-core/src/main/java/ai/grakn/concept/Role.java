@@ -21,6 +21,7 @@ package ai.grakn.concept;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -76,7 +77,7 @@ public interface Role extends OntologyConcept {
      * @return The sub of this Role
      */
     @Override
-    Collection<Role> subs();
+    Stream<Role> subs();
 
     /**
      * Returns the RelationTypes that this Role takes part in.

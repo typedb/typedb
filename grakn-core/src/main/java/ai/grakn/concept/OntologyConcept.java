@@ -21,6 +21,7 @@ package ai.grakn.concept;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -79,7 +80,7 @@ public interface OntologyConcept extends Concept {
      * @return All the indirect sub-types of this Type
      */
     @CheckReturnValue
-    Collection<? extends OntologyConcept> subs();
+    Stream<? extends OntologyConcept> subs();
 
     /**
      * Return whether the Ontology Element was created implicitly.

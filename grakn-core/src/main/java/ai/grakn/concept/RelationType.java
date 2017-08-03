@@ -23,6 +23,7 @@ import ai.grakn.exception.GraphOperationException;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -164,7 +165,7 @@ public interface RelationType extends Type {
      * @return All the sub types of this RelationType
      */
     @Override
-    Collection<RelationType> subs();
+    Stream<RelationType> subs();
 
     /**
      * Sets the Role which instances of this RelationType may play.

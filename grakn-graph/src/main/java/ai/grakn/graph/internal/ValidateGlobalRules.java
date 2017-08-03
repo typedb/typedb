@@ -233,11 +233,8 @@ class ValidateGlobalRules {
         for (Role superRelate : superRelates) {
             boolean subRoleNotFoundInRelates = true;
 
-            for (Role subRole : superRelate.subs()) {
-                if(relatesLabels.contains(subRole.getLabel())){
-                    subRoleNotFoundInRelates = false;
-                    break;
-                }
+            if(superRelate.subs().anyMatch(subRole -> relatesLabels.contains(subRole.getLabel()))){
+                subRoleNotFoundInRelates = false;
             }
 
             if(subRoleNotFoundInRelates){
