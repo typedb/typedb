@@ -204,7 +204,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private Stream<Answer> DBlookup() {
         return getMatchQuery().admin().stream()
-                .map(QueryAnswer::new)
                 .map(a -> a.explain(new LookupExplanation(this)));
     }
 
