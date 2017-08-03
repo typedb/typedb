@@ -91,7 +91,6 @@ public class ConjunctiveState extends QueryState {
 
     @Override
     public ResolutionState generateSubGoal(){
-        System.out.println("Generating conjunctive state");
         if (dbIterator.hasNext()){
             return new AnswerState(dbIterator.next(), getUnifier(), getParentState());
         }

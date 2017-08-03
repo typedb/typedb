@@ -104,8 +104,7 @@ public class QueryAnswerStream {
         for (TypeAtom type : types){
             Var var = type.getVarName();
             OntologyConcept t = type.getOntologyConcept();
-            System.out.println("Over here you moron 5");
-            if(!t.subs().collect(toSet()).contains(answer.get(var).asThing().type())){//TODO: IS THIS OUR SUSPECT
+            if (!t.subs().collect(toSet()).contains(answer.get(var).asThing().type())) {
                 return false;
             }
         }

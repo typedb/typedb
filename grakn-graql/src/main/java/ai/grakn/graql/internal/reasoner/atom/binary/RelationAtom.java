@@ -679,8 +679,7 @@ public class RelationAtom extends IsaAtom {
                         Var parentRolePlayer = prp.getRolePlayer().getVarName();
                         OntologyConcept parent = parentVarOntologyConceptMap.get(parentRolePlayer);
 
-                        System.out.println("Over here you moron 2");
-                        Set<Role> compatibleChildRoles = isMetaRole? childRoles : Sets.intersection(new HashSet<>(parentRole.subs().collect(toSet())), childRoles);//TODO: IS THIS OUR SUSPECT
+                        Set<Role> compatibleChildRoles = isMetaRole? childRoles : Sets.intersection(parentRole.subs().collect(toSet()), childRoles);
 
                         if (parent != null && parent.isType()){
                             boolean isMetaType = Schema.MetaSchema.isMetaLabel(parent.getLabel());

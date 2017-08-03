@@ -188,8 +188,6 @@ public class EquivalentFragmentSets {
 
     static boolean hasDirectSubTypes(GraknGraph graph, Label label) {
         Type type = graph.getOntologyConcept(label);
-        //I think serialising is required here because this method is already called in the context of a stream, maybe a parallel one which results in the stream being closed when trying to be more efficient
-        System.out.println("Over here you moron 1");
         return type != null && !CommonUtil.containsOnly(type.subs(), 1);
     }
 

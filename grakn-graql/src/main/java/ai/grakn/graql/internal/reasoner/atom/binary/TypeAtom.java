@@ -82,11 +82,10 @@ public abstract class TypeAtom extends Binary{
     @Override
     public boolean isRuleApplicable(InferenceRule child) {
         Atom ruleAtom = child.getHead().getAtom();
-        System.out.println("Over here you moron 3");
         return this.getOntologyConcept() != null
                 //ensure not ontological atom query
                 && getPattern().asVar().hasProperty(IsaProperty.class)
-                && this.getOntologyConcept().subs().collect(toSet()).contains(ruleAtom.getOntologyConcept()); //TODO: IS THIS OUR SUSPECT
+                && this.getOntologyConcept().subs().collect(toSet()).contains(ruleAtom.getOntologyConcept());
     }
 
     @Override

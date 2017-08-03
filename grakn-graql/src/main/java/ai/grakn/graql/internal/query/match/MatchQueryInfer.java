@@ -61,7 +61,6 @@ class MatchQueryInfer extends MatchQueryModifier {
             Stream<Answer> localStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise) : graph.graql().match(conj).stream();
             answerStream = Stream.concat(answerStream, localStream);
         }
-        System.out.println("REASONING THINGS 1");
         return answerStream.map(result -> result.filterVars(getSelectedNames()));
     }
 

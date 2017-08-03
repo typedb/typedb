@@ -69,8 +69,6 @@ public class ResolutionIterator extends ReasonerQueryIterator {
                 return state.getSubstitution();
             }
 
-            System.out.println("GENERATING NEW STATES");
-
             ResolutionState newState = state.generateSubGoal();
             if (newState != null) {
                 if (!state.isAnswerState()) states.push(state);
@@ -93,7 +91,6 @@ public class ResolutionIterator extends ReasonerQueryIterator {
      */
     @Override
     public boolean hasNext() {
-        System.out.println("FINDING ANSWER");
         nextAnswer = findNextAnswer();
         if (nextAnswer != null) return true;
 

@@ -91,7 +91,6 @@ public class AtomicState extends QueryState{
 
     @Override
     public ResolutionState generateSubGoal() {
-        System.out.println("Generating atomic state");
         if (dbIterator.hasNext()) return new AnswerState(dbIterator.next(), getUnifier(), this);
         if (ruleIterator.hasNext()) return generateSubGoalFromRule(ruleIterator.next());
         return null;

@@ -153,7 +153,6 @@ public abstract class Atom extends AtomicBase {
      */
     private Set<Rule> getPotentialRules(){
         OntologyConcept ontologyConcept = getOntologyConcept();
-        System.out.println("Over here you moron 4");
         return ontologyConcept != null ?
                 ontologyConcept.subs().flatMap(t -> t.getRulesOfConclusion().stream()).collect(Collectors.toSet()) :
                 ReasonerUtils.getRules(graph());
