@@ -39,6 +39,8 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toSet;
+
 /**
  *
  * <p>
@@ -102,7 +104,8 @@ public class QueryAnswerStream {
         for (TypeAtom type : types){
             Var var = type.getVarName();
             OntologyConcept t = type.getOntologyConcept();
-            if(!t.subs().contains(answer.get(var).asThing().type())){
+            System.out.println("Over here you moron 5");
+            if(!t.subs().collect(toSet()).contains(answer.get(var).asThing().type())){//TODO: IS THIS OUR SUSPECT
                 return false;
             }
         }

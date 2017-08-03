@@ -25,12 +25,13 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -68,6 +69,8 @@ public class ResolutionIterator extends ReasonerQueryIterator {
                 return state.getSubstitution();
             }
 
+            System.out.println("GENERATING NEW STATES");
+
             ResolutionState newState = state.generateSubGoal();
             if (newState != null) {
                 if (!state.isAnswerState()) states.push(state);
@@ -90,6 +93,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
      */
     @Override
     public boolean hasNext() {
+        System.out.println("FINDING ANSWER");
         nextAnswer = findNextAnswer();
         if (nextAnswer != null) return true;
 

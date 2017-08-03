@@ -64,6 +64,7 @@ class CumulativeState extends QueryState{
 
     @Override
     public ResolutionState generateSubGoal(){
+        System.out.println("Generating cumulative state");
         return !feederGoals.isEmpty()? feederGoals.removeFirst() : null;
     }
 }

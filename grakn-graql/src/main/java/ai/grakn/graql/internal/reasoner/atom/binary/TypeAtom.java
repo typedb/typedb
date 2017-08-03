@@ -32,6 +32,8 @@ import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
 
+import static java.util.stream.Collectors.toSet;
+
 /**
  *
  * <p>
@@ -80,10 +82,11 @@ public abstract class TypeAtom extends Binary{
     @Override
     public boolean isRuleApplicable(InferenceRule child) {
         Atom ruleAtom = child.getHead().getAtom();
+        System.out.println("Over here you moron 3");
         return this.getOntologyConcept() != null
                 //ensure not ontological atom query
                 && getPattern().asVar().hasProperty(IsaProperty.class)
-                && this.getOntologyConcept().subs().contains(ruleAtom.getOntologyConcept());
+                && this.getOntologyConcept().subs().collect(toSet()).contains(ruleAtom.getOntologyConcept()); //TODO: IS THIS OUR SUSPECT
     }
 
     @Override

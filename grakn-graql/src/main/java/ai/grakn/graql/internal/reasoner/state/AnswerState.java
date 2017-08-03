@@ -49,6 +49,7 @@ class AnswerState extends ResolutionState {
 
     @Override
     public ResolutionState generateSubGoal() {
+        System.out.println("Generating answer state");
         return getParentState().propagateAnswer(this);
     }
 

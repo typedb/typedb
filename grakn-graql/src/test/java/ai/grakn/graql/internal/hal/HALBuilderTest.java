@@ -121,6 +121,7 @@ public class HALBuilderTest {
     @Test
     public void whenSelectInferredRelationWithSingleVar_EnsureValidExplanationHrefIsContainedInResponse(){
         Json response = getHALRepresentation(genealogyGraph.graph(), "match $x isa marriage; offset 0; limit 5;");
+        System.out.println("GOT THE RESPONSE");
         assertEquals(5, response.asList().size());
         response.asJsonList().forEach(halObj -> {
             assertEquals("inferred-relation", halObj.at("_baseType").asString());
@@ -141,6 +142,7 @@ public class HALBuilderTest {
     }
 
     private Json getHALRepresentation(GraknGraph graph, String queryString) {
+        System.out.println("GETTING THE HAL REPRESENTATION");
         Query<?> query = graph.graql().materialise(false).infer(true).parse(queryString);
         return renderHALArrayData((MatchQuery) query, 0, 5);
     }

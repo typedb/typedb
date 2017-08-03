@@ -65,7 +65,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
                     .flatMap(typeLabel -> {
                         Type type = graph.get().getOntologyConcept(typeLabel);
                         if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
-                        return type.subs().stream();
+                        return type.subs();
                     })
                     .map(OntologyConcept::getLabel)
                     .collect(Collectors.toSet());

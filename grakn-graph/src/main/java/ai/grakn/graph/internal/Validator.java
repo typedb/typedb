@@ -69,26 +69,33 @@ class Validator {
         //Validate Entity Types
         //Not Needed
         //Validate Entities
+        System.out.println("VALIDATNG PART 1");
         graknGraph.txCache().getModifiedEntities().forEach(this::validateThing);
 
         //Validate RoleTypes
+        System.out.println("VALIDATNG PART 2");
         graknGraph.txCache().getModifiedRoles().forEach(this::validateRole);
         //Validate Role Players
+        System.out.println("VALIDATNG PART 3");
         graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
 
         //Validate Relation Types
+        System.out.println("VALIDATNG PART 4");
         graknGraph.txCache().getModifiedRelationTypes().forEach(this::validateRelationType);
         //Validate Relations
+        System.out.println("VALIDATNG PART 5");
         graknGraph.txCache().getModifiedRelations().forEach(relation -> validateRelation(graknGraph, relation));
 
         //Validate Rule Types
         //Not Needed
         //Validate Rules
+        System.out.println("VALIDATNG PART 6");
         graknGraph.txCache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
 
         //Validate Resource Types
         //Not Needed
         //Validate Resource
+        System.out.println("VALIDATNG PART 7");
         graknGraph.txCache().getModifiedResources().forEach(this::validateThing);
 
         return errorsFound.size() == 0;

@@ -69,7 +69,7 @@ public class GraphLoaderTest {
         GraphLoader loader = GraphLoader.preLoad(preLoader);
 
         try (GraknGraph graph = loader.graph()){
-            Set<Label> foundLabels = graph.admin().getMetaEntityType().subs().stream().
+            Set<Label> foundLabels = graph.admin().getMetaEntityType().subs().
                     map(Type::getLabel).collect(Collectors.toSet());
 
             assertTrue(foundLabels.containsAll(labels));

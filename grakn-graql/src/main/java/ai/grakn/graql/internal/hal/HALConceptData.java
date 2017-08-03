@@ -288,7 +288,7 @@ public class HALConceptData {
         }
         // We only limit the number of instances and not subtypes.
         // TODO: This `asOntologyElement` is a hack because `thing.subTypes()` will contain `Role`, which is not `Type`
-        type.asOntologyConcept().subs().stream().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
+        type.asOntologyConcept().subs().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
             Representation subResource = factory.newRepresentation(resourceLinkPrefix + sub.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             handleConcept(subResource, sub, separationDegree - 1);

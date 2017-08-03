@@ -231,11 +231,7 @@ class ValidateGlobalRules {
 
         //Check 2) Every role of superRelationType has a sub role which is in the relates of relationTypes
         for (Role superRelate : superRelates) {
-            boolean subRoleNotFoundInRelates = true;
-
-            if(superRelate.subs().anyMatch(subRole -> relatesLabels.contains(subRole.getLabel()))){
-                subRoleNotFoundInRelates = false;
-            }
+            boolean subRoleNotFoundInRelates = superRelate.subs().noneMatch(sub -> relatesLabels.contains(sub.getLabel()));
 
             if(subRoleNotFoundInRelates){
                 errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.getLabel(), superRelationType.getLabel(), "sub", "sub", relationType.getLabel()));

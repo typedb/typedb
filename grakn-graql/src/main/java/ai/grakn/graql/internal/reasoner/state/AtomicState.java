@@ -25,11 +25,12 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
+import javafx.util.Pair;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
-import javafx.util.Pair;
 
 /**
  *
@@ -90,6 +91,7 @@ public class AtomicState extends QueryState{
 
     @Override
     public ResolutionState generateSubGoal() {
+        System.out.println("Generating atomic state");
         if (dbIterator.hasNext()) return new AnswerState(dbIterator.next(), getUnifier(), this);
         if (ruleIterator.hasNext()) return generateSubGoalFromRule(ruleIterator.next());
         return null;
