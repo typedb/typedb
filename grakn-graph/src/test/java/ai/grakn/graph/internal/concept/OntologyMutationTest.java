@@ -303,7 +303,5 @@ public class OntologyMutationTest extends GraphTestBase {
 
         //Man is no longer a person and therefore is not allowed to have a name
         man.sup(graknGraph.admin().getMetaEntityType());
-
-
     }
 }

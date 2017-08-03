@@ -21,9 +21,7 @@ package ai.grakn.test.property;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.generator.GraknGraphs;
 import com.pholser.junit.quickcheck.Property;
-import com.pholser.junit.quickcheck.When;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
@@ -38,8 +36,8 @@ import static org.junit.Assert.assertThat;
 @RunWith(JUnitQuickcheck.class)
 public class ThingPropertyTest {
 
-    @Property(onMinimalCounterexample=GraknGraphs.class)
-    public void whenGettingTheDirectTypeOfAThing_TheThingIsADirectInstanceOfThatType(@When(seed = 4279567802593797485L) Thing thing) {
+    @Property
+    public void whenGettingTheDirectTypeOfAThing_TheThingIsADirectInstanceOfThatType(Thing thing) {
         Type type = thing.type();
         assertThat(PropertyUtil.directInstances(type), hasItem(thing));
     }

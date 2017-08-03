@@ -27,12 +27,11 @@ import ai.grakn.concept.Label;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.migration.owl.Main;
 import ai.grakn.migration.owl.OwlModel;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.FixMethodOrder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemErrRule;
-import org.junit.runners.MethodSorters;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertRelationBetweenInstancesExists;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
@@ -44,8 +43,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-//TODO: Figure out why these tests have to be run in such a silly order. It's not overlapping keyspaces. There is something else.
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class OwlMigratorMainTest extends TestOwlGraknBase {
 
     private String keyspace;
@@ -59,21 +56,26 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
         graph.close();
     }
 
+    @After
+    public void delete(){
+        graph.admin().delete();
+    }
+
     @Test
-    public void AowlMigratorCalledWithCorrectArgs_DataMigratedCorrectly(){
+    public void owlMigratorCalledWithCorrectArgs_DataMigratedCorrectly(){
         String owlFile = getFile("owl", "shakespeare.owl").getAbsolutePath();
-        runAndAssertDataCorrect("owl", "-u", engine.uri(), "-input", owlFile, "--keyspace", keyspace);
+        runAndAssertDataCorrect("owl", "-u", engine.uri(), "-input", owlFile, "-keyspace", keyspace);
     }
 
     @Test
     public void owlMigratorCalledWithNoData_ErrorIsPrintedToSystemErr(){
-        run("owl", "--keyspace", keyspace, "-u", engine.uri());
+        run("owl", "-keyspace", keyspace, "-u", engine.uri());
         assertThat(sysErr.getLog(), containsString("Data file missing (-i)"));
     }
 
     @Test
-    public void BowlMigratorCalledInvalidInputFile_ErrorIsPrintedToSystemErr(){
-        run("owl", "-input", "grah/?*", "--keyspace", keyspace, "-u", engine.uri());
+    public void owlMigratorCalledInvalidInputFile_ErrorIsPrintedToSystemErr(){
+        run("owl", "-input", "grah/?*", "-keyspace", keyspace, "-u", engine.uri());
         assertThat(sysErr.getLog(), containsString("Cannot find file:"));
     }
 

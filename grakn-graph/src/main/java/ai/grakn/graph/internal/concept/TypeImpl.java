@@ -361,9 +361,14 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
         boolean changingSuperAllowed = super.changingSuperAllowed(oldSuperType, newSuperType);
         if(changingSuperAllowed && oldSuperType != null && !Schema.MetaSchema.isMetaLabel(oldSuperType.getLabel())) {
             //noinspection unchecked
-            Set<Role> superPlays = TypeImpl.from(oldSuperType).directPlays().keySet();
+            Set<Role> superPlays = new HashSet<>(oldSuperType.plays());
 
-            superPlays.removeAll(directPlays().keySet());
+            //Get everything that this can play bot including the supers
+            Set<Role> plays = directPlays().keySet();
+            subs().stream().flatMap(sub -> TypeImpl.from(sub).directPlays().keySet().stream()).
+                    forEach(play -> plays.add((Role) play));
+
+            superPlays.removeAll(plays);
 
             //It is possible to be disconnecting from a role which is no longer in use but checking this will take too long
             //So we assume the role is in sure and throw if that is the case
