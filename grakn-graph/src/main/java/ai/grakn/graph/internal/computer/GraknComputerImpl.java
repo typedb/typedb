@@ -19,16 +19,26 @@
 package ai.grakn.graph.internal.computer;
 
 import ai.grakn.GraknComputer;
+import ai.grakn.concept.LabelId;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -57,7 +67,7 @@ public class GraknComputerImpl implements GraknComputer {
 
     public GraknComputerImpl(Graph graph) {
         this.graph = graph;
-        if(graph instanceof TinkerGraph){
+        if (graph instanceof TinkerGraph) {
             graphComputerClass = TinkerGraphComputer.class;
         } else {
             graphComputerClass = GraknSparkComputer.class;
@@ -65,11 +75,13 @@ public class GraknComputerImpl implements GraknComputer {
     }
 
     @Override
-    public ComputerResult compute(VertexProgram program, MapReduce... mapReduces) {
+    public ComputerResult compute(Boolean includesShortcut, Set<LabelId> types,
+                                  VertexProgram program, MapReduce... mapReduces) {
         try {
-            graphComputer = getGraphComputer().program(program);
+            if (program != null) graphComputer = getGraphComputer().program(program);
             for (MapReduce mapReduce : mapReduces)
                 graphComputer = graphComputer.mapReduce(mapReduce);
+            applyFilters(types, includesShortcut);
             return graphComputer.submit().get();
         } catch (InterruptedException | ExecutionException e) {
             throw asRuntimeException(e);
@@ -77,13 +89,19 @@ public class GraknComputerImpl implements GraknComputer {
     }
 
     @Override
+    public ComputerResult compute(Set<LabelId> types, VertexProgram program, MapReduce... mapReduces) {
+        return compute(true, types, program, mapReduces);
+    }
+
+    @Override
+    public ComputerResult compute(VertexProgram program, MapReduce... mapReduces) {
+        // only for internal tasks
+        return compute(Collections.emptySet(), program, mapReduces);
+    }
+
+    @Override
     public ComputerResult compute(MapReduce mapReduce) {
-        try {
-            graphComputer = getGraphComputer().mapReduce(mapReduce);
-            return graphComputer.submit().get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw asRuntimeException(e);
-        }
+        return compute(null, mapReduce);
     }
 
     @Override
@@ -118,4 +136,22 @@ public class GraknComputerImpl implements GraknComputer {
         return graph.compute(this.graphComputerClass);
     }
 
+    private void applyFilters(Set<LabelId> types, boolean includesShortcut) {
+        if (types == null || types.isEmpty()) return;
+        Set<Integer> labelIds = types.stream().map(LabelId::getValue).collect(Collectors.toSet());
+
+        Traversal<Vertex, Vertex> vertexFilter =
+                __.has(Schema.VertexProperty.THING_TYPE_LABEL_ID.name(), P.within(labelIds));
+
+        Traversal<Vertex, Edge> edgeFilter = includesShortcut ?
+                __.union(
+                        __.bothE(Schema.EdgeLabel.SHORTCUT.getLabel()),
+                        __.bothE(Schema.EdgeLabel.RESOURCE.getLabel())
+                                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), P.within(labelIds))) :
+                __.union(
+                        __.bothE(Schema.EdgeLabel.RESOURCE.getLabel())
+                                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), P.within(labelIds)));
+
+        graphComputer.vertices(vertexFilter).edges(edgeFilter);
+    }
 }

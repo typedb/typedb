@@ -21,14 +21,15 @@ package ai.grakn.graph.internal.computer;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
-import org.apache.tinkerpop.gremlin.hadoop.process.computer.util.Rule;
+import org.apache.tinkerpop.gremlin.hadoop.structure.io.ObjectWritable;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.util.MemoryHelper;
-import org.apache.tinkerpop.gremlin.spark.process.computer.RuleAccumulator;
+import org.apache.tinkerpop.gremlin.process.traversal.Operator;
+import org.apache.tinkerpop.gremlin.spark.process.computer.MemoryAccumulator;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.io.Serializable;
@@ -53,40 +54,45 @@ public class GraknSparkMemory implements Memory.Admin, Serializable {
 
     private static final long serialVersionUID = -3877367965011858056L;
 
-    public final Set<String> memoryKeys = new HashSet<>();
-    private final AtomicInteger iteration = new AtomicInteger(0);   // do these need to be atomics?
-    private final AtomicLong runtime = new AtomicLong(0l);
-    private final Map<String, Accumulator<Rule>> memory = new HashMap<>();
+    public final Map<String, MemoryComputeKey> memoryComputeKeys = new HashMap<>();
+    private final Map<String, Accumulator<ObjectWritable>> sparkMemory = new HashMap<>();
+    private final AtomicInteger iteration = new AtomicInteger(0);
+    private final AtomicLong runtime = new AtomicLong(0L);
     private Broadcast<Map<String, Object>> broadcast;
-    private boolean inTask = false;
+    private boolean inExecute = false;
 
     public GraknSparkMemory(final VertexProgram<?> vertexProgram,
                             final Set<MapReduce> mapReducers,
                             final JavaSparkContext sparkContext) {
         if (null != vertexProgram) {
             for (final MemoryComputeKey key : vertexProgram.getMemoryComputeKeys()) {
-                MemoryHelper.validateKey(key.getKey());
-                this.memoryKeys.add(key.getKey());
+                this.memoryComputeKeys.put(key.getKey(), key);
             }
         }
         for (final MapReduce mapReduce : mapReducers) {
-            this.memoryKeys.add(mapReduce.getMemoryKey());
+            this.memoryComputeKeys.put(
+                    mapReduce.getMemoryKey(),
+                    MemoryComputeKey.of(mapReduce.getMemoryKey(), Operator.assign, false, false));
         }
-        for (final String key : this.memoryKeys) {
-            this.memory.put(key,
-                    sparkContext.accumulator(new Rule(Rule.Operation.NO_OP, null), key, new RuleAccumulator()));
+        for (final MemoryComputeKey memoryComputeKey : this.memoryComputeKeys.values()) {
+            this.sparkMemory.put(
+                    memoryComputeKey.getKey(),
+                    sparkContext.accumulator(ObjectWritable.empty(), memoryComputeKey.getKey(),
+                            new MemoryAccumulator<>(memoryComputeKey)));
         }
-        this.broadcast = sparkContext.broadcast(new HashMap<>());
+        this.broadcast = sparkContext.broadcast(Collections.emptyMap());
     }
 
     @Override
     public Set<String> keys() {
-        if (this.inTask) {
+        if (this.inExecute) {
             return this.broadcast.getValue().keySet();
         } else {
             final Set<String> trueKeys = new HashSet<>();
-            this.memory.forEach((key, value) -> {
-                if (value.value().getObject() != null) trueKeys.add(key);
+            this.sparkMemory.forEach((key, value) -> {
+                if (!value.value().isEmpty()) {
+                    trueKeys.add(key);
+                }
             });
             return Collections.unmodifiableSet(trueKeys);
         }
@@ -119,54 +125,39 @@ public class GraknSparkMemory implements Memory.Admin, Serializable {
 
     @Override
     public <R> R get(final String key) throws IllegalArgumentException {
-        final R r = this.getValue(key);
-        if (null == r) {
+        if (!this.memoryComputeKeys.containsKey(key)) {
+            throw Memory.Exceptions.memoryDoesNotExist(key);
+        }
+        if (this.inExecute && !this.memoryComputeKeys.get(key).isBroadcast()) {
+            throw Memory.Exceptions.memoryDoesNotExist(key);
+        }
+        final ObjectWritable<R> r = (ObjectWritable<R>) (this.inExecute ?
+                this.broadcast.value().get(key) : this.sparkMemory.get(key).value());
+        if (null == r || r.isEmpty()) {
             throw Memory.Exceptions.memoryDoesNotExist(key);
         } else {
-            return r;
+            return r.get();
         }
     }
 
-    public void incr(final String key, final long delta) {
-        checkKeyValue(key, delta);
-        if (this.inTask) {
-            this.memory.get(key).add(new Rule(Rule.Operation.INCR, delta));
+    @Override
+    public void add(final String key, final Object value) {
+        checkKeyValue(key, value);
+        if (this.inExecute) {
+            this.sparkMemory.get(key).add(new ObjectWritable<>(value));
         } else {
-            this.memory.get(key).setValue(new Rule(Rule.Operation.INCR, this.<Long>getValue(key) + delta));
-        }
-    }
-
-    public void and(final String key, final boolean bool) {
-        checkKeyValue(key, bool);
-        if (this.inTask) {
-            this.memory.get(key).add(new Rule(Rule.Operation.AND, bool));
-        } else {
-            this.memory.get(key).setValue(new Rule(Rule.Operation.AND, this.<Boolean>getValue(key) && bool));
-        }
-    }
-
-    public void or(final String key, final boolean bool) {
-        checkKeyValue(key, bool);
-        if (this.inTask) {
-            this.memory.get(key).add(new Rule(Rule.Operation.OR, bool));
-        } else {
-            this.memory.get(key).setValue(new Rule(Rule.Operation.OR, this.<Boolean>getValue(key) || bool));
+            throw Memory.Exceptions.memoryAddOnlyDuringVertexProgramExecute(key);
         }
     }
 
     @Override
     public void set(final String key, final Object value) {
         checkKeyValue(key, value);
-        if (this.inTask) {
-            this.memory.get(key).add(new Rule(Rule.Operation.SET, value));
+        if (this.inExecute) {
+            throw Memory.Exceptions.memorySetOnlyDuringVertexProgramSetUpAndTerminate(key);
         } else {
-            this.memory.get(key).setValue(new Rule(Rule.Operation.SET, value));
+            this.sparkMemory.get(key).setValue(new ObjectWritable<>(value));
         }
-    }
-
-    @Override
-    public void add(String s, Object o) throws IllegalArgumentException, IllegalStateException {
-
     }
 
     @Override
@@ -174,29 +165,32 @@ public class GraknSparkMemory implements Memory.Admin, Serializable {
         return StringFactory.memoryString(this);
     }
 
-    protected void setInTask(final boolean inTask) {
-        this.inTask = inTask;
+
+    protected void complete() {
+        this.memoryComputeKeys.values().stream()
+                .filter(MemoryComputeKey::isTransient)
+                .forEach(memoryComputeKey -> this.sparkMemory.remove(memoryComputeKey.getKey()));
+    }
+
+    public void setInExecute(final boolean inExecute) {
+        this.inExecute = inExecute;
     }
 
     protected void broadcastMemory(final JavaSparkContext sparkContext) {
         this.broadcast.destroy(true); // do we need to block?
         final Map<String, Object> toBroadcast = new HashMap<>();
-        this.memory.forEach((key, rule) -> {
-            if (null != rule.value().getObject()) {
-                toBroadcast.put(key, rule.value().getObject());
+        this.sparkMemory.forEach((key, object) -> {
+            if (!object.value().isEmpty() && this.memoryComputeKeys.get(key).isBroadcast()) {
+                toBroadcast.put(key, object.value());
             }
         });
         this.broadcast = sparkContext.broadcast(toBroadcast);
     }
 
     private void checkKeyValue(final String key, final Object value) {
-        if (!this.memoryKeys.contains(key)) {
+        if (!this.memoryComputeKeys.containsKey(key)) {
             throw GraphComputer.Exceptions.providedKeyIsNotAMemoryComputeKey(key);
         }
         MemoryHelper.validateValue(value);
-    }
-
-    private <R> R getValue(final String key) {
-        return this.inTask ? (R) this.broadcast.value().get(key) : (R) this.memory.get(key).value().getObject();
     }
 }

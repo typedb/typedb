@@ -31,7 +31,6 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.Sets;
@@ -114,7 +113,7 @@ public class DegreeTest {
         for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
-        GraknSparkComputer.clear();
+//        GraknSparkComputer.clear();
         graph.close();
 
         Set<Map<Long, Set<String>>> result = list.parallelStream().map(i -> {
@@ -123,8 +122,6 @@ public class DegreeTest {
             }
         }).collect(Collectors.toSet());
         result.forEach(degrees -> {
-            System.out.println(degrees);
-            System.out.println(correctDegrees);
             assertEquals(3, degrees.size());
             degrees.forEach((key, value) -> value.forEach(
                     id -> {
@@ -502,6 +499,45 @@ public class DegreeTest {
                         assertEquals(referenceDegrees.get(ConceptId.of(id)), key);
                     }
             ));
+        }
+    }
+
+    @Test
+    public void testDegreeWithHasResourceEdges() {
+        EntityType thingy = graph.putEntityType("thingy");
+        ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING);
+        thingy.resource(name);
+        Entity entity1 = thingy.addEntity();
+        entity1.resource(name.putResource("1"));
+        graph.commit();
+
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            Map<Long, Set<String>> degrees = graph.graql().compute().degree().in().execute();
+            assertEquals(degrees.size(), 1);
+            assertEquals(degrees.get(1L).size(), 2);
+        }
+
+        graph = factory.open(GraknTxType.WRITE);
+        Entity entity2 = thingy.addEntity();
+        Role role1 = graph.putRole("role1");
+        Role role2 = graph.putRole("role2");
+        thingy.plays(role1).plays(role2);
+        RelationType related = graph.putRelationType("related").relates(role1).relates(role2);
+        related.addRelation()
+                .addRolePlayer(role1, entity1)
+                .addRolePlayer(role2, entity2);
+        graph.commit();
+
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            Map<Long, Set<String>> degrees = graph.graql().compute().degree().in("thingy", "name").execute();
+            assertEquals(degrees.size(), 2);
+            assertEquals(degrees.get(0L).size(), 1);
+            assertEquals(degrees.get(1L).size(), 2);
+
+            Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().execute();
+            assertEquals(degrees2.size(), 2);
+            assertEquals(degrees2.get(2L).size(), 2);
+            assertEquals(degrees2.get(1L).size(), 2);
         }
     }
 

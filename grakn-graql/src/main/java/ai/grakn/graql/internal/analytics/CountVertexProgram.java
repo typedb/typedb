@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.LabelId;
 import ai.grakn.util.CommonUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -29,60 +28,40 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
-
 /**
- * The vertex program for computing the degree.
+ * The vertex program for counting concepts.
  * <p>
  *
  * @author Jason Liu
- * @author Sheldon Hall
  */
 
-public class DegreeVertexProgram extends GraknVertexProgram<Long> {
+public class CountVertexProgram extends GraknVertexProgram<Long> {
 
     // element key
-    public static final String DEGREE = "degreeVertexProgram.degree";
-    private static final String OF_LABELS = "degreeVertexProgram.ofLabelIds";
+    public static final String EDGE_COUNT = "countVertexProgram.edgeCount";
 
-    Set<LabelId> ofLabelIds = new HashSet<>();
-
-    String degreePropertyKey;
+    private String edgeCountPropertyKey;
 
     // Needed internally for OLAP tasks
-    public DegreeVertexProgram() {
+    public CountVertexProgram() {
     }
 
-    public DegreeVertexProgram(Set<LabelId> ofLabelIds, String randomId) {
-        this(randomId);
-        this.ofLabelIds = ofLabelIds;
-    }
-
-    public DegreeVertexProgram(String randomId) {
-        this.degreePropertyKey = DEGREE + randomId;
-        this.persistentProperties.put(DEGREE, degreePropertyKey);
-    }
-
-    @Override
-    public void storeState(final Configuration configuration) {
-        super.storeState(configuration);
-        ofLabelIds.forEach(type -> configuration.addProperty(OF_LABELS + "." + type, type));
+    public CountVertexProgram(String randomId) {
+        this.edgeCountPropertyKey = EDGE_COUNT + randomId;
+        this.persistentProperties.put(EDGE_COUNT, edgeCountPropertyKey);
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
-        configuration.subset(OF_LABELS).getKeys().forEachRemaining(key ->
-                ofLabelIds.add((LabelId) configuration.getProperty(OF_LABELS + "." + key)));
-        degreePropertyKey = (String) this.persistentProperties.get(DEGREE);
+        edgeCountPropertyKey = (String) this.persistentProperties.get(EDGE_COUNT);
     }
 
     @Override
     public Set<VertexComputeKey> getVertexComputeKeys() {
-        return Collections.singleton(VertexComputeKey.of(degreePropertyKey, false));
+        return Collections.singleton(VertexComputeKey.of(edgeCountPropertyKey, false));
     }
 
     @Override
@@ -94,10 +73,12 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                degreeMessagePassing(messenger);
+                messenger.sendMessage(messageScopeOut, 1L);
                 break;
             case 1:
-                degreeMessageCounting(messenger, vertex);
+                if (messenger.receiveMessages().hasNext()) {
+                    vertex.property(edgeCountPropertyKey, getMessageCount(messenger));
+                }
                 break;
             default:
                 throw CommonUtil.unreachableStatement("Exceeded expected maximum number of iterations");
@@ -106,18 +87,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public boolean terminate(final Memory memory) {
-        LOGGER.debug("Finished Degree Iteration " + memory.getIteration());
+        LOGGER.debug("Finished Count Iteration " + memory.getIteration());
         return memory.getIteration() == 1;
-    }
-
-    private void degreeMessagePassing(Messenger<Long> messenger) {
-        messenger.sendMessage(messageScopeIn, 1L);
-        messenger.sendMessage(messageScopeOut, 1L);
-    }
-
-    private void degreeMessageCounting(Messenger<Long> messenger, Vertex vertex) {
-        if (ofLabelIds.isEmpty() || vertexHasSelectedTypeId(vertex, ofLabelIds)) {
-            vertex.property(degreePropertyKey, getMessageCount(messenger));
-        }
     }
 }

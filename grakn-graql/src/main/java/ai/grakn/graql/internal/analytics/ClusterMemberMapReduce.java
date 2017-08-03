@@ -52,13 +52,12 @@ public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
     public ClusterMemberMapReduce() {
     }
 
-    public ClusterMemberMapReduce(Set<LabelId> selectedLabelIds, String clusterLabel) {
-        super(selectedLabelIds);
+    public ClusterMemberMapReduce(String clusterLabel) {
         this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
     }
 
-    public ClusterMemberMapReduce(Set<LabelId> selectedLabelIds, String clusterLabel, Long clusterSize) {
-        this(selectedLabelIds, clusterLabel);
+    public ClusterMemberMapReduce(String clusterLabel, Long clusterSize) {
+        this(clusterLabel);
         this.persistentProperties.put(CLUSTER_SIZE, clusterSize);
     }
 

@@ -18,20 +18,20 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
+import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.Collections;
 import java.util.Set;
-
-import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The vertex program for connected components in a graph.
@@ -44,22 +44,19 @@ import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> {
 
     private static final int MAX_ITERATION = 100;
-    // element key
-    public static final String CLUSTER_LABEL = "connectedComponentVertexProgram.clusterLabel";
 
-    // memory key
+    public static final String CLUSTER_LABEL = "connectedComponentVertexProgram.clusterLabel";
     private static final String VOTE_TO_HALT = "connectedComponentVertexProgram.voteToHalt";
 
-    private static final Set<String> MEMORY_COMPUTE_KEYS = Collections.singleton(VOTE_TO_HALT);
+    private static final Set<MemoryComputeKey> MEMORY_COMPUTE_KEYS =
+            Collections.singleton(MemoryComputeKey.of(VOTE_TO_HALT, Operator.and, false, true));
 
     private String clusterLabel;
 
     public ConnectedComponentVertexProgram() {
     }
 
-    public ConnectedComponentVertexProgram(Set<LabelId> selectedTypes, String randomId) {
-        this.selectedTypes = selectedTypes;
-
+    public ConnectedComponentVertexProgram(String randomId) {
         clusterLabel = CLUSTER_LABEL + randomId;
         this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
     }
@@ -70,12 +67,13 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         this.clusterLabel = (String) this.persistentProperties.get(CLUSTER_LABEL);
     }
 
-    public Set<String> getElementComputeKeys() {
-        return Collections.singleton(clusterLabel);
+    @Override
+    public Set<VertexComputeKey> getVertexComputeKeys() {
+        return Collections.singleton(VertexComputeKey.of(clusterLabel, false));
     }
 
     @Override
-    public Set getMemoryComputeKeys() {
+    public Set<MemoryComputeKey> getMemoryComputeKeys() {
         return MEMORY_COMPUTE_KEYS;
     }
 
@@ -89,19 +87,13 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public void safeExecute(final Vertex vertex, Messenger<String> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (vertexHasSelectedTypeId(vertex, selectedTypes)) {
-                    String id = vertex.value(Schema.VertexProperty.ID.name());
-                    vertex.property(clusterLabel, id);
-                    messenger.sendMessage(messageScopeShortcutIn, id);
-                    messenger.sendMessage(messageScopeResourceIn, id);
-                    messenger.sendMessage(messageScopeShortcutOut, id);
-                    messenger.sendMessage(messageScopeResourceOut, id);
-                }
+                String id = vertex.value(Schema.VertexProperty.ID.name());
+                vertex.property(clusterLabel, id);
+                messenger.sendMessage(messageScopeIn, id);
+                messenger.sendMessage(messageScopeOut, id);
                 break;
             default:
-                if (vertexHasSelectedTypeId(vertex, selectedTypes)) {
-                    update(vertex, messenger, memory);
-                }
+                update(vertex, messenger, memory);
                 break;
         }
     }
@@ -112,10 +104,10 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                 (a, b) -> a.compareTo(b) > 0 ? a : b);
         if (max.compareTo(currentMax) > 0) {
             vertex.property(clusterLabel, max);
-            messenger.sendMessage(messageScopeShortcutIn, max);
-            messenger.sendMessage(messageScopeResourceIn, max);
-            messenger.sendMessage(messageScopeShortcutOut, max);
-            //memory.and(VOTE_TO_HALT, false);
+            messenger.sendMessage(messageScopeIn, max);
+            messenger.sendMessage(messageScopeOut, max);
+            memory.add(VOTE_TO_HALT, false);
+            memory.getIteration();
         }
     }
 
@@ -131,7 +123,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
             throw GraqlQueryException.maxIterationsReached(this.getClass());
         }
 
-        //memory.or(VOTE_TO_HALT, true);
+        memory.set(VOTE_TO_HALT, true);
         return false;
     }
 

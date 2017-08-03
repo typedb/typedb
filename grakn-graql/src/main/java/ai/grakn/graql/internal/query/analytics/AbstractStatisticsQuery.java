@@ -132,12 +132,24 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     }
 
     boolean selectedResourceTypesHaveInstance(Set<Label> statisticsResourceTypes) {
-        List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
-                .map(type -> var("x").has(type, var())).collect(Collectors.toList());
-        List<Pattern> checkSubtypes = subLabels.stream()
-                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
-
-        return graph.orElseThrow(GraqlQueryException::noGraph).graql().infer(false).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
+        for (Label resourceType:statisticsResourceTypes){
+            for (Label type:subLabels) {
+                Boolean patternExist = graph.get().graql().infer(false).match(
+                        var("x").has(resourceType, var()),
+                        var("x").isa(Graql.label(type))
+                ).ask().execute();
+                if (patternExist) return true;
+            }
+        }
+        return false;
+        //TODO: should use the following ask query when ask query is even lazier
+//        List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
+//                .map(type -> var("x").has(type, var())).collect(Collectors.toList());
+//        List<Pattern> checkSubtypes = subLabels.stream()
+//                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
+//
+//        return graph.get().graql().infer(false)
+//                .match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
     }
 
     Set<Label> getCombinedSubTypes() {

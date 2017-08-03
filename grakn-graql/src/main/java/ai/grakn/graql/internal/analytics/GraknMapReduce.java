@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
@@ -45,6 +45,8 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
         implements MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> {
 
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
+
+    public static final int RESERVED_TYPE_LABEL_KEY = -10;
 
     GraknMapReduce(Set<LabelId> selectedTypes) {
         this.selectedTypes = selectedTypes;

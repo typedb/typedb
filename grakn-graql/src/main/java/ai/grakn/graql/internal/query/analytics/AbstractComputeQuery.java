@@ -21,10 +21,12 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Thing;
@@ -62,7 +64,13 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     Optional<GraknGraph> graph = Optional.empty();
     GraknComputer graknComputer = null;
     String keySpace;
+
     Set<Label> subLabels = new HashSet<>();
+    Set<Type> subTypes = new HashSet<>();
+    Set<EntityType> entityTypes = new HashSet<>();
+    Set<RelationType> relationTypes = new HashSet<>();
+    Set<ResourceType> resourceTypes = new HashSet<>();
+
     private String url;
 
     @Override
@@ -117,30 +125,35 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         keySpace = theGraph.getKeyspace();
         url = theGraph.admin().getEngineUrl();
 
+        EntityType metaEntityType = theGraph.admin().getMetaEntityType();
+        entityTypes.addAll(metaEntityType.subs());
+        entityTypes.remove(metaEntityType);
+
+        ResourceType<?> metaResourceType = theGraph.admin().getMetaResourceType();
+        resourceTypes.addAll(metaResourceType.subs());
+        resourceTypes.remove(metaResourceType);
+
+        RelationType metaRelationType = theGraph.admin().getMetaRelationType();
+        relationTypes.addAll(metaRelationType.subs());
+        relationTypes.remove(metaRelationType);
+
         getAllSubTypes(theGraph);
     }
 
     private void getAllSubTypes(GraknGraph graph) {
-        // fetch all the types in the subGraph
-        Set<Type> subGraph = subLabels.stream().map((label) -> {
-            Type type = graph.getOntologyConcept(label);
-            if (type == null) throw GraqlQueryException.labelNotFound(label);
-            return type;
-        }).collect(Collectors.toSet());
-
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
-        if (subGraph.isEmpty()) {
-            EntityType metaEntityType = graph.admin().getMetaEntityType();
-            metaEntityType.subs().forEach(type -> this.subLabels.add(type.getLabel()));
-            ResourceType<?> metaResourceType = graph.admin().getMetaResourceType(); //Yay for losing the type
-            metaResourceType.subs().forEach(type -> this.subLabels.add(type.getLabel()));
-            RelationType metaRelationType = graph.admin().getMetaRelationType();
-            metaRelationType.subs().forEach(type -> this.subLabels.add(type.getLabel()));
-            subLabels.remove(metaEntityType.getLabel());
-            subLabels.remove(metaResourceType.getLabel());
-            subLabels.remove(metaRelationType.getLabel());
+        if (subLabels.isEmpty()) {
+            subTypes.addAll(entityTypes);
+            subTypes.addAll(relationTypes);
+            subTypes.addAll(resourceTypes);
+            subLabels = subTypes.stream().map(OntologyConcept::getLabel).collect(Collectors.toSet());
         } else {
-            for (Type type : subGraph) {
+            subTypes = subLabels.stream().map(label -> {
+                Type type = graph.getOntologyConcept(label);
+                if (type == null) throw GraqlQueryException.labelNotFound(label);
+                return type;
+            }).collect(Collectors.toSet());
+            for (Type type : subTypes) {
                 type.subs().forEach(subType -> this.subLabels.add(subType.getLabel()));
             }
         }
@@ -182,9 +195,9 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     Set<Label> getHasResourceRelationTypes() {
-        return subLabels.stream()
-                .filter(type -> graph.get().getOntologyConcept(type).isResourceType())
-                .map(Schema.ImplicitType.HAS::getLabel)
+        return subTypes.stream()
+                .filter(Concept::isResourceType)
+                .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
                 .collect(Collectors.toSet());
     }
 
