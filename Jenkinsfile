@@ -23,11 +23,35 @@ node {
       stage('Test Connection') {
         sh 'grakn-package/bin/graql.sh -e "match \\\$x;"' //Sanity check query. I.e. is everything working?
       }
-      stage('Build LDBC Driver') {
-        dir('ldbc-driver') {
-          git url: 'https://github.com/ldbc/ldbc_driver', branch: 'master'
-          sh 'mvn -U clean install -DskipTests -Dmaven.repo.local=' + workspace + '/maven '
+      //Sets up environmental variables which can be shared between multiple tests
+      withEnv(['VALIDATION_DATA=' + workspace + '/generate-SNB/readwrite_neo4j--validation_set.tar.gz',
+               'CSV_DATA=' + workspace + '/generate-SNB/social_network',
+               'KEYSPACE=snb',
+               'ENGINE=localhost:4567',
+               'ACTIVE_TASKS=1000',
+               'PATH+EXTRA=' + workspace + '/grakn/grakn-package/bin',
+               'LDBC_DRIVER=' + workspace + '/ldbc-driver/target/jeeves-0.3-SNAPSHOT.jar',
+               'LDBC_CONNECTOR=' + workspace + '/benchmarking/snb-interactive-grakn/target/snb-interactive-grakn-stable-jar-with-dependencies.jar',
+               'LDBC_VALIDATION_CONFIG=readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
+        timeout(90) {
+          dir('generate-SNB') {
+            stage('Load Validation Data') {
+              sh 'wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz'
+              sh './load-SNB.sh arch validate'
+            }
+          }
+          stage('Measure Size') {
+            sh '../grakn/grakn-package/bin/nodetool flush'
+            sh 'du -hd 0 ../grakn/grakn-package/db/cassandra/data'
+          }
         }
+//        timeout(360) {
+//          dir('validate-SNB') {
+//            stage(buildBranch+' Validate Graph') {
+//              sh './validate.sh'
+//            }
+//          }
+//        }
       }
     }
     slackSend channel: "#github", message: "Periodic Build Success on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
