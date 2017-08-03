@@ -87,14 +87,14 @@ public class ConceptBuilder {
     /**
      * A map of parameters that have been specified for this concept.
      */
-    private final Map<BuilderParam<?>, Object> params = new HashMap<>();
+    private final Map<BuilderParam<?>, Object> preProvidedParams = new HashMap<>();
 
     /**
      * A set of parameters that were used for building the concept. Modified while executing {@link #build()}.
      * <p>
-     * This set starts empty. Every time {@link #expect(BuilderParam)} or {@link #expectOrDefault(BuilderParam, Object)}
+     * This set starts empty. Every time {@link #use(BuilderParam)} or {@link #useOrDefault(BuilderParam, Object)}
      * is called, the parameter is added to this set. After the concept is built, any parameter not in this set is
-     * considered "unexpected". If it is present in the field {@link #params}, then an error is thrown.
+     * considered "unexpected". If it is present in the field {@link #preProvidedParams}, then an error is thrown.
      * </p>
      *
      * <p>
@@ -102,7 +102,7 @@ public class ConceptBuilder {
      * </p>
      *
      * <pre>
-     * // params = {LABEL: actor, SUPER_CONCEPT: role, VALUE: "Bob"}
+     * // preProvidedParams = {LABEL: actor, SUPER_CONCEPT: role, VALUE: "Bob"}
      * // usedParams = {}
      *
      * if (has(LABEL)) {
@@ -113,9 +113,9 @@ public class ConceptBuilder {
      * }
      *
      * // Check for any unexpected parameters
-     * params.forEach((param, value) -> {
-     *     if (!usedParams.contains(param)) {
-     *         // param = VALUE
+     * preProvidedParams.forEach((providedParam, value) -> {
+     *     if (!usedParams.contains(providedParam)) {
+     *         // providedParam = VALUE
      *         // Throws because VALUE was provided, but not used!
      *     }
      * });
@@ -181,15 +181,15 @@ public class ConceptBuilder {
         Concept concept = null;
 
         if (has(ID)) {
-            concept = executor.graph().getConcept(expect(ID));
+            concept = executor.graph().getConcept(use(ID));
         } else if (has(LABEL)) {
-            concept = executor.graph().getOntologyConcept(expect(LABEL));
+            concept = executor.graph().getOntologyConcept(use(LABEL));
         }
 
         if (concept != null) {
             // The super can be changed on an existing concept
             if (has(SUPER_CONCEPT)) {
-                OntologyConcept superConcept = expect(SUPER_CONCEPT);
+                OntologyConcept superConcept = use(SUPER_CONCEPT);
                 setSuper(concept.asOntologyConcept(), superConcept);
             }
 
@@ -213,7 +213,7 @@ public class ConceptBuilder {
         }
 
         // Check for any unexpected parameters
-        params.forEach((param, value) -> {
+        preProvidedParams.forEach((param, value) -> {
             if (!usedParams.contains(param)) {
                 throw GraqlQueryException.insertUnexpectedProperty(param.name(), value, concept);
             }
@@ -251,12 +251,12 @@ public class ConceptBuilder {
         this.var = var;
     }
 
-    private <T> T expectOrDefault(BuilderParam<T> param, @Nullable T defaultValue) {
+    private <T> T useOrDefault(BuilderParam<T> param, @Nullable T defaultValue) {
         usedParams.add(param);
 
         // This is safe, assuming we only add to the map with the `set` method
         //noinspection unchecked
-        T value = (T) params.get(param);
+        T value = (T) preProvidedParams.get(param);
 
         if (value == null) value = defaultValue;
 
@@ -276,19 +276,19 @@ public class ConceptBuilder {
      *
      * @throws GraqlQueryException if the parameter is not present
      */
-    private <T> T expect(BuilderParam<T> param) {
-        return expectOrDefault(param, null);
+    private <T> T use(BuilderParam<T> param) {
+        return useOrDefault(param, null);
     }
 
     private boolean has(BuilderParam<?> param) {
-        return params.containsKey(param);
+        return preProvidedParams.containsKey(param);
     }
 
     private <T> ConceptBuilder set(BuilderParam<T> param, T value) {
-        if (params.containsKey(param) && !params.get(param).equals(value)) {
-            throw GraqlQueryException.insertMultipleProperties(param.name(), value, params.get(param));
+        if (preProvidedParams.containsKey(param) && !preProvidedParams.get(param).equals(value)) {
+            throw GraqlQueryException.insertMultipleProperties(param.name(), value, preProvidedParams.get(param));
         }
-        params.put(param, checkNotNull(value));
+        preProvidedParams.put(param, checkNotNull(value));
         return this;
     }
 
@@ -317,7 +317,7 @@ public class ConceptBuilder {
             Concept concept, BuilderParam<T> param, Class<S> conceptType, Function<S, T> getter) {
 
         if (has(param)) {
-            T value = expect(param);
+            T value = use(param);
 
             boolean isInstance = conceptType.isInstance(concept);
 
@@ -328,16 +328,16 @@ public class ConceptBuilder {
     }
 
     private Thing putInstance() {
-        Type type = expect(TYPE);
+        Type type = use(TYPE);
 
         if (type.isEntityType()) {
             return type.asEntityType().addEntity();
         } else if (type.isRelationType()) {
             return type.asRelationType().addRelation();
         } else if (type.isResourceType()) {
-            return type.asResourceType().putResource(expect(VALUE));
+            return type.asResourceType().putResource(use(VALUE));
         } else if (type.isRuleType()) {
-            return type.asRuleType().putRule(expect(WHEN), expect(THEN));
+            return type.asRuleType().putRule(use(WHEN), use(THEN));
         } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
         } else {
@@ -346,8 +346,8 @@ public class ConceptBuilder {
     }
 
     private OntologyConcept putOntologyConcept() {
-        OntologyConcept superConcept = expect(SUPER_CONCEPT);
-        Label label = expect(LABEL);
+        OntologyConcept superConcept = use(SUPER_CONCEPT);
+        Label label = use(LABEL);
 
         OntologyConcept concept;
 
@@ -359,7 +359,7 @@ public class ConceptBuilder {
             concept = executor.graph().putRole(label);
         } else if (superConcept.isResourceType()) {
             ResourceType resourceType = superConcept.asResourceType();
-            ResourceType.DataType<?> dataType = expectOrDefault(DATA_TYPE, resourceType.getDataType());
+            ResourceType.DataType<?> dataType = useOrDefault(DATA_TYPE, resourceType.getDataType());
             concept = executor.graph().putResourceType(label, dataType);
         } else if (superConcept.isRuleType()) {
             concept = executor.graph().putRuleType(label);
