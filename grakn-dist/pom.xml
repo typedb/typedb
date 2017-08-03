@@ -30,6 +30,10 @@
 
     <artifactId>grakn-dist</artifactId>
 
+    <properties>
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
+    </properties>
+
     <dependencies>
         <!--Logging dependencies: Compile scope needed to override parent test scope-->
         <dependency>
@@ -178,7 +182,7 @@
                         <configuration>
                             <url>https://github.com/burukuru/redis-prebuilt/archive/redis-3.2.9.tar.gz</url>
                             <unpack>true</unpack>
-                            <outputDirectory>${main.basedir}/target</outputDirectory>
+                            <outputDirectory>${project.basedir}/target</outputDirectory>
                         </configuration>
                     </execution>
                     <execution>
@@ -190,7 +194,7 @@
                         <configuration>
                             <url>https://github.com/burukuru/shunit2/archive/master.zip</url>
                             <unpack>true</unpack>
-                            <outputDirectory>${main.basedir}/target/lib</outputDirectory>
+                            <outputDirectory>${project.basedir}/target/lib</outputDirectory>
                             <skip>${skipTests}</skip>
                         </configuration>
                     </execution>
@@ -209,8 +213,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipTests}</skip>
-                            <workingDirectory>${main.basedir}/src/test/bash</workingDirectory>
-                            <executable>${main.basedir}/src/test/bash/bash-startup-test.sh</executable>
+                            <workingDirectory>${project.basedir}/src/test/bash</workingDirectory>
+                            <executable>${project.basedir}/src/test/bash/bash-startup-test.sh</executable>
                         </configuration>
                     </execution>
                 </executions>
