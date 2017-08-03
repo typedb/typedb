@@ -114,6 +114,10 @@ public abstract class TypeAtom extends Binary{
                 getParentQuery().graph().getConcept(getPredicate().getPredicate()) : null;
     }
 
+    /**
+     * @param u unifier to be applied
+     * @return set of type atoms resulting from applying the unifier
+     */
     public abstract Set<TypeAtom> unify(Unifier u);
 }
 

@@ -76,21 +76,21 @@ public abstract class AtomicBase implements Atomic {
         return Sets.newHashSet(varName);
     }
 
-    /**
-     * @return pattern corresponding to this atom
-     */
+    @Override
     public PatternAdmin getPattern(){ return atomPattern;}
+
+    @Override
     public PatternAdmin getCombinedPattern(){ return getPattern();}
 
-    /**
-     * @return the query the atom is contained in
-     */
+    @Override
     public ReasonerQuery getParentQuery(){ return parent;}
 
-    /**
-     * @param q query this atom is supposed to belong to
-     */
+    @Override
     public void setParentQuery(ReasonerQuery q){ parent = q;}
+
+    /**
+     * @return GraknGraph this atomic is defined in
+     */
     protected GraknGraph graph(){ return getParentQuery().graph();}
 }
 
