@@ -52,12 +52,13 @@ public class OntologyMutationTest extends GraphTestBase {
     private EntityType car;
     private Thing alice;
     private Thing bob;
+    private Role driver;
 
     @Before
     public void buildMarriageGraph() throws InvalidGraphException {
         husband = graknGraph.putRole("Husband");
         wife = graknGraph.putRole("Wife");
-        Role driver = graknGraph.putRole("Driver");
+        driver = graknGraph.putRole("Driver");
         Role driven = graknGraph.putRole("Driven");
 
         marriage = graknGraph.putRelationType("marriage").relates(husband).relates(wife);
@@ -94,12 +95,10 @@ public class OntologyMutationTest extends GraphTestBase {
 
     @Test
     public void whenChangingSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidGraphException {
+        expectedException.expect(GraphOperationException.class);
+        expectedException.expectMessage(GraphOperationException.changingSuperWillDisconnectRole(person, car, driver).getMessage());
+
         man.sup(car);
-
-        expectedException.expect(InvalidGraphException.class);
-        expectedException.expectMessage(VALIDATION_CASTING.getMessage(man.getLabel(), bob.getId(), husband.getLabel()));
-
-        graknGraph.commit();
     }
 
     @Test
@@ -279,7 +278,7 @@ public class OntologyMutationTest extends GraphTestBase {
     }
 
     @Test
-    public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstancesMethod(){
+    public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstances_ByPreventingChange(){
         ResourceType<String> name = graknGraph.putResourceType("name", ResourceType.DataType.STRING);
 
         //Create a person and allow person to have a name
@@ -295,12 +294,16 @@ public class OntologyMutationTest extends GraphTestBase {
 
         //Get The Relation which says that our man is name bob
         Relation expectedEdge = Iterables.getOnlyElement(has_name.instances());
+        Role hasNameOwner = graknGraph.getRole("has-name-owner");
 
         assertThat(expectedEdge.type().instances(), hasItem(expectedEdge));
+
+        expectedException.expect(GraphOperationException.class);
+        expectedException.expectMessage(GraphOperationException.changingSuperWillDisconnectRole(person, graknGraph.admin().getMetaEntityType(), hasNameOwner).getMessage());
 
         //Man is no longer a person and therefore is not allowed to have a name
         man.sup(graknGraph.admin().getMetaEntityType());
 
-        assertThat(expectedEdge.type().instances(), hasItem(expectedEdge));
+
     }
 }

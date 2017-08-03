@@ -268,10 +268,8 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      * @return The Type itself
      */
     public T sup(T newSuperType) {
-        checkOntologyMutationAllowed();
-
         T oldSuperType = sup();
-        if(oldSuperType == null || (!oldSuperType.equals(newSuperType))) {
+        if(changingSuperAllowed(oldSuperType, newSuperType)){
             //Update the super type of this type in cache
             cachedSuperType.set(newSuperType);
 
@@ -298,8 +296,21 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
             //Track any existing data if there is some
             trackRolePlayers();
         }
-
         return getThis();
+    }
+
+    /**
+     * Checks if changing the super is allowed. This passed if:
+     * 1. The transaction is not of type {@link ai.grakn.GraknTxType#BATCH}
+     * 2. The <code>newSuperType</code> is different from the old.
+     *
+     * @param oldSuperType the old super
+     * @param newSuperType the new super
+     * @return true if we can set the new super
+     */
+    boolean changingSuperAllowed(T oldSuperType, T newSuperType){
+        checkOntologyMutationAllowed();
+        return oldSuperType == null || !oldSuperType.equals(newSuperType);
     }
 
     /**

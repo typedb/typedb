@@ -24,6 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.util.ErrorMessage;
@@ -255,5 +256,13 @@ public class GraphOperationException extends GraknException{
      */
     public static GraphOperationException labelTaken(Label label){
         throw new GraphOperationException(LABEL_TAKEN.getMessage(label));
+    }
+
+    /**
+     * Thrown when changing the super of a {@link Type} will result in a {@link Role} disconnection which is in use.
+     */
+    public static GraphOperationException changingSuperWillDisconnectRole(Type oldSuper, Type newSuper, Role role){
+        throw new GraphOperationException(String.format("Cannot change the super type {%s} to {%s} because {%s} is connected to role {%s} which {%s} is not connected to.",
+                oldSuper.getLabel(), newSuper.getLabel(), oldSuper.getLabel(), role.getLabel(), newSuper.getLabel()));
     }
 }
