@@ -391,8 +391,7 @@
                         <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
                         <grakn.test.timerecord.file>test-timings.csv</grakn.test.timerecord.file>
                     </systemProperties>
-                    <!-- Added this because of crash during build. We have tests that can't run concurrently. -->
-                    <forkCount>1</forkCount>
+                    <forkCount>1C</forkCount>
                     <reuseForks>false</reuseForks>
                     <argLine>-Xmx1024m</argLine>
                 </configuration>
