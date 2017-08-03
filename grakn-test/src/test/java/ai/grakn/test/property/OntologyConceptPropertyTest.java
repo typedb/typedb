@@ -162,8 +162,7 @@ public class OntologyConceptPropertyTest {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
         assumeThat((Collection<OntologyConcept>) subConcept.subs(), not(hasItem(superConcept)));
 
-        //This check makes sure that setting the super is allowed
-        if(subConcept.isType()) assumeThat(subConcept.asType().sup().plays(), is(empty()));
+        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances(), is(empty()));
 
         setDirectSuper(subConcept, superConcept);
 
@@ -196,8 +195,7 @@ public class OntologyConceptPropertyTest {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
         assumeThat((Collection<OntologyConcept>) subConcept.subs(), not(hasItem(superConcept)));
 
-        //This check makes sure that setting the super is allowed
-        if(subConcept.isType()) assumeThat(subConcept.asType().sup().plays(), is(empty()));
+        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances(), is(empty()));
 
         addDirectSub(superConcept, subConcept);
 

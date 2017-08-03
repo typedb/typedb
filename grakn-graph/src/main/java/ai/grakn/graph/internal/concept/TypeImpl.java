@@ -367,7 +367,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
 
             //It is possible to be disconnecting from a role which is no longer in use but checking this will take too long
             //So we assume the role is in sure and throw if that is the case
-            if(!superPlays.isEmpty()){
+            if(!superPlays.isEmpty() && instancesDirect().findAny().isPresent()){
                 throw GraphOperationException.changingSuperWillDisconnectRole(oldSuperType, newSuperType, superPlays.iterator().next());
             }
 
