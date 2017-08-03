@@ -21,6 +21,7 @@ package ai.grakn.graph.internal.concept;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -31,12 +32,15 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraphTestBase;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Iterables;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.junit.Assert.assertThat;
 
 public class OntologyMutationTest extends GraphTestBase {
     private Role husband;
@@ -272,5 +276,31 @@ public class OntologyMutationTest extends GraphTestBase {
         expectedException.expectMessage(Matchers.containsString(ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.getLabel())));
 
         graknGraph.commit();
+    }
+
+    @Test
+    public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstancesMethod(){
+        ResourceType<String> name = graknGraph.putResourceType("name", ResourceType.DataType.STRING);
+
+        //Create a person and allow person to have a name
+        EntityType person = graknGraph.putEntityType("person").resource(name);
+
+        //Create a man which is a person and is therefore allowed to have a name
+        EntityType man = graknGraph.putEntityType("man").sup(person);
+        RelationType has_name = graknGraph.putRelationType("has-name");
+
+        //Create a Man and name him Bob
+        Resource<String> nameBob = name.putResource("Bob");
+        man.addEntity().resource(nameBob);
+
+        //Get The Relation which says that our man is name bob
+        Relation expectedEdge = Iterables.getOnlyElement(has_name.instances());
+
+        assertThat(expectedEdge.type().instances(), hasItem(expectedEdge));
+
+        //Man is no longer a person and therefore is not allowed to have a name
+        man.sup(graknGraph.admin().getMetaEntityType());
+
+        assertThat(expectedEdge.type().instances(), hasItem(expectedEdge));
     }
 }

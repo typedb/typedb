@@ -21,12 +21,13 @@ package ai.grakn.test.property;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.generator.GraknGraphs;
 import com.pholser.junit.quickcheck.Property;
+import com.pholser.junit.quickcheck.When;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
-import static ai.grakn.test.property.PropertyUtil.choose;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertThat;
@@ -37,14 +38,13 @@ import static org.junit.Assert.assertThat;
 @RunWith(JUnitQuickcheck.class)
 public class ThingPropertyTest {
 
-    @Ignore
-    @Property
-    public void whenGettingTheDirectTypeOfAThing_TheThingIsADirectInstanceOfThatType(Thing thing) {
+    @Property(onMinimalCounterexample=GraknGraphs.class)
+    public void whenGettingTheDirectTypeOfAThing_TheThingIsADirectInstanceOfThatType(@When(seed = 4279567802593797485L) Thing thing) {
         Type type = thing.type();
         assertThat(PropertyUtil.directInstances(type), hasItem(thing));
     }
 
-    @Ignore
+    @Ignore// Ignored because sometimes we fail to generate Things with resources attached to them
     @Property
     public void whenGettingTheResourceOfAThing_TheResourcesOwnerIsTheThing(Thing thing, long seed) {
         Resource<?> resource = PropertyUtil.choose(thing.resources(), seed);
