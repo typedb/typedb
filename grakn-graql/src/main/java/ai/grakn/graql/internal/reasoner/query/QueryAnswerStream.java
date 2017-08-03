@@ -39,8 +39,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toSet;
-
 /**
  *
  * <p>
@@ -104,7 +102,7 @@ public class QueryAnswerStream {
         for (TypeAtom type : types){
             Var var = type.getVarName();
             OntologyConcept t = type.getOntologyConcept();
-            if (!t.subs().collect(toSet()).contains(answer.get(var).asThing().type())) {
+            if (t.subs().noneMatch(sub -> sub.equals(answer.get(var).asThing().type()))) {
                 return false;
             }
         }
