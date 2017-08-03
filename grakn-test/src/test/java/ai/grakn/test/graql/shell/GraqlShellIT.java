@@ -604,6 +604,15 @@ public class GraqlShellIT {
         ));
     }
 
+    @Test
+    public void whenErrorOccurs_DoNotShowStackTrace() throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        String out = testShell("match fofobjiojasd\n", err);
+
+        assertFalse(out, err.toString().isEmpty());
+        assertThat(err.toString(), not(containsString(".java")));
+    }
+
     private static String randomString(int length) {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();

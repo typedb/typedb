@@ -24,7 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Printer;
@@ -219,7 +219,7 @@ class GraqlSession {
 
                 // Return results unless query is cancelled
                 queries.stream().flatMap(query -> query.resultsString(printer)).forEach(this::sendQueryResult);
-            } catch (IllegalArgumentException | IllegalStateException | GraphOperationException e) {
+            } catch (GraknException e) {
                 errorMessage = e.getMessage();
                 LOG.error(errorMessage,e);
             } catch (Throwable e) {
