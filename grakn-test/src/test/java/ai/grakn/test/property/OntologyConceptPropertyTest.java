@@ -162,6 +162,7 @@ public class OntologyConceptPropertyTest {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
         assumeThat((Collection<OntologyConcept>) subConcept.subs(), not(hasItem(superConcept)));
 
+        //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
         if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances(), is(empty()));
 
         setDirectSuper(subConcept, superConcept);
@@ -195,6 +196,7 @@ public class OntologyConceptPropertyTest {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
         assumeThat((Collection<OntologyConcept>) subConcept.subs(), not(hasItem(superConcept)));
 
+        //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
         if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances(), is(empty()));
 
         addDirectSub(superConcept, subConcept);
