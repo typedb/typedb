@@ -36,7 +36,6 @@ import org.junit.runner.RunWith;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-import static ai.grakn.test.property.PropertyUtil.choose;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -163,6 +162,9 @@ public class OntologyConceptPropertyTest {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
         assumeThat((Collection<OntologyConcept>) subConcept.subs(), not(hasItem(superConcept)));
 
+        //This check makes sure that setting the super is allowed
+        if(subConcept.isType()) assumeThat(subConcept.asType().sup().plays(), is(empty()));
+
         setDirectSuper(subConcept, superConcept);
 
         assertEquals(superConcept, subConcept.sup());
@@ -193,6 +195,9 @@ public class OntologyConceptPropertyTest {
             OntologyConcept superConcept, @NonMeta @FromGraph OntologyConcept subConcept) {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
         assumeThat((Collection<OntologyConcept>) subConcept.subs(), not(hasItem(superConcept)));
+
+        //This check makes sure that setting the super is allowed
+        if(subConcept.isType()) assumeThat(subConcept.asType().sup().plays(), is(empty()));
 
         addDirectSub(superConcept, subConcept);
 
