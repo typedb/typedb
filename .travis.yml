@@ -15,17 +15,24 @@ cache:
    - grakn-engine/npm
 
 env:
-  - TESTS=**/*Test*
-  - TESTS=**/*IT*
-  - MODULE=grakn-dashboard
-  - MODULE=grakn-dist
-  - MODULE=grakn-engine
-  - MODULE=grakn-factory
-  - MODULE=grakn-graph
-  - MODULE=grakn-graql
-  - MODULE=grakn-graql-shell
-  - MODULE=grakn-migration
-  - MODULE=grakn-test
+  - TESTS=**/*Test* MODULE=grakn-dashboard
+  - TESTS=**/*IT*   MODULE=grakn-dashboard
+  - TESTS=**/*Test* MODULE=grakn-dist
+  - TESTS=**/*IT*   MODULE=grakn-dist
+  - TESTS=**/*Test* MODULE=grakn-engine
+  - TESTS=**/*IT*   MODULE=grakn-engine
+  - TESTS=**/*Test* MODULE=grakn-factory
+  - TESTS=**/*IT*   MODULE=grakn-factory
+  - TESTS=**/*Test* MODULE=grakn-graph
+  - TESTS=**/*IT*   MODULE=grakn-graph
+  - TESTS=**/*Test* MODULE=grakn-graql
+  - TESTS=**/*IT*   MODULE=grakn-graql
+  - TESTS=**/*Test* MODULE=grakn-graql-shell
+  - TESTS=**/*IT*   MODULE=grakn-graql-shell
+  - TESTS=**/*Test* MODULE=grakn-migration
+  - TESTS=**/*IT*   MODULE=grakn-migration
+  - TESTS=**/*Test* MODULE=grakn-test
+  - TESTS=**/*IT*   MODULE=grakn-test
 
 notifications:
   slack: grakn:RbxoPzX267spGT4cgmoGLMpT
