@@ -44,6 +44,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.contains;
@@ -79,7 +80,7 @@ public class GraknGraphPutPropertyTest {
     ) {
         OntologyConcept concept = putOntologyConcept.apply(graph, label);
 
-        assertThat("Concept should only have one sub-type: itself", concept.subs(), contains(concept));
+        assertThat("Concept should only have one sub-type: itself", concept.subs().collect(Collectors.toSet()), contains(concept));
         assertFalse("Concept should not be implicit", concept.isImplicit());
         assertThat("Rules of hypotheses should be empty", concept.getRulesOfHypothesis(), empty());
         assertThat("Rules of conclusion should be empty", concept.getRulesOfConclusion(), empty());

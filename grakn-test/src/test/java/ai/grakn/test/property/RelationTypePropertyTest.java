@@ -37,6 +37,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.contains;
@@ -60,7 +61,7 @@ public class RelationTypePropertyTest {
     public void whenANonMetaRelationTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
             @Open GraknGraph graph, @FromGraph @NonMeta RelationType type) {
         assumeThat(type.instances(), empty());
-        assumeThat(type.subs(), contains(type));
+        assumeThat(type.subs().collect(Collectors.toSet()), contains(type));
         assumeThat(type.getRulesOfHypothesis(), empty());
         assumeThat(type.getRulesOfConclusion(), empty());
 

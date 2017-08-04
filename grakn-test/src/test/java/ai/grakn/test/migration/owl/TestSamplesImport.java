@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.semanticweb.owlapi.model.OWLOntology;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertRelationBetweenInstancesExists;
 import static ai.grakn.test.migration.MigratorTestUtils.assertResourceEntityRelationExists;
@@ -66,7 +67,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             EntityType sub = graph.getEntityType("tTshirts");
             Assert.assertNotNull(type);
             Assert.assertNotNull(sub);
-            assertThat(type.subs(), hasItem(sub));
+            assertThat(type.subs().collect(Collectors.toSet()), hasItem(sub));
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -97,7 +98,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Assert.assertNotNull(type.sup());
             Assert.assertEquals("tPerson", type.sup().getLabel());
             Assert.assertEquals(top, type.sup().sup());
-            assertTrue(top.subs().contains(graph.getEntityType("tPlace")));
+            assertTrue(top.subs().anyMatch(sub -> sub.equals(graph.getEntityType("tPlace"))));
             Assert.assertNotEquals(0, type.instances().size());
 
             assertTrue(
@@ -224,10 +225,10 @@ public class TestSamplesImport extends TestOwlGraknBase {
             RelationType isUncleOf = migrator.graph().getRelationType("op-isUncleOf");
             RelationType bloodRelation = migrator.graph().getRelationType("op-isBloodRelationOf");
 
-            assertTrue(bloodRelation.subs().contains(ancestor));
-            assertTrue(bloodRelation.subs().contains(isSiblingOf));
-            assertTrue(bloodRelation.subs().contains(isAuntOf));
-            assertTrue(bloodRelation.subs().contains(isUncleOf));
+            assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(ancestor)));
+            assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(isSiblingOf)));
+            assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(isAuntOf)));
+            assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(isUncleOf)));
 
             assertTrue(!ReasonerUtils.getRules(graph).isEmpty());
         }

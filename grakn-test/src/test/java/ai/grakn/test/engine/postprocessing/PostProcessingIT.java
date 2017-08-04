@@ -38,7 +38,6 @@ import com.thinkaurelius.titan.core.SchemaViolationException;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -46,6 +45,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Stream;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
@@ -155,8 +155,8 @@ public class PostProcessingIT {
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     private boolean graphIsBroken(GraknSession session){
         try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
-            Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subs();
-            for (ResourceType<?> resourceType : resourceTypes) {
+            Stream<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subs();
+            return resourceTypes.anyMatch(resourceType -> {
                 if (!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
                     Set<Integer> foundValues = new HashSet<>();
                     for (Resource<?> resource : resourceType.instances()) {
@@ -167,9 +167,9 @@ public class PostProcessingIT {
                         }
                     }
                 }
-            }
+                return false;
+            });
         }
-        return false;
     }
 
     private void forceDuplicateResources(GraknGraph graph, int resourceTypeNum, int resourceValueNum, int entityTypeNum, int entityNum){

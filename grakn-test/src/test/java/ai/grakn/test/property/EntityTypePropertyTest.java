@@ -33,6 +33,7 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
@@ -53,7 +54,7 @@ public class EntityTypePropertyTest {
     public void whenANonMetaEntityTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
             @Open GraknGraph graph, @FromGraph @NonMeta EntityType type) {
         assumeThat(type.instances(), empty());
-        assumeThat(type.subs(), contains(type));
+        assumeThat(type.subs().collect(toSet()), contains(type));
         assumeThat(type.getRulesOfHypothesis(), empty());
         assumeThat(type.getRulesOfConclusion(), empty());
 

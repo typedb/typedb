@@ -36,8 +36,8 @@ import org.junit.runner.RunWith;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-import static ai.grakn.test.property.PropertyUtil.choose;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
@@ -126,10 +126,10 @@ public class OntologyConceptPropertyTest {
         Collection<OntologyConcept> directSubs = PropertyUtil.directSubs(concept);
         OntologyConcept[] expected = Stream.concat(
                 Stream.of(concept),
-                directSubs.stream().flatMap(subConcept -> subConcept.subs().stream())
+                directSubs.stream().flatMap(OntologyConcept::subs)
         ).toArray(OntologyConcept[]::new);
 
-        assertThat(concept.subs(), containsInAnyOrder(expected));
+        assertThat(concept.subs().collect(toSet()), containsInAnyOrder(expected));
     }
 
     @Property

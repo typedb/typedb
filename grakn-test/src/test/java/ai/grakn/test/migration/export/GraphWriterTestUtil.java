@@ -47,7 +47,7 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertDataEqual(GraknGraph one, GraknGraph two){
-        one.admin().getMetaConcept().subs().stream().
+        one.admin().getMetaConcept().subs().
                 filter(Concept::isType).
                 map(Concept::asType).
                 flatMap(t -> t.instances().stream()).
@@ -137,7 +137,7 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertOntologiesEqual(GraknGraph one, GraknGraph two){
-        boolean ontologyCorrect = one.admin().getMetaConcept().subs().stream().filter(Concept::isType)
+        boolean ontologyCorrect = one.admin().getMetaConcept().subs().filter(Concept::isType)
                 .allMatch(t -> typesEqual(t.asType(), two.getOntologyConcept(t.asType().getLabel())));
         assertEquals(true, ontologyCorrect);
     }

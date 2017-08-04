@@ -88,7 +88,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
             assertNotNull(type.sup());
             assertEquals("tPerson", type.sup().getLabel().getValue());
             assertEquals(top, type.sup().sup());
-            assertTrue(top.subs().contains(graph.getEntityType("tPlace")));
+            assertTrue(top.subs().anyMatch(sub -> sub.equals(graph.getEntityType("tPlace"))));
             assertNotEquals(0, type.instances().size());
 
             assertTrue(

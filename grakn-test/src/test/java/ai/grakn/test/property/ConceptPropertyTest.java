@@ -256,7 +256,7 @@ public class ConceptPropertyTest {
         // TODO: A better way to handle these assumptions?
         if (concept.isOntologyConcept()) {
             OntologyConcept ontologyConcept = concept.asOntologyConcept();
-            assumeThat(ontologyConcept.subs(), contains(ontologyConcept));
+            assumeThat(ontologyConcept.subs().collect(toSet()), contains(ontologyConcept));
             if(ontologyConcept.isType()) {
                 Type type = ontologyConcept.asType();
                 assumeThat(type.instances(), empty());
