@@ -111,7 +111,7 @@ public class OntologyConceptPropertyTest {
     public void whenAnOntologyConceptHasAnIndirectSuper_ItIsAnIndirectSubOfThatSuper(
             OntologyConcept subConcept, long seed) {
         OntologyConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(subConcept), seed);
-        assertThat((Collection<OntologyConcept>) superConcept.subs(), hasItem(subConcept));
+        assertThat(superConcept.subs().collect(toSet()), hasItem(subConcept));
     }
 
     @Property
@@ -134,7 +134,7 @@ public class OntologyConceptPropertyTest {
 
     @Property
     public void whenGettingTheIndirectSubs_TheyContainTheOntologyConcept(OntologyConcept concept) {
-        assertThat((Collection<OntologyConcept>) concept.subs(), hasItem(concept));
+        assertThat(concept.subs().collect(toSet()), hasItem(concept));
     }
 
     @Property
@@ -161,7 +161,7 @@ public class OntologyConceptPropertyTest {
     public void whenSettingTheDirectSuper_TheDirectSuperIsSet(
             @NonMeta OntologyConcept subConcept, @FromGraph OntologyConcept superConcept) {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
-        assumeThat((Collection<OntologyConcept>) subConcept.subs(), not(hasItem(superConcept)));
+        assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
         setDirectSuper(subConcept, superConcept);
 
@@ -192,7 +192,7 @@ public class OntologyConceptPropertyTest {
     public void whenAddingADirectSub_TheDirectSubIsAdded(
             OntologyConcept superConcept, @NonMeta @FromGraph OntologyConcept subConcept) {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
-        assumeThat((Collection<OntologyConcept>) subConcept.subs(), not(hasItem(superConcept)));
+        assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
         addDirectSub(superConcept, subConcept);
 
