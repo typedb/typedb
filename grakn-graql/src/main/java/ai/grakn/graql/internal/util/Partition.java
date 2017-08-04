@@ -14,9 +14,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.graql.internal.gremlin.spanningtree.datastructure;
+package ai.grakn.graql.internal.util;
 
 import com.google.common.collect.Maps;
 
@@ -57,7 +58,7 @@ public class Partition<V> {
      * Find the representative for the given item
      */
     public V componentOf(V i) {
-        final V parent = parents.get(i);
+        final V parent = parents.getOrDefault(i, i);
         if (parent.equals(i)) {
             return i;
         } else {
@@ -75,8 +76,8 @@ public class Partition<V> {
         final V bHead = componentOf(b);
         if (aHead.equals(bHead)) return aHead;
         // add the shorter tree underneath the taller tree
-        final int aRank = ranks.get(aHead);
-        final int bRank = ranks.get(bHead);
+        final int aRank = ranks.getOrDefault(aHead, 0);
+        final int bRank = ranks.getOrDefault(bHead, 0);
         if (aRank > bRank) {
             parents.put(bHead, aHead);
             return aHead;
