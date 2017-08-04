@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -81,12 +80,6 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
      */
     @CheckReturnValue
     <T extends VarProperty> boolean hasProperty(Class<T> type);
-
-    /**
-     * @return the ID this variable represents, if it represents something with a specific ID
-     */
-    @CheckReturnValue
-    Optional<ConceptId> getId();
 
     /**
      * @return the name this variable represents, if it represents something with a specific name

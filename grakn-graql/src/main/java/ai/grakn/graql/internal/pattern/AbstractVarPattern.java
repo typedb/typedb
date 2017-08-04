@@ -87,11 +87,6 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final Optional<ConceptId> getId() {
-        return getProperty(IdProperty.class).map(IdProperty::getId);
-    }
-
-    @Override
     public final Optional<Label> getTypeLabel() {
         return getProperty(LabelProperty.class).map(LabelProperty::getLabelValue);
     }
