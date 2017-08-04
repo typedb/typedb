@@ -64,6 +64,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
+import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
@@ -77,7 +78,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  */
 public class GraknEngineServer implements AutoCloseable {
 
-    private static final String LOAD_SYSTEM_ONTOLOGY_LOCK_NAME = "load-system-ontology";
+    public static final String LOAD_SYSTEM_ONTOLOGY_LOCK_NAME = "load-system-ontology";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
             REST.WebPath.NEW_SESSION_URI,
@@ -92,6 +93,7 @@ public class GraknEngineServer implements AutoCloseable {
     private final EngineGraknGraphFactory factory;
     private final MetricRegistry metricRegistry;
     private final LockProvider lockProvider;
+    private final GraknEngineStatus graknEngineStatus = new GraknEngineStatus();
 
     public GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
@@ -125,15 +127,20 @@ public class GraknEngineServer implements AutoCloseable {
         logStartMessage(
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
-        lockAndInitializeSystemOntology();
-        startHTTP();
+        synchronized (this){
+            lockAndInitializeSystemOntology();
+            startHTTP();
+        }
+        graknEngineStatus.setReady(true);
         LOG.info("Engine started in {}", timer.stop());
     }
 
     @Override
     public void close() {
-        stopHTTP();
-        stopTaskManager();
+        synchronized (this) {
+            stopTaskManager();
+            stopHTTP();
+        }
     }
 
     private void lockAndInitializeSystemOntology() {
@@ -151,7 +158,7 @@ public class GraknEngineServer implements AutoCloseable {
 
     private void loadAndUnlock(Lock lock) {
         try {
-            LOG.info("{} is initializing the system ontology", this.engineId);
+            LOG.info("{} is checking the system ontology", this.engineId);
             factory.systemKeyspace().loadSystemOntology();
         } finally {
             lock.unlock();
@@ -170,7 +177,10 @@ public class GraknEngineServer implements AutoCloseable {
             LockProvider lockProvider) {
         TaskManager taskManager;
         if (!inMemoryQueue) {
-            taskManager = new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry);
+            Optional<String> consumers = prop.tryProperty(QUEUE_CONSUMERS);
+            taskManager = consumers
+                    .map(s -> new RedisTaskManager(engineId, prop, jedisPool, Integer.parseInt(s), factory, lockProvider, metricRegistry))
+                    .orElseGet(() -> new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry));
         } else  {
             // Redis storage for counts, in the RedisTaskManager it's created in consumers
             RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool);
@@ -201,7 +211,7 @@ public class GraknEngineServer implements AutoCloseable {
         new GraqlController(factory, spark, metricRegistry);
         new ConceptController(factory, spark, metricRegistry);
         new DashboardController(factory, spark);
-        new SystemController(factory, spark, metricRegistry);
+        new SystemController(factory, spark, graknEngineStatus, metricRegistry);
         new AuthController(spark, passwordProtected, jwtHandler, usersHandler);
         new UserController(spark, usersHandler);
         new CommitLogController(spark, defaultKeyspace, postProcessingDelay, taskManager);
@@ -237,10 +247,8 @@ public class GraknEngineServer implements AutoCloseable {
 
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
-        //Register filter to check authentication token in each request
-        boolean isPasswordProtected = passwordProtected;
-
-        if (isPasswordProtected) {
+        // Register filter to check authentication token in each request
+        if (passwordProtected) {
             spark.before((req, res) -> checkAuthorization(spark, req, jwtHandler));
         }
 
@@ -280,6 +288,10 @@ public class GraknEngineServer implements AutoCloseable {
 
     public EngineGraknGraphFactory factory() {
         return factory;
+    }
+
+    public GraknEngineStatus getGraknEngineStatus() {
+        return graknEngineStatus;
     }
 
     /**

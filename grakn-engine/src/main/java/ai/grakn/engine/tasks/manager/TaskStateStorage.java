@@ -24,6 +24,7 @@ import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknBackendException;
 
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * <p>
@@ -85,10 +86,13 @@ public interface TaskStateStorage {
      * @param offset Use in conjunction with @limit for pagination.
      * @return Set<TaskState> of TaskStates corresponding to search
      */
-    Set<TaskState> getTasks(TaskStatus taskStatus,
-                                          String taskClassName,
-                                          String createdBy,
-                                          EngineID runningOnEngine,
-                                          int limit,
-                                          int offset);
+    Set<TaskState> getTasks(
+            @Nullable TaskStatus taskStatus,
+            @Nullable String taskClassName,
+            @Nullable String createdBy,
+            @Nullable EngineID runningOnEngine,
+            int limit,
+            int offset);
+
+    void clear();
 }

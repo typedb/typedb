@@ -35,8 +35,9 @@ import redis.clients.util.Pool;
 public class JedisLock implements Lock {
 
     private static final long TIMEOUT_MS = 10 * 1000;
+    private final String lockName;
     // Name of the lock
-    private String lockName;
+    private String internalLockName;
 
     // Lock expiration in miliseconds.
     private int expireMsecs = 60 * 1000;
@@ -45,11 +46,12 @@ public class JedisLock implements Lock {
     private Pool<Jedis> jedis;
     private Lock lock = new ReentrantLock();
 
-    public JedisLock(Pool<Jedis> jedis, String lockName) {
+    public JedisLock(Pool<Jedis> jedis, String internalLockName) {
         Preconditions.checkNotNull(jedis,"JedisPool used in lock cannot be null");
-        Preconditions.checkArgument(lockName != null && !lockName.isEmpty(),"Lock name not valid");
+        Preconditions.checkArgument(internalLockName != null && !internalLockName.isEmpty(),"Lock name not valid");
         this.jedis = jedis;
-        this.lockName = lockName;
+        this.lockName = internalLockName;
+        this.internalLockName = "lock:" + internalLockName;
     }
 
     @Override
@@ -119,7 +121,7 @@ public class JedisLock implements Lock {
 
         lock.lock();
         try{
-            if (jedis.setnx(lockName, expiresStr) == 1) {
+            if (jedis.setnx(internalLockName, expiresStr) == 1) {
                 // lock acquired
                 locked = true;
                 return true;
@@ -128,13 +130,13 @@ public class JedisLock implements Lock {
             lock.unlock();
         }
 
-        String currentValueStr = jedis.get(lockName);
+        String currentValueStr = jedis.get(internalLockName);
         if (currentValueStr != null && Long.parseLong(currentValueStr) < System
                 .currentTimeMillis()) {
             // lock is expired
             lock.lock();
             try{
-                String oldValueStr = jedis.getSet(lockName, expiresStr);
+                String oldValueStr = jedis.getSet(internalLockName, expiresStr);
                 if (oldValueStr != null && oldValueStr.equals(currentValueStr)) {
                     // lock acquired
                     locked = true;
@@ -151,7 +153,7 @@ public class JedisLock implements Lock {
         lock.lock();
         try {
             if (locked) {
-                jedis.del(lockName);
+                jedis.del(internalLockName);
                 locked = false;
             }
         } finally {

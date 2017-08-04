@@ -41,6 +41,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
@@ -79,7 +81,10 @@ public class BackgroundTaskTestUtils {
 
     public static void waitForStatus(TaskStateStorage storage, Collection<TaskState> tasks, TaskStatus... status) {
         HashSet<TaskStatus> statusSet = Sets.newHashSet(status);
-        tasks.forEach(t -> waitForStatus(storage, t, statusSet));
+        Set<CompletableFuture<Void>> futures = tasks.stream()
+                .map(t -> CompletableFuture.runAsync(() -> waitForStatus(storage, (TaskState) t, statusSet)))
+                .collect(Collectors.toSet());
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()])).join();
     }
 
     private static void waitForStatus(TaskStateStorage storage, TaskState task, Set<TaskStatus> status) {
@@ -90,15 +95,15 @@ public class BackgroundTaskTestUtils {
     public static synchronized void waitForStatus(TaskStateStorage storage, TaskId task, Set<TaskStatus> status) {
         Instant initial = Instant.now();
         long duration = Duration.between(initial, Instant.now()).toMillis();
-        while(duration < 30000) {
+        while(duration < 120000) {
             if (storage.containsTask(task)) {
-                               TaskStatus currentStatus = storage.getState(task).status();
+                TaskStatus currentStatus = storage.getState(task).status();
                 if (status.contains(currentStatus)) {
                     return;
                 }
             }
             try {
-                Thread.sleep(500);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
                 break;

@@ -37,6 +37,8 @@ import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,6 +64,7 @@ import static java.util.Arrays.stream;
  * @author fppt
  */
 final public class JanusInternalFactory extends AbstractInternalFactory<GraknJanusGraph, JanusGraph> {
+    private final static Logger LOG = LoggerFactory.getLogger(JanusInternalFactory.class);
     private final static String DEFAULT_CONFIG = "backend-default";
 
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
@@ -123,8 +126,8 @@ final public class JanusInternalFactory extends AbstractInternalFactory<GraknJan
                 set("storage.cassandra.keyspace", name).
                 set("storage.batch-loading", batchLoading);
 
-        properties.entrySet().forEach(entry-> builder.set(entry.getKey().toString(), entry.getValue()));
-
+        properties.forEach((key, value) -> builder.set(key.toString(), value));
+        LOG.debug("Opening graph on {}", address);
         return builder.open();
     }
 

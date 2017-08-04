@@ -48,6 +48,7 @@ public enum ErrorMessage {
     HAS_INVALID("The type [%s] is not allowed to have a resource of type [%s]"),
     INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
     BACKEND_EXCEPTION("Backend Exception."),
+    INITIALIZATION_EXCEPTION("Graph for keyspace [%s] not properly initialized. Missing keyspace name resource"),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
     SESSION_CLOSED("The session for graph [%s] was closed"),
     GRAPH_CLOSED_ON_ACTION("The transaction was %s and closed graph [%s]. Use the session to get a new transaction for the graph."),
