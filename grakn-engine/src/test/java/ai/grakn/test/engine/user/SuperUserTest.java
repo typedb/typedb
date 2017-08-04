@@ -23,6 +23,7 @@ import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.test.GraphContext;
 import mjson.Json;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -34,13 +35,19 @@ import org.junit.Test;
  *
  */
 public class SuperUserTest {
-    static EngineGraknGraphFactory graknFactory;
-    
+    private static final String adminPassword = "top secret";
+
+    private static EngineGraknGraphFactory graknFactory;
+
     @ClassRule
     public static final GraphContext graph = GraphContext.empty();
 
-    private static final String adminPassword = "top secret";
-    private final UsersHandler users = UsersHandler.create(adminPassword, graknFactory);
+    private UsersHandler users;
+
+    @Before
+    public void setUp() {
+        users = UsersHandler.create(adminPassword, graknFactory);
+    }
 
     @BeforeClass
     public static void beforeClass() {

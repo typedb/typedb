@@ -75,22 +75,27 @@ public class MutatorTask extends BackgroundTask {
      */
     private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts) {
         try(Context context = metricRegistry().timer(name(MutatorTask.class, "execution")).time()) {
-            inserts.forEach(q -> {
-                try(Context contextSingle = metricRegistry().timer(name(MutatorTask.class, "execution-single")).time()){
-                    q.withGraph(graph).execute();
-                }
-            });
+            if (inserts.isEmpty()) {
+                metricRegistry().meter(name(MutatorTask.class, "empty")).mark();
+                return false;
+            } else {
+                inserts.forEach(q -> {
+                    try(Context contextSingle = metricRegistry().timer(name(MutatorTask.class, "execution-single")).time()){
+                        q.withGraph(graph).execute();
+                    }
+                });
 
-            Optional<String> result = graph.admin().commitNoLogs();
-            if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
-                String logs = result.get();
-                addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()
-                                .getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY)),
-                        PostProcessingTask.createConfig(graph.getKeyspace(), logs));
-                addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
-                        UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
+                Optional<String> result = graph.admin().commitNoLogs();
+                if(result.isPresent()){ // Submit more tasks if commit resulted in created commit logs
+                    String logs = result.get();
+                    addTask(PostProcessingTask.createTask(this.getClass(), engineConfiguration()
+                                    .getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY)),
+                            PostProcessingTask.createConfig(graph.getKeyspace(), logs));
+                    addTask(UpdatingInstanceCountTask.createTask(this.getClass()),
+                            UpdatingInstanceCountTask.createConfig(graph.getKeyspace(), logs));
+                }
+                return true;
             }
-            return true;
         }
     }
 
