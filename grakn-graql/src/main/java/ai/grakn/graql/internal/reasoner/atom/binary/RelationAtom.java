@@ -239,7 +239,7 @@ public class RelationAtom extends IsaAtom {
                 //check whether the role player's type allows playing this role
                 for (Var player : e.getValue()) {
                     OntologyConcept playerType = varOntologyConceptMap.get(player);
-                    if (playerType != null && !playerType.asType().plays().contains(role)) {
+                    if (playerType != null && playerType.asType().plays().noneMatch(plays -> plays.equals(role))) {
                         errors.add(ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage(playerType.getLabel(), role.getLabel(), type == null? "" : type.getLabel()));
                     }
                 }
@@ -683,7 +683,7 @@ public class RelationAtom extends IsaAtom {
 
                         if (parent != null && parent.isType()){
                             boolean isMetaType = Schema.MetaSchema.isMetaLabel(parent.getLabel());
-                            Set<Role> typeRoles = isMetaType? childRoles : new HashSet<>(parent.asType().plays());
+                            Set<Role> typeRoles = isMetaType? childRoles : parent.asType().plays().collect(toSet());
 
                             //incompatible type
                             if (Sets.intersection(relationRoles, typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();

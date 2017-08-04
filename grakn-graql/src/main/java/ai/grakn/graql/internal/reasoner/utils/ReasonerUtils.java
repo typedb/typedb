@@ -50,7 +50,6 @@ import javafx.util.Pair;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -252,7 +251,7 @@ public class ReasonerUtils {
      * @return set of role types the type can play in relType
      */
     public static Set<Role> getCompatibleRoleTypes(Type type, Set<Role> relRoles) {
-        Collection<Role> typeRoles = type.plays();
+        Set<Role> typeRoles = type.plays().collect(toSet());
         return relRoles.stream().filter(typeRoles::contains).collect(toSet());
     }
 

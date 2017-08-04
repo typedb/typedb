@@ -664,7 +664,7 @@ public class MatchQueryTest {
 
             OntologyConcept ontologyConcept = graph.getOntologyConcept(type);
             if (ontologyConcept.isType()) {
-                graphAPIPlays = new HashSet<>(ontologyConcept.asType().plays());
+                graphAPIPlays = ontologyConcept.asType().plays().collect(toSet());
             } else {
                 graphAPIPlays = Collections.EMPTY_SET;
             }

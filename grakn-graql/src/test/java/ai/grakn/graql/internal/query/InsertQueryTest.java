@@ -413,7 +413,7 @@ public class InsertQueryTest {
         //noinspection OptionalGetWithoutIsPresent
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
-        assertTrue(newType.plays().contains(movieGraph.graph().getRole(roleTypeLabel)));
+        assertTrue(newType.plays().anyMatch(role -> role.equals(movieGraph.graph().getRole(roleTypeLabel))));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());
     }
