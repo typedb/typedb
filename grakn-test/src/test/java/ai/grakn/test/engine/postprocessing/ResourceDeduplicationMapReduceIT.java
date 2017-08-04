@@ -34,6 +34,7 @@ import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.create
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.indexOf;
 import static org.junit.Assume.assumeTrue;
 
+@Ignore("No longer compatible with new Tinkerpop API. Furthermore, this was only ever used in tests so I suspect we can remove it later")
 public class ResourceDeduplicationMapReduceIT {
 
     @ClassRule
