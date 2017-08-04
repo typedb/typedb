@@ -139,7 +139,7 @@ public class DashboardController {
             Json body = Json.object();
             Json responseField = Json.object();
             if (concept.isEntity()) {
-                Collection<Role> rolesOfType = concept.asEntity().type().plays();
+                Collection<Role> rolesOfType = concept.asEntity().type().plays().collect(Collectors.toSet());
 
                 responseField = Json.object(
                         "roles", getRoleTypes(rolesOfType, concept, limit, keyspace),
