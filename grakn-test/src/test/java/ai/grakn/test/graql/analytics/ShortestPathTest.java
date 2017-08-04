@@ -11,7 +11,6 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
@@ -52,11 +51,11 @@ public class ShortestPathTest {
     public GraknSession factory;
 
     @ClassRule
-    public static EngineContext rule = EngineContext.startInMemoryServer();
+    public static final EngineContext context = EngineContext.startInMemoryServer();
 
     @Before
     public void setUp() {
-        factory = rule.factoryWithNewKeyspace();
+        factory = context.factoryWithNewKeyspace();
     }
 
     @Test(expected = GraqlQueryException.class)
@@ -140,7 +139,6 @@ public class ShortestPathTest {
     public void testShortestPathConcurrency() {
         List<String> correctPath;
         addOntologyAndEntities();
-        GraknSparkComputer.clear();
 
         correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(), entityId1.getValue());
 

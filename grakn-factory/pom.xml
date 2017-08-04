@@ -32,7 +32,7 @@
     <artifactId>grakn-factory</artifactId>
 
     <modules>
-        <module>titan-factory</module>
+        <module>janus-factory</module>
     </modules>
 
     <properties>

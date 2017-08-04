@@ -43,7 +43,7 @@ public class GraknTestSetup {
      * Starts cassandra if needed.
      */
     public static void startCassandraIfNeeded() {
-        if (GraknTestSetup.usingTitan()) {
+        if (GraknTestSetup.usingJanus()) {
             EmbeddedCassandra.start();
         }
     }
@@ -62,9 +62,9 @@ public class GraknTestSetup {
 
     /**
      *
-     * @return true if the tests are running on titan graph
+     * @return true if the tests are running on janus graph.
      */
-    public static boolean usingTitan() {
-        return "titan".equals(CONFIG);
+    public static boolean usingJanus() {
+        return "janus".equals(CONFIG);
     }
 }

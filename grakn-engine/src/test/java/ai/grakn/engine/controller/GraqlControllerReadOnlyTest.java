@@ -371,7 +371,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     @Ignore
     public void ZGETGraqlComputePathWithTextType_ResponseIsCorrect() {
-        assumeTrue(GraknTestSetup.usingTitan());
+        assumeTrue(GraknTestSetup.usingJanus());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -386,7 +386,7 @@ public class GraqlControllerReadOnlyTest {
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseContentTypeIsHAL() {
-        assumeTrue(GraknTestSetup.usingTitan());
+        assumeTrue(GraknTestSetup.usingJanus());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -400,7 +400,7 @@ public class GraqlControllerReadOnlyTest {
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
     public void ZGETGraqlComputePathWithHALType_ResponseStatusIs200() {
-        assumeTrue(GraknTestSetup.usingTitan());
+        assumeTrue(GraknTestSetup.usingJanus());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -415,7 +415,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     @Ignore
     public void ZGETGraqlComputePathWithHALType_ResponseIsNotEmpty() {
-        assumeTrue(GraknTestSetup.usingTitan());
+        assumeTrue(GraknTestSetup.usingJanus());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
@@ -430,7 +430,7 @@ public class GraqlControllerReadOnlyTest {
     @Test
     @Ignore // TODO: Fix this. Probably related to mocks and analytics
     public void ZGETGraqlComputePathWithHALType_ResponseContainsValidHALObjects() {
-        assumeTrue(GraknTestSetup.usingTitan());
+        assumeTrue(GraknTestSetup.usingJanus());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
