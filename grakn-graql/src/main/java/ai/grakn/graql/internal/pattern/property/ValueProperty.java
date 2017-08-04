@@ -96,7 +96,7 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty 
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
         return CommonUtil.optionalToStream(predicate.getInnerVar());
     }
 

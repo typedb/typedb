@@ -85,7 +85,7 @@ public class RelatesProperty extends AbstractVarProperty implements NamedPropert
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.of(role);
     }
 

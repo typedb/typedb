@@ -112,7 +112,7 @@ public interface VarPropertyInternal extends VarProperty {
     void delete(GraknGraph graph, Concept concept) throws GraqlQueryException;
 
     @Override
-    default Stream<VarPatternAdmin> getInnerVars() {
+    default Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.empty();
     }
 

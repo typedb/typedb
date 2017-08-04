@@ -116,7 +116,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
         while (!newVars.isEmpty()) {
             VarPatternAdmin var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(VarProperty::getInnerVars).forEach(newVars::add);
+            var.getProperties().flatMap(VarProperty::innerVarPatterns).forEach(newVars::add);
         }
 
         return vars;
@@ -132,7 +132,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
         while (!newVars.isEmpty()) {
             VarPatternAdmin var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(VarProperty::getImplicitInnerVars).forEach(newVars::add);
+            var.getProperties().flatMap(VarProperty::implicitInnerVarPatterns).forEach(newVars::add);
         }
 
         return vars;

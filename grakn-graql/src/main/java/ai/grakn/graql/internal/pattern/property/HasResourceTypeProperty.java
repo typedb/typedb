@@ -135,12 +135,12 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.of(resourceType);
     }
 
     @Override
-    public Stream<VarPatternAdmin> getImplicitInnerVars() {
+    public Stream<VarPatternAdmin> implicitInnerVarPatterns() {
         return Stream.of(resourceType, ownerRole, valueRole, relationOwner, relationValue);
     }
 
