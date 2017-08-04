@@ -82,18 +82,18 @@ public class EntityTypeTest extends GraphTestBase {
         Thing scope1 = entityType.addEntity();
         Thing scope2 = entityType.addEntity();
         Thing scope3 = entityType.addEntity();
-        assertThat(entityType.scopes(), is(empty()));
+        assertThat(entityType.scopes().collect(toSet()), is(empty()));
 
         entityType.scope(scope1);
         entityType.scope(scope2);
         entityType.scope(scope3);
-        assertThat(entityType.scopes(), containsInAnyOrder(scope1, scope2, scope3));
+        assertThat(entityType.scopes().collect(toSet()), containsInAnyOrder(scope1, scope2, scope3));
 
         scope1.delete();
-        assertThat(entityType.scopes(), containsInAnyOrder(scope2, scope3));
+        assertThat(entityType.scopes().collect(toSet()), containsInAnyOrder(scope2, scope3));
 
         entityType.deleteScope(scope2);
-        assertThat(entityType.scopes(), containsInAnyOrder(scope3));
+        assertThat(entityType.scopes().collect(toSet()), containsInAnyOrder(scope3));
     }
 
     @Test

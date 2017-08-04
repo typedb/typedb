@@ -271,10 +271,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
      * @return A list of the Instances which scope this Relation
      */
     @Override
-    public Set<Thing> scopes() {
-        HashSet<Thing> scopes = new HashSet<>();
-        neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asThing()));
-        return scopes;
+    public Stream<Thing> scopes() {
+        return neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE).map(Concept::asThing);
     }
 
     /**

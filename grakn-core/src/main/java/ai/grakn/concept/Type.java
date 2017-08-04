@@ -174,7 +174,7 @@ public interface Type extends OntologyConcept {
      * @return A list of the Instances that scope this Type.
      */
     @CheckReturnValue
-    Collection<Thing> scopes();
+    Stream<Thing> scopes();
 
     //------------------------------------- Other ----------------------------------
     /**
