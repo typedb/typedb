@@ -87,7 +87,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
         LOG.trace(graqlTraversal.toString());
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(graph);
 
-        String[] selectedNames = pattern.commonVarNames().stream().map(Var::getValue).toArray(String[]::new);
+        String[] selectedNames = pattern.commonVars().stream().map(Var::getValue).toArray(String[]::new);
 
         // Must provide three arguments in order to pass an array to .select
         // If ordering, select the variable to order by as well
@@ -128,7 +128,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
     @Override
     public Set<Var> getSelectedNames() {
-        return pattern.commonVarNames();
+        return pattern.commonVars();
     }
 
     @Override
@@ -146,7 +146,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
      * @return a map of concepts where the key is the variable name
      */
     private Map<Var, Concept> makeResults(GraknGraph graph, Map<String, Element> elements) {
-        return pattern.commonVarNames().stream().collect(Collectors.<Var, Var, Concept>toMap(
+        return pattern.commonVars().stream().collect(Collectors.<Var, Var, Concept>toMap(
                 Function.identity(),
                 name -> buildConcept(graph.admin(), elements.get(name.getValue()))
         ));

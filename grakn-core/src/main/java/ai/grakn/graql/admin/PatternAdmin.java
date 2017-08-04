@@ -49,7 +49,7 @@ public interface PatternAdmin extends Pattern {
      * Get all common, user-defined variable names in the pattern.
      */
     @CheckReturnValue
-    Set<Var> commonVarNames();
+    Set<Var> commonVars();
 
     /**
      * @return true if this Pattern.Admin is a Conjunction

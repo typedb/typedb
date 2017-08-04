@@ -154,7 +154,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final Set<Var> commonVarNames() {
+    public final Set<Var> commonVars() {
         return getInnerVars().stream()
                 .filter(v -> v.var().isUserDefinedName())
                 .map(VarPatternAdmin::var)
