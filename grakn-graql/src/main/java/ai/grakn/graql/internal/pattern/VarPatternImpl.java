@@ -74,11 +74,11 @@ abstract class VarPatternImpl extends AbstractVarPattern {
 
     @Override
     public final String toString() {
-        Collection<VarPatternAdmin> innerVars = getInnerVars();
+        Collection<VarPatternAdmin> innerVars = innerVarPatterns();
         innerVars.remove(this);
         getProperties(HasResourceProperty.class)
                 .map(HasResourceProperty::getResource)
-                .flatMap(r -> r.getInnerVars().stream())
+                .flatMap(r -> r.innerVarPatterns().stream())
                 .forEach(innerVars::remove);
 
         if (innerVars.stream().anyMatch(VarPatternImpl::invalidInnerVariable)) {

@@ -107,7 +107,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final Collection<VarPatternAdmin> getInnerVars() {
+    public final Collection<VarPatternAdmin> innerVarPatterns() {
         Stack<VarPatternAdmin> newVars = new Stack<>();
         List<VarPatternAdmin> vars = new ArrayList<>();
 
@@ -123,7 +123,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final Collection<VarPatternAdmin> getImplicitInnerVars() {
+    public final Collection<VarPatternAdmin> implicitInnerVarPatterns() {
         Stack<VarPatternAdmin> newVars = new Stack<>();
         List<VarPatternAdmin> vars = new ArrayList<>();
 
@@ -155,7 +155,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final Set<Var> commonVars() {
-        return getInnerVars().stream()
+        return innerVarPatterns().stream()
                 .filter(v -> v.var().isUserDefinedName())
                 .map(VarPatternAdmin::var)
                 .collect(toSet());

@@ -378,7 +378,7 @@ class ValidateGlobalRules {
         Set<String> errors = new HashSet<>();
 
         pattern.admin().varPatterns().stream()
-                .flatMap(v -> v.getInnerVars().stream())
+                .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
                     OntologyConcept ontologyConcept = graph.getOntologyConcept(typeLabel);
                     if(ontologyConcept == null){

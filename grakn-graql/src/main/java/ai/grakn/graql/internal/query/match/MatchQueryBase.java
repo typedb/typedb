@@ -104,7 +104,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
     @Override
     public Set<OntologyConcept> getOntologyConcepts(GraknGraph graph) {
         return pattern.varPatterns().stream()
-                .flatMap(v -> v.getInnerVars().stream())
+                .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
                 .map(graph::<OntologyConcept>getOntologyConcept)
                 .filter(Objects::nonNull)

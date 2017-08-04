@@ -91,13 +91,13 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
      * @return all variables that this variable references
      */
     @CheckReturnValue
-    Collection<VarPatternAdmin> getInnerVars();
+    Collection<VarPatternAdmin> innerVarPatterns();
 
     /**
      * Get all inner variables, including implicit variables such as in a has property
      */
     @CheckReturnValue
-    Collection<VarPatternAdmin> getImplicitInnerVars();
+    Collection<VarPatternAdmin> implicitInnerVarPatterns();
 
     /**
      * @return all type names that this variable refers to
