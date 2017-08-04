@@ -37,7 +37,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
-import com.pholser.junit.quickcheck.When;
 import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import java.util.HashSet;
@@ -103,7 +102,7 @@ public class GraknEngineFailoverIT {
 
     @Property
     public void whenSubmittingTasksToTwoEngines_TheyComplete(
-            @When(seed = 3819756137707870400L)  List<TaskState> tasks1, @When(seed = -2649665058549711049L)  List<TaskState> tasks2) throws Exception {
+            List<TaskState> tasks1, List<TaskState> tasks2) throws Exception {
         // Create & Send tasks to rest api
         Set<TaskId> taskIds1 = sendTasks(engine1.port(), tasks1);
         Set<TaskId> taskIds2 = sendTasks(engine2.port(), tasks2);

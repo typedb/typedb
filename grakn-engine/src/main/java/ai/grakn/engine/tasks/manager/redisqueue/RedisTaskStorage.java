@@ -25,6 +25,7 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknBackendException;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
@@ -54,6 +55,7 @@ public class RedisTaskStorage implements TaskStateStorage {
     private static final Logger LOG = LoggerFactory.getLogger(RedisTaskStorage.class);
     private final Timer updateTimer;
     private final Timer getTimer;
+    private final Meter writeError;
 
     private Pool<Jedis> redis;
 
@@ -64,6 +66,7 @@ public class RedisTaskStorage implements TaskStateStorage {
         this.redis = redis;
         this.updateTimer = metricRegistry.timer(name(RedisTaskStorage.class, "update"));
         this.getTimer = metricRegistry.timer(name(RedisTaskStorage.class, "get"));
+        this.writeError = metricRegistry.meter(name(RedisTaskStorage.class, "write", "error"));
     }
 
     public static RedisTaskStorage create(Pool<Jedis> jedisPool, MetricRegistry metricRegistry) {
@@ -81,8 +84,9 @@ public class RedisTaskStorage implements TaskStateStorage {
             if (status != null && status.equalsIgnoreCase("OK")) {
                 return state.getId();
             } else {
+                writeError.mark();
                 LOG.error("Could not write state {} to redis. Returned: {}", key, status);
-                throw new GraknBackendException("Could not save task state " + key);
+                throw GraknBackendException.stateStorage();
             }
         }
     }
