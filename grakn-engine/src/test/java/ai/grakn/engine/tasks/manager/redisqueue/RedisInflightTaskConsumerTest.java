@@ -20,6 +20,7 @@
 package ai.grakn.engine.tasks.manager.redisqueue;
 
 import static ai.grakn.engine.tasks.manager.redisqueue.RedisInflightTaskConsumer.ITERATIONS;
+import com.codahale.metrics.MetricRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -42,6 +43,7 @@ import redis.clients.jedis.Transaction;
 public class RedisInflightTaskConsumerTest {
 
     private static final String QUEUE_NAME = "QUEUE_NAME";
+    public static final MetricRegistry METRIC_REGISTRY = new MetricRegistry();
 
     private static String TRICKY_TASK = "{\"class\":\"ai.grakn.engine.tasks.manager.redisqueue.Task\",\"args\":[{\"taskState\":{\"creator\":\"\",\"schedule\":{\"runAt\":1499800245809,\"interval\":null},\"id\":{\"value\":\"0debb87c-a4cd-46d2-90a7-03efbb10318f\"},\"priority\":\"LOW\",\"status\":\"CREATED\",\"taskClassName\":\"ai.grakn.engine.tasks.mock.LongExecutionMockTask\"},\"taskConfiguration\":{\"configuration\":\"{\\\"id\\\":\\\"0cc42a2d-134c-4385-a4e9-69edcc10fee8\\\"}\"}}],\"vars\":null}";
 
@@ -64,8 +66,8 @@ public class RedisInflightTaskConsumerTest {
                 BuilderFactory.STRING));
         when(jedis.multi()).thenReturn(transaction);
         RedisInflightTaskConsumer redisInflightTaskConsumer =
-                new RedisInflightTaskConsumer(jedisPool,
-                        Duration.ofSeconds(2), new ConfigBuilder().build(), QUEUE_NAME);
+                new RedisInflightTaskConsumer(jedisPool, Duration.ofSeconds(30),
+                        new ConfigBuilder().build(), QUEUE_NAME, METRIC_REGISTRY);
         redisInflightTaskConsumer.run();
         verify(transaction, times( ITERATIONS)).rpoplpush(anyString(), anyString());
     }

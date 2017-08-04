@@ -20,6 +20,7 @@
 package ai.grakn.test.engine;
 
 import ai.grakn.client.TaskClient;
+import ai.grakn.engine.TaskId;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
@@ -36,12 +37,14 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multiset;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
@@ -72,6 +75,7 @@ public class GraknEngineServerIT {
     public void setUp() {
         clearTasks();
         storage = engine1.getTaskManager().storage();
+        storage.clear();
     }
 
     @Test
@@ -92,7 +96,14 @@ public class GraknEngineServerIT {
 
         waitForStatus(storage, allTasks, COMPLETED, STOPPED, FAILED);
 
-        assertEquals(completableTasks(allTasks), completedTasks());
+        Multiset<TaskId> completableTasks = completableTasks(allTasks);
+        assertEquals(completableTasks, completedTasks());
+
+        Set<TaskState> tasks = engine1.getTaskManager().storage()
+                .getTasks(null, null, null, null, 0, 0);
+
+        assertThat(tasks.stream().filter(t -> t.status().equals(COMPLETED)).count(), equalTo((long)
+                completableTasks.size()));
     }
 
     @Property(trials=10)

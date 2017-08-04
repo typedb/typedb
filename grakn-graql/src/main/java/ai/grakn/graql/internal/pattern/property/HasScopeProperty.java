@@ -81,9 +81,14 @@ public abstract class HasScopeProperty extends AbstractVarProperty implements Na
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Thing scopeThing = insertQueryExecutor.getConcept(scope()).asThing();
-        concept.asType().scope(scopeThing);
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        Thing scopeThing = executor.get(scope().getVarName()).asThing();
+        executor.get(var).asType().scope(scopeThing);
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of(var, scope().getVarName());
     }
 
     @Override

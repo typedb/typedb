@@ -18,8 +18,11 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import com.google.auto.value.AutoValue;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
 
 
 /**
@@ -35,13 +38,19 @@ import com.google.auto.value.AutoValue;
 @AutoValue
 public abstract class ThenProperty extends RuleProperty {
 
+    public static final String NAME = "then";
+
     public static ThenProperty of(Pattern then) {
         return new AutoValue_ThenProperty(then);
     }
 
     @Override
     public String getName() {
-        return "then";
+        return NAME;
     }
 
+    @Override
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        executor.builder(var).then(pattern());
+    }
 }

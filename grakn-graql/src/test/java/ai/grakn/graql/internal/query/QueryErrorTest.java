@@ -210,7 +210,7 @@ public class QueryErrorTest {
         Type person = rule.graph().getEntityType("person");
 
         exception.expect(GraqlQueryException.class);
-        exception.expectMessage(ErrorMessage.INSERT_NEW_TYPE.getMessage(movie, person));
+        exception.expectMessage(containsString("person"));
 
         qb.match(var("x").id(movie.getId())).insert(var("x").isa(label(person.getLabel()))).execute();
     }

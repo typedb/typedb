@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -27,6 +28,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.parser.QueryParser;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -47,6 +49,8 @@ import java.util.Set;
 @AutoValue
 public abstract class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
+    public static final String NAME = "datatype";
+
     public static DataTypeProperty of(ResourceType.DataType<?> datatype) {
         return new AutoValue_DataTypeProperty(datatype);
     }
@@ -55,7 +59,7 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
 
     @Override
     public String getName() {
-        return "datatype";
+        return NAME;
     }
 
     @Override
@@ -66,6 +70,21 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(EquivalentFragmentSets.dataType(this, start, dataType()));
+    }
+
+    @Override
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        executor.builder(var).dataType(dataType());
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of();
+    }
+
+    @Override
+    public Set<Var> producedVars(Var var) {
+        return ImmutableSet.of(var);
     }
 
     @Override

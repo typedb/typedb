@@ -88,9 +88,14 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Role role = insertQueryExecutor.getConcept(this.role()).asRole();
-        concept.asType().plays(role);
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        Role role = executor.get(this.role().getVarName()).asRole();
+        executor.get(var).asType().plays(role);
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of(var, role().getVarName());
     }
 
     @Override

@@ -20,12 +20,14 @@ package ai.grakn.test;
 
 import ai.grakn.client.Client;
 import ai.grakn.engine.GraknEngineConfig;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
 import static ai.grakn.engine.GraknEngineConfig.TASKS_RETRY_DELAY;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
+import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.StandardSystemProperty;
 import java.io.File;
@@ -61,6 +63,7 @@ public class DistributionContext extends ExternalResource {
     private Process engineProcess;
     private int port = 4567;
     private boolean inheritIO = true;
+    private int redisPort = 6379;
 
     private DistributionContext(Class<? extends TaskManager> taskManagerClass){
         this.taskManagerClass = taskManagerClass;
@@ -91,7 +94,7 @@ public class DistributionContext extends ExternalResource {
         }
 
         engineProcess.destroyForcibly();
-        engineProcess = newEngineProcess(port);
+        engineProcess = newEngineProcess(port, redisPort);
         waitForEngine(port);
         return true;
     }
@@ -103,11 +106,10 @@ public class DistributionContext extends ExternalResource {
     @Override
     public void before() throws Throwable {
         assertPackageBuilt();
-
         unzipDistribution();
         GraknTestSetup.startCassandraIfNeeded();
-        GraknTestSetup.startRedisIfNeeded(6379);
-        engineProcess = newEngineProcess(port);
+        GraknTestSetup.startRedisIfNeeded(redisPort);
+        engineProcess = newEngineProcess(port, redisPort);
         waitForEngine(port);
     }
 
@@ -130,13 +132,14 @@ public class DistributionContext extends ExternalResource {
         zipped.extractAll(TARGET_DIRECTORY);
     }
 
-    private Process newEngineProcess(Integer port) throws IOException {
+    private Process newEngineProcess(Integer port, Integer redisPort) throws IOException {
         // Set correct port & task manager
         Properties properties = GraknEngineConfig.create().getProperties();
         properties.setProperty(SERVER_PORT_NUMBER, port.toString());
+        properties.setProperty(REDIS_HOST, new SimpleURI("localhost", redisPort).toString());
         properties.setProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
         // To speed up tests of failure cases
-        properties.setProperty(TASKS_RETRY_DELAY, "5");
+        properties.setProperty(TASKS_RETRY_DELAY, "60");
 
         // Write new properties to disk
         File propertiesFile = new File("grakn-engine-" + port + ".properties");
@@ -187,5 +190,10 @@ public class DistributionContext extends ExternalResource {
             }
         }
         throw new RuntimeException("Could not start engine within expected time");
+    }
+
+    public DistributionContext redisPort(int port) {
+        this.redisPort = port;
+        return this;
     }
 }

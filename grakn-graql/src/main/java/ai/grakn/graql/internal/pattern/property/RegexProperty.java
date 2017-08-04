@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -72,8 +71,13 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        concept.asResourceType().setRegex(regex());
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        executor.get(var).asResourceType().setRegex(regex());
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of(var);
     }
 
     @Override

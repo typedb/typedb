@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Label;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -26,6 +27,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.auto.value.AutoValue;
@@ -45,6 +47,8 @@ import java.util.Set;
 @AutoValue
 public abstract class LabelProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
+    public static final String NAME = "label";
+
     public static LabelProperty of(Label label) {
         return new AutoValue_LabelProperty(label);
     }
@@ -53,7 +57,7 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
 
     @Override
     public String getName() {
-        return "label";
+        return NAME;
     }
 
     @Override
@@ -64,6 +68,26 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(EquivalentFragmentSets.label(this, start, label()));
+    }
+
+    @Override
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        executor.builder(var).label(label());
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of();
+    }
+
+    @Override
+    public Set<Var> producedVars(Var var) {
+        return ImmutableSet.of(var);
+    }
+
+    @Override
+    public boolean uniquelyIdentifiesConcept() {
+        return true;
     }
 
     @Override

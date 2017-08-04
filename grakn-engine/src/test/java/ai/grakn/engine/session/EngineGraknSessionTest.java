@@ -10,6 +10,8 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.ErrorMessage;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -23,12 +25,22 @@ public class EngineGraknSessionTest {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    
-    static { EngineTestHelper.engineWithGraphs(); }
-    private static EngineGraknGraphFactory graknFactory = EngineGraknGraphFactory.createAndLoadSystemOntology(EngineTestHelper.config().getProperties());
+
+    private static EngineGraknGraphFactory graknFactory;
     
     private String factoryUri = "localhost:" + EngineTestHelper.config().getProperty(GraknEngineConfig.SERVER_PORT_NUMBER);
-    
+
+    @BeforeClass
+    public static void beforeClass() {
+        EngineTestHelper.engineWithGraphs();
+        graknFactory = EngineGraknGraphFactory.createAndLoadSystemOntology(EngineTestHelper.config().getProperties());
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        EngineTestHelper.noEngine();
+    }
+
     @Test
     public void whenFetchingGraphsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureGraphsAreTheSame(){
         String keyspace = "mykeyspace";
