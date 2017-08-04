@@ -309,8 +309,8 @@ public class ResourceDeduplicationMapReduceIT {
         transact(graph -> {
             Assert.assertTrue(checkUnique(graph, resourceIndex));
             Resource<String> res = graph.admin().getConcept(Schema.VertexProperty.INDEX, resourceIndex);
-            Assert.assertEquals(1, res.relations(related1).size());
-            Assert.assertEquals(1, res.relations(related2).size());
+            Assert.assertEquals(1, res.relations(related1).count());
+            Assert.assertEquals(1, res.relations(related2).count());
         });
     }
 
@@ -357,11 +357,11 @@ public class ResourceDeduplicationMapReduceIT {
             for (String key : resourceKeys)
                 Assert.assertTrue(checkUnique(graph, key));
             Resource<String> res = graph.admin().getConcept(Schema.VertexProperty.INDEX, resourceKeys[0]);
-            Assert.assertEquals(1, res.relations(related1).size());
-            Assert.assertEquals(1, res.relations(related2).size());
+            Assert.assertEquals(1, res.relations(related1).count());
+            Assert.assertEquals(1, res.relations(related2).count());
             Resource<Float> fres = graph.admin().getConcept(Schema.VertexProperty.INDEX, resourceKeys[1]);
-            Assert.assertEquals(1, fres.relations(related1).size());
-            Assert.assertEquals(1, fres.relations(related2).size());
+            Assert.assertEquals(1, fres.relations(related1).count());
+            Assert.assertEquals(1, fres.relations(related2).count());
         });
     }
     

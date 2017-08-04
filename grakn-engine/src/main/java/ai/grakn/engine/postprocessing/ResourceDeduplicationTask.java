@@ -178,7 +178,7 @@ public class ResourceDeduplicationTask extends BackgroundTask {
                 // TODO: what if we fail here due to some read-write conflict?
                 try (GraknGraph graph = Grakn.session(uri, keyspace).open(GraknTxType.WRITE)) {
                     Resource<?> res = graph.admin().getConcept(Schema.VertexProperty.INDEX, key);
-                    if (res.ownerInstances().isEmpty() && res.relations().isEmpty()) {
+                    if (res.ownerInstances().isEmpty() && !res.relations().findAny().isPresent()) {
                         res.delete();
                     }
                 }

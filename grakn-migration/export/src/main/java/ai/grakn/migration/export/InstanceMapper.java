@@ -30,6 +30,7 @@ import ai.grakn.util.CommonUtil;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
@@ -122,7 +123,7 @@ public class InstanceMapper {
      * @return var pattern with resources
      */
     private static VarPattern hasResources(VarPattern var, Thing thing){
-        for(Resource resource: thing.resources()){
+        for(Resource resource: thing.resources().collect(Collectors.toSet())){
            var = var.has(resource.type().getLabel(), var().val(resource.getValue()));
         }
         return var;

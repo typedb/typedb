@@ -77,7 +77,7 @@ public class MigratorTestUtils {
     public static void assertResourceEntityRelationExists(GraknGraph graph, String resourceName, Object resourceValue, Entity owner){
         ResourceType resourceType = graph.getResourceType(resourceName);
         assertNotNull(resourceType);
-        assertEquals(resourceValue, owner.resources(resourceType).stream()
+        assertEquals(resourceValue, owner.resources(resourceType)
                 .map(Resource::getValue)
                 .findFirst().get());
     }
@@ -85,8 +85,8 @@ public class MigratorTestUtils {
     public static void assertRelationBetweenInstancesExists(GraknGraph graph, Thing thing1, Thing thing2, Label relation){
         RelationType relationType = graph.getOntologyConcept(relation);
 
-        Role role1 = thing1.plays().stream().filter(r -> r.relationTypes().stream().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
-        assertTrue(thing1.relations(role1).stream().anyMatch(rel -> rel.rolePlayers().contains(thing2)));
+        Role role1 = thing1.plays().filter(r -> r.relationTypes().stream().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
+        assertTrue(thing1.relations(role1).anyMatch(rel -> rel.rolePlayers().contains(thing2)));
     }
 
 
@@ -117,8 +117,8 @@ public class MigratorTestUtils {
         Role roleOwner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
         Role roleOther = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 
-        Collection<Relation> relations = thing.relations(roleOwner);
-        return relations.stream().flatMap(r -> r.rolePlayers(roleOther).stream()).map(Concept::asResource);
+        Stream<Relation> relations = thing.relations(roleOwner);
+        return relations.flatMap(r -> r.rolePlayers(roleOther).stream()).map(Concept::asResource);
     }
 
     /**
@@ -139,10 +139,10 @@ public class MigratorTestUtils {
             ResourceType<String> death = graph.getResourceType("death");
 
             Entity puffball = name.getResource("Puffball").ownerInstances().iterator().next().asEntity();
-            assertEquals(0, puffball.resources(death).size());
+            assertEquals(0, puffball.resources(death).count());
 
             Entity bowser = name.getResource("Bowser").ownerInstances().iterator().next().asEntity();
-            assertEquals(1, bowser.resources(death).size());
+            assertEquals(1, bowser.resources(death).count());
         }
     }
 

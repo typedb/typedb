@@ -93,7 +93,7 @@ public class XMLMigratorTest {
 
             assertEquals(1, thingType.instances().count());
             thingType.instances().forEach(thing ->{
-                assertEquals(1, thing.resources(nameType).size());
+                assertEquals(1, thing.resources(nameType).count());
                 assertEquals(name, thing.resources(nameType).iterator().next().getValue());
             });
         }

@@ -127,7 +127,7 @@ public class CSVMigratorTest {
             ResourceType<String> death = graph.getResourceType("death");
 
             Entity fluffy = name.getResource("Fluffy").ownerInstances().iterator().next().asEntity();
-            assertEquals(1, fluffy.resources(death).size());
+            assertEquals(1, fluffy.resources(death));
         }
     }
 
@@ -165,10 +165,10 @@ public class CSVMigratorTest {
         ResourceType description = graph.getResourceType("description");
 
         Entity venture = graph.getConcept(ConceptId.of("Venture"));
-        assertEquals(1, venture.resources(description).size());
+        assertEquals(1, venture.resources(description).count());
 
         Entity ventureLarge = graph.getConcept(ConceptId.of("Venture Large"));
-        assertEquals(0, ventureLarge.resources(description).size());
+        assertEquals(0, ventureLarge.resources(description).count());
     }
 
     @Test

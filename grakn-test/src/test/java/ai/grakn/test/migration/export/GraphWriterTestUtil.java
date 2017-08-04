@@ -70,7 +70,7 @@ public abstract class GraphWriterTestUtil {
      * Assert that there are the same number of entities in each graph with the same resources
      */
     public static void assertEntityCopied(Entity entity1, GraknGraph two){
-        Collection<Entity> entitiesFromGraph1 = entity1.resources().stream().map(Resource::ownerInstances).flatMap(Collection::stream).map(Concept::asEntity).collect(toSet());
+        Collection<Entity> entitiesFromGraph1 = entity1.resources().map(Resource::ownerInstances).flatMap(Collection::stream).map(Concept::asEntity).collect(toSet());
         Collection<Entity> entitiesFromGraph2 = getInstancesByResources(two, entity1).stream().map(Concept::asEntity).collect(toSet());
 
         assertEquals(entitiesFromGraph1.size(), entitiesFromGraph2.size());
@@ -80,7 +80,7 @@ public abstract class GraphWriterTestUtil {
      * Get all instances with the same resources
      */
     public static Collection<Thing> getInstancesByResources(GraknGraph graph, Thing thing){
-        return thing.resources().stream()
+        return thing.resources()
                 .map(r -> getResourceFromGraph(graph, r))
                 .map(Resource::ownerInstances)
                 .flatMap(Collection::stream)
