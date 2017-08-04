@@ -48,7 +48,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.StringUtil.valueToString;
@@ -321,28 +320,28 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     private Type type() {
         // TODO: Revise this when meta concept is a type
         Collection<? extends Type> candidates = graph.admin().getMetaConcept().subs().
-                map(Concept::asType).collect(Collectors.toSet());
+                map(Concept::asType).collect(toSet());
         return random.choose(candidates);
     }
 
     private EntityType entityType() {
-        return random.choose(graph.admin().getMetaEntityType().subs().collect(Collectors.toSet()));
+        return random.choose(graph.admin().getMetaEntityType().subs().collect(toSet()));
     }
 
     private Role role() {
-        return random.choose(graph.admin().getMetaRole().subs().collect(Collectors.toSet()));
+        return random.choose(graph.admin().getMetaRole().subs().collect(toSet()));
     }
 
     private ResourceType resourceType() {
-        return random.choose((Collection<ResourceType>) graph.admin().getMetaResourceType().subs().collect(Collectors.toSet()));
+        return random.choose((Collection<ResourceType>) graph.admin().getMetaResourceType().subs().collect(toSet()));
     }
 
     private RelationType relationType() {
-        return random.choose(graph.admin().getMetaRelationType().subs().collect(Collectors.toSet()));
+        return random.choose(graph.admin().getMetaRelationType().subs().collect(toSet()));
     }
 
     private RuleType ruleType() {
-        return random.choose(graph.admin().getMetaRuleType().subs().collect(Collectors.toSet()));
+        return random.choose(graph.admin().getMetaRuleType().subs().collect(toSet()));
     }
 
     private Thing instance() {
@@ -378,8 +377,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
     public static Collection<? extends OntologyConcept> allOntologyElementsFrom(GraknGraph graph) {
         Set<OntologyConcept> allOntologyConcepts = new HashSet<>();
-        allOntologyConcepts.addAll(graph.admin().getMetaConcept().subs().collect(Collectors.toSet()));
-        allOntologyConcepts.addAll(graph.admin().getMetaRole().subs().collect(Collectors.toSet()));
+        allOntologyConcepts.addAll(graph.admin().getMetaConcept().subs().collect(toSet()));
+        allOntologyConcepts.addAll(graph.admin().getMetaRole().subs().collect(toSet()));
         return allOntologyConcepts;
     }
 
@@ -387,7 +386,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         // TODO: Revise this when meta concept is a type
         return graph.admin().getMetaConcept().subs().
                 flatMap(element -> element.asType().instances()).
-                collect(Collectors.toSet());
+                collect(toSet());
     }
 
     @Override
