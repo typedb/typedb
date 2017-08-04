@@ -29,7 +29,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.Graql.var;
-import static org.hamcrest.Matchers.is;
 
 /**
  * @author Felix Chapman
@@ -47,7 +46,8 @@ public class HasResourcePropertyTest {
         Label label = Schema.MetaSchema.ROLE.getLabel();
         HasResourceProperty property = HasResourceProperty.of(label, var("x").admin());
 
-        exception.expect(is(GraqlQueryException.mustBeResourceType(label)));
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.mustBeResourceType(label).getMessage());
 
         property.checkValidProperty(graph.graph(), var("y").admin());
     }

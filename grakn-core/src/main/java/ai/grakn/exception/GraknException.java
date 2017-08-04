@@ -38,19 +38,4 @@ public class GraknException extends RuntimeException {
     protected GraknException(String error, Exception e){
         super(error, e);
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        GraqlQueryException that = (GraqlQueryException) o;
-
-        return getMessage().equals(that.getMessage());
-    }
-
-    @Override
-    public int hashCode() {
-        return getMessage().hashCode();
-    }
 }

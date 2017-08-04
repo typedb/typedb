@@ -31,7 +31,6 @@ import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
-import static org.hamcrest.Matchers.is;
 
 /**
  * @author Felix Chapman
@@ -49,7 +48,8 @@ public class RelationPropertyTest {
         RelationProperty property = new RelationProperty(ImmutableMultiset.of());
         Label role = Schema.MetaSchema.ROLE.getLabel();
 
-        exception.expect(is(GraqlQueryException.notARelationType(role)));
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.notARelationType(role).getMessage());
 
         property.checkValidProperty(graph.graph(), var("x").isa(label(role)).admin());
     }
