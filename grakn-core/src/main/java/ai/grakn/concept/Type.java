@@ -121,14 +121,14 @@ public interface Type extends OntologyConcept {
      * @return The resource types which this type is linked with.
      */
     @CheckReturnValue
-    Collection<ResourceType> resources();
+    Stream<ResourceType> resources();
 
     /**
      *
      * @return The resource types which this type is linked with as a key.
      */
     @CheckReturnValue
-    Collection<ResourceType> keys();
+    Stream<ResourceType> keys();
 
     /**
      *

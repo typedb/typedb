@@ -182,34 +182,29 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
     }
 
     @Override
-    public Collection<ResourceType> resources() {
-        Collection<ResourceType> resources = resources(Schema.ImplicitType.HAS_OWNER);
-        resources.addAll(keys());
-        return resources;
+    public Stream<ResourceType> resources() {
+        Stream<ResourceType> resources = resources(Schema.ImplicitType.HAS_OWNER);
+        return Stream.concat(resources, keys());
     }
 
     @Override
-    public Collection<ResourceType> keys() {
+    public Stream<ResourceType> keys() {
         return resources(Schema.ImplicitType.KEY_OWNER);
     }
 
-    private Collection<ResourceType> resources(Schema.ImplicitType implicitType){
+    private Stream<ResourceType> resources(Schema.ImplicitType implicitType){
         //TODO: Make this less convoluted
         String [] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
         String prefix = implicitIdentifiers[0] + "-";
         String suffix = "-" + implicitIdentifiers[1];
 
-        Set<ResourceType> resourceTypes = new HashSet<>();
-        //A traversal is not used in this caching so that ontology caching can be taken advantage of.
-        plays().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
-            String roleTypeLabel = roleType.getLabel().getValue();
-            if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
-                String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
-                resourceTypes.add(vertex().graph().getResourceType(resourceTypeLabel));
-            }
-        }));
-
-        return resourceTypes;
+        //A traversal is not used in this so that ontology caching can be taken advantage of.
+        return plays().map(role -> role.getLabel().getValue()).
+                filter(roleLabel -> roleLabel.startsWith(prefix) && roleLabel.endsWith(suffix)).
+                map(roleLabel -> {
+                    String resourceTypeLabel = roleLabel.replace(prefix, "").replace(suffix, "");
+                    return vertex().graph().getResourceType(resourceTypeLabel);
+                });
     }
 
     public Map<Role, Boolean> directPlays(){
@@ -450,7 +445,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
      * @throws GraphOperationException when the resource type is already used in another implicit relation
      */
     private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, ResourceType resourceType){
-        if(resources(implicitType).contains(resourceType)) {
+        if(resources(implicitType).anyMatch(rt -> rt.equals(resourceType))) {
             throw GraphOperationException.duplicateHas(this, resourceType);
         }
     }

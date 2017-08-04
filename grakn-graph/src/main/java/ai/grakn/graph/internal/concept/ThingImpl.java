@@ -253,7 +253,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Schema.ImplicitType hasOwner  = Schema.ImplicitType.HAS_OWNER;
 
         //Is this resource a key to me?
-        if(type().keys().contains(resource.type())){
+        if(type().keys().anyMatch(rt -> rt.equals(resource.type()))){
             has = Schema.ImplicitType.KEY;
             hasValue = Schema.ImplicitType.KEY_VALUE;
             hasOwner  = Schema.ImplicitType.KEY_OWNER;
