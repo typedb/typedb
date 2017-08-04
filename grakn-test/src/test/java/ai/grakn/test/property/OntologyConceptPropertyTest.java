@@ -163,6 +163,9 @@ public class OntologyConceptPropertyTest {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
         assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
+        //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
+        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances(), is(empty()));
+
         setDirectSuper(subConcept, superConcept);
 
         assertEquals(superConcept, subConcept.sup());
@@ -193,6 +196,9 @@ public class OntologyConceptPropertyTest {
             OntologyConcept superConcept, @NonMeta @FromGraph OntologyConcept subConcept) {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
         assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
+
+        //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
+        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances(), is(empty()));
 
         addDirectSub(superConcept, subConcept);
 

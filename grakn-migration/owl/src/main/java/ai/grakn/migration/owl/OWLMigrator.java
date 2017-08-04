@@ -97,9 +97,7 @@ public class OWLMigrator {
     public void migrate() throws InvalidGraphException {
         OwlGraknGraphStoringVisitor visitor = new OwlGraknGraphStoringVisitor(this);
         visitor.prepareOWL();
-        ontology.axioms().forEach(ax -> {
-            ax.accept(visitor); 
-        });
+        ontology.axioms().forEach(ax -> ax.accept(visitor));
         graph.commit();
     }
 
