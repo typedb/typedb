@@ -21,6 +21,7 @@ package ai.grakn.exception;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.util.ErrorMessage.INVALID_UNIQUE_PROPERTY_MUTATION;
@@ -48,7 +49,7 @@ public class PropertyNotUniqueException extends GraphOperationException{
      * Thrown when trying to set the property of concept {@code mutatingConcept} to a {@code value} which is already
      * taken by concept {@code conceptWithValue}
      */
-    public static PropertyNotUniqueException cannotChangeProperty(Vertex mutatingConcept, Vertex conceptWithValue, Schema.VertexProperty property, Object value){
+    public static PropertyNotUniqueException cannotChangeProperty(Element mutatingConcept, Vertex conceptWithValue, Enum property, Object value){
         return new PropertyNotUniqueException(INVALID_UNIQUE_PROPERTY_MUTATION.getMessage(property, mutatingConcept, value, conceptWithValue));
     }
 

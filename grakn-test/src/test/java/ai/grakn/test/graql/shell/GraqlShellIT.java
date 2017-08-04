@@ -42,6 +42,7 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
@@ -58,6 +59,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -76,6 +78,8 @@ public class GraqlShellIT {
     private static final String historyFile = StandardSystemProperty.JAVA_IO_TMPDIR.value() + "/graql-test-history";
 
     private static int keyspaceSuffix = 0;
+
+    private static boolean showStdOutAndErr = true;
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -240,7 +244,7 @@ public class GraqlShellIT {
     public void testAggregateQuery() throws Exception {
         assertShellMatches(
                 "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate count;",
-                is("8") // Expect to see the whole meta-ontology
+                is("7") // Expect to see the whole meta-ontology
         );
     }
 
@@ -415,26 +419,40 @@ public class GraqlShellIT {
 
     @Test
     public void testLargeQuery() throws Exception {
-        String value = Strings.repeat("really-", 100000) + "long-value";
+        // We don't show output for this test because the query is really-really-really-really-really-really-really long
+        showStdOutAndErr = false;
 
-        assertShellMatches(
-                "insert X sub resource datatype string; val '" + value + "' isa X;",
-                anything(),
-                "match $x isa X;",
-                allOf(containsString("$x"), containsString(value))
-        );
+        try {
+            String value = Strings.repeat("really-", 100000) + "long-value";
+
+            assertShellMatches(
+                    "insert X sub resource datatype string; val '" + value + "' isa X;",
+                    anything(),
+                    "match $x isa X;",
+                    allOf(containsString("$x"), containsString(value))
+            );
+        } finally {
+            showStdOutAndErr = true;
+        }
     }
 
     @Test
     public void whenErrorIsLarge_UserStillSeesEntireErrorMessage() throws Exception {
-        String value = Strings.repeat("really-", 100000) + "long-value";
+        // We don't show output for this test because the query is really-really-really-really-really-really-really long
+        showStdOutAndErr = false;
 
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        try {
+            String value = Strings.repeat("really-", 100000) + "long-value";
 
-        // Query has a syntax error
-        testShell("insert X sub resource datatype string; value '" + value + "' isa X;\n", err);
+            ByteArrayOutputStream err = new ByteArrayOutputStream();
 
-        assertThat(err.toString(), allOf(containsString("syntax error"), containsString(value)));
+            // Query has a syntax error
+            testShell("insert X sub resource datatype string; value '" + value + "' isa X;\n", err);
+
+            assertThat(err.toString(), allOf(containsString("syntax error"), containsString(value)));
+        } finally {
+            showStdOutAndErr = true;
+        }
     }
 
     @Test
@@ -533,6 +551,7 @@ public class GraqlShellIT {
     }
 
     @Test
+    @Ignore("Causes Travis build to halt")
     public void whenRunningBatchLoad_LoadCompletes() throws Exception {
         testShell("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
         testShell("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
@@ -544,6 +563,7 @@ public class GraqlShellIT {
     }
 
     @Test
+    @Ignore("Causes Travis build to halt")
     public void whenRunningBatchLoadAndAnErrorOccurs_PrintStatus() throws Exception {
         testShell("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
 
@@ -568,6 +588,19 @@ public class GraqlShellIT {
     }
 
     @Test
+    public void whenUserMakesAMistake_SubsequentErrorsAreTheSame() throws Exception {
+        String query = "insert r sub resource datatype string; e sub entity has r has nothing;";
+
+        ByteArrayOutputStream err1 = new ByteArrayOutputStream();
+        testShell("", err1, "-e", query);
+        assertThat(err1.toString(), not(isEmptyString()));
+
+        ByteArrayOutputStream err2 = new ByteArrayOutputStream();
+        testShell("", err2, "-e", query);
+        assertEquals(err1.toString(), err2.toString());
+    }
+
+    @Test
     public void testDuplicateRelation() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell(
@@ -583,6 +616,15 @@ public class GraqlShellIT {
                 anyOf(containsString("exists"), containsString("one or more")),
                 containsString("relation")
         ));
+    }
+
+    @Test
+    public void whenErrorOccurs_DoNotShowStackTrace() throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        String out = testShell("match fofobjiojasd\n", err);
+
+        assertFalse(out, err.toString().isEmpty());
+        assertThat(err.toString(), not(containsString(".java")));
     }
 
     private static String randomString(int length) {
@@ -635,17 +677,24 @@ public class GraqlShellIT {
         return testShell(input, err, args);
     }
 
-    private String testShell(String input, ByteArrayOutputStream berr, String... args) throws Exception {
+    private String testShell(String input, OutputStream berr, String... args) throws Exception {
         args = specifyUniqueKeyspace(args);
 
         InputStream in = new ByteArrayInputStream(input.getBytes());
 
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        OutputStream bout = new ByteArrayOutputStream();
 
-        PrintStream out = new PrintStream(new TeeOutputStream(bout, trueOut));
+        OutputStream tout = bout;
+        OutputStream terr = berr;
 
-        // Intercept stderr, but make sure it is still printed using the TeeOutputStream
-        PrintStream err = new PrintStream(new TeeOutputStream(berr, trueErr));
+        if (showStdOutAndErr) {
+            // Intercept stdout and stderr, but make sure it is still printed using the TeeOutputStream
+            tout = new TeeOutputStream(bout, trueOut);
+            terr = new TeeOutputStream(berr, trueErr);
+        }
+
+        PrintStream out = new PrintStream(tout);
+        PrintStream err = new PrintStream(terr);
 
         try {
             System.out.flush();

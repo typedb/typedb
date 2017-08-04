@@ -213,12 +213,6 @@ public class QueryToStringTest {
         assertEquals("match $x val 0.0001;", qb.match(var("x").val(0.0001)).toString());
     }
 
-    @Test(expected=UnsupportedOperationException.class)
-    public void testToStringUnsupported() {
-        //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa(var().val("abc"))).toString();
-    }
-
     @Test
     public void whenCallingToStringOnDeleteQuery_ItLooksLikeOriginalQuery(){
         String query = "match $x isa movie; delete $x;";

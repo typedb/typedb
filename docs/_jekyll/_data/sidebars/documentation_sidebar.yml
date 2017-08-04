@@ -1,0 +1,206 @@
+# This is your sidebar TOC. The sidebar code loops through sections here and provides the appropriate formatting.
+
+entries:
+- title: Sidebar
+  product: Documentation
+  folders:
+
+  - title: Get Started
+    output: web
+    folderitems:
+      - title: Home
+        output: web
+        url: /index.html
+      - title: Setup Guide
+        output: web
+        url: /documentation/get-started/setup-guide.html
+      - title: Quickstart Tutorial
+        output: web
+        url: /documentation/get-started/quickstart-tutorial.html
+  - title: Grakn Fundamentals
+    output: web
+    folderitems:
+      - title: Grakn Architecture Overview
+        output: web
+        url: /documentation/the-fundamentals/grakn-architecture.html
+      - title: Grakn Knowledge Model
+        output: web
+        url: /documentation/the-fundamentals/grakn-knowledge-model.html
+  - title: Graql Ontology
+    output: web
+    folderitems:
+      - title: Define a Basic Ontology
+        output: web
+        url: /documentation/building-an-ontology/basic-ontology.html
+      - title: Define a Hierarchical Ontology
+        output: web
+        url: /documentation/building-an-ontology/hierarchical-ontology.html
+      - title: Define a Rule-Driven Ontology
+        output: web
+        url: /documentation/building-an-ontology/rule-driven-ontology.html
+  - title: Graql Queries
+    output: web
+    folderitems:
+      - title: Overview
+        output: web
+        url: /documentation/graql/graql-overview.html
+      - title: Graql Shell
+        output: web
+        url: /documentation/graql/graql-shell.html
+      - title: Match Queries
+        output: web
+        url: /documentation/graql/match-queries.html
+      - title: Ask Queries
+        output: web
+        url: /documentation/graql/ask-queries.html
+      - title: Delete Queries
+        output: web
+        url: /documentation/graql/delete-queries.html
+      - title: Insert Queries
+        output: web
+        url: /documentation/graql/insert-queries.html
+      - title: Graql Rules
+        output: web
+        url: /documentation/graql/graql-rules.html
+      - title: Aggregate Queries
+        output: web
+        url: /documentation/graql/aggregate-queries.html
+      - title: Compute Queries
+        output: web
+        url: /documentation/graql/compute-queries.html
+      - title: Graql Templating
+        output: web
+        url: /documentation/graql/graql-templating.html
+      - title: Graql Cheatsheet
+        output: web
+        url: /documentation/graql/graql-cheatsheet.html
+  - title: Graql Analytics
+    output: web
+    folderitems:
+      - title: Overview
+        output: web
+        url: /documentation/graql-analytics/analytics-overview.html
+      - title: Analytics Statistics
+        output: web
+        url: /documentation/graql-analytics/analytics-statistics.html
+      - title: Analytics Shortest Path
+        output: web
+        url: /documentation/graql-analytics/analytics-shortest-path.html
+      - title: Analytics Degrees
+        output: web
+        url: /documentation/graql-analytics/analytics-degrees.html
+      - title: Connected Components
+        output: web
+        url: /documentation/graql-analytics/analytics-connected-components.html
+  - title: Migrate to Grakn
+    output: web
+    folderitems:
+      - title: Overview
+        output: web
+        url: /documentation/migration/migration-overview.html
+      - title: CSV Migration
+        output: web
+        url: /documentation/migration/CSV-migration.html
+      - title: JSON Migration
+        output: web
+        url: /documentation/migration/JSON-migration.html
+      - title: SQL Migration
+        output: web
+        url: /documentation/migration/SQL-migration.html
+      - title: OWL Migration
+        output: web
+        url: /documentation/migration/OWL-migration.html
+  - title: Develop with Java
+    output: web
+    folderitems:
+      - title: Java Development Overview
+        output: web
+        url: /documentation/developing-with-java/java-setup.html
+      - title: Graph API
+        output: web
+        url: /documentation/developing-with-java/graph-api.html
+      - title: Java Graql API
+        output: web
+        url: /documentation/developing-with-java/java-graql.html
+      - title: Migration API
+        output: web
+        url: /documentation/developing-with-java/migration-api.html
+      - title: Loader API
+        output: web
+        url: /documentation/developing-with-java/loader-api.html
+      - title: Advanced Java Development
+        output: web
+        url: /documentation/developing-with-java/advanced-java.html
+  - title: Grakn Dashboard
+    output: web
+    folderitems:
+      - title: Grakn Visualiser
+        output: web
+        url: /documentation/grakn-dashboard/visualiser.html
+  - title: Deploy Grakn
+    output: web
+    folderitems:
+      - title: Deploy Grakn
+        output: web
+        url: /documentation/deploy-grakn/grakn-deployment-guide.html
+  - title: API Reference
+    output: web
+    folderitems:
+      - title: API Reference
+        output: web
+        url: /documentation/api-reference/api-reference.html
+  - title: Resources
+    output: web
+    folderitems:
+      - title: Overview
+        output: web
+        url: /documentation/resources/resources-overview.html
+      - title: Grakn FAQ
+        output: web
+        url: /documentation/resources/faq.html
+      - title: Downloads
+        output: web
+        url: /documentation/resources/downloads.html
+  - title: Examples
+    output: web
+    folderitems:
+      - title: Overview
+        output: web
+        url: /documentation/examples/examples-overview.html
+      - title: CSV Migration
+        output: web
+        url: /documentation/examples/CSV-migration.html
+      - title: SQL Migration
+        output: web
+        url: /documentation/examples/SQL-migration.html
+      - title: OWL Migration
+        output: web
+        url: /documentation/examples/OWL-migration.html
+      - title: Reasoning with Graql
+        output: web
+        url: /documentation/examples/graql-reasoning.html
+      - title: Working With Tweets
+        output: web
+        url: /documentation/examples/working-with-tweets.html
+      - title: Modern example
+        output: web
+        url: /documentation/examples/modern.html
+      - title: Pokemon example
+        output: web
+        url: /documentation/examples/pokemon.html
+      - title: Statistical Analysis
+        output: web
+        url: /documentation/examples/analytics.html
+      - title: Graph API for Java developers
+        output: web
+        url: /documentation/examples/graph-api-example.html
+      - title: Analytics using Java APIs
+        output: web
+        url: /documentation/examples/java-analytics.html
+      - title: Example Projects
+        output: web
+        url: /documentation/examples/projects.html
+  items:
+  - title: Contribute to GRAKN.AI
+    output: web
+    url: /contributors/index.html

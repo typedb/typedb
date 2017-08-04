@@ -51,7 +51,7 @@ public class GraphTestBase {
         graknSession.close();
     }
 
-    AbstractGraknGraph<?> switchToBatchGraph(){
+    protected AbstractGraknGraph<?> switchToBatchGraph(){
         graknGraph.close();
         graknGraphBatch = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
         return graknGraphBatch;

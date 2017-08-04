@@ -25,18 +25,18 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.query.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.Nullable;
@@ -74,11 +74,6 @@ public class ResourceAtom extends Binary{
         a.getMultiPredicate().stream()
                 .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
                 .forEach(multiPredicate::add);
-    }
-
-    @Override
-    public VarProperty getVarProperty() {
-        return getPattern().asVar().getProperties(HasResourceProperty.class).findFirst().orElse(null);
     }
 
     @Override
@@ -206,7 +201,36 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
+    public Set<String> validateOntologically() {
+        OntologyConcept type = getOntologyConcept();
+        if (type == null) {
+            return new HashSet<>();
+        }
+
+        Set<String> errors = new HashSet<>();
+        if (!type.isResourceType()){
+            errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage(type.getLabel()));
+            return errors;
+        }
+
+        OntologyConcept ownerType = getParentQuery().getVarOntologyConceptMap().get(getVarName());
+
+        if (ownerType != null
+                && ownerType.isType()
+                && !ownerType.asType().resources().contains(type.asResourceType())){
+            errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(type.getLabel(), ownerType.getLabel()));
+        }
+        return errors;
+    }
+
+    @Override
     public boolean requiresMaterialisation(){ return true;}
+
+    private boolean isSuperNode(){
+        return graph().graql().match(getCombinedPattern()).admin().stream()
+                .skip(ResolutionPlan.RESOURCE_SUPERNODE_SIZE)
+                .findFirst().isPresent();
+    }
 
     @Override
     public int computePriority(Set<Var> subbedVars){
@@ -215,8 +239,8 @@ public class ResourceAtom extends Binary{
         priority += ResolutionPlan.IS_RESOURCE_ATOM;
 
         if (vps.isEmpty()) {
-            if (subbedVars.contains(getVarName())
-                    || subbedVars.contains(getPredicateVariable())) {
+            if (subbedVars.contains(getVarName()) || subbedVars.contains(getPredicateVariable())
+                    && !isSuperNode()) {
                     priority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
             } else{
                     priority += ResolutionPlan.VARIABLE_VALUE_PREDICATE;
@@ -225,14 +249,15 @@ public class ResourceAtom extends Binary{
             int vpsPriority = 0;
             for (ValuePredicateAdmin vp : vps) {
                 //vp with a value
-                if (vp.isSpecific()) {
+                if (vp.isSpecific() && !isSuperNode()) {
                     vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
                 } //vp with a variable
                 else if (vp.getInnerVar().isPresent()) {
                     VarPatternAdmin inner = vp.getInnerVar().orElse(null);
                     //variable mapped inside the query
                     if (subbedVars.contains(getVarName())
-                        || subbedVars.contains(inner.getVarName())) {
+                        || subbedVars.contains(inner.getVarName())
+                            && !isSuperNode()) {
                         vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
                     } //variable equality
                     else if (vp.equalsValue().isPresent()){

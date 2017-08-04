@@ -53,6 +53,13 @@ import java.util.function.Function;
 public interface ResourceType<D> extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    ResourceType setLabel(Label label);
+
+    /**
      * Sets the ResourceType to be abstract - which prevents it from having any instances.
      *
      * @param isAbstract  Specifies if the ResourceType is to be abstract (true) or not (false).
@@ -162,13 +169,12 @@ public interface ResourceType<D> extends Type {
      * Get the Resource with the value provided, and its type, or return NULL
      * @see Resource
      *
-     * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @param value A value which a Resource in the graph may be holding
      * @return The Resource with the provided value and type or null if no such Resource exists.
      */
     @CheckReturnValue
     @Nullable
-    <V> Resource<V> getResource(V value);
+    Resource<D> getResource(D value);
 
     /**
      * Returns a collection of subtypes of this ResourceType.

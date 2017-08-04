@@ -21,6 +21,7 @@ package ai.grakn.test;
 
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.EmbeddedCassandra;
+import ai.grakn.util.EmbeddedRedis;
 
 /**
  * <p>
@@ -47,6 +48,10 @@ public class GraknTestSetup {
         }
     }
 
+    public static void startRedisIfNeeded(int port) {
+        EmbeddedRedis.start(port);
+    }
+
     /**
      *
      * @return true if the tests are running on tinker graph
@@ -61,13 +66,5 @@ public class GraknTestSetup {
      */
     public static boolean usingTitan() {
         return "titan".equals(CONFIG);
-    }
-
-    /**
-     *
-     * @return true if the tests are running on orient graph
-     */
-    public static boolean usingOrientDB() {
-        return "orientdb".equals(CONFIG);
     }
 }

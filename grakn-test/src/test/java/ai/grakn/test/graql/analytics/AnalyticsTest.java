@@ -34,6 +34,7 @@ import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -49,8 +50,7 @@ import static org.junit.Assume.assumeFalse;
 public class AnalyticsTest {
 
     @ClassRule
-    // TODO: Don't set port once bug #15130 is fixed
-    public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
+    public static final EngineContext context = EngineContext.startInMemoryServer();
     private GraknSession factory;
 
     private static final String thingy = "thingy";
@@ -66,12 +66,10 @@ public class AnalyticsTest {
 
     @Before
     public void setUp() {
-        // TODO: Make orientdb support analytics
-        assumeFalse(GraknTestSetup.usingOrientDB());
-
         factory = context.factoryWithNewKeyspace();
     }
 
+    @Ignore // No longer applicable
     @Test
     public void testInferredResourceRelation() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {

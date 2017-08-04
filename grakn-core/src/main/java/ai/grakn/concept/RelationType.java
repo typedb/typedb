@@ -40,6 +40,13 @@ import java.util.Collection;
 public interface RelationType extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    RelationType setLabel(Label label);
+
+    /**
      * Creates and returns a new {@link Relation} instance, whose direct type will be this type.
      * @see Relation
      *

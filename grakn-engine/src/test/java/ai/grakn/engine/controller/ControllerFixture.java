@@ -54,7 +54,7 @@ public class ControllerFixture implements TestRule {
             public void evaluate() throws Throwable {
                 final String currentURI = RestAssured.baseURI;
                 restAssuredSetup();
-                EngineTestHelper.engine();
+                EngineTestHelper.engineWithGraphs();
                 try {
                     base.evaluate();
                 }

@@ -28,6 +28,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
+
 /**
  * The MapReduce program for collecting the result of a clustering query.
  * <p>
@@ -59,7 +61,7 @@ public class ClusterSizeMapReduce extends GraknMapReduce<Long> {
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
-        if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
+        if (vertexHasSelectedTypeId(vertex, selectedTypes)) {
             emitter.emit(vertex.value((String) persistentProperties.get(CLUSTER_LABEL)), 1L);
         } else {
             emitter.emit(NullObject.instance(), 0L);

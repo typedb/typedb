@@ -43,11 +43,11 @@ public class Patterns {
     private Patterns() {}
 
     public static <T extends PatternAdmin> Conjunction<T> conjunction(Set<T> patterns) {
-        return new ConjunctionImpl<>(patterns);
+        return new AutoValue_ConjunctionImpl<>(patterns);
     }
 
     public static <T extends PatternAdmin> Disjunction<T> disjunction(Set<T> patterns) {
-        return new DisjunctionImpl<>(patterns);
+        return new AutoValue_DisjunctionImpl<>(patterns);
     }
 
     public static VarPatternAdmin mergeVars(Collection<VarPatternAdmin> vars) {
@@ -67,18 +67,18 @@ public class Patterns {
     }
 
     public static Var var() {
-        return new VarImpl(UUID.randomUUID().toString(), false);
+        return new AutoValue_VarImpl(UUID.randomUUID().toString(), false);
     }
 
     public static Var var(String value) {
-        return new VarImpl(value, true);
+        return new AutoValue_VarImpl(value, true);
     }
 
-    static VarPatternAdmin varPattern(Var name, Set<VarProperty> properties) {
+    public static VarPatternAdmin varPattern(Var name, Set<VarProperty> properties) {
         if (properties.isEmpty()) {
             return name.admin();
         } else {
-            return new VarPatternImpl(name, properties);
+            return new AutoValue_VarPatternImpl(name, properties);
         }
     }
 }

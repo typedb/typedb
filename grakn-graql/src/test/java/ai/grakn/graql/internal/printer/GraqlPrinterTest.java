@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
@@ -175,6 +176,17 @@ public class GraqlPrinterTest {
         assertThat(conceptString, containsString(Schema.MetaSchema.THING.getLabel().getValue()));
         assertThat(conceptString, not(containsString("sub")));
         assertThat(conceptString, not(containsString("isa")));
+    }
+
+    @Test
+    public void whenPrintingRole_ShowLabel() {
+        Printer printer = Printers.graql(true);
+
+        Role role = rule.graph().admin().getMetaRole();
+
+        String roleString = printer.graqlString(role);
+
+        assertThat(roleString, containsString("role"));
     }
 
     @Test

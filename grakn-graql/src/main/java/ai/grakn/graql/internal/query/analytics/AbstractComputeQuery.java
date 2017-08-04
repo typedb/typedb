@@ -24,11 +24,11 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Thing;
+import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.LabelId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
@@ -63,6 +63,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     GraknComputer graknComputer = null;
     String keySpace;
     Set<Label> subLabels = new HashSet<>();
+    private String url;
 
     @Override
     public ComputeQuery<T> withGraph(GraknGraph graph) {
@@ -114,6 +115,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     void initSubGraph() {
         GraknGraph theGraph = graph.orElseThrow(GraqlQueryException::noGraph);
         keySpace = theGraph.getKeyspace();
+        url = theGraph.admin().getEngineUrl();
 
         getAllSubTypes(theGraph);
     }
@@ -146,7 +148,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     GraknComputer getGraphComputer() {
         if (graknComputer == null) {
-            graknComputer = Grakn.session(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
+            graknComputer = Grakn.session(url, keySpace).getGraphComputer();
         }
         return graknComputer;
     }
@@ -204,7 +206,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
-        return labelSet.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+        return labelSet.stream()
+                .map(graph.get().admin()::convertToId)
+                .filter(LabelId::isValid)
+                .collect(Collectors.toSet());
     }
 
     static String getRandomJobId() {

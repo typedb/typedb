@@ -25,11 +25,13 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
@@ -45,6 +47,27 @@ public class ShortcutFragmentSetTest {
     private final Var a = Graql.var("a"), b = Graql.var("b"), c = Graql.var("c"), d = Graql.var("d");
 
     @Test
+    public void whenApplyingRoleOptimisation_ExpandRoleToAllSubs() {
+        Label author = Label.of("author");
+        Label director = Label.of("director");
+        EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null, d, author);
+
+        Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
+                EquivalentFragmentSets.shortcut(null, a, b, c, Optional.of(d)),
+                authorLabelFragmentSet
+        );
+
+        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
+
+        HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
+                new ShortcutFragmentSet(null, a, b, c, Optional.empty(), Optional.of(ImmutableSet.of(author, director)), Optional.empty()),
+                authorLabelFragmentSet
+        );
+
+        assertEquals(expected, fragmentSets);
+    }
+
+    @Test
     public void whenRoleIsNotInGraph_DoNotApplyRoleOptimisation() {
         Label magician = Label.of("magician");
 
@@ -55,7 +78,7 @@ public class ShortcutFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        ShortcutFragmentSet.applyShortcutRoleTypeOptimisation(fragmentSets, graph.graph());
+        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
 
         assertEquals(expected, fragmentSets);
     }
@@ -71,7 +94,27 @@ public class ShortcutFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        ShortcutFragmentSet.applyShortcutRoleTypeOptimisation(fragmentSets, graph.graph());
+        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
+
+        assertEquals(expected, fragmentSets);
+    }
+
+    @Test
+    public void whenApplyingRoleOptimisationToMetaRole_DoNotExpandRoleToAllSubs() {
+        Label role = Label.of("role");
+        EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null, d, role);
+
+        Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
+                EquivalentFragmentSets.shortcut(null, a, b, c, Optional.of(d)),
+                authorLabelFragmentSet
+        );
+
+        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
+
+        HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
+                new ShortcutFragmentSet(null, a, b, c, Optional.empty(), Optional.empty(), Optional.empty()),
+                authorLabelFragmentSet
+        );
 
         assertEquals(expected, fragmentSets);
     }

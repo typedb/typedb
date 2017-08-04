@@ -19,6 +19,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.Grakn;
 import ai.grakn.client.BatchMutatorClient;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
@@ -73,7 +74,7 @@ public class GraqlShellTest {
    @Test
     public void testDefaultUri() throws IOException {
        GraqlShell.runShell(new String[]{}, expectedVersion, historyFile, client);
-       verify(client).connect(any(), eq(URI.create("ws://localhost:4567/shell/remote")));
+       verify(client).connect(any(), eq(URI.create(String.format("ws://%s/shell/remote", Grakn.DEFAULT_URI))));
     }
 
     @Test

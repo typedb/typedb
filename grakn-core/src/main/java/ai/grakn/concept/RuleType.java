@@ -41,6 +41,13 @@ import java.util.Collection;
 public interface RuleType extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    RuleType setLabel(Label label);
+
+    /**
      * Adds a new Rule if it does not exist otherwise returns the existing rule.
      * @see Pattern
      *

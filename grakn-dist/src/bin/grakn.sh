@@ -53,20 +53,6 @@ clean_grakn() {
 
     #Clear redis and stop it
     "${GRAKN_HOME}/bin/grakn-redis.sh" clean
-
-    if [ $USE_KAFKA ]; then
-        local DEFAULT_KAFKA_LOGS=/tmp/grakn-kafka-logs/
-        if [ -e "${DEFAULT_KAFKA_LOGS}" ]; then
-            rm -rf "${DEFAULT_KAFKA_LOGS}"
-            echo "Deleted logs in ${DEFAULT_KAFKA_LOGS}" >&2
-        fi
-
-        local DEFAULT_ZOOKEEPER_LOGS=/tmp/grakn-zookeeper/
-        if [ -e "${DEFAULT_ZOOKEEPER_LOGS}" ]; then
-            rm -rf "${DEFAULT_ZOOKEEPER_LOGS}"
-            echo "Deleted logs in ${DEFAULT_ZOOKEEPER_LOGS}" >&2
-        fi
-    fi
 }
 
 
@@ -79,10 +65,6 @@ start)
     if [ "$USE_CASSANDRA" ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" start
     fi
-    if [ $USE_KAFKA ]; then
-        "${GRAKN_HOME}/bin/zookeeper-server-start.sh" -daemon "${GRAKN_HOME}/conf/kafka/zookeeper.properties"
-        "${GRAKN_HOME}/bin/kafka-server-start.sh" -daemon "${GRAKN_HOME}/conf/kafka/kafka.properties"
-    fi
     "${GRAKN_HOME}/bin/grakn-engine.sh" start
     ;;
 
@@ -90,10 +72,6 @@ stop)
 
     "${GRAKN_HOME}/bin/grakn-redis.sh" stop
     "${GRAKN_HOME}/bin/grakn-engine.sh" stop
-    if [ "$USE_KAFKA" ]; then
-        "${GRAKN_HOME}/bin/kafka-server-stop.sh"
-        "${GRAKN_HOME}/bin/zookeeper-server-stop.sh"
-    fi
     if [ "$USE_CASSANDRA" ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" stop
     fi
@@ -102,10 +80,6 @@ stop)
 clean)
 
     "${GRAKN_HOME}/bin/grakn-engine.sh" stop
-    if [ "$USE_KAFKA" ]; then
-        "${GRAKN_HOME}/bin/kafka-server-stop.sh"
-        "${GRAKN_HOME}/bin/zookeeper-server-stop.sh"
-    fi
     if [ "$USE_CASSANDRA" ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" stop
         clean_grakn
@@ -115,10 +89,6 @@ clean)
 status)
     "${GRAKN_HOME}/bin/grakn-redis.sh" status
     "${GRAKN_HOME}/bin/grakn-engine.sh" status
-    if [ "$USE_KAFKA" ]; then
-        "${GRAKN_HOME}/bin/kafka-server-status.sh"
-        "${GRAKN_HOME}/bin/zookeeper-server-status.sh"
-    fi
     if [ "$USE_CASSANDRA" ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" status
     fi

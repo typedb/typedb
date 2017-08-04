@@ -304,15 +304,4 @@ public class BenchmarkTests {
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }
-
-    private Conjunction<VarPatternAdmin> conjunction(Conjunction<PatternAdmin> pattern){
-        return Patterns.conjunction(pattern.admin().getVars());
-    }
-
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknGraph graph){
-        Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
-                .getDisjunctiveNormalForm().getPatterns()
-                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Patterns.conjunction(vars);
-    }
 }

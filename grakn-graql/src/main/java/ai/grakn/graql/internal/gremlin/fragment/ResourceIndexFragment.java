@@ -25,7 +25,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 import static ai.grakn.util.Schema.VertexProperty.INDEX;
 
@@ -39,8 +39,10 @@ class ResourceIndexFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.has(INDEX.name(), resourceIndex);
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+
+        return traversal.has(INDEX.name(), resourceIndex);
     }
 
     @Override
@@ -49,8 +51,8 @@ class ResourceIndexFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return 1;
+    public double fragmentCost() {
+        return COST_INDEX;
     }
 
     @Override

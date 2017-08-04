@@ -22,18 +22,19 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Thing;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.util.GraknVersion;
+import com.google.common.base.Stopwatch;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p>
@@ -77,9 +78,15 @@ public class SystemKeyspace {
     private final EngineGraknGraphFactory factory;
 
     public SystemKeyspace(EngineGraknGraphFactory factory){
+        this(factory, true);
+    }
+
+    public SystemKeyspace(EngineGraknGraphFactory factory, boolean loadSystemOntology){
         this.factory = factory;
         this.openSpaces = new ConcurrentHashMap<>();
-        loadSystemOntology();
+        if (loadSystemOntology) {
+            loadSystemOntology();
+        }
     }
 
     /**
@@ -92,6 +99,9 @@ public class SystemKeyspace {
 
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getOntologyConcept(KEYSPACE_RESOURCE);
+            if (keyspaceName == null) {
+                throw GraknBackendException.initializationException(keyspace);
+            }
             Resource<String> resource = keyspaceName.putResource(keyspace);
             if (resource.owner() == null) {
                 graph.<EntityType>getOntologyConcept(KEYSPACE_ENTITY).addEntity().resource(resource);
@@ -150,19 +160,21 @@ public class SystemKeyspace {
      * only consists of types, the inserts are idempotent and it is safe to load it
      * multiple times.
      */
-    void loadSystemOntology() {
+    public void loadSystemOntology() {
+        Stopwatch timer = Stopwatch.createStarted();
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             if (graph.getOntologyConcept(KEYSPACE_ENTITY) != null) {
                 checkVersion(graph);
                 return;
             }
+            LOG.info("No other version found, loading ontology for version {}", GraknVersion.VERSION);
             loadSystemOntology(graph);
             graph.getResourceType(SYSTEM_VERSION).putResource(GraknVersion.VERSION);
             graph.admin().commitNoLogs();
-            LOG.info("Loaded system ontology to system keyspace.");
-        } catch (InvalidGraphException | NullPointerException e) {
-            e.printStackTrace(System.err);
-            LOG.error("Could not load system ontology. The error was: " + e);
+            LOG.info("Loaded system ontology to system keyspace. Took: {}", timer.stop());
+        } catch (Exception e) {
+            LOG.error("Error while loading system ontology in {}. The error was: {}", timer.stop(), e.getMessage(), e);
+            throw e;
         }
     }
 
@@ -176,6 +188,8 @@ public class SystemKeyspace {
         Resource existingVersion = graph.getResourceType(SYSTEM_VERSION).instances().iterator().next();
         if(!GraknVersion.VERSION.equals(existingVersion.getValue())) {
             throw GraphOperationException.versionMistmatch(existingVersion);
+        } else {
+            LOG.info("Found version {}", existingVersion.getValue());
         }
     }
 

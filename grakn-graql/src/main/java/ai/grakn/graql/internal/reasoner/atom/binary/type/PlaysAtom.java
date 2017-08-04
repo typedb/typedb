@@ -23,8 +23,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import java.util.Collection;
@@ -53,11 +51,6 @@ public class PlaysAtom extends TypeAtom {
         );
     }
     private PlaysAtom(PlaysAtom a) { super(a);}
-
-    @Override
-    public VarProperty getVarProperty() {
-        return getPattern().asVar().getProperties(PlaysProperty.class).findFirst().orElse(null);
-    }
 
     @Override
     public Atomic copy(){

@@ -18,12 +18,17 @@
 
 package ai.grakn.graql.internal.pattern;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 import java.util.List;
@@ -33,23 +38,16 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
-class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
-
-    private final Set<T> patterns;
-
-    ConjunctionImpl(Set<T> patterns) {
-        this.patterns = patterns;
-    }
+@AutoValue
+abstract class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern implements Conjunction<T> {
 
     @Override
-    public Set<T> getPatterns() {
-        return patterns;
-    }
+    public abstract Set<T> getPatterns();
 
     @Override
     public Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm() {
         // Get all disjunctions in query
-        List<Set<Conjunction<VarPatternAdmin>>> disjunctionsOfConjunctions = patterns.stream()
+        List<Set<Conjunction<VarPatternAdmin>>> disjunctionsOfConjunctions = getPatterns().stream()
                 .map(p -> p.getDisjunctiveNormalForm().getPatterns())
                 .collect(toList());
 
@@ -68,7 +66,7 @@ class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
 
     @Override
     public Set<Var> commonVarNames() {
-        return patterns.stream().map(PatternAdmin::commonVarNames).reduce(ImmutableSet.of(), Sets::union);
+        return getPatterns().stream().map(PatternAdmin::commonVarNames).reduce(ImmutableSet.of(), Sets::union);
     }
 
     @Override
@@ -81,24 +79,20 @@ class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
         return this;
     }
 
+    @Override
+    public ReasonerQuery toReasonerQuery(GraknGraph graph){
+        Conjunction<VarPatternAdmin> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
+        return ReasonerQueries.create(pattern, graph);
+    }
+
     private static <U extends PatternAdmin> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {
         Set<U> patterns = conjunctions.stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(patterns);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return (obj instanceof ConjunctionImpl) && patterns.equals(((ConjunctionImpl) obj).patterns);
-    }
-
-    @Override
-    public int hashCode() {
-        return patterns.hashCode();
-    }
-
-    @Override
     public String toString() {
-        return "{" + patterns.stream().map(s -> s + ";").collect(joining(" ")) + "}";
+        return "{" + getPatterns().stream().map(s -> s + ";").collect(joining(" ")) + "}";
     }
 
     @Override

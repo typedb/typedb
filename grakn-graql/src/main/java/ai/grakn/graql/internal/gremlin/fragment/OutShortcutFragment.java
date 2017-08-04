@@ -23,19 +23,34 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
+import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_DIRECTION;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_EDGE;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelsToTraversal;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabels;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.traverseRoleTypeFromShortcutEdge;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.traverseRoleFromShortcutEdge;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
-import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_ID;
-import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_ID;
+import static ai.grakn.util.Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID;
+import static ai.grakn.util.Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID;
+import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
+import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
  * A fragment representing traversing a {@link ai.grakn.util.Schema.EdgeLabel#SHORTCUT} edge from the relation to the
@@ -49,45 +64,79 @@ class OutShortcutFragment extends AbstractFragment {
 
     private final Var edge;
 
-    private final Optional<Var> roleType;
-    private final Optional<Set<Label>> roleTypeLabels;
+    private final Optional<Var> role;
+    private final Optional<Set<Label>> roleLabels;
     private final Optional<Set<Label>> relationTypeLabels;
 
     OutShortcutFragment(VarProperty varProperty,
-            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType, Optional<Set<Label>> roleTypeLabels,
-            Optional<Set<Label>> relationTypeLabels) {
-            super(varProperty, relation, rolePlayer, edge, optionalVarToArray(roleType));
-            this.edge = edge;
-            this.roleType = roleType;
-            this.roleTypeLabels = roleTypeLabels;
-            this.relationTypeLabels = relationTypeLabels;
+                        Var relation, Var edge, Var rolePlayer, Optional<Var> role, Optional<Set<Label>> roleLabels,
+                        Optional<Set<Label>> relationTypeLabels) {
+        super(varProperty, relation, rolePlayer, edge, optionalVarToArray(role));
+        this.edge = edge;
+        this.role = role;
+        this.roleLabels = roleLabels;
+        this.relationTypeLabels = relationTypeLabels;
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel()).as(edge.getValue());
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+
+        return Fragments.union(traversal, ImmutableSet.of(
+                reifiedRelationTraversal(graph),
+                edgeRelationTraversal(graph, Direction.OUT, RELATION_ROLE_OWNER_LABEL_ID),
+                edgeRelationTraversal(graph, Direction.IN, RELATION_ROLE_VALUE_LABEL_ID)
+        ));
+    }
+
+    private GraphTraversal<Element, Vertex> reifiedRelationTraversal(GraknGraph graph) {
+        GraphTraversal<Element, Vertex> traversal = Fragments.isVertex(__.identity());
+
+        GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel()).as(edge.getValue());
 
         // Filter by any provided type labels
-        applyTypeLabelsToTraversal(edgeTraversal, ROLE_TYPE_ID, roleTypeLabels, graph);
-        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_ID, relationTypeLabels, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, relationTypeLabels, graph);
 
-        traverseRoleTypeFromShortcutEdge(edgeTraversal, roleType);
+        traverseRoleFromShortcutEdge(edgeTraversal, role, ROLE_LABEL_ID);
 
-        edgeTraversal.inV();
+        return edgeTraversal.inV();
+    }
+
+    private GraphTraversal<Element, Vertex> edgeRelationTraversal(
+            GraknGraph graph, Direction direction, Schema.EdgeProperty roleProperty) {
+        GraphTraversal<Element, Edge> edgeTraversal = Fragments.isEdge(__.identity());
+
+        // Filter by any provided type labels
+        applyTypeLabelsToTraversal(edgeTraversal, roleProperty, roleLabels, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, relationTypeLabels, graph);
+
+        traverseRoleFromShortcutEdge(edgeTraversal, role, roleProperty);
+
+        // Identify the relation - role-player pair by combining the relation edge and direction into a map
+        edgeTraversal.as(RELATION_EDGE).constant(direction).as(RELATION_DIRECTION);
+        edgeTraversal.select(Pop.last, RELATION_EDGE, RELATION_DIRECTION).as(edge.getValue()).select(RELATION_EDGE);
+
+        return edgeTraversal.toV(direction);
     }
 
     @Override
     public String getName() {
-        String role = roleType.map(rt -> " role:" + rt.shortName()).orElse("");
+        String role = this.role.map(rt -> " role:" + rt.shortName()).orElse("");
         String rels = displayOptionalTypeLabels("rels", relationTypeLabels);
-        String roles = displayOptionalTypeLabels("roles", roleTypeLabels);
+        String roles = displayOptionalTypeLabels("roles", roleLabels);
         return "-[shortcut:" + edge.shortName() + role + rels + roles + "]->";
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        long numRolePlayers = roleTypeLabels.isPresent() ? NUM_ROLE_PLAYERS_PER_ROLE : NUM_ROLE_PLAYERS_PER_RELATION;
-        return previousCost * numRolePlayers;
+    public double fragmentCost() {
+        return roleLabels.isPresent() ? COST_ROLE_PLAYERS_PER_ROLE : COST_ROLE_PLAYERS_PER_RELATION;
+    }
+
+    @Override
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
+                                                              Map<Node, Map<Node, Fragment>> edges) {
+        return getDirectedEdges(edge, nodes, edges);
     }
 
     @Override
@@ -99,7 +148,8 @@ class OutShortcutFragment extends AbstractFragment {
         OutShortcutFragment that = (OutShortcutFragment) o;
 
         if (!edge.equals(that.edge)) return false;
-        if (!roleTypeLabels.equals(that.roleTypeLabels)) return false;
+        if (!role.equals(that.role)) return false;
+        if (!roleLabels.equals(that.roleLabels)) return false;
         return relationTypeLabels.equals(that.relationTypeLabels);
     }
 
@@ -107,8 +157,14 @@ class OutShortcutFragment extends AbstractFragment {
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + edge.hashCode();
-        result = 31 * result + roleTypeLabels.hashCode();
+        result = 31 * result + role.hashCode();
+        result = 31 * result + roleLabels.hashCode();
         result = 31 * result + relationTypeLabels.hashCode();
         return result;
+    }
+
+    @Override
+    public boolean canOperateOnEdges() {
+        return true;
     }
 }

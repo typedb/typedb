@@ -24,10 +24,10 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
@@ -52,7 +52,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 // TODO We can extend AbstractGraphTest instead when we remove persisting in analytics
 public class StatisticsTest {
@@ -76,16 +75,12 @@ public class StatisticsTest {
     private ConceptId entityId4;
 
     @ClassRule
-    // TODO: Don't set port once bug #15130 is fixed
-    public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
+    public static final EngineContext context = EngineContext.startInMemoryServer();
 
     private GraknSession factory;
 
     @Before
     public void setUp() {
-        // TODO: Fix tests in orientdb
-        assumeFalse(GraknTestSetup.usingOrientDB());
-
         factory = context.factoryWithNewKeyspace();
     }
 

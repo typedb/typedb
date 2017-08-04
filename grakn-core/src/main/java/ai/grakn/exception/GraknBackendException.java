@@ -27,6 +27,7 @@ import static ai.grakn.util.ErrorMessage.BACKEND_EXCEPTION;
 import static ai.grakn.util.ErrorMessage.ENGINE_UNAVAILABLE;
 import static ai.grakn.util.ErrorMessage.MISSING_TASK_ID;
 import static ai.grakn.util.ErrorMessage.STATE_STORAGE_ERROR;
+import static ai.grakn.util.ErrorMessage.INITIALIZATION_EXCEPTION;
 import static ai.grakn.util.ErrorMessage.TASK_STATE_RETRIEVAL_FAILURE;
 
 /**
@@ -36,7 +37,6 @@ import static ai.grakn.util.ErrorMessage.TASK_STATE_RETRIEVAL_FAILURE;
  *
  * <p>
  *     Failures which occur server side are wrapped in this exception. This can include but is not limited to:
- *     - Kafka timeouts
  *     - Cassandra Timeouts
  *     - Malformed Requests
  * </p>
@@ -44,6 +44,7 @@ import static ai.grakn.util.ErrorMessage.TASK_STATE_RETRIEVAL_FAILURE;
  * @author fppt
  */
 public class GraknBackendException extends GraknException {
+
     protected GraknBackendException(String error, Exception e) {
         super(error, e);
     }
@@ -93,5 +94,9 @@ public class GraknBackendException extends GraknException {
      */
     public static GraknBackendException engineUnavailable(String host, int port, IOException e){
         return new GraknBackendException(ENGINE_UNAVAILABLE.getMessage(host, port), e);
+    }
+
+    public static GraknBackendException initializationException(String keyspace) {
+        return new GraknBackendException(String.format(INITIALIZATION_EXCEPTION.getMessage(), keyspace));
     }
 }

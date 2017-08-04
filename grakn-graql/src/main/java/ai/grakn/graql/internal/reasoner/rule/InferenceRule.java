@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -68,11 +67,6 @@ public class InferenceRule {
         //TODO simplify once changes propagated to rule objects
         body = ReasonerQueries.create(conjunction(rule.getWhen().admin()), graph);
         head = ReasonerQueries.atomic(conjunction(rule.getThen().admin()), graph);
-
-        //run time check for head atom validity
-        if (!getHead().getAtom().isAllowedToFormRuleHead()){
-            throw GraqlQueryException.disallowedAtomInRuleHead(this.getHead().getAtom().toString(), this.toString());
-        }
     }
 
     public InferenceRule(InferenceRule r){
@@ -83,7 +77,7 @@ public class InferenceRule {
 
     @Override
     public String toString(){
-        return  "\n" + this.body.toString() + "->" + this.head.toString() + "[" + resolutionPriority() +"]";
+        return  "\n" + this.body.toString() + "->\n" + this.head.toString() + "[" + resolutionPriority() +"]\n";
     }
 
     @Override

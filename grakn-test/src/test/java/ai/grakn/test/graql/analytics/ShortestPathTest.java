@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assume.assumeFalse;
 
 public class ShortestPathTest {
     private static final String thing = "thingy";
@@ -53,14 +52,10 @@ public class ShortestPathTest {
     public GraknSession factory;
 
     @ClassRule
-    // TODO: Don't set port once bug #15130 is fixed
-    public static EngineContext rule = EngineContext.startInMemoryServer().port(4567);
+    public static EngineContext rule = EngineContext.startInMemoryServer();
 
     @Before
     public void setUp() {
-        // TODO: Fix tests in orientdb
-        assumeFalse(GraknTestSetup.usingOrientDB());
-
         factory = rule.factoryWithNewKeyspace();
     }
 

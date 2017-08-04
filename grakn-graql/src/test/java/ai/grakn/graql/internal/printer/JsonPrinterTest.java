@@ -126,6 +126,12 @@ public class JsonPrinterTest {
         );
     }
 
+    @Test
+    public void whenPrintingRole_PrintWithLabel() {
+        ConceptId id = movieContext.graph().getRole("actor").getId();
+        assertJsonEquals(Json.object("id", id.getValue(), "name", "actor", "sub", "role"), movieContext.graph().getRole("actor"));
+    }
+
     private void assertJsonEquals(Json expected, Object object) {
         Json json = Json.read(printer.graqlString(object));
         assertEquals(expected, json);

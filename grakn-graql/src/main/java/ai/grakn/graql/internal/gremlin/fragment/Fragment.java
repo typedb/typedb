@@ -22,9 +22,14 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -33,12 +38,12 @@ import java.util.Set;
  * <p>
  * A fragment is composed of four things:
  * <ul>
- *     <li>A gremlin traversal function, that takes a gremlin traversal and appends some new gremlin steps</li>
- *     <li>A starting variable name, where the gremlin traversal must start from</li>
- *     <li>An optional ending variable name, if the gremlin traversal navigates to a new Graql variable</li>
- *     <li>A priority, that describes how efficient this traversal is to help with ordering the traversals</li>
+ * <li>A gremlin traversal function, that takes a gremlin traversal and appends some new gremlin steps</li>
+ * <li>A starting variable name, where the gremlin traversal must start from</li>
+ * <li>An optional ending variable name, if the gremlin traversal navigates to a new Graql variable</li>
+ * <li>A priority, that describes how efficient this traversal is to help with ordering the traversals</li>
  * </ul>
- *
+ * <p>
  * Variable names refer to Graql variables. Some of these variable names may be randomly-generated UUIDs, such as for
  * castings.
  * <p>
@@ -64,9 +69,10 @@ public interface Fragment {
 
     /**
      * @param traversal the traversal to extend with this Fragment
-     * @param graph the graph to execute the traversal on
+     * @param graph     the graph to execute the traversal on
      */
-    void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph);
+    GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph);
 
     /**
      * The name of the fragment
@@ -106,13 +112,34 @@ public interface Fragment {
         return false;
     }
 
-    double fragmentCost(double previousCost);
+    /**
+     * Get the cost for executing the fragment.
+     */
+    double fragmentCost();
 
     /**
      * If a fragment has fixed cost, the traversal is done using index. This makes the fragment a good starting point.
      * A plan should always start with these fragments when possible.
      */
     default boolean hasFixedFragmentCost() {
+        return false;
+    }
+
+    /**
+     * Convert the fragment to a set of weighted edges for query planning
+     *
+     * @param nodes          all nodes in the query
+     * @param edgeToFragment a mapping from edge(child, parent) to its corresponding fragment
+     * @return a set of edges
+     */
+    Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
+                                                       Map<Node, Map<Node, Fragment>> edgeToFragment);
+
+    /**
+     * Indicates whether the fragment can be used on an {@link org.apache.tinkerpop.gremlin.structure.Edge} as well as
+     * a {@link org.apache.tinkerpop.gremlin.structure.Vertex}.
+     */
+    default boolean canOperateOnEdges() {
         return false;
     }
 }

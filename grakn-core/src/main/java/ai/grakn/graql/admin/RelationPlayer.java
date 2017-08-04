@@ -18,31 +18,49 @@
 
 package ai.grakn.graql.admin;
 
+import com.google.auto.value.AutoValue;
+
 import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 
 /**
- * A pair of role type and role player (where the role type may not be present)
+ * A pair of role and role player (where the role may not be present)
  *
  * @author Felix Chapman
  */
-public interface RelationPlayer {
+@AutoValue
+public abstract class RelationPlayer {
+
     /**
-     * @return the role type, if specified
+     * A role - role player pair without a role specified
+     * @param rolePlayer the role player of the role - role player pair
+     */
+    public static RelationPlayer of(VarPatternAdmin rolePlayer) {
+        return new AutoValue_RelationPlayer(Optional.empty(), rolePlayer);
+    }
+
+    /**
+     * @param role the role of the role - role player pair
+     * @param rolePlayer the role player of the role - role player pair
+     */
+    public static RelationPlayer of(VarPatternAdmin role, VarPatternAdmin rolePlayer) {
+        return new AutoValue_RelationPlayer(Optional.of(role), rolePlayer);
+    }
+
+    /**
+     * @return the role, if specified
      */
     @CheckReturnValue
-    Optional<VarPatternAdmin> getRoleType();
+    public abstract Optional<VarPatternAdmin> getRole();
 
     /**
      * @return the role player
      */
     @CheckReturnValue
-    VarPatternAdmin getRolePlayer();
+    public abstract VarPatternAdmin getRolePlayer();
 
-    // TODO: If `VarPatternAdmin#setVarName` is removed, this may no longer be necessary
-    /**
-     * Set the role player, returning a new {@link RelationPlayer} with that role player set
-     */
-    @CheckReturnValue
-    RelationPlayer setRolePlayer(VarPatternAdmin rolePlayer);
+    @Override
+    public String toString() {
+        return getRole().map(r -> r.getPrintableName() + ": ").orElse("") + getRolePlayer().getPrintableName();
+    }
 }

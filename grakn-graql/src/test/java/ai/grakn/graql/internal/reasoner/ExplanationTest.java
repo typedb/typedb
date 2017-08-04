@@ -204,6 +204,15 @@ public class ExplanationTest {
     }
 
     @Test
+    public void testExplainingNonRuleResolvableQuery(){
+        String queryString = "match $x isa city, has name $n;";
+
+        MatchQuery query = iqb.parse(queryString);
+        List<Answer> answers = query.admin().execute();
+        answers.forEach(ans -> assertEquals(ans.getExplanation().isEmpty(), true));
+    }
+
+    @Test
     public void testExplainingQueryContainingContradiction2(){
         GraknGraph expGraph = explanationGraph.graph();
         QueryBuilder eiqb = expGraph.graql().infer(true);

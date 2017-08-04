@@ -22,10 +22,8 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.util.Schema;
 import ai.grakn.util.StringUtil;
-
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
 import java.util.function.BiPredicate;
@@ -58,8 +56,8 @@ class RegexPredicate implements ValuePredicateAdmin {
     }
 
     @Override
-    public void applyPredicate(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.has(Schema.VertexProperty.VALUE_STRING.name(), regexPredicate());
+    public <S, E> GraphTraversal<S, E> applyPredicate(GraphTraversal<S, E> traversal) {
+        return traversal.has(Schema.VertexProperty.VALUE_STRING.name(), regexPredicate());
     }
 
     @Override

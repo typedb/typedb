@@ -21,8 +21,15 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
+import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
+import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
+
+import java.util.Map;
+import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.HAS_SCOPE;
 
@@ -33,8 +40,9 @@ class InHasScopeFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.in(HAS_SCOPE.getLabel());
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+        return Fragments.isVertex(traversal).in(HAS_SCOPE.getLabel());
     }
 
     @Override
@@ -43,7 +51,13 @@ class InHasScopeFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost * NUM_SCOPES_PER_INSTANCE;
+    public double fragmentCost() {
+        return COST_SCOPES_PER_INSTANCE;
+    }
+
+    @Override
+    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
+                                                              Map<Node, Map<Node, Fragment>> edges) {
+        return getDirectedEdges(NodeId.NodeType.HAS_SCOPE, nodes, edges);
     }
 }

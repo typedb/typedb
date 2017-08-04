@@ -55,7 +55,7 @@ public class GraqlSessionTest {
         when(qb.materialise(false)).thenReturn(qb);
         when(qb.parseList("compute count;")).thenReturn(Stream.of(count));
 
-        GraqlSession session = new GraqlSession(jettySesssion, factory, "json", false, false, false);
+        GraqlSession session = new GraqlSession(jettySesssion, factory, "json", false, false);
         session.receiveQuery(Json.object(QUERY, "compute count;"));
         session.executeQuery().get();
 

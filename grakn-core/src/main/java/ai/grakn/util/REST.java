@@ -58,7 +58,9 @@ public class REST {
         public static class System {
             public static final String DELETE_KEYSPACE = "/deleteKeyspace";
             public static final String INITIALISE = "/initialise";
+            public static final String STATUS = "/status";
             public static final String CONFIGURATION = "/configuration";
+            public static final String METRICS = "/metrics";
             public static final String KEYSPACES = "/keyspaces";
         }
 
@@ -76,8 +78,7 @@ public class REST {
         public static class Dashboard {
             public static final String TYPES = "/dashboard/types/";
             public static final String EXPLORE = "/dashboard/explore/";
-            public static final String EXPLAIN = "/dashboard/explain/";
-            public static final String PRECOMPUTE = "/dashboard/precomputeInferences";
+            public static final String EXPLAIN = "/dashboard/explain";
         }
 
         public static final String NEW_SESSION_URI="/auth/session/";
@@ -111,6 +112,7 @@ public class REST {
         public static final String TASKS_PARAM = "tasks";
         public static final String CONFIGURATION_PARAM = "configuration";
         public static final String KEYSPACE = "keyspace";
+        public static final String FORMAT = "format";
         public static final String UUID_PARAMETER = "uuid";
 
         //Commit Logs
@@ -218,7 +220,6 @@ public class REST {
         public static final String PASSWORD = "password";
         public static final String KEYSPACE = "keyspace";
         public static final String OUTPUT_FORMAT = "outputFormat";
-        public static final String IMPLICIT = "implicit";
         public static final String INFER = "infer";
         public static final String MATERIALISE = "materialise";
         public static final String QUERY = "query";

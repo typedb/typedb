@@ -25,6 +25,7 @@ import ai.grakn.graph.internal.AbstractGraknGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Objects;
 import java.util.Properties;
 
 import static javax.annotation.meta.When.NEVER;
@@ -52,14 +53,14 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     protected final String engineUrl;
     protected final Properties properties;
 
-    protected M graknGraph = null;
+    private M graknGraph = null;
     private M batchLoadingGraknGraph = null;
     
-    protected G graph = null;
+    G graph = null;
     private G batchLoadingGraph = null;
 
     AbstractInternalFactory(String keyspace, String engineUrl, Properties properties){
-        if(keyspace == null) throw GraphOperationException.nullKeyspace();
+        Objects.requireNonNull(keyspace);
 
         this.keyspace = keyspace.toLowerCase();
         this.engineUrl = engineUrl;
@@ -87,7 +88,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         if(otherGraph != null && !otherGraph.isClosed()) throw GraphOperationException.transactionOpen(otherGraph);
     }
 
-    protected M getGraph(M graknGraph, GraknTxType txType){
+    private M getGraph(M graknGraph, GraknTxType txType){
         boolean batchLoading = GraknTxType.BATCH.equals(txType);
 
         if(graknGraph == null){
@@ -114,7 +115,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
             return graph;
         }
     }
-    protected G getTinkerPopGraph(G graph, boolean batchLoading){
+    G getTinkerPopGraph(G graph, boolean batchLoading){
         if(graph == null){
             return buildTinkerPopGraph(batchLoading);
         }

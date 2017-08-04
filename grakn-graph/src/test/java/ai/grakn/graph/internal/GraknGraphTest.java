@@ -6,6 +6,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -13,15 +14,18 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.graph.internal.concept.EntityTypeImpl;
+import ai.grakn.graph.internal.structure.Shard;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -35,7 +39,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -53,7 +56,7 @@ public class GraknGraphTest extends GraphTestBase {
     public void whenAttemptingToMutateViaTraversal_Throw(){
         expectedException.expect(VerificationException.class);
         expectedException.expectMessage("not read only");
-        graknGraph.getTinkerTraversal().drop().iterate();
+        graknGraph.getTinkerTraversal().V().drop().iterate();
     }
 
     @Test
@@ -102,11 +105,9 @@ public class GraknGraphTest extends GraphTestBase {
     public void whenGettingSubTypesFromRootMeta_IncludeAllTypes(){
         EntityType sampleEntityType = graknGraph.putEntityType("Sample Entity Type");
         RelationType sampleRelationType = graknGraph.putRelationType("Sample Relation Type");
-        Role sampleRole = graknGraph.putRole("Sample Role Type");
 
         assertThat(graknGraph.admin().getMetaConcept().subs(), containsInAnyOrder(
                 graknGraph.admin().getMetaConcept(),
-                graknGraph.admin().getMetaRoleType(),
                 graknGraph.admin().getMetaRelationType(),
                 graknGraph.admin().getMetaEntityType(),
                 graknGraph.admin().getMetaRuleType(),
@@ -114,8 +115,7 @@ public class GraknGraphTest extends GraphTestBase {
                 graknGraph.admin().getMetaRuleConstraint(),
                 graknGraph.admin().getMetaRuleInference(),
                 sampleEntityType,
-                sampleRelationType,
-                sampleRole
+                sampleRelationType
         ));
     }
 
@@ -128,18 +128,20 @@ public class GraknGraphTest extends GraphTestBase {
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.READ);
-        Collection<? extends OntologyConcept> types = graknGraph.getMetaConcept().subs();
+
+        Set<OntologyConcept> finalTypes = new HashSet<>();
+        finalTypes.addAll(graknGraph.getMetaConcept().subs());
+        finalTypes.add(graknGraph.admin().getMetaRole());
+
         graknGraph.abort();
 
         for (OntologyConcept type : graknGraph.getGraphCache().getCachedTypes().values()) {
-            assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", types.contains(type));
+            assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", finalTypes.contains(type));
         }
     }
     private void assertCacheOnlyContainsMetaTypes(){
         Set<Label> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(Collectors.toSet());
-        graknGraph.getGraphCache().getCachedTypes().keySet().forEach(cachedLabel -> {
-            assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel));
-        });
+        graknGraph.getGraphCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
     }
 
     @Test
@@ -149,61 +151,17 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
-    public void whenAllowingImplicitTypesToBeShow_ReturnImplicitTypes(){
-        //Build Implicit structures
-        EntityType type = graknGraph.putEntityType("Concept Type ");
-        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
-        type.resource(resourceType);
-
-        assertFalse(graknGraph.implicitConceptsVisible());
-
-        //Meta Types
-        RelationType relationType = graknGraph.admin().getMetaRelationType();
-        Role role = graknGraph.admin().getMetaRoleType();
-
-        //Check nothing is revealed when returning result sets
-        assertThat(type.plays(), is(empty()));
-        assertThat(resourceType.plays(), is(empty()));
-        assertThat(graknGraph.getMetaRelationType().subs(), containsInAnyOrder(relationType));
-        assertThat(graknGraph.getMetaRoleType().subs(), containsInAnyOrder(role));
-
-        //Check things are still returned when explicitly asking for them
-        RelationType has = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
-        Role hasOwner = graknGraph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType.getLabel()).getValue());
-        Role hasValue = graknGraph.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType.getLabel()).getValue());
-        assertNotNull(hasOwner);
-        assertNotNull(hasValue);
-        assertNotNull(has);
-
-        //Switch on flag
-        graknGraph.showImplicitConcepts(true);
-        assertTrue(graknGraph.implicitConceptsVisible());
-
-        //Now check the result sets again
-        assertThat(graknGraph.getMetaRelationType().subs(), containsInAnyOrder(relationType, has));
-        assertThat(graknGraph.getMetaRoleType().subs(), containsInAnyOrder(role, hasOwner, hasValue));
-        assertThat(type.plays(), containsInAnyOrder(hasOwner));
-        assertThat(resourceType.plays(), containsInAnyOrder(hasValue));
-    }
-
-    @Test
     public void whenPassingGraphToAnotherThreadWithoutOpening_Throw() throws ExecutionException, InterruptedException {
         ExecutorService pool = Executors.newSingleThreadExecutor();
         GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "testing").open(GraknTxType.WRITE);
 
-        final boolean[] errorThrown = {false};
+        expectedException.expectCause(IsInstanceOf.instanceOf(GraphOperationException.class));
+        expectedException.expectMessage(GraphOperationException.transactionClosed(graph, null).getMessage());
+
         Future future = pool.submit(() -> {
-            try{
-                graph.putEntityType("A Thing");
-            } catch (GraphOperationException e){
-                if(e.getMessage().equals(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()))){
-                    errorThrown[0] = true;
-                }
-            }
+            graph.putEntityType("A Thing");
         });
         future.get();
-
-        assertTrue("Error not thrown when graph is closed in another thread", errorThrown[0]);
     }
 
     @Test
@@ -316,8 +274,8 @@ public class GraknGraphTest extends GraphTestBase {
         failMutation(graknGraph, () -> relationT2.relates(roleT1));
     }
     private void failMutation(GraknGraph graph, Runnable mutator){
-        int vertexCount = graph.admin().getTinkerTraversal().toList().size();
-        int eddgeCount = graph.admin().getTinkerTraversal().bothE().toList().size();
+        int vertexCount = graph.admin().getTinkerTraversal().V().toList().size();
+        int eddgeCount = graph.admin().getTinkerTraversal().E().toList().size();
 
         Exception caughtException = null;
         try{
@@ -329,8 +287,8 @@ public class GraknGraphTest extends GraphTestBase {
         assertNotNull("No exception thrown when attempting to mutate a read only graph", caughtException);
         assertThat(caughtException, instanceOf(GraphOperationException.class));
         assertEquals(caughtException.getMessage(), ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
-        assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.admin().getTinkerTraversal().toList().size());
-        assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.admin().getTinkerTraversal().bothE().toList().size());
+        assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.admin().getTinkerTraversal().V().toList().size());
+        assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.admin().getTinkerTraversal().E().toList().size());
     }
 
     @Test
@@ -397,4 +355,30 @@ public class GraknGraphTest extends GraphTestBase {
         assertThat(s2.links().collect(Collectors.toSet()), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
         assertThat(s3.links().collect(Collectors.toSet()), containsInAnyOrder(s3_e1, s3_e2));
     }
+
+    @Test
+    public void whenCreatingAValidOntologyInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
+        GraknSession session = Grakn.session(Grakn.IN_MEMORY, "hi");
+
+        ExecutorService executor = Executors.newCachedThreadPool();
+
+        executor.submit(() -> {
+            //Resources
+            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+                ResourceType<Long> int_ = graph.putResourceType("int", ResourceType.DataType.LONG);
+                ResourceType<Long> foo = graph.putResourceType("foo", ResourceType.DataType.LONG).sup(int_);
+                graph.putResourceType("bar", ResourceType.DataType.LONG).sup(int_);
+                graph.putEntityType("FOO").resource(foo);
+
+                graph.commit();
+            }
+        }).get();
+
+        //Relation Which Has Resources
+        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            graph.putEntityType("BAR").resource(graph.getResourceType("bar"));
+            graph.commit();
+        }
+    }
 }
+

@@ -31,6 +31,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
+
 /**
  * The vertex program for computing the degree.
  * <p>
@@ -70,7 +72,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(OF_LABELS).getKeys().forEachRemaining(key ->
-                ofLabelIds.add(LabelId.of(configuration.getInt(OF_LABELS + "." + key))));
+                ofLabelIds.add((LabelId) configuration.getProperty(OF_LABELS + "." + key)));
         degreePropertyKey = (String) this.persistentProperties.get(DEGREE);
     }
 
@@ -105,15 +107,14 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     }
 
     void degreeMessagePassing(Vertex vertex, Messenger<Long> messenger) {
-        if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
+        if (vertexHasSelectedTypeId(vertex, selectedTypes)) {
             messenger.sendMessage(messageScopeShortcutIn, 1L);
             messenger.sendMessage(messageScopeShortcutOut, 1L);
         }
     }
 
     void degreeMessageCounting(Vertex vertex, Messenger<Long> messenger) {
-        LabelId labelId = Utility.getVertexTypeId(vertex);
-        if (selectedTypes.contains(labelId) && ofLabelIds.contains(labelId)) {
+        if (vertexHasSelectedTypeId(vertex, selectedTypes, ofLabelIds)) {
             vertex.property(degreePropertyKey, getMessageCount(messenger));
         }
     }

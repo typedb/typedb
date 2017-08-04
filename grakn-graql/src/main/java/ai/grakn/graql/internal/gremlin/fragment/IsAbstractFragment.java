@@ -23,7 +23,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 class IsAbstractFragment extends AbstractFragment {
 
@@ -32,8 +32,10 @@ class IsAbstractFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.has(Schema.VertexProperty.IS_ABSTRACT.name(), true);
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+
+        return traversal.has(Schema.VertexProperty.IS_ABSTRACT.name(), true);
     }
 
     @Override
@@ -42,7 +44,7 @@ class IsAbstractFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost;
+    public double fragmentCost() {
+        return COST_SAME_AS_PREVIOUS;
     }
 }

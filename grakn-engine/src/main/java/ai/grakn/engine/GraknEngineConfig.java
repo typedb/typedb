@@ -22,14 +22,17 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.StandardSystemProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.FileInputStream;
 import java.io.IOException;
+import static java.lang.Math.min;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -52,14 +55,17 @@ public class GraknEngineConfig {
     public static final String JWT_SECRET_PROPERTY = "JWT.secret";
     public static final String PASSWORD_PROTECTED_PROPERTY = "password.protected";
     public static final String ADMIN_PASSWORD_PROPERTY = "admin.password";
-    
+
     public static final String SERVER_HOST_NAME = "server.host";
     public static final String SERVER_PORT_NUMBER = "server.port";
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
 
-    public static final String REDIS_SERVER_URL = "redis.host";
-    public static final String REDIS_SERVER_PORT = "redis.port";
+    public static final String REDIS_HOST = "redis.host";
+    public static final String REDIS_SENTINEL_HOST = "redis.sentinel.host";
+    public static final String REDIS_SENTINEL_MASTER = "redis.sentinel.master";
+
+    public static final String QUEUE_CONSUMERS = "queue.consumers";
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
 
@@ -68,23 +74,20 @@ public class GraknEngineConfig {
 
     // Delay for the post processing task in milliseconds
     public static final String POST_PROCESSING_TASK_DELAY = "tasks.postprocessing.delay";
+    public static final String TASKS_RETRY_DELAY = "tasks.retry.delay";
 
-    public static final String ZK_SERVERS = "tasks.zookeeper.servers";
-    public static final String ZK_NAMESPACE = "tasks.zookeeper.namespace";
-    public static final String ZK_SESSION_TIMEOUT = "tasks.zookeeper.session_timeout_ms";
-    public static final String ZK_CONNECTION_TIMEOUT = "tasks.zookeeper.connection_timeout_ms";
-    public static final String ZK_BACKOFF_BASE_SLEEP_TIME = "tasks.zookeeper.backoff.base_sleep";
-    public static final String ZK_BACKOFF_MAX_RETRIES = "tasks.zookeeper.backoff.max_retries";
+    public static final int WEBSOCKET_TIMEOUT = 3600000;
 
     private static String configFilePath = null;
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.class);
 
-    private final int MAX_NUMBER_OF_THREADS = 120;
-    private final Properties prop;
+    private static final int MAX_NUMBER_OF_THREADS = 120;
+    private final Properties prop = new Properties();
     private int numOfThreads = -1;
 
     public static GraknEngineConfig create() {
+        setConfigFilePath();
         return GraknEngineConfig.read(getConfigFilePath());
     }
 
@@ -93,18 +96,17 @@ public class GraknEngineConfig {
     }
 
     private GraknEngineConfig(String path) {
-        getProjectPath();
-        prop = new Properties();
+        String projectPath = getProjectPath();
+        setGraknVersion();
         try (FileInputStream inputStream = new FileInputStream(path)){
             prop.load(inputStream);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("Could not load engine properties from {}", path, e);
         }
-        setGraknVersion();
         computeThreadsNumber();
-        LOG.info("Project directory in use: [" + getProjectPath() + "]");
-        LOG.info("Configuration file in use: [" + configFilePath + "]");
-        LOG.info("Number of threads set to [" + numOfThreads + "]");
+        LOG.info("Project directory in use: {}", projectPath);
+        LOG.info("Configuration file in use: {}", configFilePath);
+        LOG.info("Number of threads set to: {}", numOfThreads);
     }
 
     private void setGraknVersion(){
@@ -120,11 +122,13 @@ public class GraknEngineConfig {
      * If it is not set, it sets it to the default one.
      */
     private static void setConfigFilePath() {
-        configFilePath = (GraknSystemProperty.CONFIGURATION_FILE.value() != null) ? GraknSystemProperty.CONFIGURATION_FILE.value() : GraknEngineConfig.DEFAULT_CONFIG_FILE;
+        if (configFilePath != null && !configFilePath.isEmpty()) {
+            return;
+        }
+       configFilePath = (GraknSystemProperty.CONFIGURATION_FILE.value() != null) ? GraknSystemProperty.CONFIGURATION_FILE.value() : GraknEngineConfig.DEFAULT_CONFIG_FILE;
         if (!Paths.get(configFilePath).isAbsolute()) {
             configFilePath = getProjectPath() + configFilePath;
         }
-
     }
 
     /**
@@ -133,20 +137,14 @@ public class GraknEngineConfig {
      * equal to the number of available processor to the current JVM.
      */
     private void computeThreadsNumber() {
-
         numOfThreads = Integer.parseInt(prop.getProperty(NUM_THREADS_PROPERTY));
-
         if (numOfThreads == 0) {
-            numOfThreads = Runtime.getRuntime().availableProcessors();
+            int availableProcessors = Runtime.getRuntime().availableProcessors();
+            LOG.warn("Number of threads set to 0 in properties. Running with {} processors instead.", availableProcessors);
+            numOfThreads = availableProcessors;
         }
-
-        if (numOfThreads > MAX_NUMBER_OF_THREADS) {
-            numOfThreads = MAX_NUMBER_OF_THREADS;
-        }
+        numOfThreads = min(MAX_NUMBER_OF_THREADS, numOfThreads);
     }
-
-
-    // Getters
 
     /**
      * @return Number of available threads to be used to instantiate new threadpools.
@@ -155,7 +153,6 @@ public class GraknEngineConfig {
         if (numOfThreads == -1) {
             computeThreadsNumber();
         }
-
         return numOfThreads;
     }
 
@@ -169,7 +166,6 @@ public class GraknEngineConfig {
         if (Paths.get(propertyPath).isAbsolute()) {
             return propertyPath;
         }
-
         return getProjectPath() + propertyPath;
     }
 
@@ -181,15 +177,13 @@ public class GraknEngineConfig {
         if (GraknSystemProperty.CURRENT_DIRECTORY.value() == null) {
             GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
         }
-
         return GraknSystemProperty.CURRENT_DIRECTORY.value() + "/";
     }
 
     /**
      * @return The path to the config file currently in use. Default: /conf/main/grakn.properties
      */
-    public static String getConfigFilePath() {
-        if (configFilePath == null) setConfigFilePath();
+    static public String getConfigFilePath() {
         return configFilePath;
     }
 
@@ -200,13 +194,9 @@ public class GraknEngineConfig {
     public String getProperty(String property) {
          if(prop.containsKey(property)) {
              return prop.getProperty(property);
+         } else {
+            throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(property, configFilePath));
          }
-
-         if(configFilePath == null){
-             throw new RuntimeException(ErrorMessage.NO_CONFIG_FILE.getMessage(configFilePath));
-         }
-
-         throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(property, configFilePath));
     }
 
     public Optional<String> tryProperty(String property) {
@@ -216,7 +206,7 @@ public class GraknEngineConfig {
     public int getPropertyAsInt(String property) {
         return Integer.parseInt(getProperty(property));
     }
-    
+
     public long getPropertyAsLong(String property) {
         return Long.parseLong(getProperty(property));
     }
@@ -230,10 +220,14 @@ public class GraknEngineConfig {
         return getProperty(SERVER_HOST_NAME) + ":" + getProperty(SERVER_PORT_NUMBER);
     }
 
+    static List<String> parseCSValue(String s) {
+        return Arrays.stream(s.split(",")).map(String::trim).filter(t -> !t.isEmpty()).collect(Collectors.toList());
+    }
+
     static final String GRAKN_ASCII =
-                      "     ___  ___  ___  _  __ _  _     ___  ___     %n" +
+                    "     ___  ___  ___  _  __ _  _     ___  ___     %n" +
                     "    / __|| _ \\/   \\| |/ /| \\| |   /   \\|_ _|    %n" +
                     "   | (_ ||   /| - || ' < | .` | _ | - | | |     %n" +
                     "    \\___||_|_\\|_|_||_|\\_\\|_|\\_|(_)|_|_||___|   %n%n" +
-                      " Web Dashboard available at [%s]";
+                    " Web Dashboard available at [%s]";
 }

@@ -1,4 +1,7 @@
 ![GRAKN.AI](https://grakn.ai/img/Grakn%20logo%20-%20transparent.png)
+
+AI systems process knowledge that is too complex for current databases. Grakn is a **hyper-relational** database for **knowledge-oriented** systems. Grakn enables machines to manage complex data that serves as a knowledge base for cognitive/AI systems. Graql is Grakn's Reasoning (through OLTP) and Analytics (through OLAP) Query Language. Graql is a much higher level abstraction over traditional query language - SQL, NoSQL, or Graphs.
+
 ---
 [![GitHub release](https://img.shields.io/github/release/graknlabs/grakn.svg)](https://github.com/graknlabs/grakn/releases/latest)
 [![Build Status](https://travis-ci.org/graknlabs/grakn.svg?branch=internal)](https://travis-ci.org/graknlabs/grakn)
@@ -11,7 +14,7 @@ Copyright (C) 2016-2017  Grakn Labs Limited.
 
 ## Licensing
 
-This product includes software developed by [Grakn Labs](http://grakn.ai/).  It's released under the GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For licence information, please see LICENCE.txt.
+This product includes software developed by [Grakn Labs](http://grakn.ai/).  It's released under the GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For licence information, please see [LICENCE.txt](https://github.com/graknlabs/grakn/blob/master/LICENSE.txt).
 
 ## Useful links
 

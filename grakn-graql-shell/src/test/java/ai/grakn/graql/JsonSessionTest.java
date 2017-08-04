@@ -19,15 +19,9 @@
 
 package ai.grakn.graql;
 
-import mjson.Json;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
+import ai.grakn.Grakn;
+import static ai.grakn.util.REST.RemoteShell.ACTION;
+import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
@@ -35,15 +29,20 @@ import java.net.URI;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-
-import static ai.grakn.util.REST.RemoteShell.ACTION;
-import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static java.util.stream.Collectors.toList;
+import mjson.Json;
+import org.eclipse.jetty.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -54,7 +53,7 @@ public class JsonSessionTest {
     public final ExpectedException exception = ExpectedException.none();
     private GraqlClient client;
     private RemoteEndpoint remote;
-    private final URI uri = URI.create("localhost:4567");
+    private final URI uri = URI.create(Grakn.DEFAULT_URI);
 
     @Before
     public void setUp() {

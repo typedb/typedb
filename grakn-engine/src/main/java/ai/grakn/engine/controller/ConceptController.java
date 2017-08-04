@@ -25,6 +25,9 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -60,6 +63,7 @@ import static ai.grakn.util.REST.Response.Json.RESOURCES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.ROLES_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Concept.CONCEPT;
 import static ai.grakn.util.REST.WebPath.Concept.ONTOLOGY;
+import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -74,9 +78,14 @@ public class ConceptController {
 
     private static final int separationDegree = 1;
     private final EngineGraknGraphFactory factory;
+    private final Timer conceptIdGetTimer;
+    private final Timer ontologyGetTimer;
 
-    public ConceptController(EngineGraknGraphFactory factory, Service spark){
+    public ConceptController(EngineGraknGraphFactory factory, Service spark,
+            MetricRegistry metricRegistry){
         this.factory = factory;
+        this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-identifier"));
+        this.ontologyGetTimer = metricRegistry.timer(name(ConceptController.class, "ontology"));
 
         spark.get(CONCEPT + ID_PARAMETER,  this::conceptByIdentifier);
         spark.get(ONTOLOGY,  this::ontology);
@@ -100,8 +109,7 @@ public class ConceptController {
         ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID_PARAMETER));
         int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
-
-        try(GraknGraph graph = factory.getGraph(keyspace, READ)){
+        try(GraknGraph graph = factory.getGraph(keyspace, READ); Context context = conceptIdGetTimer.time()){
             Concept concept = retrieveExistingConcept(graph, conceptId);
 
             response.type(APPLICATION_HAL);
@@ -120,12 +128,10 @@ public class ConceptController {
     @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     private String ontology(Request request, Response response) {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-
         validateRequest(request, APPLICATION_ALL, APPLICATION_JSON);
-
-        try(GraknGraph graph = factory.getGraph(keyspace, READ)){
+        try(GraknGraph graph = factory.getGraph(keyspace, READ); Context context = ontologyGetTimer.time()){
             Json responseObj = Json.object();
-            responseObj.set(ROLES_JSON_FIELD, subLabels(graph.admin().getMetaRoleType()));
+            responseObj.set(ROLES_JSON_FIELD, subLabels(graph.admin().getMetaRole()));
             responseObj.set(ENTITIES_JSON_FIELD, subLabels(graph.admin().getMetaEntityType()));
             responseObj.set(RELATIONS_JSON_FIELD, subLabels(graph.admin().getMetaRelationType()));
             responseObj.set(RESOURCES_JSON_FIELD, subLabels(graph.admin().getMetaResourceType()));
@@ -158,6 +164,7 @@ public class ConceptController {
 
     private List<String> subLabels(OntologyConcept ontologyConcept) {
         return ontologyConcept.subs().stream().
+                filter(concept-> !concept.isImplicit()).
                 map(OntologyConcept::getLabel).
                 map(Label::getValue).collect(toList());
     }

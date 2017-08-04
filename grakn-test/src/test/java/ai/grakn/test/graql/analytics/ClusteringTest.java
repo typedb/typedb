@@ -49,7 +49,6 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 public class ClusteringTest {
     private static final String thing = "thingy";
@@ -70,15 +69,11 @@ public class ClusteringTest {
     private ConceptId entityId4;
 
     @ClassRule
-    // TODO: Don't set port once bug #15130 is fixed
-    public static final EngineContext context = EngineContext.startInMemoryServer().port(4567);
+    public static final EngineContext context = EngineContext.startInMemoryServer();
     private GraknSession factory;
 
     @Before
     public void setUp() {
-        // TODO: Fix tests in orientdb
-        assumeFalse(GraknTestSetup.usingOrientDB());
-
         factory = context.factoryWithNewKeyspace();
     }
 

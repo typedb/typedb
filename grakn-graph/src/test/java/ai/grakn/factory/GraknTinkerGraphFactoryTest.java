@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import static ai.grakn.util.ErrorMessage.NULL_VALUE;
 import static ai.grakn.util.ErrorMessage.TRANSACTION_ALREADY_OPEN;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -99,8 +98,7 @@ public class GraknTinkerGraphFactoryTest {
 
     @Test
     public void whenCreatingFactoryWithNullKeyspace_Throw(){
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(NULL_VALUE.getMessage("keyspace"));
+        expectedException.expect(NullPointerException.class);
         tinkerGraphFactory = new TinkerInternalFactory(null, null, null);
     }
 

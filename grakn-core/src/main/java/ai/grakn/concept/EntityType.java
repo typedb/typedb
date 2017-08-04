@@ -40,6 +40,13 @@ import java.util.Collection;
 public interface EntityType extends Type{
     //------------------------------------- Modifiers ----------------------------------
     /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    EntityType setLabel(Label label);
+
+    /**
      * Sets the EntityType to be abstract - which prevents it from having any instances.
      *
      * @param isAbstract  Specifies if the EntityType is to be abstract (true) or not (false).

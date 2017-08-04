@@ -30,7 +30,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -142,7 +141,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
     }
 
     @Override
-    public final void applyPredicate(GraphTraversal<Vertex, Vertex> traversal) {
+    public final <S, E> GraphTraversal<S, E> applyPredicate(GraphTraversal<S, E> traversal) {
         var.ifPresent(theVar -> {
             // Compare to another variable
             String thisVar = UUID.randomUUID().toString();
@@ -162,6 +161,8 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
             Schema.VertexProperty property = dataType.getVertexProperty();
             traversal.has(property.name(), gremlinPredicate(theValue));
         });
+
+        return traversal;
     }
 
 }

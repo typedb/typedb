@@ -9,6 +9,7 @@ import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
+import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -63,8 +64,8 @@ public class GraqlControllerTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(GraknEngineConfig.create().getProperties());
-        new GraqlController(factory, spark);
+        EngineGraknGraphFactory factory = EngineGraknGraphFactory.createAndLoadSystemOntology(GraknEngineConfig.create().getProperties());
+        new GraqlController(factory, spark, new MetricRegistry());
     });
 
     @Before
@@ -96,7 +97,7 @@ public class GraqlControllerTest {
             resp.then().statusCode(200);
             Assert.assertFalse(resp.jsonPath().getList(".").isEmpty());
         } finally {
-            ConceptId id = ConceptId.of(resp.jsonPath().getList("x.id").get(0));
+            ConceptId id = ConceptId.of(resp.jsonPath().getList("x.id").get(0).toString());
             graphContext.rollback();
             graphContext.graph().graql().match(var("x").id(id)).delete("x").execute();
         }

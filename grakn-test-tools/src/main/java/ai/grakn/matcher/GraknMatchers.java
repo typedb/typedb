@@ -74,7 +74,7 @@ public class GraknMatchers {
 
             @Override
             Iterable<? extends Map<Var, ? extends MatchableConcept>> transform(MatchQuery item) {
-                return item.stream().map(m -> Maps.transformValues(m.map(), MatchableConcept::new)).collect(toList());
+                return item.stream().map(m -> Maps.transformValues(m.map(), MatchableConcept::of)).collect(toList());
             }
         };
     }
@@ -94,7 +94,7 @@ public class GraknMatchers {
             Iterable<? extends MatchableConcept> transform(MatchQuery item) {
                 return item.stream()
                         .flatMap(result -> result.values().stream())
-                        .map(MatchableConcept::new)
+                        .map(MatchableConcept::of)
                         .collect(toList());
             }
         };
@@ -115,7 +115,7 @@ public class GraknMatchers {
 
             @Override
             Iterable<? extends MatchableConcept> transform(MatchQuery item) {
-                return item.get(varName).map(MatchableConcept::new).collect(toList());
+                return item.get(varName).map(MatchableConcept::of).collect(toList());
             }
         };
     }
@@ -151,24 +151,7 @@ public class GraknMatchers {
 
             @Override
             Iterable<? super MatchableConcept> transform(MatchableConcept item) {
-                return getTypes(item.get().asThing()).stream().map(MatchableConcept::new).collect(toSet());
-            }
-        };
-    }
-
-    /**
-     * Create a matcher to test that the concept is a casting.
-     */
-    public static Matcher<MatchableConcept> isCasting() {
-        return new TypeSafeMatcher<MatchableConcept>() {
-            @Override
-            public boolean matchesSafely(MatchableConcept concept) {
-                return concept.get().isThing() && concept.get().asThing().type().isRole();
-            }
-
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("isCasting()");
+                return getTypes(item.get().asThing()).stream().map(MatchableConcept::of).collect(toSet());
             }
         };
     }
@@ -264,7 +247,7 @@ public class GraknMatchers {
      * Create a matcher to test that the concept is an instance with a 'name' resource of the given value.
      * See {@link MatchableConcept#NAME_TYPES} for possible 'name' resources.
      */
-    static Matcher<MatchableConcept> instance(Object value) {
+    public static Matcher<MatchableConcept> instance(Object value) {
         return instance(hasValue(value));
     }
 
@@ -284,7 +267,7 @@ public class GraknMatchers {
             Iterable<? super MatchableConcept> transform(MatchableConcept item) {
                 return item.get().asThing().resources().stream()
                         .filter(resource -> MatchableConcept.NAME_TYPES.contains(resource.type().getLabel()))
-                        .map(MatchableConcept::new)
+                        .map(MatchableConcept::of)
                         .collect(toSet());
             }
 

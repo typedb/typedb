@@ -22,11 +22,11 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.AskQuery;
@@ -97,18 +97,12 @@ public class InsertQueryTest {
 
     @Before
     public void setUp() {
-        movieGraph.graph().showImplicitConcepts(true);
         qb = movieGraph.graph().graql();
     }
 
     @After
     public void clear(){
         movieGraph.rollback();
-    }
-
-    @After
-    public void tearDown() {
-        if (movieGraph.graph() != null) movieGraph.graph().showImplicitConcepts(false);
     }
 
     @Test
@@ -432,8 +426,8 @@ public class InsertQueryTest {
     @Test
     public void testInsertRule() {
         String ruleTypeId = "a-rule-type";
-        Pattern when = qb.parsePattern("$x sub entity");
-        Pattern then = qb.parsePattern("$x sub entity");
+        Pattern when = qb.parsePattern("$x isa entity");
+        Pattern then = qb.parsePattern("$x isa entity");
         VarPattern vars = var("x").isa(ruleTypeId).when(when).then(then);
         qb.insert(vars).execute();
 
@@ -476,8 +470,6 @@ public class InsertQueryTest {
                 label(resourceType).sub("resource").datatype(ResourceType.DataType.STRING),
                 label("an-unconnected-resource-type").sub("resource").datatype(ResourceType.DataType.LONG)
         ).execute();
-
-        movieGraph.graph().showImplicitConcepts(true);
 
         // Make sure a-new-type can have the given resource type, but not other resource types
         assertTrue(qb.match(label("a-new-type").sub("entity").has(resourceType)).ask().execute());
@@ -541,7 +533,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testKeyUniqueOwner() throws InvalidGraphException {
+    public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidGraphException {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(

@@ -18,12 +18,18 @@
 
 package ai.grakn.test.engine.lock;
 
+import ai.grakn.engine.lock.JedisLock;
 import ai.grakn.engine.lock.NonReentrantLock;
-import ai.grakn.engine.lock.ZookeeperLock;
-import ai.grakn.engine.tasks.connection.ZookeeperConnection;
 import ai.grakn.test.EngineContext;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.experimental.theories.DataPoints;
@@ -32,46 +38,28 @@ import org.junit.experimental.theories.Theory;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 @RunWith(Theories.class)
 public class LockTestIT {
 
     private static final String LOCK_PATH = "/lock";
-    private static ZookeeperConnection zookeeperConnection;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static EngineContext kafka = EngineContext.startKafkaServer();
-
-    @BeforeClass
-    public static void setupZK(){
-        zookeeperConnection = new ZookeeperConnection(kafka.config());
-    }
-
-    @AfterClass
-    public static void shutdownZK(){
-        zookeeperConnection.close();
-    }
+    public static EngineContext engineContext = EngineContext.startSingleQueueServer();
 
     @DataPoints
     public static Locks[] configValues = Locks.values();
 
-    private static enum Locks {
-        ZOOKEEPER, NONREENTRANT;
+    private enum Locks {
+        REDIS, NONREENTRANT;
     }
 
     private Lock getLock(Locks lock, String lockPath){
         switch (lock){
-            case ZOOKEEPER:
-                return new ZookeeperLock(zookeeperConnection, lockPath);
+            case REDIS:
+                return new JedisLock(engineContext.getJedisPool(), lockPath);
             case NONREENTRANT:
                 return new NonReentrantLock();
         }
@@ -79,24 +67,12 @@ public class LockTestIT {
     }
 
     private Lock copy(Lock lock){
-        if(lock instanceof ZookeeperLock){
-            return new ZookeeperLock(zookeeperConnection, ((ZookeeperLock) lock).getLockPath());
+        if(lock instanceof JedisLock){
+            return new JedisLock(engineContext.getJedisPool(), ((JedisLock) lock).getLockName());
         } else if(lock instanceof NonReentrantLock){
             return lock;
         }
         throw new RuntimeException("Invalid lock [" + lock + "]");
-    }
-
-    // this is allowed in a Reentrant lock
-    @Theory
-    public void whenLockAcquired_ItCannotBeAcquiredAgain(Locks locks){
-        Lock lock = getLock(locks, LOCK_PATH);
-
-        lock.lock();
-
-        assertThat(lock.tryLock(), is(false));
-
-        lock.unlock();
     }
 
     @Theory
@@ -112,19 +88,17 @@ public class LockTestIT {
     }
 
     @Theory
-    public void whenMultipleOfSameLock_OnlyOneAtATimeCanBeAcquired(Locks locks){
+    public void whenMultipleOfSameLock_OnlyOneAtATimeCanBeAcquired(Locks locks)
+            throws ExecutionException, InterruptedException {
         Lock lock1 = getLock(locks, LOCK_PATH);
         Lock lock2 = copy(lock1);
-
+        Callable<Boolean> r = lock2::tryLock;
+        ExecutorService execSvc = Executors.newSingleThreadExecutor();
         lock1.lock();
-
-        assertThat(lock2.tryLock(), is(false));
-
+        Boolean acquired = execSvc.submit(r).get();
+        assertThat(acquired, is(false));
         lock1.unlock();
-
         assertThat(lock2.tryLock(), is(true));
-        assertThat(lock1.tryLock(), is(false));
-
         lock2.unlock();
     }
 
@@ -159,14 +133,6 @@ public class LockTestIT {
 
         lock1.unlock();
         lock2.unlock();
-    }
-
-    @Theory
-    public void whenNewConditionCalled_UnsupportedOperationThrown(Locks locks){
-        exception.expect(UnsupportedOperationException.class);
-
-        Lock lock = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
-        lock.newCondition();
     }
 
     @Theory

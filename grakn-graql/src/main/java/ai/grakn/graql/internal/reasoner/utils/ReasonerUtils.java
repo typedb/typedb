@@ -75,8 +75,6 @@ import static java.util.stream.Collectors.toSet;
  */
 public class ReasonerUtils {
 
-    private static final String CAPTURE_MARK = "captured-";
-
     /**
      *
      * @param graph to be checked against
@@ -94,35 +92,6 @@ public class ReasonerUtils {
     public static boolean hasRules(GraknGraph graph) {
         Label inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getLabel();
         return graph.graql().infer(false).match(var("x").isa(Graql.label(inferenceRule))).ask().execute();
-    }
-
-    /**
-     * Capture a variable name, by prepending a constant to the name
-     * @param var the variable name to capture
-     * @return the captured variable
-     */
-    public static Var capture(Var var) {
-        return var.map(CAPTURE_MARK::concat);
-    }
-
-    /**
-     * Uncapture a variable name, by removing a prepended constant
-     * @param var the variable name to uncapture
-     * @return the uncaptured variable
-     */
-    public static Var uncapture(Var var) {
-        // TODO: This could cause bugs if a user has a variable including the word "capture"
-        return var.map(name -> name.replace(CAPTURE_MARK, ""));
-    }
-
-    /**
-     * Check if a variable has been captured
-     * @param var the variable to check
-     * @return if the variable has been captured
-     */
-    public static boolean isCaptured(Var var) {
-        // TODO: This could cause bugs if a user has a variable including the word "capture"
-        return var.getValue().contains(CAPTURE_MARK);
     }
 
     /**

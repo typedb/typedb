@@ -41,6 +41,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
@@ -122,10 +123,10 @@ public class AtomicTest {
 
     @Test
     public void testAtomFactoryProducesAtomsOfCorrectType(){
-        GraknGraph graph = cwGraph.graph();
-        String atomString = "{$x isa person;}";
-        String relString = "{($x, $y, $z) isa transaction;}";
-        String resString = "{$x has alignment 'hostile';}";
+        GraknGraph graph = unificationTestSet.graph();
+        String atomString = "{$x isa entity1;}";
+        String relString = "{($x, $y, $z) isa relation1;}";
+        String resString = "{$x has res1 'value';}";
 
         Atom atom = ReasonerQueries.atomic(conjunction(atomString, graph), graph).getAtom();
         Atom relation = ReasonerQueries.atomic(conjunction(relString, graph), graph).getAtom();
@@ -274,6 +275,57 @@ public class AtomicTest {
         atomicEquivalence(atom2, atom3, false);
         atomicEquivalence(atom2, atom4, false);
         atomicEquivalence(atom3, atom4, false);
+    }
+
+    @Test //tests alpha-equivalence of queries with resources with multi predicate
+    public void testAlphaEquivalence_MultiPredicateResources(){
+        GraknGraph graph = unificationTestSet.graph();
+        String patternString = "{$x isa entity1;$x has res1 $a;$a val >23; $a val <27;}";
+        String patternString2 = "{$p isa entity1;$p has res1 $a;$a val >23;}";
+        String patternString3 = "{$a isa entity1;$a has res1 $p;$p val <27;$p val >23;}";
+        String patternString4 = "{$x isa entity1, has res1 $a;$a val >23; $a val <27;}";
+        String patternString5 = "{$x isa $type;$type label entity1;$x has res1 $a;$a val >23; $a val <27;}";
+
+        Atom atom = ReasonerQueries.atomic(conjunction(patternString, graph), graph).getAtom();
+        Atom atom2 = ReasonerQueries.atomic(conjunction(patternString2, graph), graph).getAtom();
+        Atom atom3 = ReasonerQueries.atomic(conjunction(patternString3, graph), graph).getAtom();
+        Atom atom4 = ReasonerQueries.atomic(conjunction(patternString4, graph), graph).getAtom();
+        Atom atom5 = ReasonerQueries.atomic(conjunction(patternString5, graph), graph).getAtom();
+        atomicEquivalence(atom, atom2, false);
+        atomicEquivalence(atom, atom3, true);
+        atomicEquivalence(atom, atom4, true);
+        atomicEquivalence(atom, atom5, true);
+        atomicEquivalence(atom2, atom3, false);
+        atomicEquivalence(atom2, atom4, false);
+        atomicEquivalence(atom3, atom4, true);
+        atomicEquivalence(atom4, atom5, true);
+    }
+
+    @Test //tests alpha-equivalence of resource atoms with different predicates
+    public void testAlphaEquivalence_resourcesWithDifferentPredicates() {
+        GraknGraph graph = unificationTestSet.graph();
+        String patternString = "{$x has res1 $r;$r val > 1099;}";
+        String patternString2 = "{$x has res1 $r;$r val < 1099;}";
+        String patternString3 = "{$x has res1 $r;$r val = 1099;}";
+        String patternString4 = "{$x has res1 $r;$r val '1099';}";
+        String patternString5 = "{$x has res1 $r;$r val > $var;}";
+
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern4 = conjunction(patternString4, graph);
+        Conjunction<VarPatternAdmin> pattern5 = conjunction(patternString5, graph);
+
+        Atom atom = ReasonerQueries.atomic(pattern, graph).getAtom();
+        Atom atom2 = ReasonerQueries.atomic(pattern2, graph).getAtom();
+        Atom atom3 = ReasonerQueries.atomic(pattern3, graph).getAtom();
+        Atom atom4 = ReasonerQueries.atomic(pattern4, graph).getAtom();
+        Atom atom5 = ReasonerQueries.atomic(pattern5, graph).getAtom();
+
+        atomicEquivalence(atom, atom2, false);
+        atomicEquivalence(atom2, atom3, false);
+        atomicEquivalence(atom3, atom4, true);
+        atomicEquivalence(atom4, atom5, false);
     }
 
     @Test
@@ -517,7 +569,7 @@ public class AtomicTest {
         assertEquals(4, relation.getApplicableRules().size());
     }
 
-    @Test //should assign (role1: $x, role: $y, role1: $z) which is incompatible with any of the rule heads
+    @Test //should assign (role: $x, role1: $y, role1: $z) which is incompatible with any of the rule heads
     public void testRuleApplicability_WithWildcard_MissingMappings(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$y isa entity1; $z isa entity5;}";

@@ -20,26 +20,21 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
+import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.util.JWTHandler;
+import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.util.EmbeddedKafka;
+import ai.grakn.engine.util.JWTHandler;
+import static ai.grakn.graql.Graql.var;
 import ai.grakn.util.EmbeddedRedis;
 import com.jayway.restassured.RestAssured;
-import org.slf4j.LoggerFactory;
-import spark.Service;
-
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
-
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
-import static ai.grakn.graql.Graql.var;
+import org.slf4j.LoggerFactory;
+import spark.Service;
 
 /**
  * <p>
@@ -71,7 +66,7 @@ public abstract class GraknTestEngineSetup {
     }
 
     /**
-     * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
+     * To run engine we must ensure Cassandra and the Grakn HTTP endpoint are running
      */
     static GraknEngineServer startEngine(GraknEngineConfig config) throws Exception {
         // To ensure consistency b/w test profiles and configuration files, when not using Titan
@@ -89,35 +84,28 @@ public abstract class GraknTestEngineSetup {
 
         // start engine
         setRestAssuredUri(config);
-        GraknEngineServer server = GraknEngineServer.start(config);
+        GraknEngineServer server = new GraknEngineServer(config);
+        server.start();
 
         LOG.info("engine started.");
 
         return server;
     }
 
-    static void startRedis(GraknEngineConfig config){
-        EmbeddedRedis.start(config.getPropertyAsInt(REDIS_SERVER_PORT));
+    static void startRedis(int port) throws URISyntaxException {
+        EmbeddedRedis.start(port);
     }
 
     static void stopRedis(){
         EmbeddedRedis.stop();
     }
 
-    static void startKafka(GraknEngineConfig config) throws Exception {
-        EmbeddedKafka.start(config.getAvailableThreads(), TaskState.Priority.HIGH.queue(), TaskState.Priority.LOW.queue());
-    }
-
-    static void stopKafka() throws Exception {
-        EmbeddedKafka.stop();
-    }
-
     static void stopEngine(GraknEngineServer server) throws Exception {
         LOG.info("stopping engine...");
 
         // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
-        server.close();
         clearGraphs(server);
+        server.close();
 
         LOG.info("engine stopped.");
 

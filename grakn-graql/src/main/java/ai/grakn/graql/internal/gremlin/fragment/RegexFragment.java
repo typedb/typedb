@@ -23,7 +23,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
 import static ai.grakn.util.Schema.VertexProperty.REGEX;
 
@@ -37,8 +37,10 @@ class RegexFragment extends AbstractFragment {
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.has(REGEX.name(), regex);
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+
+        return traversal.has(REGEX.name(), regex);
     }
 
     @Override
@@ -47,8 +49,8 @@ class RegexFragment extends AbstractFragment {
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost;
+    public double fragmentCost() {
+        return COST_SAME_AS_PREVIOUS;
     }
 
     @Override
