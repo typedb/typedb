@@ -83,7 +83,6 @@ property       : 'isa' variable                                                 
                | 'datatype' DATATYPE                                                                 # propDatatype
                | 'regex' REGEX                                                                       # propRegex
                | '!=' variable                                                                       # propNeq
-
                ;
 
 casting        : variable (':' VARIABLE)?
