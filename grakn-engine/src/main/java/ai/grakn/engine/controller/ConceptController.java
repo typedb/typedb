@@ -163,7 +163,7 @@ public class ConceptController {
     }
 
     private List<String> subLabels(OntologyConcept ontologyConcept) {
-        return ontologyConcept.subs().stream().
+        return ontologyConcept.subs().
                 filter(concept-> !concept.isImplicit()).
                 map(OntologyConcept::getLabel).
                 map(Label::getValue).collect(toList());
