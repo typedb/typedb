@@ -37,7 +37,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static java.util.stream.Collectors.toSet;
@@ -62,9 +61,9 @@ public class RelationTypePropertyTest {
     public void whenANonMetaRelationTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
             @Open GraknGraph graph, @FromGraph @NonMeta RelationType type) {
         assumeThat(type.instances().collect(toSet()), empty());
-        assumeThat(type.subs().collect(Collectors.toSet()), contains(type));
-        assumeThat(type.getRulesOfHypothesis(), empty());
-        assumeThat(type.getRulesOfConclusion(), empty());
+        assumeThat(type.subs().collect(toSet()), contains(type));
+        assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());
+        assumeThat(type.getRulesOfConclusion().collect(toSet()), empty());
 
         type.delete();
 

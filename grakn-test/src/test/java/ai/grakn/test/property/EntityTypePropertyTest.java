@@ -55,8 +55,8 @@ public class EntityTypePropertyTest {
             @Open GraknGraph graph, @FromGraph @NonMeta EntityType type) {
         assumeThat(type.instances().collect(toSet()), empty());
         assumeThat(type.subs().collect(toSet()), contains(type));
-        assumeThat(type.getRulesOfHypothesis(), empty());
-        assumeThat(type.getRulesOfConclusion(), empty());
+        assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());
+        assumeThat(type.getRulesOfConclusion().collect(toSet()), empty());
 
         type.delete();
 

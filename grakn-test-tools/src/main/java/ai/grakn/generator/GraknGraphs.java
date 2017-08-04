@@ -349,11 +349,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private Relation relation() {
-        return chooseOrThrow(graph.admin().getMetaRelationType().instances().collect(toSet()));
+        return chooseOrThrow(graph.admin().getMetaRelationType().instances());
     }
 
     private Resource resource() {
-        return chooseOrThrow((Collection<Resource>) graph.admin().getMetaResourceType().instances());
+        return chooseOrThrow((Stream<Resource>) graph.admin().getMetaResourceType().instances());
     }
 
     //TODO: re-enable when grakn-graph can create graql constructs
@@ -361,7 +361,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 //        return chooseOrThrow(graph.admin().getMetaRuleType().instances());
 //    }
 
-    private <T> T chooseOrThrow(Collection<? extends T> collection) {
+    private <T> T chooseOrThrow(Stream<? extends T> stream) {
+        Set<? extends  T> collection = stream.collect(toSet());
         if (collection.isEmpty()) {
             throw new GraphGeneratorException();
         } else {
@@ -371,7 +372,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
     public static List<Concept> allConceptsFrom(GraknGraph graph) {
         List<Concept> concepts = Lists.newArrayList(GraknGraphs.allOntologyElementsFrom(graph));
-        concepts.addAll(allInstancesFrom(graph));
+        concepts.addAll(allInstancesFrom(graph).collect(toSet()));
         return concepts;
     }
 
@@ -382,11 +383,10 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return allOntologyConcepts;
     }
 
-    public static Collection<? extends Thing> allInstancesFrom(GraknGraph graph) {
+    public static Stream<? extends Thing> allInstancesFrom(GraknGraph graph) {
         // TODO: Revise this when meta concept is a type
         return graph.admin().getMetaConcept().subs().
-                flatMap(element -> element.asType().instances()).
-                collect(toSet());
+                flatMap(element -> element.asType().instances());
     }
 
     @Override

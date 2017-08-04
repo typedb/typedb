@@ -25,6 +25,8 @@ import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
 
 import java.util.Collection;
 
+import static java.util.stream.Collectors.toSet;
+
 /**
  * Abstract class for generating {@link Thing}s.
  *
@@ -46,7 +48,8 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
     protected final T generateFromGraph() {
         S type = genFromGraph(generatorClass).makeExcludeAbstractTypes().excludeMeta().generate(random, status);
 
-        Collection<T> instances = (Collection<T>) type.instances();
+        //noinspection unchecked
+        Collection<T> instances = (Collection<T> ) type.instances().collect(toSet());
         if (instances.isEmpty()) {
             return newInstance(type);
         } else {

@@ -208,7 +208,7 @@ public class OntologyConceptPropertyTest {
     @Ignore // TODO: Find a way to generate linked rules
     @Property
     public void whenDeletingAnOntologyConceptWithHypothesisRules_Throw(OntologyConcept concept) {
-        assumeThat(concept.getRulesOfHypothesis(), not(empty()));
+        assumeThat(concept.getRulesOfHypothesis().collect(toSet()), not(empty()));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.cannotBeDeleted(concept).getMessage());
@@ -218,7 +218,7 @@ public class OntologyConceptPropertyTest {
     @Ignore // TODO: Find a way to generate linked rules
     @Property
     public void whenDeletingAnOntologyConceptWithConclusionRules_Throw(OntologyConcept concept) {
-        assumeThat(concept.getRulesOfConclusion(), not(empty()));
+        assumeThat(concept.getRulesOfConclusion().collect(toSet()), not(empty()));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.cannotBeDeleted(concept).getMessage());

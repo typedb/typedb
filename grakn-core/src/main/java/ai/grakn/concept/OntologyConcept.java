@@ -20,7 +20,6 @@ package ai.grakn.concept;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.Collection;
 import java.util.stream.Stream;
 
 /**
@@ -99,7 +98,7 @@ public interface OntologyConcept extends Concept {
      * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a hypothesis
      */
     @CheckReturnValue
-    Collection<Rule> getRulesOfHypothesis();
+    Stream<Rule> getRulesOfHypothesis();
 
     /**
      * Return the collection of {@link Rule} for which this {@link OntologyConcept} serves as a conclusion.
@@ -108,7 +107,7 @@ public interface OntologyConcept extends Concept {
      * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a conclusion
      */
     @CheckReturnValue
-    Collection<Rule> getRulesOfConclusion();
+    Stream<Rule> getRulesOfConclusion();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

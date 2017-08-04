@@ -260,8 +260,8 @@ public class ConceptPropertyTest {
             if(ontologyConcept.isType()) {
                 Type type = ontologyConcept.asType();
                 assumeThat(type.instances().collect(toSet()), empty());
-                assumeThat(type.getRulesOfHypothesis(), empty());
-                assumeThat(type.getRulesOfConclusion(), empty());
+                assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());
+                assumeThat(type.getRulesOfConclusion().collect(toSet()), empty());
             }
 
             if (ontologyConcept.isRole()) {

@@ -25,8 +25,8 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.Thing;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
@@ -38,6 +38,7 @@ import org.junit.Test;
 
 import java.io.FileNotFoundException;
 import java.util.Collection;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
@@ -145,8 +146,8 @@ public class JsonMigratorTest {
 
         try(GraknGraph graph = factory.open(GraknTxType.READ)) {
             EntityType rootType = graph.getEntityType("thingy");
-            Stream<Entity> things = rootType.instances();
-            assertEquals(1, things.count());
+            Set<Entity> things = rootType.instances().collect(toSet());
+            assertEquals(1, things.size());
 
             Entity thing = things.iterator().next();
 

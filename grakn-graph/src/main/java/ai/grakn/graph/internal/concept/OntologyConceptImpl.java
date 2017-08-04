@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal.concept;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
@@ -33,8 +34,6 @@ import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -331,10 +330,8 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a hypothesis
      */
     @Override
-    public Collection<Rule> getRulesOfHypothesis() {
-        Set<Rule> rules = new HashSet<>();
-        neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(concept.asRule()));
-        return Collections.unmodifiableCollection(rules);
+    public Stream<Rule> getRulesOfHypothesis() {
+        return neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS).map(Concept::asRule);
     }
 
     /**
@@ -342,10 +339,8 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a conclusion
      */
     @Override
-    public Collection<Rule> getRulesOfConclusion() {
-        Set<Rule> rules = new HashSet<>();
-        neighbours(Direction.IN, Schema.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(concept.asRule()));
-        return Collections.unmodifiableCollection(rules);
+    public Stream<Rule> getRulesOfConclusion() {
+        return neighbours(Direction.IN, Schema.EdgeLabel.CONCLUSION).map(Concept::asRule);
     }
 
     @Override

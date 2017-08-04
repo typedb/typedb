@@ -44,9 +44,9 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
@@ -80,10 +80,10 @@ public class GraknGraphPutPropertyTest {
     ) {
         OntologyConcept concept = putOntologyConcept.apply(graph, label);
 
-        assertThat("Concept should only have one sub-type: itself", concept.subs().collect(Collectors.toSet()), contains(concept));
+        assertThat("Concept should only have one sub-type: itself", concept.subs().collect(toSet()), contains(concept));
         assertFalse("Concept should not be implicit", concept.isImplicit());
-        assertThat("Rules of hypotheses should be empty", concept.getRulesOfHypothesis(), empty());
-        assertThat("Rules of conclusion should be empty", concept.getRulesOfConclusion(), empty());
+        assertThat("Rules of hypotheses should be empty", concept.getRulesOfHypothesis().collect(toSet()), empty());
+        assertThat("Rules of conclusion should be empty", concept.getRulesOfConclusion().collect(toSet()), empty());
     }
 
     @Property
@@ -93,8 +93,8 @@ public class GraknGraphPutPropertyTest {
     ) {
         Type type = putType.apply(graph, label);
 
-        assertThat("Type should not play any roles", type.plays().collect(Collectors.toSet()), empty());
-        assertThat("Type should not have any scopes", type.scopes().collect(Collectors.toSet()), empty());
+        assertThat("Type should not play any roles", type.plays().collect(toSet()), empty());
+        assertThat("Type should not have any scopes", type.scopes().collect(toSet()), empty());
         assertFalse("Type should not be abstract", type.isAbstract());
     }
 
