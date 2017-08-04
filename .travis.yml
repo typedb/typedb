@@ -15,8 +15,11 @@ cache:
    - grakn-engine/npm
 
 env:
-  - TESTS=**/*Test*
-  - TESTS=**/*IT*
+  # Split tests into grakn-test and everything else
+  - TESTS=**/*Test* MODULE=grakn-test
+  - TESTS=**/*IT*   MODULE=grakn-test
+  - TESTS=**/*Test* MODULE=!grakn-test
+  - TESTS=**/*IT*   MODULE=!grakn-test
 
 notifications:
   slack: grakn:RbxoPzX267spGT4cgmoGLMpT
@@ -25,7 +28,7 @@ notifications:
 install: mvn install -T 2.5C -DskipTests=true -Dmaven.javadoc.skip=true -B -V
 
 script:
-    - mvn test -Dtest=$TESTS -DfailIfNoTests=false jacoco:report
+    - mvn test --projects "$MODULE" -Dtest=$TESTS -DfailIfNoTests=false jacoco:report
     - bash <(curl -s https://codecov.io/bash)
 before_install:
   - npm config set registry http://registry.npmjs.org/

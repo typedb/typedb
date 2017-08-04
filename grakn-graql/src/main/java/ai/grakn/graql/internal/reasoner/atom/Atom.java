@@ -28,7 +28,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
-import ai.grakn.graql.internal.reasoner.query.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -72,20 +72,22 @@ public abstract class Atom extends AtomicBase {
     @Override
     public boolean isAtom(){ return true;}
 
-    /**
-     * @return true if the atom corresponds to a atom
-     * */
-    public boolean isType(){ return false;}
+    @Override
+    public boolean isRuleResolvable() {
+        return !getApplicableRules().isEmpty();
+    }
 
-    /**
-     * @return true if the atom corresponds to a non-unary atom
-     * */
-    public boolean isRelation(){return false;}
-
-    /**
-     * @return true if the atom corresponds to a resource atom
-     * */
-    public boolean isResource(){ return false;}
+    @Override
+    public boolean isRecursive(){
+        if (isResource() || getOntologyConcept() == null) return false;
+        OntologyConcept ontologyConcept = getOntologyConcept();
+        return getApplicableRules().stream()
+                .filter(rule -> rule.getBody().selectAtoms().stream()
+                        .filter(at -> Objects.nonNull(at.getOntologyConcept()))
+                        .filter(at -> checkCompatible(ontologyConcept, at.getOntologyConcept())).findFirst().isPresent())
+                .filter(this::isRuleApplicable)
+                .findFirst().isPresent();
+    }
 
     /**
      * @return var properties this atom (its pattern) contains
@@ -97,7 +99,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return partial substitutions for this atom (NB: instances)
      */
-    public Set<IdPredicate> getPartialSubstitutions(){ return new HashSet<>();}
+    protected Set<IdPredicate> getPartialSubstitutions(){ return new HashSet<>();}
 
     /**
      * compute base resolution priority of this atom
@@ -144,7 +146,7 @@ public abstract class Atom extends AtomicBase {
         return basePriority;
     }
 
-    public abstract boolean isRuleApplicable(InferenceRule child);
+    protected abstract boolean isRuleApplicable(InferenceRule child);
 
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
@@ -167,23 +169,6 @@ public abstract class Atom extends AtomicBase {
                     .collect(Collectors.toSet());
         }
         return applicableRules;
-    }
-
-    @Override
-    public boolean isRuleResolvable() {
-        return !getApplicableRules().isEmpty();
-    }
-
-    @Override
-    public boolean isRecursive(){
-        if (isResource() || getOntologyConcept() == null) return false;
-        OntologyConcept ontologyConcept = getOntologyConcept();
-        return getApplicableRules().stream()
-                .filter(rule -> rule.getBody().selectAtoms().stream()
-                        .filter(at -> Objects.nonNull(at.getOntologyConcept()))
-                        .filter(at -> checkCompatible(ontologyConcept, at.getOntologyConcept())).findFirst().isPresent())
-                .filter(this::isRuleApplicable)
-                .findFirst().isPresent();
     }
 
     /**

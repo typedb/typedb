@@ -16,43 +16,72 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.Stack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  *
  * <p>
- * Iterator for query answers maintaining the iterative behaviour of QSQ scheme.
+ * Iterator for query answers maintaining the iterative behaviour of the QSQ scheme.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-class QueryAnswerIterator extends ReasonerQueryIterator {
+public class ResolutionIterator extends ReasonerQueryIterator {
 
     private int iter = 0;
     private long oldAns = 0;
     private final ReasonerQueryImpl query;
     private final Set<Answer> answers = new HashSet<>();
 
-    private final QueryCache<ReasonerAtomicQuery> cache;
-    private Iterator<Answer> answerIterator;
+    private final QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+    private final Stack<ResolutionState> states = new Stack<>();
+
+    private Answer nextAnswer = null;
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
-    QueryAnswerIterator(ReasonerQueryImpl q){
+    public ResolutionIterator(ReasonerQueryImpl q){
         this.query = q;
-        this.cache = new QueryCache<>();
-        this.answerIterator = query.iterator(new QueryAnswer(), new HashSet<>(), cache);
+        states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
+    }
+
+    private Answer findNextAnswer(){
+        while(!states.isEmpty()) {
+            ResolutionState state = states.pop();
+
+            if (state.isAnswerState() && state.isTopState()) {
+                return state.getSubstitution();
+            }
+
+            ResolutionState newState = state.generateSubGoal();
+            if (newState != null) {
+                if (!state.isAnswerState()) states.push(state);
+                states.push(newState);
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Answer next(){
+        if (nextAnswer == null) throw new NoSuchElementException();
+        answers.add(nextAnswer);
+        return nextAnswer;
     }
 
     /**
@@ -61,27 +90,19 @@ class QueryAnswerIterator extends ReasonerQueryIterator {
      */
     @Override
     public boolean hasNext() {
-        if (answerIterator.hasNext()) return true;
+        nextAnswer = findNextAnswer();
+        if (nextAnswer != null) return true;
 
         //iter finished
         long dAns = answers.size() - oldAns;
         if (dAns != 0 || iter == 0) {
             LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
             iter++;
-            answerIterator = query.iterator(new QueryAnswer(), new HashSet<>(), cache);
+            states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
             oldAns = answers.size();
-            return answerIterator.hasNext();
+            return hasNext();
         }
-        else return false;
-    }
 
-    /**
-     * @return single answer to the query
-     */
-    @Override
-    public Answer next() {
-        Answer ans = answerIterator.next();
-        answers.add(ans);
-        return ans;
+        return false;
     }
 }

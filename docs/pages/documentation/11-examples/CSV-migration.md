@@ -82,13 +82,15 @@ child sub role;
 # Resources
 
 identifier sub resource datatype string;
-firstname sub resource datatype string;
-surname sub resource datatype string;
-middlename sub resource datatype string;
+name sub resource datatype string;
+firstname sub name datatype string;
+surname sub name datatype string;
+middlename sub name datatype string;
 picture sub resource datatype string;
 age sub resource datatype long;
-birth-date sub resource datatype string;
-death-date sub resource datatype string;
+"date" sub resource datatype string;
+birth-date sub "date" datatype string;
+death-date sub "date" datatype string;
 gender sub resource datatype string;
 ``` 
 

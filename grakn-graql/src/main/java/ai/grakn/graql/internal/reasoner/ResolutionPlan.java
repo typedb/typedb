@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Var;
@@ -27,6 +27,8 @@ import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.collect.ImmutableList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -134,7 +136,7 @@ public final class ResolutionPlan {
      * compute the resolution plan - list of atomic queries ordered by their cost as computed by the graql traversal planner
      * @return list of prioritised queries
      */
-    static LinkedList<ReasonerQueryImpl> getResolutionPlanFromTraversal(ReasonerQueryImpl query){
+    public static LinkedList<ReasonerQueryImpl> getResolutionPlanFromTraversal(ReasonerQueryImpl query){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
         GraknGraph graph = query.graph();
 
@@ -164,7 +166,7 @@ public final class ResolutionPlan {
                     queries.add(ReasonerQueries.create(nonResolvableAtoms, graph));
                     nonResolvableAtoms.clear();
                 }
-                queries.add(new ReasonerAtomicQuery(top));
+                queries.add(ReasonerQueries.atomic(top));
             } else {
                 nonResolvableAtoms.add(top);
                 if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, graph));
@@ -177,7 +179,7 @@ public final class ResolutionPlan {
      * compute the resolution plan - list of atomic queries ordered by their resolution priority
      * @return list of prioritised queries
      */
-    static LinkedList<ReasonerQueryImpl> getResolutionPlan(ReasonerQueryImpl query){
+    public static LinkedList<ReasonerQueryImpl> getResolutionPlan(ReasonerQueryImpl query){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
         GraknGraph graph = query.graph();
 
@@ -198,7 +200,7 @@ public final class ResolutionPlan {
                     queries.add(ReasonerQueries.create(nonResolvableAtoms, graph));
                     nonResolvableAtoms.clear();
                 }
-                queries.add(new ReasonerAtomicQuery(top));
+                queries.add(ReasonerQueries.atomic(top));
             } else {
                 nonResolvableAtoms.add(top);
                 if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, graph));

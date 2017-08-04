@@ -26,7 +26,6 @@ import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
-import static ai.grakn.test.property.PropertyUtil.choose;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertThat;
@@ -43,7 +42,7 @@ public class ThingPropertyTest {
         assertThat(PropertyUtil.directInstances(type), hasItem(thing));
     }
 
-    @Ignore
+    @Ignore// Ignored because sometimes we fail to generate Things with resources attached to them
     @Property
     public void whenGettingTheResourceOfAThing_TheResourcesOwnerIsTheThing(Thing thing, long seed) {
         Resource<?> resource = PropertyUtil.choose(thing.resources(), seed);
