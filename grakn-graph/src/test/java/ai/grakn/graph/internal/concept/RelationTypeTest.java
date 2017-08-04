@@ -44,7 +44,7 @@ public class RelationTypeTest extends GraphTestBase {
         Role role2 = graknGraph.putRole("role2");
         Role role3 = graknGraph.putRole("role3");
         relationType.relates(role1).relates(role2).relates(role3);
-        assertThat(relationType.relates(), containsInAnyOrder(role1, role2, role3));
+        assertThat(relationType.relates().collect(toSet()), containsInAnyOrder(role1, role2, role3));
     }
 
     @Test
@@ -52,13 +52,13 @@ public class RelationTypeTest extends GraphTestBase {
         RelationType relationType = graknGraph.putRelationType("c1");
         Role role1 = graknGraph.putRole("c2");
         Role role2 = graknGraph.putRole("c3");
-        assertThat(relationType.relates(), empty());
+        assertThat(relationType.relates().collect(toSet()), empty());
 
         relationType.relates(role1).relates(role2);
-        assertThat(relationType.relates(), containsInAnyOrder(role1, role2));
+        assertThat(relationType.relates().collect(toSet()), containsInAnyOrder(role1, role2));
 
         relationType.deleteRelates(role1);
-        assertThat(relationType.relates(), containsInAnyOrder(role2));
+        assertThat(relationType.relates().collect(toSet()), containsInAnyOrder(role2));
     }
 
     @Test

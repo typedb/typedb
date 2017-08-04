@@ -44,8 +44,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -138,7 +138,7 @@ public class PostProcessingTest extends GraphTestBase{
         assertEquals(4, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
         assertEquals(2, graknGraph.getTinkerTraversal().E().hasLabel(Schema.EdgeLabel.RESOURCE.getLabel()).toList().size());
 
-        r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().contains(e1)));
+        r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().anyMatch(thing -> thing.equals(e1))));
 
         //Now fix everything
         graknGraph.fixDuplicateResources(r1.getIndex(), resourceIds);
@@ -148,7 +148,7 @@ public class PostProcessingTest extends GraphTestBase{
 
         //Get back the surviving resource
         Resource<String> foundR1 = null;
-        for (Resource<String> resource : resourceType.instances().collect(Collectors.toSet())) {
+        for (Resource<String> resource : resourceType.instances().collect(toSet())) {
             if(resource.getValue().equals("1")){
                 foundR1 = resource;
                 break;
@@ -156,7 +156,7 @@ public class PostProcessingTest extends GraphTestBase{
         }
 
         assertNotNull(foundR1);
-        assertThat(foundR1.ownerInstances(), containsInAnyOrder(e1, e2, e3));
+        assertThat(foundR1.ownerInstances().collect(toSet()), containsInAnyOrder(e1, e2, e3));
         assertEquals(5, graknGraph.admin().getMetaRelationType().instances().count());
     }
 

@@ -47,6 +47,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -148,8 +149,8 @@ public class RelationTest extends GraphTestBase {
     @Test
     public void whenGettingRolePlayersOfRelation_ReturnsRolesAndInstances() throws Exception {
         assertThat(relation.allRolePlayers().keySet(), containsInAnyOrder(role1, role2, role3));
-        assertThat(relation.rolePlayers(role1), containsInAnyOrder(rolePlayer1));
-        assertThat(relation.rolePlayers(role2), containsInAnyOrder(rolePlayer2));
+        assertThat(relation.rolePlayers(role1).collect(toSet()), containsInAnyOrder(rolePlayer1));
+        assertThat(relation.rolePlayers(role2).collect(toSet()), containsInAnyOrder(rolePlayer2));
     }
 
     @Test

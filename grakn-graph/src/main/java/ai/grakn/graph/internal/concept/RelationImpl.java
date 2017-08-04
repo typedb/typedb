@@ -30,7 +30,6 @@ import ai.grakn.graph.internal.cache.ContainsTxCache;
 import ai.grakn.graph.internal.structure.VertexElement;
 import com.google.common.collect.Iterables;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -140,7 +139,7 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     }
 
     @Override
-    public Collection<Thing> rolePlayers(Role... roles) {
+    public Stream<Thing> rolePlayers(Role... roles) {
         return structure().rolePlayers(roles);
     }
 
@@ -161,18 +160,9 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
      * When a relation is deleted this cleans up any solitary casting and resources.
      */
     void cleanUp() {
-        boolean performDeletion = true;
-        Collection<Thing> rolePlayers = rolePlayers();
-
-        for(Thing thing : rolePlayers){
-            if(thing != null && (thing.getId() != null )){
-                performDeletion = false;
-            }
-        }
-
-        if(performDeletion){
-            delete();
-        }
+        Stream<Thing> rolePlayers = rolePlayers();
+        boolean performDeletion = rolePlayers.noneMatch(thing -> thing != null && thing.getId() != null);
+        if(performDeletion) delete();
     }
 
     @Override

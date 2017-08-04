@@ -138,7 +138,7 @@ class ValidateGlobalRules {
      * @return An error message if the relates does not have a single incoming RELATES edge
      */
     static Optional<String> validateHasSingleIncomingRelatesEdge(Role role){
-        if(role.relationTypes().isEmpty()) {
+        if(!role.relationTypes().findAny().isPresent()) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.getLabel()));
         }
         return Optional.empty();
@@ -147,10 +147,10 @@ class ValidateGlobalRules {
     /**
      *
      * @param relationType The RelationType to validate
-     * @return An error message if the relationTypes does not have at least 2 roles
+     * @return An error message if the relationTypes does not have at least 1 role
      */
     static Optional<String> validateHasMinimumRoles(RelationType relationType) {
-        if(relationType.isAbstract() || relationType.relates().size() >= 1){
+        if(relationType.isAbstract() || relationType.relates().iterator().hasNext()){
             return Optional.empty();
         } else {
             return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationType.getLabel()));
@@ -166,7 +166,7 @@ class ValidateGlobalRules {
     static Optional<String> validateRelationshipStructure(RelationReified relation){
         RelationType relationType = relation.type();
         Collection<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
-        Collection<Role> roles = relationType.relates();
+        Collection<Role> roles = relationType.relates().collect(Collectors.toSet());
 
         Set<Role> rolesViaRolePlayers = castings.stream().map(Casting::getRoleType).collect(Collectors.toSet());
 
@@ -175,13 +175,8 @@ class ValidateGlobalRules {
         }
 
         for(Casting casting : castings){
-            boolean notFound = true;
-            for (RelationType innerRelationType : casting.getRoleType().relationTypes()) {
-                if(innerRelationType.getLabel().equals(relationType.getLabel())){
-                    notFound = false;
-                    break;
-                }
-            }
+            boolean notFound = casting.getRoleType().relationTypes().
+                    noneMatch(innerRelationType -> innerRelationType.getLabel().equals(relationType.getLabel()));
 
             if(notFound) {
                 return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRoleType().getLabel(), relationType.getLabel()));
@@ -204,8 +199,8 @@ class ValidateGlobalRules {
 
         Set<String> errorMessages = new HashSet<>();
 
-        Collection<Role> superRelates = superRelationType.relates();
-        Collection<Role> relates = relationType.relates();
+        Collection<Role> superRelates = superRelationType.relates().collect(Collectors.toSet());
+        Collection<Role> relates = relationType.relates().collect(Collectors.toSet());
         Set<Label> relatesLabels = relates.stream().map(OntologyConcept::getLabel).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant

@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItems;
@@ -477,7 +478,7 @@ public class ValidatorTest extends GraphTestBase{
         relation.addRolePlayer(role1, thing1);
         relation.addRolePlayer(role1, thing2);
 
-        assertThat(relation.rolePlayers(role1), hasItems(thing1, thing2));
+        assertThat(relation.rolePlayers(role1).collect(toSet()), hasItems(thing1, thing2));
 
         graknGraph.commit();
     }
@@ -501,7 +502,7 @@ public class ValidatorTest extends GraphTestBase{
             relation.addRolePlayer(role1, thing);
         }
 
-        assertEquals(things, relation.rolePlayers(role1));
+        assertEquals(things, relation.rolePlayers(role1).collect(toSet()));
 
         graknGraph.commit();
     }

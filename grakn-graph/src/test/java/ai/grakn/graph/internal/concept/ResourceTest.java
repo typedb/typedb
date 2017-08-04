@@ -69,7 +69,7 @@ public class ResourceTest extends GraphTestBase {
         Resource<String> birthDate = resourceType.putResource("10/10/10");
         hasResource.relates(resourceRole).relates(actorRole);
 
-        assertThat(birthDate.ownerInstances(), empty());
+        assertThat(birthDate.ownerInstances().collect(toSet()), empty());
 
         hasResource.addRelation().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, pacino);
@@ -80,7 +80,7 @@ public class ResourceTest extends GraphTestBase {
         hasResource.addRelation().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, alice);
 
-        assertThat(birthDate.ownerInstances(), containsInAnyOrder(pacino, jennifer, bob, alice));
+        assertThat(birthDate.ownerInstances().collect(toSet()), containsInAnyOrder(pacino, jennifer, bob, alice));
     }
 
     // this is due to the generic of getResourcesByValue
@@ -205,13 +205,13 @@ public class ResourceTest extends GraphTestBase {
         assertEquals(relationStructureBefore.getId(), relationStructureAfter.getId());
 
         //Check Role Players have been transferred
-        allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationStructureAfter.rolePlayers(role)));
+        allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationStructureAfter.rolePlayers(role).collect(toSet())));
 
         //Check Type Has Been Transferred
         assertEquals(relationStructureBefore.type(), relationStructureAfter.type());
 
         //Check new role player has been added as well
-        assertEquals(newEntity, Iterables.getOnlyElement(relationStructureAfter.rolePlayers(newRole)));
+        assertEquals(newEntity, Iterables.getOnlyElement(relationStructureAfter.rolePlayers(newRole).collect(toSet())));
     }
 
     @Test

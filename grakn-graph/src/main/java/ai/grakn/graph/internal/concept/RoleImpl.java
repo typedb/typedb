@@ -29,9 +29,6 @@ import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -83,8 +80,8 @@ public class RoleImpl extends OntologyConceptImpl<Role> implements Role {
      * @return The Relation Type which this role takes part in.
      */
     @Override
-    public Collection<RelationType> relationTypes() {
-        return Collections.unmodifiableCollection(cachedRelationTypes.get());
+    public Stream<RelationType> relationTypes() {
+        return cachedRelationTypes.get().stream();
     }
 
     /**
@@ -112,10 +109,8 @@ public class RoleImpl extends OntologyConceptImpl<Role> implements Role {
      * @return A list of all the Concept Types which can play this role.
      */
     @Override
-    public Collection<Type> playedByTypes() {
-        Set<Type> playedByTypes = new HashSet<>();
-        cachedDirectPlayedByTypes.get().forEach(type -> playedByTypes.addAll(type.subs().collect(Collectors.toSet())));
-        return Collections.unmodifiableCollection(playedByTypes);
+    public Stream<Type> playedByTypes() {
+        return cachedDirectPlayedByTypes.get().stream().flatMap(Type::subs);
     }
 
     void addCachedDirectPlaysByType(Type newType){
@@ -131,7 +126,7 @@ public class RoleImpl extends OntologyConceptImpl<Role> implements Role {
      * @return Get all the roleplayers of this role type
      */
     public Stream<Casting> rolePlayers(){
-        return relationTypes().stream().
+        return relationTypes().
                 flatMap(RelationType::instances).
                 map(relation -> RelationImpl.from(relation).reified()).
                 flatMap(CommonUtil::optionalToStream).

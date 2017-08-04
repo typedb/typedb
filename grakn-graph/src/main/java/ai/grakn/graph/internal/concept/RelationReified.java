@@ -30,7 +30,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -73,8 +72,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         return roleMap;
     }
 
-    public Collection<Thing> rolePlayers(Role... roles) {
-        return castingsRelation(roles).map(Casting::getInstance).collect(Collectors.toSet());
+    public Stream<Thing> rolePlayers(Role... roles) {
+        return castingsRelation(roles).map(Casting::getInstance);
     }
 
     public void addRolePlayer(Role role, Thing thing) {

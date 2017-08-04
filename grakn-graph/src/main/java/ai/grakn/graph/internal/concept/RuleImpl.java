@@ -28,8 +28,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -106,10 +105,8 @@ public class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @return A collection of Concept Types that constitute a part of the hypothesis of the rule
      */
     @Override
-    public Collection<Type> getHypothesisTypes() {
-        Collection<Type> types = new HashSet<>();
-        neighbours(Direction.OUT, Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> types.add(concept.asType()));
-        return types;
+    public Stream<Type> getHypothesisTypes() {
+        return neighbours(Direction.OUT, Schema.EdgeLabel.HYPOTHESIS);
     }
 
     /**
@@ -117,10 +114,8 @@ public class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @return A collection of Concept Types that constitute a part of the conclusion of the rule
      */
     @Override
-    public Collection<Type> getConclusionTypes() {
-        Collection<Type> types = new HashSet<>();
-        neighbours(Direction.OUT, Schema.EdgeLabel.CONCLUSION).forEach(concept -> types.add(concept.asType()));
-        return types;
+    public Stream<Type> getConclusionTypes() {
+        return neighbours(Direction.OUT, Schema.EdgeLabel.CONCLUSION);
     }
 
     /**

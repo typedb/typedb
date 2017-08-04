@@ -20,7 +20,6 @@ package ai.grakn.concept;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
-import java.util.Collection;
 import java.util.stream.Stream;
 
 /**
@@ -86,7 +85,7 @@ public interface Role extends OntologyConcept {
      * @return The RelationTypes which this role takes part in.
      */
     @CheckReturnValue
-    Collection<RelationType> relationTypes();
+    Stream<RelationType> relationTypes();
 
     /**
      * Returns a collection of the Types that can play this Role.
@@ -95,7 +94,7 @@ public interface Role extends OntologyConcept {
      * @return A list of all the Types which can play this role.
      */
     @CheckReturnValue
-    Collection<Type> playedByTypes();
+    Stream<Type> playedByTypes();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

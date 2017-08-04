@@ -18,7 +18,6 @@
 
 package ai.grakn.graph.internal.concept;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
@@ -331,7 +330,7 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      */
     @Override
     public Stream<Rule> getRulesOfHypothesis() {
-        return neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS).map(Concept::asRule);
+        return neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS);
     }
 
     /**
@@ -340,7 +339,7 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      */
     @Override
     public Stream<Rule> getRulesOfConclusion() {
-        return neighbours(Direction.IN, Schema.EdgeLabel.CONCLUSION).map(Concept::asRule);
+        return neighbours(Direction.IN, Schema.EdgeLabel.CONCLUSION);
     }
 
     @Override

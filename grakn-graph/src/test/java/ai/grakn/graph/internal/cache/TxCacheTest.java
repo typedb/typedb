@@ -279,27 +279,27 @@ public class TxCacheTest extends GraphTestBase {
         //Check concepts match what is in transaction cache
         graknGraph = (AbstractGraknGraph<?>) graknSession.open(GraknTxType.WRITE);
         assertTxBoundConceptMatches(e1, t -> t.plays().collect(toSet()), containsInAnyOrder(rol1, rol2));
-        assertTxBoundConceptMatches(rel, RelationType::relates, containsInAnyOrder(rol1, rol2));
-        assertTxBoundConceptMatches(rol1, Role::playedByTypes, containsInAnyOrder(e1));
-        assertTxBoundConceptMatches(rol2, Role::playedByTypes, containsInAnyOrder(e1));
-        assertTxBoundConceptMatches(rol1, Role::relationTypes, containsInAnyOrder(rel));
-        assertTxBoundConceptMatches(rol2, Role::relationTypes, containsInAnyOrder(rel));
+        assertTxBoundConceptMatches(rel, t -> t.relates().collect(toSet()), containsInAnyOrder(rol1, rol2));
+        assertTxBoundConceptMatches(rol1, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1));
+        assertTxBoundConceptMatches(rol2, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1));
+        assertTxBoundConceptMatches(rol1, t -> t.relationTypes().collect(toSet()), containsInAnyOrder(rel));
+        assertTxBoundConceptMatches(rol2, t -> t.relationTypes().collect(toSet()), containsInAnyOrder(rel));
 
         //Role Type 1 and 2 played by e2 now
         e2.plays(rol1);
         e2.plays(rol2);
-        assertTxBoundConceptMatches(rol1, Role::playedByTypes, containsInAnyOrder(e1, e2));
-        assertTxBoundConceptMatches(rol2, Role::playedByTypes, containsInAnyOrder(e1, e2));
+        assertTxBoundConceptMatches(rol1, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1, e2));
+        assertTxBoundConceptMatches(rol2, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1, e2));
 
         //e1 no longer plays role 1
         e1.deletePlays(rol1);
-        assertTxBoundConceptMatches(rol1, Role::playedByTypes, containsInAnyOrder(e2));
-        assertTxBoundConceptMatches(rol2, Role::playedByTypes, containsInAnyOrder(e1, e2));
+        assertTxBoundConceptMatches(rol1, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e2));
+        assertTxBoundConceptMatches(rol2, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1, e2));
 
         //Role 2 no longer part of relation type
         rel.deleteRelates(rol2);
-        assertTxBoundConceptMatches(rol2, Role::relationTypes, empty());
-        assertTxBoundConceptMatches(rel, RelationType::relates, containsInAnyOrder(rol1));
+        assertTxBoundConceptMatches(rol2, t -> t.relationTypes().collect(toSet()), empty());
+        assertTxBoundConceptMatches(rel, t -> t.relates().collect(toSet()), containsInAnyOrder(rol1));
     }
 
     /**

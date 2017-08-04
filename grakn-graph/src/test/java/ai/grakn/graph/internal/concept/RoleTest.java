@@ -29,6 +29,7 @@ import ai.grakn.graph.internal.GraphTestBase;
 import org.junit.Before;
 import org.junit.Test;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertNotNull;
@@ -47,9 +48,9 @@ public class RoleTest extends GraphTestBase {
 
     @Test
     public void whenGettingTheRelationTypesARoleIsInvolvedIn_ReturnTheRelationTypes() throws Exception {
-        assertThat(role.relationTypes(), empty());
+        assertThat(role.relationTypes().collect(toSet()), empty());
         relationType.relates(role);
-        assertThat(role.relationTypes(), containsInAnyOrder(relationType));
+        assertThat(role.relationTypes().collect(toSet()), containsInAnyOrder(relationType));
     }
 
     @Test
@@ -58,7 +59,7 @@ public class RoleTest extends GraphTestBase {
         Type type2 = graknGraph.putEntityType("CT2").plays(role);
         Type type3 = graknGraph.putEntityType("CT3").plays(role);
         Type type4 = graknGraph.putEntityType("CT4").plays(role);
-        assertThat(role.playedByTypes(), containsInAnyOrder(type1, type2, type3, type4));
+        assertThat(role.playedByTypes().collect(toSet()), containsInAnyOrder(type1, type2, type3, type4));
     }
 
     @Test
@@ -114,8 +115,8 @@ public class RoleTest extends GraphTestBase {
         RelationType relationType2 = graknGraph.putRelationType("relationType2").relates(roleB).relates(role);
         graknGraph.commit();
 
-        assertThat(roleA.relationTypes(), containsInAnyOrder(relationType));
-        assertThat(roleB.relationTypes(), containsInAnyOrder(relationType2));
-        assertThat(role.relationTypes(), containsInAnyOrder(relationType, relationType2));
+        assertThat(roleA.relationTypes().collect(toSet()), containsInAnyOrder(relationType));
+        assertThat(roleB.relationTypes().collect(toSet()), containsInAnyOrder(relationType2));
+        assertThat(role.relationTypes().collect(toSet()), containsInAnyOrder(relationType, relationType2));
     }
 }
