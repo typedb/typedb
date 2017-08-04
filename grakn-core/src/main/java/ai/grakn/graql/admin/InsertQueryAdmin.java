@@ -51,7 +51,7 @@ public interface InsertQueryAdmin extends InsertQuery {
      * @return the variables to insert in the insert query
      */
     @CheckReturnValue
-    Collection<VarPatternAdmin> getVars();
+    Collection<VarPatternAdmin> varPatterns();
 
     /**
      * @return the graph set on this query, if it was provided one

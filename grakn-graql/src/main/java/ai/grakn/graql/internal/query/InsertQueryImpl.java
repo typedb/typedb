@@ -142,7 +142,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Collection<VarPatternAdmin> getVars() {
+    public Collection<VarPatternAdmin> varPatterns() {
         return originalVars;
     }
 
