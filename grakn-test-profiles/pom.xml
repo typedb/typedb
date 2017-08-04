@@ -78,6 +78,37 @@
             </properties>
         </profile>
 
+        <!--Temporary titan profile to point to Janus -->
+        <profile>
+            <id>titan</id>
+            <properties>
+                <grakn.test-profile>janus</grakn.test-profile>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>ai.grakn</groupId>
+                    <artifactId>janus-factory</artifactId>
+                    <version>${project.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-log4j12</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>logback-classic</artifactId>
+                        </exclusion>
+                        <!--Excluded because we provide logback logger-->
+                        <exclusion>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-nop</artifactId>
+                        </exclusion>
+                    </exclusions>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
         <profile>
             <id>janus</id>
             <properties>
