@@ -1,13 +1,15 @@
 package ai.grakn.engine.lock;
 
-import ai.grakn.util.EmbeddedRedis;
+import ai.grakn.util.Redis;
 import com.google.common.base.Stopwatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.ExternalResource;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
@@ -17,9 +19,11 @@ public class JedisLockTest {
     public static final String LOCK_NAME = "LOCK_NAME";
     private static JedisPool jedisPool;
 
+    @ClassRule
+    public static ExternalResource redis = Redis.redis(PORT, false);
+
     @BeforeClass
     public static void setupClass() {
-        EmbeddedRedis.start(PORT);
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         jedisPool = new JedisPool(poolConfig, "localhost", PORT);
     }
@@ -27,8 +31,6 @@ public class JedisLockTest {
     @AfterClass
     public static void tearDownClass() throws InterruptedException {
         jedisPool.close();
-        EmbeddedRedis.stop();
-
     }
 
     @Test

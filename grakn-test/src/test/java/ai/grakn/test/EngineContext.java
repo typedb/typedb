@@ -32,16 +32,14 @@ import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import ai.grakn.engine.util.SimpleURI;
 import static ai.grakn.test.GraknTestEngineSetup.startEngine;
-import static ai.grakn.test.GraknTestEngineSetup.startRedis;
 import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
-import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
 import static ai.grakn.util.GraphLoader.randomKeyspace;
+import ai.grakn.util.MockRedis;
 import com.jayway.restassured.RestAssured;
+import javax.annotation.Nullable;
 import org.junit.rules.ExternalResource;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
-
-import javax.annotation.Nullable;
 
 
 /**
@@ -53,6 +51,7 @@ import javax.annotation.Nullable;
  */
 public class EngineContext extends ExternalResource {
 
+    private final MockRedis redis;
     private GraknEngineServer server;
 
     private final boolean startSingleQueueEngine;
@@ -63,6 +62,8 @@ public class EngineContext extends ExternalResource {
     private EngineContext(boolean startSingleQueueEngine, boolean startStandaloneEngine){
         this.startSingleQueueEngine = startSingleQueueEngine;
         this.startStandaloneEngine = startStandaloneEngine;
+        SimpleURI redisURI = new SimpleURI(config.getProperty(REDIS_HOST));
+        this.redis = new MockRedis(redisURI.getPort());
     }
 
     public static EngineContext startNoQueue(){
@@ -125,9 +126,8 @@ public class EngineContext extends ExternalResource {
         }
 
         try {
-            SimpleURI redisURI = new SimpleURI(config.getProperty(REDIS_HOST));
-            startRedis(redisURI.getPort());
-            jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
+            redis.start();
+            jedisPool = new JedisPool(redis.getServer().getHost(), redis.getServer().getBindPort());
 
             @Nullable Class<? extends TaskManager> taskManagerClass = null;
 
@@ -144,7 +144,7 @@ public class EngineContext extends ExternalResource {
                 server = startEngine(config);
             }
         } catch (Exception e) {
-            stopRedis();
+            redis.stop();
             throw e;
         }
 
@@ -162,7 +162,7 @@ public class EngineContext extends ExternalResource {
                 noThrow(() -> stopEngine(server), "Error closing engine");
             }
             getJedisPool().close();
-            stopRedis();
+            redis.stop();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }

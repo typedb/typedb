@@ -33,9 +33,10 @@ import ai.grakn.engine.tasks.manager.TaskState.Priority;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.GraphContext;
-import ai.grakn.util.EmbeddedRedis;
+import ai.grakn.util.EmbeddedCassandra;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import ai.grakn.util.Redis;
 import com.codahale.metrics.MetricRegistry;
 import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.Retryer;
@@ -50,7 +51,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertNotSame;
 import static junit.framework.TestCase.fail;
 import mjson.Json;
@@ -60,23 +60,25 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 public class RedisTaskManagerTest {
 
-    public static final Retryer<Boolean> RETRY_STRATEGY = RetryerBuilder.<Boolean>newBuilder()
+    private static final Retryer<Boolean> RETRY_STRATEGY = RetryerBuilder.<Boolean>newBuilder()
             .withStopStrategy(StopStrategies.stopAfterAttempt(10))
             .retryIfResult(aBoolean -> false)
             .retryIfExceptionOfType(ai.grakn.exception.GraknBackendException.class)
             .withWaitStrategy(WaitStrategies.exponentialWait(10, 60, TimeUnit.SECONDS))
             .build();
+
     private static final int PORT = 9899;
     private static final int MAX_TOTAL = 256;
-    public static final GraknEngineConfig CONFIG = GraknEngineConfig.create();
+    private static final GraknEngineConfig CONFIG = GraknEngineConfig.create();
     private static final MetricRegistry metricRegistry = new MetricRegistry();
     private static final EngineID engineID = EngineID.of("engineID");
-    public static final ProcessWideLockProvider LOCK_PROVIDER = new ProcessWideLockProvider();
+    private static final ProcessWideLockProvider LOCK_PROVIDER = new ProcessWideLockProvider();
 
     private static JedisPool jedisPool;
     private static EngineGraknGraphFactory engineGraknGraphFactory;
@@ -85,16 +87,18 @@ public class RedisTaskManagerTest {
     private static RedisTaskManager taskManager;
 
     @ClassRule
-    public static final GraphContext graph = GraphContext.empty();
+    public static RuleChain chain = RuleChain
+            .outerRule(new EmbeddedCassandra())
+            .around(Redis.redis(PORT, false))
+            .around(GraphContext.empty());
+
 
     @BeforeClass
     public static void setupClass() {
-        EmbeddedRedis.start(PORT);
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setBlockWhenExhausted(true);
         poolConfig.setMaxTotal(MAX_TOTAL);
-        jedisPool = new JedisPool(poolConfig, "localhost", 9899);
-        assertFalse(jedisPool.isClosed());
+        jedisPool = new JedisPool(poolConfig, "localhost", PORT);
         engineGraknGraphFactory = EngineGraknGraphFactory.createAndLoadSystemOntology(CONFIG.getProperties());
         int nThreads = 2;
         executor = Executors.newFixedThreadPool(nThreads);
@@ -108,7 +112,6 @@ public class RedisTaskManagerTest {
         taskManager.close();
         executor.awaitTermination(3, TimeUnit.SECONDS);
         jedisPool.close();
-        EmbeddedRedis.stop();
     }
 
     @Ignore // TODO: Fix (Bug #16193)

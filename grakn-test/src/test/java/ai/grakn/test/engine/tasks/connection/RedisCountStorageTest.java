@@ -21,19 +21,18 @@ package ai.grakn.test.engine.tasks.connection;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.MockRedisRule;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
+import ai.grakn.util.MockRedis;
+import ai.grakn.util.TestResourceUtil;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
 import static org.junit.Assert.assertEquals;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 /**
  * <p>
@@ -48,7 +47,7 @@ public class RedisCountStorageTest {
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @ClassRule
-    public static final MockRedisRule mockRedisRule = new MockRedisRule();
+    public static final MockRedis mockRedisRule = new MockRedis(TestResourceUtil.getEphemeralPort());
 
     private static RedisCountStorage redis;
 

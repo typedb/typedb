@@ -18,9 +18,10 @@
 
 package ai.grakn.util;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.rules.ExternalResource;
 import org.slf4j.LoggerFactory;
 import redis.embedded.RedisServer;
+import redis.embedded.exceptions.EmbeddedRedisException;
 
 /**
  * <p>
@@ -35,12 +36,41 @@ import redis.embedded.RedisServer;
  * @author fppt
  *
  */
-public class EmbeddedRedis {
+public class EmbeddedRedis extends ExternalResource {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedRedis.class);
-    private static AtomicInteger REDIS_COUNTER = new AtomicInteger(0);
-    private static volatile RedisServer redisServer;
 
-    static {
+    private RedisServer redisServer;
+    private int port;
+
+    public EmbeddedRedis(int port) {
+        this.port = port;
+        this.redisServer = RedisServer.builder()
+                .port(port)
+                // We have short running tests and sometimes we kill the connections
+                .setting("timeout 360")
+                .build();
+    }
+
+    /**
+     * Starts an embedded redis on the provided port
+     */
+    @Override
+    public void before(){
+        start();
+    }
+
+    public void start() {
+        LOG.info("Starting redis...");
+        if (!redisServer.isActive()) {
+            try {
+                redisServer.start();
+            } catch (EmbeddedRedisException e) {
+                LOG.warn("Unexpected Redis instance already running on port {}", port, e);
+            } catch (Exception e) {
+                LOG.warn("Exception while trying to start Redis on port {}. Will attempt to continue.", port, e);
+            }
+            LOG.info("Redis started on {}", port);
+        }
         Runtime.getRuntime().addShutdownHook(
                 new Thread(() -> {
                     if (redisServer != null && redisServer.isActive()) {
@@ -51,37 +81,11 @@ public class EmbeddedRedis {
     }
 
     /**
-     * Starts an embedded redis on the provided port
-     *
-     * @param port The port to start redis on
-     */
-    public static void start(int port){
-        if(REDIS_COUNTER.getAndIncrement() == 0) {
-            LOG.info("Starting redis...");
-            redisServer = RedisServer.builder()
-                    .port(port)
-                    // We have short running tests and sometimes we kill the connections
-                    .setting("timeout 360")
-                    .build();
-            if (!redisServer.isActive()) {
-                redisServer.start();
-                LOG.info("Redis started.");
-            } else {
-                LOG.warn("Redis already running.");
-            }
-        }
-    }
-
-    /**
      * Stops the embedded redis
      */
-    public static void stop(){
-        if (redisServer != null && REDIS_COUNTER.decrementAndGet() <= 0) {
-            LOG.info("Stopping Redis...");
-            redisServer.stop();
-            LOG.info("Redis stopped.");
-        } else {
-            LOG.warn("Called stop while {} redis instances are running", REDIS_COUNTER);
-        }
+    @Override
+    public void after(){
+        redisServer.stop();
+        LOG.info("Redis stopped.");
     }
 }

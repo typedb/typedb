@@ -27,6 +27,8 @@ import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.util.GraknVersion;
+import ai.grakn.util.MockRedis;
+import ai.grakn.util.TestResourceUtil;
 import com.google.common.base.StandardSystemProperty;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -57,6 +59,7 @@ public class DistributionContext extends ExternalResource {
     private static final String TARGET_DIRECTORY = CURRENT_DIRECTORY + "/../grakn-dist/target/";
     private static final String DIST_DIRECTORY = TARGET_DIRECTORY + "grakn-dist-" + GraknVersion.VERSION;
     private final Class<? extends TaskManager> taskManagerClass;
+    private final MockRedis redis;
 
     private Process engineProcess;
     private int port = 4567;
@@ -64,6 +67,7 @@ public class DistributionContext extends ExternalResource {
 
     private DistributionContext(Class<? extends TaskManager> taskManagerClass){
         this.taskManagerClass = taskManagerClass;
+        this.redis = new MockRedis(TestResourceUtil.getEphemeralPort());
     }
 
     public static DistributionContext startSingleQueueEngineProcess(){
@@ -106,7 +110,7 @@ public class DistributionContext extends ExternalResource {
 
         unzipDistribution();
         GraknTestSetup.startCassandraIfNeeded();
-        GraknTestSetup.startRedisIfNeeded(6379);
+        redis.start();
         engineProcess = newEngineProcess(port);
         waitForEngine(port);
     }
@@ -114,6 +118,7 @@ public class DistributionContext extends ExternalResource {
     @Override
     public void after() {
         engineProcess.destroyForcibly();
+        redis.stop();
     }
 
     private void assertPackageBuilt() throws IOException {

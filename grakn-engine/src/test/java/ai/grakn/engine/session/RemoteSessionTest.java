@@ -57,6 +57,10 @@ import static ai.grakn.util.REST.RemoteShell.OUTPUT_FORMAT;
 import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -76,12 +80,14 @@ public class RemoteSessionTest {
     );
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EmbeddedCassandra.start();
-        Properties properties = GraknEngineConfig.create().getProperties();
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.createAndLoadSystemOntology(properties);
-        new SystemController(factory, spark, new MetricRegistry());
-    }).port(4567);
+    public static RuleChain ruleChain = RuleChain
+            .outerRule(new EmbeddedCassandra())
+            .around(SparkContext.withControllers(spark -> {
+                Properties properties = GraknEngineConfig.create().getProperties();
+                EngineGraknGraphFactory factory = EngineGraknGraphFactory
+                        .createAndLoadSystemOntology(properties);
+                new SystemController(factory, spark, new MetricRegistry());
+            }).port(4567));
 
     private final BlockingQueue<Json> responses = new LinkedBlockingDeque<>();
     private final RemoteEndpoint remoteEndpoint = mock(RemoteEndpoint.class);
