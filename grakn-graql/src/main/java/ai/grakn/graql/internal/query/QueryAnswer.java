@@ -140,6 +140,8 @@ public class QueryAnswer implements Answer {
     @Override
     public Answer merge(Answer a2, boolean mergeExplanation){
         if(a2.isEmpty()) return this;
+        if(this.isEmpty()) return a2;
+
         AnswerExplanation exp = this.getExplanation();
         Answer merged = new QueryAnswer(a2);
         merged.putAll(this);

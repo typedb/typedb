@@ -24,7 +24,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.query.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
@@ -114,6 +114,10 @@ public abstract class TypeAtom extends Binary{
                 getParentQuery().graph().getConcept(getPredicate().getPredicate()) : null;
     }
 
+    /**
+     * @param u unifier to be applied
+     * @return set of type atoms resulting from applying the unifier
+     */
     public abstract Set<TypeAtom> unify(Unifier u);
 }
 

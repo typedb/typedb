@@ -18,6 +18,7 @@ In this tutorial we will look at how to stream public tweets into Grakn's knowle
 - Inserting tweets into the knowledge graph using Grakn's Graph API
 - Performing simple queries using Graql, the Grakn's query language
 
+A fully working example of this tutorial can be found in the [sample-projects repository](https://github.com/graknlabs/sample-projects/tree/master/example-working-with-tweets).
 ## Registering Your Own Twitter Application
 As of today, every endpoint in the Twitter API is authenticated. Therefore, you must own a Twitter application (or, register a new one) before proceeding further.
 
