@@ -29,6 +29,7 @@ import ai.grakn.graph.internal.GraphTestBase;
 import ai.grakn.util.Schema;
 import org.junit.Test;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
@@ -71,11 +72,11 @@ public class RelationTypeTest extends GraphTestBase {
         RelationType implicitRelationType = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
 
         assertNotNull(implicitRelationType);
-        assertThat(implicitRelationType.instances(), empty());
+        assertThat(implicitRelationType.instances().collect(toSet()), empty());
 
         entity.resource(resource);
 
-        assertEquals(1, implicitRelationType.instances().size());
+        assertEquals(1, implicitRelationType.instances().count());
     }
 
     @Test

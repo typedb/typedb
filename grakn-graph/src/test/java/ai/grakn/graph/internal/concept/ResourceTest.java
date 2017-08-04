@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -136,7 +137,7 @@ public class ResourceTest extends GraphTestBase {
             // expected failure
         }
 
-        Collection<Resource> instances = longResourceType.instances();
+        Collection<Resource> instances = (Collection<Resource>) longResourceType.instances().collect(toSet());
 
         assertThat(instances, empty());
     }

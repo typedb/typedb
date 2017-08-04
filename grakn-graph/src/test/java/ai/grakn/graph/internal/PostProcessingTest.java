@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -84,13 +85,13 @@ public class PostProcessingTest extends GraphTestBase{
         resourceIds.add(createFakeResource(resourceType, "1").getId());
 
         //Check we have duplicate resources
-        assertEquals(3, resourceType.instances().size());
+        assertEquals(3, resourceType.instances().count());
 
         //Fix duplicates
         graknGraph.fixDuplicateResources(mainResource.getIndex(), resourceIds);
 
         //Check we no longer have duplicates
-        assertEquals(1, resourceType.instances().size());
+        assertEquals(1, resourceType.instances().count());
     }
 
     @Test
@@ -130,7 +131,7 @@ public class PostProcessingTest extends GraphTestBase{
         addEdgeRelation(e3, r111);
 
         //Check everything is broken
-        assertEquals(3, resourceType.instances().size());
+        assertEquals(3, resourceType.instances().count());
         assertEquals(1, r1.relations().size());
         assertEquals(2, r11.relations().size());
         assertEquals(1, r1.relations().size());
@@ -143,11 +144,11 @@ public class PostProcessingTest extends GraphTestBase{
         graknGraph.fixDuplicateResources(r1.getIndex(), resourceIds);
 
         //Check everything is in order
-        assertEquals(1, resourceType.instances().size());
+        assertEquals(1, resourceType.instances().count());
 
         //Get back the surviving resource
         Resource<String> foundR1 = null;
-        for (Resource<String> resource : resourceType.instances()) {
+        for (Resource<String> resource : resourceType.instances().collect(Collectors.toSet())) {
             if(resource.getValue().equals("1")){
                 foundR1 = resource;
                 break;
@@ -156,7 +157,7 @@ public class PostProcessingTest extends GraphTestBase{
 
         assertNotNull(foundR1);
         assertThat(foundR1.ownerInstances(), containsInAnyOrder(e1, e2, e3));
-        assertEquals(5, graknGraph.admin().getMetaRelationType().instances().size());
+        assertEquals(5, graknGraph.admin().getMetaRelationType().instances().count());
     }
 
     private void addEdgeRelation(Entity entity, Resource<?> resource) {
@@ -240,7 +241,7 @@ public class PostProcessingTest extends GraphTestBase{
         assertEquals(3, relation.resources().size());
 
         //There are too many resources
-        assertEquals(6, graknGraph.admin().getMetaResourceType().instances().size());
+        assertEquals(6, graknGraph.admin().getMetaResourceType().instances().count());
 
         //Now fix everything for resource 1
         graknGraph.fixDuplicateResources(r1dup1.getIndex(), new HashSet<>(Arrays.asList(r1dup1.getId(), r1dup2.getId(), r1dup3.getId())));
@@ -248,7 +249,7 @@ public class PostProcessingTest extends GraphTestBase{
         //Check resource one has been sorted out
         assertEquals(2, entity.resources().size());
         assertEquals(2, entity.resources().size());
-        assertEquals(4, graknGraph.admin().getMetaResourceType().instances().size()); // 4 because we still have 2 dups on r2
+        assertEquals(4, graknGraph.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
 
         //Now fix everything for resource 2
         graknGraph.fixDuplicateResources(r2dup1.getIndex(), new HashSet<>(Arrays.asList(r2dup1.getId(), r2dup2.getId(), r2dup3.getId())));
@@ -256,6 +257,6 @@ public class PostProcessingTest extends GraphTestBase{
         //Check resource one has been sorted out
         assertEquals(2, entity.resources().size());
         assertEquals(2, entity.resources().size());
-        assertEquals(2, graknGraph.admin().getMetaResourceType().instances().size()); // 4 because we still have 2 dups on r2
+        assertEquals(2, graknGraph.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
     }
 }

@@ -192,7 +192,7 @@ public interface RelationType extends Type {
      * @return All the Relation instances of this relation type
      */
     @Override
-    Collection<Relation> instances();
+    Stream<Relation> instances();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

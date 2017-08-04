@@ -39,6 +39,7 @@ import org.junit.Test;
 
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertThat;
 
@@ -293,10 +294,10 @@ public class OntologyMutationTest extends GraphTestBase {
         man.addEntity().resource(nameBob);
 
         //Get The Relation which says that our man is name bob
-        Relation expectedEdge = Iterables.getOnlyElement(has_name.instances());
+        Relation expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));
         Role hasNameOwner = graknGraph.getRole("has-name-owner");
 
-        assertThat(expectedEdge.type().instances(), hasItem(expectedEdge));
+        assertThat(expectedEdge.type().instances().collect(toSet()), hasItem(expectedEdge));
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.changingSuperWillDisconnectRole(person, graknGraph.admin().getMetaEntityType(), hasNameOwner).getMessage());

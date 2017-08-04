@@ -204,9 +204,9 @@ public class EntityTypeTest extends GraphTestBase {
         Entity e3_child2 = e3.addEntity();
         Entity e3_child3 = e3.addEntity();
 
-        assertThat(e1.instances(), containsInAnyOrder(e2_child1, e2_child2, e3_child1, e3_child2, e3_child3));
-        assertThat(e2.instances(), containsInAnyOrder(e2_child1, e2_child2));
-        assertThat(e3.instances(), containsInAnyOrder(e3_child1, e3_child2, e3_child3));
+        assertThat(e1.instances().collect(toSet()), containsInAnyOrder(e2_child1, e2_child2, e3_child1, e3_child2, e3_child3));
+        assertThat(e2.instances().collect(toSet()), containsInAnyOrder(e2_child1, e2_child2));
+        assertThat(e3.instances().collect(toSet()), containsInAnyOrder(e3_child1, e3_child2, e3_child3));
     }
 
     @Test

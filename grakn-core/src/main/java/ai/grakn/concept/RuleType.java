@@ -21,9 +21,8 @@ package ai.grakn.concept;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.Pattern;
 
-import javax.annotation.Nonnull;
 import javax.annotation.CheckReturnValue;
-import java.util.Collection;
+import javax.annotation.Nonnull;
 import java.util.stream.Stream;
 
 /**
@@ -155,7 +154,7 @@ public interface RuleType extends Type {
      * @return All the rule instances of this Rule Type.
      */
     @Override
-    Collection<Rule> instances();
+    Stream<Rule> instances();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

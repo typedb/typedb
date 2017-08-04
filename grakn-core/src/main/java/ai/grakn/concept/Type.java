@@ -22,7 +22,6 @@ import ai.grakn.exception.GraphOperationException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.Collection;
 import java.util.stream.Stream;
 
 /**
@@ -156,7 +155,7 @@ public interface Type extends OntologyConcept {
      * @return All the indirect instances of this type.
      */
     @CheckReturnValue
-    Collection<? extends Thing> instances();
+    Stream<? extends Thing> instances();
 
     /**
      * Return if the type is set to abstract.

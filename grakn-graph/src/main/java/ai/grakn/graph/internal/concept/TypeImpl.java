@@ -36,8 +36,6 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -236,19 +234,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
      */
     @SuppressWarnings("unchecked")
     @Override
-    public Collection<V> instances() {
-        Set<V> instances = new HashSet<>();
-        //TODO: Clean this up. Maybe remove role from the meta ontology
-        //OntologyConcept is used here because when calling `graph.admin().getMataConcept().instances()` a role can appear
-        //When that happens this leads to a crash
-        subs().forEach(sub -> {
-            if (!sub.isRole()) {
-                TypeImpl<?, V> typeImpl = (TypeImpl) sub;
-                typeImpl.instancesDirect().forEach(instances::add);
-            }
-        });
-
-        return Collections.unmodifiableCollection(instances);
+    public Stream<V> instances() {
+        return subs().flatMap(sub -> TypeImpl.<T, V>from(sub).instancesDirect());
     }
 
     Stream<V> instancesDirect(){
@@ -342,11 +329,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
         boolean changingSuperAllowed = super.changingSuperAllowed(oldSuperType, newSuperType);
         if(changingSuperAllowed && oldSuperType != null && !Schema.MetaSchema.isMetaLabel(oldSuperType.getLabel())) {
             //noinspection unchecked
-            Set<Role> superPlays = new HashSet<>(oldSuperType.plays());
+            Set<Role> superPlays = oldSuperType.plays().collect(Collectors.toSet());
 
             //Get everything that this can play bot including the supers
             Set<Role> plays = new HashSet<>(directPlays().keySet());
-            subs().stream().flatMap(sub -> TypeImpl.from(sub).directPlays().keySet().stream()).
+            subs().flatMap(sub -> TypeImpl.from(sub).directPlays().keySet().stream()).
                     forEach(play -> plays.add((Role) play));
 
             superPlays.removeAll(plays);
