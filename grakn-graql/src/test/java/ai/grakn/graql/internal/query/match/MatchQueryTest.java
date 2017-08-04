@@ -814,7 +814,7 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var().has("title", "Godfather").has("resource", x));
 
         Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
-        Set<Resource<?>> expected = Sets.newHashSet(godfather.resources());
+        Set<Resource<?>> expected = godfather.resources().collect(toSet());
 
         Set<Resource<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
 

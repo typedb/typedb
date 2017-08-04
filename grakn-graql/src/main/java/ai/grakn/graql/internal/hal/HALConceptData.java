@@ -209,15 +209,12 @@ public class HALConceptData {
 
 
     private void generateEntityEmbedded(Representation halResource, Entity entity, int separationDegree) {
-        Stream<Relation> relationStream = entity.relations().stream();
+        Stream<Relation> relationStream = entity.relations();
 
         relationStream = relationStream.skip(offset);
         if (limit >= 0) relationStream = relationStream.limit(limit);
 
-
-        relationStream.forEach(rel -> {
-            embedRelationsNotConnectedToResources(halResource, entity, rel, separationDegree);
-        });
+        relationStream.forEach(rel -> embedRelationsNotConnectedToResources(halResource, entity, rel, separationDegree));
     }
 
     private void attachRelation(Representation halResource, Concept rel, Label role, int separationDegree) {
