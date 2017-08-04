@@ -48,10 +48,8 @@ import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
@@ -220,7 +218,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
         //id part
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
         IdPredicate predicate = null;
-        Var typeVariable = isaProp != null? isaProp.getType().getVarName().asUserDefined() : Graql.var().asUserDefined();
+        Var typeVariable = isaProp != null? isaProp.type().getVarName().asUserDefined() : Graql.var().asUserDefined();
         //Isa present
         if (isaProp != null) {
             VarPatternAdmin isaVar = isaProp.type();

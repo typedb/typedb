@@ -25,6 +25,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.parser.QueryParser;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
 import com.google.auto.value.AutoValue;
@@ -32,8 +33,6 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Set;
-
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.dataType;
 
 /**
  * Represents the {@code datatype} property on a {@link ResourceType}.
@@ -52,7 +51,7 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
         return new AutoValue_DataTypeProperty(datatype);
     }
 
-    public abstract ResourceType.DataType<?> getDataType();
+    public abstract ResourceType.DataType<?> dataType();
 
     @Override
     public String getName() {
@@ -61,12 +60,12 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
 
     @Override
     public String getProperty() {
-        return QueryParser.DATA_TYPES.inverse().get(getDataType());
+        return QueryParser.DATA_TYPES.inverse().get(dataType());
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(dataType(this, start, getDataType()));
+        return ImmutableSet.of(EquivalentFragmentSets.dataType(this, start, dataType()));
     }
 
     @Override

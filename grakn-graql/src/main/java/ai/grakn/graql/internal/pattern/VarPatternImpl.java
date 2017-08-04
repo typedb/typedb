@@ -77,7 +77,7 @@ abstract class VarPatternImpl extends AbstractVarPattern {
         Collection<VarPatternAdmin> innerVars = getInnerVars();
         innerVars.remove(this);
         getProperties(HasResourceProperty.class)
-                .map(HasResourceProperty::getResource)
+                .map(HasResourceProperty::resource)
                 .flatMap(r -> r.getInnerVars().stream())
                 .forEach(innerVars::remove);
 
