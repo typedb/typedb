@@ -333,7 +333,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private ResourceType resourceType() {
-        return random.choose((Collection<ResourceType>) graph.admin().getMetaResourceType().subs());
+        return random.choose((Collection<ResourceType>) graph.admin().getMetaResourceType().subs().collect(Collectors.toSet()));
     }
 
     private RelationType relationType() {
