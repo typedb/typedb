@@ -58,6 +58,7 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Generator to create random {@link GraknGraph}s.
@@ -349,7 +350,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private Relation relation() {
-        return chooseOrThrow(graph.admin().getMetaRelationType().instances());
+        return chooseOrThrow(graph.admin().getMetaRelationType().instances().collect(toSet()));
     }
 
     private Resource resource() {
@@ -385,7 +386,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     public static Collection<? extends Thing> allInstancesFrom(GraknGraph graph) {
         // TODO: Revise this when meta concept is a type
         return graph.admin().getMetaConcept().subs().
-                flatMap(element -> element.asType().instances().stream()).
+                flatMap(element -> element.asType().instances()).
                 collect(Collectors.toSet());
     }
 

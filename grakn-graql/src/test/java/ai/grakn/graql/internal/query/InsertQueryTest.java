@@ -432,13 +432,9 @@ public class InsertQueryTest {
         qb.insert(vars).execute();
 
         RuleType ruleType = movieGraph.graph().getRuleType(ruleTypeId);
-        boolean found = false;
-        for (ai.grakn.concept.Rule rule : ruleType.instances()) {
-            if(when.equals(rule.getWhen()) && then.equals(rule.getThen())){
-                found = true;
-                break;
-            }
-        }
+        boolean found = ruleType.instances().
+                anyMatch(rule -> when.equals(rule.getWhen()) && then.equals(rule.getThen()));
+
         assertTrue("Unable to find rule with when [" + when + "] and then [" + then + "]", found);
     }
 

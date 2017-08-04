@@ -80,7 +80,7 @@ public class ReasonerUtils {
      * @return set of inference rule contained in the graph
      */
     public static Set<Rule> getRules(GraknGraph graph) {
-        return new HashSet<>(graph.admin().getMetaRuleInference().instances());
+        return graph.admin().getMetaRuleInference().instances().collect(toSet());
     }
 
     /**
