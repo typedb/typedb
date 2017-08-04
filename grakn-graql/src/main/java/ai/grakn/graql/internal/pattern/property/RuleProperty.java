@@ -53,7 +53,7 @@ public abstract class RuleProperty extends AbstractVarProperty implements Unique
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getClass().getName()));
+        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getName()));
     }
 
     @Override

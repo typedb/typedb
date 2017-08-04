@@ -40,7 +40,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.pattern.property.WhenProperty;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.matcher.MatchableConcept;
 import ai.grakn.test.GraphContext;
@@ -608,7 +607,7 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(x.when(qb.parsePattern("$x id 'expect-when'")).then(qb.parsePattern("$x id 'expect-then'")));
 
         expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage(MATCH_INVALID.getMessage(WhenProperty.class.getName()));
+        expectedException.expectMessage(MATCH_INVALID.getMessage("when"));
 
         query.forEach(r -> {
         });
