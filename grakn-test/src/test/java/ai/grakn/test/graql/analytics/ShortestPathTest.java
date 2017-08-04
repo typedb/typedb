@@ -139,7 +139,6 @@ public class ShortestPathTest {
     public void testShortestPathConcurrency() {
         List<String> correctPath;
         addOntologyAndEntities();
-//        GraknSparkComputer.clear();
 
         correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(), entityId1.getValue());
 

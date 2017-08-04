@@ -58,6 +58,8 @@ import java.util.List;
 import java.util.function.BinaryOperator;
 
 /**
+ * Interceptor copied from tinkerpop so we can use our own graph computer
+ *
  * @author Jason Liu
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -88,7 +90,7 @@ public final class GraknSparkStarBarrierInterceptor
                 .flatMap(vertexWritable -> {
                     if (identityTraversal) {                          // g.V.count()-style (identity)
                         return () -> IteratorUtils.of(traversal.getTraverserGenerator().generate(vertexWritable.get(), (Step) graphStep, 1l));
-                    }else {                                          // add the vertex to head of the traversal
+                    } else {                                          // add the vertex to head of the traversal
                         return () -> {                              // and iterate it for its results
                             final Traversal.Admin<Vertex, ?> clone = traversal.clone(); // need a unique clone for each vertex to isolate the computation
                             clone.getStartStep().addStart(clone.getTraverserGenerator().generate(vertexWritable.get(), graphStep, 1l));
@@ -98,26 +100,26 @@ public final class GraknSparkStarBarrierInterceptor
                 });
         // USE SPARK DSL FOR THE RESPECTIVE END REDUCING BARRIER STEP OF THE TRAVERSAL
         final Object result;
-        if (endStep instanceof CountGlobalStep){
-            result = nextRDD.map(Traverser::bulk).fold(0l, (a, b) -> a + b);}
-        else if (endStep instanceof SumGlobalStep){
+        if (endStep instanceof CountGlobalStep) {
+            result = nextRDD.map(Traverser::bulk).fold(0l, (a, b) -> a + b);
+        } else if (endStep instanceof SumGlobalStep) {
             result = nextRDD
                     .map(traverser -> NumberHelper.mul(traverser.bulk(), (Number) traverser.get()))
-                    .fold(0, NumberHelper::add);}
-        else if (endStep instanceof MeanGlobalStep){
+                    .fold(0, NumberHelper::add);
+        } else if (endStep instanceof MeanGlobalStep) {
             result = nextRDD
                     .map(traverser -> new MeanGlobalStep.MeanNumber((Number) traverser.get(), traverser.bulk()))
                     .fold(new MeanGlobalStep.MeanNumber(), MeanGlobalStep.MeanNumber::add)
-                    .getFinal();}
-        else if (endStep instanceof MinGlobalStep){
+                    .getFinal();
+        } else if (endStep instanceof MinGlobalStep) {
             result = nextRDD
                     .map(traverser -> (Number) traverser.get())
-                    .fold(Integer.MAX_VALUE, NumberHelper::min);}
-        else if (endStep instanceof MaxGlobalStep){
+                    .fold(Integer.MAX_VALUE, NumberHelper::min);
+        } else if (endStep instanceof MaxGlobalStep) {
             result = nextRDD
                     .map(traverser -> (Number) traverser.get())
-                    .fold(Integer.MIN_VALUE, NumberHelper::max);}
-        else if (endStep instanceof FoldStep) {
+                    .fold(Integer.MIN_VALUE, NumberHelper::max);
+        } else if (endStep instanceof FoldStep) {
             final BinaryOperator biOperator = endStep.getBiOperator();
             result = nextRDD.map(traverser -> {
                 if (endStep.getSeedSupplier() instanceof ArrayListSupplier) {
@@ -145,8 +147,9 @@ public final class GraknSparkStarBarrierInterceptor
                         return () -> IteratorUtils.map(partitions, clone::projectTraverser);
                     })
                     .fold(((GroupCountStep<Object, Object>) endStep).getSeedSupplier().get(), biOperator::apply);
-        } else{
-            throw new IllegalArgumentException("The end step is an unsupported barrier: " + endStep);}
+        } else {
+            throw new IllegalArgumentException("The end step is an unsupported barrier: " + endStep);
+        }
         memory.setInExecute(false);
         ///////////////////////////////
 
@@ -162,10 +165,12 @@ public final class GraknSparkStarBarrierInterceptor
         final Step<?, ?> startStep = traversal.getStartStep();
         final Step<?, ?> endStep = traversal.getEndStep();
         // right now this is not supported because of how the SparkStarBarrierInterceptor mutates the traversal prior to local evaluation
-        if (traversal.getStrategies().toList().stream().filter(strategy -> strategy instanceof SubgraphStrategy).findAny().isPresent())
-        {return false;}
-        if (!startStep.getClass().equals(GraphStep.class) || ((GraphStep) startStep).returnsEdge())
-        {return false;}
+        if (traversal.getStrategies().toList().stream().filter(strategy -> strategy instanceof SubgraphStrategy).findAny().isPresent()) {
+            return false;
+        }
+        if (!startStep.getClass().equals(GraphStep.class) || ((GraphStep) startStep).returnsEdge()) {
+            return false;
+        }
         if (!endStep.getClass().equals(CountGlobalStep.class) &&
                 !endStep.getClass().equals(SumGlobalStep.class) &&
                 !endStep.getClass().equals(MeanGlobalStep.class) &&
@@ -174,12 +179,16 @@ public final class GraknSparkStarBarrierInterceptor
                 !endStep.getClass().equals(FoldStep.class) &&
                 !endStep.getClass().equals(GroupStep.class) &&
                 !endStep.getClass().equals(GroupCountStep.class))
-            // TODO: tree()
-        {return false;}
-        if (TraversalHelper.getStepsOfAssignableClassRecursively(Scope.global, Barrier.class, traversal).size() != 1)
-        { return false;}
-        if (traversal.getTraverserRequirements().contains(TraverserRequirement.SACK))
-        {return false;}
+        // TODO: tree()
+        {
+            return false;
+        }
+        if (TraversalHelper.getStepsOfAssignableClassRecursively(Scope.global, Barrier.class, traversal).size() != 1) {
+            return false;
+        }
+        if (traversal.getTraverserRequirements().contains(TraverserRequirement.SACK)) {
+            return false;
+        }
         return TraversalHelper.isLocalStarGraph(traversal);
     }
 }

@@ -107,7 +107,6 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
             messenger.sendMessage(messageScopeIn, max);
             messenger.sendMessage(messageScopeOut, max);
             memory.add(VOTE_TO_HALT, false);
-            memory.getIteration();
         }
     }
 

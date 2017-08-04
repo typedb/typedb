@@ -35,7 +35,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
-import java.util.Collections;
+import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -75,12 +75,11 @@ public class GraknComputerImpl implements GraknComputer {
     }
 
     @Override
-    public ComputerResult compute(Boolean includesShortcut, Set<LabelId> types,
-                                  VertexProgram program, MapReduce... mapReduces) {
+    public ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
+                                  @Nullable Set<LabelId> types, Boolean includesShortcut) {
         try {
             if (program != null) graphComputer = getGraphComputer().program(program);
-            for (MapReduce mapReduce : mapReduces)
-                graphComputer = graphComputer.mapReduce(mapReduce);
+            if (mapReduce != null) graphComputer = graphComputer.mapReduce(mapReduce);
             applyFilters(types, includesShortcut);
             return graphComputer.submit().get();
         } catch (InterruptedException | ExecutionException e) {
@@ -89,19 +88,9 @@ public class GraknComputerImpl implements GraknComputer {
     }
 
     @Override
-    public ComputerResult compute(Set<LabelId> types, VertexProgram program, MapReduce... mapReduces) {
-        return compute(true, types, program, mapReduces);
-    }
-
-    @Override
-    public ComputerResult compute(VertexProgram program, MapReduce... mapReduces) {
-        // only for internal tasks
-        return compute(Collections.emptySet(), program, mapReduces);
-    }
-
-    @Override
-    public ComputerResult compute(MapReduce mapReduce) {
-        return compute(null, mapReduce);
+    public ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
+                                  @Nullable Set<LabelId> types) {
+        return compute(program, mapReduce, types, true);
     }
 
     @Override

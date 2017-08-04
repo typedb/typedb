@@ -281,6 +281,12 @@
             <groupId>com.google.cloud.bigtable</groupId>
             <artifactId>bigtable-hbase-1.0</artifactId>
             <version>${google-bigtable.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

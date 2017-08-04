@@ -54,10 +54,11 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
 
         String randomId = getRandomJobId();
 
-        ComputerResult result = getGraphComputer().compute(allSubLabelIds,
+        ComputerResult result = getGraphComputer().compute(
                 new DegreeStatisticsVertexProgram(statisticsResourceLabelIds, randomId),
                 new MaxMapReduce(statisticsResourceLabelIds, dataType,
-                        DegreeVertexProgram.DEGREE + randomId));
+                        DegreeVertexProgram.DEGREE + randomId),
+                allSubLabelIds);
         Map<Serializable, Number> max = result.memory().get(MaxMapReduce.class.getName());
 
         LOGGER.debug("Max = " + max.get(MapReduce.NullObject.instance()));

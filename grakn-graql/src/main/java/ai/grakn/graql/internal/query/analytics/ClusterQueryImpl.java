@@ -60,30 +60,34 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
 
         if (members) {
             if (anySize) {
-                result = getGraphComputer().compute(withResourceRelationLabelIds,
+                result = getGraphComputer().compute(
                         new ConnectedComponentVertexProgram(randomId),
                         new ClusterMemberMapReduce(
-                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId));
+                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId),
+                        withResourceRelationLabelIds);
             } else {
-                result = getGraphComputer().compute(withResourceRelationLabelIds,
+                result = getGraphComputer().compute(
                         new ConnectedComponentVertexProgram(randomId),
                         new ClusterMemberMapReduce(
-                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize));
+                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize),
+                        withResourceRelationLabelIds);
             }
             LOGGER.info("ConnectedComponentsVertexProgram is done in "
                     + (System.currentTimeMillis() - startTime) + " ms");
             return result.memory().get(ClusterMemberMapReduce.class.getName());
         } else {
             if (anySize) {
-                result = getGraphComputer().compute(withResourceRelationLabelIds,
+                result = getGraphComputer().compute(
                         new ConnectedComponentVertexProgram(randomId),
                         new ClusterSizeMapReduce(
-                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId));
+                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId),
+                        withResourceRelationLabelIds);
             } else {
-                result = getGraphComputer().compute(withResourceRelationLabelIds,
+                result = getGraphComputer().compute(
                         new ConnectedComponentVertexProgram(randomId),
                         new ClusterSizeMapReduce(
-                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize));
+                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize),
+                        withResourceRelationLabelIds);
             }
             LOGGER.info("ConnectedComponentsVertexProgram is done in "
                     + (System.currentTimeMillis() - startTime) + " ms");

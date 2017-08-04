@@ -113,7 +113,6 @@ public class DegreeTest {
         for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
-//        GraknSparkComputer.clear();
         graph.close();
 
         Set<Map<Long, Set<String>>> result = list.parallelStream().map(i -> {

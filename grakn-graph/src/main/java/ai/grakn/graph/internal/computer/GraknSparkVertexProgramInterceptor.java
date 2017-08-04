@@ -24,6 +24,8 @@ import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.VertexProgramInterceptor;
 
 /**
+ * Interceptor interface copied from tinkerpop so we can use our own graph computer
+ *
  * @param <V> Vertex Program
  * @author Jason Liu
  */

@@ -69,9 +69,9 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
         String randomId = getRandomJobId();
 
         ComputerResult result = getGraphComputer().compute(
-                false, rolePlayerLabelIds,
                 new CountVertexProgram(randomId),
-                new CountMapReduce(CountVertexProgram.EDGE_COUNT + randomId));
+                new CountMapReduce(CountVertexProgram.EDGE_COUNT + randomId),
+                rolePlayerLabelIds, false);
 
         Map<Integer, Long> count = result.memory().get(CountMapReduce.class.getName());
 
