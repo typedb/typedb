@@ -40,8 +40,8 @@ import org.junit.runner.RunWith;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collection;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
@@ -259,7 +259,7 @@ public class ConceptPropertyTest {
             assumeThat(ontologyConcept.subs().collect(toSet()), contains(ontologyConcept));
             if(ontologyConcept.isType()) {
                 Type type = ontologyConcept.asType();
-                assumeThat(type.instances(), empty());
+                assumeThat(type.instances().collect(toSet()), empty());
                 assumeThat(type.getRulesOfHypothesis(), empty());
                 assumeThat(type.getRulesOfConclusion(), empty());
             }
@@ -268,8 +268,8 @@ public class ConceptPropertyTest {
                 Role role = ontologyConcept.asRole();
                 assumeThat(role.playedByTypes(), empty());
                 assumeThat(role.relationTypes(), empty());
-                Collection<? extends Relation> allRelations = graph.admin().getMetaRelationType().instances();
-                Set<Role> allRolesPlayed = allRelations.stream().flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
+                Stream<Relation> allRelations = graph.admin().getMetaRelationType().instances();
+                Set<Role> allRolesPlayed = allRelations.flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
                 assumeThat(allRolesPlayed, not(hasItem(role)));
             } else if (ontologyConcept.isRelationType()) {
                 assumeThat(ontologyConcept.asRelationType().relates(), empty());

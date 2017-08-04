@@ -134,11 +134,11 @@ public class MigrationCLI {
 
             StringBuilder builder = new StringBuilder();
             builder.append("Graph ontology contains:\n");
-            builder.append("\t ").append(graph.admin().getMetaEntityType().instances().size()).append(" entity types\n");
-            builder.append("\t ").append(graph.admin().getMetaRelationType().instances().size()).append(" relation types\n");
+            builder.append("\t ").append(graph.admin().getMetaEntityType().instances().count()).append(" entity types\n");
+            builder.append("\t ").append(graph.admin().getMetaRelationType().instances().count()).append(" relation types\n");
             builder.append("\t ").append("0 role types\n");
-            builder.append("\t ").append(graph.admin().getMetaResourceType().instances().size()).append(" resource types\n");
-            builder.append("\t ").append(graph.admin().getMetaRuleType().instances().size()).append(" rule types\n\n");
+            builder.append("\t ").append(graph.admin().getMetaResourceType().instances().count()).append(" resource types\n");
+            builder.append("\t ").append(graph.admin().getMetaRuleType().instances().count()).append(" rule types\n\n");
 
             builder.append("Graph data contains:\n");
             builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.ENTITY.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" entities\n");

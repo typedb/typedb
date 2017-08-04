@@ -37,7 +37,7 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
 
 import java.io.IOException;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
@@ -117,11 +117,11 @@ public class CSVMigratorTest {
 
         try(GraknGraph graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
 
-            Collection<Entity> pets = graph.getEntityType("pet").instances();
-            assertEquals(1, pets.size());
+            Stream<Entity> pets = graph.getEntityType("pet").instances();
+            assertEquals(1, pets.count());
 
-            Collection<Entity> cats = graph.getEntityType("cat").instances();
-            assertEquals(1, cats.size());
+            Stream<Entity> cats = graph.getEntityType("cat").instances();
+            assertEquals(1, cats.count());
 
             ResourceType<String> name = graph.getResourceType("name");
             ResourceType<String> death = graph.getResourceType("death");
@@ -140,7 +140,7 @@ public class CSVMigratorTest {
         declareAndLoad(template, "pets/data/pets.quotes");
 
         GraknGraph graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
-        assertEquals(8, graph.getEntityType("pet").instances().size());
+        assertEquals(8, graph.getEntityType("pet").instances().count());
     }
 
     @Ignore //Ignored because this feature is not yet supported
@@ -155,11 +155,11 @@ public class CSVMigratorTest {
         declareAndLoad(template, "single-file/data/cars.csv");
 
         // test
-        Collection<Entity> makes = graph.getEntityType("make").instances();
-        assertEquals(3, makes.size());
+        Stream<Entity> makes = graph.getEntityType("make").instances();
+        assertEquals(3, makes.count());
 
-        Collection<Entity> models = graph.getEntityType("model").instances();
-        assertEquals(4, models.size());
+        Stream<Entity> models = graph.getEntityType("model").instances();
+        assertEquals(4, models.count());
 
         // test empty value not created
         ResourceType description = graph.getResourceType("description");
@@ -193,7 +193,7 @@ public class CSVMigratorTest {
         declareAndLoad(template, "pets/data/pets.csv");
 
         try(GraknGraph graph = factory.open(GraknTxType.READ)){
-            assertEquals(0, graph.admin().getMetaEntityType().instances().size());
+            assertEquals(0, graph.admin().getMetaEntityType().instances().count());
         }
     }
 

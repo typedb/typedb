@@ -5,7 +5,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.migration.base.Migrator;
@@ -92,11 +91,11 @@ public class XMLMigratorTest {
             EntityType thingType = graph.getEntityType("thingy");
             ResourceType nameType = graph.getResourceType("name");
 
-            assertEquals(1, thingType.instances().size());
-            for(Entity thing:thingType.instances()){
+            assertEquals(1, thingType.instances().count());
+            thingType.instances().forEach(thing ->{
                 assertEquals(1, thing.resources(nameType).size());
                 assertEquals(name, thing.resources(nameType).iterator().next().getValue());
-            }
+            });
         }
     }
 

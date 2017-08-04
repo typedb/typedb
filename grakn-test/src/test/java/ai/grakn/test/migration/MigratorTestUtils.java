@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -99,7 +100,7 @@ public class MigratorTestUtils {
 
         Set<Thing> things = new HashSet<>();
 
-        relation.instances().stream()
+        relation.instances()
                 .filter(i -> i.rolePlayers().contains(thing))
                 .forEach(i -> things.addAll(i.rolePlayers()));
 
@@ -125,13 +126,13 @@ public class MigratorTestUtils {
      */
     public static void assertPetGraphCorrect(GraknSession session){
         try(GraknGraph graph = session.open(GraknTxType.READ)) {
-            Collection<Entity> pets = graph.getEntityType("pet").instances();
+            Collection<Entity> pets = graph.getEntityType("pet").instances().collect(Collectors.toSet());
             assertEquals(9, pets.size());
 
-            Collection<Entity> cats = graph.getEntityType("cat").instances();
+            Collection<Entity> cats = graph.getEntityType("cat").instances().collect(Collectors.toSet());
             assertEquals(2, cats.size());
 
-            Collection<Entity> hamsters = graph.getEntityType("hamster").instances();
+            Collection<Entity> hamsters = graph.getEntityType("hamster").instances().collect(Collectors.toSet());
             assertEquals(1, hamsters.size());
 
             ResourceType<String> name = graph.getResourceType("name");
@@ -150,7 +151,7 @@ public class MigratorTestUtils {
      */
     public static void assertPokemonGraphCorrect(GraknSession session){
         try(GraknGraph graph = session.open(GraknTxType.READ)){
-            Collection<Entity> pokemon = graph.getEntityType("pokemon").instances();
+            Collection<Entity> pokemon = graph.getEntityType("pokemon").instances().collect(Collectors.toSet());
             assertEquals(9, pokemon.size());
 
             ResourceType<String> typeid = graph.getResourceType("type-id");

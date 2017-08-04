@@ -29,24 +29,26 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
 import ai.grakn.util.REST;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import ai.grakn.util.Schema;
-import static ai.grakn.util.Schema.VertexProperty.INDEX;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Sets;
-import java.util.Set;
-import static java.util.stream.Collectors.toSet;
 import mjson.Json;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.Set;
+
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
+import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.Schema.VertexProperty.INDEX;
+import static java.util.stream.Collectors.toSet;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 public class PostProcessingTest {
 
@@ -83,13 +85,13 @@ public class PostProcessingTest {
         graph.admin().commitNoLogs();
         graph = session.open(GraknTxType.WRITE);
 
-        assertEquals(1, resourceType.instances().size());
+        assertEquals(1, resourceType.instances().count());
         //Check duplicates have been created
         Set<Vertex> resource1 = createDuplicateResource(graph, resourceType, resource);
         Set<Vertex> resource2 = createDuplicateResource(graph, resourceType, resource);
         Set<Vertex> resource3 = createDuplicateResource(graph, resourceType, resource);
         Set<Vertex> resource4 = createDuplicateResource(graph, resourceType, resource);
-        assertEquals(5, resourceType.instances().size());
+        assertEquals(5, resourceType.instances().count());
 
         // Resource vertex index
         String resourceIndex = resource1.iterator().next().value(INDEX.name()).toString();
@@ -125,7 +127,7 @@ public class PostProcessingTest {
         graph = session.open(GraknTxType.READ);
 
         //Check it's fixed
-        assertEquals(1, graph.getResourceType(sample).instances().size());
+        assertEquals(1, graph.getResourceType(sample).instances().count());
 
         graph.close();
     }

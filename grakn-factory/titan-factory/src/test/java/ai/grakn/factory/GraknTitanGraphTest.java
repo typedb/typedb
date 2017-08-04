@@ -86,7 +86,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         }
 
         graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
-        assertEquals(100, graknGraph.admin().getMetaEntityType().instances().size());
+        assertEquals(100L, graknGraph.admin().getMetaEntityType().instances().count());
     }
     private void addEntity(EntityType type){
         GraknTitanGraph graph = titanGraphFactory.open(GraknTxType.WRITE);

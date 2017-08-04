@@ -164,7 +164,7 @@ public class OntologyConceptPropertyTest {
         assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
         //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
-        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances(), is(empty()));
+        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances().collect(toSet()), is(empty()));
 
         setDirectSuper(subConcept, superConcept);
 
@@ -198,7 +198,7 @@ public class OntologyConceptPropertyTest {
         assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
         //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
-        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances(), is(empty()));
+        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances().collect(toSet()), is(empty()));
 
         addDirectSub(superConcept, subConcept);
 

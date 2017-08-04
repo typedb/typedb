@@ -45,6 +45,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static junit.framework.TestCase.assertEquals;
@@ -144,11 +145,11 @@ public class PostProcessingIT {
 
         try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
             //Check the resource indices are working
-            for (Object object : graph.admin().getMetaResourceType().instances()) {
+            graph.admin().getMetaResourceType().instances().forEach(object -> {
                 Resource resource = (Resource) object;
                 String index = Schema.generateResourceIndex(resource.type().getLabel(), resource.getValue().toString());
                 assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.VertexProperty.INDEX, index));
-            }
+            });
         }
     }
 
@@ -159,7 +160,7 @@ public class PostProcessingIT {
             return resourceTypes.anyMatch(resourceType -> {
                 if (!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
                     Set<Integer> foundValues = new HashSet<>();
-                    for (Resource<?> resource : resourceType.instances()) {
+                    for (Resource<?> resource : resourceType.instances().collect(Collectors.toSet())) {
                         if (foundValues.contains(resource.getValue())) {
                             return true;
                         } else {

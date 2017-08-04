@@ -20,6 +20,7 @@ package ai.grakn.migration.export;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.util.Schema;
 
@@ -57,7 +58,7 @@ public class GraphWriter {
         return join(types()
                 .filter(Concept::isType)
                 .map(Concept::asType)
-                .flatMap(c -> c.instances().stream())
+                .flatMap(Type::instances)
                 .map(Concept::asThing)
                 .map(InstanceMapper::map));
     }

@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
@@ -60,7 +61,7 @@ public class RelationTypePropertyTest {
     @Property
     public void whenANonMetaRelationTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
             @Open GraknGraph graph, @FromGraph @NonMeta RelationType type) {
-        assumeThat(type.instances(), empty());
+        assumeThat(type.instances().collect(toSet()), empty());
         assumeThat(type.subs().collect(Collectors.toSet()), contains(type));
         assumeThat(type.getRulesOfHypothesis(), empty());
         assumeThat(type.getRulesOfConclusion(), empty());

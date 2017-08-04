@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertRelationBetweenInstancesExists;
 import static ai.grakn.test.migration.MigratorTestUtils.assertResourceEntityRelationExists;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -100,10 +101,10 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Assert.assertEquals("tPerson", type.sup().getLabel());
             Assert.assertEquals(top, type.sup().sup());
             assertTrue(top.subs().anyMatch(sub -> sub.equals(graph.getEntityType("tPlace"))));
-            Assert.assertNotEquals(0, type.instances().size());
+            Assert.assertNotEquals(0, type.instances().count());
 
             assertTrue(
-                type.instances().stream()
+                type.instances()
                         .flatMap(inst -> inst
                                 .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
                         .anyMatch(s -> s.getValue().equals("eShakespeare"))
@@ -138,7 +139,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             graph = factory.open(GraknTxType.WRITE);
             EntityType type = graph.getEntityType("tProduct");
             Assert.assertNotNull(type);
-            Optional<Entity> e = findById(type.instances(), "eProduct5");
+            Optional<Entity> e = findById(type.instances().collect(toSet()), "eProduct5");
             assertTrue(e.isPresent());
             e.get().resources().stream().map(Resource::type).forEach(System.out::println);
             assertResourceEntityRelationExists(graph, "Product_Available", "14", e.get());
@@ -168,7 +169,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             migrator.graph(graph);
             EntityType type = migrator.entityType(owlManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));          
             Assert.assertNotNull(type);         
-            assertTrue(type.instances().stream().flatMap(inst -> inst
+            assertTrue(type.instances().flatMap(inst -> inst
                     .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
                     .anyMatch(s -> s.getValue().equals("eItem1")));
 

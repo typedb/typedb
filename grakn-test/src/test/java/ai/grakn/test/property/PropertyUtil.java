@@ -57,8 +57,8 @@ public class PropertyUtil {
     }
 
     public static Collection<Thing> directInstances(Type type) {
-        Collection<? extends Thing> indirectInstances = type.instances();
-        return indirectInstances.stream().filter(instance -> type.equals(instance.type())).collect(toList());
+        Stream<? extends Thing> indirectInstances = type.instances();
+        return indirectInstances.filter(instance -> type.equals(instance.type())).collect(toList());
     }
 
     public static <T> T choose(Stream<? extends T> stream, long seed) {

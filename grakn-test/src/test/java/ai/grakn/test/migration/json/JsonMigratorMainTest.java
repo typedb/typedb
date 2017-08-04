@@ -117,7 +117,7 @@ public class JsonMigratorMainTest {
 
         try(GraknGraph graph = session.open(GraknTxType.READ)) {
             EntityType personType = graph.getEntityType("person");
-            assertEquals(1, personType.instances().size());
+            assertEquals(1, personType.instances().count());
 
             Entity person = personType.instances().iterator().next();
             Entity address = getProperty(graph, person, "has-address").asEntity();

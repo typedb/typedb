@@ -92,7 +92,7 @@ public class TypePropertyTest {
     @Ignore // TODO: Fails very rarely and only remotely
     @Property
     public void whenDeletingATypeWithIndirectInstances_Throw(@NonMeta Type type) {
-        assumeThat(type.instances(), not(empty()));
+        assumeThat(type.instances().collect(toSet()), not(empty()));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.cannotBeDeleted(type).getMessage());
@@ -123,10 +123,10 @@ public class TypePropertyTest {
         Collection<Type> directSubTypes = PropertyUtil.directSubs(type);
         Thing[] expected = Stream.concat(
             PropertyUtil.directInstances(type).stream(),
-            directSubTypes.stream().flatMap(subType -> subType.instances().stream())
+            directSubTypes.stream().flatMap(subType -> subType.instances())
         ).toArray(Thing[]::new);
 
-        assertThat(type.instances(), containsInAnyOrder(expected));
+        assertThat(type.instances().collect(toSet()), containsInAnyOrder(expected));
     }
 
     @Property

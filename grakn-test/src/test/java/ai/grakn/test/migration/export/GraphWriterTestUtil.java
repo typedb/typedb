@@ -50,7 +50,7 @@ public abstract class GraphWriterTestUtil {
         one.admin().getMetaConcept().subs().
                 filter(Concept::isType).
                 map(Concept::asType).
-                flatMap(t -> t.instances().stream()).
+                flatMap(Type::instances).
                 forEach(i -> assertInstanceCopied(i, two));
     }
 
@@ -112,12 +112,8 @@ public abstract class GraphWriterTestUtil {
                         collect(Collectors.toSet())
         ));
 
-        boolean relationFound = false;
-        for (Relation relation : relationType.instances()) {
-            if(relation.allRolePlayers().equals(rolemap)){
-                relationFound = true;
-            }
-        }
+        boolean relationFound = relationType.instances().
+                anyMatch(relation -> relation.allRolePlayers().equals(rolemap));
 
         assertTrue("The copied relation [" + relation1 + "] was not found.", relationFound);
     }
