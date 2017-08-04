@@ -103,8 +103,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         repr.add(typeLabelToString(resourceType));
 
-        if (resource.getVarName().isUserDefinedName()) {
-            repr.add(resource.getVarName().toString());
+        if (resource.var().isUserDefinedName()) {
+            repr.add(resource.var().toString());
         } else {
             resource.getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.getPredicate().toString()));
         }
@@ -119,7 +119,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         return ImmutableSet.of(
                 shortcut(this, relation, edge1, start, Optional.empty()),
-                shortcut(this, relation, edge2, resource.getVarName(), Optional.empty()),
+                shortcut(this, relation, edge2, resource.var(), Optional.empty()),
                 neq(this, edge1, edge2)
         );
     }
@@ -139,14 +139,14 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Resource resourceConcept = executor.get(resource.getVarName()).asResource();
+        Resource resourceConcept = executor.get(resource.var()).asResource();
         Thing thing = executor.get(var).asThing();
         thing.resource(resourceConcept);
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, resource.getVarName());
+        return ImmutableSet.of(var, resource.var());
     }
 
     @Override
@@ -195,11 +195,11 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName().asUserDefined();
+        Var varName = var.var().asUserDefined();
 
         Label type = this.getType();
         VarPatternAdmin resource = this.getResource();
-        Var resourceVariable = resource.getVarName().asUserDefined();
+        Var resourceVariable = resource.var().asUserDefined();
         Set<ValuePredicate> predicates = getValuePredicates(resourceVariable, resource, vars, parent);
 
         IsaProperty isaProp = resource.getProperties(IsaProperty.class).findFirst().orElse(null);

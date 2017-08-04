@@ -108,6 +108,6 @@ public class DataTypeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new DataTypeAtom(var.getVarName(), this, parent);
+        return new DataTypeAtom(var.var(), this, parent);
     }
 }

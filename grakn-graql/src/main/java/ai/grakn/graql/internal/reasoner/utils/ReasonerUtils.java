@@ -104,7 +104,7 @@ public class ReasonerUtils {
      */
     public static IdPredicate getUserDefinedIdPredicate(Var typeVariable, Set<VarPatternAdmin> vars, ReasonerQuery parent){
         return  vars.stream()
-                .filter(v -> v.getVarName().equals(typeVariable))
+                .filter(v -> v.var().equals(typeVariable))
                 .flatMap(v -> v.hasProperty(LabelProperty.class)?
                         v.getProperties(LabelProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)) :
                         v.getProperties(IdProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)))
@@ -124,7 +124,7 @@ public class ReasonerUtils {
     public static IdPredicate getIdPredicate(Var typeVariable, VarPatternAdmin typeVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
         IdPredicate predicate = null;
         //look for id predicate among vars
-        if(typeVar.getVarName().isUserDefinedName()) {
+        if(typeVar.var().isUserDefinedName()) {
             predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
         } else {
             LabelProperty nameProp = typeVar.getProperty(LabelProperty.class).orElse(null);
@@ -144,10 +144,10 @@ public class ReasonerUtils {
      */
     public static Set<ValuePredicate> getValuePredicates(Var valueVariable, VarPatternAdmin valueVar, Set<VarPatternAdmin> vars, ReasonerQuery parent){
         Set<ValuePredicate> predicates = new HashSet<>();
-        if(valueVar.getVarName().isUserDefinedName()){
+        if(valueVar.var().isUserDefinedName()){
             vars.stream()
-                    .filter(v -> v.getVarName().equals(valueVariable))
-                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.getVarName(), vp.getPredicate(), parent)))
+                    .filter(v -> v.var().equals(valueVariable))
+                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.var(), vp.getPredicate(), parent)))
                     .forEach(predicates::add);
         }
         //add value atom

@@ -256,7 +256,7 @@ public class ResourceAtom extends Binary{
                     VarPatternAdmin inner = vp.getInnerVar().orElse(null);
                     //variable mapped inside the query
                     if (subbedVars.contains(getVarName())
-                        || subbedVars.contains(inner.getVarName())
+                        || subbedVars.contains(inner.var())
                             && !isSuperNode()) {
                         vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
                     } //variable equality

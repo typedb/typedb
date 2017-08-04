@@ -73,7 +73,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(hasScope(this, start, scope.getVarName()));
+        return ImmutableSet.of(hasScope(this, start, scope.var()));
     }
 
     @Override
@@ -83,13 +83,13 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Thing scopeThing = executor.get(scope.getVarName()).asThing();
+        Thing scopeThing = executor.get(scope.var()).asThing();
         executor.get(var).asType().scope(scopeThing);
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, scope.getVarName());
+        return ImmutableSet.of(var, scope.var());
     }
 
     @Override
@@ -117,9 +117,9 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName().asUserDefined();
+        Var varName = var.var().asUserDefined();
         VarPatternAdmin scopeVar = this.getScope();
-        Var scopeVariable = scopeVar.getVarName().asUserDefined();
+        Var scopeVariable = scopeVar.var().asUserDefined();
         IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent);
 
         //isa part

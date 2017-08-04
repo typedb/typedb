@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 public class NeqPredicate extends Predicate<Var> {
 
     public NeqPredicate(Var varName, NeqProperty prop, ReasonerQuery parent){
-        super(varName.neq(prop.getVar().getVarName()).admin(), parent);
+        super(varName.neq(prop.getVar().var()).admin(), parent);
     }
     public NeqPredicate(NeqPredicate a){
         super(a);
@@ -60,7 +60,7 @@ public class NeqPredicate extends Predicate<Var> {
 
     @Override
     protected Var extractPredicate(VarPatternAdmin pattern) {
-        return pattern.getProperties(NeqProperty.class).iterator().next().getVar().getVarName();
+        return pattern.getProperties(NeqProperty.class).iterator().next().getVar().var();
     }
 
     @Override

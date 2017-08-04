@@ -77,7 +77,7 @@ import static java.util.stream.Collectors.toSet;
 public abstract class AbstractVarPattern extends AbstractPattern implements VarPatternAdmin {
 
     @Override
-    public abstract Var getVarName();
+    public abstract Var var();
 
     protected abstract Set<VarProperty> properties();
 
@@ -156,8 +156,8 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     @Override
     public final Set<Var> commonVarNames() {
         return getInnerVars().stream()
-                .filter(v -> v.getVarName().isUserDefinedName())
-                .map(VarPatternAdmin::getVarName)
+                .filter(v -> v.var().isUserDefinedName())
+                .map(VarPatternAdmin::var)
                 .collect(toSet());
     }
 
@@ -340,7 +340,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     public final String getPrintableName() {
         if (properties().size() == 0) {
             // If there are no properties, we display the variable name
-            return getVarName().toString();
+            return var().toString();
         } else if (properties().size() == 1) {
             // If there is only a label, we display that
             Optional<Label> label = getTypeLabel();
@@ -377,11 +377,11 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
         if (property.isUnique()) {
             testUniqueProperty((UniqueVarProperty) property);
         }
-        return Patterns.varPattern(getVarName(), Sets.union(properties(), ImmutableSet.of(property)));
+        return Patterns.varPattern(var(), Sets.union(properties(), ImmutableSet.of(property)));
     }
 
     private AbstractVarPattern removeProperty(VarProperty property) {
-        return (AbstractVarPattern) Patterns.varPattern(getVarName(), Sets.difference(properties(), ImmutableSet.of(property)));
+        return (AbstractVarPattern) Patterns.varPattern(var(), Sets.difference(properties(), ImmutableSet.of(property)));
     }
 
     /**

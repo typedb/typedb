@@ -48,7 +48,7 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
      * @return the variable name of this variable
      */
     @CheckReturnValue
-    Var getVarName();
+    Var var();
 
     /**
      * Get a stream of all properties on this variable

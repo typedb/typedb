@@ -136,7 +136,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin rolePlayer) {
-        return Stream.of(shortcut(this, start, casting, rolePlayer.getVarName(), Optional.empty()));
+        return Stream.of(shortcut(this, start, casting, rolePlayer.var(), Optional.empty()));
     }
 
     /**
@@ -145,7 +145,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
-        return Stream.of(shortcut(this, start, casting, rolePlayer.getVarName(), Optional.of(roleType.getVarName())));
+        return Stream.of(shortcut(this, start, casting, rolePlayer.var(), Optional.of(roleType.var())));
     }
 
     @Override
@@ -197,8 +197,8 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     private void addRoleplayer(InsertQueryExecutor executor, Relation relation, RelationPlayer relationPlayer) {
         VarPatternAdmin roleVar = getRole(relationPlayer);
 
-        Role role = executor.get(roleVar.getVarName()).asRole();
-        Thing roleplayer = executor.get(relationPlayer.getRolePlayer().getVarName()).asThing();
+        Role role = executor.get(roleVar.var()).asRole();
+        Thing roleplayer = executor.get(relationPlayer.getRolePlayer().var()).asThing();
         relation.addRolePlayer(role, roleplayer);
     }
 
@@ -206,7 +206,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     public Set<Var> requiredVars(Var var) {
         Stream<Var> relationPlayers = this.relationPlayers.stream()
                 .flatMap(relationPlayer -> Stream.of(relationPlayer.getRolePlayer(), getRole(relationPlayer)))
-                .map(VarPatternAdmin::getVarName);
+                .map(VarPatternAdmin::var);
 
         return Stream.concat(relationPlayers, Stream.of(var)).collect(toImmutableSet());
     }
@@ -238,7 +238,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .filter(prop -> !IsaProperty.class.isInstance(prop))
                 .count() > 0;
-        VarPattern relVar = (var.getVarName().isUserDefinedName() || isReified)? var.getVarName().asUserDefined() : Graql.var();
+        VarPattern relVar = (var.var().isUserDefinedName() || isReified)? var.var().asUserDefined() : Graql.var();
         List<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(Collectors.toList());
 
         for (RelationPlayer rp : relationPlayers) {
@@ -251,7 +251,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         //id part
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
         IdPredicate predicate = null;
-        Var typeVariable = isaProp != null? isaProp.getType().getVarName().asUserDefined() : Graql.var().asUserDefined();
+        Var typeVariable = isaProp != null? isaProp.getType().var().asUserDefined() : Graql.var().asUserDefined();
         //Isa present
         if (isaProp != null) {
             VarPatternAdmin isaVar = isaProp.getType();
@@ -260,7 +260,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 VarPatternAdmin idVar = typeVariable.id(parent.graph().getOntologyConcept(label).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
             } else {
-                typeVariable = isaVar.getVarName();
+                typeVariable = isaVar.var();
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
             }
         }

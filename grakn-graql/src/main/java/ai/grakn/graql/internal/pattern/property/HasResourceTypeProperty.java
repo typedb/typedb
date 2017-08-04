@@ -99,7 +99,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         this.ownerRole = ownerRole.admin();
         this.valueRole = valueRole.admin();
         this.relationOwner = relationType.relates(this.ownerRole).admin();
-        this.relationValue = relationType.admin().getVarName().relates(this.valueRole).admin();
+        this.relationValue = relationType.admin().var().relates(this.valueRole).admin();
 
     }
 
@@ -123,8 +123,8 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
         traversals.addAll(new PlaysProperty(ownerRole, required).match(start));
         //TODO: Get this to use real constraints no just the required flag
-        traversals.addAll(new PlaysProperty(valueRole, false).match(resourceType.getVarName()));
-        traversals.addAll(new NeqProperty(ownerRole).match(valueRole.getVarName()));
+        traversals.addAll(new PlaysProperty(valueRole, false).match(resourceType.var()));
+        traversals.addAll(new NeqProperty(ownerRole).match(valueRole.var()));
 
         return traversals;
     }
@@ -147,7 +147,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         Type entityTypeConcept = executor.get(var).asType();
-        ResourceType resourceTypeConcept = executor.get(resourceType.getVarName()).asResourceType();
+        ResourceType resourceTypeConcept = executor.get(resourceType.var()).asResourceType();
 
         if (required) {
             entityTypeConcept.key(resourceTypeConcept);
@@ -158,7 +158,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, resourceType.getVarName());
+        return ImmutableSet.of(var, resourceType.var());
     }
 
     @Override
@@ -180,7 +180,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
-        Var varName = var.getVarName().asUserDefined();
+        Var varName = var.var().asUserDefined();
         Label label = this.getResourceType().getTypeLabel().orElse(null);
 
         Var predicateVar = var().asUserDefined();

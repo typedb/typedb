@@ -137,7 +137,7 @@ class ConjunctionQuery {
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(VarPatternAdmin var) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
-        Var start = var.getVarName();
+        Var start = var.var();
 
         var.getProperties().forEach(property -> {
             VarPropertyInternal propertyInternal = (VarPropertyInternal) property;

@@ -110,6 +110,6 @@ public class LabelProperty extends AbstractVarProperty implements NamedProperty,
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new IdPredicate(var.getVarName(), this, parent);
+        return new IdPredicate(var.var(), this, parent);
     }
 }

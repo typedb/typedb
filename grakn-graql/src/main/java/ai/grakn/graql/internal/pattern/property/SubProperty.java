@@ -76,7 +76,7 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType.getVarName()));
+        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType.var()));
     }
 
     @Override
@@ -91,7 +91,7 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        OntologyConcept superConcept = executor.get(superType.getVarName()).asOntologyConcept();
+        OntologyConcept superConcept = executor.get(superType.var()).asOntologyConcept();
 
         Optional<ConceptBuilder> builder = executor.tryBuilder(var);
 
@@ -104,7 +104,7 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(superType.getVarName());
+        return ImmutableSet.of(superType.var());
     }
 
     @Override
@@ -130,9 +130,9 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName().asUserDefined();
+        Var varName = var.var().asUserDefined();
         VarPatternAdmin typeVar = this.getSuperType();
-        Var typeVariable = typeVar.getVarName().asUserDefined();
+        Var typeVariable = typeVar.var().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarPatternAdmin resVar = varName.sub(typeVariable).admin();

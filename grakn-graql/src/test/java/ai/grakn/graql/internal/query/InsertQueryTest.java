@@ -894,7 +894,7 @@ public class InsertQueryTest {
 
         // Delete all vars
         for (VarPattern var : vars) {
-            qb.match(var).delete(var.admin().getVarName()).execute();
+            qb.match(var).delete(var.admin().var()).execute();
         }
 
         // Make sure vars don't exist
