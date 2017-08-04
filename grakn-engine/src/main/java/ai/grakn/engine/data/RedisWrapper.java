@@ -55,8 +55,8 @@ public class RedisWrapper {
      */
     public static class Builder {
 
-        public static final int DEFAULT_PORT = 6379;
-        public static final int TIMEOUT = 5000;
+        static final int DEFAULT_PORT = 6379;
+        static final int TIMEOUT = 5000;
 
         private boolean useSentinel = false;
         private Set<String> uriSet = new HashSet<>();
@@ -101,5 +101,4 @@ public class RedisWrapper {
             return new RedisWrapper(jedisPool);
         }
     }
-
 }

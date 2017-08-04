@@ -21,6 +21,7 @@ package ai.grakn.util;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.LoggerFactory;
 import redis.embedded.RedisServer;
+import redis.embedded.exceptions.EmbeddedRedisException;
 
 /**
  * <p>
@@ -64,8 +65,14 @@ public class EmbeddedRedis {
                     .setting("timeout 360")
                     .build();
             if (!redisServer.isActive()) {
-                redisServer.start();
-                LOG.info("Redis started.");
+                try {
+                    redisServer.start();
+                } catch (EmbeddedRedisException e) {
+                    LOG.warn("Unexpected Redis instance already running on port {}", port, e);
+                } catch (Exception e) {
+                    LOG.warn("Exception while trying to start Redis on port {}. Will attempt to continue.", port, e);
+                }
+                LOG.info("Redis started on {}", port);
             } else {
                 LOG.warn("Redis already running.");
             }

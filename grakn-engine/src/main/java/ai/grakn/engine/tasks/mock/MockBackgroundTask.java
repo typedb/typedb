@@ -23,9 +23,11 @@ import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
-
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Main task Mock class- keeps track of completed and failed tasks
@@ -33,6 +35,7 @@ import java.util.function.Consumer;
  * @author alexandraorth, Felix Chapman
  */
 public abstract class MockBackgroundTask extends BackgroundTask {
+    private static final Logger LOG = LoggerFactory.getLogger(MockBackgroundTask.class);
 
     private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
     private static final ConcurrentHashMultiset<TaskId> CANCELLED_TASKS = ConcurrentHashMultiset.create();
@@ -95,27 +98,32 @@ public abstract class MockBackgroundTask extends BackgroundTask {
 
     @Override
     public final boolean start() {
-        id = TaskId.of(configuration().json().at("id").asString());
-        onTaskStart(id);
+        Json json = configuration().json();
+        Json id = json.at("id");
+        if (id == null) {
+            LOG.error("Missing id in {}: {}", this.getClass().getName(), json);
+        }
+        this.id = TaskId.of(id.asString());
+        onTaskStart(this.id);
 
-        saveCheckpoint(TaskCheckpoint.of(configuration().json()));
+        saveCheckpoint(TaskCheckpoint.of(json));
 
         boolean wasCancelled = cancelled.get();
 
         if (!wasCancelled) {
-            executeStartInner(id);
+            executeStartInner(this.id);
         }
 
         // Cancelled status may have changed
         wasCancelled = cancelled.get();
 
         if (!wasCancelled) {
-            addCompletedTask(id);
+            addCompletedTask(this.id);
         } else {
-            addCancelledTask(id);
+            addCancelledTask(this.id);
         }
 
-        onTaskFinish(id);
+        onTaskFinish(this.id);
 
         return !wasCancelled;
     }

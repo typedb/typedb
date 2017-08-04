@@ -32,21 +32,21 @@ import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Transaction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-
 import java.io.IOException;
 import java.io.InputStream;
+import static java.util.Arrays.stream;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-
-import static java.util.Arrays.stream;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -62,6 +62,8 @@ import static java.util.Arrays.stream;
  * @author fppt
  */
 final public class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, TitanGraph> {
+    private final static Logger LOG = LoggerFactory.getLogger(TitanInternalFactory.class);
+
     private final static String DEFAULT_CONFIG = "backend-default";
 
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
@@ -122,8 +124,8 @@ final public class TitanInternalFactory extends AbstractInternalFactory<GraknTit
                 set("storage.cassandra.keyspace", name).
                 set("storage.batch-loading", batchLoading);
 
-        properties.entrySet().forEach(entry-> builder.set(entry.getKey().toString(), entry.getValue()));
-
+        properties.forEach((key, value) -> builder.set(key.toString(), value));
+        LOG.debug("Opening graph on {}", address);
         return builder.open();
     }
 

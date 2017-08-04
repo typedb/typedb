@@ -22,10 +22,11 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Thing;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.admin.GraknAdmin;
@@ -98,6 +99,9 @@ public class SystemKeyspace {
 
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getOntologyConcept(KEYSPACE_RESOURCE);
+            if (keyspaceName == null) {
+                throw GraknBackendException.initializationException(keyspace);
+            }
             Resource<String> resource = keyspaceName.putResource(keyspace);
             if (resource.owner() == null) {
                 graph.<EntityType>getOntologyConcept(KEYSPACE_ENTITY).addEntity().resource(resource);

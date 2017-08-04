@@ -22,13 +22,13 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknBackendException;
-
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nullable;
 
 /**
  * <p>
@@ -74,7 +74,8 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
     }
 
     @Override
-    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, EngineID engineRunningOn, int limit, int offset) {
+    public Set<TaskState> getTasks(@Nullable TaskStatus taskStatus, @Nullable String taskClassName,
+            @Nullable String createdBy, @Nullable EngineID engineRunningOn, int limit, int offset) {
         Set<TaskState> res = new HashSet<>();
 
         int count = 0;
@@ -111,5 +112,10 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
         }
 
         return res;
+    }
+
+    @Override
+    public void clear() {
+        storage.clear();
     }
 }
