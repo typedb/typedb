@@ -19,11 +19,11 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
@@ -184,9 +184,9 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Relation relation = concept.asRelation();
-        relationPlayers.forEach(relationPlayer -> addRoleplayer(insertQueryExecutor, relation, relationPlayer));
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        Relation relation = executor.get(var).asRelation();
+        relationPlayers.forEach(relationPlayer -> addRoleplayer(executor, relation, relationPlayer));
     }
 
     /**
@@ -194,12 +194,25 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param relation the concept representing the relation
      * @param relationPlayer a casting between a role type and role player
      */
-    private void addRoleplayer(InsertQueryExecutor insertQueryExecutor, Relation relation, RelationPlayer relationPlayer) {
-        VarPatternAdmin roleVar = relationPlayer.getRole().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
+    private void addRoleplayer(InsertQueryExecutor executor, Relation relation, RelationPlayer relationPlayer) {
+        VarPatternAdmin roleVar = getRole(relationPlayer);
 
-        Role role = insertQueryExecutor.getConcept(roleVar).asRole();
-        Thing roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asThing();
+        Role role = executor.get(roleVar.getVarName()).asRole();
+        Thing roleplayer = executor.get(relationPlayer.getRolePlayer().getVarName()).asThing();
         relation.addRolePlayer(role, roleplayer);
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        Stream<Var> relationPlayers = this.relationPlayers.stream()
+                .flatMap(relationPlayer -> Stream.of(relationPlayer.getRolePlayer(), getRole(relationPlayer)))
+                .map(VarPatternAdmin::getVarName);
+
+        return Stream.concat(relationPlayers, Stream.of(var)).collect(toImmutableSet());
+    }
+
+    private VarPatternAdmin getRole(RelationPlayer relationPlayer) {
+        return relationPlayer.getRole().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
     }
 
     @Override

@@ -20,9 +20,9 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -90,9 +90,14 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Role role = insertQueryExecutor.getConcept(this.role).asRole();
-        concept.asType().plays(role);
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        Role role = executor.get(this.role.getVarName()).asRole();
+        executor.get(var).asType().plays(role);
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of(var, role.getVarName());
     }
 
     @Override

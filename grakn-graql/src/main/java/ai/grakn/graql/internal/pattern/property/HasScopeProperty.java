@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
+import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -83,9 +83,14 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Thing scopeThing = insertQueryExecutor.getConcept(scope).asThing();
-        concept.asType().scope(scopeThing);
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        Thing scopeThing = executor.get(scope.getVarName()).asThing();
+        executor.get(var).asType().scope(scopeThing);
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of(var, scope.getVarName());
     }
 
     @Override
