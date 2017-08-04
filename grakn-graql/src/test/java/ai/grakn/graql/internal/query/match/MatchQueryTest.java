@@ -130,6 +130,7 @@ import static ai.grakn.matcher.MovieMatchers.name;
 import static ai.grakn.matcher.MovieMatchers.neilMcCauley;
 import static ai.grakn.matcher.MovieMatchers.person;
 import static ai.grakn.matcher.MovieMatchers.production;
+import static ai.grakn.matcher.MovieMatchers.provenance;
 import static ai.grakn.matcher.MovieMatchers.realName;
 import static ai.grakn.matcher.MovieMatchers.releaseDate;
 import static ai.grakn.matcher.MovieMatchers.robertDeNiro;
@@ -593,7 +594,7 @@ public class MatchQueryTest {
 
         query = qb.match(x.datatype(ResourceType.DataType.STRING));
 
-        assertThat(query, variable(x, containsInAnyOrder(title, gender, realName, name)));
+        assertThat(query, variable(x, containsInAnyOrder(title, gender, realName, name, provenance)));
         query = qb.match(x.datatype(ResourceType.DataType.DATE));
         assertThat(query, variable(x, contains(releaseDate)));
     }
