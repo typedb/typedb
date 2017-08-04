@@ -95,14 +95,14 @@ public class GraqlControllerInsertTest {
 
         String query = "insert $x isa movie;";
 
-        int genreCountBefore = graphContext.graph().getEntityType("movie").instances().size();
+        long genreCountBefore = graphContext.graph().getEntityType("movie").instances().count();
 
         sendRequest(query);
 
         // refresh graph
         graphContext.graph().close();
 
-        int genreCountAfter = graphContext.graph().getEntityType("movie").instances().size();
+        long genreCountAfter = graphContext.graph().getEntityType("movie").instances().count();
 
         assertEquals(genreCountBefore + 1, genreCountAfter);
     }
