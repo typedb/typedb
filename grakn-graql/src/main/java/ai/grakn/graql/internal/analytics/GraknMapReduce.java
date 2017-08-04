@@ -46,6 +46,9 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
 
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
 
+    // In MapReduce, vertex emits type label id, but has-resource edge can not. Instead, a message is sent via the edge,
+    // and a vertex property is added. So the resource vertex can emit an extra key value pair, key being this constant.
+    // Here, -10 is just a number that is not used as a type id.
     public static final int RESERVED_TYPE_LABEL_KEY = -10;
 
     GraknMapReduce(Set<LabelId> selectedTypes) {

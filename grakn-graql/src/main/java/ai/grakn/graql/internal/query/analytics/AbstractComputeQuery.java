@@ -67,9 +67,6 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     Set<Label> subLabels = new HashSet<>();
     Set<Type> subTypes = new HashSet<>();
-    Set<EntityType> entityTypes = new HashSet<>();
-    Set<RelationType> relationTypes = new HashSet<>();
-    Set<ResourceType> resourceTypes = new HashSet<>();
 
     private String url;
 
@@ -125,27 +122,21 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         keySpace = theGraph.getKeyspace();
         url = theGraph.admin().getEngineUrl();
 
-        EntityType metaEntityType = theGraph.admin().getMetaEntityType();
-        entityTypes.addAll(metaEntityType.subs());
-        entityTypes.remove(metaEntityType);
-
-        ResourceType<?> metaResourceType = theGraph.admin().getMetaResourceType();
-        resourceTypes.addAll(metaResourceType.subs());
-        resourceTypes.remove(metaResourceType);
-
-        RelationType metaRelationType = theGraph.admin().getMetaRelationType();
-        relationTypes.addAll(metaRelationType.subs());
-        relationTypes.remove(metaRelationType);
-
         getAllSubTypes(theGraph);
     }
 
     private void getAllSubTypes(GraknGraph graph) {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         if (subLabels.isEmpty()) {
-            subTypes.addAll(entityTypes);
-            subTypes.addAll(relationTypes);
-            subTypes.addAll(resourceTypes);
+            EntityType metaEntityType = graph.admin().getMetaEntityType();
+            subTypes.addAll(metaEntityType.subs());
+            subTypes.remove(metaEntityType);
+            ResourceType<?> metaResourceType = graph.admin().getMetaResourceType();
+            subTypes.addAll(metaResourceType.subs());
+            subTypes.remove(metaResourceType);
+            RelationType metaRelationType = graph.admin().getMetaRelationType();
+            subTypes.addAll(metaRelationType.subs());
+            subTypes.remove(metaRelationType);
             subLabels = subTypes.stream().map(OntologyConcept::getLabel).collect(Collectors.toSet());
         } else {
             subTypes = subLabels.stream().map(label -> {

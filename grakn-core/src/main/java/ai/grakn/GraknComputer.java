@@ -25,6 +25,7 @@ import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
@@ -60,7 +61,8 @@ public interface GraknComputer {
      * @see ComputerResult
      */
     @CheckReturnValue
-    ComputerResult compute(VertexProgram program, MapReduce mapReduce, Set<LabelId> types, Boolean includesShortcut);
+    ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
+                           @Nullable Set<LabelId> types, Boolean includesShortcut);
 
     /**
      * Execute the given vertex program using a graph computer.
@@ -72,7 +74,8 @@ public interface GraknComputer {
      * @see ComputerResult
      */
     @CheckReturnValue
-    ComputerResult compute(VertexProgram program, MapReduce mapReduce, Set<LabelId> types);
+    ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
+                           @Nullable Set<LabelId> types);
 
     /**
      * Kill all the jobs the graph computer has
