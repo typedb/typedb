@@ -25,6 +25,8 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarPattern;
 
+import java.util.stream.Collectors;
+
 import static ai.grakn.graql.Graql.var;
 
 /**
@@ -107,7 +109,7 @@ public class OntologyConceptMapper {
      * @return var with appropriate plays edges
      */
     private static VarPattern plays(VarPattern var, Type type) {
-        for(Role role:type.plays()){
+        for(Role role:type.plays().collect(Collectors.toSet())){
             var = var.plays(Graql.label(role.getLabel()));
         }
         return var;
