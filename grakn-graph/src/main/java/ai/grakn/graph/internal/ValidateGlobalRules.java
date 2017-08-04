@@ -377,7 +377,7 @@ class ValidateGlobalRules {
     private static Set<String> checkRuleSideInvalid(GraknGraph graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
-        pattern.admin().getVars().stream()
+        pattern.admin().varPatterns().stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
                     OntologyConcept ontologyConcept = graph.getOntologyConcept(typeLabel);

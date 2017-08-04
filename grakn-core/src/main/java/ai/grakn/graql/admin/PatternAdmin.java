@@ -102,7 +102,7 @@ public interface PatternAdmin extends Pattern {
      * @return all variables referenced in the pattern
      */
     @CheckReturnValue
-    default Set<VarPatternAdmin> getVars() {
+    default Set<VarPatternAdmin> varPatterns() {
         return getDisjunctiveNormalForm().getPatterns().stream()
                 .flatMap(conj -> conj.getPatterns().stream())
                 .collect(toSet());

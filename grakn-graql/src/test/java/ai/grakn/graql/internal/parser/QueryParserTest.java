@@ -653,7 +653,7 @@ public class QueryParserTest {
     public void testParseBooleanType() {
         MatchQuery query = parse("match $x datatype boolean;");
 
-        VarPatternAdmin var = query.admin().getPattern().getVars().iterator().next();
+        VarPatternAdmin var = query.admin().getPattern().varPatterns().iterator().next();
 
         //noinspection OptionalGetWithoutIsPresent
         DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();

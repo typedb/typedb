@@ -79,7 +79,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
     public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
         GraknGraph graph = optionalGraph.orElseThrow(GraqlQueryException::noGraph);
 
-        for (VarPatternAdmin var : pattern.getVars()) {
+        for (VarPatternAdmin var : pattern.varPatterns()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
 
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, graph);
@@ -103,7 +103,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
     @Override
     public Set<OntologyConcept> getOntologyConcepts(GraknGraph graph) {
-        return pattern.getVars().stream()
+        return pattern.varPatterns().stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
                 .map(graph::<OntologyConcept>getOntologyConcept)
