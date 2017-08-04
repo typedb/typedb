@@ -65,24 +65,24 @@ pattern        : varPattern                    # varPatternCase
 varPatterns    : (varPattern ';')+ ;
 varPattern     : VARIABLE | variable? property (','? property)* ;
 
-property       : 'isa' variable                                                                      # isa
-               | 'sub' variable                                                                      # sub
-               | 'relates' variable                                                                  # relates
-               | 'plays' variable                                                                    # plays
-               | 'has-scope' VARIABLE                                                                # hasScope
-               | 'id' id                                                                             # propId
-               | 'label' label                                                                       # propLabel
-               | 'val' predicate                                                                     # propValue
-               | 'when' '{' patterns '}'                                                             # propWhen
-               | 'then' '{' varPatterns '}'                                                          # propThen
-               | 'has' ('REIFIED' '{{' relation=VARIABLE '}}')?label (resource=VARIABLE | predicate) # propHas
-               | 'has' variable                                                                      # propResource
-               | 'key' variable                                                                      # propKey
-               | '(' casting (',' casting)* ')'                                                      # propRel
-               | 'is-abstract'                                                                       # isAbstract
-               | 'datatype' DATATYPE                                                                 # propDatatype
-               | 'regex' REGEX                                                                       # propRegex
-               | '!=' variable                                                                       # propNeq
+property       : 'isa' variable                 # isa
+               | 'sub' variable                 # sub
+               | 'relates' variable             # relates
+               | 'plays' variable               # plays
+               | 'has-scope' VARIABLE           # hasScope
+               | 'id' id                        # propId
+               | 'label' label                  # propLabel
+               | 'val' predicate                # propValue
+               | 'when' '{' patterns '}'        # propWhen
+               | 'then' '{' varPatterns '}'     # propThen
+               | 'has' ('REIFIED' '{' '{' relation=VARIABLE '}' '}')? label (resource=VARIABLE | predicate) # propHas
+               | 'has' variable                 # propResource
+               | 'key' variable                 # propKey
+               | '(' casting (',' casting)* ')' # propRel
+               | 'is-abstract'                  # isAbstract
+               | 'datatype' DATATYPE            # propDatatype
+               | 'regex' REGEX                  # propRegex
+               | '!=' variable                  # propNeq
                ;
 
 casting        : variable (':' VARIABLE)?
