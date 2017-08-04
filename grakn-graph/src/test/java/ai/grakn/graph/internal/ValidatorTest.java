@@ -34,6 +34,7 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -149,7 +150,7 @@ public class ValidatorTest extends GraphTestBase{
 
         // now try to delete all assertions and then the movie
         godfather = graknGraph.getEntityType("movie").instances().iterator().next();
-        Collection<Relation> assertions = godfather.relations();
+        Collection<Relation> assertions = godfather.relations().collect(Collectors.toSet());
         Set<ConceptId> assertionIds = new HashSet<>();
 
         for (Relation a : assertions) {

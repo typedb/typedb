@@ -31,11 +31,11 @@ import ai.grakn.graph.internal.structure.VertexElement;
 import com.google.common.collect.Iterables;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -101,7 +101,7 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     }
 
     @Override
-    public Collection<Resource<?>> resources(ResourceType[] resourceTypes) {
+    public Stream<Resource<?>> resources(ResourceType[] resourceTypes) {
         return readFromReified((relationReified) -> relationReified.resources(resourceTypes));
     }
 
@@ -111,12 +111,12 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     }
 
     @Override
-    public Collection<Relation> relations(Role... roles) {
+    public Stream<Relation> relations(Role... roles) {
         return readFromReified((relationReified) -> relationReified.relations(roles));
     }
 
     @Override
-    public Collection<Role> plays() {
+    public Stream<Role> plays() {
         return readFromReified(ThingImpl::plays);
     }
 
@@ -124,8 +124,8 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
      * Reads some data from a {@link RelationReified}. If the {@link Relation} has not been reified then an empty
      * collection is returned.
      */
-    private <X> Collection<X> readFromReified(Function<RelationReified, Collection<X>> producer){
-        return reified().map(producer).orElseGet(Collections::emptyList);
+    private <X> Stream<X> readFromReified(Function<RelationReified, Stream<X>> producer){
+        return reified().map(producer).orElseGet(Stream::empty);
     }
 
     /**

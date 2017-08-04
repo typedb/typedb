@@ -50,7 +50,6 @@ import ai.grakn.graph.internal.concept.RelationEdge;
 import ai.grakn.graph.internal.concept.RelationImpl;
 import ai.grakn.graph.internal.concept.RelationReified;
 import ai.grakn.graph.internal.concept.ResourceImpl;
-import ai.grakn.graph.internal.concept.ThingImpl;
 import ai.grakn.graph.internal.concept.TypeImpl;
 import ai.grakn.graph.internal.structure.EdgeElement;
 import ai.grakn.graph.internal.structure.VertexElement;
@@ -84,6 +83,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -901,12 +901,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(duplicates.size() > 0) {
             //Remove any resources associated with this index that are not the main resource
             for (Resource otherResource : duplicates) {
-                Collection<Relation> otherRelations = otherResource.relations();
+                Stream<Relation> otherRelations = otherResource.relations();
 
                 //Copy the actual relation
-                for (Relation otherRelation : otherRelations) {
-                    copyRelation(mainResource, otherResource, otherRelation);
-                }
+                otherRelations.forEach(otherRelation -> copyRelation(mainResource, otherResource, otherRelation));
 
                 //Delete the node
                 ResourceImpl.from(otherResource).deleteNode();

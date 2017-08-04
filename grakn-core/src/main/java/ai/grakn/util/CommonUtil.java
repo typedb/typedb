@@ -77,7 +77,7 @@ public class CommonUtil {
             if(++count > size) return false;
         }
 
-        return true;
+        return size == count;
     }
 
     @CheckReturnValue

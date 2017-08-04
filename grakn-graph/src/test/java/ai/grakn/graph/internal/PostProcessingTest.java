@@ -132,9 +132,9 @@ public class PostProcessingTest extends GraphTestBase{
 
         //Check everything is broken
         assertEquals(3, resourceType.instances().count());
-        assertEquals(1, r1.relations().size());
-        assertEquals(2, r11.relations().size());
-        assertEquals(1, r1.relations().size());
+        assertEquals(1, r1.relations().count());
+        assertEquals(2, r11.relations().count());
+        assertEquals(1, r1.relations().count());
         assertEquals(4, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
         assertEquals(2, graknGraph.getTinkerTraversal().E().hasLabel(Schema.EdgeLabel.RESOURCE.getLabel()).toList().size());
 
@@ -237,8 +237,8 @@ public class PostProcessingTest extends GraphTestBase{
 
         //Check everything is broken
         //Entities Too Many Resources
-        assertEquals(4, entity.resources().size());
-        assertEquals(3, relation.resources().size());
+        assertEquals(4, entity.resources().count());
+        assertEquals(3, relation.resources().count());
 
         //There are too many resources
         assertEquals(6, graknGraph.admin().getMetaResourceType().instances().count());
@@ -247,16 +247,16 @@ public class PostProcessingTest extends GraphTestBase{
         graknGraph.fixDuplicateResources(r1dup1.getIndex(), new HashSet<>(Arrays.asList(r1dup1.getId(), r1dup2.getId(), r1dup3.getId())));
 
         //Check resource one has been sorted out
-        assertEquals(2, entity.resources().size());
-        assertEquals(2, entity.resources().size());
+        assertEquals(2, entity.resources().count());
+        assertEquals(2, entity.resources().count());
         assertEquals(4, graknGraph.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
 
         //Now fix everything for resource 2
         graknGraph.fixDuplicateResources(r2dup1.getIndex(), new HashSet<>(Arrays.asList(r2dup1.getId(), r2dup2.getId(), r2dup3.getId())));
 
         //Check resource one has been sorted out
-        assertEquals(2, entity.resources().size());
-        assertEquals(2, entity.resources().size());
+        assertEquals(2, entity.resources().count());
+        assertEquals(2, entity.resources().count());
         assertEquals(2, graknGraph.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
     }
 }
