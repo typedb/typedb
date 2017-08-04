@@ -35,12 +35,12 @@ import java.util.stream.Stream;
  */
 public interface VarPatternAdmin extends PatternAdmin, VarPattern {
     @Override
-    default boolean isVar() {
+    default boolean isVarPattern() {
         return true;
     }
 
     @Override
-    default VarPatternAdmin asVar() {
+    default VarPatternAdmin asVarPattern() {
         return this;
     }
 

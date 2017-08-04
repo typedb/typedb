@@ -147,9 +147,9 @@ public class ResourceAtom extends Binary{
     public PatternAdmin getCombinedPattern() {
         Set<VarPatternAdmin> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
-                .map(PatternAdmin::asVar)
+                .map(PatternAdmin::asVarPattern)
                 .collect(Collectors.toSet());
-        vars.add(super.getPattern().asVar());
+        vars.add(super.getPattern().asVarPattern());
         return Patterns.conjunction(vars);
     }
 

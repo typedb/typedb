@@ -115,8 +115,8 @@ public abstract class Binary extends Atom {
 
     @Override
     public PatternAdmin getCombinedPattern() {
-        Set<VarPatternAdmin> vars = Sets.newHashSet(super.getPattern().asVar());
-        if (getPredicate() != null) vars.add(getPredicate().getPattern().asVar());
+        Set<VarPatternAdmin> vars = Sets.newHashSet(super.getPattern().asVarPattern());
+        if (getPredicate() != null) vars.add(getPredicate().getPattern().asVarPattern());
         return Patterns.conjunction(vars);
     }
 

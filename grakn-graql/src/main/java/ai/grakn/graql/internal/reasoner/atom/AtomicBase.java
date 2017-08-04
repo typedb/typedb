@@ -52,7 +52,7 @@ public abstract class AtomicBase implements Atomic {
 
     protected AtomicBase(AtomicBase a) {
         this.atomPattern = a.atomPattern;
-        this.varName = atomPattern.asVar().var();
+        this.varName = atomPattern.asVarPattern().var();
         this.parent = a.getParentQuery();
     }
 
@@ -66,7 +66,7 @@ public abstract class AtomicBase implements Atomic {
     public boolean containsVar(Var name){ return getVarNames().contains(name);}
 
     @Override
-    public boolean isUserDefinedName(){ return atomPattern.asVar().var().isUserDefinedName();}
+    public boolean isUserDefinedName(){ return atomPattern.asVarPattern().var().isUserDefinedName();}
     
     @Override
     public Var getVarName(){ return varName;}

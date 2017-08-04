@@ -93,7 +93,7 @@ public abstract class Atom extends AtomicBase {
      * @return var properties this atom (its pattern) contains
      */
     public Set<VarProperty> getVarProperties() {
-        return getPattern().asVar().getProperties().collect(Collectors.toSet());
+        return getPattern().asVarPattern().getProperties().collect(Collectors.toSet());
     }
 
     /**

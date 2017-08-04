@@ -71,7 +71,7 @@ public interface PatternAdmin extends Pattern {
      * @return true if this {@link PatternAdmin} is a {@link VarPatternAdmin}
      */
     @CheckReturnValue
-    default boolean isVar() {
+    default boolean isVarPattern() {
         return false;
     }
 
@@ -95,7 +95,7 @@ public interface PatternAdmin extends Pattern {
      * @return this {@link PatternAdmin} as a {@link VarPatternAdmin}, if it is one.
      */
     @CheckReturnValue
-    default VarPatternAdmin asVar() {
+    default VarPatternAdmin asVarPattern() {
         throw new UnsupportedOperationException();
     }
     /**

@@ -152,7 +152,7 @@ public class HALUtils {
         Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
         if (atom.isRelation()) {
             Optional<VarPatternAdmin> var = atom.getPattern().getVars().stream().filter(x -> x.hasProperty(RelationProperty.class)).findFirst();
-            VarPatternAdmin varAdmin = atom.getPattern().asVar();
+            VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
             if (var.isPresent() && !var.get().var().isUserDefinedName() && bothRolePlayersAreSelected(atom, matchQuery)) {
                 roleTypes.put(varAdmin, pairVarNamesRelationType(atom));
             }
@@ -217,14 +217,14 @@ public class HALUtils {
         if (firstExplanation.isRuleExplanation() || firstExplanation.isLookupExplanation()) {
             Atom atom = ((ReasonerAtomicQuery) firstAnswer.getExplanation().getQuery()).getAtom();
             if (atom.isRelation()) {
-                VarPatternAdmin varAdmin = atom.getPattern().asVar();
+                VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
                 inferredRelations.put(varAdmin, firstAnswer.getExplanation().isRuleExplanation());
             }
         } else {
             firstAnswer.getExplanation().getAnswers().forEach(answer -> {
                 Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
                 if (atom.isRelation()) {
-                    VarPatternAdmin varAdmin = atom.getPattern().asVar();
+                    VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
                     inferredRelations.put(varAdmin, answer.getExplanation().isRuleExplanation());
                 }
             });

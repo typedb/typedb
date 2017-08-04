@@ -115,7 +115,7 @@ public class RelationAtom extends IsaAtom {
     private List<RelationPlayer> getRelationPlayers() {
         if (relationPlayers == null) {
             relationPlayers = new ArrayList<>();
-            getPattern().asVar()
+            getPattern().asVarPattern()
                     .getProperty(RelationProperty.class)
                     .ifPresent(prop -> prop.getRelationPlayers()
                             .forEach(relationPlayers::add));
@@ -358,7 +358,7 @@ public class RelationAtom extends IsaAtom {
         ConceptId typeId = type.getId();
         Var typeVariable = getPredicateVariable().getValue().isEmpty() ? Graql.var().asUserDefined() : getPredicateVariable();
 
-        VarPatternAdmin newPattern = getPattern().asVar().isa(typeVariable).admin();
+        VarPatternAdmin newPattern = getPattern().asVarPattern().isa(typeVariable).admin();
         IdPredicate newPredicate = new IdPredicate(typeVariable.id(typeId).admin(), getParentQuery());
 
         return new RelationAtom(newPattern, typeVariable, newPredicate, this.getParentQuery());
@@ -595,7 +595,7 @@ public class RelationAtom extends IsaAtom {
                 });
 
         PatternAdmin newPattern = constructRelationVarPattern(getVarName(), getPredicateVariable(), rolePlayerMappings);
-        return new RelationAtom(newPattern.asVar(), getPredicateVariable(), getPredicate(), getParentQuery());
+        return new RelationAtom(newPattern.asVarPattern(), getPredicateVariable(), getPredicate(), getParentQuery());
     }
 
     /**
@@ -773,7 +773,7 @@ public class RelationAtom extends IsaAtom {
     @Override
     public Atom rewriteToUserDefined(){
         VarPattern newVar = Graql.var().asUserDefined();
-        VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
+        VarPattern relVar = getPattern().asVarPattern().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.getType()))
                 .orElse(newVar);
 
