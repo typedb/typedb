@@ -28,10 +28,10 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.graph.internal.concept.OntologyConceptImpl;
 import ai.grakn.graph.internal.concept.RelationImpl;
 import ai.grakn.graph.internal.concept.RelationReified;
 import ai.grakn.graph.internal.concept.RelationTypeImpl;
-import ai.grakn.graph.internal.concept.RoleImpl;
 import ai.grakn.graph.internal.concept.RuleImpl;
 import ai.grakn.graph.internal.concept.TypeImpl;
 import ai.grakn.graph.internal.structure.Casting;
@@ -214,14 +214,8 @@ class ValidateGlobalRules {
             superRelationType.superSet().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.getLabel())));
 
             for (Role relate : relates) {
-                boolean validRoleTypeFound = false;
-                Set<Role> superRoles = ((RoleImpl) relate).superSet();
-                for (Role superRole : superRoles) {
-                    if(allSuperRolesPlayed.contains(superRole.getLabel())){
-                        validRoleTypeFound = true;
-                        break;
-                    }
-                }
+                boolean validRoleTypeFound = OntologyConceptImpl.from(relate).superSet().
+                        anyMatch(superRole -> allSuperRolesPlayed.contains(superRole.getLabel()));
 
                 if(!validRoleTypeFound){
                     errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(relate.getLabel(), relationType.getLabel(), "super", "super", superRelationType.getLabel()));

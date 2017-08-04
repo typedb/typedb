@@ -169,18 +169,16 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
      * @return A list of all the roles this Type is allowed to play.
      */
     @Override
-    public Collection<Role> plays() {
-        Set<Role> allRoles = new HashSet<>();
-
+    public Stream<Role> plays() {
         //Get the immediate plays which may be cached
-        allRoles.addAll(directPlays().keySet());
+        Stream<Role> allRoles = directPlays().keySet().stream();
 
         //Now get the super type plays (Which may also be cached locally within their own context
-        Set<T> superSet = superSet();
-        superSet.remove(this); //We already have the plays from ourselves
-        superSet.forEach(superParent -> allRoles.addAll(((TypeImpl<?,?>) superParent).directPlays().keySet()));
+        Stream<Role> superSet =superSet().
+                filter(sup -> !sup.equals(this)). //We already have the plays from ourselves
+                flatMap(sup -> TypeImpl.from(sup).directPlays().keySet().stream());
 
-        return Collections.unmodifiableCollection(allRoles);
+        return Stream.concat(allRoles, superSet);
     }
 
     @Override
@@ -457,7 +455,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
         }
     }
 
-    public static TypeImpl from(Type type){
-        return (TypeImpl) type;
+    public static <X extends Type, Y extends Thing> TypeImpl<X,Y> from(Type type){
+        //noinspection unchecked
+        return (TypeImpl<X, Y>) type;
     }
 }

@@ -114,7 +114,7 @@ public interface Type extends OntologyConcept {
      *
      * @return A list of Role Types which instances of this Type can indirectly play.
      */
-    Collection<Role> plays();
+    Stream<Role> plays();
 
     /**
      *

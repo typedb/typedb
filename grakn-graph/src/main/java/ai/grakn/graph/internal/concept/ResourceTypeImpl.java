@@ -151,12 +151,12 @@ public class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> 
      */
     private void checkConformsToRegexes(D value){
         //Not checking the datatype because the regex will always be null for non strings.
-        for (ResourceType rt : superSet()) {
-            String regex = rt.getRegex();
+        superSet().forEach(sup -> {
+            String regex = sup.getRegex();
             if (regex != null && !Pattern.matches(regex, (String) value)) {
                 throw GraphOperationException.regexFailure(this, (String) value, regex);
             }
-        }
+        });
     }
 
     @Override

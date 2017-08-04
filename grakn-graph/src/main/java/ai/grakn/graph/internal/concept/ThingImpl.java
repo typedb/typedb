@@ -265,7 +265,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Role hasResourceOwner = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
         Role hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
 
-        if(hasResource == null || hasResourceOwner == null || hasResourceValue == null || !type().plays().contains(hasResourceOwner)){
+        if(hasResource == null || hasResourceOwner == null || hasResourceValue == null || type().plays().noneMatch(play -> play.equals(hasResourceOwner))){
             throw GraphOperationException.hasNotAllowed(this, resource);
         }
 

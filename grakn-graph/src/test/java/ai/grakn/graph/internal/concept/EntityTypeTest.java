@@ -123,8 +123,8 @@ public class EntityTypeTest extends GraphTestBase {
         EntityType creature = graknGraph.putEntityType("creature").plays(monster).plays(animal);
         EntityType creatureMysterious = graknGraph.putEntityType("mysterious creature").sup(creature).plays(monsterEvil);
 
-        assertThat(creature.plays(), containsInAnyOrder(monster, animal));
-        assertThat(creatureMysterious.plays(), containsInAnyOrder(monster, animal, monsterEvil));
+        assertThat(creature.plays().collect(Collectors.toSet()), containsInAnyOrder(monster, animal));
+        assertThat(creatureMysterious.plays().collect(Collectors.toSet()), containsInAnyOrder(monster, animal, monsterEvil));
     }
 
     @Test
@@ -135,10 +135,10 @@ public class EntityTypeTest extends GraphTestBase {
         EntityType c3 = graknGraph.putEntityType("c3").sup(c2);
         EntityType c4 = graknGraph.putEntityType("c4").sup(c1);
 
-        Set<EntityType> c1SuperTypes = ((TypeImpl) c1).superSet();
-        Set<EntityType> c2SuperTypes = ((TypeImpl) c2).superSet();
-        Set<EntityType> c3SuperTypes = ((TypeImpl) c3).superSet();
-        Set<EntityType> c4SuperTypes = ((TypeImpl) c4).superSet();
+        Set<Type> c1SuperTypes = EntityTypeImpl.from(c1).superSet().collect(Collectors.toSet());
+        Set<Type> c2SuperTypes = EntityTypeImpl.from(c2).superSet().collect(Collectors.toSet());
+        Set<Type> c3SuperTypes = EntityTypeImpl.from(c3).superSet().collect(Collectors.toSet());
+        Set<Type> c4SuperTypes = EntityTypeImpl.from(c4).superSet().collect(Collectors.toSet());
 
         assertThat(c1SuperTypes, containsInAnyOrder(entityType, c1));
         assertThat(c2SuperTypes, containsInAnyOrder(entityType, c2, c1));
@@ -186,9 +186,9 @@ public class EntityTypeTest extends GraphTestBase {
         Role role2 = graknGraph.putRole("A Role 2");
         EntityType type = graknGraph.putEntityType("A Concept Type").plays(role1).plays(role2);
 
-        assertThat(type.plays(), containsInAnyOrder(role1, role2));
+        assertThat(type.plays().collect(Collectors.toSet()), containsInAnyOrder(role1, role2));
         type.deletePlays(role1);
-        assertThat(type.plays(), containsInAnyOrder( role2));
+        assertThat(type.plays().collect(Collectors.toSet()), containsInAnyOrder( role2));
     }
 
     @Test
@@ -267,10 +267,10 @@ public class EntityTypeTest extends GraphTestBase {
         entityType2.resource(rt);
 
         //Check role types are only built explicitly
-        assertThat(entityType1.plays(),
+        assertThat(entityType1.plays().collect(Collectors.toSet()),
                 containsInAnyOrder(graknGraph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(superLabel).getValue())));
 
-        assertThat(entityType2.plays(),
+        assertThat(entityType2.plays().collect(Collectors.toSet()),
                 containsInAnyOrder(graknGraph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
 
         //Check Implicit Types Follow SUB Structure

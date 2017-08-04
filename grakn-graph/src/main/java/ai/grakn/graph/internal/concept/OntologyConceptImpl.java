@@ -140,7 +140,7 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      *
      * @return All outgoing sub parents including itself
      */
-    public Set<T> superSet() {
+    public Stream<T> superSet() {
         Set<T> superSet= new HashSet<>();
         superSet.add(getThis());
         T superParent = sup();
@@ -151,7 +151,7 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
             superParent = (T) superParent.sup();
         }
 
-        return superSet;
+        return superSet.stream();
     }
 
     /**
