@@ -147,6 +147,7 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
         }
     }
 
+    @SuppressWarnings("PMD.UnusedFormalParameter")
     private Future<ComputerResult> submitWithExecutor(Executor exec) {
         jobGroupId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
         String jobDescription = this.vertexProgram == null ? this.mapReducers.toString() :
