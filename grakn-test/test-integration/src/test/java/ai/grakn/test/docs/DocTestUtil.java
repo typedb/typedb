@@ -22,6 +22,7 @@ package ai.grakn.test.docs;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
@@ -40,7 +41,7 @@ import static org.junit.Assert.fail;
 
 public class DocTestUtil {
 
-    public static final File PAGES = new File(System.getProperty("main.basedir")+"/docs/pages/");
+    public static final File PAGES = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value()+"/docs/pages/");
 
     public static GraknSession getTestGraph(String uri) {
         String keyspace = UUID.randomUUID().toString().replaceAll("-", "");
