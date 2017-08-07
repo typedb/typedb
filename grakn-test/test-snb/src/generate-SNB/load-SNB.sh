@@ -110,7 +110,7 @@ do
 
         tail -n +2 $CSV_DATA/${DATA_FILE} | wc -l
         time migration.sh csv -s \| -t $GRAQL/${TEMPLATE_FILE} -i $CSV_DATA/${DATA_FILE} -k $KEYSPACE -u $ENGINE -a ${ACTIVE_TASKS:-25} -b ${BATCH_SIZE}
-done < migrationsToRun.txt
+done < $SCRIPTPATH/migrationsToRun.txt
 
 # confirm there were no errors
 $SCRIPTPATH/../tools/check-errors.sh fail
