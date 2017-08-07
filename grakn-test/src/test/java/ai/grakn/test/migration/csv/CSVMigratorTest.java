@@ -127,7 +127,7 @@ public class CSVMigratorTest {
             ResourceType<String> death = graph.getResourceType("death");
 
             Entity fluffy = name.getResource("Fluffy").ownerInstances().iterator().next().asEntity();
-            assertEquals(1, fluffy.resources(death));
+            assertEquals(1, fluffy.resources(death).count());
         }
     }
 
