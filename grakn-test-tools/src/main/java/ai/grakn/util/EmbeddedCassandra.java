@@ -45,6 +45,18 @@ public class EmbeddedCassandra extends ExternalResource {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedCassandra.class);
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
 
+    private final boolean checkJanusProfile;
+
+    public EmbeddedCassandra() {
+        this(true);
+    }
+
+    public EmbeddedCassandra(boolean checkJanus) {
+        this.checkJanusProfile = checkJanus;
+    }
+
+
+
     /**
      * Starts an embedded version of cassandra
      */
@@ -54,7 +66,7 @@ public class EmbeddedCassandra extends ExternalResource {
     }
 
     public void start() {
-        if(GraknTestSetup.usingTitan() && CASSANDRA_RUNNING.compareAndSet(false, true)) {
+        if((!checkJanusProfile || GraknTestSetup.usingJanus()) && CASSANDRA_RUNNING.compareAndSet(false, true)) {
             try {
                 LOG.info("starting cassandra...");
                 EmbeddedCassandraServerHelper
