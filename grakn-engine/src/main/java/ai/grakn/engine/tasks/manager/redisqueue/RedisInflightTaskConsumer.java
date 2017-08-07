@@ -18,6 +18,9 @@
 
 package ai.grakn.engine.tasks.manager.redisqueue;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.Duration;
@@ -47,6 +50,13 @@ public class RedisInflightTaskConsumer extends TimerTask {
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     static final int ITERATIONS = 10;
+    private final Meter exceptions;
+    private final Meter processed;
+    private final Meter dead;
+    private final Meter failedMove;
+    private final Duration destroyInterval;
+    private final Meter failedDestroy;
+    private final Meter destroyable;
 
     private Pool<Jedis> jedisPool;
     private Duration processInterval;
@@ -54,11 +64,19 @@ public class RedisInflightTaskConsumer extends TimerTask {
     private String queueName;
 
     public RedisInflightTaskConsumer(Pool<Jedis> jedisPool, Duration processInterval,
-            Config config, String queueName) {
+            Config config, String queueName, MetricRegistry metricRegistry) {
         this.jedisPool = jedisPool;
         this.processInterval = processInterval;
+        // After a certain time we get rid of it
+        this.destroyInterval = processInterval.multipliedBy(10);
         this.config = config;
         this.queueName = queueName;
+        this.exceptions = metricRegistry.meter(name(RedisInflightTaskConsumer.class, "exceptions"));
+        this.failedMove = metricRegistry.meter(name(RedisInflightTaskConsumer.class, "failed", "move"));
+        this.failedDestroy = metricRegistry.meter(name(RedisInflightTaskConsumer.class, "failed", "destroy"));
+        this.processed = metricRegistry.meter(name(RedisInflightTaskConsumer.class, "processed", "total"));
+        this.dead = metricRegistry.meter(name(RedisInflightTaskConsumer.class, "processed", "dead"));
+        this.destroyable = metricRegistry.meter(name(RedisInflightTaskConsumer.class, "processed", "destroyable"));
     }
 
     @Override
@@ -71,7 +89,6 @@ public class RedisInflightTaskConsumer extends TimerTask {
                     LOG.debug("Processing inflight for {}, iteration {}", key, i);
                     resource.watch(key);
                     List<String> elements = resource.lrange(key, -1, -1);
-                    LOG.info("NOOP");
                     // Optimistic concurrency control. If there are changes in keys we fail
                     if (!elements.isEmpty()) {
                         String head = elements.get(0);
@@ -81,6 +98,7 @@ public class RedisInflightTaskConsumer extends TimerTask {
                                 processElement(key, resource, head);
                             }
                         } catch (IOException e) {
+                            exceptions.mark();
                             LOG.error("Could not deserialize task, moving to head: {}", head, e);
                             // Moving to the head
                             attemptMove(resource, key, key);
@@ -92,16 +110,32 @@ public class RedisInflightTaskConsumer extends TimerTask {
     }
 
     private void processElement(String key, Jedis resource, String head) {
+        processed.mark();
         // TODO Use Jackson for this
         long runAt = Json.read(head).at("args").at(0).at("taskState")
                 .at("schedule").at("runAt").asLong();
         Instant runAtDate = Instant.ofEpochMilli(runAt);
         Duration gap = Duration.between(runAtDate, Instant.now());
+        if (gap.getSeconds() > destroyInterval.getSeconds()) {
+            destroyable.mark();
+            LOG.info("Found really old dead task in inflight, destroying it: {}", head);
+            attemptDestroy(key, resource);
+        }
         if (gap.getSeconds() > processInterval.getSeconds()) {
-            LOG.info("Found dead task in inflight: {}", head);
-            String keyDest = JesqueUtils
-                    .createKey(config.getNamespace(), QUEUE, queueName);
+            dead.mark();
+            LOG.info("Found dead task in inflight, moving it: {}", head);
+            String keyDest = JesqueUtils.createKey(config.getNamespace(), QUEUE, queueName);
             attemptMove(resource, key, keyDest);
+        }
+    }
+
+    private void attemptDestroy(String key, Jedis resource) {
+        Transaction transaction = resource.multi();
+        transaction.rpop(key);
+        List<Object> result = transaction.exec();
+        if (result == null) {
+            failedDestroy.mark();
+            LOG.warn("Could not move pop from {}, something modified the queue. ", key);
         }
     }
 
@@ -110,8 +144,9 @@ public class RedisInflightTaskConsumer extends TimerTask {
         transaction.rpoplpush(key, keyDest);
         List<Object> result = transaction.exec();
         if (result == null) {
+            failedMove.mark();
             LOG.warn("Could not move job from {} to {}, something modified the queue. "
-                    + "The move will be retried when the task is next scheduled", key, keyDest);
+                   + "The move will be retried when the task is next scheduled", key, keyDest);
         }
     }
 }

@@ -348,6 +348,40 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
     }
 
     /**
+     * This is a temporary patch to prevent accidentally disconnecting implicit {@link RelationType}s from their
+     * {@link RelationEdge}s. This Disconnection happens because {@link RelationType#instances()} depends on the
+     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link Type} and the implicit {@link RelationType}.
+     *
+     * When changing the super you may accidentally cause this disconnection. So we prevent it here.
+     *
+     */
+    //TODO: Remove this when traversing to the instances of an implicit Relation Type is no longer done via plays edges
+    @Override
+    boolean changingSuperAllowed(T oldSuperType, T newSuperType){
+        boolean changingSuperAllowed = super.changingSuperAllowed(oldSuperType, newSuperType);
+        if(changingSuperAllowed && oldSuperType != null && !Schema.MetaSchema.isMetaLabel(oldSuperType.getLabel())) {
+            //noinspection unchecked
+            Set<Role> superPlays = new HashSet<>(oldSuperType.plays());
+
+            //Get everything that this can play bot including the supers
+            Set<Role> plays = new HashSet<>(directPlays().keySet());
+            subs().stream().flatMap(sub -> TypeImpl.from(sub).directPlays().keySet().stream()).
+                    forEach(play -> plays.add((Role) play));
+
+            superPlays.removeAll(plays);
+
+            //It is possible to be disconnecting from a role which is no longer in use but checking this will take too long
+            //So we assume the role is in sure and throw if that is the case
+            if(!superPlays.isEmpty() && instancesDirect().findAny().isPresent()){
+                throw GraphOperationException.changingSuperWillDisconnectRole(oldSuperType, newSuperType, superPlays.iterator().next());
+            }
+
+            return true;
+        }
+        return changingSuperAllowed;
+    }
+
+    /**
      *
      * @param role The Role Type which the instances of this Type should no longer be allowed to play.
      * @return The Type itself.

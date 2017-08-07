@@ -88,7 +88,7 @@ public class GraqlShellIT {
         trueErr = System.err;
         
         // TODO: Get these tests working consistently on Jenkins - causes timeouts
-        assumeFalse(GraknTestSetup.usingTitan());
+        assumeFalse(GraknTestSetup.usingJanus());
     }
 
     @Before
@@ -616,6 +616,15 @@ public class GraqlShellIT {
                 anyOf(containsString("exists"), containsString("one or more")),
                 containsString("relation")
         ));
+    }
+
+    @Test
+    public void whenErrorOccurs_DoNotShowStackTrace() throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        String out = testShell("match fofobjiojasd\n", err);
+
+        assertFalse(out, err.toString().isEmpty());
+        assertThat(err.toString(), not(containsString(".java")));
     }
 
     private static String randomString(int length) {

@@ -381,3 +381,4 @@ public class GraknGraphTest extends GraphTestBase {
         }
     }
 }
+

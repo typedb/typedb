@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuery<T> {
 
@@ -57,22 +56,21 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
 
         String randomId = getRandomJobId();
 
-        Set<LabelId> withResourceRelationLabelIds =
-                withResourceRelationTypes.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
-        Set<LabelId> subLabelIds =
-                subLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet());
+        Set<LabelId> withResourceRelationLabelIds = convertLabelsToIds(withResourceRelationTypes);
 
         if (members) {
             if (anySize) {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationLabelIds, randomId),
-                        new ClusterMemberMapReduce(subLabelIds,
-                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId));
+                        new ConnectedComponentVertexProgram(randomId),
+                        new ClusterMemberMapReduce(
+                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId),
+                        withResourceRelationLabelIds);
             } else {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationLabelIds, randomId),
-                        new ClusterMemberMapReduce(subLabelIds,
-                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize));
+                        new ConnectedComponentVertexProgram(randomId),
+                        new ClusterMemberMapReduce(
+                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize),
+                        withResourceRelationLabelIds);
             }
             LOGGER.info("ConnectedComponentsVertexProgram is done in "
                     + (System.currentTimeMillis() - startTime) + " ms");
@@ -80,14 +78,16 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         } else {
             if (anySize) {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationLabelIds, randomId),
-                        new ClusterSizeMapReduce(subLabelIds,
-                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId));
+                        new ConnectedComponentVertexProgram(randomId),
+                        new ClusterSizeMapReduce(
+                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId),
+                        withResourceRelationLabelIds);
             } else {
                 result = getGraphComputer().compute(
-                        new ConnectedComponentVertexProgram(withResourceRelationLabelIds, randomId),
-                        new ClusterSizeMapReduce(subLabelIds,
-                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize));
+                        new ConnectedComponentVertexProgram(randomId),
+                        new ClusterSizeMapReduce(
+                                ConnectedComponentVertexProgram.CLUSTER_LABEL + randomId, clusterSize),
+                        withResourceRelationLabelIds);
             }
             LOGGER.info("ConnectedComponentsVertexProgram is done in "
                     + (System.currentTimeMillis() - startTime) + " ms");

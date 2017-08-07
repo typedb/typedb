@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
@@ -37,6 +36,7 @@ import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.HasAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -145,15 +145,20 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Type entityTypeConcept = concept.asType();
-        ResourceType resourceTypeConcept = insertQueryExecutor.getConcept(resourceType).asResourceType();
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        Type entityTypeConcept = executor.get(var).asType();
+        ResourceType resourceTypeConcept = executor.get(resourceType.getVarName()).asResourceType();
 
         if (required) {
             entityTypeConcept.key(resourceTypeConcept);
         } else {
             entityTypeConcept.resource(resourceTypeConcept);
         }
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of(var, resourceType.getVarName());
     }
 
     @Override

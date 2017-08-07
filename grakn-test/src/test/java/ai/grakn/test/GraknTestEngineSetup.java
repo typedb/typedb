@@ -66,15 +66,15 @@ public abstract class GraknTestEngineSetup {
      * To run engine we must ensure Cassandra and the Grakn HTTP endpoint are running
      */
     static GraknEngineServer startEngine(GraknEngineConfig config) throws Exception {
-        // To ensure consistency b/w test profiles and configuration files, when not using Titan
+        // To ensure consistency b/w test profiles and configuration files, when not using Janus
         // for a unit tests in an IDE, add the following option:
         // -Dgrakn.conf=../conf/test/tinker/grakn.properties
         //
-        // When using titan, add -Dgrakn.test-profile=titan
+        // When using janus, add -Dgrakn.test-profile=janus
         //
-        // The reason is that the default configuration of Grakn uses the Titan factory while the default
+        // The reason is that the default configuration of Grakn uses the Janus factory while the default
         // test profile is tinker: so when running a unit test within an IDE without any extra parameters,
-        // we end up wanting to use the TitanFactory but without starting Cassandra first.
+        // we end up wanting to use the JanusFactory but without starting Cassandra first.
         LOG.info("starting engine...");
 
         GraknTestSetup.startCassandraIfNeeded();

@@ -18,40 +18,26 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.macro.Macro;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
 
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
-import static ai.grakn.util.ErrorMessage.INSERT_INSTANCE_WITH_NAME;
-import static ai.grakn.util.ErrorMessage.INSERT_ISA_AND_SUB;
-import static ai.grakn.util.ErrorMessage.INSERT_MULTIPLE_VALUES;
-import static ai.grakn.util.ErrorMessage.INSERT_NEW_TYPE;
-import static ai.grakn.util.ErrorMessage.INSERT_NO_DATATYPE;
 import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
-import static ai.grakn.util.ErrorMessage.INSERT_RESOURCE_WITHOUT_VALUE;
-import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_WHEN;
-import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_THEN;
-import static ai.grakn.util.ErrorMessage.INSERT_TYPE_WITHOUT_LABEL;
 import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
-import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
-import static ai.grakn.util.ErrorMessage.INSERT_WITHOUT_TYPE;
 import static ai.grakn.util.ErrorMessage.INVALID_VALUE;
 import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
 import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
@@ -77,6 +63,10 @@ public class GraqlQueryException extends GraknException{
 
     private GraqlQueryException(String error, Exception cause) {
         super(error, cause);
+    }
+
+    private static GraqlQueryException create(String formatString, Object... args) {
+        return new GraqlQueryException(String.format(formatString, args));
     }
 
     public static GraqlQueryException noPatterns() {
@@ -128,35 +118,19 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.INSERT_RELATION_WITHOUT_ISA.getMessage());
     }
 
-    public static GraqlQueryException insertUnsupportedProperty(String name, Schema.MetaSchema metaSchema) {
-        return new GraqlQueryException(INSERT_UNSUPPORTED_PROPERTY.getMessage(name, metaSchema.getLabel()));
-    }
-
     public static GraqlQueryException insertPredicate() {
         return new GraqlQueryException(ErrorMessage.INSERT_PREDICATE.getMessage());
-    }
-
-    public static GraqlQueryException insertIsaAndSub(String printableName) {
-        return new GraqlQueryException(INSERT_ISA_AND_SUB.getMessage(printableName));
     }
 
     public static GraqlQueryException insertRecursive(VarPatternAdmin var) {
         return new GraqlQueryException(INSERT_RECURSIVE.getMessage(var.getPrintableName()));
     }
 
-    public static GraqlQueryException insertInstanceWithLabel(Label label) {
-        return new GraqlQueryException(INSERT_INSTANCE_WITH_NAME.getMessage(label));
-    }
-
-    public static GraqlQueryException insertWithoutType(ConceptId conceptId) {
-        return new GraqlQueryException(INSERT_WITHOUT_TYPE.getMessage(conceptId));
-    }
-
     public static GraqlQueryException insertUndefinedVariable(VarPatternAdmin var) {
         return new GraqlQueryException(INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
     }
 
-    public static GraqlQueryException createInstanceOfMetaConcept(VarPatternAdmin var, Type type) {
+    public static GraqlQueryException createInstanceOfMetaConcept(Var var, Type type) {
         return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.getLabel());
     }
 
@@ -164,12 +138,49 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, ontologyConcept.getLabel()));
     }
 
-    public static GraqlQueryException insertMultipleValues(ValuePredicateAdmin predicate, Object value) {
-        return new GraqlQueryException(INSERT_MULTIPLE_VALUES.getMessage(value, predicate));
+    /**
+     * Thrown when a concept is inserted with multiple properties when it can only have one.
+     *
+     * For example: {@code insert $x isa movie; $x isa person;}
+     */
+    public static GraqlQueryException insertMultipleProperties(String property, Object value1, Object value2) {
+        return create("a concept cannot have multiple properties `%s` and `%s` for `%s`", value1, value2, property);
     }
 
-    public static GraqlQueryException insertResourceWithoutValue() {
-        return new GraqlQueryException(INSERT_RESOURCE_WITHOUT_VALUE.getMessage());
+    /**
+     * Thrown when a property is inserted on a concept that already exists and that property can't be overridden.
+     *
+     * For example: {@code match $x isa name; insert $x val "Bob";}
+     */
+    public static GraqlQueryException insertPropertyOnExistingConcept(String property, Object value, Concept concept) {
+        return create("cannot insert property `%s %s` on existing concept `%s`", property, value, concept);
+    }
+
+    /**
+     * Thrown when a property is inserted on a concept that doesn't support that property.
+     *
+     * For example, an entity with a value: {@code insert $x isa movie, val "The Godfather";}
+     */
+    public static GraqlQueryException insertUnexpectedProperty(String property, Object value, Concept concept) {
+        return create("unexpected property `%s %s` for concept `%s`", property, value, concept);
+    }
+
+    /**
+     * Thrown when a concept does not have all expected properties required to insert it.
+     *
+     * For example, a resource without a value: {@code insert $x isa name;}
+     */
+    public static GraqlQueryException insertNoExpectedProperty(String property, VarPatternAdmin var) {
+        return create("missing expected property `%s` in `%s`", property, var);
+    }
+
+    /**
+     * Thrown when attempting to insert a concept that already exists.
+     *
+     * For example: {@code match $x isa movie; insert $x isa name, val "Bob";}
+     */
+    public static GraqlQueryException insertExistingConcept(VarPatternAdmin pattern, Concept concept) {
+        return create("cannot overwrite properties `%s` on  concept `%s`", pattern, concept);
     }
 
     public static GraqlQueryException varNotInQuery(Var var) {
@@ -281,27 +292,7 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage());
     }
 
-    public static GraqlQueryException insertRuleWithoutLhs(VarPatternAdmin var) {
-        return new GraqlQueryException(INSERT_RULE_WITHOUT_WHEN.getMessage(var));
-    }
-
-    public static GraqlQueryException insertRuleWithoutRhs(VarPatternAdmin var) {
-        return new GraqlQueryException(INSERT_RULE_WITHOUT_THEN.getMessage(var));
-    }
-
-    public static GraqlQueryException insertTypeWithoutLabel() {
-        return new GraqlQueryException(INSERT_TYPE_WITHOUT_LABEL.getMessage());
-    }
-
     public static GraqlQueryException insertAbstractOnNonType(OntologyConcept concept){
         return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.getLabel()));
-    }
-
-    public static GraqlQueryException insertResourceTypeWithoutDataType(VarPatternAdmin var) {
-        return new GraqlQueryException(INSERT_NO_DATATYPE.getMessage(var.getPrintableName()));
-    }
-
-    public static GraqlQueryException insertNewType(Thing thing, Type type) {
-        return new GraqlQueryException(INSERT_NEW_TYPE.getMessage(thing, type));
     }
 }

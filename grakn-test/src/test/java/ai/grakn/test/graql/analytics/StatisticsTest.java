@@ -30,7 +30,6 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
@@ -419,7 +418,6 @@ public class StatisticsTest {
         for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
-        GraknSparkComputer.clear();
 
         List<Double> numberList = list.parallelStream().map(i -> {
             try (GraknGraph graph = factory.open(GraknTxType.READ)) {
@@ -495,7 +493,7 @@ public class StatisticsTest {
         for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
-        GraknSparkComputer.clear();
+
         List<Number> numberList = list.parallelStream().map(i -> {
             try (GraknGraph graph = factory.open(GraknTxType.READ)) {
                 return graph.graql().compute().median().of(resourceType1).execute().get();

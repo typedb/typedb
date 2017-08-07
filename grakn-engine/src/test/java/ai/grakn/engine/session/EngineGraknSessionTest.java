@@ -14,6 +14,8 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.EmbeddedCassandra;
 import ai.grakn.util.ErrorMessage;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import ai.grakn.util.Redis;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
