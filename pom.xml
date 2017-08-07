@@ -102,10 +102,11 @@
         <prometheus.version>0.0.13</prometheus.version>
         <jesque.version>2.1.2</jesque.version>
         <auto-value.version>1.4.1</auto-value.version>
-        <main.basedir>${project.parent.basedir}</main.basedir>
+        <main.basedir>${project.basedir}</main.basedir>
         <redisson.version>3.1.0</redisson.version>
         <spark-gremlin.version>3.1.1-incubating</spark-gremlin.version>
         <netty-all.version>4.0.42.Final</netty-all.version>
+        <ldbc-driver.version>0.3-SNAPSHOT</ldbc-driver.version>
     </properties>
 
     <organization>
@@ -454,7 +455,7 @@
                         <exclude>**/ai/grakn/engine/controller/DashboardController.java</exclude>
                     </excludes>
                     <rulesets>
-                        <ruleset>${main.basedir}/pmd-rules.xml</ruleset>
+                        <ruleset>${user.dir}/pmd-rules.xml</ruleset>
                     </rulesets>
                 </configuration>
                 <executions>
