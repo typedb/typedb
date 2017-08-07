@@ -56,6 +56,7 @@ public class JavaDocsTest {
                     "(</pre>|```)", Pattern.DOTALL);
 
     private static String groovyPrefix;
+    
 
     @Parameterized.Parameter(0)
     public File file;
