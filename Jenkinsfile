@@ -42,8 +42,8 @@ node {
           }
         }
         stage('Measure Size') {
-          sh '../grakn/grakn-package/bin/nodetool flush'
-          sh 'du -hd 0 ../grakn/grakn-package/db/cassandra/data'
+          sh 'nodetool flush'
+          sh 'du -hd 0 grakn-package/db/cassandra/data'
         }
       }
 //        timeout(360) {
