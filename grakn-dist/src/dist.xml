@@ -28,65 +28,11 @@
     <fileSets>
         <fileSet>
             <outputDirectory>/</outputDirectory>
-            <directory>${main.basedir}</directory>
+            <directory>${basedir}/src</directory>
             <includes>
                 <include>grakn</include>
             </includes>
         </fileSet>
-        <!-- changelog license readme
-        <fileSet>
-            <outputDirectory>/</outputDirectory>
-            <directory>${main.basedir}</directory>
-            <includes>
-                <include>CHANGELOG</include>
-                <include>LICENSE.txt</include>
-                <include>README.md</include>
-            </includes>
-        </fileSet>
-        -->
-        <!-- src
-        <fileSet>
-            <outputDirectory>src</outputDirectory>
-            <directory>${main.basedir}/</directory>
-            <includes>
-                <include>pom.xml</include>
-                <include>LICENSE.txt</include>
-                <include>grakn-core/**</include>
-                <include>grakn-client/**</include>
-                <include>grakn-test-profiles/**</include>
-                <include>grakn-dashboard/**</include>
-                <include>grakn-dist/**</include>
-                <include>grakn-engine/**</include>
-                <include>grakn-graph/**</include>
-                <include>grakn-graql/**</include>
-                <include>grakn-graql-shell/**</include>
-                <include>grakn-migration/**</include>
-                <include>grakn-test/**</include>
-                <include>grakn-factory/**</include>
-            </includes>
-            <excludes>
-                <exclude>**/target/</exclude>
-                <exclude>grakn-dashboard/node_modules/</exclude>
-                <exclude>grakn-dashboard/static/dashboard.js</exclude>
-            </excludes>
-        </fileSet>
-        -->
-        <!-- docs
-        <fileSet>
-            <outputDirectory>docs/api</outputDirectory>
-            <directory>${main.basedir}/target/apidocs/</directory>
-            <includes>
-                <include>**</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <outputDirectory>docs/rest-api</outputDirectory>
-            <directory>${main.basedir}/grakn-engine/target/jaxrs-raml/</directory>
-            <includes>
-                <include>engine-apis.html</include>
-            </includes>
-        </fileSet>
-        -->
         <fileSet>
             <outputDirectory>services</outputDirectory>
             <directory>${basedir}/src/services/</directory>
@@ -101,15 +47,6 @@
                 <include>**</include>
             </includes>
         </fileSet>
-        <!-- examples
-        <fileSet>
-            <outputDirectory>examples</outputDirectory>
-            <directory>${basedir}/src/examples/</directory>
-            <includes>
-                <include>**</include>
-            </includes>
-        </fileSet>
-        -->
         <fileSet>
             <outputDirectory>conf</outputDirectory>
             <directory>${main.basedir}/conf/</directory>
