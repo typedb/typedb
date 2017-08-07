@@ -31,7 +31,7 @@
     <artifactId>grakn-test</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>test-unit</module>
+        <module>test-integration</module>
         <module>test-snb</module>
     </modules>
 
