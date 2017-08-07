@@ -30,6 +30,7 @@ import org.apache.tinkerpop.gremlin.util.function.TriConsumer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -51,6 +52,7 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+@Ignore("Running very slowly on Travis")
 @RunWith(Parameterized.class)
 public class GraqlDocsTest {
 
