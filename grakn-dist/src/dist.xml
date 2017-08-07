@@ -55,7 +55,7 @@
             </includes>
         </fileSet>
         <fileSet>
-            <outputDirectory>assets</outputDirectory>
+            <outputDirectory>services/assets</outputDirectory>
             <directory>${main.basedir}/grakn-dashboard/static</directory>
             <includes>
                 <include>**</include>
