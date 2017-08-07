@@ -38,10 +38,10 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
-import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -225,7 +225,7 @@ public class RelationAtom extends IsaAtom {
         }
 
         //check roles are ok
-        Collection<Role> possibleRoles = type != null? type.asRelationType().relates() : Collections.EMPTY_SET;
+        Set<Role> possibleRoles = type != null? type.asRelationType().relates().collect(toSet()) : Collections.EMPTY_SET;
         Map<Var, OntologyConcept> varOntologyConceptMap = getParentQuery().getVarOntologyConceptMap();
 
         for (Map.Entry<Role, Collection<Var>> e : getRoleVarMap().asMap().entrySet() ){
@@ -550,7 +550,7 @@ public class RelationAtom extends IsaAtom {
         //remaining roles
         //role types can repeat so no matter what has been allocated still the full spectrum of possibilities is present
         //TODO make restrictions based on cardinality constraints
-        Set<Role> possibleRoles = Sets.newHashSet(relType.relates());
+        Set<Role> possibleRoles = relType.relates().collect(toSet());
 
         //possible role types for each casting based on its type
         Map<RelationPlayer, Set<Role>> mappings = new HashMap<>();
@@ -662,7 +662,7 @@ public class RelationAtom extends IsaAtom {
         Map<Var, OntologyConcept> parentVarOntologyConceptMap = parentAtom.getParentQuery().getVarOntologyConceptMap();
         Map<Var, OntologyConcept> childVarOntologyConceptMap = this.getParentQuery().getVarOntologyConceptMap();
 
-        Set<Role> relationRoles = new HashSet<>(getOntologyConcept().asRelationType().relates());
+        Set<Role> relationRoles = getOntologyConcept().asRelationType().relates().collect(toSet());
         Set<Role> childRoles = new HashSet<>(childRoleRPMap.keySet());
 
         parentAtom.getRelationPlayers().stream()

@@ -173,7 +173,7 @@ public class HALConceptData {
 
     private void generateOwnerInstances(Representation halResource, Resource<?> conceptResource, int separationDegree) {
         final Label roleType = conceptResource.type().getLabel();
-        Stream<Thing> ownersStream = conceptResource.ownerInstances().stream().skip(offset);
+        Stream<Thing> ownersStream = conceptResource.ownerInstances().skip(offset);
         if (limit >= 0) ownersStream = ownersStream.limit(limit);
         ownersStream.forEach(instance -> {
             Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))

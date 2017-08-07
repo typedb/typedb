@@ -41,6 +41,7 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.utils.conversion.OntologyConceptConverter;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
@@ -330,8 +331,7 @@ public class ReasonerUtils {
      * @return rule instance
      */
     public static Rule createTransitiveRule(RelationType relType, Label fromRoleLabel, Label toRoleLabel, GraknGraph graph){
-        final int arity = relType.relates().size();
-        if (arity != 2) throw GraqlQueryException.ruleCreationArityMismatch();
+        if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPatternAdmin startVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "z").admin();
         VarPatternAdmin endVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "z").rel(Graql.label(toRoleLabel), "y").admin();
@@ -349,8 +349,7 @@ public class ReasonerUtils {
      * @return rule instance
      */
     public static Rule createReflexiveRule(RelationType relType, Label fromRoleLabel, Label toRoleLabel, GraknGraph graph){
-        final int arity = relType.relates().size();
-        if (arity != 2) throw GraqlQueryException.ruleCreationArityMismatch();
+        if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPattern body = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y");
         VarPattern head = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "x");
@@ -367,8 +366,8 @@ public class ReasonerUtils {
      */
     public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<Label, Label> roleMappings,
                                              GraknGraph graph){
-        final int parentArity = parent.relates().size();
-        final int childArity = child.relates().size();
+        final long parentArity = parent.relates().count();
+        final long childArity = child.relates().count();
         if (parentArity != childArity || parentArity != roleMappings.size()) {
             throw GraqlQueryException.ruleCreationArityMismatch();
         }

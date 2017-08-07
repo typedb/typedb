@@ -40,7 +40,7 @@ public class OntologyConceptConverterImpl implements OntologyConceptConverter<On
         ontologyConcept.subs().filter(Concept::isType)
                 .flatMap(t -> t.asType().plays())
                 .forEach(roleType -> {
-                    roleType.relationTypes().stream()
+                    roleType.relationTypes()
                             .filter(rel -> !rel.isImplicit())
                             .forEach(rel -> relationMap.put(rel, roleType));
                 });

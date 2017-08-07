@@ -60,7 +60,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.label;
@@ -74,6 +73,7 @@ import static ai.grakn.util.Schema.ImplicitType.KEY;
 import static ai.grakn.util.Schema.ImplicitType.KEY_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
@@ -317,7 +317,7 @@ public class InsertQueryTest {
                 var("z").has("name", "xyz").isa("language")
         );
 
-        Set<Answer> results = insert.stream().collect(Collectors.toSet());
+        Set<Answer> results = insert.stream().collect(toSet());
         assertEquals(1, results.size());
         Answer result = results.iterator().next();
         assertEquals(ImmutableSet.of(Graql.var("x"), Graql.var("z")), result.keySet());
@@ -766,9 +766,9 @@ public class InsertQueryTest {
         Role clusterOfProduction = movieGraph.graph().getRole("cluster-of-production");
         Role productionWithCluster = movieGraph.graph().getRole("production-with-cluster");
 
-        assertEquals(relation.rolePlayers(), ImmutableSet.of(cluster, godfather, muppets));
-        assertEquals(relation.rolePlayers(clusterOfProduction), ImmutableSet.of(cluster));
-        assertEquals(relation.rolePlayers(productionWithCluster), ImmutableSet.of(godfather, muppets));
+        assertEquals(relation.rolePlayers().collect(toSet()), ImmutableSet.of(cluster, godfather, muppets));
+        assertEquals(relation.rolePlayers(clusterOfProduction).collect(toSet()), ImmutableSet.of(cluster));
+        assertEquals(relation.rolePlayers(productionWithCluster).collect(toSet()), ImmutableSet.of(godfather, muppets));
     }
 
     @Test(expected = Exception.class)
