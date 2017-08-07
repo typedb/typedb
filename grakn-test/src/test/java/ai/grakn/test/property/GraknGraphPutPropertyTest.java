@@ -225,7 +225,7 @@ public class GraknGraphPutPropertyTest {
     public void whenCallingPutRelationType_CreateATypeThatOwnsNoRoles(
             @Open GraknGraph graph, @Unused Label label) {
         RelationType relationType = graph.putRelationType(label);
-        assertThat(relationType.relates(), empty());
+        assertThat(relationType.relates().collect(toSet()), empty());
     }
 
     @Property
@@ -260,8 +260,8 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph, @Unused Label label) {
         Role role = graph.putRole(label);
 
-        assertThat("The role should be played by no types", role.playedByTypes(), empty());
-        assertThat("The role should be owned by no relation types", role.relationTypes(), empty());
+        assertThat("The role should be played by no types", role.playedByTypes().collect(toSet()), empty());
+        assertThat("The role should be owned by no relation types", role.relationTypes().collect(toSet()), empty());
     }
 
     @Property

@@ -266,13 +266,13 @@ public class ConceptPropertyTest {
 
             if (ontologyConcept.isRole()) {
                 Role role = ontologyConcept.asRole();
-                assumeThat(role.playedByTypes(), empty());
-                assumeThat(role.relationTypes(), empty());
+                assumeThat(role.playedByTypes().collect(toSet()), empty());
+                assumeThat(role.relationTypes().collect(toSet()), empty());
                 Stream<Relation> allRelations = graph.admin().getMetaRelationType().instances();
                 Set<Role> allRolesPlayed = allRelations.flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
                 assumeThat(allRolesPlayed, not(hasItem(role)));
             } else if (ontologyConcept.isRelationType()) {
-                assumeThat(ontologyConcept.asRelationType().relates(), empty());
+                assumeThat(ontologyConcept.asRelationType().relates().collect(toSet()), empty());
             }
         }
     }

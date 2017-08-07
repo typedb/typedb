@@ -184,16 +184,16 @@ public class DashboardController {
     }
 
     private static List<Json> getRelationTypes(Collection<Role> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
-        return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes().stream())
+        return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes())
                 .map(relationType -> relationType.getLabel().getValue()).sorted()
                 .map(relationName -> Json.object("value", relationName, "href", String.format(RELATION_TYPES, concept.asThing().type().getLabel().getValue(), concept.getId().getValue(), relationName, limit, keyspace, limit)))
                 .collect(toList());
     }
 
     private static List<Json> getEntityTypes(Collection<Role> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
-        return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes().stream())
-                .flatMap(relationType -> relationType.relates().stream().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
-                .flatMap(roleType -> roleType.playedByTypes().stream().map(entityType -> entityType.getLabel().getValue()))
+        return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes())
+                .flatMap(relationType -> relationType.relates().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
+                .flatMap(roleType -> roleType.playedByTypes().map(entityType -> entityType.getLabel().getValue()))
                 .collect(Collectors.toSet()).stream()
                 .sorted()
                 .map(entityName -> Json.object("value", entityName, "href", String.format(ENTITY_TYPES, concept.asThing().type().getLabel().getValue(), concept.getId().getValue(), entityName, limit, keyspace, limit)))
@@ -201,8 +201,8 @@ public class DashboardController {
     }
 
     private static List<Json> getRoleTypes(Collection<Role> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
-        return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes().stream())
-                .flatMap(relationType -> relationType.relates().stream().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
+        return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes())
+                .flatMap(relationType -> relationType.relates().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
                 .map(roleType -> roleType.getLabel().getValue())
                 .collect(Collectors.toSet()).stream()
                 .sorted()

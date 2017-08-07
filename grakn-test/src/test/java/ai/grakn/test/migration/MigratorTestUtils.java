@@ -85,8 +85,8 @@ public class MigratorTestUtils {
     public static void assertRelationBetweenInstancesExists(GraknGraph graph, Thing thing1, Thing thing2, Label relation){
         RelationType relationType = graph.getOntologyConcept(relation);
 
-        Role role1 = thing1.plays().filter(r -> r.relationTypes().stream().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
-        assertTrue(thing1.relations(role1).anyMatch(rel -> rel.rolePlayers().contains(thing2)));
+        Role role1 = thing1.plays().filter(r -> r.relationTypes().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
+        assertTrue(thing1.relations(role1).anyMatch(rel -> rel.rolePlayers().anyMatch(r -> r.equals(thing2))));
     }
 
 
@@ -101,8 +101,8 @@ public class MigratorTestUtils {
         Set<Thing> things = new HashSet<>();
 
         relation.instances()
-                .filter(i -> i.rolePlayers().contains(thing))
-                .forEach(i -> things.addAll(i.rolePlayers()));
+                .filter(i -> i.rolePlayers().anyMatch(t -> t.equals(thing)))
+                .forEach(i -> i.rolePlayers().forEach(things::add));
 
         things.remove(thing);
         return things;
@@ -118,7 +118,7 @@ public class MigratorTestUtils {
         Role roleOther = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 
         Stream<Relation> relations = thing.relations(roleOwner);
-        return relations.flatMap(r -> r.rolePlayers(roleOther).stream()).map(Concept::asResource);
+        return relations.flatMap(r -> r.rolePlayers(roleOther)).map(Concept::asResource);
     }
 
     /**

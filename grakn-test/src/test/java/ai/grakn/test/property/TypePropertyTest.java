@@ -137,7 +137,7 @@ public class TypePropertyTest {
 
     @Property
     public void ATypePlayingARoleIsEquivalentToARoleBeingPlayed(Type type, @FromGraph Role role) {
-        assertEquals(type.plays().anyMatch(r -> r.equals(role)), role.playedByTypes().contains(type));
+        assertEquals(type.plays().anyMatch(r -> r.equals(role)), role.playedByTypes().collect(toSet()).contains(type));
     }
 
     @Property

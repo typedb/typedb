@@ -122,7 +122,7 @@ public class OntologyConceptMapper {
      * @return var with appropriate relates edges
      */
     private static VarPattern relates(VarPattern var, RelationType type){
-        for(Role role:type.relates()){
+        for(Role role:type.relates().collect(Collectors.toSet())){
             var = var.relates(Graql.label(role.getLabel()));
         }
         return var;

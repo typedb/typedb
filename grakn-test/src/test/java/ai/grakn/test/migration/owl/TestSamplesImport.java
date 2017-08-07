@@ -184,8 +184,8 @@ public class TestSamplesImport extends TestOwlGraknBase {
                     relation -> item1.equals(relation.rolePlayers(objectRole).iterator().next())));
             Role catsubjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(Label.of("op-hasCategory")));
             Role catobjectRole = graph.getOntologyConcept(migrator.namer().objectRole(Label.of("op-hasCategory")));
-            assertTrue(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("tCategory")));
-            assertTrue(catsubjectRole.playedByTypes().contains(migrator.graph().getEntityType("tThing")));
+            assertTrue(catobjectRole.playedByTypes().collect(toSet()).contains(migrator.graph().getEntityType("tCategory")));
+            assertTrue(catsubjectRole.playedByTypes().collect(toSet()).contains(migrator.graph().getEntityType("tThing")));
             //Assert.assertFalse(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("Thing")));
 
             Entity category2 = getEntity("eCategory2");

@@ -35,6 +35,7 @@ import java.util.Set;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static com.google.common.collect.Sets.union;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.ArrayUtils.addAll;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
@@ -53,7 +54,7 @@ public class RelationPropertyTest {
 
         relation.addRolePlayer(role, rolePlayer);
 
-        assertThat(relation.rolePlayers(), hasItem(rolePlayer));
+        assertThat(relation.rolePlayers().collect(toSet()), hasItem(rolePlayer));
     }
 
     @Property(onMinimalCounterexample = GraknGraphs.class)
@@ -62,23 +63,23 @@ public class RelationPropertyTest {
 
         relation.addRolePlayer(role, rolePlayer);
 
-        assertThat(relation.rolePlayers(role), hasItem(rolePlayer));
+        assertThat(relation.rolePlayers(role).collect(toSet()), hasItem(rolePlayer));
     }
 
     @Property
     public void whenAddingARolePlayer_NoRolePlayersAreRemoved(
             Relation relation, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
 
-        Thing[] rolePlayers = relation.rolePlayers(role).toArray(new Thing[0]);
+        Thing[] rolePlayers = relation.rolePlayers(role).toArray(Thing[]::new);
 
         relation.addRolePlayer(role, rolePlayer);
 
-        assertThat(relation.rolePlayers(role), hasItems(rolePlayers));
+        assertThat(relation.rolePlayers(role).collect(toSet()), hasItems(rolePlayers));
     }
 
     @Property
     public void whenCallingRolePlayers_TheResultIsASet(Relation relation, @FromGraph Role[] roles) {
-        Collection<Thing> rolePlayers = relation.rolePlayers(roles);
+        Collection<Thing> rolePlayers = relation.rolePlayers(roles).collect(toSet());
         Set<Thing> rolePlayersSet = newHashSet(rolePlayers);
         assertEquals(rolePlayers.size(), rolePlayersSet.size());
     }
@@ -98,7 +99,7 @@ public class RelationPropertyTest {
         Role[] rolesXY = (Role[]) addAll(rolesX, rolesY);
 
         Set<Thing> expected =
-                union(newHashSet(relation.rolePlayers(rolesX)), newHashSet(relation.rolePlayers(rolesY)));
+                union(newHashSet(relation.rolePlayers(rolesX).collect(toSet())), newHashSet(relation.rolePlayers(rolesY).collect(toSet())));
 
         assertEquals(expected, newHashSet(relation.rolePlayers(rolesXY)));
     }

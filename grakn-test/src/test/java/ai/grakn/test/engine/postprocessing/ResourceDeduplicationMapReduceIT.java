@@ -281,7 +281,7 @@ public class ResourceDeduplicationMapReduceIT {
         transact(graph -> {
             Assert.assertTrue(checkUnique(graph, resourceIndex));
             Resource<String> res = graph.admin().getConcept(Schema.VertexProperty.INDEX, resourceIndex);
-            Assert.assertEquals(3, res.ownerInstances().size());
+            Assert.assertEquals(3, res.ownerInstances().count());
         });        
     }
     
