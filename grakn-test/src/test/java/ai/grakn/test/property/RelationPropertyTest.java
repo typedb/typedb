@@ -89,7 +89,7 @@ public class RelationPropertyTest {
         Role[] allRoles = new Role[relation.allRolePlayers().size()];
         relation.allRolePlayers().keySet().toArray(allRoles);
 
-        assertEquals(relation.rolePlayers(), relation.rolePlayers(allRoles));
+        assertEquals(relation.rolePlayers().collect(toSet()), relation.rolePlayers(allRoles).collect(toSet()));
     }
 
     @Property
@@ -99,8 +99,8 @@ public class RelationPropertyTest {
         Role[] rolesXY = (Role[]) addAll(rolesX, rolesY);
 
         Set<Thing> expected =
-                union(newHashSet(relation.rolePlayers(rolesX).collect(toSet())), newHashSet(relation.rolePlayers(rolesY).collect(toSet())));
+                union(relation.rolePlayers(rolesX).collect(toSet()), relation.rolePlayers(rolesY).collect(toSet()));
 
-        assertEquals(expected, newHashSet(relation.rolePlayers(rolesXY)));
+        assertEquals(expected, relation.rolePlayers(rolesXY).collect(toSet()));
     }
 }
