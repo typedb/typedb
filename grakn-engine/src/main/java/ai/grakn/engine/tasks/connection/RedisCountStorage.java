@@ -19,8 +19,15 @@
 package ai.grakn.engine.tasks.connection;
 
 import ai.grakn.concept.ConceptId;
+import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.exceptions.JedisException;
 import redis.clients.util.Pool;
 
 /**
@@ -35,14 +42,18 @@ import redis.clients.util.Pool;
  * @author fppt
  */
 public class RedisCountStorage {
+    private final static Logger LOG = LoggerFactory.getLogger(RedisCountStorage.class);
+
+    private final Timer contactRedisTimer;
     private Pool<Jedis> jedisPool;
 
-    private RedisCountStorage(Pool<Jedis> jedisPool){
+    private RedisCountStorage(Pool<Jedis> jedisPool, MetricRegistry metricRegistry){
         this.jedisPool = jedisPool;
+        this.contactRedisTimer = metricRegistry.timer(name(RedisCountStorage.class, "contact"));
     }
 
-    public static RedisCountStorage create(Pool<Jedis> jedisPool) {
-        return new RedisCountStorage(jedisPool);
+    public static RedisCountStorage create(Pool<Jedis> jedisPool, MetricRegistry metricRegistry) {
+        return new RedisCountStorage(jedisPool, metricRegistry);
     }
 
     /**
@@ -85,8 +96,11 @@ public class RedisCountStorage {
      * @return The result of contacting redis.
      */
     private <X> X contactRedis(Function<Jedis, X> function){
-        try(Jedis jedis = jedisPool.getResource()){
+        try(Jedis jedis = jedisPool.getResource(); Context ignored = contactRedisTimer.time()){
             return function.apply(jedis);
+        } catch (JedisException e) {
+            LOG.error("Could not contact redis. Active: {}. Idle: {}", jedisPool.getNumActive(), jedisPool.getNumIdle(), e);
+            throw e;
         }
     }
 

@@ -66,14 +66,18 @@ public class RedisTaskManager implements TaskManager {
         this.factory = factory;
         this.redisTaskStorage = RedisTaskStorage.create(jedisPool, metricRegistry);
         this.redisTaskQueue = new RedisTaskQueue(jedisPool, distributedLockClient, metricRegistry,
-                Integer.parseInt(config.tryProperty(TASKS_RETRY_DELAY).orElse("180")));
+                config.tryIntProperty(TASKS_RETRY_DELAY, 180));
         this.threads = threads;
     }
 
     @Override
     public void close() {
         LOG.info("Closing task manager");
-        this.redisTaskQueue.close();
+        try {
+            this.redisTaskQueue.close();
+        } catch (InterruptedException e) {
+            LOG.error("Interrupted while closing queue", e);
+        }
     }
 
     @Override
@@ -88,9 +92,7 @@ public class RedisTaskManager implements TaskManager {
 
     private void startBlocking() {
         redisTaskQueue.runInFlightProcessor();
-        for (int i = 0; i < threads; i++) {
-            redisTaskQueue.subscribe(this, engineId, config, factory, threads);
-        }
+        redisTaskQueue.subscribe(this, engineId, config, factory, threads);
         LOG.info("Redis task manager started with {} subscriptions", threads);
     }
 

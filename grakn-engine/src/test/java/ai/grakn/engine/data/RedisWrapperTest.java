@@ -39,6 +39,22 @@ public class RedisWrapperTest {
         assertTrue(redisWrapper.getJedisPool() != null);
     }
 
+    @Test
+    public void whenBuildingFromStringWithPort_Succeeds() {
+        RedisWrapper redisWrapper = RedisWrapper.builder().setUseSentinel(false)
+                .addURI("localhost:2345")
+                .build();
+        assertTrue(redisWrapper.getJedisPool() != null);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void whenBuildingFromStringWithDoublePort_Fails() {
+        RedisWrapper redisWrapper = RedisWrapper.builder().setUseSentinel(false)
+                .addURI("localhost:2345:5678")
+                .build();
+        assertTrue(redisWrapper.getJedisPool() != null);
+    }
+
     @Test(expected = JedisConnectionException.class)
     public void whenBuildingSentinelWellFormed_JedisCantConnect() {
         RedisServer server = mockRedisRule.getServer();

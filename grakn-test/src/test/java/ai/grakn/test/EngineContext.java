@@ -36,6 +36,7 @@ import static ai.grakn.test.GraknTestEngineSetup.startRedis;
 import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
 import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
 import static ai.grakn.util.GraphLoader.randomKeyspace;
+import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;
 import redis.clients.jedis.JedisPool;
@@ -101,7 +102,7 @@ public class EngineContext extends ExternalResource {
     public RedisCountStorage redis(String host, int port) {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         this.jedisPool = new JedisPool(poolConfig, host, port);
-        return RedisCountStorage.create(jedisPool);
+        return RedisCountStorage.create(jedisPool, new MetricRegistry());
     }
 
     public TaskManager getTaskManager(){
