@@ -26,6 +26,13 @@
     </formats>
 
     <fileSets>
+        <fileSet>
+            <outputDirectory>/</outputDirectory>
+            <directory>${main.basedir}</directory>
+            <includes>
+                <include>grakn</include>
+            </includes>
+        </fileSet>
         <!-- changelog license readme
         <fileSet>
             <outputDirectory>/</outputDirectory>
