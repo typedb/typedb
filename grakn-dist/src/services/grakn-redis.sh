@@ -32,17 +32,17 @@ redisRunning()
 
 executeRedisServer(){
     if [ "$(uname)" == "Darwin" ]; then
-        "${GRAKN_HOME}/bin/"redis-server-osx $1
+        "${GRAKN_HOME}/services/"redis-server-osx $1
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-        "${GRAKN_HOME}/bin/"redis-server-linux $1
+        "${GRAKN_HOME}/services/"redis-server-linux $1
     fi
 }
 
 executeRedisCli(){
     if [ "$(uname)" == "Darwin" ]; then
-        "${GRAKN_HOME}/bin/"redis-cli-osx $1
+        "${GRAKN_HOME}/services/"redis-cli-osx $1
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-        "${GRAKN_HOME}/bin/"redis-cli-linux $1
+        "${GRAKN_HOME}/services/"redis-cli-linux $1
     fi
 }
 

@@ -7,11 +7,11 @@ if [ -z "${GRAKN_HOME}" ]; then
 fi
 
 # Define CLASSPATH
-for jar in "${GRAKN_HOME}"/lib/*.jar; do
+for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
    CLASSPATH="$CLASSPATH:$jar"
 done
 
 # Add path containing logback.xml
 CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf/main/
 
-java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/bin" ai.grakn.graql.GraqlShell ${1+"$@"}
+java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell ${1+"$@"}

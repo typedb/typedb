@@ -26,6 +26,7 @@
     </formats>
 
     <fileSets>
+        <!-- changelog license readme
         <fileSet>
             <outputDirectory>/</outputDirectory>
             <directory>${main.basedir}</directory>
@@ -35,6 +36,8 @@
                 <include>README.md</include>
             </includes>
         </fileSet>
+        -->
+        <!-- src
         <fileSet>
             <outputDirectory>src</outputDirectory>
             <directory>${main.basedir}/</directory>
@@ -60,6 +63,8 @@
                 <exclude>grakn-dashboard/static/dashboard.js</exclude>
             </excludes>
         </fileSet>
+        -->
+        <!-- docs
         <fileSet>
             <outputDirectory>docs/api</outputDirectory>
             <directory>${main.basedir}/target/apidocs/</directory>
@@ -74,9 +79,10 @@
                 <include>engine-apis.html</include>
             </includes>
         </fileSet>
+        -->
         <fileSet>
-            <outputDirectory>bin</outputDirectory>
-            <directory>${basedir}/src/bin/</directory>
+            <outputDirectory>services</outputDirectory>
+            <directory>${basedir}/src/services/</directory>
             <includes>
                 <include>*</include>
             </includes>
@@ -88,6 +94,7 @@
                 <include>**</include>
             </includes>
         </fileSet>
+        <!-- examples
         <fileSet>
             <outputDirectory>examples</outputDirectory>
             <directory>${basedir}/src/examples/</directory>
@@ -95,6 +102,7 @@
                 <include>**</include>
             </includes>
         </fileSet>
+        -->
         <fileSet>
             <outputDirectory>conf</outputDirectory>
             <directory>${main.basedir}/conf/</directory>
@@ -139,7 +147,7 @@
         </fileSet>
         <!-- Redis Package -->
         <fileSet>
-            <outputDirectory>bin</outputDirectory>
+            <outputDirectory>services</outputDirectory>
             <directory>${basedir}/target/redis-prebuilt-redis-3.2.9</directory>
             <excludes>
                 <exclude>README.md</exclude>

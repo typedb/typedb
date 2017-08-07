@@ -23,7 +23,7 @@ if [ -z "${GRAKN_HOME}" ]; then
     GRAKN_HOME=$(cd "${GRAKN_BIN}"/.. && pwd -P)
 fi
 
-export GRAKN_INCLUDE="${GRAKN_HOME}/bin/grakn.in.sh"
+export GRAKN_INCLUDE="${GRAKN_HOME}/services/grakn.in.sh"
 . "$GRAKN_INCLUDE"
 
 ENGINE_STARTUP_TIMEOUT_S=120
@@ -32,7 +32,7 @@ SLEEP_INTERVAL_S=2
 ENGINE_PS=/tmp/grakn-engine.pid
 
 # Define CLASSPATH, exclude slf4j as we use logback
-for jar in "${GRAKN_HOME}"/lib/*.jar; do
+for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
     if [[ $jar != *slf4j-log4j12* ]] ; then
         CLASSPATH="$CLASSPATH":"$jar"
     fi
@@ -47,7 +47,7 @@ wait_for_engine() {
 
     while [ $now_s -le $stop_s ]; do
         echo -n .
-        java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.client.Client
+        java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.client.Client
         if [ $? -eq 0 ]; then
             echo
             return 0
@@ -71,9 +71,9 @@ start)
         echo -n "Starting engine"
         cd "${GRAKN_HOME}"
         if [[ "$FOREGROUND" = true ]]; then
-            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.engine.GraknEngineServer
+            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.engine.GraknEngineServer
         else
-            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.engine.GraknEngineServer &
+            java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.engine.GraknEngineServer &
             echo $!>$ENGINE_PS
         fi
 

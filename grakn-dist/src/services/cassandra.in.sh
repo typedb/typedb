@@ -32,7 +32,7 @@ CASSANDRA_HOME=$(cd "`abs_path`"/.. && pwd)
 # The directory where Cassandra's configs live (required)
 CASSANDRA_CONF=$CASSANDRA_HOME/conf/cassandra
 
-# This can be the path to a jar file, or a directory containing the 
+# This can be the path to a jar file, or a directory containing the
 # compiled classes. NOTE: This isn't needed by the startup script,
 # it's just used here in constructing the classpath.
 cassandra_bin="$CASSANDRA_HOME/build/classes/main"
@@ -49,9 +49,9 @@ cassandra_storagedir="$CASSANDRA_HOME/data"
 # The java classpath (required)
 CLASSPATH="$CASSANDRA_CONF:$cassandra_bin"
 
-CLASSPATH="$CLASSPATH":"$CASSANDRA_HOME"/lib/slf4j-log4j12-1.7.5.jar
+CLASSPATH="$CLASSPATH":"$CASSANDRA_HOME"/services/lib/slf4j-log4j12-1.7.5.jar
 
-for jar in "${CASSANDRA_HOME}"/lib/*.jar; do
+for jar in "${CASSANDRA_HOME}"/services/lib/*.jar; do
     if [[ $jar != *slf4j-log4j12* ]] ; then
         CLASSPATH="$CLASSPATH":"$jar"
     fi
