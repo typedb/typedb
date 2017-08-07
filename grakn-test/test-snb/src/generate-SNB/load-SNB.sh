@@ -113,4 +113,4 @@ do
 done < $SCRIPTPATH/migrationsToRun.txt
 
 # confirm there were no errors
-$SCRIPTPATH/../tools/check-errors.sh fail
+$SCRIPTPATH/check-errors.sh fail
