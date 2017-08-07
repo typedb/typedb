@@ -49,9 +49,9 @@ Please see the answer to the question below "Can I run Grakn on an existing Cass
 ### Why am I getting ghost vertices?
 
 In a  transaction based environment it is possible to have one transaction removing a concept while another concurrently modifies the same concept. Both
-transactions may successfully commit if the backend is eventually consistent, e.g. [Titan Cassandra](http://s3.thinkaurelius.com/docs/titan/1.0.0/common-questions.html.
+transactions may successfully commit if the backend is eventually consistent, e.g. [Janus Cassandra](http://docs.janusgraph.org/latest/common-questions.html).
 
-The concept is likely to still exist with only the modified properties. When using the Titan Cassandra backend it is possible to safeguard against
+The concept is likely to still exist with only the modified properties. When using the Janus Cassandra backend it is possible to safeguard against
 this by setting the `checkInternalVertexExistence` property to true. However, this will result in slower transaction as more reads will be necessary.
 
 ## Working with  Grakn
@@ -140,7 +140,7 @@ It would be possible to create multiple resources of the type `unique-id` with t
 
 ### Can I run Grakn on an existing Cassandra Platform?
 
-By default, Grakn is shipped with TitanDB, which in turn relies on Cassandra. When you call `grakn.sh start`, this starts a Cassandra instance and then starts the Grakn server.  You are not bound to use our instance of Cassandra, and can make adjustments to the settings in the `.properties` file in the `conf/main` directory of the Grakn, e.g. to make Titan use your Cassandra instance.
+By default, Grakn is shipped with [Janus Graph](http://janusgraph.org/), which in turn relies on Cassandra. When you call `grakn.sh start`, this starts a Cassandra instance and then starts the Grakn server.  You are not bound to use our instance of Cassandra, and can make adjustments to the settings in the `.properties` file in the `conf/main` directory of the Grakn, e.g. to make Janus use your Cassandra instance.
 
 Specifically you should change the following parameters:
 
@@ -155,7 +155,7 @@ You can also, for example, add the following to specify a custom port:
 storage.port = 1234
 ```
 
-Please refer to the [Titan documentation](http://s3.thinkaurelius.com/docs/titan/1.0.0/titan-config-ref.html#_storage) for more information.
+Please refer to the [Janus documentation](http://docs.janusgraph.org/latest/config-ref.html#_storage) for more information.
 
 
 ### Do applications written on top of Grakn have to be in Java?

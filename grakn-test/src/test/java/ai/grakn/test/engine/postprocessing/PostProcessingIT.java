@@ -34,7 +34,7 @@ import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
-import com.thinkaurelius.titan.core.SchemaViolationException;
+import org.janusgraph.core.SchemaViolationException;
 import org.junit.ClassRule;
 import org.junit.Test;
 

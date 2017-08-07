@@ -23,12 +23,12 @@ All Grakn applications have the following Maven dependency:
 </dependency>
 ```
 
-This dependency will give you access to the Core API. Your Java application will also require the following dependency when it is running against a Titan backend, which is what is configured for you by default:
+This dependency will give you access to the Core API. Your Java application will also require the following dependency when it is running against a Janus backend, which is what is configured for you by default:
 
 ```xml
 <dependency>
 <groupId>ai.grakn</groupId>
-<artifactId>titan-factory</artifactId>
+<artifactId>janus-factory</artifactId>
 <version>${project.version}</version>
 </dependency>
 ```

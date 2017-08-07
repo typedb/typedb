@@ -48,9 +48,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
-        <tinkerpop.version>3.1.1-grakn-SNAPSHOT</tinkerpop.version>
+        <tinkerpop.version>3.2.5-grakn-SNAPSHOT</tinkerpop.version>
         <junit.version>4.12</junit.version>
-        <titan.version>1.1.0.grakn-SNAPSHOT</titan.version>
+        <janus.version>0.2.0-grakn-SNAPSHOT</janus.version>
         <guava.version>19.0</guava.version>
         <antlr.version>4.5</antlr.version>
         <jline.version>2.12</jline.version>
@@ -62,7 +62,7 @@
         <halbuilder-standard.version>4.0.1</halbuilder-standard.version>
         <rest-assured.version>2.7.0</rest-assured.version>
         <java-tuples.version>1.2</java-tuples.version>
-        <spark.version>1.5.2</spark.version>
+        <spark.version>1.6.1</spark.version>
         <jinjava.version>2.1.0</jinjava.version>
         <airline.version>0.6</airline.version>
         <antlr4.visitor>true</antlr4.visitor>
@@ -99,8 +99,11 @@
         <jesque.version>2.1.2</jesque.version>
         <auto-value.version>1.4.1</auto-value.version>
         <main.basedir>${project.parent.basedir}</main.basedir>
-        <spark-gremlin.version>3.1.1-incubating</spark-gremlin.version>
+        <spark-gremlin.version>3.2.5</spark-gremlin.version>
         <netty-all.version>4.0.42.Final</netty-all.version>
+        <google-bigtable.version>0.9.5.1</google-bigtable.version>
+        <netty.version>1.1.33.Fork19</netty.version>
+        <apache-http-core.version>4.4.6</apache-http-core.version>
     </properties>
 
     <organization>

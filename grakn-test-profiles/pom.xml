@@ -79,14 +79,14 @@
         </profile>
 
         <profile>
-            <id>titan</id>
+            <id>janus</id>
             <properties>
-                <grakn.test-profile>titan</grakn.test-profile>
+                <grakn.test-profile>janus</grakn.test-profile>
             </properties>
             <dependencies>
                 <dependency>
                     <groupId>ai.grakn</groupId>
-                    <artifactId>titan-factory</artifactId>
+                    <artifactId>janus-factory</artifactId>
                     <version>${project.version}</version>
                     <exclusions>
                         <exclusion>
@@ -111,12 +111,12 @@
         <profile>
             <id>scaling</id>
             <properties>
-                <grakn.test-profile>titan</grakn.test-profile>
+                <grakn.test-profile>janus</grakn.test-profile>
             </properties>
             <dependencies>
                 <dependency>
                     <groupId>ai.grakn</groupId>
-                    <artifactId>titan-factory</artifactId>
+                    <artifactId>janus-factory</artifactId>
                     <version>${project.version}</version>
                     <exclusions>
                         <exclusion>
