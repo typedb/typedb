@@ -1,7 +1,6 @@
 node {
   //Everything is wrapped in a try catch so we can handle any test failures
   //If one test fails then all the others will stop. I.e. we fail fast
-  //Currently there is no way to rebuild this project other than pushing another commit
   try {
     def workspace = pwd()
     //Always wrap each test block in a timeout
