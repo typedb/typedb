@@ -69,7 +69,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getCompatibleRelationTypesWithRoles;
@@ -662,7 +661,6 @@ public class RelationAtom extends IsaAtom {
         Map<Var, OntologyConcept> parentVarOntologyConceptMap = parentAtom.getParentQuery().getVarOntologyConceptMap();
         Map<Var, OntologyConcept> childVarOntologyConceptMap = this.getParentQuery().getVarOntologyConceptMap();
 
-        Stream<Role> relationRoles = getOntologyConcept().asRelationType().relates();
         Set<Role> childRoles = new HashSet<>(childRoleRPMap.keySet());
 
         parentAtom.getRelationPlayers().stream()
@@ -686,7 +684,7 @@ public class RelationAtom extends IsaAtom {
                             Set<Role> typeRoles = isMetaType? childRoles : parent.asType().plays().collect(toSet());
 
                             //incompatible type
-                            if (Sets.intersection(relationRoles.collect(toSet()), typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
+                            if (Sets.intersection(getOntologyConcept().asRelationType().relates().collect(toSet()), typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
                             else {
                                 compatibleChildRoles = compatibleChildRoles.stream()
                                         .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || typeRoles.contains(rc))
