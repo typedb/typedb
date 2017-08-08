@@ -37,7 +37,7 @@ node {
              'PATH+EXTRA=' + workspace + '/grakn-package/bin',
              'LDBC_DRIVER=' + workspace + '/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar',
              'LDBC_CONNECTOR=' + workspace + "/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar",
-             'LDBC_VALIDATION_CONFIG=' + workspace + '/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
+             'LDBC_VALIDATION_CONFIG=' + workspace + '/grakn-test/test-snb/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
 //      timeout(90) {
 //        dir('generate-SNB') {
 //          stage('Load Validation Data') {
@@ -63,9 +63,9 @@ node {
         }
       }
     }
-    slackSend channel: "#github", message: "Periodic Build Success on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
+//    slackSend channel: "#github", message: "Periodic Build Success on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
   } catch (error) {
-    slackSend channel: "#github", message: "Periodic Build Failed on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
+//    slackSend channel: "#github", message: "Periodic Build Failed on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
     throw error
   } finally { // Tears down test environment
     timeout(5) {
