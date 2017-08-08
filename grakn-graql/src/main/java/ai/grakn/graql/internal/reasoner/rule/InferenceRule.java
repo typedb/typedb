@@ -133,6 +133,19 @@ public class InferenceRule {
                 .isEmpty();
     }
 
+    //TODO need a better name
+    boolean isHeadEquivalentToBody(){
+        return getBody().isEquivalent(
+                ReasonerQueries.create(getHead())
+                        .addAtomConstraints(
+                                getBody()
+                                        .getTypeConstraints().stream()
+                                        .filter(t -> !t.isRelation())
+                                        .collect(toSet())
+                        )
+        );
+    }
+
     /**
      * rule requires materialisation in the context of resolving parentatom
      * if parent atom requires materialisation, head atom requires materialisation or if the head contains only fresh variables

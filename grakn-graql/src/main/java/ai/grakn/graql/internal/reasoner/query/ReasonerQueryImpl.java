@@ -343,8 +343,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * adds a set of constraints (types, predicates) to the atom set
      * @param cstrs set of constraints
      */
-    public void addAtomConstraints(Set<? extends Atomic> cstrs){
+    public ReasonerQueryImpl addAtomConstraints(Set<? extends Atomic> cstrs){
         cstrs.forEach(con -> addAtomic(AtomicFactory.create(con, this)));
+        return this;
     }
 
     /**
@@ -614,6 +615,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .map(Concept::asType)
                 .collect(Collectors.toSet());
         return ruleGraph.hasTypesWithNegativeFlux(types)
-                || ruleGraph.hasRulesGeneratingFreshVariables(types);
+                || ruleGraph.hasRulesWithEquivalentHeadAndBody(this);
+                //|| ruleGraph.hasRulesGeneratingFreshVariables(types);
+                //|| ruleGraph.hasRulesGeneratingFreshVariables(this);
     }
 }

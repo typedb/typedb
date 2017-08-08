@@ -24,6 +24,8 @@ import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.Schema;
 import java.util.HashSet;
 import java.util.Set;
@@ -99,6 +101,19 @@ public class RuleGraph {
                 .findFirst().isPresent();
     }
 
+    public boolean hasRulesGeneratingFreshVariables(ReasonerQueryImpl query){
+        return getDependentRules(query)
+                .filter(InferenceRule::generatesFreshVariables)
+                .findFirst().isPresent();
+    }
+
+    public boolean hasRulesWithEquivalentHeadAndBody(ReasonerQueryImpl query){
+        return getDependentRules(query)
+                .filter(InferenceRule::isHeadEquivalentToBody)
+                .findFirst().isPresent();
+    }
+
+
     /**
      * @param topTypes entry types in the rule graph
      * @return all rules that are reachable from the entry types
@@ -117,6 +132,26 @@ public class RuleGraph {
                         .filter(visitedTypes::contains)
                         .forEach(types::add);
                 visitedTypes.add(type);
+            }
+        }
+        return rules.stream();
+    }
+
+    private Stream<InferenceRule> getDependentRules(ReasonerQueryImpl query){
+        Set<InferenceRule> rules = new HashSet<>();
+        Set<Atom> visitedAtoms = new HashSet<>();
+        Stack<Atom> atoms = new Stack<>();
+        query.selectAtoms().forEach(atoms::push);
+        while(!atoms.isEmpty()) {
+            Atom atom = atoms.pop();
+            if (!visitedAtoms.contains(atom)){
+                atom.getApplicableRules()
+                        .peek(rules::add)
+                        .map(rule -> rule.rewriteToUserDefined(atom))
+                        .flatMap(rule -> rule.getBody().selectAtoms().stream())
+                        .filter(visitedAtoms::contains)
+                        .forEach(atoms::add);
+                visitedAtoms.add(atom);
             }
         }
         return rules.stream();
