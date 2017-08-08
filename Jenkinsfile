@@ -14,7 +14,7 @@ node {
           checkout scm
           sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
           sh "mvn versions:set -DnewVersion=${env.BRANCH_NAME} -DgenerateBackupPoms=false"
-          sh 'mvn clean package -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT'
+          sh 'mvn clean install -Dmaven.repo.local=' + workspace + '/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT'
           archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
         }
         stage('Init Grakn') {
@@ -53,7 +53,7 @@ node {
       timeout(360) {
         dir('grakn-test/test-snb/') {
           stage('Build the SNB connectors') {
-            sh 'mvn clean package assembly:single -DskipTests -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
+            sh 'mvn clean package assembly:single -Dmaven.repo.local=' + workspace + '/maven -DskipTests -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
           }
         }
         dir('validate-snb') {
