@@ -32,6 +32,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Collection;
 
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
@@ -48,7 +49,7 @@ public class ResourceTypePropertyTest {
     public void whenPuttingAResourceAndMethodThrows_DoNotCreateTheResource(
             @NonMeta @NonAbstract ResourceType type, @From(ResourceValues.class) Object value) {
 
-        Collection previousResources = type.instances();
+        Collection previousResources = (Collection) type.instances().collect(toSet());
 
         try {
             type.putResource(value);
@@ -57,7 +58,7 @@ public class ResourceTypePropertyTest {
             // This is expected to throw
         }
 
-        Collection newResources = type.instances();
+        Collection newResources = (Collection) type.instances().collect(toSet());
 
         assertEquals(previousResources.size(), newResources.size());
     }

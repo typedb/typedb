@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.GRAPH_CLOSED_ON_ACTION;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
@@ -84,7 +85,7 @@ public class GraknJanusGraphTest extends JanusTestBase {
         }
 
         graknGraph = janusGraphFactory.open(GraknTxType.WRITE);
-        assertEquals(100, graknGraph.admin().getMetaEntityType().instances().size());
+        assertEquals(100L, graknGraph.admin().getMetaEntityType().instances().count());
     }
     private void addEntity(EntityType type){
         GraknJanusGraph graph = janusGraphFactory.open(GraknTxType.WRITE);
@@ -169,12 +170,12 @@ public class GraknJanusGraphTest extends JanusTestBase {
 
         EntityType entityType = graph.admin().getMetaEntityType();
         EntityType newEntityType = graph.putEntityType("New Entity Type");
-        assertThat(entityType.subs(), containsInAnyOrder(entityType, newEntityType));
+        assertThat(entityType.subs().collect(Collectors.toSet()), containsInAnyOrder(entityType, newEntityType));
 
         graph.close();
 
         graph = factory.open(GraknTxType.WRITE);
-        assertThat(entityType.subs(), containsInAnyOrder(entityType));
+        assertThat(entityType.subs().collect(Collectors.toSet()), containsInAnyOrder(entityType));
 
         graph.close();
     }

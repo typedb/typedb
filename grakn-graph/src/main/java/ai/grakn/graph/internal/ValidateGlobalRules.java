@@ -28,10 +28,10 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
+import ai.grakn.graph.internal.concept.OntologyConceptImpl;
 import ai.grakn.graph.internal.concept.RelationImpl;
 import ai.grakn.graph.internal.concept.RelationReified;
 import ai.grakn.graph.internal.concept.RelationTypeImpl;
-import ai.grakn.graph.internal.concept.RoleImpl;
 import ai.grakn.graph.internal.concept.RuleImpl;
 import ai.grakn.graph.internal.concept.TypeImpl;
 import ai.grakn.graph.internal.structure.Casting;
@@ -40,6 +40,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
@@ -50,9 +51,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.util.ErrorMessage.VALIDATION_CASTING;
-import static ai.grakn.util.ErrorMessage.VALIDATION_INSTANCE;
+import static ai.grakn.util.ErrorMessage.VALIDATION_NOT_EXACTLY_ONE_KEY;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_CASTING_LOOP_FAIL;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_MORE_CASTING_THAN_ROLES;
@@ -60,7 +62,6 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPE;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA;
 import static ai.grakn.util.ErrorMessage.VALIDATION_REQUIRED_RELATION;
 import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE;
-import static ai.grakn.util.ErrorMessage.VALIDATION_TOO_MANY_KEYS;
 
 /**
  * <p>
@@ -116,8 +117,8 @@ class ValidateGlobalRules {
                     satisfiesPlays = true;
 
                     // Assert unique relation for this role type
-                    if (required && thing.relations(role).size() != 1) {
-                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(thing.getId(), thing.type().getLabel(), role.getLabel(), thing.relations(role).size()));
+                    if (required && !CommonUtil.containsOnly(thing.relations(role), 1)) {
+                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(thing.getId(), thing.type().getLabel(), role.getLabel(), thing.relations(role).count()));
                     }
                 }
             }
@@ -137,7 +138,7 @@ class ValidateGlobalRules {
      * @return An error message if the relates does not have a single incoming RELATES edge
      */
     static Optional<String> validateHasSingleIncomingRelatesEdge(Role role){
-        if(role.relationTypes().isEmpty()) {
+        if(!role.relationTypes().findAny().isPresent()) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.getLabel()));
         }
         return Optional.empty();
@@ -146,10 +147,10 @@ class ValidateGlobalRules {
     /**
      *
      * @param relationType The RelationType to validate
-     * @return An error message if the relationTypes does not have at least 2 roles
+     * @return An error message if the relationTypes does not have at least 1 role
      */
     static Optional<String> validateHasMinimumRoles(RelationType relationType) {
-        if(relationType.isAbstract() || relationType.relates().size() >= 1){
+        if(relationType.isAbstract() || relationType.relates().iterator().hasNext()){
             return Optional.empty();
         } else {
             return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationType.getLabel()));
@@ -165,7 +166,7 @@ class ValidateGlobalRules {
     static Optional<String> validateRelationshipStructure(RelationReified relation){
         RelationType relationType = relation.type();
         Collection<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
-        Collection<Role> roles = relationType.relates();
+        Collection<Role> roles = relationType.relates().collect(Collectors.toSet());
 
         Set<Role> rolesViaRolePlayers = castings.stream().map(Casting::getRoleType).collect(Collectors.toSet());
 
@@ -174,13 +175,8 @@ class ValidateGlobalRules {
         }
 
         for(Casting casting : castings){
-            boolean notFound = true;
-            for (RelationType innerRelationType : casting.getRoleType().relationTypes()) {
-                if(innerRelationType.getLabel().equals(relationType.getLabel())){
-                    notFound = false;
-                    break;
-                }
-            }
+            boolean notFound = casting.getRoleType().relationTypes().
+                    noneMatch(innerRelationType -> innerRelationType.getLabel().equals(relationType.getLabel()));
 
             if(notFound) {
                 return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRoleType().getLabel(), relationType.getLabel()));
@@ -203,8 +199,8 @@ class ValidateGlobalRules {
 
         Set<String> errorMessages = new HashSet<>();
 
-        Collection<Role> superRelates = superRelationType.relates();
-        Collection<Role> relates = relationType.relates();
+        Collection<Role> superRelates = superRelationType.relates().collect(Collectors.toSet());
+        Collection<Role> relates = relationType.relates().collect(Collectors.toSet());
         Set<Label> relatesLabels = relates.stream().map(OntologyConcept::getLabel).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
@@ -214,14 +210,8 @@ class ValidateGlobalRules {
             superRelationType.superSet().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.getLabel())));
 
             for (Role relate : relates) {
-                boolean validRoleTypeFound = false;
-                Set<Role> superRoles = ((RoleImpl) relate).superSet();
-                for (Role superRole : superRoles) {
-                    if(allSuperRolesPlayed.contains(superRole.getLabel())){
-                        validRoleTypeFound = true;
-                        break;
-                    }
-                }
+                boolean validRoleTypeFound = OntologyConceptImpl.from(relate).superSet().
+                        anyMatch(superRole -> allSuperRolesPlayed.contains(superRole.getLabel()));
 
                 if(!validRoleTypeFound){
                     errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(relate.getLabel(), relationType.getLabel(), "super", "super", superRelationType.getLabel()));
@@ -231,14 +221,7 @@ class ValidateGlobalRules {
 
         //Check 2) Every role of superRelationType has a sub role which is in the relates of relationTypes
         for (Role superRelate : superRelates) {
-            boolean subRoleNotFoundInRelates = true;
-
-            for (Role subRole : superRelate.subs()) {
-                if(relatesLabels.contains(subRole.getLabel())){
-                    subRoleNotFoundInRelates = false;
-                    break;
-                }
-            }
+            boolean subRoleNotFoundInRelates = superRelate.subs().noneMatch(sub -> relatesLabels.contains(sub.getLabel()));
 
             if(subRoleNotFoundInRelates){
                 errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.getLabel(), superRelationType.getLabel(), "sub", "sub", relationType.getLabel()));
@@ -263,12 +246,11 @@ class ValidateGlobalRules {
                 if(playsEntry.getValue()){
                     Role role = playsEntry.getKey();
                     // Assert there is a relation for this type
-                    Collection<Relation> relations = thing.relations(role);
-                    if (relations.isEmpty()) {
-                        return Optional.of(VALIDATION_INSTANCE.getMessage(thing.getId(), thing.type().getLabel(), role.getLabel()));
-                    } else if(relations.size() > 1){
+                    Stream<Relation> relations = thing.relations(role);
+
+                    if(!CommonUtil.containsOnly(relations, 1)){
                         Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.getLabel());
-                        return Optional.of(VALIDATION_TOO_MANY_KEYS.getMessage(thing.getId(), resourceTypeLabel));
+                        return Optional.of(VALIDATION_NOT_EXACTLY_ONE_KEY.getMessage(thing.getId(), resourceTypeLabel));
                     }
                 }
             }

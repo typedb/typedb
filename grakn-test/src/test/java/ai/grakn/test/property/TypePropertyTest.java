@@ -40,9 +40,9 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.test.property.PropertyUtil.choose;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
@@ -92,7 +92,7 @@ public class TypePropertyTest {
     @Ignore // TODO: Fails very rarely and only remotely
     @Property
     public void whenDeletingATypeWithIndirectInstances_Throw(@NonMeta Type type) {
-        assumeThat(type.instances(), not(empty()));
+        assumeThat(type.instances().collect(toSet()), not(empty()));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.cannotBeDeleted(type).getMessage());
@@ -123,29 +123,29 @@ public class TypePropertyTest {
         Collection<Type> directSubTypes = PropertyUtil.directSubs(type);
         Thing[] expected = Stream.concat(
             PropertyUtil.directInstances(type).stream(),
-            directSubTypes.stream().flatMap(subType -> subType.instances().stream())
+            directSubTypes.stream().flatMap(subType -> subType.instances())
         ).toArray(Thing[]::new);
 
-        assertThat(type.instances(), containsInAnyOrder(expected));
+        assertThat(type.instances().collect(toSet()), containsInAnyOrder(expected));
     }
 
     @Property
     public void whenGettingPlays_ResultIsASupersetOfDirectSuperTypePlays(Type type) {
         assumeNotNull(type.sup());
-        assertTrue(type.plays().containsAll(type.sup().plays()));
+        assertTrue(type.plays().collect(toSet()).containsAll(type.sup().plays().collect(toSet())));
     }
 
     @Property
     public void ATypePlayingARoleIsEquivalentToARoleBeingPlayed(Type type, @FromGraph Role role) {
-        assertEquals(type.plays().contains(role), role.playedByTypes().contains(type));
+        assertEquals(type.plays().anyMatch(r -> r.equals(role)), role.playedByTypes().collect(toSet()).contains(type));
     }
 
     @Property
     public void whenAddingAPlays_TheTypePlaysThatRoleAndNoOtherNewRoles(
             @NonMeta Type type, @FromGraph Role role) {
-        Set<Role> previousPlays = Sets.newHashSet(type.plays());
+        Set<Role> previousPlays = type.plays().collect(toSet());
         type.plays(role);
-        Set<Role> newPlays = Sets.newHashSet(type.plays());
+        Set<Role> newPlays = type.plays().collect(toSet());
 
         assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(role)));
     }
@@ -159,9 +159,9 @@ public class TypePropertyTest {
 
         Type superType = superConcept.asType();
 
-        Set<Role> previousPlays = Sets.newHashSet(type.plays());
+        Set<Role> previousPlays = type.plays().collect(toSet());
         superType.plays(role);
-        Set<Role> newPlays = Sets.newHashSet(type.plays());
+        Set<Role> newPlays = type.plays().collect(toSet());
 
         assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(role)));
     }
@@ -169,17 +169,17 @@ public class TypePropertyTest {
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypeDoesNotPlaysThatRole_TheTypeNoLongerPlaysThatRole(
             @NonMeta Type type, @FromGraph Role role) {
-        assumeThat(type.sup().plays(), not(hasItem(role)));
+        assumeThat(type.sup().plays().collect(toSet()), not(hasItem(role)));
         type.deletePlays(role);
-        assertThat(type.plays(), not(hasItem(role)));
+        assertThat(type.plays().collect(toSet()), not(hasItem(role)));
     }
 
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypePlaysThatRole_TheTypeStillPlaysThatRole(
             @NonMeta Type type, long seed) {
-        Role role = PropertyUtil.choose(type.sup() + " plays no roles", type.sup().plays(), seed);
+        Role role = PropertyUtil.choose(type.sup() + " plays no roles", type.sup().plays().collect(toSet()), seed);
         type.deletePlays(role);
-        assertThat(type.plays(), hasItem(role));
+        assertThat(type.plays().collect(toSet()), hasItem(role));
     }
 
     // TODO: Tests for `resource` and `key`

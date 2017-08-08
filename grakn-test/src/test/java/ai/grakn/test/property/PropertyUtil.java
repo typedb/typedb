@@ -26,6 +26,9 @@ import com.google.common.collect.Lists;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.empty;
@@ -39,7 +42,7 @@ public class PropertyUtil {
 
     @SuppressWarnings("unchecked")
     public static <T extends OntologyConcept> Collection<T> directSubs(T ontologyElement) {
-        return ontologyElement.subs().stream().filter(subType -> ontologyElement.equals(subType.sup())).map(o -> (T) o).collect(toList());
+        return ontologyElement.subs().filter(subType -> ontologyElement.equals(subType.sup())).map(o -> (T) o).collect(toList());
     }
 
     public static Collection<OntologyConcept> indirectSupers(OntologyConcept ontologyConcept) {
@@ -54,8 +57,14 @@ public class PropertyUtil {
     }
 
     public static Collection<Thing> directInstances(Type type) {
-        Collection<? extends Thing> indirectInstances = type.instances();
-        return indirectInstances.stream().filter(instance -> type.equals(instance.type())).collect(toList());
+        Stream<? extends Thing> indirectInstances = type.instances();
+        return indirectInstances.filter(instance -> type.equals(instance.type())).collect(toList());
+    }
+
+    public static <T> T choose(Stream<? extends T> stream, long seed) {
+        Set<? extends T> collection = stream.collect(Collectors.toSet());
+        assumeThat(collection, not(empty()));
+        return chooseWithoutCheck(collection, seed);
     }
 
     public static <T> T choose(Collection<? extends T> collection, long seed) {

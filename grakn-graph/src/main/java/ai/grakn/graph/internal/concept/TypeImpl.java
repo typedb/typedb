@@ -20,7 +20,6 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -37,8 +36,6 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -170,49 +167,42 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
      * @return A list of all the roles this Type is allowed to play.
      */
     @Override
-    public Collection<Role> plays() {
-        Set<Role> allRoles = new HashSet<>();
-
+    public Stream<Role> plays() {
         //Get the immediate plays which may be cached
-        allRoles.addAll(directPlays().keySet());
+        Stream<Role> allRoles = directPlays().keySet().stream();
 
         //Now get the super type plays (Which may also be cached locally within their own context
-        Set<T> superSet = superSet();
-        superSet.remove(this); //We already have the plays from ourselves
-        superSet.forEach(superParent -> allRoles.addAll(((TypeImpl<?,?>) superParent).directPlays().keySet()));
+        Stream<Role> superSet =superSet().
+                filter(sup -> !sup.equals(this)). //We already have the plays from ourselves
+                flatMap(sup -> TypeImpl.from(sup).directPlays().keySet().stream());
 
-        return Collections.unmodifiableCollection(allRoles);
+        return Stream.concat(allRoles, superSet);
     }
 
     @Override
-    public Collection<ResourceType> resources() {
-        Collection<ResourceType> resources = resources(Schema.ImplicitType.HAS_OWNER);
-        resources.addAll(keys());
-        return resources;
+    public Stream<ResourceType> resources() {
+        Stream<ResourceType> resources = resources(Schema.ImplicitType.HAS_OWNER);
+        return Stream.concat(resources, keys());
     }
 
     @Override
-    public Collection<ResourceType> keys() {
+    public Stream<ResourceType> keys() {
         return resources(Schema.ImplicitType.KEY_OWNER);
     }
 
-    private Collection<ResourceType> resources(Schema.ImplicitType implicitType){
+    private Stream<ResourceType> resources(Schema.ImplicitType implicitType){
         //TODO: Make this less convoluted
         String [] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
         String prefix = implicitIdentifiers[0] + "-";
         String suffix = "-" + implicitIdentifiers[1];
 
-        Set<ResourceType> resourceTypes = new HashSet<>();
-        //A traversal is not used in this caching so that ontology caching can be taken advantage of.
-        plays().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
-            String roleTypeLabel = roleType.getLabel().getValue();
-            if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
-                String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
-                resourceTypes.add(vertex().graph().getResourceType(resourceTypeLabel));
-            }
-        }));
-
-        return resourceTypes;
+        //A traversal is not used in this so that ontology caching can be taken advantage of.
+        return plays().map(role -> role.getLabel().getValue()).
+                filter(roleLabel -> roleLabel.startsWith(prefix) && roleLabel.endsWith(suffix)).
+                map(roleLabel -> {
+                    String resourceTypeLabel = roleLabel.replace(prefix, "").replace(suffix, "");
+                    return vertex().graph().getResourceType(resourceTypeLabel);
+                });
     }
 
     public Map<Role, Boolean> directPlays(){
@@ -240,32 +230,12 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
 
     /**
      *
-     * @return All the subs of this concept including itself
-     */
-    @Override
-    public Collection<T> subs(){
-        return Collections.unmodifiableCollection(super.subs());
-    }
-
-    /**
-     *
      * @return All the instances of this type.
      */
     @SuppressWarnings("unchecked")
     @Override
-    public Collection<V> instances() {
-        Set<V> instances = new HashSet<>();
-        //TODO: Clean this up. Maybe remove role from the meta ontology
-        //OntologyConcept is used here because when calling `graph.admin().getMataConcept().instances()` a role can appear
-        //When that happens this leads to a crash
-        for (OntologyConcept sub : subs()) {
-            if (!sub.isRole()) {
-                TypeImpl<?, V> typeImpl = (TypeImpl) sub;
-                typeImpl.instancesDirect().forEach(instances::add);
-            }
-        }
-
-        return Collections.unmodifiableCollection(instances);
+    public Stream<V> instances() {
+        return subs().flatMap(sub -> TypeImpl.<T, V>from(sub).instancesDirect());
     }
 
     Stream<V> instancesDirect(){
@@ -288,10 +258,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
      * @return A list of the Instances which scope this Relation
      */
     @Override
-    public Set<Thing> scopes() {
-        HashSet<Thing> scopes = new HashSet<>();
-        neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asThing()));
-        return scopes;
+    public Stream<Thing> scopes() {
+        return neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE).map(Concept::asThing);
     }
 
     /**
@@ -361,11 +329,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
         boolean changingSuperAllowed = super.changingSuperAllowed(oldSuperType, newSuperType);
         if(changingSuperAllowed && oldSuperType != null && !Schema.MetaSchema.isMetaLabel(oldSuperType.getLabel())) {
             //noinspection unchecked
-            Set<Role> superPlays = new HashSet<>(oldSuperType.plays());
+            Set<Role> superPlays = oldSuperType.plays().collect(Collectors.toSet());
 
             //Get everything that this can play bot including the supers
             Set<Role> plays = new HashSet<>(directPlays().keySet());
-            subs().stream().flatMap(sub -> TypeImpl.from(sub).directPlays().keySet().stream()).
+            subs().flatMap(sub -> TypeImpl.from(sub).directPlays().keySet().stream()).
                     forEach(play -> plays.add((Role) play));
 
             superPlays.removeAll(plays);
@@ -496,12 +464,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
      * @throws GraphOperationException when the resource type is already used in another implicit relation
      */
     private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, ResourceType resourceType){
-        if(resources(implicitType).contains(resourceType)) {
+        if(resources(implicitType).anyMatch(rt -> rt.equals(resourceType))) {
             throw GraphOperationException.duplicateHas(this, resourceType);
         }
     }
 
-    public static TypeImpl from(Type type){
-        return (TypeImpl) type;
+    public static <X extends Type, Y extends Thing> TypeImpl<X,Y> from(Type type){
+        //noinspection unchecked
+        return (TypeImpl<X, Y>) type;
     }
 }

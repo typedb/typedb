@@ -362,7 +362,7 @@ class GraqlSession {
      * @return all type IDs in the ontology
      */
     private static Stream<Label> getTypes(GraknGraph graph) {
-        return graph.admin().getMetaConcept().subs().stream().map(OntologyConcept::getLabel);
+        return graph.admin().getMetaConcept().subs().map(OntologyConcept::getLabel);
     }
 
     private Printer getPrinter(ResourceType... resources) {

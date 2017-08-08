@@ -91,7 +91,7 @@ public class BatchMutatorClientTest {
         loader.waitToFinish();
 
         try (GraknGraph graph = session.open(GraknTxType.READ)) {
-            assertEquals(100, graph.getEntityType("name_tag").instances().size());
+            assertEquals(100, graph.getEntityType("name_tag").instances().count());
         }
     }
 
@@ -130,7 +130,7 @@ public class BatchMutatorClientTest {
         loader.waitToFinish();
 
         try (GraknGraph graph = session.open(GraknTxType.READ)) {
-            assertEquals(20, graph.getEntityType("name_tag").instances().size());
+            assertEquals(20, graph.getEntityType("name_tag").instances().count());
         }
     }
 

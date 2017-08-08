@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -76,7 +77,7 @@ public class MigratorTestUtils {
     public static void assertResourceEntityRelationExists(GraknGraph graph, String resourceName, Object resourceValue, Entity owner){
         ResourceType resourceType = graph.getResourceType(resourceName);
         assertNotNull(resourceType);
-        assertEquals(resourceValue, owner.resources(resourceType).stream()
+        assertEquals(resourceValue, owner.resources(resourceType)
                 .map(Resource::getValue)
                 .findFirst().get());
     }
@@ -84,8 +85,8 @@ public class MigratorTestUtils {
     public static void assertRelationBetweenInstancesExists(GraknGraph graph, Thing thing1, Thing thing2, Label relation){
         RelationType relationType = graph.getOntologyConcept(relation);
 
-        Role role1 = thing1.plays().stream().filter(r -> r.relationTypes().stream().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
-        assertTrue(thing1.relations(role1).stream().anyMatch(rel -> rel.rolePlayers().contains(thing2)));
+        Role role1 = thing1.plays().filter(r -> r.relationTypes().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
+        assertTrue(thing1.relations(role1).anyMatch(rel -> rel.rolePlayers().anyMatch(r -> r.equals(thing2))));
     }
 
 
@@ -99,9 +100,9 @@ public class MigratorTestUtils {
 
         Set<Thing> things = new HashSet<>();
 
-        relation.instances().stream()
-                .filter(i -> i.rolePlayers().contains(thing))
-                .forEach(i -> things.addAll(i.rolePlayers()));
+        relation.instances()
+                .filter(i -> i.rolePlayers().anyMatch(t -> t.equals(thing)))
+                .forEach(i -> i.rolePlayers().forEach(things::add));
 
         things.remove(thing);
         return things;
@@ -116,8 +117,8 @@ public class MigratorTestUtils {
         Role roleOwner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
         Role roleOther = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 
-        Collection<Relation> relations = thing.relations(roleOwner);
-        return relations.stream().flatMap(r -> r.rolePlayers(roleOther).stream()).map(Concept::asResource);
+        Stream<Relation> relations = thing.relations(roleOwner);
+        return relations.flatMap(r -> r.rolePlayers(roleOther)).map(Concept::asResource);
     }
 
     /**
@@ -125,23 +126,23 @@ public class MigratorTestUtils {
      */
     public static void assertPetGraphCorrect(GraknSession session){
         try(GraknGraph graph = session.open(GraknTxType.READ)) {
-            Collection<Entity> pets = graph.getEntityType("pet").instances();
+            Collection<Entity> pets = graph.getEntityType("pet").instances().collect(Collectors.toSet());
             assertEquals(9, pets.size());
 
-            Collection<Entity> cats = graph.getEntityType("cat").instances();
+            Collection<Entity> cats = graph.getEntityType("cat").instances().collect(Collectors.toSet());
             assertEquals(2, cats.size());
 
-            Collection<Entity> hamsters = graph.getEntityType("hamster").instances();
+            Collection<Entity> hamsters = graph.getEntityType("hamster").instances().collect(Collectors.toSet());
             assertEquals(1, hamsters.size());
 
             ResourceType<String> name = graph.getResourceType("name");
             ResourceType<String> death = graph.getResourceType("death");
 
             Entity puffball = name.getResource("Puffball").ownerInstances().iterator().next().asEntity();
-            assertEquals(0, puffball.resources(death).size());
+            assertEquals(0, puffball.resources(death).count());
 
             Entity bowser = name.getResource("Bowser").ownerInstances().iterator().next().asEntity();
-            assertEquals(1, bowser.resources(death).size());
+            assertEquals(1, bowser.resources(death).count());
         }
     }
 
@@ -150,7 +151,7 @@ public class MigratorTestUtils {
      */
     public static void assertPokemonGraphCorrect(GraknSession session){
         try(GraknGraph graph = session.open(GraknTxType.READ)){
-            Collection<Entity> pokemon = graph.getEntityType("pokemon").instances();
+            Collection<Entity> pokemon = graph.getEntityType("pokemon").instances().collect(Collectors.toSet());
             assertEquals(9, pokemon.size());
 
             ResourceType<String> typeid = graph.getResourceType("type-id");

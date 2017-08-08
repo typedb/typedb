@@ -25,8 +25,8 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.Thing;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
@@ -38,6 +38,8 @@ import org.junit.Test;
 
 import java.io.FileNotFoundException;
 import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static ai.grakn.test.migration.MigratorTestUtils.getProperties;
@@ -96,7 +98,7 @@ public class JsonMigratorTest {
 
         try(GraknGraph graph = factory.open(GraknTxType.READ)) {
             EntityType personType = graph.getEntityType("person");
-            assertEquals(1, personType.instances().size());
+            assertEquals(1, personType.instances().count());
 
             Entity person = personType.instances().iterator().next();
 
@@ -144,12 +146,12 @@ public class JsonMigratorTest {
 
         try(GraknGraph graph = factory.open(GraknTxType.READ)) {
             EntityType rootType = graph.getEntityType("thingy");
-            Collection<Entity> things = rootType.instances();
+            Set<Entity> things = rootType.instances().collect(toSet());
             assertEquals(1, things.size());
 
             Entity thing = things.iterator().next();
 
-            Collection<Object> integers = getResources(graph, thing, Label.of("a-int")).map(r -> r.getValue()).collect(toSet());
+            Collection<Object> integers = getResources(graph, thing, Label.of("a-int")).map(Resource::getValue).collect(toSet());
             assertEquals(Sets.newHashSet(1L, 2L, 3L), integers);
 
             Resource aBoolean = getResource(graph, thing, Label.of("a-boolean"));
@@ -161,7 +163,7 @@ public class JsonMigratorTest {
             Resource aString = getResource(graph, thing, Label.of("a-string"));
             assertEquals("hi", aString.getValue());
 
-            assertEquals(0, graph.getResourceType("a-null").instances().size());
+            assertEquals(0, graph.getResourceType("a-null").instances().count());
         }
     }
 
@@ -178,10 +180,10 @@ public class JsonMigratorTest {
 
         try(GraknGraph graph = factory.open(GraknTxType.READ)) {
             EntityType theThing = graph.getEntityType("the-thing");
-            assertEquals(2, theThing.instances().size());
+            assertEquals(2, theThing.instances().count());
 
-            Collection<Entity> things = theThing.instances();
-            boolean thingsCorrect = things.stream().allMatch(thing -> {
+            Stream<Entity> things = theThing.instances();
+            boolean thingsCorrect = things.allMatch(thing -> {
                 Object string = getResource(graph, thing, Label.of("a-string")).getValue();
                 return string.equals("hello") || string.equals("goodbye");
             });
@@ -203,7 +205,7 @@ public class JsonMigratorTest {
 
         try(GraknGraph graph = factory.open(GraknTxType.READ)) {
             EntityType theThing = graph.getEntityType("the-thing");
-            assertEquals(2, theThing.instances().size());
+            assertEquals(2, theThing.instances().count());
         }
     }
 
@@ -215,7 +217,7 @@ public class JsonMigratorTest {
 
         try(GraknGraph graph = factory.open(GraknTxType.READ)) {
             EntityType theThing = graph.getEntityType("the-thing");
-            assertEquals(1, theThing.instances().size());
+            assertEquals(1, theThing.instances().count());
         }
     }
 

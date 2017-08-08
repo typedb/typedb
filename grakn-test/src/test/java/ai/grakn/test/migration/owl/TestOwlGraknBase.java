@@ -89,7 +89,7 @@ public class TestOwlGraknBase {
 
     <T> Entity getEntity(T id, ResourceType<T> rtype){
         Resource<T> iri = rtype.getResource(id);
-        Thing inst = iri != null? iri.ownerInstances().stream().findFirst().orElse(null) : null;
+        Thing inst = iri != null? iri.ownerInstances().findFirst().orElse(null) : null;
         return inst != null? inst.asEntity() : null;
     }
 

@@ -61,7 +61,7 @@ public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept
             ontologyConcepts = Sets.newHashSet(otherMetaOntologyConcepts());
             ontologyConcepts.add(metaOntologyConcept());
         } else {
-            ontologyConcepts = (Collection<T>) metaOntologyConcept().subs();
+            ontologyConcepts = (Collection<T>) metaOntologyConcept().subs().collect(toSet());
         }
 
         ontologyConcepts = ontologyConcepts.stream().filter(this::filter).collect(toSet());

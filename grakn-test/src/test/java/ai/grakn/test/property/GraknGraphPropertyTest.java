@@ -57,6 +57,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
 import static ai.grakn.generator.GraknGraphs.allOntologyElementsFrom;
@@ -190,10 +191,10 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingGetResourcesByValue_TheResultIsAllResourcesWithTheGivenValue(
             @Open GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
-        Collection<Resource<?>> allResources = graph.admin().getMetaResourceType().instances();
+        Stream<Resource<?>> allResources = graph.admin().getMetaResourceType().instances();
 
         Set<Resource<?>> allResourcesOfValue =
-                allResources.stream().filter(resource -> resourceValue.equals(resource.getValue())).collect(toSet());
+                allResources.filter(resource -> resourceValue.equals(resource.getValue())).collect(toSet());
 
         assertEquals(allResourcesOfValue, graph.getResourcesByValue(resourceValue));
     }

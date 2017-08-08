@@ -329,8 +329,8 @@ public class GraqlControllerReadOnlyTest {
         // refresh graph
         graphContext.graph().close();
 
-        int numberPeople = graphContext.graph().getEntityType("movie").instances().size();
-        assertThat(stringResponse(response), equalTo(Integer.toString(numberPeople)));
+        long numberPeople = graphContext.graph().getEntityType("movie").instances().count();
+        assertThat(stringResponse(response), equalTo(Long.toString(numberPeople)));
     }
 
     @Test
@@ -363,8 +363,8 @@ public class GraqlControllerReadOnlyTest {
         String query = "compute count in movie;";
         Response response = sendRequest(query, APPLICATION_TEXT);
 
-        int numberPeople = graphContext.graph().getEntityType("movie").instances().size();
-        assertThat(stringResponse(response), equalTo(Integer.toString(numberPeople)));
+        Long numberPeople = graphContext.graph().getEntityType("movie").instances().count();
+        assertThat(stringResponse(response), equalTo(Long.toString(numberPeople)));
     }
 
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed

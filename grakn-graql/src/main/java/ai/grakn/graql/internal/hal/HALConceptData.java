@@ -173,7 +173,7 @@ public class HALConceptData {
 
     private void generateOwnerInstances(Representation halResource, Resource<?> conceptResource, int separationDegree) {
         final Label roleType = conceptResource.type().getLabel();
-        Stream<Thing> ownersStream = conceptResource.ownerInstances().stream().skip(offset);
+        Stream<Thing> ownersStream = conceptResource.ownerInstances().skip(offset);
         if (limit >= 0) ownersStream = ownersStream.limit(limit);
         ownersStream.forEach(instance -> {
             Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
@@ -209,15 +209,12 @@ public class HALConceptData {
 
 
     private void generateEntityEmbedded(Representation halResource, Entity entity, int separationDegree) {
-        Stream<Relation> relationStream = entity.relations().stream();
+        Stream<Relation> relationStream = entity.relations();
 
         relationStream = relationStream.skip(offset);
         if (limit >= 0) relationStream = relationStream.limit(limit);
 
-
-        relationStream.forEach(rel -> {
-            embedRelationsNotConnectedToResources(halResource, entity, rel, separationDegree);
-        });
+        relationStream.forEach(rel -> embedRelationsNotConnectedToResources(halResource, entity, rel, separationDegree));
     }
 
     private void attachRelation(Representation halResource, Concept rel, Label role, int separationDegree) {
@@ -277,7 +274,7 @@ public class HALConceptData {
 
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
         if (!type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
-            Stream<? extends Thing> instancesStream = type.instances().stream().skip(offset);
+            Stream<? extends Thing> instancesStream = type.instances().skip(offset);
             if (limit >= 0) instancesStream = instancesStream.limit(limit);
             instancesStream.forEach(instance -> {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
@@ -288,7 +285,7 @@ public class HALConceptData {
         }
         // We only limit the number of instances and not subtypes.
         // TODO: This `asOntologyElement` is a hack because `thing.subTypes()` will contain `Role`, which is not `Type`
-        type.asOntologyConcept().subs().stream().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
+        type.asOntologyConcept().subs().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
             Representation subResource = factory.newRepresentation(resourceLinkPrefix + sub.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             handleConcept(subResource, sub, separationDegree - 1);

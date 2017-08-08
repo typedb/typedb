@@ -47,10 +47,10 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertDataEqual(GraknGraph one, GraknGraph two){
-        one.admin().getMetaConcept().subs().stream().
+        one.admin().getMetaConcept().subs().
                 filter(Concept::isType).
                 map(Concept::asType).
-                flatMap(t -> t.instances().stream()).
+                flatMap(Type::instances).
                 forEach(i -> assertInstanceCopied(i, two));
     }
 
@@ -70,7 +70,7 @@ public abstract class GraphWriterTestUtil {
      * Assert that there are the same number of entities in each graph with the same resources
      */
     public static void assertEntityCopied(Entity entity1, GraknGraph two){
-        Collection<Entity> entitiesFromGraph1 = entity1.resources().stream().map(Resource::ownerInstances).flatMap(Collection::stream).map(Concept::asEntity).collect(toSet());
+        Collection<Entity> entitiesFromGraph1 = entity1.resources().flatMap(Resource::ownerInstances).map(Concept::asEntity).collect(toSet());
         Collection<Entity> entitiesFromGraph2 = getInstancesByResources(two, entity1).stream().map(Concept::asEntity).collect(toSet());
 
         assertEquals(entitiesFromGraph1.size(), entitiesFromGraph2.size());
@@ -80,10 +80,9 @@ public abstract class GraphWriterTestUtil {
      * Get all instances with the same resources
      */
     public static Collection<Thing> getInstancesByResources(GraknGraph graph, Thing thing){
-        return thing.resources().stream()
+        return thing.resources()
                 .map(r -> getResourceFromGraph(graph, r))
-                .map(Resource::ownerInstances)
-                .flatMap(Collection::stream)
+                .flatMap(Resource::ownerInstances)
                 .collect(toSet());
     }
 
@@ -100,7 +99,7 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertRelationCopied(Relation relation1, GraknGraph two){
-        if(relation1.rolePlayers().stream().anyMatch(Concept::isResource)){
+        if(relation1.rolePlayers().anyMatch(Concept::isResource)){
             return;
         }
 
@@ -112,12 +111,8 @@ public abstract class GraphWriterTestUtil {
                         collect(Collectors.toSet())
         ));
 
-        boolean relationFound = false;
-        for (Relation relation : relationType.instances()) {
-            if(relation.allRolePlayers().equals(rolemap)){
-                relationFound = true;
-            }
-        }
+        boolean relationFound = relationType.instances().
+                anyMatch(relation -> relation.allRolePlayers().equals(rolemap));
 
         assertTrue("The copied relation [" + relation1 + "] was not found.", relationFound);
     }
@@ -137,7 +132,7 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertOntologiesEqual(GraknGraph one, GraknGraph two){
-        boolean ontologyCorrect = one.admin().getMetaConcept().subs().stream().filter(Concept::isType)
+        boolean ontologyCorrect = one.admin().getMetaConcept().subs().filter(Concept::isType)
                 .allMatch(t -> typesEqual(t.asType(), two.getOntologyConcept(t.asType().getLabel())));
         assertEquals(true, ontologyCorrect);
     }

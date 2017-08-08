@@ -33,6 +33,7 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
@@ -52,10 +53,10 @@ public class EntityTypePropertyTest {
     @Property
     public void whenANonMetaEntityTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
             @Open GraknGraph graph, @FromGraph @NonMeta EntityType type) {
-        assumeThat(type.instances(), empty());
-        assumeThat(type.subs(), contains(type));
-        assumeThat(type.getRulesOfHypothesis(), empty());
-        assumeThat(type.getRulesOfConclusion(), empty());
+        assumeThat(type.instances().collect(toSet()), empty());
+        assumeThat(type.subs().collect(toSet()), contains(type));
+        assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());
+        assumeThat(type.getRulesOfConclusion().collect(toSet()), empty());
 
         type.delete();
 
@@ -81,13 +82,13 @@ public class EntityTypePropertyTest {
     public void whenAddingAnEntity_TheEntityIsInNoRelations(@NonMeta @NonAbstract EntityType type) {
         Entity entity = type.addEntity();
 
-        assertThat(entity.relations(), empty());
+        assertThat(entity.relations().collect(toSet()), empty());
     }
 
     @Property
     public void whenAddingAnEntity_TheEntityHasNoResources(@NonMeta @NonAbstract EntityType type) {
         Entity entity = type.addEntity();
 
-        assertThat(entity.resources(), empty());
+        assertThat(entity.resources().collect(toSet()), empty());
     }
 }

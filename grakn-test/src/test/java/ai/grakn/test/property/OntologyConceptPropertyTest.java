@@ -37,6 +37,7 @@ import java.util.Collection;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
@@ -110,7 +111,7 @@ public class OntologyConceptPropertyTest {
     public void whenAnOntologyConceptHasAnIndirectSuper_ItIsAnIndirectSubOfThatSuper(
             OntologyConcept subConcept, long seed) {
         OntologyConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(subConcept), seed);
-        assertThat((Collection<OntologyConcept>) superConcept.subs(), hasItem(subConcept));
+        assertThat(superConcept.subs().collect(toSet()), hasItem(subConcept));
     }
 
     @Property
@@ -125,15 +126,15 @@ public class OntologyConceptPropertyTest {
         Collection<OntologyConcept> directSubs = PropertyUtil.directSubs(concept);
         OntologyConcept[] expected = Stream.concat(
                 Stream.of(concept),
-                directSubs.stream().flatMap(subConcept -> subConcept.subs().stream())
+                directSubs.stream().flatMap(OntologyConcept::subs)
         ).toArray(OntologyConcept[]::new);
 
-        assertThat(concept.subs(), containsInAnyOrder(expected));
+        assertThat(concept.subs().collect(toSet()), containsInAnyOrder(expected));
     }
 
     @Property
     public void whenGettingTheIndirectSubs_TheyContainTheOntologyConcept(OntologyConcept concept) {
-        assertThat((Collection<OntologyConcept>) concept.subs(), hasItem(concept));
+        assertThat(concept.subs().collect(toSet()), hasItem(concept));
     }
 
     @Property
@@ -160,10 +161,10 @@ public class OntologyConceptPropertyTest {
     public void whenSettingTheDirectSuper_TheDirectSuperIsSet(
             @NonMeta OntologyConcept subConcept, @FromGraph OntologyConcept superConcept) {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
-        assumeThat((Collection<OntologyConcept>) subConcept.subs(), not(hasItem(superConcept)));
+        assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
         //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
-        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances(), is(empty()));
+        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances().collect(toSet()), is(empty()));
 
         setDirectSuper(subConcept, superConcept);
 
@@ -194,10 +195,10 @@ public class OntologyConceptPropertyTest {
     public void whenAddingADirectSub_TheDirectSubIsAdded(
             OntologyConcept superConcept, @NonMeta @FromGraph OntologyConcept subConcept) {
         assumeTrue(sameOntologyConcept(subConcept, superConcept));
-        assumeThat((Collection<OntologyConcept>) subConcept.subs(), not(hasItem(superConcept)));
+        assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
         //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
-        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances(), is(empty()));
+        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances().collect(toSet()), is(empty()));
 
         addDirectSub(superConcept, subConcept);
 
@@ -207,7 +208,7 @@ public class OntologyConceptPropertyTest {
     @Ignore // TODO: Find a way to generate linked rules
     @Property
     public void whenDeletingAnOntologyConceptWithHypothesisRules_Throw(OntologyConcept concept) {
-        assumeThat(concept.getRulesOfHypothesis(), not(empty()));
+        assumeThat(concept.getRulesOfHypothesis().collect(toSet()), not(empty()));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.cannotBeDeleted(concept).getMessage());
@@ -217,7 +218,7 @@ public class OntologyConceptPropertyTest {
     @Ignore // TODO: Find a way to generate linked rules
     @Property
     public void whenDeletingAnOntologyConceptWithConclusionRules_Throw(OntologyConcept concept) {
-        assumeThat(concept.getRulesOfConclusion(), not(empty()));
+        assumeThat(concept.getRulesOfConclusion().collect(toSet()), not(empty()));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.cannotBeDeleted(concept).getMessage());
