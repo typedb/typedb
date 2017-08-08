@@ -1,4 +1,4 @@
-export GRAKN_CONFIG="${GRAKN_HOME}/conf/main/grakn.properties"
+export GRAKN_CONFIG="${GRAKN_HOME}/conf/grakn.properties"
 
 if [ -z "$FOREGROUND" ]; then
   export FOREGROUND=false

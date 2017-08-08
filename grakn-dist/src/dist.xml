@@ -40,7 +40,7 @@
                 <include>*</include>
             </includes>
         </fileSet>
-        <!-- grakn.properties and logback.xml -->
+        <!-- cassandra configs
         <fileSet>
             <outputDirectory>conf</outputDirectory>
             <directory>${basedir}/src/conf/main</directory>
@@ -48,15 +48,15 @@
                 <include>**</include>
             </includes>
         </fileSet>
-        <!-- cassandra configs
+        -->
+        <!-- grakn.properties and logback.xml (main config) -->
         <fileSet>
             <outputDirectory>conf</outputDirectory>
-            <directory>${main.basedir}/conf/</directory>
+            <directory>${main.basedir}/conf/main</directory>
             <includes>
                 <include>**</include>
             </includes>
         </fileSet>
-        -->
         <fileSet>
             <outputDirectory>services/assets</outputDirectory>
             <directory>${main.basedir}/grakn-dashboard/static</directory>
