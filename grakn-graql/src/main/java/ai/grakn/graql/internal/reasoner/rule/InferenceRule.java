@@ -116,10 +116,17 @@ public class InferenceRule {
     public ConceptId getRuleId(){ return ruleId;}
 
     /**
-     * @return true if head and body do not share any variables
+     * @return true if the rule has disconnected head, i.e. head and body do not share any variables
      */
     public boolean hasDisconnectedHead(){
         return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
+    }
+
+    /**
+     * @return true if the rule generates fresh variables, i. e. its head has variables that do not occur in the body
+     */
+    public boolean generatesFreshVariables(){
+        return !Sets.difference(head.getVarNames(), body.getVarNames()).isEmpty();
     }
 
     /**

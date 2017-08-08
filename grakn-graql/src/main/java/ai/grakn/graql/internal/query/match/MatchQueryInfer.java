@@ -25,6 +25,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 
 import java.util.Iterator;
@@ -49,7 +50,7 @@ class MatchQueryInfer extends MatchQueryModifier {
     public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
         GraknGraph graph = optionalOr(optionalGraph, inner.getGraph()).orElseThrow(GraqlQueryException::noGraph);
 
-        if (!ReasonerUtils.hasRules(graph)) return inner.stream(optionalGraph);
+        if (!new RuleGraph(graph).hasRules()) return inner.stream(optionalGraph);
 
         Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         Conjunction<VarPatternAdmin> conj = conjIt.next();

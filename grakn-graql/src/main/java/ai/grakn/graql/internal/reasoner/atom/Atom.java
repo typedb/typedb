@@ -29,6 +29,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -152,10 +153,7 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     private Set<Rule> getPotentialRules(){
-        OntologyConcept ontologyConcept = getOntologyConcept();
-        return ontologyConcept != null ?
-                ontologyConcept.subs().flatMap(OntologyConcept::getRulesOfConclusion).collect(Collectors.toSet()) :
-                ReasonerUtils.getRules(graph());
+        return new RuleGraph(graph()).getRulesWithType(getOntologyConcept());
     }
 
     /**
