@@ -52,7 +52,7 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-@Ignore("Running very slowly on Travis")
+@Ignore("Ignored because there has been a general slow down in graql and these are the tests we can most safely ignore without regressing")
 @RunWith(Parameterized.class)
 public class GraqlDocsTest {
 
