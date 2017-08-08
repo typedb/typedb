@@ -35,9 +35,9 @@ node {
              'ENGINE=localhost:4567',
              'ACTIVE_TASKS=1000',
              'PATH+EXTRA=' + workspace + '/grakn-package/bin',
-             'LDBC_DRIVER=' + workspace + '/ldbc-driver/target/jeeves-0.3-SNAPSHOT.jar',
-             'LDBC_CONNECTOR=' + workspace + '/benchmarking/snb-interactive-grakn/target/snb-interactive-grakn-stable-jar-with-dependencies.jar',
-             'LDBC_VALIDATION_CONFIG=readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
+             'LDBC_DRIVER=' + workspace + '/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar',
+             'LDBC_CONNECTOR=' + workspace + "/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar",
+             'LDBC_VALIDATION_CONFIG=' + workspace + '/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
       timeout(90) {
         dir('generate-SNB') {
           stage('Load Validation Data') {
@@ -50,13 +50,18 @@ node {
           sh 'du -hd 0 grakn-package/db/cassandra/data'
         }
       }
-//        timeout(360) {
-//          dir('validate-SNB') {
-//            stage(buildBranch+' Validate Graph') {
-//              sh './validate.sh'
-//            }
-//          }
-//        }
+      timeout(360) {
+        dir('grakn-test/test-snb/') {
+          stage('Build the SNB connectors') {
+            sh 'mvn clean package assembly:single -DskipTests -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
+          }
+        }
+        dir('validate-snb') {
+          stage('Validate Queries') {
+            sh '../grakn-test/test-snb/src/validate-SNB/validate.sh'
+          }
+        }
+      }
     }
     slackSend channel: "#github", message: "Periodic Build Success on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
   } catch (error) {
