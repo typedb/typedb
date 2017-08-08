@@ -57,7 +57,8 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        Concept concept = executor.get(var);
         if(concept.isType()){
             concept.asType().setAbstract(true);
         } else {
@@ -66,9 +67,13 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of(var);
+    }
+
+    @Override
     public boolean equals(Object o) {
         return this == o || !(o == null || getClass() != o.getClass());
-
     }
 
     @Override

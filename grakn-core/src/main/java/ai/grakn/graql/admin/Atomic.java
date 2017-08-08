@@ -38,11 +38,34 @@ public interface Atomic {
     @CheckReturnValue
     Atomic copy();
 
+    /**
+     * @return true if the atomic corresponds to a atom
+     * */
     @CheckReturnValue
     default boolean isAtom(){ return false;}
 
+    /**
+     * @return true if the atomic corresponds to a predicate
+     * */
     @CheckReturnValue
     default boolean isPredicate(){ return false;}
+
+    /**
+     * @return true if the atomic corresponds to a type atom
+     * */
+    @CheckReturnValue
+    default boolean isType(){ return false;}
+
+    /**
+     * @return true if the atomic corresponds to a relation atom
+     * */
+    @CheckReturnValue
+    default boolean isRelation(){return false;}
+
+    /**
+     * @return true if the atomic corresponds to a resource atom
+     * */
+    default boolean isResource(){ return false;}
 
     /**
      * @return true if atom alpha-equivalent
@@ -51,7 +74,7 @@ public interface Atomic {
     boolean isEquivalent(Object obj);
 
     /**
-     * @return equivalence hash code
+     * @return alpha-equivalence hash code
      */
     @CheckReturnValue
     int equivalenceHashCode();
@@ -111,21 +134,24 @@ public interface Atomic {
     PatternAdmin getCombinedPattern();
 
     /**
-     * @return the query the atom is contained in
+     * @return the query the atomic is contained in
      */
     @CheckReturnValue
     ReasonerQuery getParentQuery();
 
     /**
-     * @param q query this atom is supposed to belong to
+     * @param q query this atomic is supposed to belong to
      */
     void setParentQuery(ReasonerQuery q);
 
+    /**
+     * @return variable name of this atomic
+     */
     @CheckReturnValue
     Var getVarName();
 
     /**
-     * @return all addressable variable names in the atom
+     * @return all addressable variable names in this atomic
      */
     @CheckReturnValue
     Set<Var> getVarNames();

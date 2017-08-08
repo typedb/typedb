@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -57,6 +56,8 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  */
 public class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
+    public static final String NAME = "isa";
+
     private final VarPatternAdmin type;
 
     public IsaProperty(VarPatternAdmin type) {
@@ -69,7 +70,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public String getName() {
-        return "isa";
+        return NAME;
     }
 
     @Override
@@ -93,12 +94,19 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Type type = insertQueryExecutor.getConcept(this.type).asType();
-        Thing thing = concept.asThing();
-        if (!thing.type().equals(type)) {
-            throw GraqlQueryException.insertNewType(thing, type);
-        }
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        Type type = executor.get(this.type.getVarName()).asType();
+        executor.builder(var).isa(type);
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of(type.getVarName());
+    }
+
+    @Override
+    public Set<Var> producedVars(Var var) {
+        return ImmutableSet.of(var);
     }
 
     @Override

@@ -26,12 +26,44 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.FACTORY_ANALYTICS;
-import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
+import ai.grakn.engine.GraknEngineStatus;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.json.MetricsModule;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.dropwizard.DropwizardExports;
+import io.prometheus.client.exporter.common.TextFormat;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import spark.Request;
+import spark.Response;
+import spark.Service;
+
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+
+import static ai.grakn.engine.GraknEngineConfig.FACTORY_ANALYTICS;
+import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
 import static ai.grakn.util.REST.GraphConfig.COMPUTER;
 import static ai.grakn.util.REST.GraphConfig.DEFAULT;
 import static ai.grakn.util.REST.Request.FORMAT;
@@ -44,36 +76,8 @@ import static ai.grakn.util.REST.WebPath.System.DELETE_KEYSPACE;
 import static ai.grakn.util.REST.WebPath.System.INITIALISE;
 import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 import static ai.grakn.util.REST.WebPath.System.METRICS;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.json.MetricsModule;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.dropwizard.DropwizardExports;
-import io.prometheus.client.exporter.common.TextFormat;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.DELETE;
-import mjson.Json;
+import static ai.grakn.util.REST.WebPath.System.STATUS;
 import static org.apache.http.HttpHeaders.CACHE_CONTROL;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import spark.Request;
-import spark.Response;
-import spark.Service;
 
 
 
@@ -95,26 +99,28 @@ public class SystemController {
 
     private static final String PROMETHEUS_CONTENT_TYPE = "text/plain; version=0.0.4";
     private static final String PROMETHEUS = "prometheus";
-    public static final String JSON = "json";
+    private static final String JSON = "json";
 
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
     private final EngineGraknGraphFactory factory;
+    private final GraknEngineStatus graknEngineStatus;
     private final MetricRegistry metricRegistry;
     private final ObjectMapper mapper;
-    private final DropwizardExports prometheusMetricWrapper;
     private final CollectorRegistry prometheusRegistry;
 
-    public SystemController(EngineGraknGraphFactory factory , Service spark,
-            MetricRegistry metricRegistry) {
+    public SystemController(EngineGraknGraphFactory factory, Service spark,
+            GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
         this.factory = factory;
+        this.graknEngineStatus = graknEngineStatus;
         this.metricRegistry = metricRegistry;
-        this.prometheusMetricWrapper = new DropwizardExports(metricRegistry);
+        DropwizardExports prometheusMetricWrapper = new DropwizardExports(metricRegistry);
         this.prometheusRegistry = new CollectorRegistry();
         prometheusRegistry.register(prometheusMetricWrapper);
         spark.get(KEYSPACES,     this::getKeyspaces);
         spark.get(CONFIGURATION, this::getConfiguration);
         spark.get(METRICS, this::getMetrics);
         spark.get(INITIALISE, this::initialiseSession);
+        spark.get(STATUS, this::getStatus);
         spark.delete(DELETE_KEYSPACE, this::deleteKeyspace);
 
         final TimeUnit rateUnit = TimeUnit.SECONDS;
@@ -191,6 +197,13 @@ public class SystemController {
         }
 
         return config.toString();
+    }
+
+    @GET
+    @Path("/status")
+    @ApiOperation(value = "Return the status of the engine: READY, INITIALIZING")
+    private String getStatus(Request request, Response response) {
+        return graknEngineStatus.isReady() ? "READY" : "INITIALIZING";
     }
 
     @GET

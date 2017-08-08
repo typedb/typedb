@@ -311,11 +311,7 @@ public class GeoInferenceTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        long startTime = System.currentTimeMillis();
-        QueryAnswers answers = new QueryAnswers(query.admin().stream().map(QueryAnswer::new).collect(toSet()));
-        System.out.println("time: " + (System.currentTimeMillis() - startTime));
-        System.out.println(answers.size());
-        return answers;
+        return new QueryAnswers(query.admin().stream().map(QueryAnswer::new).collect(toSet()));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

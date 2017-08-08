@@ -138,10 +138,15 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Resource resourceConcept = insertQueryExecutor.getConcept(resource).asResource();
-        Thing thing = concept.asThing();
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        Resource resourceConcept = executor.get(resource.getVarName()).asResource();
+        Thing thing = executor.get(var).asThing();
         thing.resource(resourceConcept);
+    }
+
+    @Override
+    public Set<Var> requiredVars(Var var) {
+        return ImmutableSet.of(var, resource.getVarName());
     }
 
     @Override

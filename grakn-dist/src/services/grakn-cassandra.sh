@@ -32,7 +32,7 @@ NODETOOL="${GRAKN_HOME}/services/nodetool"
 
 CASSANDRA_PS=/tmp/grakn-cassandra.pid
 
-# from titan
+# from janus
 wait_for_cassandra() {
     local now_s=`date '+%s'`
     local stop_s=$(( $now_s + $CASSANDRA_STARTUP_TIMEOUT_S ))

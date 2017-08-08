@@ -19,9 +19,8 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.util.CommonUtil;
 
@@ -42,10 +41,6 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
 
     void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
 
-    }
-
-    @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
     }
 
     @Override

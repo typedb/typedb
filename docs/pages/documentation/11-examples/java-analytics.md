@@ -50,7 +50,7 @@ The rest of the project is contained in the Java example code, which can be foun
 ```xml
 <dependency>
 <groupId>ai.grakn</groupId>
-<artifactId>titan-factory</artifactId>
+<artifactId>janus-factory</artifactId>
 <version>${grakn.version}</version>
 </dependency>
 <dependency>
@@ -65,7 +65,7 @@ The rest of the project is contained in the Java example code, which can be foun
 </dependency>
 ```
 
-The Titan factory is required because engine is configured with Titan as the backend. The `slf4j-nop` dependency is a work around because we are using a later version of Spark. The spring framework dependency is a current bug workaround in GRAKN.AI version 0.12.0.
+The Janus factory is required because engine is configured with Janus as the backend. The `slf4j-nop` dependency is a work around because we are using a later version of Spark. The spring framework dependency is a current bug workaround in GRAKN.AI version 0.12.0.
 
 First, we load the ontology and data we will be working with, which is the familiar *basic-genealogy.gql* dataset.
 
