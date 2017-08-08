@@ -30,7 +30,7 @@ abs_path() {
 CASSANDRA_HOME=$(cd "`abs_path`"/.. && pwd)
 
 # The directory where Cassandra's configs live (required)
-CASSANDRA_CONF=$CASSANDRA_HOME/conf/cassandra
+CASSANDRA_CONF=$CASSANDRA_HOME/services
 
 # This can be the path to a jar file, or a directory containing the
 # compiled classes. NOTE: This isn't needed by the startup script,

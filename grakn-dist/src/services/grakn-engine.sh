@@ -39,7 +39,7 @@ for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
 done
 
 # Add path containing logback.xml
-CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf/main/
+CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
 
 wait_for_engine() {
     local now_s=`date '+%s'`

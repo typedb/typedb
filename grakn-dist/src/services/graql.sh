@@ -12,6 +12,6 @@ for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
 done
 
 # Add path containing logback.xml
-CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf/main/
+CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
 
 java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell ${1+"$@"}
