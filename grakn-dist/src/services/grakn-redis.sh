@@ -53,7 +53,7 @@ start)
         echo "Redis is already running"
     else
         echo "Starting redis"
-        executeRedisServer "${GRAKN_HOME}/conf/redis/redis.conf"
+        executeRedisServer "${GRAKN_HOME}/services/redis.conf"
     fi
     ;;
 stop)
@@ -64,7 +64,7 @@ clean)
     echo "Cleaning redis"
 
     if [ ! $(redisRunning) ] ; then
-        executeRedisServer "${GRAKN_HOME}/conf/redis/redis.conf"
+        executeRedisServer "${GRAKN_HOME}/services/redis.conf"
     fi
 
     executeRedisCli flushall
