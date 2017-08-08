@@ -63,17 +63,17 @@ public class PropertyUtil {
 
     public static <T> T choose(Stream<? extends T> stream, long seed) {
         Set<? extends T> collection = stream.collect(Collectors.toSet());
-        Assume.assumeThat(collection, Matchers.not(Matchers.empty()));
+        assumeThat(collection, not(empty()));
         return chooseWithoutCheck(collection, seed);
     }
 
     public static <T> T choose(Collection<? extends T> collection, long seed) {
-        Assume.assumeThat(collection, Matchers.not(Matchers.empty()));
+        assumeThat(collection, not(empty()));
         return chooseWithoutCheck(collection, seed);
     }
 
     public static <T> T choose(String message, Collection<? extends T> collection, long seed) {
-        Assume.assumeThat(message, collection, Matchers.not(Matchers.empty()));
+        assumeThat(message, collection, not(empty()));
         return chooseWithoutCheck(collection, seed);
     }
 

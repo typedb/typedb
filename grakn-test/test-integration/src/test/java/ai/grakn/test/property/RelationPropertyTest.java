@@ -54,7 +54,7 @@ public class RelationPropertyTest {
 
         relation.addRolePlayer(role, rolePlayer);
 
-        Assert.assertThat(relation.rolePlayers().collect(toSet()), CoreMatchers.hasItem(rolePlayer));
+        assertThat(relation.rolePlayers().collect(toSet()), hasItem(rolePlayer));
     }
 
     @Property(onMinimalCounterexample = GraknGraphs.class)
@@ -63,7 +63,7 @@ public class RelationPropertyTest {
 
         relation.addRolePlayer(role, rolePlayer);
 
-        Assert.assertThat(relation.rolePlayers(role).collect(toSet()), CoreMatchers.hasItem(rolePlayer));
+        assertThat(relation.rolePlayers(role).collect(toSet()), hasItem(rolePlayer));
     }
 
     @Property
@@ -74,14 +74,14 @@ public class RelationPropertyTest {
 
         relation.addRolePlayer(role, rolePlayer);
 
-        Assert.assertThat(relation.rolePlayers(role).collect(toSet()), CoreMatchers.hasItems(rolePlayers));
+        assertThat(relation.rolePlayers(role).collect(toSet()), hasItems(rolePlayers));
     }
 
     @Property
     public void whenCallingRolePlayers_TheResultIsASet(Relation relation, @FromGraph Role[] roles) {
         Collection<Thing> rolePlayers = relation.rolePlayers(roles).collect(toSet());
-        Set<Thing> rolePlayersSet = Sets.newHashSet(rolePlayers);
-        Assert.assertEquals(rolePlayers.size(), rolePlayersSet.size());
+        Set<Thing> rolePlayersSet = newHashSet(rolePlayers);
+        assertEquals(rolePlayers.size(), rolePlayersSet.size());
     }
 
     @Property
@@ -89,18 +89,18 @@ public class RelationPropertyTest {
         Role[] allRoles = new Role[relation.allRolePlayers().size()];
         relation.allRolePlayers().keySet().toArray(allRoles);
 
-        Assert.assertEquals(relation.rolePlayers().collect(toSet()), relation.rolePlayers(allRoles).collect(toSet()));
+        assertEquals(relation.rolePlayers().collect(toSet()), relation.rolePlayers(allRoles).collect(toSet()));
     }
 
     @Property
     public void whenCallingRolePlayersWithXandY_IsTheSameAsCallingRolePlayersXAndRolePlayersY(
             Relation relation, @FromGraph Role[] rolesX, @FromGraph Role[] rolesY) {
 
-        Role[] rolesXY = (Role[]) ArrayUtils.addAll(rolesX, rolesY);
+        Role[] rolesXY = (Role[]) addAll(rolesX, rolesY);
 
         Set<Thing> expected =
-                Sets.union(relation.rolePlayers(rolesX).collect(toSet()), relation.rolePlayers(rolesY).collect(toSet()));
+                union(relation.rolePlayers(rolesX).collect(toSet()), relation.rolePlayers(rolesY).collect(toSet()));
 
-        Assert.assertEquals(expected, relation.rolePlayers(rolesXY).collect(toSet()));
+        assertEquals(expected, relation.rolePlayers(rolesXY).collect(toSet()));
     }
 }

@@ -53,14 +53,14 @@ public class EntityTypePropertyTest {
     @Property
     public void whenANonMetaEntityTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
             @Open GraknGraph graph, @FromGraph @NonMeta EntityType type) {
-        Assume.assumeThat(type.instances().collect(toSet()), Matchers.empty());
-        Assume.assumeThat(type.subs().collect(toSet()), Matchers.contains(type));
-        Assume.assumeThat(type.getRulesOfHypothesis().collect(toSet()), Matchers.empty());
-        Assume.assumeThat(type.getRulesOfConclusion().collect(toSet()), Matchers.empty());
+        assumeThat(type.instances().collect(toSet()), empty());
+        assumeThat(type.subs().collect(toSet()), contains(type));
+        assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());
+        assumeThat(type.getRulesOfConclusion().collect(toSet()), empty());
 
         type.delete();
 
-        Assert.assertNull(graph.getOntologyConcept(type.getLabel()));
+        assertNull(graph.getOntologyConcept(type.getLabel()));
     }
 
     @Property
@@ -75,20 +75,20 @@ public class EntityTypePropertyTest {
             @NonMeta @NonAbstract EntityType type) {
         Entity entity = type.addEntity();
 
-        Assert.assertEquals(type, entity.type());
+        assertEquals(type, entity.type());
     }
 
     @Property
     public void whenAddingAnEntity_TheEntityIsInNoRelations(@NonMeta @NonAbstract EntityType type) {
         Entity entity = type.addEntity();
 
-        Assert.assertThat(entity.relations().collect(toSet()), Matchers.empty());
+        assertThat(entity.relations().collect(toSet()), empty());
     }
 
     @Property
     public void whenAddingAnEntity_TheEntityHasNoResources(@NonMeta @NonAbstract EntityType type) {
         Entity entity = type.addEntity();
 
-        Assert.assertThat(entity.resources().collect(toSet()), Matchers.empty());
+        assertThat(entity.resources().collect(toSet()), empty());
     }
 }

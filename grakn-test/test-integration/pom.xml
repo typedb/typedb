@@ -5,7 +5,7 @@
     <parent>
         <artifactId>grakn-test</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.16.0-SNAPSHOT</version>
+        <version>0.17.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,6 +15,16 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>grakn-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-graql</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-client</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -141,7 +151,7 @@
 
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>titan-factory</artifactId>
+            <artifactId>janus-factory</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
             <!--Excluded because we provide logback logger-->
@@ -152,7 +162,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
     </dependencies>
 
 </project>

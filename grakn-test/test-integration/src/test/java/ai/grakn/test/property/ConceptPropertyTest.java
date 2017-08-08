@@ -72,10 +72,10 @@ public class ConceptPropertyTest {
             @NonMeta Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
         concept.delete();
 
-        Object[] params = Methods.mockParamsOf(method);
+        Object[] params = mockParamsOf(method);
 
         exception.expect(InvocationTargetException.class);
-        exception.expectCause(Matchers.isA(RuntimeException.class));
+        exception.expectCause(isA(RuntimeException.class));
 
         method.invoke(concept, params);
     }
@@ -86,11 +86,11 @@ public class ConceptPropertyTest {
             @Open GraknGraph graph, @FromGraph Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
         graph.close();
 
-        Object[] params = Methods.mockParamsOf(method);
+        Object[] params = mockParamsOf(method);
 
         exception.expect(InvocationTargetException.class);
-        exception.expectCause(Matchers.isA(GraphOperationException.class));
-        exception.expectCause(Matchers.hasProperty("message", Matchers.is(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
+        exception.expectCause(isA(GraphOperationException.class));
+        exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
 
         method.invoke(concept, params);
     }
@@ -100,20 +100,20 @@ public class ConceptPropertyTest {
             @Open GraknGraph graph, @FromGraph @NonMeta Concept concept) {
         assumeDeletable(graph, concept);
         concept.delete();
-        MatcherAssert.assertThat(concept.toString(), Matchers.containsString(concept.getId().getValue()));
+        assertThat(concept.toString(), containsString(concept.getId().getValue()));
     }
 
     @Property
     public void whenCallingGetId_TheResultIsUnique(Concept concept1, @FromGraph Concept concept2) {
-        Assume.assumeThat(concept1, Matchers.not(Matchers.is(concept2)));
-        Assert.assertNotEquals(concept1.getId(), concept2.getId());
+        assumeThat(concept1, not(is(concept2)));
+        assertNotEquals(concept1.getId(), concept2.getId());
     }
 
     @Property
     public void whenCallingGetId_TheResultCanBeUsedToRetrieveTheSameConcept(
             @Open GraknGraph graph, @FromGraph Concept concept) {
         ConceptId id = concept.getId();
-        Assert.assertEquals(concept, graph.getConcept(id));
+        assertEquals(concept, graph.getConcept(id));
     }
 
     @Property
@@ -121,43 +121,43 @@ public class ConceptPropertyTest {
             @Open GraknGraph graph, @NonMeta @FromGraph Concept concept) {
         assumeDeletable(graph, concept);
 
-        MatcherAssert.assertThat(GraknGraphs.allConceptsFrom(graph), Matchers.hasItem(concept));
+        assertThat(allConceptsFrom(graph), hasItem(concept));
         concept.delete();
-        MatcherAssert.assertThat(GraknGraphs.allConceptsFrom(graph), Matchers.not(Matchers.hasItem(concept)));
+        assertThat(allConceptsFrom(graph), not(hasItem(concept)));
     }
 
     @Property
     public void whenConceptIsASubClass_TheConceptCanBeConvertedToThatSubClass(Concept concept) {
         // These are all in one test only because they are trivial
 
-        if (concept.isOntologyConcept()) Assert.assertEquals(concept, concept.asOntologyConcept());
+        if (concept.isOntologyConcept()) assertEquals(concept, concept.asOntologyConcept());
 
-        if (concept.isType()) Assert.assertEquals(concept, concept.asType());
+        if (concept.isType()) assertEquals(concept, concept.asType());
 
-        if (concept.isEntityType()) Assert.assertEquals(concept, concept.asEntityType());
+        if (concept.isEntityType()) assertEquals(concept, concept.asEntityType());
 
-        if (concept.isRelationType()) Assert.assertEquals(concept, concept.asRelationType());
+        if (concept.isRelationType()) assertEquals(concept, concept.asRelationType());
 
-        if (concept.isRole()) Assert.assertEquals(concept, concept.asRole());
+        if (concept.isRole()) assertEquals(concept, concept.asRole());
 
-        if (concept.isResourceType()) Assert.assertEquals(concept, concept.asResourceType());
+        if (concept.isResourceType()) assertEquals(concept, concept.asResourceType());
 
-        if (concept.isRuleType()) Assert.assertEquals(concept, concept.asRuleType());
+        if (concept.isRuleType()) assertEquals(concept, concept.asRuleType());
 
-        if (concept.isThing()) Assert.assertEquals(concept, concept.asThing());
+        if (concept.isThing()) assertEquals(concept, concept.asThing());
 
-        if (concept.isEntity()) Assert.assertEquals(concept, concept.asEntity());
+        if (concept.isEntity()) assertEquals(concept, concept.asEntity());
 
-        if (concept.isRelation()) Assert.assertEquals(concept, concept.asRelation());
+        if (concept.isRelation()) assertEquals(concept, concept.asRelation());
 
-        if (concept.isResource()) Assert.assertEquals(concept, concept.asResource());
+        if (concept.isResource()) assertEquals(concept, concept.asResource());
 
-        if (concept.isRule()) Assert.assertEquals(concept, concept.asRule());
+        if (concept.isRule()) assertEquals(concept, concept.asRule());
     }
 
     @Property
     public void whenConceptIsNotAType_TheConceptCannotBeConvertedToAType(Concept concept) {
-        Assume.assumeFalse(concept.isType());
+        assumeFalse(concept.isType());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asType();
@@ -165,7 +165,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotAnOntologyConcept_TheConceptCannotBeConvertedToAnOntologyConcept(Concept concept) {
-        Assume.assumeFalse(concept.isOntologyConcept());
+        assumeFalse(concept.isOntologyConcept());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asOntologyConcept();
@@ -173,7 +173,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotAnEntityType_TheConceptCannotBeConvertedToAnEntityType(Concept concept) {
-        Assume.assumeFalse(concept.isEntityType());
+        assumeFalse(concept.isEntityType());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asEntityType();
@@ -181,7 +181,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotARelationType_TheConceptCannotBeConvertedToARelationType(Concept concept) {
-        Assume.assumeFalse(concept.isRelationType());
+        assumeFalse(concept.isRelationType());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asRelationType();
@@ -189,7 +189,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotARole_TheConceptCannotBeConvertedToARole(Concept concept) {
-        Assume.assumeFalse(concept.isRole());
+        assumeFalse(concept.isRole());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asRole();
@@ -197,7 +197,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotAResourceType_TheConceptCannotBeConvertedToAResourceType(Concept concept) {
-        Assume.assumeFalse(concept.isResourceType());
+        assumeFalse(concept.isResourceType());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asResourceType();
@@ -205,7 +205,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotARuleType_TheConceptCannotBeConvertedToARuleType(Concept concept) {
-        Assume.assumeFalse(concept.isRuleType());
+        assumeFalse(concept.isRuleType());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asRuleType();
@@ -213,7 +213,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotAnInstance_TheConceptCannotBeConvertedToAnInstance(Concept concept) {
-        Assume.assumeFalse(concept.isThing());
+        assumeFalse(concept.isThing());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asThing();
@@ -221,7 +221,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotAnEntity_TheConceptCannotBeConvertedToAnEntity(Concept concept) {
-        Assume.assumeFalse(concept.isEntity());
+        assumeFalse(concept.isEntity());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asEntity();
@@ -229,7 +229,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotARelation_TheConceptCannotBeConvertedToARelation(Concept concept) {
-        Assume.assumeFalse(concept.isRelation());
+        assumeFalse(concept.isRelation());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asRelation();
@@ -237,7 +237,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotAResource_TheConceptCannotBeConvertedToAResource(Concept concept) {
-        Assume.assumeFalse(concept.isResource());
+        assumeFalse(concept.isResource());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asResource();
@@ -245,7 +245,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotARule_TheConceptCannotBeConvertedToARule(Concept concept) {
-        Assume.assumeFalse(concept.isRule());
+        assumeFalse(concept.isRule());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asRule();
@@ -256,23 +256,23 @@ public class ConceptPropertyTest {
         // TODO: A better way to handle these assumptions?
         if (concept.isOntologyConcept()) {
             OntologyConcept ontologyConcept = concept.asOntologyConcept();
-            Assume.assumeThat(ontologyConcept.subs().collect(toSet()), Matchers.contains(ontologyConcept));
+            assumeThat(ontologyConcept.subs().collect(toSet()), contains(ontologyConcept));
             if(ontologyConcept.isType()) {
                 Type type = ontologyConcept.asType();
-                Assume.assumeThat(type.instances().collect(toSet()), Matchers.empty());
-                Assume.assumeThat(type.getRulesOfHypothesis().collect(toSet()), Matchers.empty());
-                Assume.assumeThat(type.getRulesOfConclusion().collect(toSet()), Matchers.empty());
+                assumeThat(type.instances().collect(toSet()), empty());
+                assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());
+                assumeThat(type.getRulesOfConclusion().collect(toSet()), empty());
             }
 
             if (ontologyConcept.isRole()) {
                 Role role = ontologyConcept.asRole();
-                Assume.assumeThat(role.playedByTypes().collect(toSet()), Matchers.empty());
-                Assume.assumeThat(role.relationTypes().collect(toSet()), Matchers.empty());
+                assumeThat(role.playedByTypes().collect(toSet()), empty());
+                assumeThat(role.relationTypes().collect(toSet()), empty());
                 Stream<Relation> allRelations = graph.admin().getMetaRelationType().instances();
                 Set<Role> allRolesPlayed = allRelations.flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
-                Assume.assumeThat(allRolesPlayed, Matchers.not(Matchers.hasItem(role)));
+                assumeThat(allRolesPlayed, not(hasItem(role)));
             } else if (ontologyConcept.isRelationType()) {
-                Assume.assumeThat(ontologyConcept.asRelationType().relates().collect(toSet()), Matchers.empty());
+                assumeThat(ontologyConcept.asRelationType().relates().collect(toSet()), empty());
             }
         }
     }

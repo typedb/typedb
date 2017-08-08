@@ -92,7 +92,7 @@ public class TypePropertyTest {
     @Ignore // TODO: Fails very rarely and only remotely
     @Property
     public void whenDeletingATypeWithIndirectInstances_Throw(@NonMeta Type type) {
-        Assume.assumeThat(type.instances().collect(toSet()), Matchers.not(Matchers.empty()));
+        assumeThat(type.instances().collect(toSet()), not(empty()));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.cannotBeDeleted(type).getMessage());
@@ -102,42 +102,42 @@ public class TypePropertyTest {
     @Ignore // TODO: Fix this (Bug #16191)
     @Property
     public void whenATypeWithDirectInstancesIsSetToAbstract_Throw(Type type) {
-        Assume.assumeThat(PropertyUtil.directInstances(type), Matchers.not(Matchers.empty()));
+        assumeThat(PropertyUtil.directInstances(type), not(empty()));
 
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(ErrorMessage.IS_ABSTRACT.getMessage(type.getLabel()));
+        exception.expectMessage(IS_ABSTRACT.getMessage(type.getLabel()));
 
         type.setAbstract(true);
     }
 
     @Property
     public void whenSettingATypeAbstractFlag_TheTypesAbstractFlagIsSet(@NonMeta Type type, boolean isAbstract) {
-        Assume.assumeThat(PropertyUtil.directInstances(type), Matchers.empty());
+        assumeThat(PropertyUtil.directInstances(type), empty());
 
         type.setAbstract(isAbstract);
-        Assert.assertEquals(isAbstract, type.isAbstract());
+        assertEquals(isAbstract, type.isAbstract());
     }
 
     @Property
     public void whenGettingIndirectInstances_ReturnDirectInstancesAndIndirectInstancesOfDirectSubTypes(Type type) {
         Collection<Type> directSubTypes = PropertyUtil.directSubs(type);
         Thing[] expected = Stream.concat(
-            PropertyUtil.directInstances(type).stream(),
-            directSubTypes.stream().flatMap(subType -> subType.instances())
+                PropertyUtil.directInstances(type).stream(),
+                directSubTypes.stream().flatMap(subType -> subType.instances())
         ).toArray(Thing[]::new);
 
-        Assert.assertThat(type.instances().collect(toSet()), Matchers.containsInAnyOrder(expected));
+        assertThat(type.instances().collect(toSet()), containsInAnyOrder(expected));
     }
 
     @Property
     public void whenGettingPlays_ResultIsASupersetOfDirectSuperTypePlays(Type type) {
-        Assume.assumeNotNull(type.sup());
-        Assert.assertTrue(type.plays().collect(toSet()).containsAll(type.sup().plays().collect(toSet())));
+        assumeNotNull(type.sup());
+        assertTrue(type.plays().collect(toSet()).containsAll(type.sup().plays().collect(toSet())));
     }
 
     @Property
     public void ATypePlayingARoleIsEquivalentToARoleBeingPlayed(Type type, @FromGraph Role role) {
-        Assert.assertEquals(type.plays().anyMatch(r -> r.equals(role)), role.playedByTypes().collect(toSet()).contains(type));
+        assertEquals(type.plays().anyMatch(r -> r.equals(role)), role.playedByTypes().collect(toSet()).contains(type));
     }
 
     @Property
@@ -147,15 +147,15 @@ public class TypePropertyTest {
         type.plays(role);
         Set<Role> newPlays = type.plays().collect(toSet());
 
-        Assert.assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(role)));
+        assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(role)));
     }
 
     @Property
     public void whenAddingAPlaysToATypesIndirectSuperType_TheTypePlaysThatRole(
             Type type, @FromGraph Role role, long seed) {
         OntologyConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(type), seed);
-        Assume.assumeTrue(superConcept.isType());
-        Assume.assumeFalse(MetaSchema.isMetaLabel(superConcept.getLabel()));
+        assumeTrue(superConcept.isType());
+        assumeFalse(isMetaLabel(superConcept.getLabel()));
 
         Type superType = superConcept.asType();
 
@@ -163,15 +163,15 @@ public class TypePropertyTest {
         superType.plays(role);
         Set<Role> newPlays = type.plays().collect(toSet());
 
-        Assert.assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(role)));
+        assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(role)));
     }
 
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypeDoesNotPlaysThatRole_TheTypeNoLongerPlaysThatRole(
             @NonMeta Type type, @FromGraph Role role) {
-        Assume.assumeThat(type.sup().plays().collect(toSet()), Matchers.not(Matchers.hasItem(role)));
+        assumeThat(type.sup().plays().collect(toSet()), not(hasItem(role)));
         type.deletePlays(role);
-        Assert.assertThat(type.plays().collect(toSet()), Matchers.not(Matchers.hasItem(role)));
+        assertThat(type.plays().collect(toSet()), not(hasItem(role)));
     }
 
     @Property
@@ -179,7 +179,7 @@ public class TypePropertyTest {
             @NonMeta Type type, long seed) {
         Role role = PropertyUtil.choose(type.sup() + " plays no roles", type.sup().plays().collect(toSet()), seed);
         type.deletePlays(role);
-        Assert.assertThat(type.plays().collect(toSet()), Matchers.hasItem(role));
+        assertThat(type.plays().collect(toSet()), hasItem(role));
     }
 
     // TODO: Tests for `resource` and `key`

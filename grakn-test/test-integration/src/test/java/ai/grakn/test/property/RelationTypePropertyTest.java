@@ -60,14 +60,14 @@ public class RelationTypePropertyTest {
     @Property
     public void whenANonMetaRelationTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
             @Open GraknGraph graph, @FromGraph @NonMeta RelationType type) {
-        Assume.assumeThat(type.instances().collect(toSet()), Matchers.empty());
-        Assume.assumeThat(type.subs().collect(toSet()), Matchers.contains(type));
-        Assume.assumeThat(type.getRulesOfHypothesis().collect(toSet()), Matchers.empty());
-        Assume.assumeThat(type.getRulesOfConclusion().collect(toSet()), Matchers.empty());
+        assumeThat(type.instances().collect(toSet()), empty());
+        assumeThat(type.subs().collect(toSet()), contains(type));
+        assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());
+        assumeThat(type.getRulesOfConclusion().collect(toSet()), empty());
 
         type.delete();
 
-        Assert.assertNull(graph.getOntologyConcept(type.getLabel()));
+        assertNull(graph.getOntologyConcept(type.getLabel()));
     }
 
     @Property
@@ -82,34 +82,34 @@ public class RelationTypePropertyTest {
             @NonMeta @NonAbstract RelationType type) {
         Relation relation = type.addRelation();
 
-        Assert.assertEquals(type, relation.type());
+        assertEquals(type, relation.type());
     }
 
     @Property
     public void whenAddingARelation_TheRelationIsInNoRelations(@NonMeta @NonAbstract RelationType type) {
         Relation relation = type.addRelation();
 
-        Assert.assertThat(relation.relations().collect(toSet()), Matchers.empty());
+        assertThat(relation.relations().collect(toSet()), empty());
     }
 
     @Property
     public void whenAddingARelation_TheRelationHasNoResources(@NonMeta @NonAbstract RelationType type) {
         Relation relation = type.addRelation();
 
-        Assert.assertThat(relation.resources().collect(toSet()), Matchers.empty());
+        assertThat(relation.resources().collect(toSet()), empty());
     }
 
     @Property
     public void whenAddingARelation_TheRelationHasNoRolePlayers(@NonMeta @NonAbstract RelationType type) {
         Relation relation = type.addRelation();
 
-        Assert.assertThat(relation.rolePlayers().collect(toSet()), Matchers.empty());
+        assertThat(relation.rolePlayers().collect(toSet()), empty());
     }
 
     @Property
     public void relationTypeRelatingARoleIsEquivalentToARoleHavingARelationType(
             RelationType relationType, @FromGraph Role role) {
-        Assert.assertEquals(relationType.relates().collect(toSet()).contains(role), role.relationTypes().collect(toSet()).contains(relationType));
+        assertEquals(relationType.relates().collect(toSet()).contains(role), role.relationTypes().collect(toSet()).contains(relationType));
     }
 
     @Property
@@ -126,7 +126,7 @@ public class RelationTypePropertyTest {
         relationType.relates(role);
         Set<Role> newHasRoles = relationType.relates().collect(toSet());
 
-        Assert.assertEquals(Sets.union(previousHasRoles, ImmutableSet.of(role)), newHasRoles);
+        assertEquals(Sets.union(previousHasRoles, ImmutableSet.of(role)), newHasRoles);
     }
 
     @Property
@@ -138,20 +138,20 @@ public class RelationTypePropertyTest {
         subType.relates(role);
         Set<Role> newHasRoles = superType.relates().collect(toSet());
 
-        Assert.assertEquals(previousHasRoles, newHasRoles);
+        assertEquals(previousHasRoles, newHasRoles);
     }
 
     @Property
     public void whenRelatingARole_TheDirectSubTypeRelatedRolesAreUnchanged(
             @NonMeta RelationType subType, @FromGraph Role role) {
         RelationType superType = subType.sup();
-        Assume.assumeFalse(MetaSchema.isMetaLabel(superType.getLabel()));
+        assumeFalse(isMetaLabel(superType.getLabel()));
 
         Set<Role> previousHasRoles = subType.relates().collect(toSet());
         superType.relates(role);
         Set<Role> newHasRoles = subType.relates().collect(toSet());
 
-        Assert.assertEquals(previousHasRoles, newHasRoles);
+        assertEquals(previousHasRoles, newHasRoles);
     }
 
     @Property
@@ -169,7 +169,7 @@ public class RelationTypePropertyTest {
         relationType.deleteRelates(role);
         Set<Role> newHasRoles = relationType.relates().collect(toSet());
 
-        Assert.assertEquals(Sets.difference(previousHasRoles, ImmutableSet.of(role)), newHasRoles);
+        assertEquals(Sets.difference(previousHasRoles, ImmutableSet.of(role)), newHasRoles);
     }
 
     @Property
@@ -181,19 +181,19 @@ public class RelationTypePropertyTest {
         subType.deleteRelates(role);
         Set<Role> newHasRoles = superType.relates().collect(toSet());
 
-        Assert.assertEquals(previousHasRoles, newHasRoles);
+        assertEquals(previousHasRoles, newHasRoles);
     }
 
     @Property
     public void whenDeletingARelatedRole_TheDirectSubTypeRelatedRolesAreUnchanged(
             @NonMeta RelationType subType, @FromGraph Role role) {
         RelationType superType = subType.sup();
-        Assume.assumeFalse(MetaSchema.isMetaLabel(superType.getLabel()));
+        assumeFalse(isMetaLabel(superType.getLabel()));
 
         Set<Role> previousHasRoles = subType.relates().collect(toSet());
         superType.deleteRelates(role);
         Set<Role> newHasRoles = subType.relates().collect(toSet());
 
-        Assert.assertEquals(previousHasRoles, newHasRoles);
+        assertEquals(previousHasRoles, newHasRoles);
     }
 }

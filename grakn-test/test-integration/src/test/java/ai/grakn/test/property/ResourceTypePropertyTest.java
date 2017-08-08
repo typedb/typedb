@@ -53,13 +53,13 @@ public class ResourceTypePropertyTest {
 
         try {
             type.putResource(value);
-            Assume.assumeTrue("Assumed putResource would throw", false);
+            assumeTrue("Assumed putResource would throw", false);
         } catch (GraphOperationException e) {
             // This is expected to throw
         }
 
         Collection newResources = (Collection) type.instances().collect(toSet());
 
-        Assert.assertEquals(previousResources.size(), newResources.size());
+        assertEquals(previousResources.size(), newResources.size());
     }
 }

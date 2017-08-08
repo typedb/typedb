@@ -64,7 +64,7 @@ public class OntologyConceptPropertyTest {
     @Property
     public void whenDeletingAMetaConcept_Throw(@Meta OntologyConcept ontologyConcept) {
         exception.expect(GraphOperationException.class);
-        exception.expectMessage(Matchers.isOneOf(
+        exception.expectMessage(isOneOf(
                 GraphOperationException.metaTypeImmutable(ontologyConcept.getLabel()).getMessage(),
                 GraphOperationException.cannotBeDeleted(ontologyConcept).getMessage()
         ));
@@ -74,7 +74,7 @@ public class OntologyConceptPropertyTest {
     @Property
     public void whenDeletingAnOntologyConceptWithDirectSubs_Throw(@NonMeta OntologyConcept ontologyConcept) {
         OntologyConcept superConcept = ontologyConcept.sup();
-        Assume.assumeFalse(MetaSchema.isMetaLabel(superConcept.getLabel()));
+        assumeFalse(isMetaLabel(superConcept.getLabel()));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.cannotBeDeleted(superConcept).getMessage());
@@ -83,42 +83,42 @@ public class OntologyConceptPropertyTest {
 
     @Property
     public void whenCallingGetLabel_TheResultIsUnique(OntologyConcept concept1, @FromGraph OntologyConcept concept2) {
-        Assume.assumeThat(concept1, Matchers.not(Matchers.is(concept2)));
-        Assert.assertNotEquals(concept1.getLabel(), concept2.getLabel());
+        assumeThat(concept1, not(is(concept2)));
+        assertNotEquals(concept1.getLabel(), concept2.getLabel());
     }
 
     @Property
     public void whenCallingGetLabel_TheResultCanBeUsedToRetrieveTheSameConcept(
             @Open GraknGraph graph, @FromGraph OntologyConcept concept) {
         Label label = concept.getLabel();
-        Assert.assertEquals(concept, graph.getOntologyConcept(label));
+        assertEquals(concept, graph.getOntologyConcept(label));
     }
 
     @Property
     public void whenAnOntologyElementHasADirectSuper_ItIsADirectSubOfThatSuper(OntologyConcept ontologyConcept) {
         OntologyConcept superConcept = ontologyConcept.sup();
-        Assume.assumeTrue(superConcept != null);
+        assumeTrue(superConcept != null);
 
-        Assert.assertThat(PropertyUtil.directSubs(superConcept), Matchers.hasItem(ontologyConcept));
+        assertThat(PropertyUtil.directSubs(superConcept), hasItem(ontologyConcept));
     }
 
     @Property
     public void whenGettingSuper_TheResultIsNeverItself(OntologyConcept concept) {
-        Assert.assertNotEquals(concept, concept.sup());
+        assertNotEquals(concept, concept.sup());
     }
 
     @Property
     public void whenAnOntologyConceptHasAnIndirectSuper_ItIsAnIndirectSubOfThatSuper(
             OntologyConcept subConcept, long seed) {
         OntologyConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(subConcept), seed);
-        Assert.assertThat(superConcept.subs().collect(toSet()), Matchers.hasItem(subConcept));
+        assertThat(superConcept.subs().collect(toSet()), hasItem(subConcept));
     }
 
     @Property
     public void whenAnOntologyConceptHasAnIndirectSub_ItIsAnIndirectSuperOfThatSub(
             OntologyConcept superConcept, long seed) {
         OntologyConcept subConcept = PropertyUtil.choose(superConcept.subs(), seed);
-        Assert.assertThat(PropertyUtil.indirectSupers(subConcept), Matchers.hasItem(superConcept));
+        assertThat(PropertyUtil.indirectSupers(subConcept), hasItem(superConcept));
     }
 
     @Property
@@ -129,18 +129,18 @@ public class OntologyConceptPropertyTest {
                 directSubs.stream().flatMap(OntologyConcept::subs)
         ).toArray(OntologyConcept[]::new);
 
-        Assert.assertThat(concept.subs().collect(toSet()), Matchers.containsInAnyOrder(expected));
+        assertThat(concept.subs().collect(toSet()), containsInAnyOrder(expected));
     }
 
     @Property
     public void whenGettingTheIndirectSubs_TheyContainTheOntologyConcept(OntologyConcept concept) {
-        Assert.assertThat(concept.subs().collect(toSet()), Matchers.hasItem(concept));
+        assertThat(concept.subs().collect(toSet()), hasItem(concept));
     }
 
     @Property
     public void whenSettingTheDirectSuperOfAMetaConcept_Throw(
             @Meta OntologyConcept subConcept, @FromGraph OntologyConcept superConcept) {
-        Assume.assumeTrue(sameOntologyConcept(subConcept, superConcept));
+        assumeTrue(sameOntologyConcept(subConcept, superConcept));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
@@ -160,21 +160,21 @@ public class OntologyConceptPropertyTest {
     @Property
     public void whenSettingTheDirectSuper_TheDirectSuperIsSet(
             @NonMeta OntologyConcept subConcept, @FromGraph OntologyConcept superConcept) {
-        Assume.assumeTrue(sameOntologyConcept(subConcept, superConcept));
-        Assume.assumeThat(subConcept.subs().collect(toSet()), Matchers.not(Matchers.hasItem(superConcept)));
+        assumeTrue(sameOntologyConcept(subConcept, superConcept));
+        assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
         //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
-        if(subConcept.isType()) Assume.assumeThat(subConcept.asType().sup().instances().collect(toSet()), Matchers.is(Matchers.empty()));
+        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances().collect(toSet()), is(empty()));
 
         setDirectSuper(subConcept, superConcept);
 
-        Assert.assertEquals(superConcept, subConcept.sup());
+        assertEquals(superConcept, subConcept.sup());
     }
 
     @Property
     public void whenAddingADirectSubThatIsAMetaConcept_Throw(
             OntologyConcept superConcept, @Meta @FromGraph OntologyConcept subConcept) {
-        Assume.assumeTrue(sameOntologyConcept(subConcept, superConcept));
+        assumeTrue(sameOntologyConcept(subConcept, superConcept));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
@@ -194,21 +194,21 @@ public class OntologyConceptPropertyTest {
     @Property
     public void whenAddingADirectSub_TheDirectSubIsAdded(
             OntologyConcept superConcept, @NonMeta @FromGraph OntologyConcept subConcept) {
-        Assume.assumeTrue(sameOntologyConcept(subConcept, superConcept));
-        Assume.assumeThat(subConcept.subs().collect(toSet()), Matchers.not(Matchers.hasItem(superConcept)));
+        assumeTrue(sameOntologyConcept(subConcept, superConcept));
+        assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
         //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
-        if(subConcept.isType()) Assume.assumeThat(subConcept.asType().sup().instances().collect(toSet()), Matchers.is(Matchers.empty()));
+        if(subConcept.isType()) assumeThat(subConcept.asType().sup().instances().collect(toSet()), is(empty()));
 
         addDirectSub(superConcept, subConcept);
 
-        Assert.assertThat(PropertyUtil.directSubs(superConcept), Matchers.hasItem(subConcept));
+        assertThat(PropertyUtil.directSubs(superConcept), hasItem(subConcept));
     }
 
     @Ignore // TODO: Find a way to generate linked rules
     @Property
     public void whenDeletingAnOntologyConceptWithHypothesisRules_Throw(OntologyConcept concept) {
-        Assume.assumeThat(concept.getRulesOfHypothesis().collect(toSet()), Matchers.not(Matchers.empty()));
+        assumeThat(concept.getRulesOfHypothesis().collect(toSet()), not(empty()));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.cannotBeDeleted(concept).getMessage());
@@ -218,7 +218,7 @@ public class OntologyConceptPropertyTest {
     @Ignore // TODO: Find a way to generate linked rules
     @Property
     public void whenDeletingAnOntologyConceptWithConclusionRules_Throw(OntologyConcept concept) {
-        Assume.assumeThat(concept.getRulesOfConclusion().collect(toSet()), Matchers.not(Matchers.empty()));
+        assumeThat(concept.getRulesOfConclusion().collect(toSet()), not(empty()));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.cannotBeDeleted(concept).getMessage());
@@ -246,7 +246,7 @@ public class OntologyConceptPropertyTest {
         } else if (subConcept.isRuleType()) {
             subConcept.asRuleType().sup(superConcept.asRuleType());
         } else {
-            Assert.fail("unreachable");
+            fail("unreachable");
         }
     }
 
@@ -262,7 +262,7 @@ public class OntologyConceptPropertyTest {
         } else if (superConcept.isRuleType()) {
             superConcept.asRuleType().sub(subConcept.asRuleType());
         } else {
-            Assert.fail("unreachable");
+            fail("unreachable");
         }
     }
 }

@@ -89,15 +89,15 @@ public class GraknGraphPropertyTest {
             @Open(false) GraknGraph graph, @MethodOf(GraknGraph.class) Method method) throws Throwable {
 
         // TODO: Should `admin`, `close`, `implicitConceptsVisible`, `getKeyspace` and `graql` be here?
-        Assume.assumeThat(method.getName(), Matchers.not(Matchers.isOneOf(
+        assumeThat(method.getName(), not(isOneOf(
                 "isClosed", "admin", "close", "commit", "abort", "isReadOnly", "implicitConceptsVisible",
                 "getKeyspace", "graql", "getId"
         )));
-        Object[] params = Methods.mockParamsOf(method);
+        Object[] params = mockParamsOf(method);
 
         exception.expect(InvocationTargetException.class);
-        exception.expectCause(Matchers.isA(GraphOperationException.class));
-        exception.expectCause(Matchers.hasProperty("message", Matchers.is(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
+        exception.expectCause(isA(GraphOperationException.class));
+        exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
 
         method.invoke(graph, params);
     }
@@ -106,21 +106,21 @@ public class GraknGraphPropertyTest {
     public void whenCallingGetConceptWithAnExistingConceptId_ItReturnsThatConcept(
             @Open GraknGraph graph, @FromGraph Concept concept) {
         ConceptId id = concept.getId();
-        Assert.assertEquals(concept, graph.getConcept(id));
+        assertEquals(concept, graph.getConcept(id));
     }
 
     @Property
     public void whenCallingGetConceptWithANonExistingConceptId_ItReturnsNull(@Open GraknGraph graph, ConceptId id) {
-        Set<ConceptId> allIds = GraknGraphs.allConceptsFrom(graph).stream().map(Concept::getId).collect(toSet());
-        Assume.assumeThat(allIds, Matchers.not(Matchers.hasItem(id)));
+        Set<ConceptId> allIds = allConceptsFrom(graph).stream().map(Concept::getId).collect(toSet());
+        assumeThat(allIds, not(hasItem(id)));
 
-        Assert.assertNull(graph.getConcept(id));
+        assertNull(graph.getConcept(id));
     }
 
     @Property
     public void whenCallingGetConceptWithAnIncorrectGeneric_ItThrows(
             @Open GraknGraph graph, @FromGraph Concept concept) {
-        Assume.assumeFalse(concept.isRole());
+        assumeFalse(concept.isRole());
         ConceptId id = concept.getId();
 
         exception.expect(ClassCastException.class);
@@ -134,22 +134,22 @@ public class GraknGraphPropertyTest {
     public void whenCallingGetOntologyConceptWithAnExistingLabel_ItReturnsThatConcept(
             @Open GraknGraph graph, @FromGraph OntologyConcept concept) {
         Label label = concept.getLabel();
-        Assert.assertEquals(concept, graph.getOntologyConcept(label));
+        assertEquals(concept, graph.getOntologyConcept(label));
     }
 
     @Property
     public void whenCallingGetOntologyConceptWithANonExistingTypeLabel_ItReturnsNull(
             @Open GraknGraph graph, Label label) {
-        Set<Label> allTypes = GraknGraphs.allOntologyElementsFrom(graph).stream().map(OntologyConcept::getLabel).collect(toSet());
-        Assume.assumeThat(allTypes, Matchers.not(Matchers.hasItem(label)));
+        Set<Label> allTypes = allOntologyElementsFrom(graph).stream().map(OntologyConcept::getLabel).collect(toSet());
+        assumeThat(allTypes, not(hasItem(label)));
 
-        Assert.assertNull(graph.getOntologyConcept(label));
+        assertNull(graph.getOntologyConcept(label));
     }
 
     @Property
     public void whenCallingGetOntologyConceptWithAnIncorrectGeneric_ItThrows(
             @Open GraknGraph graph, @FromGraph Type type) {
-        Assume.assumeFalse(type.isRole());
+        assumeFalse(type.isRole());
         Label label = type.getLabel();
 
         exception.expect(ClassCastException.class);
@@ -163,7 +163,7 @@ public class GraknGraphPropertyTest {
     public void whenCallingGetResourcesByValueAfterAddingAResource_TheResultIncludesTheResource(
             @Open GraknGraph graph,
             @FromGraph @NonMeta @NonAbstract ResourceType resourceType, @From(ResourceValues.class) Object value) {
-        Assume.assumeThat(value.getClass().getName(), Matchers.is(resourceType.getDataType().getName()));
+        assumeThat(value.getClass().getName(), is(resourceType.getDataType().getName()));
 
         Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(value);
         Resource resource = resourceType.putResource(value);
@@ -171,7 +171,7 @@ public class GraknGraphPropertyTest {
 
         expectedResources.add(resource);
 
-        Assert.assertEquals(expectedResources, resourcesAfter);
+        assertEquals(expectedResources, resourcesAfter);
     }
 
     @Property
@@ -185,7 +185,7 @@ public class GraknGraphPropertyTest {
 
         expectedResources.remove(resource);
 
-        Assert.assertEquals(expectedResources, resourcesAfter);
+        assertEquals(expectedResources, resourcesAfter);
     }
 
     @Property
@@ -196,7 +196,7 @@ public class GraknGraphPropertyTest {
         Set<Resource<?>> allResourcesOfValue =
                 allResources.filter(resource -> resourceValue.equals(resource.getValue())).collect(toSet());
 
-        Assert.assertEquals(allResourcesOfValue, graph.getResourcesByValue(resourceValue));
+        assertEquals(allResourcesOfValue, graph.getResourcesByValue(resourceValue));
     }
 
     @Property
@@ -244,24 +244,24 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingAdmin_TheResultIsTheSameGraph(GraknGraph graph) {
-        Assert.assertEquals(graph, graph.admin());
+        assertEquals(graph, graph.admin());
     }
 
     @Property
     public void whenCallingClear_TheGraphCloses(@Open GraknGraph graph) {
         graph.admin().delete();
-        Assert.assertTrue(graph.isClosed());
+        assertTrue(graph.isClosed());
     }
 
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
         graph.admin().delete();
         graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
-        List<Concept> concepts = GraknGraphs.allConceptsFrom(graph);
+        List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
-            Assert.assertTrue(concept.isOntologyConcept());
-            Assert.assertTrue(MetaSchema.isMetaLabel(concept.asOntologyConcept().getLabel()));
-            });
+            assertTrue(concept.isOntologyConcept());
+            assertTrue(isMetaLabel(concept.asOntologyConcept().getLabel()));
+        });
         graph.close();
     }
 
@@ -269,24 +269,24 @@ public class GraknGraphPropertyTest {
     public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaLabels.class) Label label) {
         graph.admin().delete();
         graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
-        Assert.assertNotNull(graph.getOntologyConcept(label));
+        assertNotNull(graph.getOntologyConcept(label));
         graph.close();
     }
 
     @Property
     public void whenCallingIsClosedOnAClosedGraph_ReturnTrue(@Open(false) GraknGraph graph) {
-        Assert.assertTrue(graph.isClosed());
+        assertTrue(graph.isClosed());
     }
 
     @Property
     public void whenCallingIsClosedOnAnOpenGraph_ReturnFalse(@Open GraknGraph graph) {
-        Assert.assertFalse(graph.isClosed());
+        assertFalse(graph.isClosed());
     }
 
     @Property
     public void whenCallingClose_TheGraphIsClosed(GraknGraph graph) throws InvalidGraphException {
         graph.close();
-        Assert.assertTrue(graph.isClosed());
+        assertTrue(graph.isClosed());
     }
 
 
@@ -358,7 +358,7 @@ public class GraknGraphPropertyTest {
             actualException = e;
         }
 
-        Assert.assertEquals(expectedException, actualException);
-        Assert.assertEquals(expectedResult, actualResult);
+        assertEquals(expectedException, actualException);
+        assertEquals(expectedResult, actualResult);
     }
 }

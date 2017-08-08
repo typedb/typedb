@@ -364,8 +364,8 @@ public class GraknQueryHandlers {
                     toInstant(ZoneOffset.UTC).toEpochMilli();
         }
         private static <T> List<T> getListResources(Entity entity, Label resourceType, GraknGraph graknGraph) {
-            Collection<Resource<?>> rawResources = entity.resources(graknGraph.getResourceType(resourceType.toString()));
-            return rawResources.stream().map((resource) -> (T) resource.getValue()).collect(Collectors.<T>toList());
+            Stream<Resource<?>> rawResources = entity.resources(graknGraph.getResourceType(resourceType.toString()));
+            return rawResources.map((resource) -> (T) resource.getValue()).collect(Collectors.<T>toList());
         }
     }
 

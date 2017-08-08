@@ -40,13 +40,13 @@ public class ThingPropertyTest {
     @Property
     public void whenGettingTheDirectTypeOfAThing_TheThingIsADirectInstanceOfThatType(Thing thing) {
         Type type = thing.type();
-        Assert.assertThat(PropertyUtil.directInstances(type), Matchers.hasItem(thing));
+        assertThat(PropertyUtil.directInstances(type), hasItem(thing));
     }
 
     @Ignore// Ignored because sometimes we fail to generate Things with resources attached to them
     @Property
     public void whenGettingTheResourceOfAThing_TheResourcesOwnerIsTheThing(Thing thing, long seed) {
         Resource<?> resource = PropertyUtil.choose(thing.resources(), seed);
-        TestCase.assertTrue("[" + thing + "] is connected to resource [" + resource + "] but is not in it's owner set", resource.ownerInstances().collect(toSet()).contains(thing));
+        assertTrue("[" + thing + "] is connected to resource [" + resource + "] but is not in it's owner set", resource.ownerInstances().collect(toSet()).contains(thing));
     }
 }

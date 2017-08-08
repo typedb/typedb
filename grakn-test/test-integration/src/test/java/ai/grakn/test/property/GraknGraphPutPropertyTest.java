@@ -70,7 +70,7 @@ public class GraknGraphPutPropertyTest {
             @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, OntologyConcept> putOntologyConcept
     ) {
         OntologyConcept type = putOntologyConcept.apply(graph, label);
-        Assert.assertEquals(label, type.getLabel());
+        assertEquals(label, type.getLabel());
     }
 
     @Property
@@ -80,10 +80,10 @@ public class GraknGraphPutPropertyTest {
     ) {
         OntologyConcept concept = putOntologyConcept.apply(graph, label);
 
-        Assert.assertThat("Concept should only have one sub-type: itself", concept.subs().collect(toSet()), Matchers.contains(concept));
-        Assert.assertFalse("Concept should not be implicit", concept.isImplicit());
-        Assert.assertThat("Rules of hypotheses should be empty", concept.getRulesOfHypothesis().collect(toSet()), Matchers.empty());
-        Assert.assertThat("Rules of conclusion should be empty", concept.getRulesOfConclusion().collect(toSet()), Matchers.empty());
+        assertThat("Concept should only have one sub-type: itself", concept.subs().collect(toSet()), contains(concept));
+        assertFalse("Concept should not be implicit", concept.isImplicit());
+        assertThat("Rules of hypotheses should be empty", concept.getRulesOfHypothesis().collect(toSet()), empty());
+        assertThat("Rules of conclusion should be empty", concept.getRulesOfConclusion().collect(toSet()), empty());
     }
 
     @Property
@@ -93,29 +93,29 @@ public class GraknGraphPutPropertyTest {
     ) {
         Type type = putType.apply(graph, label);
 
-        Assert.assertThat("Type should not play any roles", type.plays().collect(toSet()), Matchers.empty());
-        Assert.assertThat("Type should not have any scopes", type.scopes().collect(toSet()), Matchers.empty());
-        Assert.assertFalse("Type should not be abstract", type.isAbstract());
+        assertThat("Type should not play any roles", type.plays().collect(toSet()), empty());
+        assertThat("Type should not have any scopes", type.scopes().collect(toSet()), empty());
+        assertFalse("Type should not be abstract", type.isAbstract());
     }
 
     @Property
     public void whenCallingPutEntityType_CreateATypeWithSuperTypeEntity(
             @Open GraknGraph graph, @Unused Label label) {
         EntityType entityType = graph.putEntityType(label);
-        Assert.assertEquals(graph.admin().getMetaEntityType(), entityType.sup());
+        assertEquals(graph.admin().getMetaEntityType(), entityType.sup());
     }
 
     @Property
     public void whenCallingPutEntityTypeWithAnExistingEntityTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph EntityType entityType) {
         EntityType newType = graph.putEntityType(entityType.getLabel());
-        Assert.assertEquals(entityType, newType);
+        assertEquals(entityType, newType);
     }
 
     @Property
     public void whenCallingPutEntityTypeWithAnExistingNonEntityTypeLabel_Throw(
             @Open GraknGraph graph, @FromGraph Type type) {
-        Assume.assumeFalse(type.isEntityType());
+        assumeFalse(type.isEntityType());
 
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
@@ -130,7 +130,7 @@ public class GraknGraphPutPropertyTest {
     public void whenCallingPutResourceType_CreateATypeWithSuperTypeResource(
             @Open GraknGraph graph, @Unused Label label, ResourceType.DataType<?> dataType) {
         ResourceType<?> resourceType = graph.putResourceType(label, dataType);
-        Assert.assertEquals(graph.admin().getMetaResourceType(), resourceType.sup());
+        assertEquals(graph.admin().getMetaResourceType(), resourceType.sup());
     }
 
     @Property
@@ -138,27 +138,27 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph, @Unused Label label, ResourceType.DataType<?> dataType) {
         ResourceType<?> resourceType = graph.putResourceType(label, dataType);
 
-        Assert.assertEquals("The data-type should be as specified", dataType, resourceType.getDataType());
-        Assert.assertNull("The resource type should have no regex constraint", resourceType.getRegex());
+        assertEquals("The data-type should be as specified", dataType, resourceType.getDataType());
+        assertNull("The resource type should have no regex constraint", resourceType.getRegex());
     }
 
     @Property
     public void whenCallingPutResourceTypeWithThePropertiesOfAnExistingResourceType_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph  ResourceType<?> resourceType) {
-        Assume.assumeFalse(resourceType.equals(graph.admin().getMetaResourceType()));
+        assumeFalse(resourceType.equals(graph.admin().getMetaResourceType()));
 
         Label label = resourceType.getLabel();
         ResourceType.DataType<?> dataType = resourceType.getDataType();
 
         ResourceType<?> newType = graph.putResourceType(label, dataType);
 
-        Assert.assertEquals(resourceType, newType);
+        assertEquals(resourceType, newType);
     }
 
     @Property
     public void whenCallingPutResourceTypeWithAnExistingNonResourceTypeLabel_Throw(
             @Open GraknGraph graph, @FromGraph Type type, ResourceType.DataType<?> dataType) {
-        Assume.assumeFalse(type.isResourceType());
+        assumeFalse(type.isResourceType());
 
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
@@ -173,11 +173,11 @@ public class GraknGraphPutPropertyTest {
     public void whenCallingPutResourceTypeWithAnExistingNonUniqueResourceTypeLabelButADifferentDataType_Throw(
             @Open GraknGraph graph, @FromGraph ResourceType<?> resourceType,
             ResourceType.DataType<?> dataType) {
-        Assume.assumeThat(dataType, Matchers.not(Matchers.is(resourceType.getDataType())));
+        assumeThat(dataType, not(is(resourceType.getDataType())));
         Label label = resourceType.getLabel();
 
         exception.expect(GraphOperationException.class);
-        if(MetaSchema.isMetaLabel(label)) {
+        if(isMetaLabel(label)) {
             exception.expectMessage(GraphOperationException.metaTypeImmutable(label).getMessage());
         } else {
             exception.expectMessage(GraphOperationException.immutableProperty(resourceType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE).getMessage());
@@ -189,20 +189,20 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRuleType_CreateATypeWithSuperTypeRule(@Open GraknGraph graph, @Unused Label label) {
         RuleType ruleType = graph.putRuleType(label);
-        Assert.assertEquals(graph.admin().getMetaRuleType(), ruleType.sup());
+        assertEquals(graph.admin().getMetaRuleType(), ruleType.sup());
     }
 
     @Property
     public void whenCallingPutRuleTypeWithAnExistingRuleTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph RuleType ruleType) {
         RuleType newType = graph.putRuleType(ruleType.getLabel());
-        Assert.assertEquals(ruleType, newType);
+        assertEquals(ruleType, newType);
     }
 
     @Property
     public void whenCallingPutRuleTypeWithAnExistingNonRuleTypeLabel_Throw(
             @Open GraknGraph graph, @FromGraph Type type) {
-        Assume.assumeFalse(type.isRuleType());
+        assumeFalse(type.isRuleType());
 
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
@@ -218,27 +218,27 @@ public class GraknGraphPutPropertyTest {
     public void whenCallingPutRelationType_CreateATypeWithSuperTypeRelation(
             @Open GraknGraph graph, @Unused Label label) {
         RelationType relationType = graph.putRelationType(label);
-        Assert.assertEquals(graph.admin().getMetaRelationType(), relationType.sup());
+        assertEquals(graph.admin().getMetaRelationType(), relationType.sup());
     }
 
     @Property
     public void whenCallingPutRelationType_CreateATypeThatOwnsNoRoles(
             @Open GraknGraph graph, @Unused Label label) {
         RelationType relationType = graph.putRelationType(label);
-        Assert.assertThat(relationType.relates().collect(toSet()), Matchers.empty());
+        assertThat(relationType.relates().collect(toSet()), empty());
     }
 
     @Property
     public void whenCallingPutRelationTypeWithAnExistingRelationTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph RelationType relationType) {
         RelationType newType = graph.putRelationType(relationType.getLabel());
-        Assert.assertEquals(relationType, newType);
+        assertEquals(relationType, newType);
     }
 
     @Property
     public void whenCallingPutRelationTypeWithAnExistingNonRelationTypeLabel_Throw(
             @Open GraknGraph graph, @FromGraph Type type) {
-        Assume.assumeFalse(type.isRelationType());
+        assumeFalse(type.isRelationType());
 
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
@@ -252,7 +252,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRole_CreateATypeWithSuperRole(@Open GraknGraph graph, @Unused Label label) {
         Role role = graph.putRole(label);
-        Assert.assertEquals(graph.admin().getMetaRole(), role.sup());
+        assertEquals(graph.admin().getMetaRole(), role.sup());
     }
 
     @Property
@@ -260,15 +260,15 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph, @Unused Label label) {
         Role role = graph.putRole(label);
 
-        Assert.assertThat("The role should be played by no types", role.playedByTypes().collect(toSet()), Matchers.empty());
-        Assert.assertThat("The role should be owned by no relation types", role.relationTypes().collect(toSet()), Matchers.empty());
+        assertThat("The role should be played by no types", role.playedByTypes().collect(toSet()), empty());
+        assertThat("The role should be owned by no relation types", role.relationTypes().collect(toSet()), empty());
     }
 
     @Property
     public void whenCallingPutRoleWithAnExistingRoleLabel_ItReturnsThatRole(
             @Open GraknGraph graph, @FromGraph Role role) {
         Role newType = graph.putRole(role.getLabel());
-        Assert.assertEquals(role, newType);
+        assertEquals(role, newType);
     }
 
     @Property
