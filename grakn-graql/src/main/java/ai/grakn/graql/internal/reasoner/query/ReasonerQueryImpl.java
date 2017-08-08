@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
@@ -47,6 +48,7 @@ import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 
+import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
 import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
 import com.google.common.collect.ImmutableSet;
@@ -597,5 +599,21 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         return Sets.cartesianProduct(atomOptions).stream()
                 .map(atomList -> ReasonerQueries.create(new HashSet<>(atomList), graph()));
+    }
+
+    /**
+     * @return true if because of the rule graph form, the resolution of this query may require reiteration
+     */
+    public boolean requiresReiteration(){
+        RuleGraph ruleGraph = new RuleGraph(graph());
+        Set<Type> types = getAtoms().stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .map(Atom::getOntologyConcept)
+                .filter(Objects::nonNull)
+                .filter(Concept::isType)
+                .map(Concept::asType)
+                .collect(Collectors.toSet());
+        return ruleGraph.hasTypesWithNegativeFlux(types)
+                || ruleGraph.hasRulesGeneratingFreshVariables(types);
     }
 }

@@ -118,7 +118,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveChain()  {
-        final int N = 20;
+        final int N = 100;
         long startTime = System.currentTimeMillis();
         graphContext.load(TransitivityChainGraph.get(N));
         long loadTime = System.currentTimeMillis() - startTime;

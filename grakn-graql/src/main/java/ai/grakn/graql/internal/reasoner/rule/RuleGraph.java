@@ -22,14 +22,25 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.util.Schema;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Stack;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
 
+/**
+ *
+ * <p>
+ * Convenience class providing methods for operating with the rule graph.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class RuleGraph {
 
     private final GraknGraph graph;
@@ -41,8 +52,8 @@ public class RuleGraph {
     /**
      * @return set of inference rule contained in the graph
      */
-    public Set<Rule> getRules() {
-        return new HashSet<>(graph.admin().getMetaRuleInference().instances());
+    public Stream<Rule> getRules() {
+        return graph.admin().getMetaRuleInference().instances();
     }
 
     /**
@@ -57,51 +68,57 @@ public class RuleGraph {
      * @param type for which rules containing it in the head are sought
      * @return rules containing specified type in the head
      */
-    public Set<Rule> getRulesWithType(OntologyConcept type){
+    public Stream<Rule> getRulesWithType(OntologyConcept type){
         return type != null ?
-                type.subs().stream().flatMap(t -> t.getRulesOfConclusion().stream()).collect(Collectors.toSet()) :
+                type.subs().flatMap(OntologyConcept::getRulesOfConclusion) :
                 getRules();
     }
 
     /**
-     * @return
+     * @return true if the rule graph contains types with negative net flux (appears in more rule heads than bodies)
      */
-    public boolean hasLoops(){
-        return getRules().stream()
-                .flatMap(rule -> rule.getConclusionTypes().stream())
+    public boolean hasTypesWithNegativeFlux(Set<Type> topTypes){
+        return getDependentRules(topTypes)
+                .flatMap(Rule::getConclusionTypes)
                 .distinct()
-                .filter(type -> !type.getRulesOfHypothesis().isEmpty())
+                .filter(type -> {
+                    long outflux = type.getRulesOfHypothesis().count();
+                    long influx = type.getRulesOfConclusion().count();
+                    return outflux > 0 && influx > outflux;
+                })
                 .findFirst().isPresent();
     }
 
     /**
-     * @return
+     * @return true if the rule graph contains rules generating fresh variables (occurring in rule head but not in the body)
      */
-    public boolean hasTypesWithNegativeFlux(){
-        return getRules().stream()
-                .flatMap(rule -> rule.getConclusionTypes().stream())
-                .distinct()
-                .filter(type -> type.getRulesOfConclusion().size() > type.getRulesOfHypothesis().size())
-                .findFirst().isPresent();
-    }
-
-    /**
-     * @return
-     */
-    public boolean hasRulesGeneratingFreshVariables(){
-        return getRules().stream()
+    public boolean hasRulesGeneratingFreshVariables(Set<Type> topTypes){
+        return getDependentRules(topTypes)
                 .map(r -> new InferenceRule(r, graph))
                 .filter(InferenceRule::generatesFreshVariables)
                 .findFirst().isPresent();
     }
 
     /**
-     *
-     * @return
+     * @param topTypes entry types in the rule graph
+     * @return all rules that are reachable from the entry types
      */
-    public boolean requiresReiteration(){
-        return hasTypesWithNegativeFlux() || hasRulesGeneratingFreshVariables();
+    private Stream<Rule> getDependentRules(Set<Type> topTypes){
+        Set<Rule> rules = new HashSet<>();
+        Set<Type> visitedTypes = new HashSet<>();
+        Stack<Type> types = new Stack<>();
+        topTypes.forEach(types::push);
+        while(!types.isEmpty()) {
+            Type type = types.pop();
+            if (!visitedTypes.contains(type)){
+                type.getRulesOfConclusion()
+                        .peek(rules::add)
+                        .flatMap(Rule::getHypothesisTypes)
+                        .filter(visitedTypes::contains)
+                        .forEach(types::add);
+                visitedTypes.add(type);
+            }
+        }
+        return rules.stream();
     }
-
-
 }

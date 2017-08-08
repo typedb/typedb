@@ -125,8 +125,12 @@ public class InferenceRule {
     /**
      * @return true if the rule generates fresh variables, i. e. its head has variables that do not occur in the body
      */
-    public boolean generatesFreshVariables(){
-        return !Sets.difference(head.getVarNames(), body.getVarNames()).isEmpty();
+    boolean generatesFreshVariables(){
+        Atom atom = head.getAtom();
+        return !Sets.difference(
+                atom.getVarNames().stream().filter(v -> !v.equals(atom.getPredicateVariable())).collect(toSet()),
+                body.getVarNames())
+                .isEmpty();
     }
 
     /**

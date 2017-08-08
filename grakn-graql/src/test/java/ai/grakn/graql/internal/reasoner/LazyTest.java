@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
 import ai.grakn.test.graphs.GeoGraph;
 import ai.grakn.test.graphs.MatrixGraphII;
 import ai.grakn.graql.MatchQuery;
@@ -134,7 +135,7 @@ public class LazyTest {
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         query.lookup(cache);
-        InferenceRule rule = new InferenceRule(ReasonerUtils.getRules(graph).iterator().next(), graph);
+        InferenceRule rule = new InferenceRule(new RuleGraph(graph).getRules().iterator().next(), graph);
 
         Set<Var> joinVars = Sets.intersection(query.getVarNames(), query2.getVarNames());
         Stream<Answer> join = join(

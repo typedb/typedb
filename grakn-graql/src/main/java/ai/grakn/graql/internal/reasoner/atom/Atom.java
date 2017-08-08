@@ -30,7 +30,6 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -75,14 +74,14 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public boolean isRuleResolvable() {
-        return !getApplicableRules().isEmpty();
+        return getApplicableRules().findFirst().isPresent();
     }
 
     @Override
     public boolean isRecursive(){
         if (isResource() || getOntologyConcept() == null) return false;
         OntologyConcept ontologyConcept = getOntologyConcept();
-        return getApplicableRules().stream()
+        return getApplicableRules()
                 .filter(rule -> rule.getBody().selectAtoms().stream()
                         .filter(at -> Objects.nonNull(at.getOntologyConcept()))
                         .filter(at -> checkCompatible(ontologyConcept, at.getOntologyConcept())).findFirst().isPresent())
@@ -152,21 +151,21 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
-    private Set<Rule> getPotentialRules(){
+    private Stream<Rule> getPotentialRules(){
         return new RuleGraph(graph()).getRulesWithType(getOntologyConcept());
     }
 
     /**
      * @return set of applicable rules - does detailed (slow) check for applicability
      */
-    public Set<InferenceRule> getApplicableRules() {
+    public Stream<InferenceRule> getApplicableRules() {
         if (applicableRules == null) {
-            applicableRules = getPotentialRules().stream()
+            applicableRules = getPotentialRules()
                     .map(rule -> new InferenceRule(rule, graph()))
                     .filter(this::isRuleApplicable)
                     .collect(Collectors.toSet());
         }
-        return applicableRules;
+        return applicableRules.stream();
     }
 
     /**

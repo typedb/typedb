@@ -24,7 +24,6 @@ import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +59,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     public ResolutionIterator(ReasonerQueryImpl q){
         this.query = q;
-        this.reiterationRequired = new RuleGraph(q.graph()).requiresReiteration();
+        this.reiterationRequired = q.requiresReiteration();
         states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
     }
 
