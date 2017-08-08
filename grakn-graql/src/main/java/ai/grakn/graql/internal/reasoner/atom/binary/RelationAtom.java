@@ -69,6 +69,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getCompatibleRelationTypesWithRoles;
@@ -225,14 +226,13 @@ public class RelationAtom extends IsaAtom {
         }
 
         //check roles are ok
-        Set<Role> possibleRoles = type != null? type.asRelationType().relates().collect(toSet()) : Collections.EMPTY_SET;
         Map<Var, OntologyConcept> varOntologyConceptMap = getParentQuery().getVarOntologyConceptMap();
 
         for (Map.Entry<Role, Collection<Var>> e : getRoleVarMap().asMap().entrySet() ){
             Role role = e.getKey();
             if (!Schema.MetaSchema.isMetaLabel(role.getLabel())) {
                 //check whether this role can be played in this relation
-                if (type != null && !possibleRoles.contains(role)) {
+                if (type != null && type.asRelationType().relates().noneMatch(r -> r.equals(role))) {
                     errors.add(ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage(role.getLabel(), type.getLabel()));
                 }
 
@@ -560,7 +560,7 @@ public class RelationAtom extends IsaAtom {
                     Var varName = casting.getRolePlayer().getVarName();
                     OntologyConcept ontologyConcept = varOntologyConceptMap.get(varName);
                     if (ontologyConcept != null && !Schema.MetaSchema.isMetaLabel(ontologyConcept.getLabel()) && ontologyConcept.isType()) {
-                        mappings.put(casting, ReasonerUtils.getCompatibleRoleTypes(ontologyConcept.asType(), possibleRoles));
+                        mappings.put(casting, ReasonerUtils.getCompatibleRoleTypes(ontologyConcept.asType(), possibleRoles.stream()));
                     } else {
                         mappings.put(casting, ReasonerUtils.getOntologyConcepts(possibleRoles));
                     }
@@ -662,7 +662,7 @@ public class RelationAtom extends IsaAtom {
         Map<Var, OntologyConcept> parentVarOntologyConceptMap = parentAtom.getParentQuery().getVarOntologyConceptMap();
         Map<Var, OntologyConcept> childVarOntologyConceptMap = this.getParentQuery().getVarOntologyConceptMap();
 
-        Set<Role> relationRoles = getOntologyConcept().asRelationType().relates().collect(toSet());
+        Stream<Role> relationRoles = getOntologyConcept().asRelationType().relates();
         Set<Role> childRoles = new HashSet<>(childRoleRPMap.keySet());
 
         parentAtom.getRelationPlayers().stream()
@@ -686,7 +686,7 @@ public class RelationAtom extends IsaAtom {
                             Set<Role> typeRoles = isMetaType? childRoles : parent.asType().plays().collect(toSet());
 
                             //incompatible type
-                            if (Sets.intersection(relationRoles, typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
+                            if (Sets.intersection(relationRoles.collect(toSet()), typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
                             else {
                                 compatibleChildRoles = compatibleChildRoles.stream()
                                         .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || typeRoles.contains(rc))

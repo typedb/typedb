@@ -251,9 +251,9 @@ public class ReasonerUtils {
      * @param relRoles relation type of interest
      * @return set of role types the type can play in relType
      */
-    public static Set<Role> getCompatibleRoleTypes(Type type, Set<Role> relRoles) {
+    public static Set<Role> getCompatibleRoleTypes(Type type, Stream<Role> relRoles) {
         Set<Role> typeRoles = type.plays().collect(toSet());
-        return relRoles.stream().filter(typeRoles::contains).collect(toSet());
+        return relRoles.filter(typeRoles::contains).collect(toSet());
     }
 
     /**
