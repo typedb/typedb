@@ -85,7 +85,9 @@ public class GraknJanusGraph extends AbstractGraknGraph<JanusGraph> {
 
     @Override
     public int numOpenTx() {
-        return ((StandardJanusGraph) getTinkerPopGraph()).getOpenTxs();
+        int numTxs = ((StandardJanusGraph) getTinkerPopGraph()).getOpenTxs();
+        if(numTxs == 0 && !isClosed()) numTxs = 1;
+        return numTxs;
     }
 
     @Override
