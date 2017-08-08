@@ -92,6 +92,13 @@
                 <exclude>*/**</exclude>
             </excludes>
         </fileSet>
+        <fileSet>
+            <directory>.</directory>
+            <outputDirectory>db/redis</outputDirectory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
+        </fileSet>
         <!-- Redis Package -->
         <fileSet>
             <outputDirectory>services</outputDirectory>
