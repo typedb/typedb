@@ -58,7 +58,7 @@ node {
         }
         dir('validate-snb') {
           stage('Validate Queries') {
-            sh '../grakn-test/test-snb/src/validate-SNB/validate.sh'
+            sh '../grakn-test/test-snb/src/validate-snb/validate.sh'
           }
         }
       }
