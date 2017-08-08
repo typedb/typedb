@@ -50,6 +50,10 @@ public class RedisWrapper {
         return new Builder();
     }
 
+    public void close() {
+        jedisPool.close();
+    }
+
     /**
      * Builder for the wrapper
      */
@@ -61,6 +65,7 @@ public class RedisWrapper {
         private boolean useSentinel = false;
         private Set<String> uriSet = new HashSet<>();
         private String masterName = null;
+        private int poolSize = 128;
 
         public Builder setUseSentinel(boolean useSentinel) {
             this.useSentinel = useSentinel;
@@ -82,6 +87,11 @@ public class RedisWrapper {
             return this;
         }
 
+        public Builder setPoolSize(int poolSize) {
+            this.poolSize = poolSize;
+            return this;
+        }
+
         public RedisWrapper build() {
             // TODO make connection pool sizes configurable
             Preconditions.checkState(!uriSet.isEmpty(), "Trying to build RedisWrapper without uriSet");
@@ -91,6 +101,7 @@ public class RedisWrapper {
             JedisPoolConfig poolConfig = new JedisPoolConfig();
             poolConfig.setTestOnBorrow(true);
             poolConfig.setTestOnReturn(true);
+            poolConfig.setMaxTotal(poolSize);
             if (useSentinel) {
                 jedisPool = new JedisSentinelPool(masterName, uriSet, poolConfig, TIMEOUT);
             } else {
