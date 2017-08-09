@@ -71,13 +71,7 @@ public abstract class GraphMutators {
      */
     private static void runGraphMutationWithRetry(
             EngineGraknGraphFactory factory , String keyspace, GraknTxType txType, int maxRetry,
-            Consumer<GraknGraph> mutatingFunction
-    ){
-        if(!factory.systemKeyspace().containsKeyspace(keyspace)){ //This may be slow.
-            LOG.warn("Attempting to execute mutation on graph [" + keyspace + "] which no longer exists");
-            throw new RuntimeException(ErrorMessage.UNABLE_TO_MUTATE_GRAPH.getMessage(keyspace));
-        }
-
+            Consumer<GraknGraph> mutatingFunction) {
         for(int retry = 0; retry < maxRetry; retry++) {
             try(GraknGraph graph = factory.getGraph(keyspace, txType))  {
 
@@ -91,7 +85,6 @@ public abstract class GraphMutators {
 
             performRetry(retry);
         }
-
         throw new RuntimeException(ErrorMessage.UNABLE_TO_MUTATE_GRAPH.getMessage(keyspace));
     }
 
@@ -99,7 +92,7 @@ public abstract class GraphMutators {
      * Sleep the current thread for a random amount of time
      * @param retry Seed with which to calculate sleep time
      */
-    private static void performRetry(int retry){
+    private static void performRetry(int retry) {
         double seed = 1.0 + (Math.random() * 5.0);
         double waitTime = (retry * 2.0)  + seed;
         LOG.debug(ErrorMessage.BACK_OFF_RETRY.getMessage(waitTime));
