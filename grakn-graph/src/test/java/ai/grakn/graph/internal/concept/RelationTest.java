@@ -293,4 +293,32 @@ public class RelationTest extends GraphTestBase {
 
         implicitRelation.resource(resource);
     }
+
+
+    @Test
+    public void whenAddingDuplicateRelationsWittDifferentKeys_EnsureTheyCanBeCommitted(){
+        Role role1 = graknGraph.putRole("dark");
+        Role role2 = graknGraph.putRole("souls");
+        ResourceType<Long> resourceType = graknGraph.putResourceType("Death Number", ResourceType.DataType.LONG);
+        RelationType relationType = graknGraph.putRelationType("Dark Souls").relates(role1).relates(role2).key(resourceType);
+        EntityType entityType = graknGraph.putEntityType("Dead Guys").plays(role1).plays(role2);
+
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+
+        Resource<Long> r1 = resourceType.putResource(1000000L);
+        Resource<Long> r2 = resourceType.putResource(1000000L);
+
+        Relation rel1 = relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
+        Relation rel2 = relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
+
+        //Set the keys and commit. Without this step it should fail
+        rel1.resource(r1);
+        rel2.resource(r2);
+
+        graknGraph.commit();
+        graknGraph = (AbstractGraknGraph<?>) graknSession.open(GraknTxType.WRITE);
+
+        assertThat(graknGraph.admin().getMetaRelationType().instances().collect(toSet()), containsInAnyOrder(rel1, rel2));
+    }
 }
