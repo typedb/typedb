@@ -265,9 +265,25 @@ class ValidateGlobalRules {
      * @return An error message if the relation is not unique.
      */
     static Optional<String> validateRelationIsUnique(AbstractGraknGraph<?> graph, RelationReified relationReified){
+        if(relationReified.type().keys().iterator().hasNext()){
+            throw new UnsupportedOperationException("Not Yet Implemented");
+        } else {
+            return validateNonKeyControlledRelation(graph, relationReified);
+        }
+    }
+
+    /**
+     * Checks if {@link Relation}s which are not bound to {@link ai.grakn.concept.Resource}s as keys are unique by their
+     * {@link Role}s and the {@link Thing}s which play those roles.
+     *
+     * @param graph the {@link GraknGraph} used to check for uniqueness
+     * @param relationReified the {@link Relation} to check
+     */
+    private static Optional<String> validateNonKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified){
         RelationImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, RelationReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers()));
         if(foundRelation == null){
-            relationReified.setHash();
+            String hash = RelationReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers());
+            relationReified.setHash(hash);
         } else if(foundRelation.reified().isPresent() && !foundRelation.reified().get().equals(relationReified)){
             return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
         }

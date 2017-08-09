@@ -89,8 +89,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     /**
      * Sets the internal hash in order to perform a faster lookup
      */
-    public void setHash(){
-        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateNewHash(type(), allRolePlayers()));
+    public void setHash(String hash){
+        vertex().propertyUnique(Schema.VertexProperty.INDEX, hash);
     }
 
     /**
