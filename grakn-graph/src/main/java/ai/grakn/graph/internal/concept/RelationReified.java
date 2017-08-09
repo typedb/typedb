@@ -127,11 +127,6 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
      * @return A unique hash identifying this {@link Relation}
      */
     public static String generateNewHash(RelationType relationType, TreeMap<String, String> resourceMap){
-        //This is a sorted map of Resource Type Ids to Resource Ids
-        //Map<String, String> resourceMap = new TreeMap<>();
-        ///resources.forEach(resource -> resourceMap.put(resource.type().getId().getValue(), resource.getId().getValue()));
-
-
         StringBuilder hashMain = new StringBuilder();
         hashMain.append("RelationType_").append(StringUtil.escapeString(relationType.getId().getValue())).append("_");
 
