@@ -27,6 +27,7 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.structure.Casting;
 import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
+import ai.grakn.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -103,14 +104,14 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     public static String generateNewHash(RelationType relationType, Map<Role, Set<Thing>> roleMap){
         SortedSet<Role> sortedRoleIds = new TreeSet<>(roleMap.keySet());
         StringBuilder hash = new StringBuilder();
-        hash.append("RelationType_").append(relationType.getId().getValue().replace("_", "\\_")).append("_Relation");
+        hash.append("RelationType_").append(StringUtil.escapeString(relationType.getId().getValue())).append("_Relation");
 
         for(Role role: sortedRoleIds){
-            hash.append("_").append(role.getId().getValue().replace("_", "\\_"));
+            hash.append("_").append(StringUtil.escapeString(role.getId().getValue()));
 
             roleMap.get(role).forEach(instance -> {
                 if(instance != null){
-                    hash.append("_").append(instance.getId().getValue().replace("_", "\\_"));
+                    hash.append("_").append(StringUtil.escapeString(instance.getId().getValue()));
                 }
             });
         }
