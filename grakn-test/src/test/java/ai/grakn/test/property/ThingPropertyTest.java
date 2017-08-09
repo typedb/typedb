@@ -21,9 +21,9 @@ package ai.grakn.test.property;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.generator.AbstractThingGenerator;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 import static java.util.stream.Collectors.toSet;
@@ -43,9 +43,8 @@ public class ThingPropertyTest {
         assertThat(PropertyUtil.directInstances(type), hasItem(thing));
     }
 
-    @Ignore// Ignored because sometimes we fail to generate Things with resources attached to them
     @Property
-    public void whenGettingTheResourceOfAThing_TheResourcesOwnerIsTheThing(Thing thing, long seed) {
+    public void whenGettingTheResourceOfAThing_TheResourcesOwnerIsTheThing(@AbstractThingGenerator.WithResource Thing thing, long seed) {
         Resource<?> resource = PropertyUtil.choose(thing.resources(), seed);
         assertTrue("[" + thing + "] is connected to resource [" + resource + "] but is not in it's owner set", resource.ownerInstances().collect(toSet()).contains(thing));
     }

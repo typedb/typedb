@@ -38,8 +38,6 @@ public class Resources extends AbstractThingGenerator<Resource, ResourceType> {
 
     @Override
     protected Resource newInstance(ResourceType type) {
-        ResourceType.DataType<?> dataType = type.getDataType();
-        Object value = gen().make(ResourceValues.class).dataType(dataType).generate(random, status);
-        return type.putResource(value);
+        return newResource(type);
     }
 }
