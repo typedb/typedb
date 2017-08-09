@@ -16,10 +16,10 @@ cache:
 
 env:
   # Split tests into grakn-test and everything else
-  - TESTS=**/*Test* MODULE=test-integration
-  - TESTS=**/*IT*   MODULE=test-integration
-  - TESTS=**/*Test* MODULE=!test-integration
-  - TESTS=**/*IT*   MODULE=!test-integration
+  - TESTS=**/*Test* MODULE=grakn-test/test-integration
+  - TESTS=**/*IT*   MODULE=grakn-test/test-integration
+  - TESTS=**/*Test* MODULE=!grakn-test/test-integration
+  - TESTS=**/*IT*   MODULE=!grakn-test/test-integration
 
 notifications:
   slack: grakn:RbxoPzX267spGT4cgmoGLMpT
