@@ -23,6 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
@@ -47,6 +48,7 @@ import ai.grakn.util.Schema;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -260,16 +262,30 @@ class ValidateGlobalRules {
     }
 
     /**
-     * @param graph graph used to ensure the relation is unique
-     * @param relationReified The relation whose hash needs to be set.
-     * @return An error message if the relation is not unique.
+     * @param graph graph used to ensure the {@link Relation} is unique
+     * @param relationReified The {@link Relation} whose hash needs to be set.
+     * @return An error message if the {@link Relation} is not unique.
      */
     static Optional<String> validateRelationIsUnique(AbstractGraknGraph<?> graph, RelationReified relationReified){
-        if(relationReified.type().keys().iterator().hasNext()){
-            throw new UnsupportedOperationException("Not Yet Implemented");
+        Iterator<ResourceType> keys = relationReified.type().keys().iterator();
+        if(keys.hasNext()){
+            return validateKeyControlledRelation(graph, relationReified, keys);
         } else {
             return validateNonKeyControlledRelation(graph, relationReified);
         }
+    }
+
+    /**
+     * Checks that a {@link Relation} which is bound to a {@link ai.grakn.concept.Resource} as a key actually is unique to that key.
+     * The check for if the key is actually connected to the relation is done in {@link #validateInstancePlaysAllRequiredRoles}
+     *
+     * @param graph the {@link GraknGraph} used to check for uniqueness
+     * @param relationReified the {@link Relation} to check
+     * @param keys the {@link ResourceType}s indicating the keys which the relation must be bound to and unique to
+     * @return An error message if the {@link Relation} is not unique.
+     */
+    private static Optional<String> validateKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified, Iterator<ResourceType> keys) {
+        return Optional.empty();
     }
 
     /**
@@ -278,11 +294,12 @@ class ValidateGlobalRules {
      *
      * @param graph the {@link GraknGraph} used to check for uniqueness
      * @param relationReified the {@link Relation} to check
+     * @return An error message if the {@link Relation} is not unique.
      */
     private static Optional<String> validateNonKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified){
-        RelationImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, RelationReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers()));
+        String hash = RelationReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers());
+        RelationImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
         if(foundRelation == null){
-            String hash = RelationReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers());
             relationReified.setHash(hash);
         } else if(foundRelation.reified().isPresent() && !foundRelation.reified().get().equals(relationReified)){
             return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relationReified));
