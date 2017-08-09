@@ -18,7 +18,6 @@
 
 package ai.grakn.graph.internal.concept;
 
-import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
