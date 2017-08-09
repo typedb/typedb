@@ -1,0 +1,95 @@
+# The relationships defined in the ldbc-snb benchmark
+insert
+
+"contained" sub role;
+"container" sub role;
+"container-of" sub relation
+	relates contained
+	relates container;
+
+"creator" sub role;
+"product" sub role;
+"has-creator" sub relation
+	relates creator
+	relates product;
+
+"interest" sub role;
+"interested" sub role;
+"has-interest" sub relation
+	relates interest
+	relates interested;
+
+"member" sub role;
+"group" sub role;
+"has-member" sub relation
+	has join-date
+	relates member
+	relates group;
+
+"moderator" sub role;
+"moderated" sub role;
+"has-moderator" sub relation
+	relates moderator
+	relates moderated;
+
+"tagged" sub role;
+"topic" sub role;
+"has-tag" sub relation
+	relates tagged
+	relates topic;
+
+"class" sub role;
+"instance" sub role;
+"has-type" sub relation
+	relates class
+	relates instance;
+
+"part" sub role;
+"whole" sub role;
+"is-part-of" sub relation
+	relates part
+	relates whole;
+
+"located" sub role;
+"region" sub role;
+"is-located-in" sub relation
+	relates located
+	relates region;
+
+"subclass" sub role;
+"superclass" sub role;
+"is-subclass-of" sub relation
+	relates subclass
+	relates superclass;
+
+"friend" sub role;
+"knows" sub relation
+	has creation-date
+	relates friend;
+
+"like" sub role;
+"admirer" sub role;
+"likes" sub relation
+	has creation-date
+	relates like
+	relates admirer;
+
+"reply" sub role;
+"original" sub role;
+"reply-of" sub relation
+	relates reply
+	relates original;
+
+"school" sub role;
+"student" sub role;
+"study-at" sub relation
+	has class-year
+	relates school
+	relates student;
+
+"employee" sub role;
+"employer" sub role;
+"work-at" sub relation
+	has work-from
+	relates employer,
+	relates employee;	
