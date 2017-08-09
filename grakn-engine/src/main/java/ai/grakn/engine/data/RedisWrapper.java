@@ -65,7 +65,7 @@ public class RedisWrapper {
         private boolean useSentinel = false;
         private Set<String> uriSet = new HashSet<>();
         private String masterName = null;
-        private int poolSize = 128;
+        private int poolSize = 32;
 
         public Builder setUseSentinel(boolean useSentinel) {
             this.useSentinel = useSentinel;

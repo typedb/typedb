@@ -111,7 +111,6 @@ public class RedisTaskStorage implements TaskStateStorage {
             if (value != null) {
                 return (TaskState) deserialize(Base64.getDecoder().decode(value));
             } else {
-                LOG.info("Requested state {} was not found", id.getValue());
                 // TODO Don't use exceptions for an expected return like this
                 throw GraknBackendException.stateStorageMissingId(id);
             }

@@ -75,7 +75,7 @@ public abstract class GraphMutators {
     ){
         if(!factory.systemKeyspace().containsKeyspace(keyspace)){ //This may be slow.
             LOG.warn("Attempting to execute mutation on graph [" + keyspace + "] which no longer exists");
-            return;
+            throw new RuntimeException(ErrorMessage.UNABLE_TO_MUTATE_GRAPH.getMessage(keyspace));
         }
 
         for(int retry = 0; retry < maxRetry; retry++) {

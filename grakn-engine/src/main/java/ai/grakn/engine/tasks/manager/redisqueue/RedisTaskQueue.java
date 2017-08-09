@@ -29,10 +29,10 @@ import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.Timer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.ConfigBuilder;
@@ -46,7 +46,6 @@ import net.greghaines.jesque.worker.RecoveryStrategy;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerEvent;
 import net.greghaines.jesque.worker.WorkerPool;
-import net.greghaines.jesque.worker.WorkerPoolImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -79,6 +78,8 @@ class RedisTaskQueue {
     private final Meter failures;
     private final int processingDelay;
     private final Timer timer;
+    private final Meter jobExecute;
+    private final ExecutorService executor;
     private Pool<Jedis> jedisPool;
     private LockProvider lockProvider;
     private final MetricRegistry metricRegistry;
@@ -97,6 +98,7 @@ class RedisTaskQueue {
         this.config = new ConfigBuilder().build();
         this.redisClient = new ClientPoolImpl(config, jedisPool);
         this.processingDelay = processingDelay;
+        this.executor = Executors.newFixedThreadPool(8);
         metricRegistry.register(MetricRegistry.name(RedisTaskQueue.class, "job-queue", "size"),
                 new CachedGauge<Long>(GAUGE_CACHING_INTERVAL, TimeUnit.SECONDS) {
                     @Override
@@ -115,8 +117,25 @@ class RedisTaskQueue {
                         }
                     }
                 });
+        metricRegistry.register(MetricRegistry.name(RedisTaskQueue.class, "workers", "active"),
+                new CachedGauge<Long>(GAUGE_CACHING_INTERVAL, TimeUnit.SECONDS) {
+                    @Override
+                    public Long loadValue() {
+                        return (workerPool == null) ?
+                                0L : (long) workerPool.getActiveWorkerCount();
+                    }
+                });
+        metricRegistry.register(MetricRegistry.name(RedisTaskQueue.class, "workers", "idle"),
+                new CachedGauge<Long>(GAUGE_CACHING_INTERVAL, TimeUnit.SECONDS) {
+                    @Override
+                    public Long loadValue() {
+                        return (workerPool == null) ?
+                                0L : (long) workerPool.getIdleWorkerCount();
+                    }
+                });
         this.putJobMeter = metricRegistry.meter(name(RedisTaskQueue.class, "put-job"));
         this.failures = metricRegistry.meter(name(RedisTaskQueue.class, "failures"));
+        this.jobExecute = metricRegistry.meter(name(RedisTaskQueue.class, "job", "execute"));
         this.timer = new Timer();
     }
 
@@ -139,7 +158,7 @@ class RedisTaskQueue {
 
     void runInFlightProcessor() {
         timer.scheduleAtFixedRate(new RedisInflightTaskConsumer(jedisPool, Duration.ofSeconds(
-                processingDelay), config, QUEUE_NAME, metricRegistry), new Date(), 2000);
+                processingDelay), config, QUEUE_NAME, metricRegistry), new Date(), 1000);
     }
 
     void subscribe(
@@ -159,7 +178,8 @@ class RedisTaskQueue {
 
     private Worker getWorker(RedisTaskManager redisTaskManager, EngineID engineId,
             GraknEngineConfig engineConfig, EngineGraknGraphFactory factory) {
-        Worker worker = new WorkerPoolImpl(config, Collections.singletonList(QUEUE_NAME), JOB_FACTORY, jedisPool);
+        Worker worker = new BlockingWorker(config, QUEUE_NAME, JOB_FACTORY, jedisPool,
+                executor, metricRegistry);
         // We need this since the job can only be instantiated with the
         // task coming from the queue
         worker.getWorkerEventEmitter().addListener(
@@ -168,6 +188,7 @@ class RedisTaskQueue {
                         ((RedisTaskQueueConsumer) runner)
                                 .setRunningState(redisTaskManager, engineId, engineConfig, jedisPool,
                                         factory, lockProvider, metricRegistry);
+                        jobExecute.mark();
                     } else {
                         LOG.error("Found unexpected job in queue of type {}", runner.getClass().getName());
                     }

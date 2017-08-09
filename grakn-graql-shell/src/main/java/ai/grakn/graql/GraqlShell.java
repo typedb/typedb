@@ -94,6 +94,8 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A Graql REPL shell that can be run from the command line
@@ -101,6 +103,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Felix Chapman
  */
 public class GraqlShell {
+    private static final Logger LOG = LoggerFactory.getLogger(GraqlShell.class);
+
     private static final String LICENSE_PROMPT = "\n" +
             "Grakn  Copyright (C) 2016  Grakn Labs Limited \n" +
             "This is free software, and you are welcome to redistribute it \n" +
@@ -516,10 +520,12 @@ public class GraqlShell {
         Iterable<String> splitQuery = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(queryString);
 
         for (String queryChunk : splitQuery) {
-            session.sendJson(Json.object(
+            Json jsonObject = Json.object(
                     ACTION, ACTION_QUERY,
                     QUERY, queryChunk
-            ));
+            );
+            LOG.debug("Sending {}", jsonObject);
+            session.sendJson(jsonObject);
         }
 
         session.sendJson(Json.object(ACTION, ACTION_END));
@@ -538,6 +544,7 @@ public class GraqlShell {
      * @param message the message to handle
      */
     private void handleMessage(Json message) {
+        LOG.debug("Received message from server: ", message);
         switch (message.at(ACTION).asString()) {
             case ACTION_QUERY:
                 String result = message.at(QUERY_RESULT).asString();
