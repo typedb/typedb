@@ -259,7 +259,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
      */
     @Override
     public Stream<Thing> scopes() {
-        return neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE).map(Concept::asThing);
+        return neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE);
     }
 
     /**

@@ -347,7 +347,7 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s3_e2 = entityType.addEntity();
 
         //Check Type was sharded correctly
-        assertThat(entityType.shards(), containsInAnyOrder(s1, s2, s3));
+        assertThat(entityType.shards().collect(Collectors.toSet()), containsInAnyOrder(s1, s2, s3));
 
         //Check shards have correct instances
         assertThat(s1.links().collect(Collectors.toSet()), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
