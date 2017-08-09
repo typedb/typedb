@@ -46,6 +46,9 @@ import ai.grakn.util.REST;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.google.common.base.Stopwatch;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
@@ -186,6 +189,10 @@ public class GraknEngineServer implements AutoCloseable {
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "waiters"), (Gauge<Integer>) jedisPool::getNumWaiters);
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "max"), (Gauge<Long>) jedisPool::getMaxBorrowWaitTimeMillis);
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "mean"), (Gauge<Long>) jedisPool::getMeanBorrowWaitTimeMillis);
+
+        metricRegistry.register(name(GraknEngineServer.class, "System", "gc"), new GarbageCollectorMetricSet());
+        metricRegistry.register(name(GraknEngineServer.class, "System", "threads"), new CachedThreadStatesGaugeSet(15, TimeUnit.SECONDS));
+        metricRegistry.register(name(GraknEngineServer.class, "System", "memory"), new MemoryUsageGaugeSet());
 
         if (!inMemoryQueue) {
             Optional<String> consumers = prop.tryProperty(QUEUE_CONSUMERS);
@@ -366,7 +373,7 @@ public class GraknEngineServer implements AutoCloseable {
     private RedisWrapper instantiateRedis(GraknEngineConfig prop) {
         List<String> redisUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_HOST).orElse("localhost:6379"));
         List<String> sentinelUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_SENTINEL_HOST).orElse(""));
-        int poolSize = prop.tryIntProperty(REDIS_POOL_SIZE, 128);
+        int poolSize = prop.tryIntProperty(REDIS_POOL_SIZE, 32);
         boolean useSentinel = !sentinelUrl.isEmpty();
         Builder builder = RedisWrapper.builder()
                 .setUseSentinel(useSentinel)
