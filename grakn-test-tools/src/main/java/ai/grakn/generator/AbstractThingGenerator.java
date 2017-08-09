@@ -30,8 +30,6 @@ import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Collection;
-import java.util.Set;
-import java.util.stream.Stream;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
@@ -70,40 +68,22 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
             thing = random.choose(instances);
         }
 
-        if(withResource){
-            //Getting the resource type we need
-            Set<ResourceType> availableResourceTypes = Stream.concat(type.resources(), type.keys()).
-                    filter(rt -> !rt.isAbstract()).
-                    filter(rt -> !rt.equals(type)).
-                    collect(toSet());
+        if(withResource && !thing.resources().findAny().isPresent()){
+            //A new resource type is created every time a resource is lacking.
+            //Existing resource types and resources of those types are not used because we end up mutating the
+            // the ontology in strange ways. This approach is less complex but ensures everything has a resource
+            // without conflicting with the ontology
 
-            ResourceType resourceType;
-            if(availableResourceTypes.isEmpty()){
-                ResourceType.DataType<?> dataType = gen(ResourceType.DataType.class);
-                Label label = genFromGraph(Labels.class).mustBeUnused().generate(random, status);
-                resourceType = graph().putResourceType(label, dataType);
-                //resourceType = genFromGraph(ResourceTypes.class).makeExcludeAbstractTypes().excludeMeta().generate(random, status);
-                System.out.println("Creating new resource type: " + resourceType.getLabel());
-                type.resource(resourceType);
-            } else {
-                resourceType = random.choose(availableResourceTypes);
-                System.out.println("Using old resource type: " + resourceType.getLabel());
-            }
+            //Create a new resource type
+            ResourceType.DataType<?> dataType = gen(ResourceType.DataType.class);
+            Label label = genFromGraph(Labels.class).mustBeUnused().generate(random, status);
+            ResourceType resourceType = graph().putResourceType(label, dataType);
 
-            //Getting the resource we need
-            //noinspection unchecked
-            Set<Resource> availableResources = (Set<Resource>) resourceType.instances().collect(toSet());
+            //Create new resource
+            Resource resource = newResource(resourceType);
 
-            Resource resource;
-            if(availableResources.isEmpty()){
-                System.out.println("Creating new resource from type: " + resourceType.getLabel());
-                resource = newResource(resourceType);
-            } else {
-                System.out.println("Choosing old resource from type: " + resourceType.getLabel());
-                resource = random.choose(availableResources);
-            }
-
-            System.out.println("Give resource of type [" + resource.type().getLabel() + "] to a thing of type [" + thing.type().getLabel() + "]");
+            //Link everything together
+            type.resource(resourceType);
             thing.resource(resource);
         }
 
