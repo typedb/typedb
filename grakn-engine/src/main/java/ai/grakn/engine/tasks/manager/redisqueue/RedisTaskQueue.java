@@ -98,7 +98,7 @@ class RedisTaskQueue {
         this.config = new ConfigBuilder().build();
         this.redisClient = new ClientPoolImpl(config, jedisPool);
         this.processingDelay = processingDelay;
-        this.executor = Executors.newFixedThreadPool(8);
+        this.executor = Executors.newFixedThreadPool(4);
         metricRegistry.register(MetricRegistry.name(RedisTaskQueue.class, "job-queue", "size"),
                 new CachedGauge<Long>(GAUGE_CACHING_INTERVAL, TimeUnit.SECONDS) {
                     @Override

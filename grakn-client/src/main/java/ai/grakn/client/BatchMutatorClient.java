@@ -89,7 +89,6 @@ public class BatchMutatorClient {
     private final String keyspace;
     private final String uri;
     private final TaskClient taskClient;
-    private final Retryer<TaskId> sendRetryer;
     private final Retryer<Json> getStatusRetrier;
 
     private Consumer<Json> onCompletionOfTask;
@@ -124,13 +123,6 @@ public class BatchMutatorClient {
         } else {
             throw new RuntimeException("Invalid uri " + uri);
         }
-
-        sendRetryer = RetryerBuilder.<TaskId>newBuilder()
-                .retryIfExceptionOfType(IOException.class)
-                .retryIfRuntimeException()
-                .withStopStrategy(StopStrategies.stopAfterAttempt(retry ? MAX_RETRIES : 1))
-                .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
-                .build();
 
         getStatusRetrier = RetryerBuilder.<Json>newBuilder()
                 .retryIfExceptionOfType(IOException.class)
@@ -272,6 +264,14 @@ public class BatchMutatorClient {
                         Instant.ofEpochMilli(new Date().getTime()), null, configuration, 10000);
 
         TaskId taskId;
+
+        Retryer<TaskId> sendRetryer = RetryerBuilder.<TaskId>newBuilder()
+                .retryIfExceptionOfType(IOException.class)
+                .retryIfRuntimeException()
+                .withStopStrategy(StopStrategies.stopAfterAttempt(retry ? MAX_RETRIES : 1))
+                .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
+                .build();
+
         try {
             taskId = sendRetryer.call(callable);
         } catch (Exception e) {
