@@ -35,6 +35,7 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraphTestBase;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -296,7 +297,7 @@ public class RelationTest extends GraphTestBase {
 
 
     @Test
-    public void whenAddingDuplicateRelationsWittDifferentKeys_EnsureTheyCanBeCommitted(){
+    public void whenAddingDuplicateRelationsWithDifferentKeys_EnsureTheyCanBeCommitted(){
         Role role1 = graknGraph.putRole("dark");
         Role role2 = graknGraph.putRole("souls");
         ResourceType<Long> resourceType = graknGraph.putResourceType("Death Number", ResourceType.DataType.LONG);
@@ -320,5 +321,29 @@ public class RelationTest extends GraphTestBase {
         graknGraph = (AbstractGraknGraph<?>) graknSession.open(GraknTxType.WRITE);
 
         assertThat(graknGraph.admin().getMetaRelationType().instances().collect(toSet()), containsInAnyOrder(rel1, rel2));
+    }
+
+    @Test
+    public void whenAddingDuplicateRelationsWithSameKeys_Throw(){
+        Role role1 = graknGraph.putRole("dark");
+        Role role2 = graknGraph.putRole("souls");
+        ResourceType<Long> resourceType = graknGraph.putResourceType("Death Number", ResourceType.DataType.LONG);
+        RelationType relationType = graknGraph.putRelationType("Dark Souls").relates(role1).relates(role2).key(resourceType);
+        EntityType entityType = graknGraph.putEntityType("Dead Guys").plays(role1).plays(role2);
+
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+
+        Resource<Long> r1 = resourceType.putResource(1000000L);
+
+        relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2).resource(r1);
+        relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2).resource(r1);
+
+        String message = ErrorMessage.VALIDATION_RELATION_DUPLICATE.getMessage("");
+        message = message.substring(0, message.length() - 5);
+        expectedException.expect(InvalidGraphException.class);
+        expectedException.expectMessage(containsString(message));
+
+        graknGraph.commit();
     }
 }
