@@ -23,6 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -52,6 +53,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -281,11 +283,21 @@ class ValidateGlobalRules {
      *
      * @param graph the {@link GraknGraph} used to check for uniqueness
      * @param relationReified the {@link Relation} to check
-     * @param keys the {@link ResourceType}s indicating the keys which the relation must be bound to and unique to
+     * @param keys the {@link ResourceType} indicating the key which the relation must be bound to and unique to
      * @return An error message if the {@link Relation} is not unique.
      */
     private static Optional<String> validateKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified, Iterator<ResourceType> keys) {
-        return Optional.empty();
+        TreeMap<String, String> resources = new TreeMap<>();
+        while(keys.hasNext()){
+            Optional<Resource<?>> foundResource = relationReified.resources(keys.next()).findAny();
+            //Lack of resource key is handled by another method.
+            //Handling the lack of a key here would result in duplicate error messages
+            foundResource.ifPresent(resource -> resources.put(resource.type().getId().getValue(), resource.getId().getValue()));
+        }
+
+        String hash = RelationReified.generateNewHash(relationReified.type(), resources);
+
+        return setRelationUnique(graph, relationReified, hash);
     }
 
     /**
@@ -298,7 +310,21 @@ class ValidateGlobalRules {
      */
     private static Optional<String> validateNonKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified){
         String hash = RelationReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers());
+        return setRelationUnique(graph, relationReified, hash);
+    }
+
+    /**
+     * Checks is a {@link Relation} is unique by searching the {@link GraknGraph} for another {@link Relation} with the same
+     * hash.
+     *
+     * @param graph the {@link GraknGraph} used to check for uniqueness
+     * @param relationReified The candidate unique {@link Relation}
+     * @param hash The hash to use to find other potential {@link Relation}s
+     * @return An error message if the provided {@link Relation} is not unique and were unable to set the hash
+     */
+    private static Optional<String> setRelationUnique(AbstractGraknGraph<?> graph, RelationReified relationReified, String hash){
         RelationImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
+
         if(foundRelation == null){
             relationReified.setHash(hash);
         } else if(foundRelation.reified().isPresent() && !foundRelation.reified().get().equals(relationReified)){

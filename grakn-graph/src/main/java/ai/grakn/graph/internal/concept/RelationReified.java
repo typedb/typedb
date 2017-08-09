@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -122,11 +123,31 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
      * Creates a hash for a relation based on it's {@link RelationType} and the {@link Resource} which serves as it's key
      *
      * @param relationType the {@link RelationType} of the {@link Relation}
-     * @param resource the {@link Resource} which serves as it's key
+     * @param resourceMap a sorted map of {@link ai.grakn.concept.ResourceType} Ids to {@link Resource} Ids
      * @return A unique hash identifying this {@link Relation}
      */
-    public static String generateNewHash(RelationType relationType, Resource resource){
-        return null;
+    public static String generateNewHash(RelationType relationType, TreeMap<String, String> resourceMap){
+        //This is a sorted map of Resource Type Ids to Resource Ids
+        //Map<String, String> resourceMap = new TreeMap<>();
+        ///resources.forEach(resource -> resourceMap.put(resource.type().getId().getValue(), resource.getId().getValue()));
+
+
+        StringBuilder hashMain = new StringBuilder();
+        hashMain.append("RelationType_").append(StringUtil.escapeString(relationType.getId().getValue())).append("_");
+
+        StringBuilder hashResourceTypes = new StringBuilder();
+        hashResourceTypes.append("ResourceTypes_");
+
+        StringBuilder hashResources = new StringBuilder();
+        hashResources.append("Resources_");
+
+        resourceMap.forEach((resourceTypeId, resourceId) -> {
+            hashResourceTypes.append(StringUtil.escapeString(resourceTypeId)).append("_");
+            hashResources.append(StringUtil.escapeString(resourceId)).append("_");
+        });
+
+
+        return hashMain.append(hashResourceTypes).append(hashResources).toString();
     }
 
     /**

@@ -39,6 +39,7 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -308,7 +309,7 @@ public class RelationTest extends GraphTestBase {
         Entity e2 = entityType.addEntity();
 
         Resource<Long> r1 = resourceType.putResource(1000000L);
-        Resource<Long> r2 = resourceType.putResource(1000000L);
+        Resource<Long> r2 = resourceType.putResource(2000000L);
 
         Relation rel1 = relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
         Relation rel2 = relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
@@ -320,7 +321,8 @@ public class RelationTest extends GraphTestBase {
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) graknSession.open(GraknTxType.WRITE);
 
-        assertThat(graknGraph.admin().getMetaRelationType().instances().collect(toSet()), containsInAnyOrder(rel1, rel2));
+        assertThat(graknGraph.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel1));
+        assertThat(graknGraph.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel2));
     }
 
     @Test
