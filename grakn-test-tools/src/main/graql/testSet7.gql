@@ -28,7 +28,7 @@ isa inference-rule
 		$z (role1:$x, role2:$y) isa relation1;
 	}
 	then {
-		$z1 (role1:$x, role2:$z) isa relation1;
+		(role1:$x, role2:$z) isa relation1;
 	};
 
 

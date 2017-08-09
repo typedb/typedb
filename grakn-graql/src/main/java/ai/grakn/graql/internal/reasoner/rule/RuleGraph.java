@@ -77,10 +77,12 @@ public class RuleGraph {
     }
 
     /**
-     * @return true if the rule graph contains types with negative net flux (appears in more rule heads than bodies)
+     * @param rules set of rules of interest forming a rule subgraph
+     * @return true if the rule subgraph formed from provided rules contains loops with negative net flux (appears in more rule heads than bodies)
      */
-    public boolean hasTypesWithNegativeFlux(Set<Type> topTypes){
-        return getDependentRules(topTypes)
+    public boolean subGraphHasLoopsWithNegativeFlux(Set<InferenceRule> rules){
+        return rules.stream()
+                .map(r -> graph.<Rule>getConcept(r.getRuleId()))
                 .flatMap(Rule::getConclusionTypes)
                 .distinct()
                 .filter(type -> {
@@ -92,33 +94,20 @@ public class RuleGraph {
     }
 
     /**
-     * @return true if the rule graph contains rules generating fresh variables (occurring in rule head but not in the body)
+     * @param rules set of rules of interest forming a rule subgraph
+     * @return true if the rule subgraph formed from provided rules contains any rule with head satisfying the body pattern
      */
-    public boolean hasRulesGeneratingFreshVariables(Set<Type> topTypes){
-        return getDependentRules(topTypes)
-                .map(r -> new InferenceRule(r, graph))
-                .filter(InferenceRule::generatesFreshVariables)
+    public boolean subGraphHasRulesWithHeadSatisfyingBody(Set<InferenceRule> rules){
+        return rules.stream()
+                .filter(InferenceRule::headSatisfiesBody)
                 .findFirst().isPresent();
     }
-
-    public boolean hasRulesGeneratingFreshVariables(ReasonerQueryImpl query){
-        return getDependentRules(query)
-                .filter(InferenceRule::generatesFreshVariables)
-                .findFirst().isPresent();
-    }
-
-    public boolean hasRulesWithEquivalentHeadAndBody(ReasonerQueryImpl query){
-        return getDependentRules(query)
-                .filter(InferenceRule::isHeadEquivalentToBody)
-                .findFirst().isPresent();
-    }
-
 
     /**
      * @param topTypes entry types in the rule graph
      * @return all rules that are reachable from the entry types
      */
-    private Stream<Rule> getDependentRules(Set<Type> topTypes){
+    public Stream<Rule> getDependentRules(Set<Type> topTypes){
         Set<Rule> rules = new HashSet<>();
         Set<Type> visitedTypes = new HashSet<>();
         Stack<Type> types = new Stack<>();
@@ -137,7 +126,11 @@ public class RuleGraph {
         return rules.stream();
     }
 
-    private Stream<InferenceRule> getDependentRules(ReasonerQueryImpl query){
+    /**
+     * @param query top query
+     * @return all rules that are reachable from the entry types
+     */
+    public Stream<InferenceRule> getDependentRules(ReasonerQueryImpl query){
         Set<InferenceRule> rules = new HashSet<>();
         Set<Atom> visitedAtoms = new HashSet<>();
         Stack<Atom> atoms = new Stack<>();
@@ -147,7 +140,6 @@ public class RuleGraph {
             if (!visitedAtoms.contains(atom)){
                 atom.getApplicableRules()
                         .peek(rules::add)
-                        .map(rule -> rule.rewriteToUserDefined(atom))
                         .flatMap(rule -> rule.getBody().selectAtoms().stream())
                         .filter(visitedAtoms::contains)
                         .forEach(atoms::add);

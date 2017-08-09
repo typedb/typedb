@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
@@ -48,6 +49,7 @@ import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
 import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
@@ -603,20 +605,15 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
+     * reiteration might be required if rule graph contains loops with negative flux
+     * or there exists a rule which head satisfies body
      * @return true if because of the rule graph form, the resolution of this query may require reiteration
      */
-    public boolean requiresReiteration(){
+    public boolean requiresReiteration() {
         RuleGraph ruleGraph = new RuleGraph(graph());
-        Set<Type> types = getAtoms().stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .map(Atom::getOntologyConcept)
-                .filter(Objects::nonNull)
-                .filter(Concept::isType)
-                .map(Concept::asType)
-                .collect(Collectors.toSet());
-        return ruleGraph.hasTypesWithNegativeFlux(types)
-                || ruleGraph.hasRulesWithEquivalentHeadAndBody(this);
-                //|| ruleGraph.hasRulesGeneratingFreshVariables(types);
-                //|| ruleGraph.hasRulesGeneratingFreshVariables(this);
+
+        Set<InferenceRule> dependentRules = ruleGraph.getDependentRules(this).collect(Collectors.toSet());
+        return ruleGraph.subGraphHasLoopsWithNegativeFlux(dependentRules)
+                || ruleGraph.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
     }
 }

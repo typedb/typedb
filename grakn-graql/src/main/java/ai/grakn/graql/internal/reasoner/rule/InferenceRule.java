@@ -115,6 +115,7 @@ public class InferenceRule {
 
     public ConceptId getRuleId(){ return ruleId;}
 
+
     /**
      * @return true if the rule has disconnected head, i.e. head and body do not share any variables
      */
@@ -123,20 +124,12 @@ public class InferenceRule {
     }
 
     /**
-     * @return true if the rule generates fresh variables, i. e. its head has variables that do not occur in the body
+     * @return true if head satisfies the pattern specified in the body of the rule
      */
-    boolean generatesFreshVariables(){
-        Atom atom = head.getAtom();
-        return !Sets.difference(
-                atom.getVarNames().stream().filter(v -> !v.equals(atom.getPredicateVariable())).collect(toSet()),
-                body.getVarNames())
-                .isEmpty();
-    }
-
-    //TODO need a better name
-    boolean isHeadEquivalentToBody(){
+    boolean headSatisfiesBody(){
         return getBody().isEquivalent(
-                ReasonerQueries.create(getHead())
+                ReasonerQueries.create(
+                        getHead())
                         .addAtomConstraints(
                                 getBody()
                                         .getTypeConstraints().stream()
