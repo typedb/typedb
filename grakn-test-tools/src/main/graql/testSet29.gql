@@ -24,8 +24,8 @@ name sub resource datatype string;
 
 isa inference-rule
 	when {
-		$x isa entity1;
-		$y isa entity1;
+		(role1:$x, role2:$z) isa relation1;
+		(role1:$z, role2:$y) isa relation1;
 	}
 	then {
 		(role1:$x, role2:$y) isa relation1;
