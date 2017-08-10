@@ -107,7 +107,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         atoms.stream()
                 .flatMap(Atom::getNonSelectableConstraints)
                 .distinct()
-                .forEach(at -> addAtomic(AtomicFactory.create(at, this)));
+                .forEach(t -> addAtomic(AtomicFactory.create(t, this)));
         inferTypes();
     }
 
@@ -164,11 +164,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * replace all atoms with inferrable types with their new instances with added types
      */
     private void inferTypes() {
-        Set<Atom> inferrableAtoms = new HashSet<>();
-        Set<Atom> inferredAtoms = getAtoms(Atom.class)
-                .peek(inferrableAtoms::add)
-                .map(Atom::inferTypes)
-                .collect(Collectors.toSet());
+        Set<Atom> inferrableAtoms = getAtoms(Atom.class).collect(Collectors.toSet());
+        Set<Atom> inferredAtoms = inferrableAtoms.stream().map(Atom::inferTypes).collect(Collectors.toSet());
         inferrableAtoms.forEach(this::removeAtomic);
         inferredAtoms.forEach(this::addAtomic);
     }
@@ -331,7 +328,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public boolean isEquivalent(ReasonerQueryImpl q) {
         Set<Atom> atoms = getAtoms(Atom.class).collect(Collectors.toSet());
-        if(atoms.size() != q.getAtoms(Atom.class).count()) return false;
+        if(atoms.size() != q.getAtoms().stream().filter(Atomic::isAtom).count()) return false;
         for (Atom atom : atoms){
             if(!q.containsEquivalentAtom(atom)){
                 return false;

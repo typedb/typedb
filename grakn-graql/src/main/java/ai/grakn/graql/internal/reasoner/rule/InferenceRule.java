@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
@@ -173,14 +172,14 @@ public class InferenceRule {
                     });
         }
 
-        Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints().stream()
+        Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints()
                 .flatMap(type -> type.unify(unifier).stream())
                 .collect(toSet());
 
         //set rule body types to sub types of combined query+rule types
         Set<TypeAtom> ruleTypes = body.getAtoms(TypeAtom.class).filter(t -> !t.isRelation()).collect(toSet());
         ruleTypes.forEach(body::removeAtomic);
-        Set<TypeAtom> allTypes = Sets.union(unifiedTypes, ruleTypes);z
+        Set<TypeAtom> allTypes = Sets.union(unifiedTypes, ruleTypes);
         allTypes.stream()
                 .filter(ta -> {
                     OntologyConcept ontologyConcept = ta.getOntologyConcept();
@@ -204,17 +203,17 @@ public class InferenceRule {
     }
 
     private InferenceRule rewriteBody(){
-        new HashSet<>(body.getAtoms()).stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
+        HashSet<Atom> toRemove = new HashSet<>();
+        HashSet<Atom> rewrites = new HashSet<>();
+        body.getAtoms(Atom.class)
                 .filter(Atom::isRelation)
                 .filter(at -> !at.isUserDefinedName())
                 .filter(at -> Objects.nonNull(at.getOntologyConcept()))
                 .filter(at -> at.getOntologyConcept().equals(head.getAtom().getOntologyConcept()))
-                .forEach(at -> {
-                    Atom rewrite = at.rewriteToUserDefined();
-                    body.removeAtomic(at);
-                    body.addAtomic(rewrite);
-                    });
+                .peek(toRemove::add)
+                .forEach(at -> rewrites.add(at.rewriteToUserDefined()));
+        toRemove.forEach(body::removeAtomic);
+        rewrites.forEach(body::addAtomic);
         return this;
     }
 

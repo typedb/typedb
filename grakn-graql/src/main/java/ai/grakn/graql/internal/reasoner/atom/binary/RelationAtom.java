@@ -489,7 +489,7 @@ public class RelationAtom extends IsaAtom {
     @Override
     public Set<TypeAtom> getSpecificTypeConstraints() {
         Set<Var> mappedVars = getSpecificRolePlayers();
-        return getTypeConstraints().stream()
+        return getTypeConstraints()
                 .filter(t -> mappedVars.contains(t.getVarName()))
                 .filter(t -> Objects.nonNull(t.getOntologyConcept()))
                 .collect(toSet());

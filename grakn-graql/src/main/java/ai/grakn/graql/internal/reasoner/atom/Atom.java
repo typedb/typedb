@@ -33,8 +33,6 @@ import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.Sets;
 
@@ -120,7 +118,7 @@ public abstract class Atom extends AtomicBase {
         priority += isRuleResolvable()? ResolutionPlan.RULE_RESOLVABLE_ATOM : 0;
         priority += isRecursive()? ResolutionPlan.RECURSIVE_ATOM : 0;
 
-        priority += getTypeConstraints().size() * ResolutionPlan.GUARD;
+        priority += getTypeConstraints().count() * ResolutionPlan.GUARD;
         Set<Var> otherVars = getParentQuery().getAtoms().stream()
                 .filter(a -> a != this)
                 .flatMap(at -> at.getVarNames().stream())
@@ -208,22 +206,17 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of types relevant to this atom
      */
-    public Set<TypeAtom> getTypeConstraints(){
-        Set<TypeAtom> relevantTypes = new HashSet<>();
-        //ids from indirect types
-        getParentQuery().getAtoms(TypeAtom.class)
+    public Stream<TypeAtom> getTypeConstraints(){
+        return getParentQuery().getAtoms(TypeAtom.class)
                 .filter(atom -> atom != this)
-                .filter(atom -> containsVar(atom.getVarName()))
-                .forEach(relevantTypes::add);
-        return relevantTypes;
+                .filter(atom -> containsVar(atom.getVarName()));
     }
 
     /**
      * @return neighbours of this atoms, i.e. atoms connected to this atom via shared variable
      */
     public Stream<Atom> getNeighbours(){
-        return getParentQuery()
-                .getAtoms(Atom.class)
+        return getParentQuery().getAtoms(Atom.class)
                 .filter(at -> at != this)
                 .filter(at -> !Sets.intersection(this.getVarNames(), at.getVarNames()).isEmpty());
     }
@@ -234,7 +227,7 @@ public abstract class Atom extends AtomicBase {
     public Stream<Atomic> getNonSelectableConstraints() {
         return Stream.concat(
                 getPredicates(),
-                getTypeConstraints().stream().filter(at -> !at.isSelectable())
+                getTypeConstraints().filter(at -> !at.isSelectable())
                 );
     }
 

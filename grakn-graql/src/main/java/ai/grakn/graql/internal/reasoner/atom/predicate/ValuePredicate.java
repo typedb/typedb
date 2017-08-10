@@ -101,9 +101,6 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     }
 
     @Override
-    public boolean isValuePredicate(){ return true;}
-
-    @Override
     public String getPredicateValue() {
         return getPredicate().getPredicate().map(P::getValue).map(Object::toString).orElse("");
     }
