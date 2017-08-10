@@ -24,10 +24,8 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  *
@@ -85,29 +83,5 @@ public class NeqPredicate extends Predicate<Var> {
 
     public static boolean notEqualsOperator(Answer answer, NeqPredicate atom) {
         return !answer.get(atom.getVarName()).equals(answer.get(atom.getReferenceVarName()));
-    }
-
-    /**
-     * apply the not equals filter to answer set
-     * @param answers the filter should be applied to
-     * @return filtered answer set
-     */
-    public QueryAnswers filter(QueryAnswers answers){
-        QueryAnswers results = new QueryAnswers();
-        Var refVarName = getReferenceVarName();
-        answers.stream()
-                .filter(answer -> !answer.get(getVarName()).equals(answer.get(refVarName)))
-                .forEach(results::add);
-        return results;
-    }
-
-    /**
-     * apply the not equals filter to answer stream
-     * @param answers the filter should be applied to
-     * @return filtered answer stream
-     */
-    public Stream<Answer> filter(Stream<Answer> answers){
-        Var refVarName = getReferenceVarName();
-        return answers.filter(answer -> !answer.get(getVarName()).equals(answer.get(refVarName)));
     }
 }
