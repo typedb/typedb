@@ -104,10 +104,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         atoms.stream()
                 .map(at -> AtomicFactory.create(at, this))
                 .forEach(this::addAtomic);
+
         atoms.stream()
                 .flatMap(Atom::getNonSelectableConstraints)
-                .distinct()
-                .forEach(t -> addAtomic(AtomicFactory.create(t, this)));
+                .map(at -> AtomicFactory.create(at, this))
+                .forEach(this::addAtomic);
+
         inferTypes();
     }
 
