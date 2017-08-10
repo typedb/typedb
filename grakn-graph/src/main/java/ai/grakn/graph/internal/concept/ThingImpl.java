@@ -283,6 +283,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     private void type(TypeImpl type) {
         if(type != null){
             type.currentShard().link(this);
+            //noinspection unchecked
+            cachedType.set((V) type);
             setInternalType(type());
         }
     }
