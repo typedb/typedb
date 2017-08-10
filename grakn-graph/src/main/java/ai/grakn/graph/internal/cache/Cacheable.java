@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
+import ai.grakn.graph.internal.structure.Shard;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -79,6 +80,10 @@ public class Cacheable<V> {
 
     public static <K, T> Cacheable<Map<K, T>> map(){
         return new Cacheable<>(HashMap::new);
+    }
+
+    public static Cacheable<Shard> shard(){
+        return new Cacheable<>((o) -> o);
     }
 
     /**

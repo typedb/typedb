@@ -50,6 +50,11 @@ import java.util.stream.Stream;
  *
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxCache {
+    private final Cache<Shard> currentShard = new Cache<>(Cacheable.shard(), () -> {
+        String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
+        Vertex shardVertex = vertex().graph().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
+        return vertex().graph().factory().buildShard(shardVertex);
+    });
     private final Cache<ConceptId> conceptId = new Cache<>(Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
 
@@ -201,9 +206,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     }
 
     public Shard currentShard(){
-        String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
-        Vertex shardVertex = vertex().graph().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
-        return vertex().graph().factory().buildShard(shardVertex);
+        return currentShard.get();
     }
 
     public long getShardCount(){
