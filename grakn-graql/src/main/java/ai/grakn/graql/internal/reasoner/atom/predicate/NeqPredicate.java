@@ -73,6 +73,12 @@ public class NeqPredicate extends Predicate<Var> {
         return vars;
     }
 
+    public boolean isSatisfied(Answer sub) {
+        return !sub.containsKey(getVarName())
+                || !sub.containsKey(getReferenceVarName())
+                || !sub.get(getVarName()).equals(sub.get(getReferenceVarName()));
+    }
+
     private Var getReferenceVarName(){
         return getPredicate();
     }

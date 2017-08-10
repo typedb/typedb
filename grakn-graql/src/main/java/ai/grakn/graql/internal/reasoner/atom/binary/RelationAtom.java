@@ -109,7 +109,7 @@ public class RelationAtom extends IsaAtom {
         String relationString = (isUserDefinedName()? getVarName() + " ": "") +
                 (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") +
                 getRelationPlayers().toString();
-        return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
+        return relationString + getPredicates().stream().map(Predicate::toString).collect(Collectors.joining(""));
     }
 
     private List<RelationPlayer> getRelationPlayers() {

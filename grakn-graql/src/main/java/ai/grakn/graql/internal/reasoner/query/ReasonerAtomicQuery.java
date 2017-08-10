@@ -46,6 +46,7 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 import ai.grakn.graql.internal.reasoner.state.AtomicState;
+import ai.grakn.graql.internal.reasoner.state.NeqComplementState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
@@ -346,7 +347,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return new AtomicState(this, sub, u, parent, subGoals, cache);
+        return getNeqPredicates().isEmpty()?
+                new AtomicState(this, sub, u, parent, subGoals, cache) :
+                new NeqComplementState(this, sub, u, parent, subGoals, cache);
     }
 
     /**

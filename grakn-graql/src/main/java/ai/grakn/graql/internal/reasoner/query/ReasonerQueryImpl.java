@@ -255,7 +255,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return set of neq predicates contained in this query
      */
-    private Set<NeqPredicate> getNeqPredicates() {
+    public Set<NeqPredicate> getNeqPredicates() {
         return getPredicates().stream()
                 .filter(Predicate::isNeqPredicate).map(at -> (NeqPredicate) at)
                 .collect(Collectors.toSet());

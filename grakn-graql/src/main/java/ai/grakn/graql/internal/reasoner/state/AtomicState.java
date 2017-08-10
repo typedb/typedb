@@ -96,6 +96,8 @@ public class AtomicState extends QueryState{
         return null;
     }
 
+    ReasonerAtomicQuery getQuery(){return query;}
+
     private ResolutionState generateSubGoalFromRule(RuleTuple ruleTuple){
         currentRule = ruleTuple.getRule();
         Unifier ruleUnifier = ruleTuple.getRuleUnifier();
