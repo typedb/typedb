@@ -1,3 +1,6 @@
+#!groovy
+//This sets properties in the Jenkins server. In this case run every 8 hours
+properties([pipelineTriggers([cron('H H/8 * * *')])])
 node {
   //Everything is wrapped in a try catch so we can handle any test failures
   //If one test fails then all the others will stop. I.e. we fail fast
