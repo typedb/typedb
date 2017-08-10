@@ -83,7 +83,7 @@ public class ResourceAtom extends Binary{
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getOntologyConcept().getLabel() + " " +
                 multiPredicateString +
-                getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
+                getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
     }
 
     @Override
@@ -305,9 +305,8 @@ public class ResourceAtom extends Binary{
         return unifier;
     }
 
-    @Override
-    public Set<ValuePredicate> getValuePredicates(){
-        Set<ValuePredicate> valuePredicates = super.getValuePredicates();
+    private Set<ValuePredicate> getValuePredicates(){
+        Set<ValuePredicate> valuePredicates = getPredicates(ValuePredicate.class).collect(Collectors.toSet());
         getMultiPredicate().forEach(valuePredicates::add);
         return valuePredicates;
     }

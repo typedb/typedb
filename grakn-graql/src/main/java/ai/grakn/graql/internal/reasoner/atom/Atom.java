@@ -99,14 +99,14 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return partial substitutions for this atom (NB: instances)
      */
-    protected Set<IdPredicate> getPartialSubstitutions(){ return new HashSet<>();}
+    protected Stream<IdPredicate> getPartialSubstitutions(){ return Stream.empty();}
 
     /**
      * compute base resolution priority of this atom
      * @return priority value
      */
     private int computePriority(){
-        return computePriority(getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
+        return computePriority(getPartialSubstitutions().map(IdPredicate::getVarName).collect(Collectors.toSet()));
     }
 
     /**
@@ -128,9 +128,7 @@ public abstract class Atom extends AtomicBase {
         priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionPlan.BOUND_VARIABLE;
 
         //inequality predicates with unmapped variable
-        priority += getPredicates().stream()
-                .filter(Predicate::isNeqPredicate)
-                .map(p -> (NeqPredicate) p)
+        priority += getPredicates(NeqPredicate.class)
                 .map(Predicate::getPredicate)
                 .filter(v -> !subbedVars.contains(v)).count() * ResolutionPlan.INEQUALITY_PREDICATE;
         return priority;
@@ -194,28 +192,17 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of predicates relevant to this atom
      */
-    public Set<Predicate> getPredicates() {
-        return ((ReasonerQueryImpl) getParentQuery()).getPredicates().stream()
-                .filter(atom -> this.containsVar(atom.getVarName()))
-                .collect(Collectors.toSet());
+    public Stream<Predicate> getPredicates() {
+        return getParentQuery().getAtoms(Predicate.class).filter(atom -> this.containsVar(atom.getVarName()));
     }
 
     /**
-     * @return set of id predicates relevant to this atom
+     * @param type the class of {@link Predicate} to return
+     * @param <T> the type of {@link Predicate} to return
+     * @return stream of predicates relevant to this atom
      */
-    public Set<IdPredicate> getIdPredicates() {
-        return ((ReasonerQueryImpl) getParentQuery()).getIdPredicates().stream()
-                .filter(atom -> this.containsVar(atom.getVarName()))
-                .collect(Collectors.toSet());
-    }
-
-    /**
-     * @return set of value predicates relevant to this atom
-     */
-    public Set<ValuePredicate> getValuePredicates(){
-        return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
-                .filter(atom -> atom.getVarName().equals(getPredicateVariable()))
-                .collect(Collectors.toSet());
+    public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
+        return getParentQuery().getAtoms(type).filter(atom -> this.containsVar(atom.getVarName()));
     }
 
     /**
@@ -224,7 +211,7 @@ public abstract class Atom extends AtomicBase {
     public Set<TypeAtom> getTypeConstraints(){
         Set<TypeAtom> relevantTypes = new HashSet<>();
         //ids from indirect types
-        ((ReasonerQueryImpl) getParentQuery()).getTypeConstraints().stream()
+        getParentQuery().getAtoms(TypeAtom.class)
                 .filter(atom -> atom != this)
                 .filter(atom -> containsVar(atom.getVarName()))
                 .forEach(relevantTypes::add);
@@ -235,8 +222,8 @@ public abstract class Atom extends AtomicBase {
      * @return neighbours of this atoms, i.e. atoms connected to this atom via shared variable
      */
     public Stream<Atom> getNeighbours(){
-        return getParentQuery().getAtoms().stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
+        return getParentQuery()
+                .getAtoms(Atom.class)
                 .filter(at -> at != this)
                 .filter(at -> !Sets.intersection(this.getVarNames(), at.getVarNames()).isEmpty());
     }
@@ -244,11 +231,11 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of constraints of this atom (predicates + types) that are not selectable
      */
-    public Set<Atomic> getNonSelectableConstraints() {
-        Set<Atom> types = getTypeConstraints().stream()
-                .filter(at -> !at.isSelectable())
-                .collect(Collectors.toSet());
-        return Sets.union(types, getPredicates());
+    public Stream<Atomic> getNonSelectableConstraints() {
+        return Stream.concat(
+                getPredicates(),
+                getTypeConstraints().stream().filter(at -> !at.isSelectable())
+                );
     }
 
     /**
