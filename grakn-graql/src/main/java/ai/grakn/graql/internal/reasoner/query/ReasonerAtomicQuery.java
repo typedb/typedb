@@ -47,7 +47,7 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import javafx.util.Pair;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
