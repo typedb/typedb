@@ -26,6 +26,7 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.util.ConcurrencyUtil;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
@@ -283,7 +284,7 @@ public class TasksController {
                 .map(taskStateWithConfiguration -> CompletableFuture
                         .supplyAsync(() -> addTaskToManager(taskStateWithConfiguration), executor))
                 .collect(toList());
-        return all(futures);
+        return ConcurrencyUtil.all(futures);
     }
 
     private Json extractConfiguration(Json taskJson) {
@@ -313,14 +314,6 @@ public class TasksController {
             singleTaskReturnJson.set("code", HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
         return singleTaskReturnJson;
-    }
-
-    static private <T> CompletableFuture<List<T>> all(List<CompletableFuture<T>> cf) {
-        return CompletableFuture.allOf(cf.toArray(new CompletableFuture[cf.size()]))
-                .thenApply(v -> cf.stream()
-                        .map(CompletableFuture::join)
-                        .collect(toList())
-                );
     }
 
     private TaskState extractParametersAndProcessTask(Json singleTaskJson) {

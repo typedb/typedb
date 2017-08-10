@@ -104,7 +104,7 @@ class RedisTaskQueue {
                     @Override
                     public Long loadValue() {
                         try (Jedis resource = jedisPool.getResource()) {
-                            return resource.llen(String.format("resque:queue:%s", QUEUE_NAME));
+                            return resource.llen(String.format("*queue:%s", QUEUE_NAME));
                         }
                     }
                 });
@@ -141,9 +141,10 @@ class RedisTaskQueue {
 
     void close() throws InterruptedException {
         timer.cancel();
+        timer.purge();
         synchronized(this) {
             if (workerPool != null) {
-                workerPool.endAndJoin(true, 5000);
+                workerPool.endAndJoin(false, 60000);
             }
         }
         redisClient.end();

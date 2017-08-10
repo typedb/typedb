@@ -67,7 +67,9 @@ import redis.clients.util.Pool;
  * @author Domenico Corapi
  */
 public class BlockingWorker extends WorkerPoolImpl {
+
     private static final Logger LOG = LoggerFactory.getLogger(BlockingWorker.class);
+    public static final int BLOCKING_TIMEOUT = 500 /*ms*/;
     private static SecureRandom random = new SecureRandom();
     private final String name;
     private final Timer popTimer;
@@ -80,7 +82,6 @@ public class BlockingWorker extends WorkerPoolImpl {
             JobFactory jobFactory, Pool<Jedis> jedis, ExecutorService executor, MetricRegistry metricRegistry) {
         super(config, Collections.singletonList(queue), jobFactory, jedis);
         this.executor = executor;
-
         this.name = "worker_" + new BigInteger(130, random).toString(32);
         this.popTimer = metricRegistry.timer(MetricRegistry.name(BlockingWorker.class, "pop"));
         this.pollTimer = metricRegistry.timer(MetricRegistry.name(BlockingWorker.class, "poll"));
@@ -131,7 +132,8 @@ public class BlockingWorker extends WorkerPoolImpl {
     @Override
     protected void poll() {
         // This supports only one queue
-        String curQueue = queueNames.pop();
+        String curQueue = queueNames.peek();
+        LOG.info("Worker {} consuming from {}", this.name, key(QUEUE, curQueue));
         while (RUNNING.equals(this.state.get())) {
             try (Context ignoredPoll = pollTimer.time()) {
                 this.listenerDelegate
@@ -150,13 +152,11 @@ public class BlockingWorker extends WorkerPoolImpl {
             } catch (JsonParseException | JsonMappingException e) {
                 // If the job JSON is not deserializable, we never want to submit it again
                 final String fCurQueue = curQueue;
-                PoolUtils.doWorkInPoolNicely(this.jedisPool, new PoolWork<Jedis, Void>() {
-                    @Override
-                    public Void doWork(final Jedis jedis) {
-                        removeInFlight(jedis, fCurQueue);
-                        return null;
-                    }
-                });
+                executor.execute(() -> PoolUtils.doWorkInPoolNicely(this.jedisPool,
+                        (PoolWork<Jedis, Void>) jedis -> {
+                            removeInFlight(jedis, fCurQueue);
+                            return null;
+                        }));
                 recoverFromException(curQueue, e);
             } catch (Exception e) {
                 recoverFromException(curQueue, e);
@@ -174,7 +174,7 @@ public class BlockingWorker extends WorkerPoolImpl {
                  */
                 @Override
                 public String doWork(final Jedis jedis) {
-                    return jedis.brpoplpush(key, key(INFLIGHT, name, curQueue), 0);
+                    return jedis.brpoplpush(key, key(INFLIGHT, name, curQueue), BLOCKING_TIMEOUT);
                 }
             });
         }
@@ -190,7 +190,7 @@ public class BlockingWorker extends WorkerPoolImpl {
 
     @Override
     protected String lpoplpush(final Jedis jedis, final String from, final String to) {
-        return jedis.brpoplpush(from, to, 0);
+        return jedis.brpoplpush(from, to, BLOCKING_TIMEOUT);
     }
 
     private void removeInFlight(final Jedis jedis, final String curQueue) {
