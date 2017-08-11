@@ -5,10 +5,6 @@ node {
   //Everything is wrapped in a try catch so we can handle any test failures
   //If one test fails then all the others will stop. I.e. we fail fast
   try {
-    slackSend channel: "#github", message: """
-      Build Started on ${env.BRANCH_NAME}: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
-      On branch - ${env.GIT_BRANCH} - by - ${env.GIT_AUTHOR_NAME}
-      """
     def workspace = pwd()
     //Always wrap each test block in a timeout
     //This first block sets up engine within 15 minutes
@@ -19,8 +15,10 @@ node {
         stage('Build Grakn') {//Stages allow you to organise and group things within Jenkins
           sh 'npm config set registry http://registry.npmjs.org/'
           checkout scm
-          sh "printenv"
-          sh "git show --format=\"%aN\" | head -n 1"
+          def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
+          slackSend channel: "#github", message: """
+Build Started on ${env.BRANCH_NAME}: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+authored by - """ + user
           sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
           sh "mvn versions:set -DnewVersion=${env.BRANCH_NAME} -DgenerateBackupPoms=false"
           sh 'mvn clean install -Dmaven.repo.local=' + workspace + '/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT'
