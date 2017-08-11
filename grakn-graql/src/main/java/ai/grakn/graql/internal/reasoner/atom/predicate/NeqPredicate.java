@@ -62,9 +62,6 @@ public class NeqPredicate extends Predicate<Var> {
     }
 
     @Override
-    public boolean isNeqPredicate(){ return true;}
-
-    @Override
     public Set<Var> getVarNames(){
         Set<Var> vars = super.getVarNames();
         vars.add(getReferenceVarName());

@@ -121,7 +121,7 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
 
     /**
      * Reads some data from a {@link RelationReified}. If the {@link Relation} has not been reified then an empty
-     * collection is returned.
+     * {@link Stream} is returned.
      */
     private <X> Stream<X> readFromReified(Function<RelationReified, Stream<X>> producer){
         return reified().map(producer).orElseGet(Stream::empty);

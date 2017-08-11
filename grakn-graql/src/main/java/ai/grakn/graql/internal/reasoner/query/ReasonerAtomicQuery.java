@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
@@ -106,8 +107,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public String toString(){
-        return getAtoms().stream()
-                .filter(Atomic::isAtom)
+        return getAtoms(Atom.class)
                 .map(Atomic::toString).collect(Collectors.joining(", "));
     }
 
@@ -347,9 +347,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return getNeqPredicates().isEmpty()?
-                new AtomicState(this, sub, u, parent, subGoals, cache) :
-                new NeqComplementState(this, sub, u, parent, subGoals, cache);
+        return getAtoms(NeqPredicate.class).findFirst().isPresent()?
+                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
+                new AtomicState(this, sub, u, parent, subGoals, cache);
     }
 
     /**
