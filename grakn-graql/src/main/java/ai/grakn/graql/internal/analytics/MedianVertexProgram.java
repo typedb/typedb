@@ -177,7 +177,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
                 degreeStatisticsStepResourceOwner(vertex, messenger, statisticsResourceLabelIds);
                 break;
             case 1:
-                degreeStatisticsStepResourceRelation(vertex, messenger);
+                degreeStatisticsStepResourceRelation(vertex, messenger, statisticsResourceLabelIds);
                 break;
             case 2:
                 if (vertexHasSelectedTypeId(vertex, statisticsResourceLabelIds)) {

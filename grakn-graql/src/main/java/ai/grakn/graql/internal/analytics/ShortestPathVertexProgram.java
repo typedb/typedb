@@ -103,7 +103,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        return memory.<Boolean>get(FOUND_PATH) ? Collections.emptySet() : messageScopeSetShortcut;
+        return memory.<Boolean>get(FOUND_PATH) ? Collections.emptySet() : messageScopeSetInAndOut;
     }
 
     @Override

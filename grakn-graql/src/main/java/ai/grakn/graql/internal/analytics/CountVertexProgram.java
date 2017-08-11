@@ -66,7 +66,7 @@ public class CountVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        return memory.isInitialIteration() ? messageScopeSetShortcut : Collections.emptySet();
+        return memory.isInitialIteration() ? messageScopeSetInAndOut : Collections.emptySet();
     }
 
     @Override

@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.analytics;
 import ai.grakn.concept.LabelId;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -44,8 +45,8 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     public DegreeStatisticsVertexProgram() {
     }
 
-    public DegreeStatisticsVertexProgram(Set<LabelId> ofLabelIDs, String randomId) {
-        super(ofLabelIDs, randomId);
+    public DegreeStatisticsVertexProgram(Set<LabelId> ofLabelIDs) {
+        super(ofLabelIDs);
     }
 
     @Override
@@ -55,10 +56,10 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
                 degreeStatisticsStepResourceOwner(vertex, messenger, ofLabelIds);
                 break;
             case 1:
-                degreeStatisticsStepResourceRelation(vertex, messenger);
+                degreeStatisticsStepResourceRelation(vertex, messenger, ofLabelIds);
                 break;
             case 2:
-                degreeStatisticsStepResource(vertex, messenger, ofLabelIds, degreePropertyKey);
+                degreeStatisticsStepResource(vertex, messenger, ofLabelIds);
                 break;
             default:
                 throw CommonUtil.unreachableStatement("Exceeded expected maximum number of iterations");
@@ -69,9 +70,9 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     public Set<MessageScope> getMessageScopes(final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                return Collections.singleton(messageScopeIn);
+                return Sets.newHashSet(messageScopeShortcutIn, messageScopeResourceOut);
             case 1:
-                return Collections.singleton(messageScopeOut);
+                return Collections.singleton(messageScopeShortcutOut);
             default:
                 return Collections.emptySet();
         }
@@ -86,20 +87,25 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     static void degreeStatisticsStepResourceOwner(Vertex vertex, Messenger<Long> messenger, Set<LabelId> ofLabelIds) {
         LabelId labelId = Utility.getVertexTypeId(vertex);
         if (labelId.isValid() && !ofLabelIds.contains(labelId)) {
-            messenger.sendMessage(messageScopeIn, 1L);
+            messenger.sendMessage(messageScopeShortcutIn, 1L);
+            messenger.sendMessage(messageScopeResourceOut, 1L);
         }
     }
 
-    static void degreeStatisticsStepResourceRelation(Vertex vertex, Messenger<Long> messenger) {
-        if (vertex.label().equals(Schema.BaseType.RELATION.name()) && messenger.receiveMessages().hasNext()) {
-            messenger.sendMessage(messageScopeOut, 1L);
+    static void degreeStatisticsStepResourceRelation(Vertex vertex, Messenger<Long> messenger, Set<LabelId> ofLabelIds) {
+        if (messenger.receiveMessages().hasNext()) {
+            if (vertex.label().equals(Schema.BaseType.RELATION.name())) {
+                messenger.sendMessage(messageScopeOut, 1L);
+            } else if (ofLabelIds.contains(Utility.getVertexTypeId(vertex))) {
+                vertex.property(DEGREE, getMessageCount(messenger));
+            }
         }
     }
 
     static void degreeStatisticsStepResource(Vertex vertex, Messenger<Long> messenger,
-                                             Set<LabelId> ofLabelIds, String degree) {
+                                             Set<LabelId> ofLabelIds) {
         if (vertexHasSelectedTypeId(vertex, ofLabelIds)) {
-            vertex.property(degree, getMessageCount(messenger));
+            vertex.property(DEGREE, getMessageCount(messenger) + (Long) vertex.value(DEGREE));
         }
     }
 }

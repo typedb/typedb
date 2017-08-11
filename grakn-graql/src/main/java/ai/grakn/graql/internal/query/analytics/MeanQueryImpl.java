@@ -55,9 +55,9 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         String randomId = getRandomJobId();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds, randomId),
+                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
                 new MeanMapReduce(statisticsResourceLabelIds, dataType,
-                        DegreeVertexProgram.DEGREE + randomId),
+                        DegreeVertexProgram.DEGREE),
                 allSubLabelIds);
         Map<Serializable, Map<String, Double>> mean = result.memory().get(MeanMapReduce.class.getName());
         Map<String, Double> meanPair = mean.get(MapReduce.NullObject.instance());
