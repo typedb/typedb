@@ -425,7 +425,7 @@ public class EntityTypeTest extends GraphTestBase {
     @Test
     public void whenCreatingEntityType_EnsureItHasAShard(){
         EntityTypeImpl entityType = (EntityTypeImpl) graknGraph.putEntityType("EntityType");
-        assertThat(entityType.shards(), not(empty()));
+        assertThat(entityType.shards().collect(toSet()), not(empty()));
         assertEquals(entityType.shards().iterator().next(), entityType.currentShard());
     }
 
