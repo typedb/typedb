@@ -105,7 +105,8 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     static void degreeStatisticsStepResource(Vertex vertex, Messenger<Long> messenger,
                                              Set<LabelId> ofLabelIds) {
         if (vertexHasSelectedTypeId(vertex, ofLabelIds)) {
-            vertex.property(DEGREE, getMessageCount(messenger) + (Long) vertex.value(DEGREE));
+            vertex.property(DEGREE, vertex.property(DEGREE).isPresent() ?
+                    getMessageCount(messenger) + (Long) vertex.value(DEGREE) : getMessageCount(messenger));
         }
     }
 }

@@ -80,8 +80,6 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
         Set<LabelId> withResourceRelationLabelIds = convertLabelsToIds(withResourceRelationTypes);
         Set<LabelId> ofLabelIds = convertLabelsToIds(ofLabels);
 
-//        String randomId = getRandomJobId();
-
         ComputerResult result = getGraphComputer().compute(
                 new DegreeVertexProgram(ofLabelIds),
                 new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE),
