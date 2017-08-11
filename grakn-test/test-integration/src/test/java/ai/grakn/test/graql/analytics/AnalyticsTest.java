@@ -69,28 +69,28 @@ public class AnalyticsTest {
         factory = context.factoryWithNewKeyspace();
     }
 
-    @Ignore // No longer applicable
+    @Ignore
     @Test
-    public void testInferredResourceRelation() throws InvalidGraphException {
+    public void testImplicitResourceRelation() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            Label resourceLabel = Label.of("degree");
-            ResourceType<Long> degree = graph.putResourceType(resourceLabel, ResourceType.DataType.LONG);
+            Label resourceLabel = Label.of("someResource");
+            ResourceType<Long> someResource = graph.putResourceType(resourceLabel, ResourceType.DataType.LONG);
             EntityType thingy = graph.putEntityType("thingy");
-            thingy.resource(degree);
+            thingy.resource(someResource);
 
             Entity thisThing = thingy.addEntity();
-            Resource thisResource = degree.putResource(1L);
+            Resource thisResource = someResource.putResource(1L);
             thisThing.resource(thisResource);
             graph.commit();
         }
 
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees;
-            degrees = graph.graql().compute().degree().of("thingy").in("thingy", "degree").execute();
+            degrees = graph.graql().compute().degree().of("thingy").in("someResource").execute();
             assertEquals(1, degrees.size());
             assertEquals(1, degrees.get(1L).size());
 
-            degrees = graph.graql().compute().degree().in("thingy", "degree").execute();
+            degrees = graph.graql().compute().degree().in("thingy", "someResource").execute();
             assertEquals(1, degrees.size());
             assertEquals(2, degrees.get(1L).size());
         }
