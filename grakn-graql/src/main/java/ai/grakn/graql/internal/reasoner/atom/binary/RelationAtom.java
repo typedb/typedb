@@ -55,6 +55,7 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import java.util.stream.Stream;
 import javafx.util.Pair;
 
 import javax.annotation.Nullable;
@@ -109,7 +110,7 @@ public class RelationAtom extends IsaAtom {
         String relationString = (isUserDefinedName()? getVarName() + " ": "") +
                 (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") +
                 getRelationPlayers().toString();
-        return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
+        return relationString + getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
     }
 
     private List<RelationPlayer> getRelationPlayers() {
@@ -255,11 +256,10 @@ public class RelationAtom extends IsaAtom {
     }
 
     @Override
-    public Set<IdPredicate> getPartialSubstitutions() {
+    public Stream<IdPredicate> getPartialSubstitutions() {
         Set<Var> rolePlayers = getRolePlayers();
-        return getIdPredicates().stream()
-                .filter(pred -> rolePlayers.contains(pred.getVarName()))
-                .collect(toSet());
+        return getPredicates(IdPredicate.class)
+                .filter(pred -> rolePlayers.contains(pred.getVarName()));
     }
 
     /**
@@ -269,7 +269,7 @@ public class RelationAtom extends IsaAtom {
         if (roleConceptIdMap == null) {
             roleConceptIdMap = ArrayListMultimap.create();
 
-            Map<Var, IdPredicate> varSubMap = getPartialSubstitutions().stream()
+            Map<Var, IdPredicate> varSubMap = getPartialSubstitutions()
                     .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
             Multimap<Role, Var> roleMap = getRoleVarMap();
 
@@ -489,7 +489,7 @@ public class RelationAtom extends IsaAtom {
     @Override
     public Set<TypeAtom> getSpecificTypeConstraints() {
         Set<Var> mappedVars = getSpecificRolePlayers();
-        return getTypeConstraints().stream()
+        return getTypeConstraints()
                 .filter(t -> mappedVars.contains(t.getVarName()))
                 .filter(t -> Objects.nonNull(t.getOntologyConcept()))
                 .collect(toSet());
@@ -727,10 +727,10 @@ public class RelationAtom extends IsaAtom {
                                     }))
                                     //prioritise mappings with sam var substitution (idpredicates)
                                     .sorted(Comparator.comparing(e -> {
-                                        IdPredicate parentId = parentAtom.getIdPredicates().stream()
+                                        IdPredicate parentId = parentAtom.getPredicates(IdPredicate.class)
                                                 .filter(p -> p.getVarName().equals(e.getKey().getRolePlayer().getVarName()))
                                                 .findFirst().orElse(null);
-                                        IdPredicate childId = getIdPredicates().stream()
+                                        IdPredicate childId = getPredicates(IdPredicate.class)
                                                 .filter(p -> p.getVarName().equals(e.getValue().getRolePlayer().getVarName()))
                                                 .findFirst().orElse(null);
                                         return !(parentId != null && childId != null && parentId.getPredicate().equals(childId.getPredicate()));
