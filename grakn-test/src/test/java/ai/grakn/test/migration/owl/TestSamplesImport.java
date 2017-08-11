@@ -115,7 +115,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             final Entity work = getEntity("eHamlet");
             Assert.assertNotNull(work);
             assertRelationBetweenInstancesExists(graph, work, author, Label.of("op-wrote"));
-            Assert.assertTrue(new RuleGraph(graph).getRules().findFirst().isPresent());
+            Assert.assertTrue(RuleGraph.getRules(graph).findFirst().isPresent());
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -233,7 +233,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(isAuntOf)));
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(isUncleOf)));
 
-            assertTrue(new RuleGraph(graph).getRules().findFirst().isPresent());
+            assertTrue(RuleGraph.getRules(graph).findFirst().isPresent());
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);

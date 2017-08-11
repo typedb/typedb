@@ -110,7 +110,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
             final Entity work = getEntity("eHamlet");
             assertNotNull(work);
             assertRelationBetweenInstancesExists(graph, work, author, Label.of("op-wrote"));
-            assertTrue(new RuleGraph(graph).getRules().findFirst().isPresent());
+            assertTrue(RuleGraph.getRules(graph).findFirst().isPresent());
         }
     }
 }
