@@ -6,6 +6,7 @@ node {
   //If one test fails then all the others will stop. I.e. we fail fast
   try {
     def workspace = pwd()
+    def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
     //Always wrap each test block in a timeout
     //This first block sets up engine within 15 minutes
     withEnv([
@@ -15,9 +16,8 @@ node {
         stage('Build Grakn') {//Stages allow you to organise and group things within Jenkins
           sh 'npm config set registry http://registry.npmjs.org/'
           checkout scm
-          def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
           slackSend channel: "#github", message: """
-Build Started on ${env.BRANCH_NAME}: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+Build Started on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
 authored by - """ + user
           sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
           sh "mvn versions:set -DnewVersion=${env.BRANCH_NAME} -DgenerateBackupPoms=false"
@@ -71,14 +71,12 @@ authored by - """ + user
       }
     }
     slackSend channel: "#github", message: """
-      Periodic Build Success on ${env.BRANCH_NAME}: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)
-      On branch - ${env.GIT_BRANCH} - by - ${env.GIT_AUTHOR_NAME}
-      """
+Periodic Build Success on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+authored by - """ + user
   } catch (error) {
     slackSend channel: "#github", message: """
-      Periodic Build Failed on ${env.BRANCH_NAME}: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)
-      On branch - ${env.GIT_BRANCH} - by - ${env.GIT_AUTHOR_NAME}
-    """
+Periodic Build Failed on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+authored by - """ + user
     throw error
   } finally { // Tears down test environment
     timeout(5) {
