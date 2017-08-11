@@ -15,6 +15,10 @@ node {
         stage('Build Grakn') {//Stages allow you to organise and group things within Jenkins
           sh 'npm config set registry http://registry.npmjs.org/'
           checkout scm
+            def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
+          slackSend channel: "#github", message: """
+Build Started on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+authored by - """ + user
           sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
           sh "mvn versions:set -DnewVersion=${env.BRANCH_NAME} -DgenerateBackupPoms=false"
           sh 'mvn clean install -Dmaven.repo.local=' + workspace + '/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT'
@@ -66,9 +70,15 @@ node {
         }
       }
     }
-    slackSend channel: "#github", message: "Periodic Build Success on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
+    def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
+    slackSend channel: "#github", message: """
+Periodic Build Success on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+authored by - """ + user
   } catch (error) {
-    slackSend channel: "#github", message: "Periodic Build Failed on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
+    def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
+    slackSend channel: "#github", message: """
+Periodic Build Failed on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+authored by - """ + user
     throw error
   } finally { // Tears down test environment
     timeout(5) {
