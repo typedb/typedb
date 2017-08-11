@@ -1,4 +1,0 @@
-match
-  $post isa post, has message-id @long(<"Post.id">);
-  $comment isa comment, has message-id @long(<"Comment.id">);
-insert (original: $post, reply: $comment) isa reply-of;

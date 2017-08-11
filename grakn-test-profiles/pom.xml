@@ -13,6 +13,10 @@
 
     <packaging>pom</packaging>
 
+    <properties>
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
@@ -31,10 +35,9 @@
 
                 <configuration>
                     <systemPropertyVariables>
-                        <grakn.conf>${user.dir}/conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
+                        <grakn.conf>../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
-                        <logback.configurationFile>${user.dir}/conf/test/logback-test.xml</logback.configurationFile>
-                        <main.basedir>${user.dir}</main.basedir>
+                        <logback.configurationFile>../conf/test/logback-test.xml</logback.configurationFile>
                     </systemPropertyVariables>
                     <!-- uncomment the following to be able to run only specific packages with
                         for example -DtestGroup=ai/grakn/test/migration/sql
@@ -55,10 +58,9 @@
 
                 <configuration>
                     <systemPropertyVariables>
-                        <grakn.conf>${user.dir}/conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
+                        <grakn.conf>../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
-                        <logback.configurationFile>${user.dir}/conf/test/logback-test.xml</logback.configurationFile>
-                        <main.basedir>${user.dir}</main.basedir>
+                        <logback.configurationFile>../conf/test/logback-test.xml</logback.configurationFile>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -104,6 +106,47 @@
                     <scope>test</scope>
                 </dependency>
             </dependencies>
+        </profile>
+
+        <profile>
+            <id>scaling</id>
+            <properties>
+                <grakn.test-profile>janus</grakn.test-profile>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>ai.grakn</groupId>
+                    <artifactId>janus-factory</artifactId>
+                    <version>${project.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-log4j12</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>logback-classic</artifactId>
+                        </exclusion>
+                        <!--Excluded because we provide logback logger-->
+                        <exclusion>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-nop</artifactId>
+                        </exclusion>
+                    </exclusions>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>-Xmx16g</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>
