@@ -181,7 +181,7 @@ public class CountTest {
     }
 
     @Test
-    public void testHasResourceVertices() {
+    public void testHasResourceVerticesAndEdges() {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
 
             // manually construct the relation type and instance

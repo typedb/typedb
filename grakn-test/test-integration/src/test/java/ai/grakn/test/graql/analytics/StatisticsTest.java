@@ -26,6 +26,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
@@ -500,6 +501,56 @@ public class StatisticsTest {
             }
         }).collect(Collectors.toList());
         numberList.forEach(value -> assertEquals(1.5D, value.doubleValue(), delta));
+    }
+
+    @Test
+    public void testHasResourceVerticesAndEdges() {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+
+            // manually construct the relation type and instance
+            EntityType person = graph.putEntityType("person");
+            ResourceType<Long> power = graph.putResourceType("power", ResourceType.DataType.LONG);
+            Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")));
+            person.plays(resourceOwner);
+            Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")));
+            power.plays(resourceValue);
+
+            person.resource(power);
+
+            Entity person1 = person.addEntity();
+            Entity person2 = person.addEntity();
+            Entity person3 = person.addEntity();
+            Resource power1 = power.putResource(1L);
+            Resource power2 = power.putResource(2L);
+            Resource power3 = power.putResource(3L);
+            RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
+                    .relates(resourceOwner).relates(resourceValue);
+
+            relationType.addRelation()
+                    .addRolePlayer(resourceOwner, person1)
+                    .addRolePlayer(resourceValue, power1);
+
+            relationType.addRelation()
+                    .addRolePlayer(resourceOwner, person2)
+                    .addRolePlayer(resourceValue, power2);
+            person1.resource(power2);
+
+            person3.resource(power3);
+
+            graph.commit();
+        }
+
+        Optional<Number> result;
+        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            result = graph.graql().compute().min().of("power").in().execute();
+            assertEquals(1L, result.get().longValue());
+
+            result = graph.graql().compute().max().of("power").in().execute();
+            assertEquals(3L, result.get().longValue());
+
+            result = graph.graql().compute().sum().of("power").in().execute();
+            assertEquals(8L, result.get().longValue());
+        }
     }
 
     private void addOntologyAndEntities() throws InvalidGraphException {
