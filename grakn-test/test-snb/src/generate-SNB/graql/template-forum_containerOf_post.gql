@@ -1,4 +1,0 @@
-match
-  $forum isa forum, has forum-id @long(<"Forum.id">);
-  $post isa post, has message-id @long(<"Post.id">);
-insert (container: $forum, contained: $post) isa container-of;
