@@ -30,7 +30,7 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 
 import java.util.stream.StreamSupport;
-import javafx.util.Pair;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

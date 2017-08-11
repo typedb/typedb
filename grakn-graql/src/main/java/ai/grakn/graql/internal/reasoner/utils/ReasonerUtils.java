@@ -46,7 +46,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import javafx.util.Pair;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
