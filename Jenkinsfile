@@ -5,6 +5,10 @@ node {
   //Everything is wrapped in a try catch so we can handle any test failures
   //If one test fails then all the others will stop. I.e. we fail fast
   try {
+    slackSend channel: "#github", message: """
+      Build Started on ${env.BRANCH_NAME}: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+      On branch - ${env.GIT_BRANCH} - by - ${env.GIT_AUTHOR_NAME}
+      """
     def workspace = pwd()
     //Always wrap each test block in a timeout
     //This first block sets up engine within 15 minutes
@@ -66,9 +70,15 @@ node {
         }
       }
     }
-    slackSend channel: "#github", message: "Periodic Build Success on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
+    slackSend channel: "#github", message: """
+      Periodic Build Success on ${env.BRANCH_NAME}: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)
+      On branch - ${env.GIT_BRANCH} - by - ${env.GIT_AUTHOR_NAME}
+      """
   } catch (error) {
-    slackSend channel: "#github", message: "Periodic Build Failed on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
+    slackSend channel: "#github", message: """
+      Periodic Build Failed on ${env.BRANCH_NAME}: ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)
+      On branch - ${env.GIT_BRANCH} - by - ${env.GIT_AUTHOR_NAME}
+    """
     throw error
   } finally { // Tears down test environment
     timeout(5) {
