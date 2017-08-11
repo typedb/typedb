@@ -45,23 +45,17 @@ import static ai.grakn.graql.Graql.var;
  */
 public class RuleGraph {
 
-    private final GraknGraph graph;
-
-    public RuleGraph(GraknGraph graph){
-        this.graph = graph;
-    }
-
     /**
      * @return set of inference rule contained in the graph
      */
-    public Stream<Rule> getRules() {
+    public static Stream<Rule> getRules(GraknGraph graph) {
         return graph.admin().getMetaRuleInference().instances();
     }
 
     /**
      * @return true if at least one inference rule is present in the graph
      */
-    public boolean hasRules() {
+    public static boolean hasRules(GraknGraph graph) {
         Label inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getLabel();
         return graph.graql().infer(false).match(var("x").isa(Graql.label(inferenceRule))).ask().execute();
     }
@@ -70,17 +64,17 @@ public class RuleGraph {
      * @param type for which rules containing it in the head are sought
      * @return rules containing specified type in the head
      */
-    public Stream<Rule> getRulesWithType(OntologyConcept type){
+    public static Stream<Rule> getRulesWithType(OntologyConcept type, GraknGraph graph){
         return type != null ?
                 type.subs().flatMap(OntologyConcept::getRulesOfConclusion) :
-                getRules();
+                getRules(graph);
     }
 
     /**
      * @param rules set of rules of interest forming a rule subgraph
      * @return true if the rule subgraph formed from provided rules contains loops with negative net flux (appears in more rule heads than bodies)
      */
-    public boolean subGraphHasLoopsWithNegativeFlux(Set<InferenceRule> rules){
+    public static boolean subGraphHasLoopsWithNegativeFlux(Set<InferenceRule> rules, GraknGraph graph){
         return rules.stream()
                 .map(r -> graph.<Rule>getConcept(r.getRuleId()))
                 .flatMap(Rule::getConclusionTypes)
@@ -97,7 +91,7 @@ public class RuleGraph {
      * @param rules set of rules of interest forming a rule subgraph
      * @return true if the rule subgraph formed from provided rules contains any rule with head satisfying the body pattern
      */
-    public boolean subGraphHasRulesWithHeadSatisfyingBody(Set<InferenceRule> rules){
+    public static boolean subGraphHasRulesWithHeadSatisfyingBody(Set<InferenceRule> rules, GraknGraph graph){
         return rules.stream()
                 .filter(InferenceRule::headSatisfiesBody)
                 .findFirst().isPresent();
@@ -107,7 +101,7 @@ public class RuleGraph {
      * @param topTypes entry types in the rule graph
      * @return all rules that are reachable from the entry types
      */
-    public Stream<Rule> getDependentRules(Set<Type> topTypes){
+    public static Stream<Rule> getDependentRules(Set<Type> topTypes){
         Set<Rule> rules = new HashSet<>();
         Set<Type> visitedTypes = new HashSet<>();
         Stack<Type> types = new Stack<>();
@@ -130,7 +124,7 @@ public class RuleGraph {
      * @param query top query
      * @return all rules that are reachable from the entry types
      */
-    public Stream<InferenceRule> getDependentRules(ReasonerQueryImpl query){
+    public static Stream<InferenceRule> getDependentRules(ReasonerQueryImpl query){
         Set<InferenceRule> rules = new HashSet<>();
         Set<Atom> visitedAtoms = new HashSet<>();
         Stack<Atom> atoms = new Stack<>();

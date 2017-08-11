@@ -49,7 +49,7 @@ class MatchQueryInfer extends MatchQueryModifier {
     public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
         GraknGraph graph = optionalOr(optionalGraph, inner.getGraph()).orElseThrow(GraqlQueryException::noGraph);
 
-        if (!new RuleGraph(graph).hasRules()) return inner.stream(optionalGraph);
+        if (!RuleGraph.hasRules(graph)) return inner.stream(optionalGraph);
 
         Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         Conjunction<VarPatternAdmin> conj = conjIt.next();

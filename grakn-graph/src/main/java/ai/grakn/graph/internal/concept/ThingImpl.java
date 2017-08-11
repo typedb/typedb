@@ -38,6 +38,7 @@ import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -135,14 +136,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     public Stream<Resource<?>> resources(ResourceType... resourceTypes) {
         Set<ConceptId> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
-
-        //Get Resources Attached Via Implicit Relations
-        Stream<Resource<?>> implicitStream = resources(getShortcutNeighbours(), resourceTypesIds);
-
-        //Get Resources Attached Via resource edge
-        Stream<Resource<?>> edgeStream = resources(neighbours(Direction.OUT, Schema.EdgeLabel.RESOURCE), resourceTypesIds);
-
-        return Stream.concat(implicitStream, edgeStream);
+        return resources(getShortcutNeighbours(), resourceTypesIds);
     }
 
     /**
@@ -175,14 +169,19 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     <X extends Thing> Stream<X> getShortcutNeighbours(){
-        return vertex().graph().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), getId().getValue()).
-                inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+        GraphTraversal<Object, Vertex> shortcutTraversal = __.inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 as("edge").
                 outV().
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 where(P.neq("edge")).
-                inV().toStream().
+                inV();
+
+        GraphTraversal<Object, Vertex> resourceEdgeTraversal = __.outE(Schema.EdgeLabel.RESOURCE.getLabel()).inV();
+
+        //noinspection unchecked
+        return vertex().graph().getTinkerTraversal().V().
+                has(Schema.VertexProperty.ID.name(), getId().getValue()).
+                union(shortcutTraversal, resourceEdgeTraversal).toStream().
                 map(vertex -> vertex().graph().buildConcept(vertex));
     }
 

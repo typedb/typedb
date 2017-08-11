@@ -67,9 +67,6 @@ public class IdPredicate extends Predicate<ConceptId>{
     }
 
     @Override
-    public boolean isIdPredicate(){ return true;}
-
-    @Override
     public String getPredicateValue() { return getPredicate().getValue();}
 
     @Override

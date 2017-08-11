@@ -135,7 +135,7 @@ public class LazyTest {
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         query.lookup(cache);
-        InferenceRule rule = new InferenceRule(new RuleGraph(graph).getRules().iterator().next(), graph);
+        InferenceRule rule = new InferenceRule(RuleGraph.getRules(graph).iterator().next(), graph);
 
         Set<Var> joinVars = Sets.intersection(query.getVarNames(), query2.getVarNames());
         Stream<Answer> join = join(

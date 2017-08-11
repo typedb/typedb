@@ -141,8 +141,8 @@ public final class ResolutionPlan {
         GraknGraph graph = query.graph();
 
         Map<VarProperty, Atom> propertyMap = new HashMap<>();
-        query.getAtoms().stream()
-                .filter(Atomic::isSelectable).map(at -> (Atom) at)
+        query.getAtoms(Atom.class)
+                .filter(Atomic::isSelectable)
                 .forEach(at -> at.getVarProperties().forEach(p -> propertyMap.put(p, at)));
         Set<VarProperty> properties = propertyMap.keySet();
 
@@ -189,7 +189,7 @@ public final class ResolutionPlan {
 
         Atom top = atoms.getFirst();
         Set<Atom> nonResolvableAtoms = new HashSet<>();
-        Set<Var> subbedVars = query.getIdPredicates().stream().map(IdPredicate::getVarName).collect(Collectors.toSet());
+        Set<Var> subbedVars = query.getAtoms(IdPredicate.class).map(IdPredicate::getVarName).collect(Collectors.toSet());
         while (!atoms.isEmpty()) {
 
             subbedVars.addAll(top.getVarNames());

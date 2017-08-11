@@ -22,12 +22,12 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -127,16 +127,12 @@ public class InferenceRule {
      * @return true if head satisfies the pattern specified in the body of the rule
      */
     boolean headSatisfiesBody(){
-        return getBody().isEquivalent(
-                ReasonerQueries.create(
-                        getHead())
-                        .addAtomConstraints(
-                                getBody()
-                                        .getTypeConstraints().stream()
-                                        .filter(t -> !t.isRelation())
-                                        .collect(toSet())
-                        )
-        );
+        ReasonerQueryImpl extendedHead = ReasonerQueries.create(getHead());
+        getBody().getAtoms(TypeAtom.class)
+                .filter(t -> !t.isRelation())
+                .map(at -> AtomicFactory.create(at, extendedHead))
+                .forEach(extendedHead::addAtomic);
+        return getBody().isEquivalent(extendedHead);
     }
 
     /**
@@ -181,21 +177,23 @@ public class InferenceRule {
         //only transfer value predicates if head has a user specified value variable
         Atom headAtom = head.getAtom();
         if(headAtom.isResource() && ((ResourceAtom) headAtom).getMultiPredicate().isEmpty()){
-            Set<ValuePredicate> valuePredicates = parentAtom.getValuePredicates().stream()
+            parentAtom.getPredicates(ValuePredicate.class)
                     .flatMap(vp -> vp.unify(unifier).stream())
-                    .collect(toSet());
-            head.addAtomConstraints(valuePredicates);
-            body.addAtomConstraints(valuePredicates);
+                    .forEach(vp -> {
+                        head.addAtomic(AtomicFactory.create(vp, head));
+                        body.addAtomic(AtomicFactory.create(vp, body));
+                    });
         }
 
-        Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints().stream()
+        Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints()
                 .flatMap(type -> type.unify(unifier).stream())
                 .collect(toSet());
 
         //set rule body types to sub types of combined query+rule types
-        Set<TypeAtom> ruleTypes = body.getTypeConstraints().stream().filter(t -> !t.isRelation()).collect(toSet());
+        Set<TypeAtom> ruleTypes = body.getAtoms(TypeAtom.class).filter(t -> !t.isRelation()).collect(toSet());
+        ruleTypes.forEach(body::removeAtomic);
         Set<TypeAtom> allTypes = Sets.union(unifiedTypes, ruleTypes);
-        Set<TypeAtom> types = allTypes.stream()
+        allTypes.stream()
                 .filter(ta -> {
                     OntologyConcept ontologyConcept = ta.getOntologyConcept();
                     OntologyConcept subType = allTypes.stream()
@@ -204,10 +202,7 @@ public class InferenceRule {
                             .filter(t -> ReasonerUtils.getSupers(t).contains(ontologyConcept))
                             .findFirst().orElse(null);
                     return ontologyConcept == null || subType == null;
-                }).collect(toSet());
-
-        ruleTypes.forEach(body::removeAtomic);
-        body.addAtomConstraints(types);
+                }).forEach(t -> body.addAtomic(AtomicFactory.create(t, body)));
 
         return this;
     }
@@ -221,17 +216,17 @@ public class InferenceRule {
     }
 
     private InferenceRule rewriteBody(){
-        new HashSet<>(body.getAtoms()).stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
+        HashSet<Atom> toRemove = new HashSet<>();
+        HashSet<Atom> rewrites = new HashSet<>();
+        body.getAtoms(Atom.class)
                 .filter(Atom::isRelation)
                 .filter(at -> !at.isUserDefinedName())
                 .filter(at -> Objects.nonNull(at.getOntologyConcept()))
                 .filter(at -> at.getOntologyConcept().equals(head.getAtom().getOntologyConcept()))
-                .forEach(at -> {
-                    Atom rewrite = at.rewriteToUserDefined();
-                    body.removeAtomic(at);
-                    body.addAtomic(rewrite);
-                    });
+                .peek(toRemove::add)
+                .forEach(at -> rewrites.add(at.rewriteToUserDefined()));
+        toRemove.forEach(body::removeAtomic);
+        rewrites.forEach(body::addAtomic);
         return this;
     }
 
