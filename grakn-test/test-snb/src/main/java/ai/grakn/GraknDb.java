@@ -22,6 +22,7 @@ import com.ldbc.driver.DbConnectionState;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.control.LoggingService;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery1PersonProfile;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery2PersonPosts;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery4MessageContent;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery5MessageCreator;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery6MessageForum;
@@ -52,7 +53,7 @@ public class GraknDb extends Db {
         connectionState = new GraknDbConnectionState(properties);
 
         registerOperationHandler(LdbcShortQuery1PersonProfile.class, GraknShortQueryHandlers.LdbcShortQuery1PersonProfileHandler.class);
-//        registerOperationHandler(LdbcShortQuery2PersonPosts.class, GraknShortQueryHandlers.LdbcShortQuery2PersonPostsHandler.class);
+        registerOperationHandler(LdbcShortQuery2PersonPosts.class, GraknShortQueryHandlers.LdbcShortQuery2PersonPostsHandler.class);
 //        registerOperationHandler(LdbcShortQuery3PersonFriends.class, GraknShortQueryHandlers.LdbcShortQuery3PersonFriendsHandler.class);
         registerOperationHandler(LdbcShortQuery4MessageContent.class, GraknShortQueryHandlers.LdbcShortQuery4MessageContentHandler.class);
         registerOperationHandler(LdbcShortQuery5MessageCreator.class, GraknShortQueryHandlers.LdbcShortQuery5MessageCreatorHandler.class);
