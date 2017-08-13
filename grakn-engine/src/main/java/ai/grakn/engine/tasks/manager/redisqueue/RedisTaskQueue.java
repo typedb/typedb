@@ -98,22 +98,13 @@ class RedisTaskQueue {
         this.config = new ConfigBuilder().build();
         this.redisClient = new ClientPoolImpl(config, jedisPool);
         this.processingDelay = processingDelay;
-        this.executor = Executors.newFixedThreadPool(4);
+        this.executor = Executors.newFixedThreadPool(1);
         metricRegistry.register(MetricRegistry.name(RedisTaskQueue.class, "job-queue", "size"),
                 new CachedGauge<Long>(GAUGE_CACHING_INTERVAL, TimeUnit.SECONDS) {
                     @Override
                     public Long loadValue() {
                         try (Jedis resource = jedisPool.getResource()) {
-                            return resource.llen(String.format("*queue:%s", QUEUE_NAME));
-                        }
-                    }
-                });
-        metricRegistry.register(MetricRegistry.name(RedisTaskQueue.class, "redis-keys", "size"),
-                new CachedGauge<Long>(GAUGE_CACHING_INTERVAL, TimeUnit.SECONDS) {
-                    @Override
-                    public Long loadValue() {
-                        try (Jedis resource = jedisPool.getResource()) {
-                            return (long) resource.keys("*").size();
+                            return resource.llen(String.format("*:queue:%s", QUEUE_NAME));
                         }
                     }
                 });
