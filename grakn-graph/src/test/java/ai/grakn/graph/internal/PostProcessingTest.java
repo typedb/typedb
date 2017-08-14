@@ -29,6 +29,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.graph.internal.concept.ConceptImpl;
 import ai.grakn.graph.internal.concept.EntityTypeImpl;
 import ai.grakn.graph.internal.concept.RelationImpl;
+import ai.grakn.graph.internal.concept.RelationReified;
 import ai.grakn.graph.internal.concept.RelationTypeImpl;
 import ai.grakn.graph.internal.concept.ResourceImpl;
 import ai.grakn.graph.internal.concept.ResourceTypeImpl;
@@ -166,7 +167,8 @@ public class PostProcessingTest extends GraphTestBase{
 
     private void addReifiedRelation(Role roleEntity, Role roleResource, RelationType relationType, Entity entity, Resource<?> resource) {
         Relation relation = relationType.addRelation().addRolePlayer(roleResource, resource).addRolePlayer(roleEntity, entity);
-        RelationImpl.from(relation).reify().setHash();
+        String hash = RelationReified.generateNewHash(relation.type(), relation.allRolePlayers());
+        RelationImpl.from(relation).reify().setHash(hash);
     }
 
 
