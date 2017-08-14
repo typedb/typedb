@@ -32,11 +32,11 @@
     <artifactId>grakn-factory</artifactId>
 
     <modules>
-        <module>titan-factory</module>
+        <module>janus-factory</module>
     </modules>
 
     <properties>
-        <main.basedir>${project.parent.parent.basedir}</main.basedir>
+        <main.basedir>${project.parent.basedir}</main.basedir>
     </properties>
 
 </project>

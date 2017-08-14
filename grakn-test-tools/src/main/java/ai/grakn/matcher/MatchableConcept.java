@@ -26,8 +26,8 @@ import ai.grakn.util.CommonUtil;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static ai.grakn.util.StringUtil.valueToString;
 
@@ -61,8 +61,8 @@ public class MatchableConcept {
             return "hasValue(" + valueToString(concept.asResource().getValue()) + ")";
         } else if (concept.isThing()) {
             Thing thing = concept.asThing();
-            Collection<Resource<?>> resources = thing.resources();
-            Optional<?> value = resources.stream()
+            Stream<Resource<?>> resources = thing.resources();
+            Optional<?> value = resources
                     .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
                     .map(Resource::getValue).findFirst();
 

@@ -38,11 +38,11 @@ import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -134,29 +134,28 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      *
      * @return All the {@link Resource} that this Thing is linked with
      */
-    public Collection<Resource<?>> resources(ResourceType... resourceTypes) {
+    public Stream<Resource<?>> resources(ResourceType... resourceTypes) {
         Set<ConceptId> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
+        return resources(getShortcutNeighbours(), resourceTypesIds);
+    }
 
-        Set<Resource<?>> resources = new HashSet<>();
+    /**
+     * Helper class which filters a {@link Stream} of {@link Resource} to those of a specific set of {@link ResourceType}.
+     *
+     * @param conceptStream The {@link Stream} to filter
+     * @param resourceTypesIds The {@link ResourceType} {@link ConceptId}s to filter to.
+     * @return the filtered stream
+     */
+    private <X extends Concept> Stream<Resource<?>> resources(Stream<X> conceptStream, Set<ConceptId> resourceTypesIds){
+        Stream<Resource<?>> resourceStream = conceptStream.
+                filter(concept -> concept.isResource() && !this.equals(concept)).
+                map(Concept::asResource);
 
-        //Get Resources Attached Via Implicit Relations
-        getShortcutNeighbours().forEach(concept -> {
-            if(concept.isResource() && !equals(concept)) {
-                Resource<?> resource = concept.asResource();
-                if(resourceTypesIds.isEmpty() || resourceTypesIds.contains(resource.type().getId())) {
-                    resources.add(resource);
-                }
-            }
-        });
+        if(!resourceTypesIds.isEmpty()){
+            resourceStream = resourceStream.filter(resource -> resourceTypesIds.contains(resource.type().getId()));
+        }
 
-        //Get Resources Attached Via resource edge
-        neighbours(Direction.OUT, Schema.EdgeLabel.RESOURCE).forEach(resource -> {
-            if(resourceTypesIds.isEmpty() || resourceTypesIds.contains(resource.asThing().type().getId())) {
-                resources.add(resource.asResource());
-            }
-        });
-
-        return resources;
+        return resourceStream;
     }
 
     /**
@@ -169,18 +168,21 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 map(edge -> vertex().graph().factory().buildCasting(edge));
     }
 
-    <X extends Thing> Set<X> getShortcutNeighbours(){
-        Set<X> foundNeighbours = new HashSet<X>();
-        vertex().graph().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), getId().getValue()).
-                inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+    <X extends Thing> Stream<X> getShortcutNeighbours(){
+        GraphTraversal<Object, Vertex> shortcutTraversal = __.inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 as("edge").
                 outV().
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 where(P.neq("edge")).
-                inV().
-                forEachRemaining(vertex -> foundNeighbours.add(vertex().graph().buildConcept(vertex)));
-        return foundNeighbours;
+                inV();
+
+        GraphTraversal<Object, Vertex> resourceEdgeTraversal = __.outE(Schema.EdgeLabel.RESOURCE.getLabel()).inV();
+
+        //noinspection unchecked
+        return vertex().graph().getTinkerTraversal().V().
+                has(Schema.VertexProperty.ID.name(), getId().getValue()).
+                union(shortcutTraversal, resourceEdgeTraversal).toStream().
+                map(vertex -> vertex().graph().buildConcept(vertex));
     }
 
     /**
@@ -189,15 +191,11 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
      */
     @Override
-    public Collection<Relation> relations(Role... roles) {
-        Set<Relation> relations = reifiedRelations(roles);
-        relations.addAll(edgeRelations(roles));
-
-        return relations;
+    public Stream<Relation> relations(Role... roles) {
+        return Stream.concat(reifiedRelations(roles), edgeRelations(roles));
     }
 
-    private Set<Relation> reifiedRelations(Role... roles){
-        Set<Relation> relations = new HashSet<>();
+    private Stream<Relation> reifiedRelations(Role... roles){
         GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue());
 
@@ -208,27 +206,22 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             traversal.inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                     has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).outV();
         }
-        traversal.forEachRemaining(v -> relations.add(vertex().graph().buildConcept(v)));
 
-        return relations;
+        return traversal.toStream().map(vertex -> vertex().graph().buildConcept(vertex));
     }
 
-    private Set<Relation> edgeRelations(Role... roles){
+    private Stream<Relation> edgeRelations(Role... roles){
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
-        Set<Relation> relations = new HashSet<>();
+        Stream<EdgeElement> stream = vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.RESOURCE);
 
-        vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.RESOURCE).forEach(edge -> {
-            if (roleSet.isEmpty()) {
-                relations.add(vertex().graph().factory().buildRelation(edge));
-            } else {
+        if(!roleSet.isEmpty()){
+            stream = stream.filter(edge -> {
                 Role roleOwner = vertex().graph().getOntologyConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID)));
-                if(roleSet.contains(roleOwner)){
-                    relations.add(vertex().graph().factory().buildRelation(edge));
-                }
-            }
-        });
+                return roleSet.contains(roleOwner);
+            });
+        }
 
-        return relations;
+        return stream.map(edge -> vertex().graph().factory().buildRelation(edge));
     }
 
     /**
@@ -236,8 +229,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      * @return A set of all the Role Types which this instance plays.
      */
     @Override
-    public Collection<Role> plays() {
-        return castingsInstance().map(Casting::getRoleType).collect(Collectors.toSet());
+    public Stream<Role> plays() {
+        return castingsInstance().map(Casting::getRoleType);
     }
 
 
@@ -253,7 +246,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Schema.ImplicitType hasOwner  = Schema.ImplicitType.HAS_OWNER;
 
         //Is this resource a key to me?
-        if(type().keys().contains(resource.type())){
+        if(type().keys().anyMatch(rt -> rt.equals(resource.type()))){
             has = Schema.ImplicitType.KEY;
             hasValue = Schema.ImplicitType.KEY_VALUE;
             hasOwner  = Schema.ImplicitType.KEY_OWNER;
@@ -265,7 +258,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Role hasResourceOwner = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
         Role hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
 
-        if(hasResource == null || hasResourceOwner == null || hasResourceValue == null || !type().plays().contains(hasResourceOwner)){
+        if(hasResource == null || hasResourceOwner == null || hasResourceValue == null || type().plays().noneMatch(play -> play.equals(hasResourceOwner))){
             throw GraphOperationException.hasNotAllowed(this, resource);
         }
 

@@ -31,8 +31,6 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
@@ -148,7 +146,8 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         return conceptId.get();
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         return getId().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
     }
 
@@ -195,9 +194,9 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
     }
 
-    public Set<Shard> shards(){
+    public Stream<Shard> shards(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).map(edge ->
-                vertex().graph().factory().buildShard(edge.source())).collect(Collectors.toSet());
+                vertex().graph().factory().buildShard(edge.source()));
     }
 
     public Shard currentShard(){

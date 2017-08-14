@@ -37,9 +37,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.CWGraph;
 import ai.grakn.test.graphs.GeoGraph;
-import ai.grakn.test.graphs.SNBGraph;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
@@ -54,7 +52,6 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -108,7 +105,7 @@ public class AtomicQueryTest {
 
     private Concept getConceptByResourceValue(GraknGraph graph, String id){
         Set<Concept> instances = graph.getResourcesByValue(id)
-                .stream().flatMap(res -> res.ownerInstances().stream()).collect(Collectors.toSet());
+                .stream().flatMap(res -> res.ownerInstances()).collect(Collectors.toSet());
         if (instances.size() != 1)
             throw new IllegalStateException("Something wrong, multiple instances with given res value");
         return instances.iterator().next();

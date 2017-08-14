@@ -186,7 +186,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         Preconditions.checkState(this.role.isPresent());
         Preconditions.checkState(!roleTypeLabels.isPresent());
 
-        Set<Label> newRoleLabels = role.subs().stream().map(OntologyConcept::getLabel).collect(toSet());
+        Set<Label> newRoleLabels = role.subs().map(OntologyConcept::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleLabels), relationTypeLabels
@@ -201,7 +201,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     private ShortcutFragmentSet addRelationTypeLabel(RelationType relationType) {
         Preconditions.checkState(!relationTypeLabels.isPresent());
 
-        Set<Label> newRelationLabels = relationType.subs().stream().map(Type::getLabel).collect(toSet());
+        Set<Label> newRelationLabels = relationType.subs().map(Type::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, role, roleTypeLabels, Optional.of(newRelationLabels)

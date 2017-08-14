@@ -24,6 +24,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -55,10 +56,13 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     public DegreeVertexProgram() {
     }
 
-    public DegreeVertexProgram(Set<LabelId> types, Set<LabelId> ofLabelIds, String randomId) {
-        selectedTypes = types;
-        degreePropertyKey = DEGREE + randomId;
+    public DegreeVertexProgram(Set<LabelId> ofLabelIds, String randomId) {
+        this(randomId);
         this.ofLabelIds = ofLabelIds;
+    }
+
+    public DegreeVertexProgram(String randomId) {
+        this.degreePropertyKey = DEGREE + randomId;
         this.persistentProperties.put(DEGREE, degreePropertyKey);
     }
 
@@ -77,8 +81,8 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     }
 
     @Override
-    public Set<String> getElementComputeKeys() {
-        return Collections.singleton(degreePropertyKey);
+    public Set<VertexComputeKey> getVertexComputeKeys() {
+        return Collections.singleton(VertexComputeKey.of(degreePropertyKey, false));
     }
 
     @Override
@@ -90,10 +94,10 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                degreeMessagePassing(vertex, messenger);
+                degreeMessagePassing(messenger);
                 break;
             case 1:
-                degreeMessageCounting(vertex, messenger);
+                degreeMessageCounting(messenger, vertex);
                 break;
             default:
                 throw CommonUtil.unreachableStatement("Exceeded expected maximum number of iterations");
@@ -106,15 +110,13 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
         return memory.getIteration() == 1;
     }
 
-    void degreeMessagePassing(Vertex vertex, Messenger<Long> messenger) {
-        if (vertexHasSelectedTypeId(vertex, selectedTypes)) {
-            messenger.sendMessage(messageScopeShortcutIn, 1L);
-            messenger.sendMessage(messageScopeShortcutOut, 1L);
-        }
+    private void degreeMessagePassing(Messenger<Long> messenger) {
+        messenger.sendMessage(messageScopeIn, 1L);
+        messenger.sendMessage(messageScopeOut, 1L);
     }
 
-    void degreeMessageCounting(Vertex vertex, Messenger<Long> messenger) {
-        if (vertexHasSelectedTypeId(vertex, selectedTypes, ofLabelIds)) {
+    private void degreeMessageCounting(Messenger<Long> messenger, Vertex vertex) {
+        if (ofLabelIds.isEmpty() || vertexHasSelectedTypeId(vertex, ofLabelIds)) {
             vertex.property(degreePropertyKey, getMessageCount(messenger));
         }
     }

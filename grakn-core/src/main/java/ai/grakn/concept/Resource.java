@@ -21,7 +21,7 @@ package ai.grakn.concept;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -71,7 +71,7 @@ public interface Resource<D> extends Thing {
      * @return The list of all Instances that possess this Resource.
      */
     @CheckReturnValue
-    Collection<Thing> ownerInstances();
+    Stream<Thing> ownerInstances();
 
     /**
      * If the Resource is unique, this method retrieves the Thing that possesses it.

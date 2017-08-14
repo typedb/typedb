@@ -23,8 +23,8 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
@@ -83,7 +83,7 @@ public abstract class TypeAtom extends Binary{
         return this.getOntologyConcept() != null
                 //ensure not ontological atom query
                 && getPattern().asVar().hasProperty(IsaProperty.class)
-                && this.getOntologyConcept().subs().contains(ruleAtom.getOntologyConcept());
+                && this.getOntologyConcept().subs().anyMatch(sub -> sub.equals(ruleAtom.getOntologyConcept()));
     }
 
     @Override

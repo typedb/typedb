@@ -33,11 +33,10 @@ import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
 
@@ -139,7 +138,7 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      *
      * @return All outgoing sub parents including itself
      */
-    public Set<T> superSet() {
+    public Stream<T> superSet() {
         Set<T> superSet= new HashSet<>();
         superSet.add(getThis());
         T superParent = sup();
@@ -150,7 +149,7 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
             superParent = (T) superParent.sup();
         }
 
-        return superSet;
+        return superSet.stream();
     }
 
     /**
@@ -198,8 +197,8 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      * @return All the subs of this concept including itself
      */
     @Override
-    public Collection<T> subs(){
-        return Collections.unmodifiableCollection(nextSubLevel(this));
+    public Stream<T> subs(){
+        return nextSubLevel(getThis());
     }
 
     /**
@@ -217,16 +216,9 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      * @return All the sub children of the root. Effectively calls  the cache {@link OntologyConceptImpl#cachedDirectSubTypes} recursively
      */
     @SuppressWarnings("unchecked")
-    private Set<T> nextSubLevel(OntologyConceptImpl<T> root){
-        Set<T> results = new HashSet<>();
-        results.add((T) root);
-
-        Set<T> children = root.cachedDirectSubTypes.get();
-        for(T child: children){
-            results.addAll(nextSubLevel((OntologyConceptImpl<T>) child));
-        }
-
-        return results;
+    private Stream<T> nextSubLevel(T root){
+        return Stream.concat(Stream.of(root),
+                OntologyConceptImpl.<T>from(root).cachedDirectSubTypes.get().stream().flatMap(this::nextSubLevel));
     }
 
     /**
@@ -337,10 +329,8 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a hypothesis
      */
     @Override
-    public Collection<Rule> getRulesOfHypothesis() {
-        Set<Rule> rules = new HashSet<>();
-        neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(concept.asRule()));
-        return Collections.unmodifiableCollection(rules);
+    public Stream<Rule> getRulesOfHypothesis() {
+        return neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS);
     }
 
     /**
@@ -348,10 +338,8 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a conclusion
      */
     @Override
-    public Collection<Rule> getRulesOfConclusion() {
-        Set<Rule> rules = new HashSet<>();
-        neighbours(Direction.IN, Schema.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(concept.asRule()));
-        return Collections.unmodifiableCollection(rules);
+    public Stream<Rule> getRulesOfConclusion() {
+        return neighbours(Direction.IN, Schema.EdgeLabel.CONCLUSION);
     }
 
     @Override
@@ -361,7 +349,8 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
         return message;
     }
 
-    public static OntologyConceptImpl from(OntologyConcept ontologyConcept){
-        return (OntologyConceptImpl) ontologyConcept;
+    public static <X extends OntologyConcept> OntologyConceptImpl<X> from(OntologyConcept ontologyConcept){
+        //noinspection unchecked
+        return (OntologyConceptImpl<X>) ontologyConcept;
     }
 }

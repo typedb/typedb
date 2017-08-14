@@ -22,7 +22,7 @@ import ai.grakn.exception.GraphOperationException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -113,21 +113,21 @@ public interface Type extends OntologyConcept {
      *
      * @return A list of Role Types which instances of this Type can indirectly play.
      */
-    Collection<Role> plays();
+    Stream<Role> plays();
 
     /**
      *
      * @return The resource types which this type is linked with.
      */
     @CheckReturnValue
-    Collection<ResourceType> resources();
+    Stream<ResourceType> resources();
 
     /**
      *
      * @return The resource types which this type is linked with as a key.
      */
     @CheckReturnValue
-    Collection<ResourceType> keys();
+    Stream<ResourceType> keys();
 
     /**
      *
@@ -145,7 +145,7 @@ public interface Type extends OntologyConcept {
      * @return All the indirect sub-types of this Type
      */
     @CheckReturnValue
-    Collection<? extends Type> subs();
+    Stream<? extends Type> subs();
 
     /**
      * Get all indirect instances of this type.
@@ -155,7 +155,7 @@ public interface Type extends OntologyConcept {
      * @return All the indirect instances of this type.
      */
     @CheckReturnValue
-    Collection<? extends Thing> instances();
+    Stream<? extends Thing> instances();
 
     /**
      * Return if the type is set to abstract.
@@ -173,7 +173,7 @@ public interface Type extends OntologyConcept {
      * @return A list of the Instances that scope this Type.
      */
     @CheckReturnValue
-    Collection<Thing> scopes();
+    Stream<Thing> scopes();
 
     //------------------------------------- Other ----------------------------------
     /**

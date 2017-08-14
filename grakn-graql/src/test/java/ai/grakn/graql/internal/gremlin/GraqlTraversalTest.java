@@ -100,7 +100,7 @@ public class GraqlTraversalTest {
 
         when(graph.getOntologyConcept(wifeLabel)).thenAnswer(invocation -> {
             //noinspection unchecked
-            when(wife.subs()).thenReturn((Collection) ImmutableSet.of(wife));
+            when(wife.subs()).thenReturn(Stream.of(wife));
             when(wife.getLabel()).thenReturn(wifeLabel);
             return wife;
         });
@@ -110,7 +110,7 @@ public class GraqlTraversalTest {
 
         when(graph.getOntologyConcept(marriageLabel)).thenAnswer(invocation -> {
             //noinspection unchecked
-            when(marriage.subs()).thenReturn((Collection) ImmutableSet.of(marriage));
+            when(marriage.subs()).thenReturn(Stream.of(marriage));
             when(marriage.getLabel()).thenReturn(marriageLabel);
             return marriage;
         });
