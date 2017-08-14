@@ -278,7 +278,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param atom to be added
      * @return true if the atom set did not already contain the specified atom
      */
-    public boolean addAtomic(Atomic atom) {
+    protected boolean addAtomic(Atomic atom) {
         if (atomSet.add(atom)) {
             atom.setParentQuery(this);
             return true;
@@ -289,7 +289,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param atom to be removed
      * @return true if the atom set contained the specified atom
      */
-    public boolean removeAtomic(Atomic atom) {
+    protected boolean removeAtomic(Atomic atom) {
         return atomSet.remove(atom);
     }
 

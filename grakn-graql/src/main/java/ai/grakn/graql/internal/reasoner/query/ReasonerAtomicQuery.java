@@ -124,9 +124,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return atom;
     }
 
-
     @Override
-    public boolean addAtomic(Atomic at) {
+    protected boolean addAtomic(Atomic at) {
         if (super.addAtomic(at)) {
             if (atom == null && at.isSelectable()) atom = (Atom) at;
             return true;
@@ -134,7 +133,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public boolean removeAtomic(Atomic at) {
+    protected boolean removeAtomic(Atomic at) {
         if (super.removeAtomic(at)) {
             if (at.equals(atom)) atom = null;
             return true;
