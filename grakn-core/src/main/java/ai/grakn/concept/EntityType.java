@@ -20,9 +20,9 @@ package ai.grakn.concept;
 
 import ai.grakn.exception.GraphOperationException;
 
-import javax.annotation.Nonnull;
 import javax.annotation.CheckReturnValue;
-import java.util.Collection;
+import javax.annotation.Nonnull;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -158,7 +158,7 @@ public interface EntityType extends Type{
      * @return All the sub classes of this EntityType
      */
     @Override
-    Collection<EntityType> subs();
+    Stream<EntityType> subs();
 
     /**
      * Returns a collection of all Entity instances for this EntityType.
@@ -168,7 +168,7 @@ public interface EntityType extends Type{
      * @return All the instances of this EntityType.
      */
     @Override
-    Collection<Entity> instances();
+    Stream<Entity> instances();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

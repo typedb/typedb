@@ -147,7 +147,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(type()));
         Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(type()));
 
-        concept.asThing().relations(owner).stream()
+        concept.asThing().relations(owner)
                 .filter(relation -> testPredicate(predicate, relation, value))
                 .forEach(Concept::delete);
     }

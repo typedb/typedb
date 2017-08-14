@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.util.CommonUtil;
-import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -48,17 +47,10 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
 
     static final Logger LOGGER = LoggerFactory.getLogger(GraknVertexProgram.class);
 
-    static final MessageScope.Local<?> messageScopeShortcutIn = MessageScope.Local.of(() -> __.inE(
-            Schema.EdgeLabel.SHORTCUT.getLabel()));
-    static final MessageScope.Local<?> messageScopeShortcutOut = MessageScope.Local.of(() -> __.outE(
-            Schema.EdgeLabel.SHORTCUT.getLabel()));
-    static final MessageScope.Local<?> messageScopeResourceIn = MessageScope.Local.of(() -> __.inE(
-            Schema.EdgeLabel.RESOURCE.getLabel()));
-    static final MessageScope.Local<?> messageScopeResourceOut = MessageScope.Local.of(() -> __.outE(
-            Schema.EdgeLabel.RESOURCE.getLabel()));
+    static final MessageScope.Local<?> messageScopeIn = MessageScope.Local.of(__::inE);
+    static final MessageScope.Local<?> messageScopeOut = MessageScope.Local.of(__::outE);
     static final Set<MessageScope> messageScopeSetShortcut =
-            Sets.newHashSet(messageScopeShortcutIn, messageScopeShortcutOut,
-                    messageScopeResourceIn, messageScopeResourceOut);
+            Sets.newHashSet(messageScopeIn, messageScopeOut);
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {

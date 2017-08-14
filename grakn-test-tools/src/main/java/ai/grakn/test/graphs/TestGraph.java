@@ -67,7 +67,7 @@ public abstract class TestGraph {
 
     public static Thing getInstance(GraknGraph graph, String id){
         Set<Thing> things = graph.getResourcesByValue(id)
-                .stream().flatMap(res -> res.ownerInstances().stream()).collect(toSet());
+                .stream().flatMap(Resource::ownerInstances).collect(toSet());
         if (things.size() != 1) {
             throw new IllegalStateException("Multiple things with given resource value");
         }

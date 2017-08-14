@@ -19,17 +19,23 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Role;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.internal.analytics.CountMapReduce;
+import ai.grakn.graql.internal.analytics.CountVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
-import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Set;
+
+import static ai.grakn.graql.internal.analytics.GraknMapReduce.RESERVED_TYPE_LABEL_KEY;
+import static java.util.stream.Collectors.toSet;
 
 class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
 
@@ -49,13 +55,38 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
             return 0L;
         }
 
-        ComputerResult result = getGraphComputer().compute(new CountMapReduce(
-                subLabels.stream().map(graph.get().admin()::convertToId).collect(Collectors.toSet())));
-        Map<Serializable, Long> count = result.memory().get(CountMapReduce.class.getName());
+        Set<LabelId> rolePlayerLabelIds = subTypes.stream()
+                .filter(Concept::isRelationType)
+                .map(relationType -> ((RelationType) relationType).relates().collect(toSet()))
+                .filter(roles -> roles.size() == 2)
+                .flatMap(roles -> roles.stream().flatMap(Role::playedByTypes))
+                .map(type -> graph.get().admin().convertToId(type.getLabel()))
+                .filter(LabelId::isValid)
+                .collect(toSet());
 
-        LOGGER.debug("Count = " + count.get(MapReduce.NullObject.instance()));
+        Set<LabelId> typeLabelIds = convertLabelsToIds(subLabels);
+        rolePlayerLabelIds.addAll(typeLabelIds);
+
+        String randomId = getRandomJobId();
+
+        ComputerResult result = getGraphComputer().compute(
+                new CountVertexProgram(randomId),
+                new CountMapReduce(CountVertexProgram.EDGE_COUNT + randomId),
+                rolePlayerLabelIds, false);
+
+        Map<Integer, Long> count = result.memory().get(CountMapReduce.class.getName());
+
+        long finalCount = count.keySet().stream()
+                .filter(id -> typeLabelIds.contains(LabelId.of(id)))
+                .map(count::get)
+                .reduce(0L, (x, y) -> x + y);
+        if (count.containsKey(RESERVED_TYPE_LABEL_KEY)) {
+            finalCount += count.get(RESERVED_TYPE_LABEL_KEY);
+        }
+
+        LOGGER.debug("Count = " + finalCount);
         LOGGER.info("CountMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return count.get(MapReduce.NullObject.instance());
+        return finalCount;
     }
 
     @Override

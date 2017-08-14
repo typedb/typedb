@@ -59,7 +59,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -663,7 +662,7 @@ public class MatchQueryTest {
 
             OntologyConcept ontologyConcept = graph.getOntologyConcept(type);
             if (ontologyConcept.isType()) {
-                graphAPIPlays = new HashSet<>(ontologyConcept.asType().plays());
+                graphAPIPlays = ontologyConcept.asType().plays().collect(toSet());
             } else {
                 graphAPIPlays = Collections.EMPTY_SET;
             }
@@ -673,7 +672,7 @@ public class MatchQueryTest {
 
         Stream.of(d, e, f).forEach(type -> {
             Set<Concept> graqlPlayedBy = qb.match(x.plays(Graql.label(type))).get("x").collect(toSet());
-            Collection<Type> graphAPIPlayedBy = new HashSet<>(graph.<Role>getOntologyConcept(type).playedByTypes());
+            Collection<Type> graphAPIPlayedBy = graph.<Role>getOntologyConcept(type).playedByTypes().collect(toSet());
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });
@@ -813,7 +812,7 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var().has("title", "Godfather").has("resource", x));
 
         Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
-        Set<Resource<?>> expected = Sets.newHashSet(godfather.resources());
+        Set<Resource<?>> expected = godfather.resources().collect(toSet());
 
         Set<Resource<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
 

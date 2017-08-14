@@ -20,11 +20,10 @@ package ai.grakn.migration.export;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.util.Schema;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -59,7 +58,7 @@ public class GraphWriter {
         return join(types()
                 .filter(Concept::isType)
                 .map(Concept::asType)
-                .flatMap(c -> c.instances().stream())
+                .flatMap(Type::instances)
                 .map(Concept::asThing)
                 .map(InstanceMapper::map));
     }
@@ -81,11 +80,7 @@ public class GraphWriter {
      * @return a stream of all types with non-reserved IDs
      */
     private Stream<? extends OntologyConcept> types(){
-        Set<OntologyConcept> types = new HashSet<>();
-        types.addAll(graph.admin().getMetaConcept().subs());
-        types.addAll(graph.admin().getMetaRole().subs());
-
-        return types.stream()
-                .filter(t -> !Schema.MetaSchema.isMetaLabel(t.getLabel()));
+        return Stream.concat(graph.admin().getMetaConcept().subs(), graph.admin().getMetaRole().subs()).
+                filter(t -> !Schema.MetaSchema.isMetaLabel(t.getLabel()));
     }
 }

@@ -21,7 +21,7 @@ package ai.grakn.concept;
 import ai.grakn.graql.Pattern;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -74,7 +74,7 @@ public interface Rule extends Thing {
      * @return A collection of Concept Types that constitute a part of the hypothesis of the Rule
      */
     @CheckReturnValue
-    Collection<Type> getHypothesisTypes();
+    Stream<Type> getHypothesisTypes();
 
     /**
      * Retrieve a set of Types that constitue a part of the conclusion of the Rule.
@@ -82,7 +82,7 @@ public interface Rule extends Thing {
      * @return A collection of Concept Types that constitute a part of the conclusion of the Rule
      */
     @CheckReturnValue
-    Collection<Type> getConclusionTypes();
+    Stream<Type> getConclusionTypes();
 
     //---- Inherited Methods
     /**

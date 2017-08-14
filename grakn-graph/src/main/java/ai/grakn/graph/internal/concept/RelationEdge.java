@@ -29,14 +29,13 @@ import ai.grakn.graph.internal.cache.Cacheable;
 import ai.grakn.graph.internal.structure.EdgeElement;
 import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Sets;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -122,9 +121,9 @@ public class RelationEdge implements RelationStructure{
     }
 
     @Override
-    public Collection<Thing> rolePlayers(Role... roles) {
+    public Stream<Thing> rolePlayers(Role... roles) {
         if(roles.length == 0){
-            return Sets.newHashSet(owner(), value());
+            return Stream.of(owner(), value());
         }
 
         HashSet<Thing> result = new HashSet<>();
@@ -135,7 +134,7 @@ public class RelationEdge implements RelationStructure{
                 result.add(value());
             }
         }
-        return result;
+        return result.stream();
     }
 
     @Override

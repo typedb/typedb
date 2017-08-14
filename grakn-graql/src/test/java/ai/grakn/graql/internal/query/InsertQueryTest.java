@@ -60,7 +60,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static ai.grakn.concept.ResourceType.DataType.BOOLEAN;
 import static ai.grakn.graql.Graql.gt;
@@ -74,6 +73,7 @@ import static ai.grakn.util.Schema.ImplicitType.KEY;
 import static ai.grakn.util.Schema.ImplicitType.KEY_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -319,7 +319,7 @@ public class InsertQueryTest {
                 var("z").has("name", "xyz").isa("language")
         );
 
-        Set<Answer> results = insert.stream().collect(Collectors.toSet());
+        Set<Answer> results = insert.stream().collect(toSet());
         assertEquals(1, results.size());
         Answer result = results.iterator().next();
         assertEquals(ImmutableSet.of(var("x"), var("z")), result.keySet());
@@ -419,7 +419,7 @@ public class InsertQueryTest {
         //noinspection OptionalGetWithoutIsPresent
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
-        assertTrue(newType.plays().contains(movieGraph.graph().getRole(roleTypeLabel)));
+        assertTrue(newType.plays().anyMatch(role -> role.equals(movieGraph.graph().getRole(roleTypeLabel))));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());
     }
@@ -438,13 +438,9 @@ public class InsertQueryTest {
         qb.insert(vars).execute();
 
         RuleType ruleType = movieGraph.graph().getRuleType(ruleTypeId);
-        boolean found = false;
-        for (ai.grakn.concept.Rule rule : ruleType.instances()) {
-            if(when.equals(rule.getWhen()) && then.equals(rule.getThen())){
-                found = true;
-                break;
-            }
-        }
+        boolean found = ruleType.instances().
+                anyMatch(rule -> when.equals(rule.getWhen()) && then.equals(rule.getThen()));
+
         assertTrue("Unable to find rule with when [" + when + "] and then [" + then + "]", found);
     }
 
@@ -789,9 +785,9 @@ public class InsertQueryTest {
         Role clusterOfProduction = movieGraph.graph().getRole("cluster-of-production");
         Role productionWithCluster = movieGraph.graph().getRole("production-with-cluster");
 
-        assertEquals(relation.rolePlayers(), ImmutableSet.of(cluster, godfather, muppets));
-        assertEquals(relation.rolePlayers(clusterOfProduction), ImmutableSet.of(cluster));
-        assertEquals(relation.rolePlayers(productionWithCluster), ImmutableSet.of(godfather, muppets));
+        assertEquals(relation.rolePlayers().collect(toSet()), ImmutableSet.of(cluster, godfather, muppets));
+        assertEquals(relation.rolePlayers(clusterOfProduction).collect(toSet()), ImmutableSet.of(cluster));
+        assertEquals(relation.rolePlayers(productionWithCluster).collect(toSet()), ImmutableSet.of(godfather, muppets));
     }
 
     @Test(expected = Exception.class)

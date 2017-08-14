@@ -43,9 +43,9 @@ public class RelationsFromRolePlayers extends FromGraphGenerator<Relation> {
 
     @Override
     protected Relation generateFromGraph() {
-        Stream<? extends Thing> things = ((Type) graph().admin().getMetaConcept()).instances().stream();
+        Stream<? extends Thing> things = ((Type) graph().admin().getMetaConcept()).instances();
 
-        Optional<Relation> relation = things.flatMap(thing -> thing.relations().stream()).findAny();
+        Optional<Relation> relation = things.flatMap(thing -> thing.relations()).findAny();
 
         if (relation.isPresent()) {
             return relation.get();

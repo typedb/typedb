@@ -22,9 +22,9 @@ package ai.grakn.concept;
 import ai.grakn.exception.PropertyNotUniqueException;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -78,7 +78,7 @@ public interface Relation extends Thing {
      * @return a list of every {@link Thing} involved in the {@link Relation}.
      */
     @CheckReturnValue
-    Collection<Thing> rolePlayers(Role... roles);
+    Stream<Thing> rolePlayers(Role... roles);
 
     /**
      * Expands this Relation to include a new role player which is playing a specific role.

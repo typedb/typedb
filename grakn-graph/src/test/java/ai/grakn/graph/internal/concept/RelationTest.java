@@ -35,10 +35,6 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraphTestBase;
-import ai.grakn.graph.internal.concept.EntityImpl;
-import ai.grakn.graph.internal.concept.RelationImpl;
-import ai.grakn.graph.internal.concept.RoleImpl;
-import ai.grakn.graph.internal.concept.ThingImpl;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -51,6 +47,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -152,8 +149,8 @@ public class RelationTest extends GraphTestBase {
     @Test
     public void whenGettingRolePlayersOfRelation_ReturnsRolesAndInstances() throws Exception {
         assertThat(relation.allRolePlayers().keySet(), containsInAnyOrder(role1, role2, role3));
-        assertThat(relation.rolePlayers(role1), containsInAnyOrder(rolePlayer1));
-        assertThat(relation.rolePlayers(role2), containsInAnyOrder(rolePlayer2));
+        assertThat(relation.rolePlayers(role1).collect(toSet()), containsInAnyOrder(rolePlayer1));
+        assertThat(relation.rolePlayers(role2).collect(toSet()), containsInAnyOrder(rolePlayer2));
     }
 
     @Test
@@ -247,11 +244,11 @@ public class RelationTest extends GraphTestBase {
         Relation relation1 = hasDegree.addRelation().addRolePlayer(entityRole, entity).addRolePlayer(degreeRole, degree1);
         hasDegree.addRelation().addRolePlayer(entityRole, entity).addRolePlayer(degreeRole, degree2);
 
-        assertEquals(2, entity.relations().size());
+        assertEquals(2, entity.relations().count());
 
         relation1.delete();
 
-        assertEquals(1, entity.relations().size());
+        assertEquals(1, entity.relations().count());
     }
 
 
@@ -289,7 +286,7 @@ public class RelationTest extends GraphTestBase {
         Resource<String> resource = resourceType.putResource("a real pain");
 
         EntityType entityType = graknGraph.putEntityType("yay").resource(resourceType);
-        Relation implicitRelation = Iterables.getOnlyElement(entityType.addEntity().resource(resource).relations());
+        Relation implicitRelation = Iterables.getOnlyElement(entityType.addEntity().resource(resource).relations().collect(Collectors.toSet()));
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.hasNotAllowed(implicitRelation, resource).getMessage());

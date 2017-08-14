@@ -92,14 +92,13 @@ public class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> 
     private void checkInstancesMatchRegex(@Nullable String regex){
         if(regex != null) {
             Pattern pattern = Pattern.compile(regex);
-            Matcher matcher;
-            for (Resource<D> resource : instances()) {
+            instances().forEach(resource -> {
                 String value = (String) resource.getValue();
-                matcher = pattern.matcher(value);
+                Matcher matcher = pattern.matcher(value);
                 if(!matcher.matches()){
                     throw GraphOperationException.regexFailure(this, value, regex);
                 }
-            }
+            });
         }
     }
 
@@ -151,12 +150,12 @@ public class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> 
      */
     private void checkConformsToRegexes(D value){
         //Not checking the datatype because the regex will always be null for non strings.
-        for (ResourceType rt : superSet()) {
-            String regex = rt.getRegex();
+        superSet().forEach(sup -> {
+            String regex = sup.getRegex();
             if (regex != null && !Pattern.matches(regex, (String) value)) {
                 throw GraphOperationException.regexFailure(this, (String) value, regex);
             }
-        }
+        });
     }
 
     @Override

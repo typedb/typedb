@@ -24,6 +24,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
+import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import org.junit.Before;
@@ -37,7 +38,6 @@ import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
-import com.codahale.metrics.MetricRegistry;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -148,14 +148,14 @@ public class GraqlControllerDeleteTest {
 
         String query = "match $x has title \"Godfather\"; delete $x;";
 
-        int movieCountBefore = graphContext.graph().getEntityType("movie").instances().size();
+        long movieCountBefore = graphContext.graph().getEntityType("movie").instances().count();
 
         sendRequest(query);
 
         // refresh graph
         graphContext.graph().close();
 
-        int movieCountAfter = graphContext.graph().getEntityType("movie").instances().size();
+        long movieCountAfter = graphContext.graph().getEntityType("movie").instances().count();
 
         assertEquals(movieCountBefore - 1, movieCountAfter);
     }

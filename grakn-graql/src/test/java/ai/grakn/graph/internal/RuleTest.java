@@ -37,6 +37,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.stream.Collectors;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -361,13 +363,13 @@ public class RuleTest {
         then = graknGraph.graql().parsePattern("$x isa type2");
 
         Rule rule = graknGraph.admin().getMetaRuleInference().putRule(when, then);
-        assertThat(rule.getHypothesisTypes(), empty());
-        assertThat(rule.getConclusionTypes(), empty());
+        assertThat(rule.getHypothesisTypes().collect(Collectors.toSet()), empty());
+        assertThat(rule.getConclusionTypes().collect(Collectors.toSet()), empty());
 
         graknGraph.commit();
 
-        assertThat(rule.getHypothesisTypes(), containsInAnyOrder(t1));
-        assertThat(rule.getConclusionTypes(), containsInAnyOrder(t2));
+        assertThat(rule.getHypothesisTypes().collect(Collectors.toSet()), containsInAnyOrder(t1));
+        assertThat(rule.getConclusionTypes().collect(Collectors.toSet()), containsInAnyOrder(t2));
     }
 
     @Test

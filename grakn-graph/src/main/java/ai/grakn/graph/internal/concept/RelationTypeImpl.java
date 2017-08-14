@@ -28,8 +28,6 @@ import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -81,8 +79,8 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
      * @return A list of the Role Types which make up this Relation Type.
      */
     @Override
-    public Collection<Role> relates() {
-        return Collections.unmodifiableCollection(cachedRelates.get());
+    public Stream<Role> relates() {
+        return cachedRelates.get().stream();
     }
 
     /**
@@ -179,8 +177,8 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
     private Stream<Relation> relationEdges(){
         //Unfortunately this is a slow process
-        return relates().stream().
-                flatMap(role -> role.playedByTypes().stream()).
+        return relates().
+                flatMap(role -> role.playedByTypes()).
                 flatMap(type ->{
                     //Traversal is used here to take advantage of vertex centric index
                     return  vertex().graph().getTinkerTraversal().V().
