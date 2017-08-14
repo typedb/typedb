@@ -24,10 +24,6 @@ case "$1" in
     esac
     ;;
 
-  graql)
-    "${GRAKN_HOME}/services/graql.sh"
-    ;;
-
   *|help)
     case "$2" in
       server)
@@ -36,25 +32,18 @@ Starts, stops or monitors grakn running on this machine.
 
 Usage: grakn server (start|stop|status)"
         ;;
-      graql)
-        echo "
-Starts a REPL console for running Graql queries on Grakn.
 
-Usage: grakn graql
-"
-        ;;
       *)
         echo "
 Usage: grakn <command>
 
 command:
   server  start a new grakn server
-  graql   start a graql console
   help    print this message
 
 tips:
   Start grakn with 'grakn server start' (by default the dashboard will be on http://localhost:4567)
-  You can then perform queries by opening a REPL console with 'grakn graql' (defaults to connecting to a local server)"
+  You can then perform queries by opening a REPL console with 'graql' (defaults to connecting to a local server)"
         ;;
     esac
     ;;
