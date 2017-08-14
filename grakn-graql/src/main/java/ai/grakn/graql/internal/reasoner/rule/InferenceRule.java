@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
@@ -157,7 +158,7 @@ public class InferenceRule {
      * @return a conclusion atom which parent contains all atoms in the rule
      */
     public Atom getRuleConclusionAtom() {
-        Set<Atom> allAtoms = new HashSet<>();
+        Set<Atomic> allAtoms = new HashSet<>();
         allAtoms.add(head.getAtom());
         body.getAtoms(Atom.class).forEach(allAtoms::add);
         ReasonerQueryImpl ruleQuery = ReasonerQueries.create(allAtoms, graph);
@@ -174,7 +175,7 @@ public class InferenceRule {
 
         //only transfer value predicates if head has a user specified value variable
         Atom headAtom = head.getAtom();
-        Set<Atom> bodyAtoms = body.getAtoms(Atom.class).collect(toSet());
+        Set<Atomic> bodyAtoms = body.getAtoms(Atom.class).collect(toSet());
         if(headAtom.isResource() && ((ResourceAtom) headAtom).getMultiPredicate().isEmpty()){
             Set<ValuePredicate> vps = parentAtom.getPredicates(ValuePredicate.class)
                     .flatMap(vp -> vp.unify(unifier).stream())
@@ -186,6 +187,7 @@ public class InferenceRule {
                     vps,
                     headAtom.getParentQuery()
             );
+            bodyAtoms.addAll(vps);
         }
 
         Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints()
@@ -204,7 +206,7 @@ public class InferenceRule {
                             .filter(t -> ReasonerUtils.getSupers(t).contains(ontologyConcept))
                             .findFirst().orElse(null);
                     return ontologyConcept == null || subType == null;
-                }).forEach(t -> bodyAtoms.add((Atom) AtomicFactory.create(t, body)));
+                }).forEach(t -> bodyAtoms.add(AtomicFactory.create(t, body)));
         return new InferenceRule(
                 ReasonerQueries.atomic(headAtom),
                 ReasonerQueries.create(bodyAtoms, graph),
@@ -216,7 +218,7 @@ public class InferenceRule {
     private InferenceRule rewrite(){
         ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined());
 
-        Set<Atom> bodyRewrites = new HashSet<>();
+        Set<Atomic> bodyRewrites = new HashSet<>();
         body.getAtoms(Atom.class)
                 .map(at -> {
                     if (at.isRelation()

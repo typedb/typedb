@@ -158,7 +158,7 @@ public final class ResolutionPlan {
                 .distinct()
                 .collect(Collectors.toCollection(LinkedList::new));
 
-        Set<Atom> nonResolvableAtoms = new HashSet<>();
+        Set<Atomic> nonResolvableAtoms = new HashSet<>();
         while (!atoms.isEmpty()) {
             Atom top = atoms.remove();
             if (top.isRuleResolvable()) {
@@ -188,7 +188,7 @@ public final class ResolutionPlan {
                 .collect(Collectors.toCollection(LinkedList::new));
 
         Atom top = atoms.getFirst();
-        Set<Atom> nonResolvableAtoms = new HashSet<>();
+        Set<Atomic> nonResolvableAtoms = new HashSet<>();
         Set<Var> subbedVars = query.getAtoms(IdPredicate.class).map(IdPredicate::getVarName).collect(Collectors.toSet());
         while (!atoms.isEmpty()) {
 

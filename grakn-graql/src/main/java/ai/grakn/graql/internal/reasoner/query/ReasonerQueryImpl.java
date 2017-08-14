@@ -98,7 +98,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         q.getAtoms().forEach(at -> addAtomic(AtomicFactory.create(at, this)));
     }
 
-    ReasonerQueryImpl(Set<Atom> atoms, GraknGraph graph){
+    ReasonerQueryImpl(Set<Atomic> atoms, GraknGraph graph){
         this.graph = graph;
 
         atoms.stream()
@@ -106,6 +106,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .forEach(this::addAtomic);
 
         atoms.stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .flatMap(Atom::getNonSelectableConstraints)
                 .map(at -> AtomicFactory.create(at, this))
                 .forEach(this::addAtomic);
@@ -115,6 +116,16 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     ReasonerQueryImpl(Atom atom) {
         this(Collections.singleton(atom), atom.getParentQuery().graph());
+    }
+
+    /**
+     * replace all atoms with inferrable types with their new instances with added types
+     */
+    private void inferTypes() {
+        Set<Atom> inferrableAtoms = getAtoms(Atom.class).collect(Collectors.toSet());
+        Set<Atom> inferredAtoms = inferrableAtoms.stream().map(Atom::inferTypes).collect(Collectors.toSet());
+        inferrableAtoms.forEach(this::removeAtomic);
+        inferredAtoms.forEach(this::addAtomic);
     }
 
     @Override
@@ -160,16 +171,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             priority = totalPriority/selectableAtoms.size();
         }
         return priority;
-    }
-
-    /**
-     * replace all atoms with inferrable types with their new instances with added types
-     */
-    private void inferTypes() {
-        Set<Atom> inferrableAtoms = getAtoms(Atom.class).collect(Collectors.toSet());
-        Set<Atom> inferredAtoms = inferrableAtoms.stream().map(Atom::inferTypes).collect(Collectors.toSet());
-        inferrableAtoms.forEach(this::removeAtomic);
-        inferredAtoms.forEach(this::addAtomic);
     }
 
     @Override
@@ -268,7 +269,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return id predicate for the specified var name if any
      */
     @Nullable
-    public IdPredicate getIdPredicate(Var var) {
+    protected IdPredicate getIdPredicate(Var var) {
         return getAtoms(IdPredicate.class)
                 .filter(sub -> sub.getVarName().equals(var))
                 .findFirst().orElse(null);
