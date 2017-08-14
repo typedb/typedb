@@ -8,24 +8,7 @@ fi
 
 case "$1" in
   server)
-    case "$2" in
-      start)
-        "${GRAKN_HOME}/services/grakn.sh" start
-        ;;
-      stop)
-        "${GRAKN_HOME}/services/grakn.sh" stop
-      ;;
-      status)
-        "${GRAKN_HOME}/services/grakn.sh" status
-        ;;
-      *)
-        echo "
-Starts, stops or monitors grakn running on this machine.
-
-Usage:
-  grakn server (start|stop|status)"
-        ;;
-    esac
+    "${GRAKN_HOME}/services/grakn.sh" "${@:2}"
     ;;
 
   *|help)
