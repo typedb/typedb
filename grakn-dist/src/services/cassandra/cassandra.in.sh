@@ -27,10 +27,10 @@ abs_path() {
     echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 }
 
-CASSANDRA_HOME=$(cd "`abs_path`"/.. && pwd)
+CASSANDRA_HOME=$(cd "`abs_path`"/../.. && pwd)
 
 # The directory where Cassandra's configs live (required)
-CASSANDRA_CONF=$CASSANDRA_HOME/services
+CASSANDRA_CONF=$CASSANDRA_HOME/services/cassandra
 
 # This can be the path to a jar file, or a directory containing the
 # compiled classes. NOTE: This isn't needed by the startup script,
@@ -58,7 +58,7 @@ for jar in "${CASSANDRA_HOME}"/services/lib/*.jar; do
 done
 
 # This system property is referenced in log4j-server.properties
-logdir="$CASSANDRA_HOME/log"
+logdir="$CASSANDRA_HOME/services/logs"
 
 # Special-case path variables.
 case "`uname`" in

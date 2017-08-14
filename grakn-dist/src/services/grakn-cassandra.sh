@@ -28,7 +28,7 @@ export GRAKN_INCLUDE="${GRAKN_HOME}/services/grakn.in.sh"
 
 CASSANDRA_STARTUP_TIMEOUT_S=60
 SLEEP_INTERVAL_S=2
-NODETOOL="${GRAKN_HOME}/services/nodetool"
+NODETOOL="${GRAKN_HOME}/services/cassandra/nodetool"
 
 CASSANDRA_PS=/tmp/grakn-cassandra.pid
 
@@ -64,7 +64,7 @@ start)
         # cassandra has not already started
         echo -n "Starting cassandra "
         echo ""
-        "${GRAKN_HOME}"/services/cassandra -p $CASSANDRA_PS
+        "${GRAKN_HOME}"/services/cassandra/cassandra -p $CASSANDRA_PS
 
         if ! wait_for_cassandra ; then exit 1 ; fi
     fi
