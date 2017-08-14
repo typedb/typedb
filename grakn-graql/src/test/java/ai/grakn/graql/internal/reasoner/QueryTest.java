@@ -20,9 +20,6 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.test.graphs.AdmissionsGraph;
 import ai.grakn.test.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
@@ -32,7 +29,6 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.SNBGraph;
 
 import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.Sets;
@@ -45,8 +41,6 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class QueryTest {

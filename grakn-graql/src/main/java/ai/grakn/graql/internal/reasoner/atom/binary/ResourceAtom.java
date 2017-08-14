@@ -40,7 +40,6 @@ import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 
 import com.google.common.collect.ImmutableSet;
-import java.util.Collections;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import java.util.HashSet;

@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
@@ -187,9 +186,7 @@ public class InferenceRule {
                     vps,
                     headAtom.getParentQuery()
             );
-            //bodyAtoms.addAll(vps);
         }
-
 
         Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints()
                 .flatMap(type -> type.unify(unifier).stream())
@@ -241,7 +238,7 @@ public class InferenceRule {
      * @return rewritten rule
      */
     public InferenceRule rewriteToUserDefined(Atom parentAtom){
-        return parentAtom.isUserDefinedName()? this.rewrite() : this;
+        return parentAtom.isUserDefinedName()? rewrite() : this;
     }
 
     /**

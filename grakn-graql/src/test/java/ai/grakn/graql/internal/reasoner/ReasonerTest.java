@@ -23,7 +23,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;

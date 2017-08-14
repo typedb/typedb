@@ -31,7 +31,6 @@ import ai.grakn.test.graphs.SNBGraph;
 
 import ai.grakn.test.GraknTestSetup;
 import java.util.List;
-import java.util.Set;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
