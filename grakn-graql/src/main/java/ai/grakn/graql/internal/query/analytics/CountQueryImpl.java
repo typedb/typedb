@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Role;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.internal.analytics.CountMapReduce;
 import ai.grakn.graql.internal.analytics.CountVertexProgram;
@@ -32,9 +33,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.analytics.GraknMapReduce.RESERVED_TYPE_LABEL_KEY;
+import static java.util.stream.Collectors.toSet;
 
 class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
 
@@ -56,12 +57,12 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
 
         Set<LabelId> rolePlayerLabelIds = subTypes.stream()
                 .filter(Concept::isRelationType)
-                .map(relationType -> ((RelationType) relationType).relates())
+                .map(relationType -> ((RelationType) relationType).relates().collect(toSet()))
                 .filter(roles -> roles.size() == 2)
-                .flatMap(roles -> roles.stream().flatMap(role -> role.playedByTypes().stream()))
+                .flatMap(roles -> roles.stream().flatMap(Role::playedByTypes))
                 .map(type -> graph.get().admin().convertToId(type.getLabel()))
                 .filter(LabelId::isValid)
-                .collect(Collectors.toSet());
+                .collect(toSet());
 
         Set<LabelId> typeLabelIds = convertLabelsToIds(subLabels);
         rolePlayerLabelIds.addAll(typeLabelIds);

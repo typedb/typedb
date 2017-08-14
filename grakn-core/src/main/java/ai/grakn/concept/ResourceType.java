@@ -29,8 +29,8 @@ import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collection;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -182,7 +182,7 @@ public interface ResourceType<D> extends Type {
      * @return The subtypes of this ResourceType
      */
     @Override
-    Collection<ResourceType<D>> subs();
+    Stream<ResourceType<D>> subs();
 
     /**
      * Returns a collection of all Resource Instances of this ResourceType.
@@ -190,7 +190,7 @@ public interface ResourceType<D> extends Type {
      * @return The resource instances of this ResourceType
      */
     @Override
-    Collection<Resource<D>> instances();
+    Stream<Resource<D>> instances();
 
     /**
      * Get the data type to which instances of the ResourceType must conform.

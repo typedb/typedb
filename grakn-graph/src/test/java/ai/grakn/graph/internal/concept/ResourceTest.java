@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -68,7 +69,7 @@ public class ResourceTest extends GraphTestBase {
         Resource<String> birthDate = resourceType.putResource("10/10/10");
         hasResource.relates(resourceRole).relates(actorRole);
 
-        assertThat(birthDate.ownerInstances(), empty());
+        assertThat(birthDate.ownerInstances().collect(toSet()), empty());
 
         hasResource.addRelation().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, pacino);
@@ -79,7 +80,7 @@ public class ResourceTest extends GraphTestBase {
         hasResource.addRelation().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, alice);
 
-        assertThat(birthDate.ownerInstances(), containsInAnyOrder(pacino, jennifer, bob, alice));
+        assertThat(birthDate.ownerInstances().collect(toSet()), containsInAnyOrder(pacino, jennifer, bob, alice));
     }
 
     // this is due to the generic of getResourcesByValue
@@ -136,7 +137,7 @@ public class ResourceTest extends GraphTestBase {
             // expected failure
         }
 
-        Collection<Resource> instances = longResourceType.instances();
+        Collection<Resource> instances = (Collection<Resource>) longResourceType.instances().collect(toSet());
 
         assertThat(instances, empty());
     }
@@ -162,11 +163,11 @@ public class ResourceTest extends GraphTestBase {
 
         entity.resource(resource);
 
-        RelationStructure relationStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relations())).structure();
+        RelationStructure relationStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
         assertThat(relationStructure, instanceOf(RelationEdge.class));
         assertTrue("Edge Relation id not starting with [" + Schema.PREFIX_EDGE + "]",relationStructure.getId().getValue().startsWith(Schema.PREFIX_EDGE));
         assertEquals(entity, resource.owner());
-        assertThat(entity.resources(), containsInAnyOrder(resource));
+        assertThat(entity.resources().collect(toSet()), containsInAnyOrder(resource));
     }
 
     @Test
@@ -204,13 +205,13 @@ public class ResourceTest extends GraphTestBase {
         assertEquals(relationStructureBefore.getId(), relationStructureAfter.getId());
 
         //Check Role Players have been transferred
-        allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationStructureAfter.rolePlayers(role)));
+        allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationStructureAfter.rolePlayers(role).collect(toSet())));
 
         //Check Type Has Been Transferred
         assertEquals(relationStructureBefore.type(), relationStructureAfter.type());
 
         //Check new role player has been added as well
-        assertEquals(newEntity, Iterables.getOnlyElement(relationStructureAfter.rolePlayers(newRole)));
+        assertEquals(newEntity, Iterables.getOnlyElement(relationStructureAfter.rolePlayers(newRole).collect(toSet())));
     }
 
     @Test
@@ -239,15 +240,15 @@ public class ResourceTest extends GraphTestBase {
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
 
-        assertThat(resource.relations(), empty());
+        assertThat(resource.relations().collect(toSet()), empty());
 
         e1.resource(resource);
         e2.resource(resource);
 
-        Relation rel1 = Iterables.getOnlyElement(e1.relations());
-        Relation rel2 = Iterables.getOnlyElement(e2.relations());
+        Relation rel1 = Iterables.getOnlyElement(e1.relations().collect(toSet()));
+        Relation rel2 = Iterables.getOnlyElement(e2.relations().collect(toSet()));
 
-        assertThat(resource.relations(), containsInAnyOrder(rel1, rel2));
+        assertThat(resource.relations().collect(toSet()), containsInAnyOrder(rel1, rel2));
     }
 
 }

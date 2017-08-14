@@ -21,7 +21,6 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -61,6 +60,7 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static ai.grakn.engine.GraknEngineConfig.FACTORY_ANALYTICS;
 import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
@@ -215,13 +215,13 @@ public class SystemController {
             ResourceType<String> keyspaceName = graph.getOntologyConcept(SystemKeyspace.KEYSPACE_RESOURCE);
             Json result = Json.array();
 
-            for (Entity keyspace : graph.<EntityType>getOntologyConcept(SystemKeyspace.KEYSPACE_ENTITY).instances()) {
-                Collection<Resource<?>> names = keyspace.resources(keyspaceName);
+            graph.<EntityType>getOntologyConcept(SystemKeyspace.KEYSPACE_ENTITY).instances().forEach(keyspace -> {
+                Collection<Resource<?>> names = keyspace.resources(keyspaceName).collect(Collectors.toSet());
                 if (names.size() != 1) {
                     throw GraknServerException.internalError(ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " has no unique name."));
                 }
                 result.add(names.iterator().next().getValue());
-            }
+            });
             return result.toString();
         } catch (Exception e) {
             LOG.error("While retrieving keyspace list:", e);

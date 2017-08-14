@@ -19,8 +19,8 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.ResourceType;
 
 /**
  * A generator that produces {@link ResourceType}s
@@ -44,5 +44,4 @@ public class ResourceTypes extends AbstractTypeGenerator<ResourceType> {
     protected ResourceType metaOntologyConcept() {
         return graph().admin().getMetaResourceType();
     }
-
 }

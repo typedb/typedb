@@ -27,9 +27,9 @@ import ai.grakn.graph.internal.cache.ContainsTxCache;
 import ai.grakn.graph.internal.structure.EdgeElement;
 import ai.grakn.graph.internal.structure.VertexElement;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -82,7 +82,7 @@ interface RelationStructure extends ContainsTxCache {
      * @param roles The {@link Role}s which are played in this relation
      * @return The {@link Thing}s which play those {@link Role}s
      */
-    Collection<Thing> rolePlayers(Role... roles);
+    Stream<Thing> rolePlayers(Role... roles);
 
     /**
      * Deletes the {@link VertexElement} or {@link EdgeElement} used to represent this {@link Relation}

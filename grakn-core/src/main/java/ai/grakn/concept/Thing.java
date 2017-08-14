@@ -19,7 +19,7 @@
 package ai.grakn.concept;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -60,7 +60,7 @@ public interface Thing extends Concept{
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
      */
     @CheckReturnValue
-    Collection<Relation> relations(Role... roles);
+    Stream<Relation> relations(Role... roles);
 
     /**
      * Determine the Role Types that this Thing may play.
@@ -69,7 +69,7 @@ public interface Thing extends Concept{
      * @return A set of all the Role Types which this instance plays.
      */
     @CheckReturnValue
-    Collection<Role> plays();
+    Stream<Role> plays();
 
     /**
      * Creates a relation from this instance to the provided resource.
@@ -87,7 +87,7 @@ public interface Thing extends Concept{
      * @return A collection of resources attached to this Thing.
      */
     @CheckReturnValue
-    Collection<Resource<?>> resources(ResourceType ... resourceTypes);
+    Stream<Resource<?>> resources(ResourceType ... resourceTypes);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

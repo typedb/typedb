@@ -21,6 +21,7 @@ package ai.grakn.engine.data;
 import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.util.MockRedisRule;
 import com.github.zxl0714.redismock.RedisServer;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -36,7 +37,23 @@ public class RedisWrapperTest {
         RedisWrapper redisWrapper = RedisWrapper.builder().setUseSentinel(false)
                 .addURI(new SimpleURI(server.getHost(), server.getBindPort()).toString())
                 .build();
-        assertTrue(redisWrapper.getJedisPool() != null);
+        assertNotNull(redisWrapper.getJedisPool());
+    }
+
+    @Test
+    public void whenBuildingFromStringWithPort_Succeeds() {
+        RedisWrapper redisWrapper = RedisWrapper.builder().setUseSentinel(false)
+                .addURI("localhost:2345")
+                .build();
+        assertNotNull(redisWrapper.getJedisPool());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void whenBuildingFromStringWithDoublePort_Fails() {
+        RedisWrapper redisWrapper = RedisWrapper.builder().setUseSentinel(false)
+                .addURI("localhost:2345:5678")
+                .build();
+        assertNotNull(redisWrapper.getJedisPool());
     }
 
     @Test(expected = JedisConnectionException.class)

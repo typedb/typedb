@@ -35,13 +35,11 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraphTestBase;
-import ai.grakn.graph.internal.concept.EntityImpl;
-import ai.grakn.graph.internal.concept.RelationImpl;
-import ai.grakn.graph.internal.concept.RoleImpl;
-import ai.grakn.graph.internal.concept.ThingImpl;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,6 +49,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -152,8 +151,8 @@ public class RelationTest extends GraphTestBase {
     @Test
     public void whenGettingRolePlayersOfRelation_ReturnsRolesAndInstances() throws Exception {
         assertThat(relation.allRolePlayers().keySet(), containsInAnyOrder(role1, role2, role3));
-        assertThat(relation.rolePlayers(role1), containsInAnyOrder(rolePlayer1));
-        assertThat(relation.rolePlayers(role2), containsInAnyOrder(rolePlayer2));
+        assertThat(relation.rolePlayers(role1).collect(toSet()), containsInAnyOrder(rolePlayer1));
+        assertThat(relation.rolePlayers(role2).collect(toSet()), containsInAnyOrder(rolePlayer2));
     }
 
     @Test
@@ -202,8 +201,8 @@ public class RelationTest extends GraphTestBase {
         Thing thing1 = type.addEntity();
         Thing thing2 = type.addEntity();
 
-        Relation rel1 = relationType.addRelation().addRolePlayer(role1, thing1).addRolePlayer(role2, thing2);
-        Relation rel2 = relationType.addRelation().addRolePlayer(role1, thing1).addRolePlayer(role2, thing2);
+        relationType.addRelation().addRolePlayer(role1, thing1).addRolePlayer(role2, thing2);
+        relationType.addRelation().addRolePlayer(role1, thing1).addRolePlayer(role2, thing2);
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(containsString("You have created one or more relations"));
@@ -247,11 +246,11 @@ public class RelationTest extends GraphTestBase {
         Relation relation1 = hasDegree.addRelation().addRolePlayer(entityRole, entity).addRolePlayer(degreeRole, degree1);
         hasDegree.addRelation().addRolePlayer(entityRole, entity).addRolePlayer(degreeRole, degree2);
 
-        assertEquals(2, entity.relations().size());
+        assertEquals(2, entity.relations().count());
 
         relation1.delete();
 
-        assertEquals(1, entity.relations().size());
+        assertEquals(1, entity.relations().count());
     }
 
 
@@ -289,11 +288,64 @@ public class RelationTest extends GraphTestBase {
         Resource<String> resource = resourceType.putResource("a real pain");
 
         EntityType entityType = graknGraph.putEntityType("yay").resource(resourceType);
-        Relation implicitRelation = Iterables.getOnlyElement(entityType.addEntity().resource(resource).relations());
+        Relation implicitRelation = Iterables.getOnlyElement(entityType.addEntity().resource(resource).relations().collect(Collectors.toSet()));
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.hasNotAllowed(implicitRelation, resource).getMessage());
 
         implicitRelation.resource(resource);
+    }
+
+
+    @Test
+    public void whenAddingDuplicateRelationsWithDifferentKeys_EnsureTheyCanBeCommitted(){
+        Role role1 = graknGraph.putRole("dark");
+        Role role2 = graknGraph.putRole("souls");
+        ResourceType<Long> resourceType = graknGraph.putResourceType("Death Number", ResourceType.DataType.LONG);
+        RelationType relationType = graknGraph.putRelationType("Dark Souls").relates(role1).relates(role2).key(resourceType);
+        EntityType entityType = graknGraph.putEntityType("Dead Guys").plays(role1).plays(role2);
+
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+
+        Resource<Long> r1 = resourceType.putResource(1000000L);
+        Resource<Long> r2 = resourceType.putResource(2000000L);
+
+        Relation rel1 = relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
+        Relation rel2 = relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
+
+        //Set the keys and commit. Without this step it should fail
+        rel1.resource(r1);
+        rel2.resource(r2);
+
+        graknGraph.commit();
+        graknGraph = (AbstractGraknGraph<?>) graknSession.open(GraknTxType.WRITE);
+
+        assertThat(graknGraph.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel1));
+        assertThat(graknGraph.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel2));
+    }
+
+    @Test
+    public void whenAddingDuplicateRelationsWithSameKeys_Throw(){
+        Role role1 = graknGraph.putRole("dark");
+        Role role2 = graknGraph.putRole("souls");
+        ResourceType<Long> resourceType = graknGraph.putResourceType("Death Number", ResourceType.DataType.LONG);
+        RelationType relationType = graknGraph.putRelationType("Dark Souls").relates(role1).relates(role2).key(resourceType);
+        EntityType entityType = graknGraph.putEntityType("Dead Guys").plays(role1).plays(role2);
+
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+
+        Resource<Long> r1 = resourceType.putResource(1000000L);
+
+        relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2).resource(r1);
+        relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2).resource(r1);
+
+        String message = ErrorMessage.VALIDATION_RELATION_DUPLICATE.getMessage("");
+        message = message.substring(0, message.length() - 5);
+        expectedException.expect(InvalidGraphException.class);
+        expectedException.expectMessage(containsString(message));
+
+        graknGraph.commit();
     }
 }

@@ -61,10 +61,18 @@ public interface ReasonerQuery{
     Set<Var> getVarNames();
 
     /**
-     * @return atom set constituting this reasoner query
+     * @return atom set defining this reasoner query
      */
     @CheckReturnValue
     Set<Atomic> getAtoms();
+
+    /**
+     * @param type the class of {@link Atomic} to return
+     * @param <T> the type of {@link Atomic} to return
+     * @return stream of atoms of specified type defined in this query
+     */
+    @CheckReturnValue
+    <T extends Atomic> Stream<T> getAtoms(Class<T> type);
 
     /**
      * @return corresponding MatchQuery

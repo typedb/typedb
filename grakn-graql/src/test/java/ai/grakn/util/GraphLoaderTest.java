@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.Assert.assertEquals;
@@ -54,9 +55,9 @@ public class GraphLoaderTest {
         GraphLoader loader = GraphLoader.empty();
 
         try (GraknGraph graph = loader.graph()){
-            assertThat(graph.admin().getMetaEntityType().instances(), is(empty()));
-            assertThat(graph.admin().getMetaRelationType().instances(), is(empty()));
-            assertThat(graph.admin().getMetaRuleType().instances(), is(empty()));
+            assertThat(graph.admin().getMetaEntityType().instances().collect(toSet()), is(empty()));
+            assertThat(graph.admin().getMetaRelationType().instances().collect(toSet()), is(empty()));
+            assertThat(graph.admin().getMetaRuleType().instances().collect(toSet()), is(empty()));
         }
     }
 
@@ -69,7 +70,7 @@ public class GraphLoaderTest {
         GraphLoader loader = GraphLoader.preLoad(preLoader);
 
         try (GraknGraph graph = loader.graph()){
-            Set<Label> foundLabels = graph.admin().getMetaEntityType().subs().stream().
+            Set<Label> foundLabels = graph.admin().getMetaEntityType().subs().
                     map(Type::getLabel).collect(Collectors.toSet());
 
             assertTrue(foundLabels.containsAll(labels));

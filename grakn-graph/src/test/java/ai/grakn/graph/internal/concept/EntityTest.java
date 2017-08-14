@@ -148,11 +148,11 @@ public class EntityTest extends GraphTestBase {
         Resource resource1 = resourceType.putResource("A resource thing");
         Resource resource2 = resourceType.putResource("Another resource thing");
 
-        assertEquals(0, entity.relations().size());
+        assertEquals(0, entity.relations().count());
         entity.resource(resource1);
-        assertEquals(1, entity.relations().size());
+        assertEquals(1, entity.relations().count());
         entity.resource(resource2);
-        assertEquals(2, entity.relations().size());
+        assertEquals(2, entity.relations().count());
 
         graknGraph.commit();
     }

@@ -21,13 +21,14 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
@@ -187,7 +188,7 @@ public class EquivalentFragmentSets {
 
     static boolean hasDirectSubTypes(GraknGraph graph, Label label) {
         Type type = graph.getOntologyConcept(label);
-        return type != null && type.subs().size() != 1;
+        return type != null && !CommonUtil.containsOnly(type.subs(), 1);
     }
 
     static @Nullable LabelFragmentSet typeLabelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {
