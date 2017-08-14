@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.Assert.assertEquals;
@@ -54,9 +55,9 @@ public class GraphLoaderTest {
         GraphLoader loader = GraphLoader.empty();
 
         try (GraknGraph graph = loader.graph()){
-            assertThat(graph.admin().getMetaEntityType().instances(), is(empty()));
-            assertThat(graph.admin().getMetaRelationType().instances(), is(empty()));
-            assertThat(graph.admin().getMetaRuleType().instances(), is(empty()));
+            assertThat(graph.admin().getMetaEntityType().instances().collect(toSet()), is(empty()));
+            assertThat(graph.admin().getMetaRelationType().instances().collect(toSet()), is(empty()));
+            assertThat(graph.admin().getMetaRuleType().instances().collect(toSet()), is(empty()));
         }
     }
 
@@ -69,7 +70,7 @@ public class GraphLoaderTest {
         GraphLoader loader = GraphLoader.preLoad(preLoader);
 
         try (GraknGraph graph = loader.graph()){
-            Set<Label> foundLabels = graph.admin().getMetaEntityType().subs().stream().
+            Set<Label> foundLabels = graph.admin().getMetaEntityType().subs().
                     map(Type::getLabel).collect(Collectors.toSet());
 
             assertTrue(foundLabels.containsAll(labels));
@@ -82,8 +83,8 @@ public class GraphLoaderTest {
             //String comparison is used here because we do not have the class available at compile time
             if(GraknTestSetup.usingTinker()){
                 assertEquals("ai.grakn.graph.internal.GraknTinkerGraph", graph.getClass().getName());
-            } else if (GraknTestSetup.usingTitan()) {
-                assertEquals("ai.grakn.graph.internal.GraknTitanGraph", graph.getClass().getName());
+            } else if (GraknTestSetup.usingJanus()) {
+                assertEquals("ai.grakn.graph.internal.GraknJanusGraph", graph.getClass().getName());
             } else {
                 throw new RuntimeException("Test run with unsupported graph backend");
             }

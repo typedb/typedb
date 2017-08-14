@@ -17,11 +17,7 @@
  */
 package ai.grakn.engine;
 
-import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
-import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
@@ -47,18 +43,11 @@ import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
 import com.google.common.base.Stopwatch;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import javax.annotation.Nullable;
 import mjson.Json;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +58,22 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+
+import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
+import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+
 /**
  * Main class in charge to start a web server and all the REST controllers.
  *
@@ -76,7 +81,7 @@ import spark.Service;
  */
 public class GraknEngineServer implements AutoCloseable {
 
-    public static final String LOAD_SYSTEM_ONTOLOGY_LOCK_NAME = "load-system-ontology";
+    private static final String LOAD_SYSTEM_ONTOLOGY_LOCK_NAME = "load-system-ontology";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
             REST.WebPath.NEW_SESSION_URI,
@@ -92,13 +97,14 @@ public class GraknEngineServer implements AutoCloseable {
     private final MetricRegistry metricRegistry;
     private final LockProvider lockProvider;
     private final GraknEngineStatus graknEngineStatus = new GraknEngineStatus();
+    private final RedisWrapper redisWrapper;
 
     public GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
         // Metrics
         this.metricRegistry = new MetricRegistry();
         // Redis connection pool
-        RedisWrapper redisWrapper = instantiateRedis(prop);
+        this.redisWrapper = instantiateRedis(prop);
         // Lock provider
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
         boolean inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
@@ -138,6 +144,7 @@ public class GraknEngineServer implements AutoCloseable {
         synchronized (this) {
             stopTaskManager();
             stopHTTP();
+            redisWrapper.close();
         }
     }
 
@@ -170,10 +177,16 @@ public class GraknEngineServer implements AutoCloseable {
      * @param jedisPool
      */
     private TaskManager startTaskManager(
-            boolean inMemoryQueue,
-            Pool<Jedis> jedisPool,
-            LockProvider lockProvider) {
+            final boolean inMemoryQueue,
+            final Pool<Jedis> jedisPool,
+            final LockProvider lockProvider) {
         TaskManager taskManager;
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "idle"), (Gauge<Integer>) jedisPool::getNumIdle);
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "active"), (Gauge<Integer>) jedisPool::getNumActive);
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "waiters"), (Gauge<Integer>) jedisPool::getNumWaiters);
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "max"), (Gauge<Long>) jedisPool::getMaxBorrowWaitTimeMillis);
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "mean"), (Gauge<Long>) jedisPool::getMeanBorrowWaitTimeMillis);
+
         if (!inMemoryQueue) {
             Optional<String> consumers = prop.tryProperty(QUEUE_CONSUMERS);
             taskManager = consumers
@@ -181,7 +194,7 @@ public class GraknEngineServer implements AutoCloseable {
                     .orElseGet(() -> new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry));
         } else  {
             // Redis storage for counts, in the RedisTaskManager it's created in consumers
-            RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool);
+            RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool, metricRegistry);
             taskManager = new StandaloneTaskManager(engineId, prop, redisCountStorage, factory, lockProvider, metricRegistry);
         }
         taskManager.start();
@@ -353,9 +366,11 @@ public class GraknEngineServer implements AutoCloseable {
     private RedisWrapper instantiateRedis(GraknEngineConfig prop) {
         List<String> redisUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_HOST).orElse("localhost:6379"));
         List<String> sentinelUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_SENTINEL_HOST).orElse(""));
+        int poolSize = prop.tryIntProperty(REDIS_POOL_SIZE, 128);
         boolean useSentinel = !sentinelUrl.isEmpty();
         Builder builder = RedisWrapper.builder()
                 .setUseSentinel(useSentinel)
+                .setPoolSize(poolSize)
                 .setURI((useSentinel ? sentinelUrl : redisUrl));
         if (useSentinel) {
             builder.setMasterName(prop.tryProperty(REDIS_SENTINEL_MASTER).orElse("graknmaster"));

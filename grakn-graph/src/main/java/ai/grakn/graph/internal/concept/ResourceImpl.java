@@ -25,9 +25,8 @@ import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Iterator;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -68,23 +67,22 @@ public class ResourceImpl<D> extends ThingImpl<Resource<D>, ResourceType<D>> imp
      * @return The list of all Instances which posses this resource
      */
     @Override
-    public Collection<Thing> ownerInstances() {
+    public Stream<Thing> ownerInstances() {
         //Get Owner via implicit structure
-        Set<Thing> owners = new HashSet<>(getShortcutNeighbours());
-
+        Stream<Thing> implicitOwners = getShortcutNeighbours();
         //Get owners via edges
-        neighbours(Direction.IN, Schema.EdgeLabel.RESOURCE).forEach(concept -> owners.add(concept.asThing()));
+        Stream<Thing> edgeOwners = neighbours(Direction.IN, Schema.EdgeLabel.RESOURCE);
 
-        return owners;
+        return Stream.concat(implicitOwners, edgeOwners);
     }
 
     @Override
     public Thing owner() {
-        Collection<Thing> owners = ownerInstances();
-        if(owners.isEmpty()) {
-            return null;
+        Iterator<Thing> owners = ownerInstances().iterator();
+        if(owners.hasNext()) {
+            return owners.next();
         } else {
-            return owners.iterator().next();
+            return null;
         }
     }
 

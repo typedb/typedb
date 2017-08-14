@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -57,6 +58,26 @@ public class CommonUtil {
     @SafeVarargs
     public static <T> Optional<T> optionalOr(Optional<T>... options) {
         return Stream.of(options).flatMap(CommonUtil::optionalToStream).findFirst();
+    }
+
+    /**
+     * Helper which lazily checks if a {@link Stream} contains the number specified
+     * WARNING: This consumes the stream rendering it unusable afterwards
+     *
+     * @param stream the {@link Stream} to check the count against
+     * @param size the expected number of elements in the stream
+     * @return true if the expected size is found
+     */
+    public static boolean containsOnly(Stream stream, long size){
+        long count = 0L;
+        Iterator it = stream.iterator();
+
+        while(it.hasNext()){
+            it.next();
+            if(++count > size) return false;
+        }
+
+        return size == count;
     }
 
     @CheckReturnValue

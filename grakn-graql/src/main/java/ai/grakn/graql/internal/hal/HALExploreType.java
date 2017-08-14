@@ -25,14 +25,14 @@ import ai.grakn.concept.Type;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.hal.HALUtils.DIRECTION_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.HAS_EDGE;
-import static ai.grakn.graql.internal.hal.HALUtils.RELATES_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.INBOUND_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.PLAYS_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.RELATES_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.SUB_EDGE;
 
 
@@ -117,7 +117,7 @@ class HALExploreType extends HALExploreConcept{
         });
     }
 
-    private void attachRolesPlayed(Representation halResource, Collection<Role> roles) {
+    private void attachRolesPlayed(Representation halResource, Stream<Role> roles) {
         roles.forEach(role -> {
             Representation roleRepresentation = factory
                     .newRepresentation(resourceLinkPrefix + role.getId() + getURIParams())

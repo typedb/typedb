@@ -13,7 +13,6 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
-import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.internal.concept.EntityTypeImpl;
@@ -106,7 +105,7 @@ public class GraknGraphTest extends GraphTestBase {
         EntityType sampleEntityType = graknGraph.putEntityType("Sample Entity Type");
         RelationType sampleRelationType = graknGraph.putRelationType("Sample Relation Type");
 
-        assertThat(graknGraph.admin().getMetaConcept().subs(), containsInAnyOrder(
+        assertThat(graknGraph.admin().getMetaConcept().subs().collect(Collectors.toSet()), containsInAnyOrder(
                 graknGraph.admin().getMetaConcept(),
                 graknGraph.admin().getMetaRelationType(),
                 graknGraph.admin().getMetaEntityType(),
@@ -130,7 +129,7 @@ public class GraknGraphTest extends GraphTestBase {
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.READ);
 
         Set<OntologyConcept> finalTypes = new HashSet<>();
-        finalTypes.addAll(graknGraph.getMetaConcept().subs());
+        finalTypes.addAll(graknGraph.getMetaConcept().subs().collect(Collectors.toSet()));
         finalTypes.add(graknGraph.admin().getMetaRole());
 
         graknGraph.abort();
@@ -204,7 +203,7 @@ public class GraknGraphTest extends GraphTestBase {
         assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
         assertTrue("Type [" + rel1 + "] was not cached", cachedValues.contains(rel1));
 
-        assertThat(e1.plays(), containsInAnyOrder(r1, r2));
+        assertThat(e1.plays().collect(Collectors.toSet()), containsInAnyOrder(r1, r2));
 
         ExecutorService pool = Executors.newSingleThreadExecutor();
         //Mutate Ontology in a separate thread
@@ -217,7 +216,7 @@ public class GraknGraphTest extends GraphTestBase {
 
         //Check the above mutation did not affect central repo
         OntologyConcept foundE1 = graknGraph.getGraphCache().getCachedTypes().get(e1.getLabel());
-        assertTrue("Main cache was affected by transaction", ((Type) foundE1).plays().contains(r1));
+        assertTrue("Main cache was affected by transaction", foundE1.asType().plays().anyMatch(role -> role.equals(r1)));
     }
 
     @Test
@@ -348,7 +347,7 @@ public class GraknGraphTest extends GraphTestBase {
         Entity s3_e2 = entityType.addEntity();
 
         //Check Type was sharded correctly
-        assertThat(entityType.shards(), containsInAnyOrder(s1, s2, s3));
+        assertThat(entityType.shards().collect(Collectors.toSet()), containsInAnyOrder(s1, s2, s3));
 
         //Check shards have correct instances
         assertThat(s1.links().collect(Collectors.toSet()), containsInAnyOrder(s1_e1, s1_e2, s1_e3));

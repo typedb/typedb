@@ -25,8 +25,6 @@ import ai.grakn.concept.Role;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
-import java.util.Collection;
-
 /**
  * <p>
  * Basic {@link OntologyConceptConverter} implementation for conversion between compatible types.
@@ -39,12 +37,10 @@ public class OntologyConceptConverterImpl implements OntologyConceptConverter<On
     @Override
     public Multimap<RelationType, Role> toRelationMultimap(OntologyConcept ontologyConcept) {
         Multimap<RelationType, Role> relationMap = HashMultimap.create();
-        Collection<? extends OntologyConcept> types = ontologyConcept.subs();
-        types.stream()
-                .filter(Concept::isType)
-                .flatMap(t -> t.asType().plays().stream())
+        ontologyConcept.subs().filter(Concept::isType)
+                .flatMap(t -> t.asType().plays())
                 .forEach(roleType -> {
-                    roleType.relationTypes().stream()
+                    roleType.relationTypes()
                             .filter(rel -> !rel.isImplicit())
                             .forEach(rel -> relationMap.put(rel, roleType));
                 });

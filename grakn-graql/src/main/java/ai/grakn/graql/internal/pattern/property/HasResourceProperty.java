@@ -169,7 +169,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
         Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
 
-        concept.asThing().relations(owner).stream()
+        concept.asThing().relations(owner)
                 .filter(relation -> testPredicate(predicate, relation, value))
                 .forEach(Concept::delete);
     }

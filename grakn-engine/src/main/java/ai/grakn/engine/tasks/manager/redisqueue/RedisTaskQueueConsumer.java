@@ -179,7 +179,7 @@ public class RedisTaskQueueConsumer implements Runnable {
         this.redisTaskManager = redisTaskManager;
         this.engineId = engineId;
         this.config = config;
-        this.redisCountStorage = RedisCountStorage.create(jedisPool);
+        this.redisCountStorage = RedisCountStorage.create(jedisPool, metricRegistry);
         this.lockProvider = lockProvider;
         this.metricRegistry = metricRegistry;
         this.factory = factory;

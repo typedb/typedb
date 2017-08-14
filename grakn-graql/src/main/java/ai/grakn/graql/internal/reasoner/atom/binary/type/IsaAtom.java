@@ -63,7 +63,7 @@ public class IsaAtom extends TypeAtom {
     @Override
     public String toString(){
         String typeString = (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") + "(" + getVarName() + ")";
-        return typeString + getPredicates().stream().map(Predicate::toString).collect(Collectors.joining(""));
+        return typeString + getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
     }
 
     @Override

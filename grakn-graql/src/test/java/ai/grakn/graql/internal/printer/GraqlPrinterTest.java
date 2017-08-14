@@ -70,8 +70,8 @@ public class GraqlPrinterTest {
         MatchQuery query = rule.graph().graql().match(var("r").isa("has-cluster"));
 
         Relation relation = query.get("r").iterator().next().asRelation();
-        int numRolePlayers = relation.rolePlayers().size();
-        int numCommas = numRolePlayers - 1;
+        long numRolePlayers = relation.rolePlayers().count();
+        long numCommas = numRolePlayers - 1;
 
         String relationString = printer.graqlString(relation);
 

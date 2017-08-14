@@ -265,7 +265,7 @@ public class GraknMatchers {
 
             @Override
             Iterable<? super MatchableConcept> transform(MatchableConcept item) {
-                return item.get().asThing().resources().stream()
+                return item.get().asThing().resources()
                         .filter(resource -> MatchableConcept.NAME_TYPES.contains(resource.type().getLabel()))
                         .map(MatchableConcept::of)
                         .collect(toSet());

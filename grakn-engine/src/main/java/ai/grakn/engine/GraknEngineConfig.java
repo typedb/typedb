@@ -64,6 +64,7 @@ public class GraknEngineConfig {
     public static final String REDIS_HOST = "redis.host";
     public static final String REDIS_SENTINEL_HOST = "redis.sentinel.host";
     public static final String REDIS_SENTINEL_MASTER = "redis.sentinel.master";
+    public static final String REDIS_POOL_SIZE = "redis.pool-size";
 
     public static final String QUEUE_CONSUMERS = "queue.consumers";
 
@@ -201,6 +202,10 @@ public class GraknEngineConfig {
 
     public Optional<String> tryProperty(String property) {
         return Optional.ofNullable(prop.getProperty(property));
+    }
+
+    public int tryIntProperty(String property, int defaultValue) {
+        return Optional.ofNullable(prop.getProperty(property)).map(Integer::parseInt).orElse(defaultValue);
     }
 
     public int getPropertyAsInt(String property) {
