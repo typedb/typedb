@@ -29,6 +29,7 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -56,6 +57,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toSet;
 
 abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
@@ -190,6 +192,17 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
                 .filter(Concept::isResourceType)
                 .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
                 .collect(Collectors.toSet());
+    }
+
+    Set<LabelId> getRolePlayerLabelIds() {
+        return subTypes.stream()
+                .filter(Concept::isRelationType)
+                .map(relationType -> ((RelationType) relationType).relates().collect(toSet()))
+                .filter(roles -> roles.size() == 2)
+                .flatMap(roles -> roles.stream().flatMap(Role::playedByTypes))
+                .map(type -> graph.get().admin().convertToId(type.getLabel()))
+                .filter(LabelId::isValid)
+                .collect(toSet());
     }
 
     @Override

@@ -55,23 +55,14 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
             return 0L;
         }
 
-        Set<LabelId> rolePlayerLabelIds = subTypes.stream()
-                .filter(Concept::isRelationType)
-                .map(relationType -> ((RelationType) relationType).relates().collect(toSet()))
-                .filter(roles -> roles.size() == 2)
-                .flatMap(roles -> roles.stream().flatMap(Role::playedByTypes))
-                .map(type -> graph.get().admin().convertToId(type.getLabel()))
-                .filter(LabelId::isValid)
-                .collect(toSet());
+        Set<LabelId> rolePlayerLabelIds = getRolePlayerLabelIds();
 
         Set<LabelId> typeLabelIds = convertLabelsToIds(subLabels);
         rolePlayerLabelIds.addAll(typeLabelIds);
 
-        String randomId = getRandomJobId();
-
         ComputerResult result = getGraphComputer().compute(
-                new CountVertexProgram(randomId),
-                new CountMapReduce(CountVertexProgram.EDGE_COUNT + randomId),
+                new CountVertexProgram(),
+                new CountMapReduce(),
                 rolePlayerLabelIds, false);
 
         Map<Integer, Long> count = result.memory().get(CountMapReduce.class.getName());

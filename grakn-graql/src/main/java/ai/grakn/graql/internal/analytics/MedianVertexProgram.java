@@ -104,7 +104,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     @Override
     public Set<VertexComputeKey> getVertexComputeKeys() {
         return Sets.newHashSet(
-                VertexComputeKey.of(DegreeVertexProgram.DEGREE, true),
+                VertexComputeKey.of(DEGREE, true),
                 VertexComputeKey.of(LABEL, true));
     }
 
