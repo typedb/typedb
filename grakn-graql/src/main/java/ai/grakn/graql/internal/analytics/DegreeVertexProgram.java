@@ -44,27 +44,18 @@ import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
-    // element key
     public static final String DEGREE = "degreeVertexProgram.degree";
     private static final String OF_LABELS = "degreeVertexProgram.ofLabelIds";
 
     Set<LabelId> ofLabelIds = new HashSet<>();
-
-//    String degreePropertyKey;
 
     // Needed internally for OLAP tasks
     public DegreeVertexProgram() {
     }
 
     public DegreeVertexProgram(Set<LabelId> ofLabelIds) {
-//        this(randomId);
         this.ofLabelIds = ofLabelIds;
     }
-
-//    public DegreeVertexProgram(String randomId) {
-//        this.degreePropertyKey = DEGREE + randomId;
-//        this.persistentProperties.put(DEGREE, degreePropertyKey);
-//    }
 
     @Override
     public void storeState(final Configuration configuration) {
@@ -77,7 +68,6 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
         super.loadState(graph, configuration);
         configuration.subset(OF_LABELS).getKeys().forEachRemaining(key ->
                 ofLabelIds.add((LabelId) configuration.getProperty(OF_LABELS + "." + key)));
-//        degreePropertyKey = (String) this.persistentProperties.get(DEGREE);
     }
 
     @Override

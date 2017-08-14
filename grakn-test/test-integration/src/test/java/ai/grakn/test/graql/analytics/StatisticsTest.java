@@ -541,7 +541,10 @@ public class StatisticsTest {
         }
 
         Optional<Number> result;
+
         try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            // No need to test all statistics as most of them share the same vertex program
+
             result = graph.graql().compute().min().of("power").in().execute();
             assertEquals(1L, result.get().longValue());
 
@@ -550,6 +553,9 @@ public class StatisticsTest {
 
             result = graph.graql().compute().sum().of("power").in().execute();
             assertEquals(8L, result.get().longValue());
+
+            result = graph.graql().compute().median().of("power").in().execute();
+            assertEquals(2L, result.get().longValue());
         }
     }
 

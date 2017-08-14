@@ -52,8 +52,6 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
         Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
 
-        String randomId = getRandomJobId();
-
         ComputerResult result = getGraphComputer().compute(
                 new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
                 new MeanMapReduce(statisticsResourceLabelIds, dataType,

@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -46,7 +47,8 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     private final Map<Label, ResourceType.DataType> resourceTypesDataTypeMap = new HashMap<>();
 
     AbstractStatisticsQuery<T> setStatisticsResourceType(String... statisticsResourceTypeLabels) {
-        this.statisticsResourceLabels = Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(Collectors.toSet());
+        this.statisticsResourceLabels =
+                Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(Collectors.toSet());
         return this;
     }
 
@@ -83,14 +85,16 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
             throw GraqlQueryException.statisticsResourceTypesNotSpecified();
         }
 
-        Set<Type> statisticsResourceTypes = statisticsResourceLabels.stream().map((label) -> {
-            Type type = graph.getOntologyConcept(label);
-            if (type == null) throw GraqlQueryException.labelNotFound(label);
-            return type;
-        }).collect(Collectors.toSet());
-        for (Type type : statisticsResourceTypes) {
-            type.subs().forEach(subtype -> this.statisticsResourceLabels.add(subtype.getLabel()));
-        }
+        statisticsResourceLabels = statisticsResourceLabels.stream()
+                .map((label) -> {
+                    Type type = graph.getOntologyConcept(label);
+                    if (type == null) throw GraqlQueryException.labelNotFound(label);
+                    return type;
+                })
+                .flatMap(Type::subs)
+                .map(OntologyConcept::getLabel)
+                .collect(Collectors.toSet());
+
 
         ResourceType<?> metaResourceType = graph.admin().getMetaResourceType();
         metaResourceType.subs()
@@ -129,8 +133,8 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     }
 
     boolean selectedResourceTypesHaveInstance(Set<Label> statisticsResourceTypes) {
-        for (Label resourceType:statisticsResourceTypes){
-            for (Label type:subLabels) {
+        for (Label resourceType : statisticsResourceTypes) {
+            for (Label type : subLabels) {
                 Boolean patternExist = graph.get().graql().infer(false).match(
                         var("x").has(resourceType, var()),
                         var("x").isa(Graql.label(type))
