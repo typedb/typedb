@@ -1,0 +1,36 @@
+#!/bin/bash
+
+if [ -z "${GRAKN_HOME}" ]; then
+    [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
+    GRAKN_BIN=$(cd "$(dirname "${path}")" && pwd -P)
+    GRAKN_HOME=$(cd "${GRAKN_BIN}" && pwd -P)
+fi
+
+case "$1" in
+  migrate)
+    "${GRAKN_HOME}/services/migrate.sh" $@
+    ;;
+
+  help)
+    case "$2" in
+      migrate)
+        echo ""
+        ;;
+
+      *)
+        echo "
+Usage:
+  graql
+  graql <command>
+
+command:
+migrate  start a new grakn server
+help     print this message"
+        ;;
+    esac
+    ;;
+
+  *)
+    "${GRAKN_HOME}/services/graql.sh" $@
+    ;;
+esac
