@@ -22,8 +22,10 @@ import com.ldbc.driver.DbConnectionState;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.control.LoggingService;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery1PersonProfile;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery2PersonPosts;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery4MessageContent;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery5MessageCreator;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery6MessageForum;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageReplies;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate1AddPerson;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate2AddPostLike;
@@ -50,13 +52,12 @@ public class GraknDb extends Db {
     protected void onInit(Map<String, String> properties, LoggingService loggingService) throws DbException {
         connectionState = new GraknDbConnectionState(properties);
 
-        // TODO: disabling a lot because they are slow
         registerOperationHandler(LdbcShortQuery1PersonProfile.class, GraknShortQueryHandlers.LdbcShortQuery1PersonProfileHandler.class);
-//        registerOperationHandler(LdbcShortQuery2PersonPosts.class, GraknShortQueryHandlers.LdbcShortQuery2PersonPostsHandler.class);
+        registerOperationHandler(LdbcShortQuery2PersonPosts.class, GraknShortQueryHandlers.LdbcShortQuery2PersonPostsHandler.class);
 //        registerOperationHandler(LdbcShortQuery3PersonFriends.class, GraknShortQueryHandlers.LdbcShortQuery3PersonFriendsHandler.class);
         registerOperationHandler(LdbcShortQuery4MessageContent.class, GraknShortQueryHandlers.LdbcShortQuery4MessageContentHandler.class);
         registerOperationHandler(LdbcShortQuery5MessageCreator.class, GraknShortQueryHandlers.LdbcShortQuery5MessageCreatorHandler.class);
-//        registerOperationHandler(LdbcShortQuery6MessageForum.class, GraknShortQueryHandlers.LdbcShortQuery6MessageForumHandler.class);
+        registerOperationHandler(LdbcShortQuery6MessageForum.class, GraknShortQueryHandlers.LdbcShortQuery6MessageForumHandler.class);
         registerOperationHandler(LdbcShortQuery7MessageReplies.class, GraknShortQueryHandlers.LdbcShortQuery7MessageRepliesHandler.class);
 
         registerOperationHandler(LdbcUpdate1AddPerson.class, GraknUpdateQueryHandlers.LdbcUpdate1AddPersonHandler.class);
@@ -68,6 +69,7 @@ public class GraknDb extends Db {
         registerOperationHandler(LdbcUpdate7AddComment.class, GraknUpdateQueryHandlers.LdbcUpdate7AddCommentHandler.class);
         registerOperationHandler(LdbcUpdate8AddFriendship.class, GraknUpdateQueryHandlers.LdbcUpdate8AddFriendshipHandler.class);
 
+        // TODO: disabling because they are slow
 //        registerOperationHandler(LdbcQuery1.class, GraknQueryHandlers.LdbcQuery1Handler.class);
 //        registerOperationHandler(LdbcQuery2.class, GraknQueryHandlers.LdbcQuery2Handler.class);
 //        registerOperationHandler(LdbcQuery8.class, GraknQueryHandlers.LdbcQuery8Handler.class);
