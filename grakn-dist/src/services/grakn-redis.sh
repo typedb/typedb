@@ -32,17 +32,17 @@ redisRunning()
 
 executeRedisServer(){
     if [ "$(uname)" == "Darwin" ]; then
-        "${GRAKN_HOME}/services/"redis-server-osx $1
+        "${GRAKN_HOME}/services/redis/"redis-server-osx $1
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-        "${GRAKN_HOME}/services/"redis-server-linux $1
+        "${GRAKN_HOME}/services/redis/"redis-server-linux $1
     fi
 }
 
 executeRedisCli(){
     if [ "$(uname)" == "Darwin" ]; then
-        "${GRAKN_HOME}/services/"redis-cli-osx $1
+        "${GRAKN_HOME}/services/redis/"redis-cli-osx $1
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-        "${GRAKN_HOME}/services/"redis-cli-linux $1
+        "${GRAKN_HOME}/services/redis/"redis-cli-linux $1
     fi
 }
 
@@ -53,7 +53,7 @@ start)
         echo "Redis is already running"
     else
         echo "Starting redis"
-        executeRedisServer "${GRAKN_HOME}/services/redis.conf"
+        executeRedisServer "${GRAKN_HOME}/services/redis/redis.conf"
     fi
     ;;
 stop)
@@ -64,7 +64,7 @@ clean)
     echo "Cleaning redis"
 
     if [ ! $(redisRunning) ] ; then
-        executeRedisServer "${GRAKN_HOME}/services/redis.conf"
+        executeRedisServer "${GRAKN_HOME}/services/redis/redis.conf"
     fi
 
     executeRedisCli flushall
