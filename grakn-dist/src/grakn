@@ -35,13 +35,14 @@ Usage: grakn server (start|stop|status)"
 
       *)
         echo "
-Usage: grakn <command>
+Usage:
+    grakn <command>
 
-command:
+Available commands:
   server  start a new grakn server
   help    print this message
 
-tips:
+Tips:
   Start grakn with 'grakn server start' (by default the dashboard will be on http://localhost:4567)
   You can then perform queries by opening a REPL console with 'graql' (defaults to connecting to a local server)"
         ;;
