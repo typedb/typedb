@@ -19,7 +19,11 @@ case "$1" in
         "${GRAKN_HOME}/services/grakn.sh" status
         ;;
       *)
-        echo "Usage: grakn server (start|stop|status)"
+        echo "
+Starts, stops or monitors grakn running on this machine.
+
+Usage:
+  grakn server (start|stop|status)"
         ;;
     esac
     ;;
@@ -30,7 +34,8 @@ case "$1" in
         echo "
 Starts, stops or monitors grakn running on this machine.
 
-Usage: grakn server (start|stop|status)"
+Usage:
+  grakn server (start|stop|status)"
         ;;
 
       *)
