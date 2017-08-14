@@ -269,7 +269,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return id predicate for the specified var name if any
      */
     @Nullable
-    protected IdPredicate getIdPredicate(Var var) {
+    public IdPredicate getIdPredicate(Var var) {
         return getAtoms(IdPredicate.class)
                 .filter(sub -> sub.getVarName().equals(var))
                 .findFirst().orElse(null);
