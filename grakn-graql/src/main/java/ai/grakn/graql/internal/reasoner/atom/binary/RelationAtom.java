@@ -53,6 +53,7 @@ import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.stream.Stream;
@@ -94,10 +95,12 @@ public class RelationAtom extends IsaAtom {
     private int hashCode = 0;
     private Multimap<Role, Var> roleVarMap = null;
     private Multimap<Role, String> roleConceptIdMap = null;
-    private List<RelationPlayer> relationPlayers = null;
+    private final ImmutableList<RelationPlayer> relationPlayers;
 
     public RelationAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate predicate, ReasonerQuery par) {
-        super(pattern, predicateVar, predicate, par);}
+        super(pattern, predicateVar, predicate, par);
+        this.relationPlayers = ImmutableList.copyOf(getRelationPlayers());
+    }
 
     private RelationAtom(RelationAtom a) {
         super(a);
@@ -114,14 +117,11 @@ public class RelationAtom extends IsaAtom {
     }
 
     private List<RelationPlayer> getRelationPlayers() {
-        if (relationPlayers == null) {
-            relationPlayers = new ArrayList<>();
-            getPattern().asVar()
-                    .getProperty(RelationProperty.class)
-                    .ifPresent(prop -> prop.getRelationPlayers()
-                            .forEach(relationPlayers::add));
-        }
-        return relationPlayers;
+        List<RelationPlayer> rps = new ArrayList<>();
+        getPattern().asVar()
+                .getProperty(RelationProperty.class)
+                .ifPresent(prop -> prop.getRelationPlayers().forEach(rps::add));
+        return rps;
     }
 
     @Override

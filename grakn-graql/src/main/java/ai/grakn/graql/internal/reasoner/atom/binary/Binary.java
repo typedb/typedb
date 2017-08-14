@@ -54,10 +54,10 @@ import java.util.Set;
  *
  */
 public abstract class Binary extends Atom {
+    private final @Nullable IdPredicate predicate;
     private final Var predicateVariable;
     private Type type = null;
     private ConceptId typeId = null;
-    private @Nullable IdPredicate predicate = null;
 
     Binary(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
         super(pattern, par);

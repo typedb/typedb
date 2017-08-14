@@ -162,6 +162,7 @@ public abstract class Atom extends AtomicBase {
             applicableRules = getPotentialRules().stream()
                     .map(rule -> new InferenceRule(rule, graph()))
                     .filter(this::isRuleApplicable)
+                    .map(r -> r.rewriteToUserDefined(this))
                     .collect(Collectors.toSet());
         }
         return applicableRules;
