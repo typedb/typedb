@@ -32,14 +32,14 @@ import java.util.Properties;
  *
  * <p>
  *     This produces an in memory grakn graph on top of {@link TinkerGraph}.
- *     The base construction process defined by {@link AbstractInternalFactory} ensures the graph factories are singletons.
+ *     The base construction process defined by {@link TxFactoryAbstract} ensures the graph factories are singletons.
  * </p>
  *
  * @author fppt
  */
-public class TinkerInternalFactory extends AbstractInternalFactory<GraknTxTinker, TinkerGraph> {
+public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGraph> {
 
-    TinkerInternalFactory(String keyspace, String engineUrl, Properties properties){
+    TxFactoryTinker(String keyspace, String engineUrl, Properties properties){
         super(keyspace, engineUrl, properties);
     }
 

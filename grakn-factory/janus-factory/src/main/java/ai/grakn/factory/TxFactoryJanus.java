@@ -58,18 +58,18 @@ import static java.util.Arrays.stream;
  *
  * <p>
  *     This produces a grakn graph on top of {@link JanusGraph}.
- *     The base construction process defined by {@link AbstractInternalFactory} ensures the graph factories are singletons.
+ *     The base construction process defined by {@link TxFactoryAbstract} ensures the graph factories are singletons.
  * </p>
  *
  * @author fppt
  */
-final public class JanusInternalFactory extends AbstractInternalFactory<GraknTxJanus, JanusGraph> {
-    private final static Logger LOG = LoggerFactory.getLogger(JanusInternalFactory.class);
+final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusGraph> {
+    private final static Logger LOG = LoggerFactory.getLogger(TxFactoryJanus.class);
     private final static String DEFAULT_CONFIG = "backend-default";
 
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
 
-    JanusInternalFactory(String keyspace, String engineUrl, Properties properties) {
+    TxFactoryJanus(String keyspace, String engineUrl, Properties properties) {
         super(keyspace, engineUrl, properties);
     }
 

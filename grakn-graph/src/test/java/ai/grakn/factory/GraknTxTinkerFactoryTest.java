@@ -45,7 +45,7 @@ import static org.junit.Assert.assertThat;
 public class GraknTxTinkerFactoryTest {
     private final static String TEST_CONFIG = "../conf/test/tinker/grakn.properties";
     private final static Properties TEST_PROPERTIES = new Properties();
-    private InternalFactory tinkerGraphFactory;
+    private TxFactory tinkerGraphFactory;
 
     @BeforeClass
     public static void setupProperties(){
@@ -61,7 +61,7 @@ public class GraknTxTinkerFactoryTest {
 
     @Before
     public void setupTinkerGraphFactory(){
-        tinkerGraphFactory = new TinkerInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        tinkerGraphFactory = new TxFactoryTinker("test", Grakn.IN_MEMORY, TEST_PROPERTIES);
     }
 
     @Test
@@ -99,12 +99,12 @@ public class GraknTxTinkerFactoryTest {
     @Test
     public void whenCreatingFactoryWithNullKeyspace_Throw(){
         expectedException.expect(NullPointerException.class);
-        tinkerGraphFactory = new TinkerInternalFactory(null, null, null);
+        tinkerGraphFactory = new TxFactoryTinker(null, null, null);
     }
 
     @Test
     public void whenGettingGraphFromFactoryWithAlreadyOpenGraph_Throw(){
-        TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TxFactoryTinker factory = new TxFactoryTinker("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES);
         factory.open(GraknTxType.WRITE);
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(TRANSACTION_ALREADY_OPEN.getMessage("mytest"));
@@ -113,7 +113,7 @@ public class GraknTxTinkerFactoryTest {
 
     @Test
     public void whenGettingGraphFromFactoryClosingItAndGettingItAgain_ReturnGraph(){
-        TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TxFactoryTinker factory = new TxFactoryTinker("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknTx graph1 = factory.open(GraknTxType.WRITE);
         graph1.close();
         GraknTxTinker graph2 = factory.open(GraknTxType.WRITE);

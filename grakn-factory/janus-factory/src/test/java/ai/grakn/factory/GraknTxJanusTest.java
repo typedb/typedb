@@ -113,8 +113,8 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     @Test
     public void whenCreatingGraphsWithDifferentKeyspace_EnsureCaseIsIgnored(){
-        JanusInternalFactory factory1 =  new JanusInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        JanusInternalFactory factory2 = new JanusInternalFactory("Case", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TxFactoryJanus factory1 =  new TxFactoryJanus("case", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TxFactoryJanus factory2 = new TxFactoryJanus("Case", Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknTxJanus case1 = factory1.open(GraknTxType.WRITE);
         GraknTxJanus case2 = factory2.open(GraknTxType.WRITE);
 
@@ -123,7 +123,7 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     @Test
     public void whenClosingTheGraph_EnsureTheTransactionIsClosed(){
-        GraknTxJanus graph = new JanusInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        GraknTxJanus graph = new TxFactoryJanus("test", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
 
         String entityTypeLabel = "Hello";
 
@@ -141,7 +141,7 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     @Test
     public void whenCreatingDateResource_EnsureDateCanBeRetrieved(){
-        GraknTxJanus graph = new JanusInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        GraknTxJanus graph = new TxFactoryJanus("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
         ResourceType<LocalDateTime> dateType = graph.putResourceType("date", ResourceType.DataType.DATE);
         LocalDateTime now = LocalDateTime.now();
         Resource<LocalDateTime> date = dateType.putResource(now);
@@ -165,7 +165,7 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     @Test //This test is performed here because it depends on actual transaction behaviour which tinker does not exhibit
     public void whenClosingTransaction_EnsureConceptTransactionCachesAreCleared(){
-        JanusInternalFactory factory = newFactory();
+        TxFactoryJanus factory = newFactory();
         GraknTx graph = factory.open(GraknTxType.WRITE);
 
         EntityType entityType = graph.admin().getMetaEntityType();
@@ -182,7 +182,7 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     @Test
     public void whenCommitting_EnsureGraphTransactionIsClosed() throws Exception {
-        JanusInternalFactory factory = newFactory();
+        TxFactoryJanus factory = newFactory();
         GraknTx graph = factory.open(GraknTxType.WRITE);
         graph.putEntityType("thingy");
         graph.commit();
@@ -198,7 +198,7 @@ public class GraknTxJanusTest extends JanusTestBase {
         assertTrue(graph.isClosed());
     }
 
-    private void addThingToBatch(JanusInternalFactory factory){
+    private void addThingToBatch(TxFactoryJanus factory){
         try(GraknTx graphBatchLoading = factory.open(GraknTxType.WRITE)) {
             graphBatchLoading.getEntityType("thingy").addEntity();
             graphBatchLoading.commit();
@@ -209,7 +209,7 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     @Test
     public void checkNumberOfOpenTransactionsChangesAsExpected() throws ExecutionException, InterruptedException {
-        JanusInternalFactory factory = newFactory();
+        TxFactoryJanus factory = newFactory();
         GraknTx graph = factory.open(GraknTxType.WRITE);
         graph.close();
         GraknTx batchGraph = factory.open(GraknTxType.BATCH);
@@ -231,7 +231,7 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     @Test
     public void afterCommitting_NumberOfOpenTransactionsDecrementsOnce() {
-        JanusInternalFactory factory = newFactory();
+        TxFactoryJanus factory = newFactory();
         GraknTx graph = factory.open(GraknTxType.READ);
         assertEquals(1, openTransactions(graph));
         graph.commit();
@@ -245,7 +245,7 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     @Test
     public void whenAddingEntitiesToAbstractTypeCreatedInDifferentTransaction_Throw(){
-        JanusInternalFactory factory = newFactory();
+        TxFactoryJanus factory = newFactory();
 
         String label = "An Abstract thingy";
 

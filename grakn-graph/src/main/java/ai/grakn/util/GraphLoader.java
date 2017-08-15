@@ -25,7 +25,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.factory.FactoryBuilder;
-import ai.grakn.factory.InternalFactory;
+import ai.grakn.factory.TxFactory;
 import ai.grakn.graph.internal.GraknTxTinker;
 import ai.grakn.graql.Query;
 import com.google.common.base.StandardSystemProperty;
@@ -61,7 +61,7 @@ public class GraphLoader {
     private static final AtomicBoolean propertiesLoaded = new AtomicBoolean(false);
     private static Properties graphConfig;
 
-    private final InternalFactory<?> factory;
+    private final TxFactory<?> factory;
     private @Nullable Consumer<GraknTx> preLoad;
     private boolean graphLoaded = false;
     private GraknTx graph;

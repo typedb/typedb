@@ -49,7 +49,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class JanusInternalFactoryTest extends JanusTestBase {
+public class TxFactoryJanusTest extends JanusTestBase {
     private static JanusGraph sharedGraph;
 
     @BeforeClass
@@ -95,7 +95,7 @@ public class JanusInternalFactoryTest extends JanusTestBase {
 
     @Test
     public void testSingleton(){
-        JanusInternalFactory factory = new JanusInternalFactory("anothertest", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TxFactoryJanus factory = new TxFactoryJanus("anothertest", Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknTxJanus mg1 = factory.open(GraknTxType.BATCH);
         JanusGraph tinkerGraphMg1 = mg1.getTinkerPopGraph();
         mg1.close();
@@ -139,7 +139,7 @@ public class JanusInternalFactoryTest extends JanusTestBase {
     public void testMultithreadedRetrievalOfGraphs(){
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
-        JanusInternalFactory factory = new JanusInternalFactory("simplekeyspace", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TxFactoryJanus factory = new TxFactoryJanus("simplekeyspace", Grakn.IN_MEMORY, TEST_PROPERTIES);
 
         for(int i = 0; i < 200; i ++) {
             futures.add(pool.submit(() -> {
@@ -172,7 +172,7 @@ public class JanusInternalFactoryTest extends JanusTestBase {
 
     @Test
     public void testGraphNotClosed() throws InvalidGraphException {
-        JanusInternalFactory factory = new JanusInternalFactory("stuff", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        TxFactoryJanus factory = new TxFactoryJanus("stuff", Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknTxJanus graph = factory.open(GraknTxType.WRITE);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
@@ -186,7 +186,7 @@ public class JanusInternalFactoryTest extends JanusTestBase {
 
     private static JanusGraph getGraph() {
         String name = UUID.randomUUID().toString().replaceAll("-", "");
-        janusGraphFactory = new JanusInternalFactory(name, Grakn.IN_MEMORY, TEST_PROPERTIES);
+        janusGraphFactory = new TxFactoryJanus(name, Grakn.IN_MEMORY, TEST_PROPERTIES);
         Graph graph = janusGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph();
         assertThat(graph, instanceOf(JanusGraph.class));
         return (JanusGraph) graph;

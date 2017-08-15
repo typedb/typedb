@@ -29,13 +29,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p>
- *     Builds a Grakn Graph {@link InternalFactory}
+ *     Builds a Grakn Graph {@link TxFactory}
  * </p>
  *
  * <p>
  *     Builds a Grakn Graph Factory which is locked to a specific keyspace and engine URL.
  *     This uses refection in order to dynamically build any vendor specific factory which implements the
- *     {@link InternalFactory} API.
+ *     {@link TxFactory} API.
  *
  *     The factories in this class are treated as singletons.
  * </p>
@@ -44,13 +44,13 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FactoryBuilder {
     public static final String FACTORY_TYPE = "factory.internal";
-    private static final Map<String, InternalFactory<?>> openFactories = new ConcurrentHashMap<>();
+    private static final Map<String, TxFactory<?>> openFactories = new ConcurrentHashMap<>();
 
     private FactoryBuilder(){
         throw new UnsupportedOperationException();
     }
 
-    public static InternalFactory<?> getFactory(String keyspace, String engineUrl, Properties properties){
+    public static TxFactory<?> getFactory(String keyspace, String engineUrl, Properties properties){
         try{
             String factoryType = properties.get(FACTORY_TYPE).toString();
             return getFactory(factoryType, keyspace, engineUrl, properties);
@@ -62,13 +62,13 @@ public class FactoryBuilder {
     /**
      *
      * @param factoryType The string defining which factory should be used for creating the grakn graph.
-     *                    A valid example includes: ai.grakn.factory.TinkerInternalFactory
+     *                    A valid example includes: ai.grakn.factory.TxFactoryTinker
      * @return A graph factory which produces the relevant expected graph.
     */
-    static InternalFactory<?> getFactory(String factoryType, String keyspace, String engineUrl, Properties properties){
+    static TxFactory<?> getFactory(String factoryType, String keyspace, String engineUrl, Properties properties){
         String key = factoryType + keyspace.toLowerCase();
         Log.debug("Get factory for " + key);
-        InternalFactory<?> factory = openFactories.get(key);
+        TxFactory<?> factory = openFactories.get(key);
         if (factory != null) {
             return factory;
         }
@@ -79,24 +79,24 @@ public class FactoryBuilder {
     /**
      *
      * @param key A unique string identifying this factory
-     * @param factoryType The type of the factory to initialise. Any factory which implements {@link InternalFactory}
+     * @param factoryType The type of the factory to initialise. Any factory which implements {@link TxFactory}
      * @param keyspace The keyspace of the graph
      * @param engineUrl The location of the running engine instance
      * @param properties Additional properties to apply to the graph
      * @return A new factory bound to a specific keyspace
      */
-    private static synchronized InternalFactory<?> newFactory(String key, String factoryType, String keyspace, String engineUrl, Properties properties){
-        InternalFactory<?> internalFactory;
+    private static synchronized TxFactory<?> newFactory(String key, String factoryType, String keyspace, String engineUrl, Properties properties){
+        TxFactory<?> txFactory;
         try {
-            internalFactory = (InternalFactory<?>) Class.forName(factoryType)
+            txFactory = (TxFactory<?>) Class.forName(factoryType)
                     .getDeclaredConstructor(String.class, String.class, Properties.class)
                     .newInstance(keyspace, engineUrl, properties);
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);
         }
-        openFactories.put(key, internalFactory);
-        Log.debug("New factory created " + internalFactory);
-        return internalFactory;
+        openFactories.put(key, txFactory);
+        Log.debug("New factory created " + txFactory);
+        return txFactory;
     }
 
     /**
