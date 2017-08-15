@@ -98,13 +98,13 @@ public class SystemKeyspace {
          }
 
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-            ResourceType<String> keyspaceName = graph.getOntologyConcept(KEYSPACE_RESOURCE);
+            ResourceType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
             if (keyspaceName == null) {
                 throw GraknBackendException.initializationException(keyspace);
             }
             Resource<String> resource = keyspaceName.putResource(keyspace);
             if (resource.owner() == null) {
-                graph.<EntityType>getOntologyConcept(KEYSPACE_ENTITY).addEntity().resource(resource);
+                graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).addEntity().resource(resource);
             }
             graph.admin().commitNoLogs();
         } catch (InvalidGraphException e) {
@@ -139,7 +139,7 @@ public class SystemKeyspace {
         }
 
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-            ResourceType<String> keyspaceName = graph.getOntologyConcept(KEYSPACE_RESOURCE);
+            ResourceType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
             Resource<String> resource = keyspaceName.getResource(keyspace);
 
             if(resource == null) return false;
@@ -163,7 +163,7 @@ public class SystemKeyspace {
     public void loadSystemOntology() {
         Stopwatch timer = Stopwatch.createStarted();
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-            if (graph.getOntologyConcept(KEYSPACE_ENTITY) != null) {
+            if (graph.getSchemaConcept(KEYSPACE_ENTITY) != null) {
                 checkVersion(graph);
                 return;
             }

@@ -101,7 +101,7 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
     @Override
     public void delete(GraknGraph graph, Concept concept) {
         Label roleLabel = role().getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
-        concept.asType().deletePlays(graph.getOntologyConcept(roleLabel));
+        concept.asType().deletePlays(graph.getSchemaConcept(roleLabel));
     }
 
     @Override

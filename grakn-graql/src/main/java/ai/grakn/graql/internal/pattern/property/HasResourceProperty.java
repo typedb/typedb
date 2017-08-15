@@ -21,10 +21,10 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
@@ -121,7 +121,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
     @Override
     void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
-        OntologyConcept ontologyConcept = graph.getOntologyConcept(type());
+        SchemaConcept ontologyConcept = graph.getSchemaConcept(type());
         if(ontologyConcept == null || !ontologyConcept.isResourceType()) {
             throw GraqlQueryException.mustBeResourceType(type());
         }
@@ -144,8 +144,8 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         Optional<ValuePredicateAdmin> predicate =
                 resource().getProperties(ValueProperty.class).map(ValueProperty::predicate).findAny();
 
-        Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(type()));
-        Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(type()));
+        Role owner = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(type()));
+        Role value = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(type()));
 
         concept.asThing().relations(owner)
                 .filter(relation -> testPredicate(predicate, relation, value))

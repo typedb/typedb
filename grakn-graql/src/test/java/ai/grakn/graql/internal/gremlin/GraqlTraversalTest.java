@@ -102,7 +102,7 @@ public class GraqlTraversalTest {
         when(wife.subs()).thenAnswer(inv -> Stream.of(wife));
         when(wife.getLabel()).thenReturn(wifeLabel);
 
-        when(graph.getOntologyConcept(wifeLabel)).thenReturn(wife);
+        when(graph.getSchemaConcept(wifeLabel)).thenReturn(wife);
 
         Label marriageLabel = Label.of("marriage");
         RelationshipType marriage = mock(RelationshipType.class);
@@ -111,7 +111,7 @@ public class GraqlTraversalTest {
         when(marriage.subs()).thenAnswer(inv -> Stream.of(marriage));
         when(marriage.getLabel()).thenReturn(marriageLabel);
 
-        when(graph.getOntologyConcept(marriageLabel)).thenReturn(marriage);
+        when(graph.getSchemaConcept(marriageLabel)).thenReturn(marriage);
     }
 
     @Test

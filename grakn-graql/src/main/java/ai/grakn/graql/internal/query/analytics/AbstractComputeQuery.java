@@ -140,7 +140,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
         } else {
             subTypes = subLabels.stream().map(label -> {
-                Type type = graph.getOntologyConcept(label);
+                Type type = graph.getSchemaConcept(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
                 return type;
             }).collect(Collectors.toSet());

@@ -60,7 +60,7 @@ public class EntityTypePropertyTest {
 
         type.delete();
 
-        assertNull(graph.getOntologyConcept(type.getLabel()));
+        assertNull(graph.getSchemaConcept(type.getLabel()));
     }
 
     @Property

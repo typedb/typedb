@@ -421,7 +421,7 @@ class ValidateGlobalRules {
         pattern.admin().getVars().stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
-                    SchemaConcept schemaConcept = graph.getOntologyConcept(typeLabel);
+                    SchemaConcept schemaConcept = graph.getSchemaConcept(typeLabel);
                     if(schemaConcept == null){
                         errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
                     } else {

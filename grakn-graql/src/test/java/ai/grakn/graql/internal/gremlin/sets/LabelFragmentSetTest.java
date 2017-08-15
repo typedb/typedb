@@ -54,8 +54,8 @@ public class LabelFragmentSetTest {
     public void setUp() {
         graph = mock(GraknGraph.class);
 
-        when(graph.getOntologyConcept(EXISTING_LABEL)).thenReturn(mock(Type.class));
-        when(graph.getOntologyConcept(NON_EXISTENT_LABEL)).thenReturn(null);
+        when(graph.getSchemaConcept(EXISTING_LABEL)).thenReturn(mock(Type.class));
+        when(graph.getSchemaConcept(NON_EXISTENT_LABEL)).thenReturn(null);
     }
 
     @Test

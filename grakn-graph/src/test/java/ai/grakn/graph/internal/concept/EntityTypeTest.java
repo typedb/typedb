@@ -274,13 +274,13 @@ public class EntityTypeTest extends GraphTestBase {
                 containsInAnyOrder(graknGraph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
 
         //Check Implicit Types Follow SUB Structure
-        RelationshipType rtSuperRelation = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(rtSuper.getLabel()));
-        Role rtSuperRoleOwner = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rtSuper.getLabel()));
-        Role rtSuperRoleValue = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rtSuper.getLabel()));
+        RelationshipType rtSuperRelation = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(rtSuper.getLabel()));
+        Role rtSuperRoleOwner = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rtSuper.getLabel()));
+        Role rtSuperRoleValue = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rtSuper.getLabel()));
 
-        RelationshipType rtRelation = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(rt.getLabel()));
-        Role reRoleOwner = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rt.getLabel()));
-        Role reRoleValue = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rt.getLabel()));
+        RelationshipType rtRelation = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(rt.getLabel()));
+        Role reRoleOwner = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rt.getLabel()));
+        Role reRoleValue = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rt.getLabel()));
 
         assertEquals(rtSuperRoleOwner, reRoleOwner.sup());
         assertEquals(rtSuperRoleValue, reRoleValue.sup());

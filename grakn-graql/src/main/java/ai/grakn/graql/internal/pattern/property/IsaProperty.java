@@ -110,7 +110,7 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
     @Override
     public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
         type().getTypeLabel().ifPresent(typeLabel -> {
-            SchemaConcept theSchemaConcept = graph.getOntologyConcept(typeLabel);
+            SchemaConcept theSchemaConcept = graph.getSchemaConcept(typeLabel);
             if (theSchemaConcept != null && theSchemaConcept.isRole()) {
                 throw GraqlQueryException.queryInstanceOfRoleType(typeLabel);
             }

@@ -615,7 +615,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public <T extends SchemaConcept> T getOntologyConcept(Label label) {
+    public <T extends SchemaConcept> T getSchemaConcept(Label label) {
         return getOntologyConcept(label, Schema.BaseType.ONTOLOGY_ELEMENT);
     }
 

@@ -73,7 +73,7 @@ public abstract class AbstractOntologyConceptGenerator<T extends SchemaConcept> 
 
         if (ontologyConcepts.isEmpty() && includeNonMeta()) {
             Label label = genFromGraph(Labels.class).mustBeUnused().generate(random, status);
-            assert graph().getOntologyConcept(label) == null;
+            assert graph().getSchemaConcept(label) == null;
             return newOntologyConcept(label);
         } else {
             return random.choose(ontologyConcepts);

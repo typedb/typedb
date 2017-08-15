@@ -660,7 +660,7 @@ public class MatchQueryTest {
             Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get("x").collect(Collectors.toSet());
             Collection<Role> graphAPIPlays;
 
-            SchemaConcept schemaConcept = graph.getOntologyConcept(type);
+            SchemaConcept schemaConcept = graph.getSchemaConcept(type);
             if (schemaConcept.isType()) {
                 graphAPIPlays = schemaConcept.asType().plays().collect(toSet());
             } else {
@@ -672,7 +672,7 @@ public class MatchQueryTest {
 
         Stream.of(d, e, f).forEach(type -> {
             Set<Concept> graqlPlayedBy = qb.match(x.plays(Graql.label(type))).get("x").collect(toSet());
-            Collection<Type> graphAPIPlayedBy = graph.<Role>getOntologyConcept(type).playedByTypes().collect(toSet());
+            Collection<Type> graphAPIPlayedBy = graph.<Role>getSchemaConcept(type).playedByTypes().collect(toSet());
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });

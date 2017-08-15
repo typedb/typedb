@@ -101,7 +101,7 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     @Override
     public void delete(GraknGraph graph, Concept concept) {
         Label roleLabel = role().getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
-        concept.asRelationType().deleteRelates(graph.getOntologyConcept(roleLabel));
+        concept.asRelationType().deleteRelates(graph.getSchemaConcept(roleLabel));
     }
 
     @Override

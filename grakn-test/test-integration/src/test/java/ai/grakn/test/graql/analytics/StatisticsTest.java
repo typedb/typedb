@@ -633,21 +633,21 @@ public class StatisticsTest {
             Entity entity3 = graph.getConcept(entityId3);
             Entity entity4 = graph.getConcept(entityId4);
 
-            Role resourceOwner1 = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType1)));
-            Role resourceOwner2 = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType2)));
-            Role resourceOwner3 = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType3)));
-            Role resourceOwner4 = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType4)));
-            Role resourceOwner5 = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType5)));
-            Role resourceOwner6 = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType6)));
+            Role resourceOwner1 = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType1)));
+            Role resourceOwner2 = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType2)));
+            Role resourceOwner3 = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType3)));
+            Role resourceOwner4 = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType4)));
+            Role resourceOwner5 = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType5)));
+            Role resourceOwner6 = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType6)));
 
-            Role resourceValue1 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType1)));
-            Role resourceValue2 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType2)));
-            Role resourceValue3 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType3)));
-            Role resourceValue4 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType4)));
-            Role resourceValue5 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType5)));
-            Role resourceValue6 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
+            Role resourceValue1 = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType1)));
+            Role resourceValue2 = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType2)));
+            Role resourceValue3 = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType3)));
+            Role resourceValue4 = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType4)));
+            Role resourceValue5 = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType5)));
+            Role resourceValue6 = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
 
-            RelationshipType relationshipType1 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)));
+            RelationshipType relationshipType1 = graph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)));
             relationshipType1.addRelation()
                     .addRolePlayer(resourceOwner1, entity1)
                     .addRolePlayer(resourceValue1, graph.<Double>getResourceType(resourceType1).putResource(1.2));
@@ -658,7 +658,7 @@ public class StatisticsTest {
                     .addRolePlayer(resourceOwner1, entity3)
                     .addRolePlayer(resourceValue1, graph.<Double>getResourceType(resourceType1).putResource(1.8));
 
-            RelationshipType relationshipType2 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)));
+            RelationshipType relationshipType2 = graph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)));
             relationshipType2.addRelation()
                     .addRolePlayer(resourceOwner2, entity1)
                     .addRolePlayer(resourceValue2, graph.<Long>getResourceType(resourceType2).putResource(4L));
@@ -671,7 +671,7 @@ public class StatisticsTest {
 
             graph.<Long>getResourceType(resourceType3).putResource(100L);
 
-            RelationshipType relationshipType5 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)));
+            RelationshipType relationshipType5 = graph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)));
             relationshipType5.addRelation()
                     .addRolePlayer(resourceOwner5, entity1)
                     .addRolePlayer(resourceValue5, graph.<Long>getResourceType(resourceType5).putResource(-7L));
@@ -682,7 +682,7 @@ public class StatisticsTest {
                     .addRolePlayer(resourceOwner5, entity4)
                     .addRolePlayer(resourceValue5, graph.<Long>getResourceType(resourceType5).putResource(-7L));
 
-            RelationshipType relationshipType6 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)));
+            RelationshipType relationshipType6 = graph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)));
             relationshipType6.addRelation()
                     .addRolePlayer(resourceOwner6, entity1)
                     .addRolePlayer(resourceValue6, graph.<Double>getResourceType(resourceType6).putResource(7.5));

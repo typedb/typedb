@@ -107,10 +107,10 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
             if (roleLabel.label().equals(Schema.MetaSchema.ROLE.getLabel())) {
                 newShortcut = shortcut.removeRoleVar();
             } else {
-                OntologyConcept ontologyConcept = graph.getOntologyConcept(roleLabel.label());
+                SchemaConcept schemaConcept = graph.getSchemaConcept(roleLabel.label());
 
-                if (ontologyConcept != null && ontologyConcept.isRole()) {
-                    Role role = ontologyConcept.asRole();
+                if (schemaConcept != null && schemaConcept.isRole()) {
+                    Role role = schemaConcept.asRole();
                     newShortcut = shortcut.substituteRoleTypeLabel(role);
                 }
             }
@@ -162,10 +162,10 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
             if (relationLabel == null) continue;
 
-            OntologyConcept ontologyConcept = graph.getOntologyConcept(relationLabel.label());
+            SchemaConcept schemaConcept = graph.getSchemaConcept(relationLabel.label());
 
-            if (ontologyConcept != null && ontologyConcept.isRelationType()) {
-                RelationshipType relationshipType = ontologyConcept.asRelationType();
+            if (schemaConcept != null && schemaConcept.isRelationType()) {
+                RelationshipType relationshipType = schemaConcept.asRelationType();
 
                 fragmentSets.remove(shortcut);
                 fragmentSets.add(shortcut.addRelationTypeLabel(relationshipType));

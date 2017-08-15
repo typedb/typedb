@@ -91,7 +91,7 @@ public class SchemaConceptPropertyTest {
     public void whenCallingGetLabel_TheResultCanBeUsedToRetrieveTheSameConcept(
             @Open GraknGraph graph, @FromGraph SchemaConcept concept) {
         Label label = concept.getLabel();
-        assertEquals(concept, graph.getOntologyConcept(label));
+        assertEquals(concept, graph.getSchemaConcept(label));
     }
 
     @Property

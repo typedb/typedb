@@ -254,9 +254,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
 
         Label label = resource.type().getLabel();
-        RelationshipType hasResource = vertex().graph().getOntologyConcept(has.getLabel(label));
-        Role hasResourceOwner = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
-        Role hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
+        RelationshipType hasResource = vertex().graph().getSchemaConcept(has.getLabel(label));
+        Role hasResourceOwner = vertex().graph().getSchemaConcept(hasOwner.getLabel(label));
+        Role hasResourceValue = vertex().graph().getSchemaConcept(hasValue.getLabel(label));
 
         if(hasResource == null || hasResourceOwner == null || hasResourceValue == null || type().plays().noneMatch(play -> play.equals(hasResourceOwner))){
             throw GraphOperationException.hasNotAllowed(this, resource);

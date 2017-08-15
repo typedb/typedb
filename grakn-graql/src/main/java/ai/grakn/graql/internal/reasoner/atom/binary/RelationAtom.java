@@ -334,7 +334,7 @@ public class RelationAtom extends IsaAtom {
         roleVars.stream()
                 .map(VarPatternAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(graph::<Role>getOntologyConcept)
+                .map(graph::<Role>getSchemaConcept)
                 .forEach(roles::add);
 
         //try indirectly
@@ -670,7 +670,7 @@ public class RelationAtom extends IsaAtom {
                     Label parentRoleLabel = parentRoleTypeVar.getTypeLabel().orElse(null);
 
                     //TODO take into account indirect roles
-                    Role parentRole = parentRoleLabel != null ? graph().getOntologyConcept(parentRoleLabel) : null;
+                    Role parentRole = parentRoleLabel != null ? graph().getSchemaConcept(parentRoleLabel) : null;
 
                     if (parentRole != null) {
                         boolean isMetaRole = Schema.MetaSchema.isMetaLabel(parentRole.getLabel());

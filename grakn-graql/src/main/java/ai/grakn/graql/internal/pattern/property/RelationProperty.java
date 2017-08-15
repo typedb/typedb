@@ -155,16 +155,16 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
                 var.getProperty(IsaProperty.class).map(IsaProperty::type).flatMap(VarPatternAdmin::getTypeLabel);
 
         maybeLabel.ifPresent(label -> {
-            OntologyConcept ontologyConcept = graph.getOntologyConcept(label);
+            SchemaConcept schemaConcept = graph.getSchemaConcept(label);
 
-            if (ontologyConcept == null || !ontologyConcept.isRelationType()) {
+            if (schemaConcept == null || !schemaConcept.isRelationType()) {
                 throw GraqlQueryException.notARelationType(label);
             }
         });
 
         // Check all role types exist
         roleTypes.forEach(roleId -> {
-            SchemaConcept schemaConcept = graph.getOntologyConcept(roleId);
+            SchemaConcept schemaConcept = graph.getSchemaConcept(roleId);
             if (schemaConcept == null || !schemaConcept.isRole()) {
                 throw GraqlQueryException.notARoleType(roleId);
             }
@@ -235,7 +235,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
             VarPatternAdmin isaVar = isaProp.type();
             Label label = isaVar.getTypeLabel().orElse(null);
             if (label != null) {
-                VarPatternAdmin idVar = typeVariable.id(parent.graph().getOntologyConcept(label).getId()).admin();
+                VarPatternAdmin idVar = typeVariable.id(parent.graph().getSchemaConcept(label).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
             } else {
                 typeVariable = isaVar.getVarName();

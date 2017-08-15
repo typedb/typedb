@@ -183,7 +183,7 @@ public class ConceptBuilder {
         if (has(ID)) {
             concept = executor.graph().getConcept(use(ID));
         } else if (has(LABEL)) {
-            concept = executor.graph().getOntologyConcept(use(LABEL));
+            concept = executor.graph().getSchemaConcept(use(LABEL));
         }
 
         if (concept != null) {

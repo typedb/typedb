@@ -215,7 +215,7 @@ public interface GraknGraph extends AutoCloseable{
      */
     @CheckReturnValue
     @Nullable
-    <T extends SchemaConcept> T getOntologyConcept(Label label);
+    <T extends SchemaConcept> T getSchemaConcept(Label label);
 
     /**
      * Get the {@link Type} with the label provided, if it exists.

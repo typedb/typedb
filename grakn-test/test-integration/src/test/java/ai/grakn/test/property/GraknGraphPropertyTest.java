@@ -134,7 +134,7 @@ public class GraknGraphPropertyTest {
     public void whenCallingGetOntologyConceptWithAnExistingLabel_ItReturnsThatConcept(
             @Open GraknGraph graph, @FromGraph SchemaConcept concept) {
         Label label = concept.getLabel();
-        assertEquals(concept, graph.getOntologyConcept(label));
+        assertEquals(concept, graph.getSchemaConcept(label));
     }
 
     @Property
@@ -143,7 +143,7 @@ public class GraknGraphPropertyTest {
         Set<Label> allTypes = allOntologyElementsFrom(graph).stream().map(SchemaConcept::getLabel).collect(toSet());
         assumeThat(allTypes, not(hasItem(label)));
 
-        assertNull(graph.getOntologyConcept(label));
+        assertNull(graph.getSchemaConcept(label));
     }
 
     @Property
@@ -156,7 +156,7 @@ public class GraknGraphPropertyTest {
 
         // We have to assign the result for the cast to happen
         //noinspection unused
-        Role role = graph.getOntologyConcept(label);
+        Role role = graph.getSchemaConcept(label);
     }
 
     @Property
@@ -211,35 +211,35 @@ public class GraknGraphPropertyTest {
     public void whenCallingGetEntityType_TheResultIsTheSameAsGetOntologyConcept(
             @Open GraknGraph graph, @FromGraph EntityType type) {
         Label label = type.getLabel();
-        assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getEntityType(label.getValue()));
+        assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getEntityType(label.getValue()));
     }
 
     @Property
     public void whenCallingGetRelationType_TheResultIsTheSameAsGetOntologyConcept(
             @Open GraknGraph graph, @FromGraph RelationshipType type) {
         Label label = type.getLabel();
-        assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getRelationType(label.getValue()));
+        assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRelationType(label.getValue()));
     }
 
     @Property
     public void whenCallingGetResourceType_TheResultIsTheSameAsGetOntologyConcept(
             @Open GraknGraph graph, @FromGraph ResourceType type) {
         Label label = type.getLabel();
-        assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getResourceType(label.getValue()));
+        assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getResourceType(label.getValue()));
     }
 
     @Property
     public void whenCallingGetRole_TheResultIsTheSameAsGetOntologyConcept(
             @Open GraknGraph graph, @FromGraph Role role) {
         Label label = role.getLabel();
-        assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getRole(label.getValue()));
+        assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRole(label.getValue()));
     }
 
     @Property
     public void whenCallingGetRuleType_TheResultIsTheSameAsGetOntologyConcept(
             @Open GraknGraph graph, @FromGraph RuleType type) {
         Label label = type.getLabel();
-        assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getRuleType(label.getValue()));
+        assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRuleType(label.getValue()));
     }
 
     @Property
@@ -269,7 +269,7 @@ public class GraknGraphPropertyTest {
     public void whenCallingDeleteAndReOpening_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaLabels.class) Label label) {
         graph.admin().delete();
         graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
-        assertNotNull(graph.getOntologyConcept(label));
+        assertNotNull(graph.getSchemaConcept(label));
         graph.close();
     }
 
