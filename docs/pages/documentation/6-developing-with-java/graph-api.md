@@ -26,7 +26,7 @@ Let's see how we can build the same schema exclusively via the java API.
 First we need a knowledge base. For this example we will just use an [in-memory knowledge base](./java-setup.html#initialising-a-graph):
 
 ```java
-GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
+GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "MyKnowlegdeBase").open(GraknTxType.WRITE);
 ```
 
 We need to define our constructs before we can use them. We will begin by defining our resource types since they are used everywhere. In Graql, they were defined as follows:
