@@ -18,7 +18,7 @@ All Grakn applications have the following Maven dependency:
 ```xml
 <dependency>
 <groupId>ai.grakn</groupId>
-<artifactId>grakn-graph</artifactId>
+<artifactId>grakn-kb</artifactId>
 <version>${project.version}</version>
 </dependency>
 ```
@@ -45,7 +45,7 @@ cd [your Grakn install directory]
 
 ## Java API: GraknTx
 
-The Java API, `GraknTx`, is a low-level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). It provides Java object constructs for the Grakn ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build up a graph programmatically. It is also possible to perform simple concept lookups using the graph API, which I’ll illustrate presently. First, let’s look at building up the graph.
+The Java API, `GraknTx`, is a low-level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). It provides Java object constructs for the Grakn ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build up a knowledge base programmatically. It is also possible to perform simple concept lookups using the java API, which I’ll illustrate presently. First, let’s look at building up the knowledge base.
 
 ### Building the Ontology
 
@@ -55,48 +55,48 @@ First we need a [knowledge base](../developing-with-java/java-setup.html#initial
 
 ```java
 GraknSession session = Grakn.session(uri, keyspace);
-GraknTx graph = session.open(GraknTxType.WRITE)
+GraknTx tx = session.open(GraknTxType.WRITE)
 ```
 
 
 Building the ontology is covered in `writeOntology()`. First, the method adds the resource types using putResourceType():
 
 ```java
-identifier = graph.putResourceType("identifier", ResourceType.DataType.STRING);
-name = graph.putResourceType("name", ResourceType.DataType.STRING);
-firstname = graph.putResourceType("firstname", ResourceType.DataType.STRING).sup(name);
-surname = graph.putResourceType("surname", ResourceType.DataType.STRING).sup(name);
-middlename = graph.putResourceType("middlename", ResourceType.DataType.STRING).sup(name);
-date = graph.putResourceType("date", ResourceType.DataType.STRING);
-birthDate = graph.putResourceType("birth-date", ResourceType.DataType.STRING).sup(date);
-deathDate = graph.putResourceType("death-date", ResourceType.DataType.STRING).sup(date);
-gender = graph.putResourceType("gender", ResourceType.DataType.STRING);
+identifier = tx.putResourceType("identifier", ResourceType.DataType.STRING);
+name = tx.putResourceType("name", ResourceType.DataType.STRING);
+firstname = tx.putResourceType("firstname", ResourceType.DataType.STRING).sup(name);
+surname = tx.putResourceType("surname", ResourceType.DataType.STRING).sup(name);
+middlename = tx.putResourceType("middlename", ResourceType.DataType.STRING).sup(name);
+date = tx.putResourceType("date", ResourceType.DataType.STRING);
+birthDate = tx.putResourceType("birth-date", ResourceType.DataType.STRING).sup(date);
+deathDate = tx.putResourceType("death-date", ResourceType.DataType.STRING).sup(date);
+gender = tx.putResourceType("gender", ResourceType.DataType.STRING);
 ```
 
 Then it adds roles using `putRole()`:
 
 ```java
-spouse = graph.putRole("spouse");
-spouse1 = graph.putRole("spouse1").sup(spouse);
-spouse2 = graph.putRole("spouse2").sup(spouse);
-parent = graph.putRole("parent");
-child = graph.putRole("child");
+spouse = tx.putRole("spouse");
+spouse1 = tx.putRole("spouse1").sup(spouse);
+spouse2 = tx.putRole("spouse2").sup(spouse);
+parent = tx.putRole("parent");
+child = tx.putRole("child");
 ```
 
 Then to add the relationship types, `putRelationType()`, which is followed by `relates()` to set the roles associated with the relationship and resource() to state that it has a date resource:
 
 ```java
-marriage = graph.putRelationType("marriage");
+marriage = tx.putRelationType("marriage");
 marriage.relates(spouse).relates(spouse1).relates(spouse2);
 marriage.resource(date);
-parentship = graph.putRelationType("parentship");
+parentship = tx.putRelationType("parentship");
 parentship.relates(parent).relates(child);
 ```
 
 Finally, entity types are added using `putEntityType()`, `plays()` and `resource()`:
 
 ```java
-person = graph.putEntityType("person");
+person = tx.putEntityType("person");
 person.plays(spouse1).plays(spouse2).plays(parent).plays(child);
 person.resource(gender);
 person.resource(birthDate);
@@ -110,7 +110,7 @@ person.resource(surname);
 Now to commit the ontology:
 
 ```java
-graph.commit();
+tx.commit();
 ```
 
 ### Loading Data
@@ -120,7 +120,7 @@ The example project does this in `writeSampleRelation_Marriage()`. First it crea
 
 ```java
 // After committing we need to open a new transaction
-graph = session.open(GraknTxType.WRITE)
+tx = session.open(GraknTxType.WRITE)
 
 // Define the resources
 Resource<String> firstNameJohn = firstname.putResource("John");
@@ -161,7 +161,7 @@ match $x isa person;
 In Java:
 
 ```java
-for (Thing p: graph.getEntityType("person").instances()) {
+for (Thing p: tx.getEntityType("person").instances()) {
     System.out.println(" " + p);
 }
 ```
@@ -171,7 +171,7 @@ for (Thing p: graph.getEntityType("person").instances()) {
 It is also possible to interact with the knowledge base using a separate Java API that forms Graql queries. This is via `GraknTx.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
 
 ```java
-for (Answer a: graph.graql().match(var("x").isa("person"))) {
+for (Answer a: tx.graql().match(var("x").isa("person"))) {
     System.out.println(" " + a);
 }
 ```
@@ -189,7 +189,7 @@ Manipulation, such as insertions into the knowledge base.
 This is best for advanced querying where traversals are involved. For example “Who is married to Homer?” is too complex a query for the Java API. Using a `QueryBuilder`:
 
 ```java
-List<Map<String, Concept>> results = graph.graql().match(
+List<Map<String, Concept>> results = tx.graql().match(
   var("x").has("firstname", "John").isa("person"),
   var("y").has("firstname", var("y_name")).isa("person"),
   var().isa("marriage").
@@ -199,7 +199,7 @@ for (Map<String, Concept> result : results) {
   System.out.println(" " + result.get("y_name"));
 }
 
-graph.close();
+tx.close();
 ```
 
 

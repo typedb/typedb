@@ -40,7 +40,7 @@ If all is well, you can open the visualiser by browsing to [localhost:4567](http
 
 There are a number of horizontal tabs on the left hand side of the screen, which open panes, described as follows.
 
-## Knowledge Base Pane
+## Graph Pane
 
 This is the default section of the visualiser, and is the main pane that you will use to explore a knowledge base with GRAKN.AI. 
 

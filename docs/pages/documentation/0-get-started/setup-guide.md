@@ -44,7 +44,7 @@ This will start:
 {% include note.html content="**Useful commands**  <br />
 To start Grakn, run `grakn.sh start`.   
 To stop Grakn, run `grakn.sh stop`.    
-To remove all knowledge bases from Grakn, run `grakn.sh clean`" %}
+To remove all keyspaces from Grakn, run `grakn.sh clean`" %}
 
 Grakn Engine is configured by default to use port 4567, but this can be changed in the *grakn-engine.properties* file, found within the */conf* directory of the installation.
 

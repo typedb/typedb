@@ -161,7 +161,7 @@ private static void mutateOntology() {
             // create set of vars representing the mutation
             Var group = Graql.var("group").label("group").sub("role");
             Var member = Graql.var("member").label("member").sub("role");
-            Var grouping = Graql.var("grouping").label("grouping").sub("relationship").relates(group).relates(member);
+            Var grouping = Graql.var("grouping").label("grouping").sub("relation").relates(group).relates(member);
             Var cluster = Graql.var("cluster").label("cluster").sub("entity").plays(group);
             Var personPlaysRole = Graql.var("person").label("person").plays("member");
             Var marriagePlaysRole = Graql.var("marriage").label("marriage").plays("member");

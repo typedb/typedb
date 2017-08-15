@@ -161,7 +161,7 @@ match $x isa car, has gear $g; aggregate min $g; # 3
 
 ## `compute`
 
-Graql also provides [compute queries](../graql/compute-queries.html) that can be used to determine values such as mean, minimum and maximum. These can be submitted using the **knowledge base** view on the Visualiser. For example, type each of the following into the form and submit:
+Graql also provides [compute queries](../graql/compute-queries.html) that can be used to determine values such as mean, minimum and maximum. These can be submitted using the **graph** view on the Visualiser. For example, type each of the following into the form and submit:
 
 ```graql
 # Number of automatic and manual cars
