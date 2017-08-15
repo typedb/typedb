@@ -273,7 +273,7 @@ public class GraqlShellIT {
     @Test
     public void testAutocompleteFill() throws Exception {
         String result = testShell("match $x sub thin\t;\n");
-        assertThat(result, containsString(Schema.MetaSchema.RELATION.getLabel().getValue()));
+        assertThat(result, containsString(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()));
     }
 
     @Test

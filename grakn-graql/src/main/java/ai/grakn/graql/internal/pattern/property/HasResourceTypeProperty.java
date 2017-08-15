@@ -86,7 +86,7 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
 
         VarPatternAdmin ownerRole = var().sub(role).admin();
         VarPatternAdmin valueRole = var().sub(role).admin();
-        VarPattern relationType = var().sub(Graql.label(Schema.MetaSchema.RELATION.getLabel()));
+        VarPattern relationType = var().sub(Graql.label(Schema.MetaSchema.RELATIONSHIP.getLabel()));
 
         // If a key, limit only to the implicit key type
         if(required){
