@@ -93,6 +93,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         Stream.Builder<String> repr = Stream.builder();
 
         if (hasReifiedRelation()) {
+            // TODO: Replace with actual reification syntax
             repr.add("REIFIED").add("{{").add(relation().getPrintableName()).add("}}");
         }
 
