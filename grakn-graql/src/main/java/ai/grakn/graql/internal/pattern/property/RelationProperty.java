@@ -24,7 +24,6 @@ import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
@@ -156,9 +155,9 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
                 var.getProperty(IsaProperty.class).map(IsaProperty::type).flatMap(VarPatternAdmin::getTypeLabel);
 
         maybeLabel.ifPresent(label -> {
-            Type type = graph.getOntologyConcept(label);
+            OntologyConcept ontologyConcept = graph.getOntologyConcept(label);
 
-            if (type == null || !type.isRelationType()) {
+            if (ontologyConcept == null || !ontologyConcept.isRelationType()) {
                 throw GraqlQueryException.notARelationType(label);
             }
         });
