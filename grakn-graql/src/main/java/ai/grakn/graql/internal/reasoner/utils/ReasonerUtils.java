@@ -76,25 +76,6 @@ import static java.util.stream.Collectors.toSet;
 public class ReasonerUtils {
 
     /**
-     *
-     * @param graph to be checked against
-     * @return set of inference rule contained in the graph
-     */
-    public static Set<Rule> getRules(GraknGraph graph) {
-        return graph.admin().getMetaRuleInference().instances().collect(toSet());
-    }
-
-    /**
-     *
-     * @param graph to be checked against
-     * @return true if at least one inference rule is present in the graph
-     */
-    public static boolean hasRules(GraknGraph graph) {
-        Label inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getLabel();
-        return graph.graql().infer(false).match(var("x").isa(Graql.label(inferenceRule))).ask().execute();
-    }
-
-    /**
      * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
      * covers the case when specified variable name is user defined
      * @param typeVariable variable name of interest
@@ -147,14 +128,14 @@ public class ReasonerUtils {
         if(valueVar.getVarName().isUserDefinedName()){
             vars.stream()
                     .filter(v -> v.getVarName().equals(valueVariable))
-                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.getVarName(), vp.getPredicate(), parent)))
+                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.getVarName(), vp.predicate(), parent)))
                     .forEach(predicates::add);
         }
         //add value atom
         else {
             valueVar.getProperties(ValueProperty.class)
                     .forEach(vp -> predicates
-                            .add(new ValuePredicate(createValueVar(valueVariable, vp.getPredicate()), parent)));
+                            .add(new ValuePredicate(createValueVar(valueVariable, vp.predicate()), parent)));
         }
         return predicates;
     }

@@ -40,6 +40,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -70,30 +71,17 @@ import static java.util.stream.Collectors.joining;
  *
  * @author Felix Chapman
  */
-public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
-
-    private final Label resourceType;
-    private final VarPatternAdmin resource;
-    private final VarPatternAdmin relation;
-
-    private HasResourceProperty(Label resourceType, VarPatternAdmin resource, VarPatternAdmin relation) {
-        this.resourceType = resourceType;
-        this.resource = resource;
-        this.relation = relation;
-    }
+@AutoValue
+public abstract class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
     public static HasResourceProperty of(Label resourceType, VarPatternAdmin resource, VarPatternAdmin relation) {
         resource = resource.isa(label(resourceType)).admin();
-        return new HasResourceProperty(resourceType, resource, relation);
+        return new AutoValue_HasResourceProperty(resourceType, resource, relation);
     }
 
-    public Label getType() {
-        return resourceType;
-    }
-
-    public VarPatternAdmin getResource() {
-        return resource;
-    }
+    public abstract Label type();
+    public abstract VarPatternAdmin resource();
+    public abstract VarPatternAdmin relation();
 
     @Override
     public String getName() {
@@ -105,15 +93,15 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Stream.Builder<String> repr = Stream.builder();
 
         if (hasReifiedRelation()) {
-            repr.add("REIFIED").add("{{").add(relation.getPrintableName()).add("}}");
+            repr.add("REIFIED").add("{{").add(relation().getPrintableName()).add("}}");
         }
 
-        repr.add(typeLabelToString(resourceType));
+        repr.add(typeLabelToString(type()));
 
-        if (resource.getVarName().isUserDefinedName()) {
-            repr.add(resource.getVarName().toString());
+        if (resource().getVarName().isUserDefinedName()) {
+            repr.add(resource().getVarName().toString());
         } else {
-            resource.getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.getPredicate().toString()));
+            resource().getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.predicate().toString()));
         }
         return repr.build().collect(joining(" "));
     }
@@ -124,50 +112,50 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                shortcut(this, relation.getVarName(), edge1, start, Optional.empty()),
-                shortcut(this, relation.getVarName(), edge2, resource.getVarName(), Optional.empty()),
+                shortcut(this, relation().getVarName(), edge1, start, Optional.empty()),
+                shortcut(this, relation().getVarName(), edge2, resource().getVarName(), Optional.empty()),
                 neq(this, edge1, edge2)
         );
     }
 
     @Override
     public Stream<VarPatternAdmin> getInnerVars() {
-        return Stream.of(resource, relation);
+        return Stream.of(resource(), relation());
     }
 
     @Override
     void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
-        Type type = graph.getOntologyConcept(resourceType);
+        Type type = graph.getOntologyConcept(type());
         if(type == null || !type.isResourceType()) {
-            throw GraqlQueryException.mustBeResourceType(resourceType);
+            throw GraqlQueryException.mustBeResourceType(type());
         }
     }
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Resource resourceConcept = executor.get(resource.getVarName()).asResource();
+        Resource resourceConcept = executor.get(resource().getVarName()).asResource();
         Thing thing = executor.get(var).asThing();
         ConceptId relationId = thing.resourceRelation(resourceConcept).getId();
-        executor.builder(relation.getVarName()).id(relationId);
+        executor.builder(relation().getVarName()).id(relationId);
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, resource.getVarName());
+        return ImmutableSet.of(var, resource().getVarName());
     }
 
     @Override
     public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(relation.getVarName());
+        return ImmutableSet.of(relation().getVarName());
     }
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
         Optional<ValuePredicateAdmin> predicate =
-                resource.getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
+                resource().getProperties(ValueProperty.class).map(ValueProperty::predicate).findAny();
 
-        Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
-        Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
+        Role owner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(type()));
+        Role value = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(type()));
 
         concept.asThing().relations(owner)
                 .filter(relation -> testPredicate(predicate, relation, value))
@@ -185,7 +173,11 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return Stream.of(label(resourceType).admin());
+        return Stream.of(label(type()).admin());
+    }
+
+    private boolean hasReifiedRelation() {
+        return relation().getProperties().findAny().isPresent() || relation().getVarName().isUserDefinedName();
     }
 
     @Override
@@ -195,33 +187,27 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         HasResourceProperty that = (HasResourceProperty) o;
 
-        if (!resourceType.equals(that.resourceType)) return false;
-        if (!resource.equals(that.resource)) return false;
+        if (!type().equals(that.type())) return false;
+        if (!resource().equals(that.resource())) return false;
 
-        boolean hasReifiedRelation =
-                hasReifiedRelation();
-
-        return !hasReifiedRelation || relation.equals(that.relation);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = resourceType.hashCode();
-        result = 31 * result + resource.hashCode();
-
-        if (hasReifiedRelation()) {
-            result = 31 * result + relation.hashCode();
-        }
-
-        return result;
-    }
-
-    private boolean hasReifiedRelation() {
         // TODO: Having to check this is pretty dodgy
         // This check is necessary for `equals` and `hashCode` because `VarPattern` equality is defined
         // s.t. `var() != var()`, but `var().label("movie") == var().label("movie")`
         // i.e., a `Var` is compared by name, but a `VarPattern` ignores the name if the var is not user-defined
-        return relation.getProperties().findAny().isPresent() || relation.getVarName().isUserDefinedName();
+        return !hasReifiedRelation() || relation().equals(that.relation());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = type().hashCode();
+        result = 31 * result + resource().hashCode();
+
+        // TODO: Having to check this is pretty dodgy, explanation in #equals
+        if (hasReifiedRelation()) {
+            result = 31 * result + relation().hashCode();
+        }
+
+        return result;
     }
 
     @Override
@@ -229,13 +215,13 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         // TODO: Support relation variable in reasoner
         Var varName = var.getVarName().asUserDefined();
 
-        Label type = this.getType();
-        VarPatternAdmin resource = this.getResource();
+        Label type = this.type();
+        VarPatternAdmin resource = this.resource();
         Var resourceVariable = resource.getVarName().asUserDefined();
         Set<ValuePredicate> predicates = getValuePredicates(resourceVariable, resource, vars, parent);
 
         IsaProperty isaProp = resource.getProperties(IsaProperty.class).findFirst().orElse(null);
-        VarPatternAdmin typeVar = isaProp != null? isaProp.getType() : null;
+        VarPatternAdmin typeVar = isaProp != null? isaProp.type() : null;
         IdPredicate idPredicate = typeVar != null? getIdPredicate(resourceVariable, typeVar, vars, parent) : null;
 
         //add resource atom

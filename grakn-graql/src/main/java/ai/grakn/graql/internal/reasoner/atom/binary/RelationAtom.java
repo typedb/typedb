@@ -118,7 +118,7 @@ public class RelationAtom extends IsaAtom {
             relationPlayers = new ArrayList<>();
             getPattern().asVar()
                     .getProperty(RelationProperty.class)
-                    .ifPresent(prop -> prop.getRelationPlayers()
+                    .ifPresent(prop -> prop.relationPlayers()
                             .forEach(relationPlayers::add));
         }
         return relationPlayers;
@@ -772,7 +772,7 @@ public class RelationAtom extends IsaAtom {
     public Atom rewriteToUserDefined(){
         VarPattern newVar = Graql.var().asUserDefined();
         VarPattern relVar = getPattern().asVar().getProperty(IsaProperty.class)
-                .map(prop -> newVar.isa(prop.getType()))
+                .map(prop -> newVar.isa(prop.type()))
                 .orElse(newVar);
 
         for (RelationPlayer c: getRelationPlayers()) {
