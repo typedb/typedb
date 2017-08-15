@@ -149,7 +149,7 @@ You can also specify a variable to represent the relation connecting the thing a
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell6">
 <pre>
-insert isa person has REIFIED {{ $r }} identifier "Fuchsia Groan";
+insert isa person has 🍌 $r identifier "Fuchsia Groan";
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java6">

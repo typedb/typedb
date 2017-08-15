@@ -790,7 +790,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingAQueryWithReifiedResourceRelationSyntax_ItIsEquivalentToJavaGraql() {
-        assertParseEquivalence("match $x has REIFIED {{ $x }} name $z;");
+        assertParseEquivalence("match $x has 🍌 $x name $z;");
     }
 
     @Test(expected = GraqlSyntaxException.class)
