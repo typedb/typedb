@@ -26,7 +26,7 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.InternalFactory;
-import ai.grakn.graph.internal.GraknTinkerGraph;
+import ai.grakn.graph.internal.GraknTxTinker;
 import ai.grakn.graql.Query;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.io.Files;
@@ -111,7 +111,7 @@ public class GraphLoader {
     }
 
     public void rollback() {
-        if (graph instanceof GraknTinkerGraph) {
+        if (graph instanceof GraknTxTinker) {
             graph.admin().delete();
             graphLoaded = false;
         } else if (!graph.isClosed()) {

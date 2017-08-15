@@ -268,7 +268,7 @@ class ValidateGlobalRules {
      * @param relationReified The {@link Relation} whose hash needs to be set.
      * @return An error message if the {@link Relation} is not unique.
      */
-    static Optional<String> validateRelationIsUnique(AbstractGraknGraph<?> graph, RelationReified relationReified){
+    static Optional<String> validateRelationIsUnique(GraknTxAbstract<?> graph, RelationReified relationReified){
         Iterator<ResourceType> keys = relationReified.type().keys().iterator();
         if(keys.hasNext()){
             return validateKeyControlledRelation(graph, relationReified, keys);
@@ -286,7 +286,7 @@ class ValidateGlobalRules {
      * @param keys the {@link ResourceType} indicating the key which the relation must be bound to and unique to
      * @return An error message if the {@link Relation} is not unique.
      */
-    private static Optional<String> validateKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified, Iterator<ResourceType> keys) {
+    private static Optional<String> validateKeyControlledRelation(GraknTxAbstract<?> graph, RelationReified relationReified, Iterator<ResourceType> keys) {
         TreeMap<String, String> resources = new TreeMap<>();
         while(keys.hasNext()){
             Optional<Resource<?>> foundResource = relationReified.resources(keys.next()).findAny();
@@ -308,7 +308,7 @@ class ValidateGlobalRules {
      * @param relationReified the {@link Relation} to check
      * @return An error message if the {@link Relation} is not unique.
      */
-    private static Optional<String> validateNonKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified){
+    private static Optional<String> validateNonKeyControlledRelation(GraknTxAbstract<?> graph, RelationReified relationReified){
         String hash = RelationReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers());
         return setRelationUnique(graph, relationReified, hash);
     }
@@ -322,7 +322,7 @@ class ValidateGlobalRules {
      * @param hash The hash to use to find other potential {@link Relation}s
      * @return An error message if the provided {@link Relation} is not unique and were unable to set the hash
      */
-    private static Optional<String> setRelationUnique(AbstractGraknGraph<?> graph, RelationReified relationReified, String hash){
+    private static Optional<String> setRelationUnique(GraknTxAbstract<?> graph, RelationReified relationReified, String hash){
         RelationImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
 
         if(foundRelation == null){

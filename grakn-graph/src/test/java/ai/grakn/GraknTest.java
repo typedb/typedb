@@ -18,8 +18,8 @@
 
 package ai.grakn;
 
-import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.graph.internal.GraknTinkerGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
+import ai.grakn.graph.internal.GraknTxTinker;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ public class GraknTest {
 
     @Test
     public void testInMemory(){
-        assertThat(Grakn.session(Grakn.IN_MEMORY, "test").open(GraknTxType.WRITE), instanceOf(GraknTinkerGraph.class));
+        assertThat(Grakn.session(Grakn.IN_MEMORY, "test").open(GraknTxType.WRITE), instanceOf(GraknTxTinker.class));
     }
 
     @Test
@@ -64,10 +64,10 @@ public class GraknTest {
     @Test
     public void testSingletonBetweenBatchAndNormalInMemory(){
         String keyspace = "test1";
-        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        GraknTxAbstract graph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
         Graph tinkerGraph = graph.getTinkerPopGraph();
         graph.close();
-        AbstractGraknGraph batchGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
+        GraknTxAbstract batchGraph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
 
         assertNotEquals(graph, batchGraph);
         assertEquals(tinkerGraph, batchGraph.getTinkerPopGraph());

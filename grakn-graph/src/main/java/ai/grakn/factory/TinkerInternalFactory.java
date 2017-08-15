@@ -18,7 +18,7 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.GraknTinkerGraph;
+import ai.grakn.graph.internal.GraknTxTinker;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
@@ -37,7 +37,7 @@ import java.util.Properties;
  *
  * @author fppt
  */
-public class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, TinkerGraph> {
+public class TinkerInternalFactory extends AbstractInternalFactory<GraknTxTinker, TinkerGraph> {
 
     TinkerInternalFactory(String keyspace, String engineUrl, Properties properties){
         super(keyspace, engineUrl, properties);
@@ -48,8 +48,8 @@ public class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGr
     }
 
     @Override
-    GraknTinkerGraph buildGraknGraphFromTinker(TinkerGraph graph) {
-        return new GraknTinkerGraph(graph, super.keyspace, super.engineUrl, properties);
+    GraknTxTinker buildGraknGraphFromTinker(TinkerGraph graph) {
+        return new GraknTxTinker(graph, super.keyspace, super.engineUrl, properties);
     }
 
     @Override

@@ -3,7 +3,7 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -25,7 +25,7 @@ public class PostProcessingTestUtils {
     @SuppressWarnings("unchecked")
     static <T> Resource<T> createDuplicateResource(GraknTx graknTx, Resource<T> resource) {
         ResourceType<T> resourceType = resource.type();
-        AbstractGraknGraph<?> graph = (AbstractGraknGraph<?>) graknTx;
+        GraknTxAbstract<?> graph = (GraknTxAbstract<?>) graknTx;
         Vertex originalResource = graph.getTinkerTraversal().V()
                 .has(Schema.VertexProperty.ID.name(), resource.getId().getValue()).next();
         Vertex vertexResourceTypeShard = graph.getTinkerTraversal().V()
@@ -40,7 +40,7 @@ public class PostProcessingTestUtils {
     
     @SuppressWarnings("unchecked")
     static <T> Set<Vertex> createDuplicateResource(GraknTx graknTx, ResourceType<T> resourceType, Resource<T> resource) {
-        AbstractGraknGraph<?> graph = (AbstractGraknGraph<?>) graknTx;
+        GraknTxAbstract<?> graph = (GraknTxAbstract<?>) graknTx;
         Vertex originalResource = graph.getTinkerTraversal().V()
                 .has(Schema.VertexProperty.ID.name(), resource.getId().getValue()).next();
         Vertex vertexResourceTypeShard = graph.getTinkerTraversal().V().

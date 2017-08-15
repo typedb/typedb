@@ -126,7 +126,7 @@ public class GraknTxTest extends GraphTestBase {
         graknGraph.abort();
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.READ);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.READ);
 
         Set<OntologyConcept> finalTypes = new HashSet<>();
         finalTypes.addAll(graknGraph.getMetaConcept().subs().collect(Collectors.toSet()));
@@ -194,7 +194,7 @@ public class GraknTxTest extends GraphTestBase {
 
         //Purge the above concepts into the main cache
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         //Check cache is in good order
         Collection<OntologyConcept> cachedValues = graknGraph.getGraphCache().getCachedTypes().values();
@@ -246,14 +246,14 @@ public class GraknTxTest extends GraphTestBase {
         String resourceType = "My Resource Type";
 
         //Fail Some Mutations
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
         failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));
         failMutation(graknGraph, () -> graknGraph.putRole(roleType1));
         failMutation(graknGraph, () -> graknGraph.putRelationType(relationType1));
 
         //Pass some mutations
         graknGraph.close();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
         EntityType entityT = graknGraph.putEntityType(entityType);
         entityT.addEntity();
         Role roleT1 = graknGraph.putRole(roleType1);
@@ -264,7 +264,7 @@ public class GraknTxTest extends GraphTestBase {
         graknGraph.commit();
 
         //Fail some mutations again
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
         failMutation(graknGraph, entityT::addEntity);
         failMutation(graknGraph, () -> resourceT.putResource("A resource"));
         failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));

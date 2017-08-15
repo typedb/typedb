@@ -18,7 +18,7 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.GraknJanusGraph;
+import ai.grakn.graph.internal.GraknTxJanus;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -63,7 +63,7 @@ import static java.util.Arrays.stream;
  *
  * @author fppt
  */
-final public class JanusInternalFactory extends AbstractInternalFactory<GraknJanusGraph, JanusGraph> {
+final public class JanusInternalFactory extends AbstractInternalFactory<GraknTxJanus, JanusGraph> {
     private final static Logger LOG = LoggerFactory.getLogger(JanusInternalFactory.class);
     private final static String DEFAULT_CONFIG = "backend-default";
 
@@ -84,8 +84,8 @@ final public class JanusInternalFactory extends AbstractInternalFactory<GraknJan
     }
 
     @Override
-    GraknJanusGraph buildGraknGraphFromTinker(JanusGraph graph) {
-        return new GraknJanusGraph(graph, super.keyspace, super.engineUrl, super.properties);
+    GraknTxJanus buildGraknGraphFromTinker(JanusGraph graph) {
+        return new GraknTxJanus(graph, super.keyspace, super.engineUrl, super.properties);
     }
 
     @Override

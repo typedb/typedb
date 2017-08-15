@@ -82,9 +82,9 @@ public class GraphLoaderTest {
         try(GraknTx graph = GraphLoader.empty().graph()){
             //String comparison is used here because we do not have the class available at compile time
             if(GraknTestSetup.usingTinker()){
-                assertEquals("ai.grakn.graph.internal.GraknTinkerGraph", graph.getClass().getName());
+                assertEquals("ai.grakn.graph.internal.GraknTxTinker", graph.getClass().getName());
             } else if (GraknTestSetup.usingJanus()) {
-                assertEquals("ai.grakn.graph.internal.GraknJanusGraph", graph.getClass().getName());
+                assertEquals("ai.grakn.graph.internal.GraknTxJanus", graph.getClass().getName());
             } else {
                 throw new RuntimeException("Test run with unsupported graph backend");
             }

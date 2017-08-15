@@ -26,8 +26,8 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.graph.internal.GraknJanusGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
+import ai.grakn.graph.internal.GraknTxJanus;
 import com.google.common.collect.Iterators;
 import org.junit.After;
 import org.junit.Before;
@@ -51,7 +51,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class GraknJanusGraphTest extends JanusTestBase {
+public class GraknTxJanusTest extends JanusTestBase {
     private GraknTx graknTx;
 
     @Before
@@ -88,7 +88,7 @@ public class GraknJanusGraphTest extends JanusTestBase {
         assertEquals(100L, graknTx.admin().getMetaEntityType().instances().count());
     }
     private void addEntity(EntityType type){
-        GraknJanusGraph graph = janusGraphFactory.open(GraknTxType.WRITE);
+        GraknTxJanus graph = janusGraphFactory.open(GraknTxType.WRITE);
         type.addEntity();
         graph.commit();
     }
@@ -115,15 +115,15 @@ public class GraknJanusGraphTest extends JanusTestBase {
     public void whenCreatingGraphsWithDifferentKeyspace_EnsureCaseIsIgnored(){
         JanusInternalFactory factory1 =  new JanusInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES);
         JanusInternalFactory factory2 = new JanusInternalFactory("Case", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        GraknJanusGraph case1 = factory1.open(GraknTxType.WRITE);
-        GraknJanusGraph case2 = factory2.open(GraknTxType.WRITE);
+        GraknTxJanus case1 = factory1.open(GraknTxType.WRITE);
+        GraknTxJanus case2 = factory2.open(GraknTxType.WRITE);
 
         assertEquals(case1.getKeyspace(), case2.getKeyspace());
     }
 
     @Test
     public void whenClosingTheGraph_EnsureTheTransactionIsClosed(){
-        GraknJanusGraph graph = new JanusInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        GraknTxJanus graph = new JanusInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
 
         String entityTypeLabel = "Hello";
 
@@ -141,7 +141,7 @@ public class GraknJanusGraphTest extends JanusTestBase {
 
     @Test
     public void whenCreatingDateResource_EnsureDateCanBeRetrieved(){
-        GraknJanusGraph graph = new JanusInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        GraknTxJanus graph = new JanusInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
         ResourceType<LocalDateTime> dateType = graph.putResourceType("date", ResourceType.DataType.DATE);
         LocalDateTime now = LocalDateTime.now();
         Resource<LocalDateTime> date = dateType.putResource(now);
@@ -240,7 +240,7 @@ public class GraknJanusGraphTest extends JanusTestBase {
 
     private int openTransactions(GraknTx graph){
         if(graph == null) return 0;
-        return ((AbstractGraknGraph) graph).numOpenTx();
+        return ((GraknTxAbstract) graph).numOpenTx();
     }
 
     @Test

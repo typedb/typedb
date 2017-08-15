@@ -38,7 +38,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class GraknTinkerGraphTest extends GraphTestBase{
+public class GraknTxTinkerTest extends GraphTestBase{
 
     @Test
     public void whenAddingMultipleConceptToTinkerGraph_EnsureGraphIsMutatedDirectlyNotViaTransaction() throws ExecutionException, InterruptedException {
@@ -56,7 +56,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
             future.get();
         }
 
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
         assertEquals(20, graknGraph.getEntityType("Thing").instances().count());
     }
     private synchronized void addRandomEntity(){
@@ -72,14 +72,14 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         assertNotNull(graknGraph.getEntityType("entity type"));
         graknGraph.admin().delete();
         assertTrue(graknGraph.isClosed());
-        graknGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
         assertNull(graknGraph.getEntityType("entity type"));
         assertNotNull(graknGraph.getMetaEntityType());
     }
 
     @Test
     public void whenMutatingClosedGraph_Throw() throws InvalidGraphException {
-        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, "new graph").open(GraknTxType.WRITE);
+        GraknTxAbstract graph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, "new graph").open(GraknTxType.WRITE);
         graph.close();
 
         expectedException.expect(GraphOperationException.class);

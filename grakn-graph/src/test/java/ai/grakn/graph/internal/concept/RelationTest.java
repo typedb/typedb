@@ -33,7 +33,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
 import ai.grakn.graph.internal.GraphTestBase;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -164,7 +164,7 @@ public class RelationTest extends GraphTestBase {
 
         relationType.addRelation();
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
 
@@ -178,7 +178,7 @@ public class RelationTest extends GraphTestBase {
         relation.addRolePlayer(role1, thing1);
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
         assertEquals(getFakeId(relation.type(), roleMap), relation.reified().get().getIndex());
@@ -319,7 +319,7 @@ public class RelationTest extends GraphTestBase {
         rel2.resource(r2);
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) graknSession.open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) graknSession.open(GraknTxType.WRITE);
 
         assertThat(graknGraph.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel1));
         assertThat(graknGraph.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel2));
