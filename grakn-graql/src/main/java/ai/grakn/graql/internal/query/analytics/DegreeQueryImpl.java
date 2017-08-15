@@ -74,7 +74,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
 
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
 
-        Set<Label> withResourceRelationTypes = getHasResourceRelationTypes();
+        Set<Label> withResourceRelationTypes = getHasResourceRelationLabels(subTypes);
         withResourceRelationTypes.addAll(subLabels);
 
         Set<LabelId> withResourceRelationLabelIds = convertLabelsToIds(withResourceRelationTypes);

@@ -186,13 +186,6 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         return "compute " + graqlString();
     }
 
-    Set<Label> getHasResourceRelationTypes() {
-        return subTypes.stream()
-                .filter(Concept::isResourceType)
-                .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
-                .collect(Collectors.toSet());
-    }
-
     Set<LabelId> getRolePlayerLabelIds() {
         return subTypes.stream()
                 .filter(Concept::isRelationType)
@@ -225,6 +218,13 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         return labelSet.stream()
                 .map(graph.get().admin()::convertToId)
                 .filter(LabelId::isValid)
+                .collect(Collectors.toSet());
+    }
+
+    static Set<Label> getHasResourceRelationLabels(Set<Type> subTypes) {
+        return subTypes.stream()
+                .filter(Concept::isResourceType)
+                .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
                 .collect(Collectors.toSet());
     }
 
