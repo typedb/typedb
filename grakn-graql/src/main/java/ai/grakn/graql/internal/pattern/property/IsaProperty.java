@@ -33,6 +33,7 @@ import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
@@ -54,19 +55,16 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  *
  * @author Felix Chapman
  */
-public class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
+@AutoValue
+public abstract class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
     public static final String NAME = "isa";
 
-    private final VarPatternAdmin type;
-
-    public IsaProperty(VarPatternAdmin type) {
-        this.type = type;
+    public static IsaProperty of(VarPatternAdmin type) {
+        return new AutoValue_IsaProperty(type);
     }
 
-    public VarPatternAdmin getType() {
-        return type;
-    }
+    public abstract VarPatternAdmin type();
 
     @Override
     public String getName() {
@@ -75,33 +73,33 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public String getProperty() {
-        return type.getPrintableName();
+        return type().getPrintableName();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.isa(this, start, type.getVarName()));
+        return ImmutableSet.of(EquivalentFragmentSets.isa(this, start, type().getVarName()));
     }
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return Stream.of(type);
+        return Stream.of(type());
     }
 
     @Override
     public Stream<VarPatternAdmin> getInnerVars() {
-        return Stream.of(type);
+        return Stream.of(type());
     }
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Type type = executor.get(this.type.getVarName()).asType();
+        Type type = executor.get(this.type().getVarName()).asType();
         executor.builder(var).isa(type);
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(type.getVarName());
+        return ImmutableSet.of(type().getVarName());
     }
 
     @Override
@@ -111,28 +109,12 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
-        type.getTypeLabel().ifPresent(typeLabel -> {
+        type().getTypeLabel().ifPresent(typeLabel -> {
             OntologyConcept theOntologyConcept = graph.getOntologyConcept(typeLabel);
             if (theOntologyConcept != null && theOntologyConcept.isRole()) {
                 throw GraqlQueryException.queryInstanceOfRoleType(typeLabel);
             }
         });
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        IsaProperty that = (IsaProperty) o;
-
-        return type.equals(that.type);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return type.hashCode();
     }
 
     @Nullable
@@ -142,7 +124,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
         if (var.hasProperty(RelationProperty.class)) return null;
 
         Var varName = var.getVarName().asUserDefined();
-        VarPatternAdmin typeVar = this.getType();
+        VarPatternAdmin typeVar = this.type();
         Var typeVariable = typeVar.getVarName().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 

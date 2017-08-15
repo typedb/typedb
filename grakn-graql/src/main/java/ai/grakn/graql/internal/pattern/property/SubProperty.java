@@ -31,6 +31,7 @@ import ai.grakn.graql.internal.query.ConceptBuilder;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.SubAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -50,19 +51,16 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  *
  * @author Felix Chapman
  */
-public class SubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+@AutoValue
+public abstract class SubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
     public static final String NAME = "sub";
 
-    private final VarPatternAdmin superType;
-
-    public SubProperty(VarPatternAdmin superType) {
-        this.superType = superType;
+    public static SubProperty of(VarPatternAdmin superType) {
+        return new AutoValue_SubProperty(superType);
     }
 
-    public VarPatternAdmin getSuperType() {
-        return superType;
-    }
+    public abstract VarPatternAdmin superType();
 
     @Override
     public String getName() {
@@ -71,27 +69,27 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
 
     @Override
     public String getProperty() {
-        return superType.getPrintableName();
+        return superType().getPrintableName();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType.getVarName()));
+        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType().getVarName()));
     }
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return Stream.of(superType);
+        return Stream.of(superType());
     }
 
     @Override
     public Stream<VarPatternAdmin> getInnerVars() {
-        return Stream.of(superType);
+        return Stream.of(superType());
     }
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        OntologyConcept superConcept = executor.get(superType.getVarName()).asOntologyConcept();
+        OntologyConcept superConcept = executor.get(superType().getVarName()).asOntologyConcept();
 
         Optional<ConceptBuilder> builder = executor.tryBuilder(var);
 
@@ -104,7 +102,7 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(superType.getVarName());
+        return ImmutableSet.of(superType().getVarName());
     }
 
     @Override
@@ -113,25 +111,9 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        SubProperty that = (SubProperty) o;
-
-        return superType.equals(that.superType);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return superType.hashCode();
-    }
-
-    @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.getVarName().asUserDefined();
-        VarPatternAdmin typeVar = this.getSuperType();
+        VarPatternAdmin typeVar = this.superType();
         Var typeVariable = typeVar.getVarName().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 

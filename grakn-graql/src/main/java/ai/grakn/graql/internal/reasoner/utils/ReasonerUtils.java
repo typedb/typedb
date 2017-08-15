@@ -128,14 +128,14 @@ public class ReasonerUtils {
         if(valueVar.getVarName().isUserDefinedName()){
             vars.stream()
                     .filter(v -> v.getVarName().equals(valueVariable))
-                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.getVarName(), vp.getPredicate(), parent)))
+                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.getVarName(), vp.predicate(), parent)))
                     .forEach(predicates::add);
         }
         //add value atom
         else {
             valueVar.getProperties(ValueProperty.class)
                     .forEach(vp -> predicates
-                            .add(new ValuePredicate(createValueVar(valueVariable, vp.getPredicate()), parent)));
+                            .add(new ValuePredicate(createValueVar(valueVariable, vp.predicate()), parent)));
         }
         return predicates;
     }
