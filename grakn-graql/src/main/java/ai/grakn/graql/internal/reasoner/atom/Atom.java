@@ -29,7 +29,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
+import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -72,14 +72,14 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public boolean isRuleResolvable() {
-        return !getApplicableRules().isEmpty();
+        return getApplicableRules().findFirst().isPresent();
     }
 
     @Override
     public boolean isRecursive(){
         if (isResource() || getOntologyConcept() == null) return false;
         OntologyConcept ontologyConcept = getOntologyConcept();
-        return getApplicableRules().stream()
+        return getApplicableRules()
                 .filter(rule -> rule.getBody().selectAtoms().stream()
                         .filter(at -> Objects.nonNull(at.getOntologyConcept()))
                         .filter(at -> checkCompatible(ontologyConcept, at.getOntologyConcept())).findFirst().isPresent())
@@ -147,24 +147,23 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
-    private Set<Rule> getPotentialRules(){
-        OntologyConcept ontologyConcept = getOntologyConcept();
-        return ontologyConcept != null ?
-                ontologyConcept.subs().flatMap(OntologyConcept::getRulesOfConclusion).collect(Collectors.toSet()) :
-                ReasonerUtils.getRules(graph());
+    private Stream<Rule> getPotentialRules(){
+        return RuleGraph.getRulesWithType(getOntologyConcept(), graph());
     }
 
     /**
      * @return set of applicable rules - does detailed (slow) check for applicability
      */
-    public Set<InferenceRule> getApplicableRules() {
+    public Stream<InferenceRule> getApplicableRules() {
         if (applicableRules == null) {
-            applicableRules = getPotentialRules().stream()
+            applicableRules = new HashSet<>();
+            return getPotentialRules()
                     .map(rule -> new InferenceRule(rule, graph()))
                     .filter(this::isRuleApplicable)
-                    .collect(Collectors.toSet());
+                    .map(r -> r.rewriteToUserDefined(this))
+                    .peek(applicableRules::add);
         }
-        return applicableRules;
+        return applicableRules.stream();
     }
 
     /**

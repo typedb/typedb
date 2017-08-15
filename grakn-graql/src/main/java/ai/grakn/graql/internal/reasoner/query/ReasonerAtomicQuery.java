@@ -371,9 +371,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @return iterator of all rules applicable to this atomic query including permuted cases when the role types are meta roles
      */
     public Iterator<RuleTuple> getRuleIterator(){
-        return getAtom().getApplicableRules().stream()
+        return getAtom().getApplicableRules()
                 .flatMap(r -> {
-                    r.rewriteToUserDefined(getAtom());
                     Unifier ruleUnifier = r.getUnifier(getAtom());
                     Unifier ruleUnifierInv = ruleUnifier.inverse();
                     return getAtom().getPermutationUnifiers(r.getHead().getAtom()).stream()
