@@ -29,7 +29,7 @@ import java.io.Serializable;
  * </p>
  *
  * <p>
- *     A class which represents an id of any {@link OntologyConcept} in the {@link ai.grakn.GraknGraph}.
+ *     A class which represents an id of any {@link SchemaConcept} in the {@link ai.grakn.GraknGraph}.
  *     Also contains a static method for producing IDs from Integers.
  * </p>
  *

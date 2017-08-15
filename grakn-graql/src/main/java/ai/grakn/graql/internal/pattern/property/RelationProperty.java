@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -164,8 +164,8 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
 
         // Check all role types exist
         roleTypes.forEach(roleId -> {
-            OntologyConcept ontologyConcept = graph.getOntologyConcept(roleId);
-            if (ontologyConcept == null || !ontologyConcept.isRole()) {
+            SchemaConcept schemaConcept = graph.getOntologyConcept(roleId);
+            if (schemaConcept == null || !schemaConcept.isRole()) {
                 throw GraqlQueryException.notARoleType(roleId);
             }
         });

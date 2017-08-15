@@ -24,14 +24,14 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
-import ai.grakn.graph.internal.concept.OntologyConceptImpl;
+import ai.grakn.graph.internal.concept.SchemaConceptImpl;
 import ai.grakn.graph.internal.concept.RelationReified;
 import ai.grakn.graph.internal.concept.ThingImpl;
 import ai.grakn.graph.internal.structure.Casting;
@@ -69,7 +69,7 @@ public class TxCache {
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
-    private final Map<Label, OntologyConcept> ontologyConceptCache = new HashMap<>();
+    private final Map<Label, SchemaConcept> ontologyConceptCache = new HashMap<>();
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
@@ -128,11 +128,11 @@ public class TxCache {
      *
      */
     public void refreshOntologyCache(){
-        Map<Label, OntologyConcept> cachedOntologySnapshot = graphCache.getCachedTypes();
+        Map<Label, SchemaConcept> cachedOntologySnapshot = graphCache.getCachedTypes();
         Map<Label, LabelId> cachedLabelsSnapshot = graphCache.getCachedLabels();
 
         //Read central cache into txCache cloning only base concepts. Sets clones later
-        for (OntologyConcept type : cachedOntologySnapshot.values()) {
+        for (SchemaConcept type : cachedOntologySnapshot.values()) {
             cacheConcept(type);
         }
 
@@ -186,7 +186,7 @@ public class TxCache {
      *
      * @return All the types currently cached in the transaction. Used for
      */
-    Map<Label, OntologyConcept> getOntologyConceptCache(){
+    Map<Label, SchemaConcept> getOntologyConceptCache(){
         return ontologyConceptCache;
     }
 
@@ -221,7 +221,7 @@ public class TxCache {
 
         conceptCache.remove(concept.getId());
         if (concept.isOntologyConcept()) {
-            Label label = ((OntologyConceptImpl) concept).getLabel();
+            Label label = ((SchemaConceptImpl) concept).getLabel();
             ontologyConceptCache.remove(label);
             labelCache.remove(label);
         }
@@ -244,7 +244,7 @@ public class TxCache {
     public void cacheConcept(Concept concept){
         conceptCache.put(concept.getId(), concept);
         if(concept.isOntologyConcept()){
-            OntologyConceptImpl ontologyElement = (OntologyConceptImpl) concept;
+            SchemaConceptImpl ontologyElement = (SchemaConceptImpl) concept;
             ontologyConceptCache.put(ontologyElement.getLabel(), ontologyElement);
             labelCache.put(ontologyElement.getLabel(), ontologyElement.getLabelId());
         }
@@ -308,7 +308,7 @@ public class TxCache {
      * @param <X> The type of the type
      * @return The cached type
      */
-    public <X extends OntologyConcept> X getCachedOntologyElement(Label label){
+    public <X extends SchemaConcept> X getCachedOntologyElement(Label label){
         //noinspection unchecked
         return (X) ontologyConceptCache.get(label);
     }

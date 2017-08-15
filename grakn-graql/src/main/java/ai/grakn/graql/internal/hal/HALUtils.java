@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
@@ -94,21 +94,21 @@ public class HALUtils {
         }
     }
 
-    static Schema.BaseType getBaseType(OntologyConcept ontologyConcept) {
-        if (ontologyConcept.isEntityType()) {
+    static Schema.BaseType getBaseType(SchemaConcept schemaConcept) {
+        if (schemaConcept.isEntityType()) {
             return Schema.BaseType.ENTITY_TYPE;
-        } else if (ontologyConcept.isRelationType()) {
+        } else if (schemaConcept.isRelationType()) {
             return Schema.BaseType.RELATION_TYPE;
-        } else if (ontologyConcept.isResourceType()) {
+        } else if (schemaConcept.isResourceType()) {
             return Schema.BaseType.RESOURCE_TYPE;
-        } else if (ontologyConcept.isRuleType()) {
+        } else if (schemaConcept.isRuleType()) {
             return Schema.BaseType.RULE_TYPE;
-        } else if (ontologyConcept.isRole()) {
+        } else if (schemaConcept.isRole()) {
             return Schema.BaseType.ROLE;
-        } else if (ontologyConcept.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
+        } else if (schemaConcept.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             return Schema.BaseType.TYPE;
         } else {
-            throw CommonUtil.unreachableStatement("Unrecognised base type of " + ontologyConcept);
+            throw CommonUtil.unreachableStatement("Unrecognised base type of " + schemaConcept);
         }
     }
 
@@ -129,7 +129,7 @@ public class HALUtils {
         }
         if (concept.isType()) {
             resource.withProperty(NAME_PROPERTY, concept.asType().getLabel().getValue());
-            resource.withProperty(IMPLICIT_PROPERTY, ((OntologyConcept)concept).isImplicit());
+            resource.withProperty(IMPLICIT_PROPERTY, ((SchemaConcept)concept).isImplicit());
         }
     }
 

@@ -24,7 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -660,9 +660,9 @@ public class MatchQueryTest {
             Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get("x").collect(Collectors.toSet());
             Collection<Role> graphAPIPlays;
 
-            OntologyConcept ontologyConcept = graph.getOntologyConcept(type);
-            if (ontologyConcept.isType()) {
-                graphAPIPlays = ontologyConcept.asType().plays().collect(toSet());
+            SchemaConcept schemaConcept = graph.getOntologyConcept(type);
+            if (schemaConcept.isType()) {
+                graphAPIPlays = schemaConcept.asType().plays().collect(toSet());
             } else {
                 graphAPIPlays = Collections.EMPTY_SET;
             }

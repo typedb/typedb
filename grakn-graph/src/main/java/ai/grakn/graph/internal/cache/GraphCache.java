@@ -20,9 +20,9 @@ package ai.grakn.graph.internal.cache;
 
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.graph.internal.concept.OntologyConceptImpl;
+import ai.grakn.graph.internal.concept.SchemaConceptImpl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class GraphCache {
     //Caches
-    private final Cache<Label, OntologyConcept> cachedTypes;
+    private final Cache<Label, SchemaConcept> cachedTypes;
     private final Map<Label, LabelId> cachedLabels;
 
     public GraphCache(Properties properties){
@@ -72,7 +72,7 @@ public class GraphCache {
      * @param label The label of the type to cache
      * @param type The type to cache
      */
-    public void cacheType(Label label, OntologyConcept type){
+    public void cacheType(Label label, SchemaConcept type){
         cachedTypes.put(label, type);
     }
 
@@ -100,7 +100,7 @@ public class GraphCache {
 
         //Flush All The Internal Transaction Caches
         txCache.getOntologyConceptCache().values().forEach(ontologyConcept
-                -> OntologyConceptImpl.from(ontologyConcept).txCacheFlush());
+                -> SchemaConceptImpl.from(ontologyConcept).txCacheFlush());
     }
 
     /**
@@ -117,7 +117,7 @@ public class GraphCache {
      *
      * @return an immutable copy of the cached ontology.
      */
-    public Map<Label, OntologyConcept> getCachedTypes(){
+    public Map<Label, SchemaConcept> getCachedTypes(){
         return ImmutableMap.copyOf(cachedTypes.asMap());
     }
 }

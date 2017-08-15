@@ -20,7 +20,7 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
@@ -42,7 +42,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class OntologyConceptTest extends GraphTestBase {
+public class SchemaConceptTest extends GraphTestBase {
 
     @Test
     public void whenChangingOntologyConceptLabel_EnsureLabelIsChangedAndOldLabelIsDead(){
@@ -80,7 +80,7 @@ public class OntologyConceptTest extends GraphTestBase {
         RelationType relationType = graknGraph.getRelationType(hasResourceLabel.getValue());
         Assert.assertEquals(hasResourceLabel, relationType.getLabel());
 
-        Set<Label> roleLabels = relationType.relates().map(OntologyConcept::getLabel).collect(toSet());
+        Set<Label> roleLabels = relationType.relates().map(SchemaConcept::getLabel).collect(toSet());
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
         assertThat(entityType.plays().collect(toSet()), containsInAnyOrder(graknGraph.getRole(hasResourceOwnerLabel.getValue())));

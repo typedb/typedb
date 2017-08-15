@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.MatchQuery;
@@ -102,17 +102,17 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Set<OntologyConcept> getOntologyConcepts(GraknGraph graph) {
+    public Set<SchemaConcept> getOntologyConcepts(GraknGraph graph) {
         return pattern.getVars().stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
-                .map(graph::<OntologyConcept>getOntologyConcept)
+                .map(graph::<SchemaConcept>getOntologyConcept)
                 .filter(Objects::nonNull)
                 .collect(toSet());
     }
 
     @Override
-    public Set<OntologyConcept> getOntologyConcepts() {
+    public Set<SchemaConcept> getOntologyConcepts() {
         throw GraqlQueryException.noGraph();
     }
 

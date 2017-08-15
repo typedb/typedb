@@ -17,20 +17,20 @@
  */
 package ai.grakn.graql.internal.reasoner.utils.conversion;
 
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import com.google.common.collect.Multimap;
 
 /**
  * <p>
- *      OntologyConceptConverter interface for conversion between compatible {@link ai.grakn.concept.OntologyConcept}.
+ *      OntologyConceptConverter interface for conversion between compatible {@link SchemaConcept}.
  * </p>
  * @param <T> type to convert from
  *
  * @author Kasper Piskorski
  */
-public interface OntologyConceptConverter<T extends OntologyConcept>{
+public interface OntologyConceptConverter<T extends SchemaConcept>{
     /**
      * convert a given type to a map of relation types in which it can play roles
      * and the corresponding role types including entity type hierarchy

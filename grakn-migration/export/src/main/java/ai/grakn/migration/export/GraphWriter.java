@@ -19,7 +19,7 @@ package ai.grakn.migration.export;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.util.Schema;
@@ -79,7 +79,7 @@ public class GraphWriter {
      * Get all the types in a graph.
      * @return a stream of all types with non-reserved IDs
      */
-    private Stream<? extends OntologyConcept> types(){
+    private Stream<? extends SchemaConcept> types(){
         return Stream.concat(graph.admin().getMetaConcept().subs(), graph.admin().getMetaRole().subs()).
                 filter(t -> !Schema.MetaSchema.isMetaLabel(t.getLabel()));
     }

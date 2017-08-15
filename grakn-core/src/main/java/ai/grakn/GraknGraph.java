@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -205,17 +205,17 @@ public interface GraknGraph extends AutoCloseable{
     <T extends Concept> T getConcept(ConceptId id);
 
     /**
-     * Get the {@link OntologyConcept} with the label provided, if it exists.
+     * Get the {@link SchemaConcept} with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the {@link OntologyConcept} in the graph.
-     * @return The {@link OntologyConcept} with the provided label or null if no such {@link OntologyConcept} exists.
+     * @param label A unique label which identifies the {@link SchemaConcept} in the graph.
+     * @return The {@link SchemaConcept} with the provided label or null if no such {@link SchemaConcept} exists.
      *
      * @throws GraphOperationException if the graph is closed
      * @throws ClassCastException if the type is not an instance of {@link T}
      */
     @CheckReturnValue
     @Nullable
-    <T extends OntologyConcept> T getOntologyConcept(Label label);
+    <T extends SchemaConcept> T getOntologyConcept(Label label);
 
     /**
      * Get the {@link Type} with the label provided, if it exists.

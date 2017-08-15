@@ -18,7 +18,7 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -154,7 +154,7 @@ public class TypePropertyTest {
     @Property
     public void whenAddingAPlaysToATypesIndirectSuperType_TheTypePlaysThatRole(
             Type type, @FromGraph Role role, long seed) {
-        OntologyConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(type), seed);
+        SchemaConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(type), seed);
         assumeTrue(superConcept.isType());
         assumeFalse(isMetaLabel(superConcept.getLabel()));
 

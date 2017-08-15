@@ -21,7 +21,7 @@ package ai.grakn.test.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
@@ -255,24 +255,24 @@ public class ConceptPropertyTest {
         // Confirm this concept is allowed to be deleted
         // TODO: A better way to handle these assumptions?
         if (concept.isOntologyConcept()) {
-            OntologyConcept ontologyConcept = concept.asOntologyConcept();
-            assumeThat(ontologyConcept.subs().collect(toSet()), contains(ontologyConcept));
-            if(ontologyConcept.isType()) {
-                Type type = ontologyConcept.asType();
+            SchemaConcept schemaConcept = concept.asOntologyConcept();
+            assumeThat(schemaConcept.subs().collect(toSet()), contains(schemaConcept));
+            if(schemaConcept.isType()) {
+                Type type = schemaConcept.asType();
                 assumeThat(type.instances().collect(toSet()), empty());
                 assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());
                 assumeThat(type.getRulesOfConclusion().collect(toSet()), empty());
             }
 
-            if (ontologyConcept.isRole()) {
-                Role role = ontologyConcept.asRole();
+            if (schemaConcept.isRole()) {
+                Role role = schemaConcept.asRole();
                 assumeThat(role.playedByTypes().collect(toSet()), empty());
                 assumeThat(role.relationTypes().collect(toSet()), empty());
                 Stream<Relation> allRelations = graph.admin().getMetaRelationType().instances();
                 Set<Role> allRolesPlayed = allRelations.flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
                 assumeThat(allRolesPlayed, not(hasItem(role)));
-            } else if (ontologyConcept.isRelationType()) {
-                assumeThat(ontologyConcept.asRelationType().relates().collect(toSet()), empty());
+            } else if (schemaConcept.isRelationType()) {
+                assumeThat(schemaConcept.asRelationType().relates().collect(toSet()), empty());
             }
         }
     }

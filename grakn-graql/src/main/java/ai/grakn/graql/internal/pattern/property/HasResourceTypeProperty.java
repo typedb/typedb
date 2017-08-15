@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -163,8 +163,8 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
         Label label = this.resourceType().getTypeLabel().orElse(null);
 
         Var predicateVar = var().asUserDefined();
-        OntologyConcept ontologyConcept = parent.graph().getOntologyConcept(label);
-        IdPredicate predicate = new IdPredicate(predicateVar, ontologyConcept, parent);
+        SchemaConcept schemaConcept = parent.graph().getOntologyConcept(label);
+        IdPredicate predicate = new IdPredicate(predicateVar, schemaConcept, parent);
         //isa part
         VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();
         return new HasAtom(resVar, predicateVar, predicate, parent);

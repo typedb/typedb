@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.reasoner.utils.conversion;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import com.google.common.collect.HashMultimap;
@@ -32,12 +32,12 @@ import com.google.common.collect.Multimap;
  *
  * @author Kasper Piskorski
  */
-public class OntologyConceptConverterImpl implements OntologyConceptConverter<OntologyConcept> {
+public class OntologyConceptConverterImpl implements OntologyConceptConverter<SchemaConcept> {
 
     @Override
-    public Multimap<RelationType, Role> toRelationMultimap(OntologyConcept ontologyConcept) {
+    public Multimap<RelationType, Role> toRelationMultimap(SchemaConcept schemaConcept) {
         Multimap<RelationType, Role> relationMap = HashMultimap.create();
-        ontologyConcept.subs().filter(Concept::isType)
+        schemaConcept.subs().filter(Concept::isType)
                 .flatMap(t -> t.asType().plays())
                 .forEach(roleType -> {
                     roleType.relationTypes()

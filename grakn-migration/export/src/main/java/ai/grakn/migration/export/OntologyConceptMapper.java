@@ -17,7 +17,7 @@
  */
 package ai.grakn.migration.export;
 
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -37,15 +37,15 @@ public class OntologyConceptMapper {
 
     /**
      * Map a Type to the Graql string representation
-     * @param ontologyConcept type to be mapped
+     * @param schemaConcept type to be mapped
      * @return Graql var equivalent to the given type
      */
-    public static VarPattern map(OntologyConcept ontologyConcept) {
-        VarPattern mapped = formatBase(ontologyConcept);
-        if (ontologyConcept.isRelationType()) {
-            mapped = map(mapped, ontologyConcept.asRelationType());
-        } else if (ontologyConcept.isResourceType()) {
-            mapped = map(mapped, ontologyConcept.asResourceType());
+    public static VarPattern map(SchemaConcept schemaConcept) {
+        VarPattern mapped = formatBase(schemaConcept);
+        if (schemaConcept.isRelationType()) {
+            mapped = map(mapped, schemaConcept.asRelationType());
+        } else if (schemaConcept.isResourceType()) {
+            mapped = map(mapped, schemaConcept.asResourceType());
         }
 
         return mapped;
@@ -73,19 +73,19 @@ public class OntologyConceptMapper {
 
     /**
      * Create a var with the information underlying all Types
-     * @param ontologyConcept type to be mapped
+     * @param schemaConcept type to be mapped
      * @return {@link VarPattern} containing basic information about the given type
      */
-    private static VarPattern formatBase(OntologyConcept ontologyConcept) {
-        VarPattern var = var().label(ontologyConcept.getLabel());
+    private static VarPattern formatBase(SchemaConcept schemaConcept) {
+        VarPattern var = var().label(schemaConcept.getLabel());
 
-        OntologyConcept superType = ontologyConcept.sup();
-        if (ontologyConcept.sup() != null) {
+        SchemaConcept superType = schemaConcept.sup();
+        if (schemaConcept.sup() != null) {
             var = var.sub(Graql.label(superType.getLabel()));
         }
 
-        if(ontologyConcept.isType()) {
-            Type type = ontologyConcept.asType();
+        if(schemaConcept.isType()) {
+            Type type = schemaConcept.asType();
             var = plays(var, type);
             var = isAbstract(var, type);
         }

@@ -26,7 +26,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -44,7 +44,7 @@ import ai.grakn.graph.internal.cache.TxCache;
 import ai.grakn.graph.internal.concept.ConceptImpl;
 import ai.grakn.graph.internal.concept.ConceptVertex;
 import ai.grakn.graph.internal.concept.ElementFactory;
-import ai.grakn.graph.internal.concept.OntologyConceptImpl;
+import ai.grakn.graph.internal.concept.SchemaConceptImpl;
 import ai.grakn.graph.internal.concept.RelationEdge;
 import ai.grakn.graph.internal.concept.RelationImpl;
 import ai.grakn.graph.internal.concept.RelationReified;
@@ -304,13 +304,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
-     * Copies the {@link OntologyConcept} and it's subs into the {@link TxCache}.
-     * This is important as lookups for {@link OntologyConcept}s based on {@link Label} depend on this caching.
+     * Copies the {@link SchemaConcept} and it's subs into the {@link TxCache}.
+     * This is important as lookups for {@link SchemaConcept}s based on {@link Label} depend on this caching.
      *
-     * @param ontologyConcept the {@link OntologyConcept} to be copied into the {@link TxCache}
+     * @param schemaConcept the {@link SchemaConcept} to be copied into the {@link TxCache}
      */
-    private void copyToCache(OntologyConcept ontologyConcept) {
-        ontologyConcept.subs().forEach(concept -> {
+    private void copyToCache(SchemaConcept schemaConcept) {
+        schemaConcept.subs().forEach(concept -> {
             getGraphCache().cacheLabel(concept.getLabel(), concept.getLabelId());
             getGraphCache().cacheType(concept.getLabel(), concept);
         });
@@ -447,18 +447,18 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <T extends OntologyConcept> T putOntologyElement(Label label, Schema.BaseType baseType, Function<VertexElement, T> factory) {
+    private <T extends SchemaConcept> T putOntologyElement(Label label, Schema.BaseType baseType, Function<VertexElement, T> factory) {
         checkOntologyMutationAllowed();
-        OntologyConcept ontologyConcept = buildOntologyElement(label, () -> factory.apply(putVertex(label, baseType)));
+        SchemaConcept schemaConcept = buildOntologyElement(label, () -> factory.apply(putVertex(label, baseType)));
 
-        T finalType = validateOntologyElement(ontologyConcept, baseType, () -> {
+        T finalType = validateOntologyElement(schemaConcept, baseType, () -> {
             if (Schema.MetaSchema.isMetaLabel(label)) throw GraphOperationException.reservedLabel(label);
-            throw PropertyNotUniqueException.cannotCreateProperty(ontologyConcept, Schema.VertexProperty.ONTOLOGY_LABEL, label);
+            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.ONTOLOGY_LABEL, label);
         });
 
         //Automatic shard creation - If this type does not have a shard create one
-        if (!Schema.MetaSchema.isMetaLabel(label) && !OntologyConceptImpl.from(ontologyConcept).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()) {
-            OntologyConceptImpl.from(ontologyConcept).createShard();
+        if (!Schema.MetaSchema.isMetaLabel(label) && !SchemaConceptImpl.from(schemaConcept).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()) {
+            SchemaConceptImpl.from(schemaConcept).createShard();
         }
 
         return finalType;
@@ -480,7 +480,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param dbBuilder A method which builds the type via a DB read or write
      * @return The type which was either cached or built via a DB read or write
      */
-    private OntologyConcept buildOntologyElement(Label label, Supplier<OntologyConcept> dbBuilder) {
+    private SchemaConcept buildOntologyElement(Label label, Supplier<SchemaConcept> dbBuilder) {
         if (txCache().isTypeCached(label)) {
             return txCache().getCachedOntologyElement(label);
         } else {
@@ -578,15 +578,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return null;
     }
 
-    private <T extends OntologyConcept> T getOntologyConcept(Label label, Schema.BaseType baseType) {
+    private <T extends SchemaConcept> T getOntologyConcept(Label label, Schema.BaseType baseType) {
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
-        OntologyConcept ontologyConcept = buildOntologyElement(label, () -> getOntologyConcept(convertToId(label)));
-        return validateOntologyElement(ontologyConcept, baseType, () -> null);
+        SchemaConcept schemaConcept = buildOntologyElement(label, () -> getOntologyConcept(convertToId(label)));
+        return validateOntologyElement(schemaConcept, baseType, () -> null);
     }
 
     @Nullable
-    public <T extends OntologyConcept> T getOntologyConcept(LabelId id) {
+    public <T extends SchemaConcept> T getOntologyConcept(LabelId id) {
         if (!id.isValid()) return null;
         return getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
     }
@@ -615,7 +615,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public <T extends OntologyConcept> T getOntologyConcept(Label label) {
+    public <T extends SchemaConcept> T getOntologyConcept(Label label) {
         return getOntologyConcept(label, Schema.BaseType.ONTOLOGY_ELEMENT);
     }
 
@@ -650,7 +650,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public OntologyConcept getMetaConcept() {
+    public SchemaConcept getMetaConcept() {
         return getOntologyConcept(Schema.MetaSchema.THING.getId());
     }
 

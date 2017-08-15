@@ -19,7 +19,7 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
 
 /**
@@ -29,15 +29,15 @@ import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
  *
  * @author Felix Chapman
  */
-public class MetaTypes extends FromGraphGenerator<OntologyConcept> {
+public class MetaTypes extends FromGraphGenerator<SchemaConcept> {
 
     public MetaTypes() {
-        // TODO: This should generate `Type`, not `OntologyConcept`
-        super(OntologyConcept.class);
+        // TODO: This should generate `Type`, not `SchemaConcept`
+        super(SchemaConcept.class);
     }
 
     @Override
-    protected OntologyConcept generateFromGraph() {
+    protected SchemaConcept generateFromGraph() {
         return graph().admin().getMetaConcept();
     }
 

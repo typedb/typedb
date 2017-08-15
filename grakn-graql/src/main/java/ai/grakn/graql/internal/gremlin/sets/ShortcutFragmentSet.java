@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
@@ -186,7 +186,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         Preconditions.checkState(this.role.isPresent());
         Preconditions.checkState(!roleTypeLabels.isPresent());
 
-        Set<Label> newRoleLabels = role.subs().map(OntologyConcept::getLabel).collect(toSet());
+        Set<Label> newRoleLabels = role.subs().map(SchemaConcept::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleLabels), relationTypeLabels

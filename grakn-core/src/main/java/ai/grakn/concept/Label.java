@@ -30,7 +30,7 @@ import java.util.function.Function;
  * </p>
  *
  * <p>
- *     A class which represents the unique label of any {@link OntologyConcept} in the {@link ai.grakn.GraknGraph}.
+ *     A class which represents the unique label of any {@link SchemaConcept} in the {@link ai.grakn.GraknGraph}.
  *     Also contains a static method for producing {@link Label}s from Strings.
  * </p>
  *

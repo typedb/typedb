@@ -43,7 +43,7 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public interface Type extends OntologyConcept {
+public interface Type extends SchemaConcept {
     //------------------------------------- Modifiers ----------------------------------
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.

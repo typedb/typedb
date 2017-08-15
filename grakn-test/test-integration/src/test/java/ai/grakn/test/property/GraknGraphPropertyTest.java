@@ -25,7 +25,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -132,7 +132,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingGetOntologyConceptWithAnExistingLabel_ItReturnsThatConcept(
-            @Open GraknGraph graph, @FromGraph OntologyConcept concept) {
+            @Open GraknGraph graph, @FromGraph SchemaConcept concept) {
         Label label = concept.getLabel();
         assertEquals(concept, graph.getOntologyConcept(label));
     }
@@ -140,7 +140,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingGetOntologyConceptWithANonExistingTypeLabel_ItReturnsNull(
             @Open GraknGraph graph, Label label) {
-        Set<Label> allTypes = allOntologyElementsFrom(graph).stream().map(OntologyConcept::getLabel).collect(toSet());
+        Set<Label> allTypes = allOntologyElementsFrom(graph).stream().map(SchemaConcept::getLabel).collect(toSet());
         assumeThat(allTypes, not(hasItem(label)));
 
         assertNull(graph.getOntologyConcept(label));

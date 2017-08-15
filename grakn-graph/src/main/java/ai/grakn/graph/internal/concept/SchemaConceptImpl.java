@@ -21,7 +21,7 @@ package ai.grakn.graph.internal.concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -57,23 +57,23 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  * @param <T> The leaf interface of the object concept.
  *           For example an {@link EntityType} or {@link RelationType} or {@link Role}
  */
-public abstract class OntologyConceptImpl<T extends OntologyConcept> extends ConceptImpl implements OntologyConcept {
+public abstract class SchemaConceptImpl<T extends SchemaConcept> extends ConceptImpl implements SchemaConcept {
     private final Cache<Label> cachedLabel = new Cache<>(Cacheable.label(), () ->  Label.of(vertex().property(Schema.VertexProperty.ONTOLOGY_LABEL)));
     private final Cache<LabelId> cachedLabelId = new Cache<>(Cacheable.labelId(), () -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
     private final Cache<T> cachedSuperType = new Cache<>(Cacheable.concept(), () -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
     private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(Cacheable.set(), () -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
     private final Cache<Boolean> cachedIsImplicit = new Cache<>(Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
-    OntologyConceptImpl(VertexElement vertexElement) {
+    SchemaConceptImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    OntologyConceptImpl(VertexElement vertexElement, T superType) {
+    SchemaConceptImpl(VertexElement vertexElement, T superType) {
         this(vertexElement);
         if(sup() == null) sup(superType);
     }
 
-    OntologyConceptImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
+    SchemaConceptImpl(VertexElement vertexElement, T superType, Boolean isImplicit) {
         this(vertexElement, superType);
         vertex().propertyImmutable(Schema.VertexProperty.IS_IMPLICIT, isImplicit, vertex().property(Schema.VertexProperty.IS_IMPLICIT));
         cachedIsImplicit.set(isImplicit);
@@ -175,7 +175,7 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
 
             //Update neighbouring caches
             //noinspection unchecked
-            ((OntologyConceptImpl<OntologyConcept>) cachedSuperType.get()).deleteCachedDirectedSubType(getThis());
+            ((SchemaConceptImpl<SchemaConcept>) cachedSuperType.get()).deleteCachedDirectedSubType(getThis());
 
             //Clear internal caching
             txCacheClear();
@@ -213,12 +213,12 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
     /**
      *
      * @param root The current Ontology Element
-     * @return All the sub children of the root. Effectively calls  the cache {@link OntologyConceptImpl#cachedDirectSubTypes} recursively
+     * @return All the sub children of the root. Effectively calls  the cache {@link SchemaConceptImpl#cachedDirectSubTypes} recursively
      */
     @SuppressWarnings("unchecked")
     private Stream<T> nextSubLevel(T root){
         return Stream.concat(Stream.of(root),
-                OntologyConceptImpl.<T>from(root).cachedDirectSubTypes.get().stream().flatMap(this::nextSubLevel));
+                SchemaConceptImpl.<T>from(root).cachedDirectSubTypes.get().stream().flatMap(this::nextSubLevel));
     }
 
     /**
@@ -250,7 +250,7 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
      */
     public T sub(T concept){
         //noinspection unchecked
-        ((OntologyConceptImpl) concept).sup(this);
+        ((SchemaConceptImpl) concept).sup(this);
         return getThis();
     }
 
@@ -278,12 +278,12 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
             //Update the sub types of the old super type
             if(oldSuperType != null) {
                 //noinspection unchecked - Casting is needed to access {deleteCachedDirectedSubTypes} method
-                ((OntologyConceptImpl<T>) oldSuperType).deleteCachedDirectedSubType(getThis());
+                ((SchemaConceptImpl<T>) oldSuperType).deleteCachedDirectedSubType(getThis());
             }
 
             //Add this as the subtype to the supertype
             //noinspection unchecked - Casting is needed to access {addCachedDirectSubTypes} method
-            ((OntologyConceptImpl<T>) newSuperType).addCachedDirectSubType(getThis());
+            ((SchemaConceptImpl<T>) newSuperType).addCachedDirectSubType(getThis());
 
             //Track any existing data if there is some
             trackRolePlayers();
@@ -312,8 +312,8 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
 
     private boolean superLoops(){
         //Check For Loop
-        HashSet<OntologyConcept> foundTypes = new HashSet<>();
-        OntologyConcept currentSuperType = sup();
+        HashSet<SchemaConcept> foundTypes = new HashSet<>();
+        SchemaConcept currentSuperType = sup();
         while (currentSuperType != null){
             foundTypes.add(currentSuperType);
             currentSuperType = currentSuperType.sup();
@@ -326,7 +326,7 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
 
     /**
      *
-     * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a hypothesis
+     * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a hypothesis
      */
     @Override
     public Stream<Rule> getRulesOfHypothesis() {
@@ -335,7 +335,7 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
 
     /**
      *
-     * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a conclusion
+     * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion
      */
     @Override
     public Stream<Rule> getRulesOfConclusion() {
@@ -349,8 +349,8 @@ public abstract class OntologyConceptImpl<T extends OntologyConcept> extends Con
         return message;
     }
 
-    public static <X extends OntologyConcept> OntologyConceptImpl<X> from(OntologyConcept ontologyConcept){
+    public static <X extends SchemaConcept> SchemaConceptImpl<X> from(SchemaConcept schemaConcept){
         //noinspection unchecked
-        return (OntologyConceptImpl<X>) ontologyConcept;
+        return (SchemaConceptImpl<X>) schemaConcept;
     }
 }

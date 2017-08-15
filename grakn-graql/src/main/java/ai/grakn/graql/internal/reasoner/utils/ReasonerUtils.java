@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.utils;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -189,12 +189,12 @@ public class ReasonerUtils {
     }
 
     /**
-     * @param ontologyConcept input type
+     * @param schemaConcept input type
      * @return set of all non-meta super types of the role
      */
-    public static Set<OntologyConcept> getSupers(OntologyConcept ontologyConcept){
-        Set<OntologyConcept> superTypes = new HashSet<>();
-        OntologyConcept superType = ontologyConcept.sup();
+    public static Set<SchemaConcept> getSupers(SchemaConcept schemaConcept){
+        Set<SchemaConcept> superTypes = new HashSet<>();
+        SchemaConcept superType = schemaConcept.sup();
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
             superTypes.add(superType);
             superType = superType.sup();
@@ -217,9 +217,9 @@ public class ReasonerUtils {
 
     /**
      * @param ontologyConcepts entry set
-     * @return top non-meta {@link OntologyConcept} from within the provided set of {@link Role}
+     * @return top non-meta {@link SchemaConcept} from within the provided set of {@link Role}
      */
-    public static <T extends OntologyConcept> Set<T> getOntologyConcepts(Set<T> ontologyConcepts) {
+    public static <T extends SchemaConcept> Set<T> getOntologyConcepts(Set<T> ontologyConcepts) {
         return ontologyConcepts.stream()
                 .filter(rt -> Sets.intersection(getSupers(rt), ontologyConcepts).isEmpty())
                 .collect(toSet());
@@ -262,7 +262,7 @@ public class ReasonerUtils {
      * @param <T> type generic
      * @return map of compatible relation types and their corresponding role types
      */
-    public static <T extends OntologyConcept> Multimap<RelationType, Role> getCompatibleRelationTypesWithRoles(Set<T> types, OntologyConceptConverter<T> ontologyConceptConverter) {
+    public static <T extends SchemaConcept> Multimap<RelationType, Role> getCompatibleRelationTypesWithRoles(Set<T> types, OntologyConceptConverter<T> ontologyConceptConverter) {
         Multimap<RelationType, Role> compatibleTypes = HashMultimap.create();
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> it = types.iterator();
@@ -395,9 +395,9 @@ public class ReasonerUtils {
      * @param child type
      * @return true if child is a subtype of parent
      */
-    public static boolean checkCompatible(OntologyConcept parent, OntologyConcept child) {
+    public static boolean checkCompatible(SchemaConcept parent, SchemaConcept child) {
         if(Schema.MetaSchema.isMetaLabel(parent.getLabel())) return true;
-        OntologyConcept superType = child;
+        SchemaConcept superType = child;
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())){
             if (superType.equals(parent)) return true;
             superType = superType.sup();
@@ -410,7 +410,7 @@ public class ReasonerUtils {
      * @param child type
      * @return true if types do not belong to the same type hierarchy
      */
-    public static boolean checkDisjoint(OntologyConcept parent, OntologyConcept child) {
+    public static boolean checkDisjoint(SchemaConcept parent, SchemaConcept child) {
         return !checkCompatible(parent, child) && !checkCompatible(child, parent);
     }
 }

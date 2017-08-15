@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.printer;
 
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -168,7 +168,7 @@ public class GraqlPrinterTest {
     public void testConcept() {
         Printer printer = Printers.graql(true);
 
-        OntologyConcept concept = rule.graph().admin().getMetaConcept();
+        SchemaConcept concept = rule.graph().admin().getMetaConcept();
 
         String conceptString = printer.graqlString(concept);
 

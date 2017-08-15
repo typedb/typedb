@@ -21,7 +21,7 @@ package ai.grakn.generator;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.ResourceType;
 import com.google.common.collect.ImmutableList;
 
@@ -39,7 +39,7 @@ public class PutOntologyConceptFunctions extends AbstractGenerator<BiFunction> {
     }
 
     @Override
-    protected BiFunction<GraknGraph, Label, OntologyConcept> generate() {
+    protected BiFunction<GraknGraph, Label, SchemaConcept> generate() {
         return random.choose(ImmutableList.of(
                 GraknGraph::putEntityType,
                 (graph, label) -> graph.putResourceType(label, gen(ResourceType.DataType.class)),

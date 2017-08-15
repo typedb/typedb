@@ -20,7 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -30,7 +30,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.graph.internal.concept.OntologyConceptImpl;
+import ai.grakn.graph.internal.concept.SchemaConceptImpl;
 import ai.grakn.graph.internal.concept.RelationImpl;
 import ai.grakn.graph.internal.concept.RelationReified;
 import ai.grakn.graph.internal.concept.RelationTypeImpl;
@@ -205,7 +205,7 @@ class ValidateGlobalRules {
 
         Collection<Role> superRelates = superRelationType.relates().collect(Collectors.toSet());
         Collection<Role> relates = relationType.relates().collect(Collectors.toSet());
-        Set<Label> relatesLabels = relates.stream().map(OntologyConcept::getLabel).collect(Collectors.toSet());
+        Set<Label> relatesLabels = relates.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers
@@ -214,7 +214,7 @@ class ValidateGlobalRules {
             superRelationType.superSet().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.getLabel())));
 
             for (Role relate : relates) {
-                boolean validRoleTypeFound = OntologyConceptImpl.from(relate).superSet().
+                boolean validRoleTypeFound = SchemaConceptImpl.from(relate).superSet().
                         anyMatch(superRole -> allSuperRolesPlayed.contains(superRole.getLabel()));
 
                 if(!validRoleTypeFound){
@@ -421,17 +421,17 @@ class ValidateGlobalRules {
         pattern.admin().getVars().stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
-                    OntologyConcept ontologyConcept = graph.getOntologyConcept(typeLabel);
-                    if(ontologyConcept == null){
+                    SchemaConcept schemaConcept = graph.getOntologyConcept(typeLabel);
+                    if(schemaConcept == null){
                         errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
                     } else {
                         if(Schema.VertexProperty.RULE_WHEN.equals(side)){
-                            if (ontologyConcept.isType()){
-                                RuleImpl.from(rule).addHypothesis(ontologyConcept.asType());
+                            if (schemaConcept.isType()){
+                                RuleImpl.from(rule).addHypothesis(schemaConcept.asType());
                             }
                         } else if (Schema.VertexProperty.RULE_THEN.equals(side)){
-                            if (ontologyConcept.isType()) {
-                                RuleImpl.from(rule).addConclusion(ontologyConcept.asType());
+                            if (schemaConcept.isType()) {
+                                RuleImpl.from(rule).addConclusion(schemaConcept.asType());
                             }
                         } else {
                             throw GraphOperationException.invalidPropertyUse(rule, side);

@@ -52,13 +52,13 @@ public interface Concept extends Comparable<Concept>{
 
     //------------------------------------- Other ---------------------------------
     /**
-     * Return as a {@link OntologyConcept} if the {@link Concept} is a {@link OntologyConcept}.
+     * Return as a {@link SchemaConcept} if the {@link Concept} is a {@link SchemaConcept}.
      *
-     * @return A {@link OntologyConcept} if the {@link Concept} is a {@link OntologyConcept}
+     * @return A {@link SchemaConcept} if the {@link Concept} is a {@link SchemaConcept}
      */
     @CheckReturnValue
-    default OntologyConcept asOntologyConcept(){
-        throw GraphOperationException.invalidCasting(this, OntologyConcept.class);
+    default SchemaConcept asOntologyConcept(){
+        throw GraphOperationException.invalidCasting(this, SchemaConcept.class);
     }
 
     /**
@@ -171,9 +171,9 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link OntologyConcept}
+     * Determine if the {@link Concept} is a {@link SchemaConcept}
      *
-     * @return true if the{@link Concept} concept is a {@link OntologyConcept}
+     * @return true if the{@link Concept} concept is a {@link SchemaConcept}
      */
     @CheckReturnValue
     default boolean isOntologyConcept(){

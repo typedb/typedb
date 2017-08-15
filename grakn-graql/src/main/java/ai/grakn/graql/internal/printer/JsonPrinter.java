@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.util.CommonUtil;
@@ -44,7 +44,7 @@ class JsonPrinter implements Printer<Json> {
 
         if (concept.isOntologyConcept()) {
             json.set("name", concept.asOntologyConcept().getLabel().getValue());
-            OntologyConcept superConcept = concept.asOntologyConcept().sup();
+            SchemaConcept superConcept = concept.asOntologyConcept().sup();
             if (superConcept != null) json.set("sub", superConcept.getLabel().getValue());
         } else if (concept.isThing()) {
             json.set("isa", concept.asThing().type().getLabel().getValue());

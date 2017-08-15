@@ -27,7 +27,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -301,8 +301,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private String summaryFormat(Object object) {
-        if (object instanceof OntologyConcept) {
-            return ((OntologyConcept) object).getLabel().getValue().replaceAll("-", "_");
+        if (object instanceof SchemaConcept) {
+            return ((SchemaConcept) object).getLabel().getValue().replaceAll("-", "_");
         } else if (object instanceof Thing) {
             Thing thing = (Thing) object;
             return summaryFormat(thing.type()) + thing.getId().getValue();
@@ -376,11 +376,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return concepts;
     }
 
-    public static Collection<? extends OntologyConcept> allOntologyElementsFrom(GraknGraph graph) {
-        Set<OntologyConcept> allOntologyConcepts = new HashSet<>();
-        allOntologyConcepts.addAll(graph.admin().getMetaConcept().subs().collect(toSet()));
-        allOntologyConcepts.addAll(graph.admin().getMetaRole().subs().collect(toSet()));
-        return allOntologyConcepts;
+    public static Collection<? extends SchemaConcept> allOntologyElementsFrom(GraknGraph graph) {
+        Set<SchemaConcept> allSchemaConcepts = new HashSet<>();
+        allSchemaConcepts.addAll(graph.admin().getMetaConcept().subs().collect(toSet()));
+        allSchemaConcepts.addAll(graph.admin().getMetaRole().subs().collect(toSet()));
+        return allSchemaConcepts;
     }
 
     public static Stream<? extends Thing> allInstancesFrom(GraknGraph graph) {

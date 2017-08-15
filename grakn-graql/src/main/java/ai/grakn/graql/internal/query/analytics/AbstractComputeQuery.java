@@ -26,7 +26,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Thing;
@@ -137,7 +137,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             RelationType metaRelationType = graph.admin().getMetaRelationType();
             metaRelationType.subs().forEach(subTypes::add);
             subTypes.remove(metaRelationType);
-            subLabels = subTypes.stream().map(OntologyConcept::getLabel).collect(Collectors.toSet());
+            subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
         } else {
             subTypes = subLabels.stream().map(label -> {
                 Type type = graph.getOntologyConcept(label);

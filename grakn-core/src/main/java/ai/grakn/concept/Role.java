@@ -24,18 +24,18 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     An {@link OntologyConcept} which defines a role which can be played in a {@link RelationType}
+ *     An {@link SchemaConcept} which defines a role which can be played in a {@link RelationType}
  * </p>
  *
  * <p>
  *     This ontological element defines the {@link Role} which make up a {@link RelationType}.
- *     It behaves similarly to {@link OntologyConcept} when relating to other types.
+ *     It behaves similarly to {@link SchemaConcept} when relating to other types.
  * </p>
  *
  * @author fppt
  *
  */
-public interface Role extends OntologyConcept {
+public interface Role extends SchemaConcept {
     //------------------------------------- Modifiers ----------------------------------
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.

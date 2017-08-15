@@ -21,7 +21,7 @@ package ai.grakn.test.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -67,18 +67,18 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyConceptWithTheGivenLabel(
             @Open GraknGraph graph, @Unused Label label,
-            @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, OntologyConcept> putOntologyConcept
+            @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, SchemaConcept> putOntologyConcept
     ) {
-        OntologyConcept type = putOntologyConcept.apply(graph, label);
+        SchemaConcept type = putOntologyConcept.apply(graph, label);
         assertEquals(label, type.getLabel());
     }
 
     @Property
     public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyConceptWithDefaultProperties(
             @Open GraknGraph graph, @Unused Label label,
-            @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, OntologyConcept> putOntologyConcept
+            @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, SchemaConcept> putOntologyConcept
     ) {
-        OntologyConcept concept = putOntologyConcept.apply(graph, label);
+        SchemaConcept concept = putOntologyConcept.apply(graph, label);
 
         assertThat("Concept should only have one sub-type: itself", concept.subs().collect(toSet()), contains(concept));
         assertFalse("Concept should not be implicit", concept.isImplicit());
