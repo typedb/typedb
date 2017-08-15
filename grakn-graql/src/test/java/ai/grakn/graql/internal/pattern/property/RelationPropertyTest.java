@@ -45,7 +45,7 @@ public class RelationPropertyTest {
 
     @Test
     public void whenCheckingRoleIsAValidRelationType_Throw() {
-        RelationProperty property = new RelationProperty(ImmutableMultiset.of());
+        RelationProperty property = RelationProperty.of(ImmutableMultiset.of());
         Label role = Schema.MetaSchema.ROLE.getLabel();
 
         exception.expect(GraqlQueryException.class);

@@ -39,16 +39,15 @@ import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.CommonUtil;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
@@ -67,28 +66,25 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Felix Chapman
  */
-public class RelationProperty extends AbstractVarProperty implements UniqueVarProperty {
+@AutoValue
+public abstract class RelationProperty extends AbstractVarProperty implements UniqueVarProperty {
 
-    private final ImmutableMultiset<RelationPlayer> relationPlayers;
-
-    public RelationProperty(ImmutableMultiset<RelationPlayer> relationPlayers) {
-        this.relationPlayers = relationPlayers;
+    public static RelationProperty of(ImmutableMultiset<RelationPlayer> relationPlayers) {
+        return new AutoValue_RelationProperty(relationPlayers);
     }
 
-    public Stream<RelationPlayer> getRelationPlayers() {
-        return relationPlayers.stream();
-    }
+    public abstract ImmutableMultiset<RelationPlayer> relationPlayers();
 
     @Override
     public void buildString(StringBuilder builder) {
-        builder.append("(").append(relationPlayers.stream().map(Object::toString).collect(joining(", "))).append(")");
+        builder.append("(").append(relationPlayers().stream().map(Object::toString).collect(joining(", "))).append(")");
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         Collection<Var> castingNames = new HashSet<>();
 
-        ImmutableSet<EquivalentFragmentSet> traversals = relationPlayers.stream().flatMap(relationPlayer -> {
+        ImmutableSet<EquivalentFragmentSet> traversals = relationPlayers().stream().flatMap(relationPlayer -> {
 
             Var castingName = Graql.var();
             castingNames.add(castingName);
@@ -107,12 +103,12 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return relationPlayers.stream().map(RelationPlayer::getRole).flatMap(CommonUtil::optionalToStream);
+        return relationPlayers().stream().map(RelationPlayer::getRole).flatMap(CommonUtil::optionalToStream);
     }
 
     @Override
     public Stream<VarPatternAdmin> getInnerVars() {
-        return relationPlayers.stream().flatMap(relationPlayer -> {
+        return relationPlayers().stream().flatMap(relationPlayer -> {
             Stream.Builder<VarPatternAdmin> builder = Stream.builder();
             builder.add(relationPlayer.getRolePlayer());
             relationPlayer.getRole().ifPresent(builder::add);
@@ -150,13 +146,13 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     @Override
     public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
 
-        Set<Label> roleTypes = relationPlayers.stream()
+        Set<Label> roleTypes = relationPlayers().stream()
                 .map(RelationPlayer::getRole).flatMap(CommonUtil::optionalToStream)
                 .map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
         Optional<Label> maybeLabel =
-                var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarPatternAdmin::getTypeLabel);
+                var.getProperty(IsaProperty.class).map(IsaProperty::type).flatMap(VarPatternAdmin::getTypeLabel);
 
         maybeLabel.ifPresent(label -> {
             OntologyConcept ontologyConcept = graph.getOntologyConcept(label);
@@ -185,7 +181,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         Relation relation = executor.get(var).asRelation();
-        relationPlayers.forEach(relationPlayer -> addRoleplayer(executor, relation, relationPlayer));
+        relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relation, relationPlayer));
     }
 
     /**
@@ -203,7 +199,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        Stream<Var> relationPlayers = this.relationPlayers.stream()
+        Stream<Var> relationPlayers = this.relationPlayers().stream()
                 .flatMap(relationPlayer -> Stream.of(relationPlayer.getRolePlayer(), getRole(relationPlayer)))
                 .map(VarPatternAdmin::getVarName);
 
@@ -215,22 +211,6 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        RelationProperty that = (RelationProperty) o;
-
-        return relationPlayers.equals(that.relationPlayers);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return relationPlayers.hashCode();
-    }
-
-    @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //keep varName if reified, reified if contains more properties than the RelationProperty itself and potential IsaProperty
         boolean isReified = var.getProperties()
@@ -238,9 +218,8 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 .filter(prop -> !IsaProperty.class.isInstance(prop))
                 .count() > 0;
         VarPattern relVar = (var.getVarName().isUserDefinedName() || isReified)? var.getVarName().asUserDefined() : Graql.var();
-        List<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(Collectors.toList());
 
-        for (RelationPlayer rp : relationPlayers) {
+        for (RelationPlayer rp : relationPlayers()) {
             VarPatternAdmin role = rp.getRole().orElse(null);
             VarPatternAdmin rolePlayer = rp.getRolePlayer();
             if (role != null) relVar = relVar.rel(role, rolePlayer);
@@ -250,10 +229,10 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         //id part
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
         IdPredicate predicate = null;
-        Var typeVariable = isaProp != null? isaProp.getType().getVarName().asUserDefined() : Graql.var().asUserDefined();
+        Var typeVariable = isaProp != null? isaProp.type().getVarName().asUserDefined() : Graql.var().asUserDefined();
         //Isa present
         if (isaProp != null) {
-            VarPatternAdmin isaVar = isaProp.getType();
+            VarPatternAdmin isaVar = isaProp.type();
             Label label = isaVar.getTypeLabel().orElse(null);
             if (label != null) {
                 VarPatternAdmin idVar = typeVariable.id(parent.graph().getOntologyConcept(label).getId()).admin();

@@ -115,11 +115,24 @@ public class InferenceRule {
 
     public ConceptId getRuleId(){ return ruleId;}
 
+
     /**
-     * @return true if head and body do not share any variables
+     * @return true if the rule has disconnected head, i.e. head and body do not share any variables
      */
     public boolean hasDisconnectedHead(){
         return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
+    }
+
+    /**
+     * @return true if head satisfies the pattern specified in the body of the rule
+     */
+    boolean headSatisfiesBody(){
+        ReasonerQueryImpl extendedHead = ReasonerQueries.create(getHead());
+        getBody().getAtoms(TypeAtom.class)
+                .filter(t -> !t.isRelation())
+                .map(at -> AtomicFactory.create(at, extendedHead))
+                .forEach(extendedHead::addAtomic);
+        return getBody().isEquivalent(extendedHead);
     }
 
     /**

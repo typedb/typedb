@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
@@ -42,17 +43,14 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public class NeqProperty extends AbstractVarProperty implements NamedProperty {
+@AutoValue
+public abstract class NeqProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final VarPatternAdmin var;
-
-    public NeqProperty(VarPatternAdmin var) {
-        this.var = var;
+    public static NeqProperty of(VarPatternAdmin var) {
+        return new AutoValue_NeqProperty(var);
     }
 
-    public VarPatternAdmin getVar() {
-        return var;
-    }
+    public abstract VarPatternAdmin var();
 
     @Override
     public String getName() {
@@ -61,15 +59,15 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
 
     @Override
     public String getProperty() {
-        return var.getPrintableName();
+        return var().getPrintableName();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         return Sets.newHashSet(
                 EquivalentFragmentSets.notInternalFragmentSet(this, start),
-                EquivalentFragmentSets.notInternalFragmentSet(this, var.getVarName()),
-                EquivalentFragmentSets.neq(this, start, var.getVarName())
+                EquivalentFragmentSets.notInternalFragmentSet(this, var().getVarName()),
+                EquivalentFragmentSets.neq(this, start, var().getVarName())
         );
     }
 
@@ -85,22 +83,7 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
 
     @Override
     public Stream<VarPatternAdmin> getInnerVars() {
-        return Stream.of(var);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        NeqProperty that = (NeqProperty) o;
-
-        return var.equals(that.var);
-    }
-
-    @Override
-    public int hashCode() {
-        return var.hashCode();
+        return Stream.of(var());
     }
 
     @Override

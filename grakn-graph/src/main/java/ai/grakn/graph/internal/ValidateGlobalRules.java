@@ -426,9 +426,13 @@ class ValidateGlobalRules {
                         errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
                     } else {
                         if(Schema.VertexProperty.RULE_WHEN.equals(side)){
-                            RuleImpl.from(rule).addHypothesis(ontologyConcept);
+                            if (ontologyConcept.isType()){
+                                RuleImpl.from(rule).addHypothesis(ontologyConcept.asType());
+                            }
                         } else if (Schema.VertexProperty.RULE_THEN.equals(side)){
-                            RuleImpl.from(rule).addConclusion(ontologyConcept);
+                            if (ontologyConcept.isType()) {
+                                RuleImpl.from(rule).addConclusion(ontologyConcept.asType());
+                            }
                         } else {
                             throw GraphOperationException.invalidPropertyUse(rule, side);
                         }
