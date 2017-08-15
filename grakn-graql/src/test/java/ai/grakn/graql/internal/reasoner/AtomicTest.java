@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
@@ -41,7 +41,6 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
@@ -837,15 +836,15 @@ public class AtomicTest {
         RelationAtom atom = (RelationAtom) query.getAtom();
         RelationAtom atom2 = (RelationAtom) query2.getAtom();
 
-        List<RelationType> possibleTypes = Lists.newArrayList(
+        List<RelationshipType> possibleTypes = Lists.newArrayList(
                 graph.getOntologyConcept(Label.of("relation1")),
                 graph.getOntologyConcept(Label.of("relation3"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
-        assertTrue(CollectionUtils.isEqualCollection(relationTypes, possibleTypes));
-        assertTrue(CollectionUtils.isEqualCollection(relationTypes2, possibleTypes));
+        assertTrue(CollectionUtils.isEqualCollection(relationshipTypes, possibleTypes));
+        assertTrue(CollectionUtils.isEqualCollection(relationshipTypes2, possibleTypes));
 
         assertEquals(atom.getOntologyConcept(), null);
         assertEquals(atom2.getOntologyConcept(), null);
@@ -861,14 +860,14 @@ public class AtomicTest {
         RelationAtom atom = (RelationAtom) query.getAtom();
         RelationAtom atom2 = (RelationAtom) query2.getAtom();
 
-        List<RelationType> possibleTypes = Collections.singletonList(
+        List<RelationshipType> possibleTypes = Collections.singletonList(
                 graph.getOntologyConcept(Label.of("relation1"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
-        assertEquals(relationTypes, possibleTypes);
-        assertEquals(relationTypes2, possibleTypes);
+        assertEquals(relationshipTypes, possibleTypes);
+        assertEquals(relationshipTypes2, possibleTypes);
         assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(Label.of("relation1")));
         assertEquals(atom2.getOntologyConcept(), graph.getOntologyConcept(Label.of("relation1")));
     }
@@ -880,14 +879,14 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();
 
-        List<RelationType> possibleTypes = Lists.newArrayList(
+        List<RelationshipType> possibleTypes = Lists.newArrayList(
                 graph.getOntologyConcept(Label.of("relation1")),
                 graph.getOntologyConcept(Label.of("relation2")),
                 graph.getOntologyConcept(Label.of("relation3"))
         );
 
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        assertTrue(CollectionUtils.isEqualCollection(relationTypes, possibleTypes));
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        assertTrue(CollectionUtils.isEqualCollection(relationshipTypes, possibleTypes));
         assertEquals(atom.getOntologyConcept(), null);
     }
 
@@ -898,12 +897,12 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();
 
-        List<RelationType> possibleTypes = Collections.singletonList(
+        List<RelationshipType> possibleTypes = Collections.singletonList(
                 graph.getOntologyConcept(Label.of("relation3"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
-        assertEquals(relationTypes, possibleTypes);
+        assertEquals(relationshipTypes, possibleTypes);
         assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(Label.of("relation3")));
     }
 
@@ -917,15 +916,15 @@ public class AtomicTest {
         RelationAtom atom = (RelationAtom) query.getAtom();
         RelationAtom atom2 = (RelationAtom) query2.getAtom();
 
-        List<RelationType> possibleTypes = Lists.newArrayList(
+        List<RelationshipType> possibleTypes = Lists.newArrayList(
                 graph.getOntologyConcept(Label.of("relation1")),
                 graph.getOntologyConcept(Label.of("relation3"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        List<RelationType> relationTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes2 = atom2.inferPossibleRelationTypes(new QueryAnswer());
 
-        assertTrue(CollectionUtils.isEqualCollection(relationTypes, possibleTypes));
-        assertTrue(CollectionUtils.isEqualCollection(relationTypes2, possibleTypes));
+        assertTrue(CollectionUtils.isEqualCollection(relationshipTypes, possibleTypes));
+        assertTrue(CollectionUtils.isEqualCollection(relationshipTypes2, possibleTypes));
 
         assertEquals(atom.getOntologyConcept(), null);
         assertEquals(atom2.getOntologyConcept(), null);
@@ -938,12 +937,12 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();
 
-        List<RelationType> possibleTypes = Collections.singletonList(
+        List<RelationshipType> possibleTypes = Collections.singletonList(
                 graph.getOntologyConcept(Label.of("relation3"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
-        assertEquals(relationTypes, possibleTypes);
+        assertEquals(relationshipTypes, possibleTypes);
         assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(Label.of("relation3")));
     }
 
@@ -954,9 +953,9 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();
 
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
-        assertThat(relationTypes, empty());
+        assertThat(relationshipTypes, empty());
         assertEquals(atom.getOntologyConcept(), null);
     }
 
@@ -967,9 +966,9 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();
 
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
-        assertThat(relationTypes, empty());
+        assertThat(relationshipTypes, empty());
         assertEquals(atom.getOntologyConcept(), null);
     }
 
@@ -980,11 +979,11 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();
 
-        List<RelationType> possibleTypes = Collections.singletonList(
+        List<RelationshipType> possibleTypes = Collections.singletonList(
                 graph.getOntologyConcept(Label.of("relation1"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        assertEquals(relationTypes, possibleTypes);
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        assertEquals(relationshipTypes, possibleTypes);
         assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(Label.of("relation1")));
     }
 
@@ -995,12 +994,12 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();
 
-        List<RelationType> possibleTypes = Collections.singletonList(
+        List<RelationshipType> possibleTypes = Collections.singletonList(
                 graph.getOntologyConcept(Label.of("relation1"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
-        assertEquals(relationTypes, possibleTypes);
+        assertEquals(relationshipTypes, possibleTypes);
         assertEquals(atom.getOntologyConcept(), graph.getOntologyConcept(Label.of("relation1")));
     }
 
@@ -1011,12 +1010,12 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();
 
-        List<RelationType> possibleTypes = Lists.newArrayList(
+        List<RelationshipType> possibleTypes = Lists.newArrayList(
                 graph.getOntologyConcept(Label.of("relation3")),
                 graph.getOntologyConcept(Label.of("relation2"))
         );
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        assertEquals(relationTypes, possibleTypes);
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        assertEquals(relationshipTypes, possibleTypes);
         assertEquals(atom.getOntologyConcept(), null);
     }
 
@@ -1027,8 +1026,8 @@ public class AtomicTest {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();
 
-        List<RelationType> relationTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
-        assertThat(relationTypes, empty());
+        List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
+        assertThat(relationshipTypes, empty());
         assertEquals(atom.getOntologyConcept(), null);
     }
 

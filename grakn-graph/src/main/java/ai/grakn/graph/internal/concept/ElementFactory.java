@@ -21,7 +21,7 @@ package ai.grakn.graph.internal.concept;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
@@ -108,21 +108,21 @@ public final class ElementFactory {
     }
 
     // ---------------------------------------- Building Relationship Types  -----------------------------------------------
-    public RelationTypeImpl buildRelationType(VertexElement vertex, RelationType type, Boolean isImplicit){
-        return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(v, type, isImplicit));
+    public RelationshipTypeImpl buildRelationType(VertexElement vertex, RelationshipType type, Boolean isImplicit){
+        return getOrBuildConcept(vertex, (v) -> new RelationshipTypeImpl(v, type, isImplicit));
     }
 
     // -------------------------------------------- Building Relations
-    RelationshipImpl buildRelation(VertexElement vertex, RelationType type){
+    RelationshipImpl buildRelation(VertexElement vertex, RelationshipType type){
         return getOrBuildConcept(vertex, (v) -> new RelationshipImpl(buildRelationReified(v, type)));
     }
-    public RelationshipImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value){
+    public RelationshipImpl buildRelation(EdgeElement edge, RelationshipType type, Role owner, Role value){
         return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationshipEdge(type, owner, value, edge)));
     }
     RelationshipImpl buildRelation(EdgeElement edge){
         return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationshipEdge(edge)));
     }
-    RelationshipReified buildRelationReified(VertexElement vertex, RelationType type){
+    RelationshipReified buildRelationReified(VertexElement vertex, RelationshipType type){
         return new RelationshipReified(vertex, type);
     }
 
@@ -188,7 +188,7 @@ public final class ElementFactory {
                     concept = new RoleImpl(vertexElement);
                     break;
                 case RELATION_TYPE:
-                    concept = new RelationTypeImpl(vertexElement);
+                    concept = new RelationshipTypeImpl(vertexElement);
                     break;
                 case ENTITY:
                     concept = new EntityImpl(vertexElement);

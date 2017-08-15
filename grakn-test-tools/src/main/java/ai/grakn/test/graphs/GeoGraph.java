@@ -20,8 +20,8 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
@@ -39,7 +39,7 @@ public class GeoGraph extends TestGraph {
     private static ResourceType<String> key;
 
     private static EntityType university, city, region, country, continent, geographicalObject;
-    private static RelationType isLocatedIn;
+    private static RelationshipType isLocatedIn;
 
     private static Role geoEntity, entityLocation;
 

@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -44,12 +44,12 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.relate
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
- * Represents the {@code relates} property on a {@link RelationType}.
+ * Represents the {@code relates} property on a {@link RelationshipType}.
  *
  * This property can be queried, inserted or deleted.
  *
- * This property relates a {@link RelationType} and a {@link Role}. It indicates that a {@link Relationship} whose
- * type is this {@link RelationType} may have a role-player playing the given {@link Role}.
+ * This property relates a {@link RelationshipType} and a {@link Role}. It indicates that a {@link Relationship} whose
+ * type is this {@link RelationshipType} may have a role-player playing the given {@link Role}.
  *
  * @author Felix Chapman
  */

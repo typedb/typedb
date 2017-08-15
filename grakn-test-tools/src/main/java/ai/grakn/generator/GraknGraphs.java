@@ -28,8 +28,8 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -177,10 +177,10 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 Label label = typeLabel();
-                RelationType superType = relationType();
-                RelationType relationType = graph.putRelationType(label).sup(superType);
-                summaryAssign(relationType, "graph", "putRelationType", label);
-                summary(relationType, "superType", superType);
+                RelationshipType superType = relationType();
+                RelationshipType relationshipType = graph.putRelationType(label).sup(superType);
+                summaryAssign(relationshipType, "graph", "putRelationType", label);
+                summary(relationshipType, "superType", superType);
             },
             () -> {
                 Type type = type();
@@ -224,21 +224,21 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary(role1, "superType", role2);
             },
             () -> {
-                RelationType relationType1 = relationType();
-                RelationType relationType2 = relationType();
-                relationType1.sup(relationType2);
-                summary(relationType1, "superType", relationType2);
+                RelationshipType relationshipType1 = relationType();
+                RelationshipType relationshipType2 = relationType();
+                relationshipType1.sup(relationshipType2);
+                summary(relationshipType1, "superType", relationshipType2);
             },
             () -> {
-                RelationType relationType = relationType();
-                Relationship relationship = relationType.addRelation();
-                summaryAssign(relationship, relationType, "addRelation");
+                RelationshipType relationshipType = relationType();
+                Relationship relationship = relationshipType.addRelation();
+                summaryAssign(relationship, relationshipType, "addRelation");
             },
             () -> {
-                RelationType relationType = relationType();
+                RelationshipType relationshipType = relationType();
                 Role role = role();
-                relationType.relates(role);
-                summary(relationType, "relates", role);
+                relationshipType.relates(role);
+                summary(relationshipType, "relates", role);
             },
             () -> {
                 ResourceType resourceType1 = resourceType();
@@ -336,7 +336,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return random.choose((Collection<ResourceType>) graph.admin().getMetaResourceType().subs().collect(toSet()));
     }
 
-    private RelationType relationType() {
+    private RelationshipType relationType() {
         return random.choose(graph.admin().getMetaRelationType().subs().collect(toSet()));
     }
 

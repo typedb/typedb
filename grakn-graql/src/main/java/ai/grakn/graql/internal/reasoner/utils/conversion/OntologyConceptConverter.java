@@ -17,8 +17,8 @@
  */
 package ai.grakn.graql.internal.reasoner.utils.conversion;
 
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import com.google.common.collect.Multimap;
 
@@ -37,6 +37,6 @@ public interface OntologyConceptConverter<T extends SchemaConcept>{
      * @param ontologyConcept to be converted
      * @return map of relation types in which it can play roles and the corresponding role types
      */
-    Multimap<RelationType, Role> toRelationMultimap(T ontologyConcept);
+    Multimap<RelationshipType, Role> toRelationMultimap(T ontologyConcept);
 }
 

@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -105,7 +105,7 @@ public class GraqlTraversalTest {
         when(graph.getOntologyConcept(wifeLabel)).thenReturn(wife);
 
         Label marriageLabel = Label.of("marriage");
-        RelationType marriage = mock(RelationType.class);
+        RelationshipType marriage = mock(RelationshipType.class);
         when(marriage.isRelationType()).thenReturn(true);
         when(marriage.asRelationType()).thenReturn(marriage);
         when(marriage.subs()).thenAnswer(inv -> Stream.of(marriage));

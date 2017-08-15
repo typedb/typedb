@@ -19,27 +19,27 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Label;
 
 /**
- * A generator that produces {@link RelationType}s
+ * A generator that produces {@link RelationshipType}s
  *
  * @author Felix Chapman
  */
-public class RelationTypes extends AbstractTypeGenerator<RelationType> {
+public class RelationTypes extends AbstractTypeGenerator<RelationshipType> {
 
     public RelationTypes() {
-        super(RelationType.class);
+        super(RelationshipType.class);
     }
 
     @Override
-    protected RelationType newOntologyConcept(Label label) {
+    protected RelationshipType newOntologyConcept(Label label) {
         return graph().putRelationType(label);
     }
 
     @Override
-    protected RelationType metaOntologyConcept() {
+    protected RelationshipType metaOntologyConcept() {
         return graph().admin().getMetaRelationType();
     }
 }

@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
@@ -77,7 +77,7 @@ class Validator {
         graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
 
         //Validate Relationship Types
-        graknGraph.txCache().getModifiedRelationTypes().forEach(this::validateRelationType);
+        graknGraph.txCache().getModifiedRelationshipTypes().forEach(this::validateRelationType);
         //Validate Relations
         graknGraph.txCache().getModifiedRelationships().forEach(relation -> validateRelation(graknGraph, relation));
 
@@ -140,11 +140,11 @@ class Validator {
 
     /**
      * Validation rules exclusive to relation types
-     * @param relationType The relationTypes to validate
+     * @param relationshipType The relationTypes to validate
      */
-    private void validateRelationType(RelationType relationType){
-        ValidateGlobalRules.validateHasMinimumRoles(relationType).ifPresent(errorsFound::add);
-        errorsFound.addAll(ValidateGlobalRules.validateRelationTypesToRolesSchema(relationType));
+    private void validateRelationType(RelationshipType relationshipType){
+        ValidateGlobalRules.validateHasMinimumRoles(relationshipType).ifPresent(errorsFound::add);
+        errorsFound.addAll(ValidateGlobalRules.validateRelationTypesToRolesSchema(relationshipType));
     }
 
     /**

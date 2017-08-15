@@ -21,8 +21,8 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -31,9 +31,9 @@ import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.concept.RelationshipImpl;
+import ai.grakn.graph.internal.concept.RelationshipTypeImpl;
 import ai.grakn.graph.internal.concept.SchemaConceptImpl;
 import ai.grakn.graph.internal.concept.RelationshipReified;
-import ai.grakn.graph.internal.concept.RelationTypeImpl;
 import ai.grakn.graph.internal.concept.RuleImpl;
 import ai.grakn.graph.internal.concept.TypeImpl;
 import ai.grakn.graph.internal.structure.Casting;
@@ -77,13 +77,13 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_T
  *     1. Plays Validation which ensures that a {@link Thing} is allowed to play the {@link Role}
  *        it has been assigned to.
  *     2. Relates Validation which ensures that every {@link Role} which is not abstract is
- *        assigned to a {@link RelationType} via {@link RelationType#relates(Role)}.
- *     3. Minimum Role Validation which ensures that every {@link RelationType} has at least 2 {@link Role}
- *        assigned to it via {@link RelationType#relates(Role)}.
+ *        assigned to a {@link RelationshipType} via {@link RelationshipType#relates(Role)}.
+ *     3. Minimum Role Validation which ensures that every {@link RelationshipType} has at least 2 {@link Role}
+ *        assigned to it via {@link RelationshipType#relates(Role)}.
  *     4. {@link Relationship} Structure Validation which ensures that each {@link Relationship} has the
  *        correct structure.
  *     5. Abstract Type Validation which ensures that each abstract {@link Type} has no {@link Thing}.
- *     6. {@link RelationType} Hierarchy Validation which ensures that {@link RelationType} with a hierarchical structure
+ *     6. {@link RelationshipType} Hierarchy Validation which ensures that {@link RelationshipType} with a hierarchical structure
  *        have a valid matching {@link Role} hierarchical structure.
  *     7. Required Resources validation which ensures that each {@link Thing} with required
  *        {@link ai.grakn.concept.Resource} has a valid {@link Relationship} to that Resource.
@@ -150,14 +150,14 @@ class ValidateGlobalRules {
 
     /**
      *
-     * @param relationType The RelationType to validate
+     * @param relationshipType The {@link RelationshipType} to validate
      * @return An error message if the relationTypes does not have at least 1 role
      */
-    static Optional<String> validateHasMinimumRoles(RelationType relationType) {
-        if(relationType.isAbstract() || relationType.relates().iterator().hasNext()){
+    static Optional<String> validateHasMinimumRoles(RelationshipType relationshipType) {
+        if(relationshipType.isAbstract() || relationshipType.relates().iterator().hasNext()){
             return Optional.empty();
         } else {
-            return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationType.getLabel()));
+            return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationshipType.getLabel()));
         }
     }
 
@@ -168,22 +168,22 @@ class ValidateGlobalRules {
      * number of castings and roles as well as looping the structure to make sure castings lead to the same relation type.
      */
     static Optional<String> validateRelationshipStructure(RelationshipReified relation){
-        RelationType relationType = relation.type();
+        RelationshipType relationshipType = relation.type();
         Collection<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
-        Collection<Role> roles = relationType.relates().collect(Collectors.toSet());
+        Collection<Role> roles = relationshipType.relates().collect(Collectors.toSet());
 
         Set<Role> rolesViaRolePlayers = castings.stream().map(Casting::getRoleType).collect(Collectors.toSet());
 
         if(rolesViaRolePlayers.size() > roles.size()) {
-            return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), rolesViaRolePlayers.size(), relationType.getLabel(), roles.size()));
+            return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), rolesViaRolePlayers.size(), relationshipType.getLabel(), roles.size()));
         }
 
         for(Casting casting : castings){
             boolean notFound = casting.getRoleType().relationTypes().
-                    noneMatch(innerRelationType -> innerRelationType.getLabel().equals(relationType.getLabel()));
+                    noneMatch(innerRelationType -> innerRelationType.getLabel().equals(relationshipType.getLabel()));
 
             if(notFound) {
-                return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRoleType().getLabel(), relationType.getLabel()));
+                return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRoleType().getLabel(), relationshipType.getLabel()));
             }
         }
 
@@ -192,11 +192,11 @@ class ValidateGlobalRules {
 
     /**
      *
-     * @param relationType the relation type to be validated
+     * @param relationshipType the relation type to be validated
      * @return Error messages if the role type sub structure does not match the relation type sub structure
      */
-    static Set<String> validateRelationTypesToRolesSchema(RelationType relationType){
-        RelationTypeImpl superRelationType = (RelationTypeImpl) relationType.sup();
+    static Set<String> validateRelationTypesToRolesSchema(RelationshipType relationshipType){
+        RelationshipTypeImpl superRelationType = (RelationshipTypeImpl) relationshipType.sup();
         if(Schema.MetaSchema.isMetaLabel(superRelationType.getLabel())){ //If super type is a meta type no validation needed
             return Collections.emptySet();
         }
@@ -204,7 +204,7 @@ class ValidateGlobalRules {
         Set<String> errorMessages = new HashSet<>();
 
         Collection<Role> superRelates = superRelationType.relates().collect(Collectors.toSet());
-        Collection<Role> relates = relationType.relates().collect(Collectors.toSet());
+        Collection<Role> relates = relationshipType.relates().collect(Collectors.toSet());
         Set<Label> relatesLabels = relates.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
@@ -218,7 +218,7 @@ class ValidateGlobalRules {
                         anyMatch(superRole -> allSuperRolesPlayed.contains(superRole.getLabel()));
 
                 if(!validRoleTypeFound){
-                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(relate.getLabel(), relationType.getLabel(), "super", "super", superRelationType.getLabel()));
+                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(relate.getLabel(), relationshipType.getLabel(), "super", "super", superRelationType.getLabel()));
                 }
             }
         }
@@ -228,7 +228,7 @@ class ValidateGlobalRules {
             boolean subRoleNotFoundInRelates = superRelate.subs().noneMatch(sub -> relatesLabels.contains(sub.getLabel()));
 
             if(subRoleNotFoundInRelates){
-                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.getLabel(), superRelationType.getLabel(), "sub", "sub", relationType.getLabel()));
+                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.getLabel(), superRelationType.getLabel(), "sub", "sub", relationshipType.getLabel()));
             }
         }
 

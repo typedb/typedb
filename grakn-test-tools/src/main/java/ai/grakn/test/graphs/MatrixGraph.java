@@ -21,7 +21,7 @@ package ai.grakn.test.graphs;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Label;
 import ai.grakn.test.GraphContext;
@@ -66,8 +66,8 @@ public class MatrixGraph extends TestGraph {
 
         EntityType aEntity = graph.getEntityType("a-entity");
         EntityType bEntity = graph.getEntityType("b-entity");
-        RelationType R1 = graph.getRelationType("R1");
-        RelationType R2 = graph.getRelationType("R2");
+        RelationshipType R1 = graph.getRelationType("R1");
+        RelationshipType R2 = graph.getRelationType("R2");
 
         ConceptId[] aInstancesIds = new ConceptId[m+1];
         ConceptId[][] bInstancesIds = new ConceptId[m][n+1];

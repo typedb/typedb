@@ -32,7 +32,7 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     A relation which is an instance of a {@link RelationType} defines how instances may relate to one another.
+ *     A relation which is an instance of a {@link RelationshipType} defines how instances may relate to one another.
  *     It represents how different entities relate to one another.
  *     {@link Relationship} are used to model n-ary relationships between instances.
  * </p>
@@ -54,13 +54,13 @@ public interface Relationship extends Thing {
     //------------------------------------- Accessors ----------------------------------
 
     /**
-     * Retrieve the associated {@link RelationType} for this {@link Relationship}.
-     * @see RelationType
+     * Retrieve the associated {@link RelationshipType} for this {@link Relationship}.
+     * @see RelationshipType
      *
-     * @return The associated {@link RelationType} for this {@link Relationship}.
+     * @return The associated {@link RelationshipType} for this {@link Relationship}.
      */
     @Override
-    RelationType type();
+    RelationshipType type();
 
     /**
      * Retrieve a list of all Instances involved in the {@link Relationship}, and the {@link Role} they play.

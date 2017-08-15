@@ -20,10 +20,9 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
@@ -109,8 +108,8 @@ public class ReasonerTest {
     public void testSubPropertyRuleCreation() {
         GraknGraph graph = testSnbGraph.graph();
         Map<Label, Label> roleMap = new HashMap<>();
-        RelationType parent = graph.getRelationType("sublocate");
-        RelationType child = graph.getRelationType("resides");
+        RelationshipType parent = graph.getRelationType("sublocate");
+        RelationshipType child = graph.getRelationType("resides");
 
         roleMap.put(graph.getRole("member-location").getLabel(), graph.getRole("subject-location").getLabel());
         roleMap.put(graph.getRole("container-location").getLabel(), graph.getRole("located-subject").getLabel());
@@ -167,10 +166,10 @@ public class ReasonerTest {
     @Test
     public void testPropertyChainRuleCreation() {
         GraknGraph graph = testSnbGraph.graph();
-        RelationType resides = graph.getRelationType("resides");
-        RelationType sublocate = graph.getRelationType("sublocate");
+        RelationshipType resides = graph.getRelationType("resides");
+        RelationshipType sublocate = graph.getRelationType("sublocate");
 
-        LinkedHashMap<RelationType, Pair<Label, Label>> chain = new LinkedHashMap<>();
+        LinkedHashMap<RelationshipType, Pair<Label, Label>> chain = new LinkedHashMap<>();
 
         chain.put(resides, new Pair<>(graph.getRole("located-subject").getLabel(), graph.getRole("subject-location").getLabel()));
         chain.put(sublocate, new Pair<>(graph.getRole("member-location").getLabel(), graph.getRole("container-location").getLabel()));

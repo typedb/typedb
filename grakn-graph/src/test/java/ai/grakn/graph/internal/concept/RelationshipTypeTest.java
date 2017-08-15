@@ -20,7 +20,7 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -36,29 +36,29 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-public class RelationTypeTest extends GraphTestBase {
+public class RelationshipTypeTest extends GraphTestBase {
     @Test
     public void whenGettingTheRolesOfRelationTypes_AllTheRolesAreReturned() throws Exception {
-        RelationType relationType = graknGraph.putRelationType("relationTypes");
+        RelationshipType relationshipType = graknGraph.putRelationType("relationTypes");
         Role role1 = graknGraph.putRole("role1");
         Role role2 = graknGraph.putRole("role2");
         Role role3 = graknGraph.putRole("role3");
-        relationType.relates(role1).relates(role2).relates(role3);
-        assertThat(relationType.relates().collect(toSet()), containsInAnyOrder(role1, role2, role3));
+        relationshipType.relates(role1).relates(role2).relates(role3);
+        assertThat(relationshipType.relates().collect(toSet()), containsInAnyOrder(role1, role2, role3));
     }
 
     @Test
     public void whenMutatingRolesOfRelationType_EnsureRelationTypeRolesAreAlwaysUpdated(){
-        RelationType relationType = graknGraph.putRelationType("c1");
+        RelationshipType relationshipType = graknGraph.putRelationType("c1");
         Role role1 = graknGraph.putRole("c2");
         Role role2 = graknGraph.putRole("c3");
-        assertThat(relationType.relates().collect(toSet()), empty());
+        assertThat(relationshipType.relates().collect(toSet()), empty());
 
-        relationType.relates(role1).relates(role2);
-        assertThat(relationType.relates().collect(toSet()), containsInAnyOrder(role1, role2));
+        relationshipType.relates(role1).relates(role2);
+        assertThat(relationshipType.relates().collect(toSet()), containsInAnyOrder(role1, role2));
 
-        relationType.deleteRelates(role1);
-        assertThat(relationType.relates().collect(toSet()), containsInAnyOrder(role2));
+        relationshipType.deleteRelates(role1);
+        assertThat(relationshipType.relates().collect(toSet()), containsInAnyOrder(role2));
     }
 
     @Test
@@ -69,14 +69,14 @@ public class RelationTypeTest extends GraphTestBase {
         EntityType entityType = graknGraph.putEntityType("My Special Entity Type").resource(resourceType);
         Entity entity = entityType.addEntity();
 
-        RelationType implicitRelationType = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
+        RelationshipType implicitRelationshipType = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
 
-        assertNotNull(implicitRelationType);
-        assertThat(implicitRelationType.instances().collect(toSet()), empty());
+        assertNotNull(implicitRelationshipType);
+        assertThat(implicitRelationshipType.instances().collect(toSet()), empty());
 
         entity.resource(resource);
 
-        assertEquals(1, implicitRelationType.instances().count());
+        assertEquals(1, implicitRelationshipType.instances().count());
     }
 
     @Test
@@ -87,11 +87,11 @@ public class RelationTypeTest extends GraphTestBase {
         EntityType entityType = graknGraph.putEntityType("My Special Entity Type").resource(resourceType);
         entityType.addEntity().resource(resource);
 
-        RelationType implicitRelationType = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
+        RelationshipType implicitRelationshipType = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()).getValue());
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.addingInstancesToAbstractType(implicitRelationType).getMessage());
+        expectedException.expectMessage(GraphOperationException.addingInstancesToAbstractType(implicitRelationshipType).getMessage());
 
-        implicitRelationType.setAbstract(true);
+        implicitRelationshipType.setAbstract(true);
     }
 }

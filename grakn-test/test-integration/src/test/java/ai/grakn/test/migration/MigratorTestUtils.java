@@ -24,9 +24,9 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -83,9 +83,9 @@ public class MigratorTestUtils {
     }
 
     public static void assertRelationBetweenInstancesExists(GraknGraph graph, Thing thing1, Thing thing2, Label relation){
-        RelationType relationType = graph.getOntologyConcept(relation);
+        RelationshipType relationshipType = graph.getOntologyConcept(relation);
 
-        Role role1 = thing1.plays().filter(r -> r.relationTypes().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
+        Role role1 = thing1.plays().filter(r -> r.relationTypes().anyMatch(rel -> rel.equals(relationshipType))).findFirst().get();
         assertTrue(thing1.relations(role1).anyMatch(rel -> rel.rolePlayers().anyMatch(r -> r.equals(thing2))));
     }
 
@@ -96,7 +96,7 @@ public class MigratorTestUtils {
     }
 
     public static Collection<Thing> getProperties(GraknGraph graph, Thing thing, String label) {
-        RelationType relation = graph.getRelationType(label);
+        RelationshipType relation = graph.getRelationType(label);
 
         Set<Thing> things = new HashSet<>();
 
@@ -160,7 +160,7 @@ public class MigratorTestUtils {
             Entity grass = typeid.getResource("12").ownerInstances().iterator().next().asEntity();
             Entity poison = typeid.getResource("4").ownerInstances().iterator().next().asEntity();
             Entity bulbasaur = pokedexno.getResource("1").ownerInstances().iterator().next().asEntity();
-            RelationType relation = graph.getRelationType("has-type");
+            RelationshipType relation = graph.getRelationType("has-type");
 
             assertNotNull(grass);
             assertNotNull(poison);

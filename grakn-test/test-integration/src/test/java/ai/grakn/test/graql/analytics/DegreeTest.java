@@ -26,7 +26,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -79,7 +79,7 @@ public class DegreeTest {
         Role role2 = graph.putRole("role2");
         thingy.plays(role1).plays(role2);
         anotherThing.plays(role1).plays(role2);
-        RelationType related = graph.putRelationType("related").relates(role1).relates(role2);
+        RelationshipType related = graph.putRelationType("related").relates(role1).relates(role2);
 
         // relate them
         ConceptId id1 = related.addRelation()
@@ -220,10 +220,10 @@ public class DegreeTest {
         // create a simple graph
         Role pet = graph.putRole("pet");
         Role owner = graph.putRole("owner");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend").relates(pet).relates(owner);
+        RelationshipType mansBestFriend = graph.putRelationType("mans-best-friend").relates(pet).relates(owner);
         Role target = graph.putRole("target");
         Role value = graph.putRole("value");
-        RelationType hasName = graph.putRelationType("has-name").relates(value).relates(target);
+        RelationshipType hasName = graph.putRelationType("has-name").relates(value).relates(target);
         EntityType person = graph.putEntityType("person").plays(owner);
         EntityType animal = graph.putEntityType("animal").plays(pet).plays(target);
         ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING).plays(value);
@@ -309,7 +309,7 @@ public class DegreeTest {
         Role pet = graph.putRole("pet");
         Role owner = graph.putRole("owner");
         Role breeder = graph.putRole("breeder");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
+        RelationshipType mansBestFriend = graph.putRelationType("mans-best-friend")
                 .relates(pet).relates(owner).relates(breeder);
         EntityType person = graph.putEntityType("person").plays(owner).plays(breeder);
         EntityType animal = graph.putEntityType("animal").plays(pet);
@@ -345,10 +345,10 @@ public class DegreeTest {
         // create a simple graph
         Role pet = graph.putRole("pet");
         Role owner = graph.putRole("owner");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend").relates(pet).relates(owner);
+        RelationshipType mansBestFriend = graph.putRelationType("mans-best-friend").relates(pet).relates(owner);
         Role target = graph.putRole("target");
         Role value = graph.putRole("value");
-        RelationType hasName = graph.putRelationType("has-name").relates(value).relates(target);
+        RelationshipType hasName = graph.putRelationType("has-name").relates(value).relates(target);
         EntityType person = graph.putEntityType("person").plays(owner);
         EntityType animal = graph.putEntityType("animal").plays(pet).plays(target);
         ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING).plays(value);
@@ -356,7 +356,7 @@ public class DegreeTest {
                 graph.putResourceType("alternate-name", ResourceType.DataType.STRING).plays(value);
         Role ownership = graph.putRole("ownership");
         Role ownershipResource = graph.putRole("ownership-resource");
-        RelationType hasOwnershipResource =
+        RelationshipType hasOwnershipResource =
                 graph.putRelationType("has-ownership-resource").relates(ownership).relates(ownershipResource);
         ResourceType<String> startDate =
                 graph.putResourceType("start-date", ResourceType.DataType.STRING).plays(ownershipResource);
@@ -431,7 +431,7 @@ public class DegreeTest {
         Role productionWithCast = graph.putRole("production-with-cast");
         Role actor = graph.putRole("actor");
         Role characterBeingPlayed = graph.putRole("character-being-played");
-        RelationType hasCast = graph.putRelationType("has-cast")
+        RelationshipType hasCast = graph.putRelationType("has-cast")
                 .relates(productionWithCast)
                 .relates(actor)
                 .relates(characterBeingPlayed);
@@ -467,7 +467,7 @@ public class DegreeTest {
         Role pet = graph.putRole("pet");
         Role owner = graph.putRole("owner");
         Role breeder = graph.putRole("breeder");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
+        RelationshipType mansBestFriend = graph.putRelationType("mans-best-friend")
                 .relates(pet).relates(owner).relates(breeder);
         EntityType person = graph.putEntityType("person").plays(owner).plays(breeder);
         EntityType animal = graph.putEntityType("animal").plays(pet);
@@ -521,7 +521,7 @@ public class DegreeTest {
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");
         thingy.plays(role1).plays(role2);
-        RelationType related = graph.putRelationType("related").relates(role1).relates(role2);
+        RelationshipType related = graph.putRelationType("related").relates(role1).relates(role2);
         related.addRelation()
                 .addRolePlayer(role1, entity1)
                 .addRolePlayer(role2, entity2);
@@ -547,7 +547,7 @@ public class DegreeTest {
         Role pet = graph.putRole("pet");
         Role owner = graph.putRole("owner");
         Role breeder = graph.putRole("breeder");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
+        RelationshipType mansBestFriend = graph.putRelationType("mans-best-friend")
                 .relates(pet).relates(owner).relates(breeder);
         EntityType person = graph.putEntityType("person").plays(owner).plays(breeder);
         EntityType dog = graph.putEntityType("dog").plays(pet);

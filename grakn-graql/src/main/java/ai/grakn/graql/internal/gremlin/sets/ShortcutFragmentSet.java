@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
@@ -165,10 +165,10 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
             OntologyConcept ontologyConcept = graph.getOntologyConcept(relationLabel.label());
 
             if (ontologyConcept != null && ontologyConcept.isRelationType()) {
-                RelationType relationType = ontologyConcept.asRelationType();
+                RelationshipType relationshipType = ontologyConcept.asRelationType();
 
                 fragmentSets.remove(shortcut);
-                fragmentSets.add(shortcut.addRelationTypeLabel(relationType));
+                fragmentSets.add(shortcut.addRelationTypeLabel(relationshipType));
 
                 return true;
             }
@@ -195,13 +195,13 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
     /**
      * Apply an optimisation where we check the relation-type property.
-     * @param relationType the relation-type that this shortcut fragment must link to
+     * @param relationshipType the relation-type that this shortcut fragment must link to
      * @return a new {@link ShortcutFragmentSet} with the same properties excepting relation-type labels
      */
-    private ShortcutFragmentSet addRelationTypeLabel(RelationType relationType) {
+    private ShortcutFragmentSet addRelationTypeLabel(RelationshipType relationshipType) {
         Preconditions.checkState(!relationTypeLabels.isPresent());
 
-        Set<Label> newRelationLabels = relationType.subs().map(Type::getLabel).collect(toSet());
+        Set<Label> newRelationLabels = relationshipType.subs().map(Type::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, role, roleTypeLabels, Optional.of(newRelationLabels)

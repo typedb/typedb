@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
@@ -45,9 +45,9 @@ public class CWGraph extends TestGraph {
     
     private static ResourceType<String> alignment, propulsion, nationality;
 
-    private static RelationType isEnemyOf;
-    private static RelationType isPaidBy;
-    private static RelationType owns;
+    private static RelationshipType isEnemyOf;
+    private static RelationshipType isPaidBy;
+    private static RelationshipType owns;
 
     private static Role enemySource, enemyTarget;
     private static Role owner, ownedItem;

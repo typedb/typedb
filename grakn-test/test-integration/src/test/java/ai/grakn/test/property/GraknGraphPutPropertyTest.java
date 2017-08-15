@@ -21,8 +21,8 @@ package ai.grakn.test.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
@@ -217,22 +217,22 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRelationType_CreateATypeWithSuperTypeRelation(
             @Open GraknGraph graph, @Unused Label label) {
-        RelationType relationType = graph.putRelationType(label);
-        assertEquals(graph.admin().getMetaRelationType(), relationType.sup());
+        RelationshipType relationshipType = graph.putRelationType(label);
+        assertEquals(graph.admin().getMetaRelationType(), relationshipType.sup());
     }
 
     @Property
     public void whenCallingPutRelationType_CreateATypeThatOwnsNoRoles(
             @Open GraknGraph graph, @Unused Label label) {
-        RelationType relationType = graph.putRelationType(label);
-        assertThat(relationType.relates().collect(toSet()), empty());
+        RelationshipType relationshipType = graph.putRelationType(label);
+        assertThat(relationshipType.relates().collect(toSet()), empty());
     }
 
     @Property
     public void whenCallingPutRelationTypeWithAnExistingRelationTypeLabel_ItReturnsThatType(
-            @Open GraknGraph graph, @FromGraph RelationType relationType) {
-        RelationType newType = graph.putRelationType(relationType.getLabel());
-        assertEquals(relationType, newType);
+            @Open GraknGraph graph, @FromGraph RelationshipType relationshipType) {
+        RelationshipType newType = graph.putRelationType(relationshipType.getLabel());
+        assertEquals(relationshipType, newType);
     }
 
     @Property

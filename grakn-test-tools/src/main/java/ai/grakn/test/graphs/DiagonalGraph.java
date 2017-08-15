@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.test.GraphContext;
 
@@ -63,8 +63,8 @@ public class DiagonalGraph extends TestGraph {
         Role relTo = graph.getRole("rel-to");
 
         EntityType entity1 = graph.getEntityType("entity1");
-        RelationType horizontal = graph.getRelationType("horizontal");
-        RelationType vertical = graph.getRelationType("vertical");
+        RelationshipType horizontal = graph.getRelationType("horizontal");
+        RelationshipType vertical = graph.getRelationType("vertical");
         ConceptId[][] instanceIds = new ConceptId[n][m];
         long inserts = 0;
         for(int i = 0 ; i < n ;i++) {

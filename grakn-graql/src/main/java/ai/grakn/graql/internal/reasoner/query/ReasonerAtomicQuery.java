@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
@@ -355,9 +355,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         Atom atom = getAtom();
         if (atom.isRelation() && atom.getOntologyConcept() == null){
-            List<RelationType> relationTypes = ((RelationAtom) atom).inferPossibleRelationTypes(sub);
-            LOG.trace("AQ: " + this + ": inferred rel types for: " + relationTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
-            return relationTypes.stream()
+            List<RelationshipType> relationshipTypes = ((RelationAtom) atom).inferPossibleRelationTypes(sub);
+            LOG.trace("AQ: " + this + ": inferred rel types for: " + relationshipTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
+            return relationshipTypes.stream()
                     .map(((RelationAtom) atom)::addType)
                     .sorted(Comparator.comparing(Atom::isRuleResolvable))
                     .map(ReasonerAtomicQuery::new);

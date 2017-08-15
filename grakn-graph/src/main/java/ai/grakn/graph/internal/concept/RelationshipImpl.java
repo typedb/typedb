@@ -21,7 +21,7 @@ package ai.grakn.graph.internal.concept;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -42,7 +42,7 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     A relation which is an instance of a {@link RelationType} defines how instances may relate to one another.
+ *     A relation which is an instance of a {@link RelationshipType} defines how instances may relate to one another.
  * </p>
  *
  * @author fppt
@@ -105,7 +105,7 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     }
 
     @Override
-    public RelationType type() {
+    public RelationshipType type() {
         return structure().type();
     }
 

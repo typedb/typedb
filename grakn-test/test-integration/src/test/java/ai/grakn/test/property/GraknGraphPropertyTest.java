@@ -25,8 +25,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -216,7 +216,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingGetRelationType_TheResultIsTheSameAsGetOntologyConcept(
-            @Open GraknGraph graph, @FromGraph RelationType type) {
+            @Open GraknGraph graph, @FromGraph RelationshipType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getRelationType(label.getValue()));
     }

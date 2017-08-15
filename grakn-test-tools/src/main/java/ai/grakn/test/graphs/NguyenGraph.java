@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.test.GraphContext;
 
@@ -67,9 +67,9 @@ public class NguyenGraph extends TestGraph {
         EntityType entity = graph.getEntityType("entity2");
         EntityType aEntity = graph.getEntityType("a-entity");
         EntityType bEntity = graph.getEntityType("b-entity");
-        RelationType r = graph.getRelationType("R");
-        RelationType p = graph.getRelationType("P");
-        RelationType q = graph.getRelationType("Q");
+        RelationshipType r = graph.getRelationType("R");
+        RelationshipType p = graph.getRelationType("P");
+        RelationshipType q = graph.getRelationType("Q");
 
         ConceptId cId = putEntity(graph, "c", entity, key).getId();
         ConceptId dId = putEntity(graph, "d", entity, key).getId();

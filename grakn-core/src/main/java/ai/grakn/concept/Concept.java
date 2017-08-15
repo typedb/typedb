@@ -33,7 +33,7 @@ import javax.annotation.CheckReturnValue;
  *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
- *     ({@link EntityType}, {@link Role}, {@link RelationType}, {@link RuleType} or {@link ResourceType})
+ *     ({@link EntityType}, {@link Role}, {@link RelationshipType}, {@link RuleType} or {@link ResourceType})
  *     or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Resource}, {@link Rule}).
  * </p>
  *
@@ -102,19 +102,19 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Return as a {@link RelationType} if the {@link Concept} is a {@link RelationType}.
+     * Return as a {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}.
      *
-     * @return A {@link RelationType} if the {@link Concept} is a {@link RelationType}
+     * @return A {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
-    default RelationType asRelationType(){
-        throw GraphOperationException.invalidCasting(this, RelationType.class);
+    default RelationshipType asRelationType(){
+        throw GraphOperationException.invalidCasting(this, RelationshipType.class);
     }
 
     /**
-     * Return as a {@link RelationType} if the {@link Concept} is a {@link RelationType}
+     * Return as a {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
      *
-     * @return A {@link RelationType} if the {@link Concept} is a {@link RelationType}
+     * @return A {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
     default <D> ResourceType<D> asResourceType(){
@@ -221,9 +221,9 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link RelationType}.
+     * Determine if the {@link Concept} is a {@link RelationshipType}.
      *
-     * @return true if the {@link Concept} is a {@link RelationType}
+     * @return true if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
     default boolean isRelationType(){

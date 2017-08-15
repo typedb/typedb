@@ -21,11 +21,10 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.migration.owl.OwlModel;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -222,11 +221,11 @@ public class TestSamplesImport extends TestOwlGraknBase {
             EntityType type = migrator.graph().getEntityType("tPerson");
             Assert.assertNotNull(type);
 
-            RelationType ancestor = migrator.graph().getRelationType("op-hasAncestor");
-            RelationType isSiblingOf = migrator.graph().getRelationType("op-isSiblingOf");
-            RelationType isAuntOf = migrator.graph().getRelationType("op-isAuntOf");
-            RelationType isUncleOf = migrator.graph().getRelationType("op-isUncleOf");
-            RelationType bloodRelation = migrator.graph().getRelationType("op-isBloodRelationOf");
+            RelationshipType ancestor = migrator.graph().getRelationType("op-hasAncestor");
+            RelationshipType isSiblingOf = migrator.graph().getRelationType("op-isSiblingOf");
+            RelationshipType isAuntOf = migrator.graph().getRelationType("op-isAuntOf");
+            RelationshipType isUncleOf = migrator.graph().getRelationType("op-isUncleOf");
+            RelationshipType bloodRelation = migrator.graph().getRelationType("op-isBloodRelationOf");
 
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(ancestor)));
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(isSiblingOf)));

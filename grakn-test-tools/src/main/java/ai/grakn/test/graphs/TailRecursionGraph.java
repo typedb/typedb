@@ -21,7 +21,7 @@ package ai.grakn.test.graphs;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.test.GraphContext;
 
@@ -63,7 +63,7 @@ public class TailRecursionGraph extends TestGraph {
 
         EntityType aEntity = graph.getEntityType("a-entity");
         EntityType bEntity = graph.getEntityType("b-entity");
-        RelationType q = graph.getRelationType("Q");
+        RelationshipType q = graph.getRelationType("Q");
 
         putEntity(graph, "a0", aEntity, key);
         for(int i = 1 ; i <= m + 1 ;i++) {

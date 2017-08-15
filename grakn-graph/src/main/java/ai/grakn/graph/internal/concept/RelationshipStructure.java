@@ -20,7 +20,7 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graph.internal.cache.ContainsTxCache;
@@ -67,9 +67,9 @@ interface RelationshipStructure extends ContainsTxCache {
 
     /**
      *
-     * @return The {@link RelationType} of the {@link Relationship}
+     * @return The {@link RelationshipType} of the {@link Relationship}
      */
-    RelationType type();
+    RelationshipType type();
 
     /**
      *

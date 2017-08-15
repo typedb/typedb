@@ -20,7 +20,7 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.graph.internal.cache.Cache;
 import ai.grakn.graph.internal.cache.Cacheable;
@@ -45,14 +45,14 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public class RelationTypeImpl extends TypeImpl<RelationType, Relationship> implements RelationType {
+public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationship> implements RelationshipType {
     private final Cache<Set<Role>> cachedRelates = new Cache<>(Cacheable.set(), () -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RelationTypeImpl(VertexElement vertexElement) {
+    RelationshipTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    RelationTypeImpl(VertexElement vertexElement, RelationType type, Boolean isImplicit) {
+    RelationshipTypeImpl(VertexElement vertexElement, RelationshipType type, Boolean isImplicit) {
         super(vertexElement, type, isImplicit);
     }
 
@@ -80,7 +80,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relationship> imple
     }
 
     @Override
-    public RelationType relates(Role role) {
+    public RelationshipType relates(Role role) {
         checkOntologyMutationAllowed();
         putEdge(ConceptVertex.from(role), Schema.EdgeLabel.RELATES);
 
@@ -100,11 +100,11 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relationship> imple
 
     /**
      *
-     * @param role The {@link Role} to delete from this {@link RelationType}.
+     * @param role The {@link Role} to delete from this {@link RelationshipType}.
      * @return The {@link Relationship} Type itself.
      */
     @Override
-    public RelationType deleteRelates(Role role) {
+    public RelationshipType deleteRelates(Role role) {
         checkOntologyMutationAllowed();
         deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) role);
 

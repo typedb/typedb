@@ -21,8 +21,8 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
@@ -388,11 +388,11 @@ public class RelationAtom extends IsaAtom {
      * entity types only play the explicitly defined roles (not the relevant part of the hierarchy of the specified role)
      * @return list of relation types this atom can have ordered by the number of compatible role types
      */
-    public List<RelationType> inferPossibleRelationTypes(Answer sub) {
+    public List<RelationshipType> inferPossibleRelationTypes(Answer sub) {
         if (getPredicate() != null) return Collections.singletonList(getOntologyConcept().asRelationType());
 
         //look at available role types
-        Multimap<RelationType, Role> compatibleTypesFromRoles = getCompatibleRelationTypesWithRoles(getExplicitRoleTypes(), new RoleTypeConverter());
+        Multimap<RelationshipType, Role> compatibleTypesFromRoles = getCompatibleRelationTypesWithRoles(getExplicitRoleTypes(), new RoleTypeConverter());
 
         //look at entity types
         Map<Var, SchemaConcept> varTypeMap = getParentQuery().getVarOntologyConceptMap();
@@ -406,9 +406,9 @@ public class RelationAtom extends IsaAtom {
         //types deduced from substitution
         inferEntityTypes(sub).forEach(types::add);
 
-        Multimap<RelationType, Role> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new OntologyConceptConverterImpl());
+        Multimap<RelationshipType, Role> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new OntologyConceptConverterImpl());
 
-        Multimap<RelationType, Role> compatibleTypes;
+        Multimap<RelationshipType, Role> compatibleTypes;
         //intersect relation types from roles and types
         if (compatibleTypesFromRoles.isEmpty()){
             compatibleTypes = compatibleTypesFromTypes;
@@ -433,9 +433,9 @@ public class RelationAtom extends IsaAtom {
     private RelationAtom inferRelationType(Answer sub){
         if (getPredicate() != null) return this;
 
-        List<RelationType> relationTypes = inferPossibleRelationTypes(sub);
-        if (relationTypes.size() == 1){
-            return addType(relationTypes.iterator().next());
+        List<RelationshipType> relationshipTypes = inferPossibleRelationTypes(sub);
+        if (relationshipTypes.size() == 1){
+            return addType(relationshipTypes.iterator().next());
         } else {
             return this;
         }
@@ -521,7 +521,7 @@ public class RelationAtom extends IsaAtom {
 
         GraknGraph graph = getParentQuery().graph();
         Role metaRole = graph.admin().getMetaRole();
-        RelationType relType = (RelationType) getOntologyConcept();
+        RelationshipType relType = (RelationshipType) getOntologyConcept();
         Map<Var, SchemaConcept> varOntologyConceptMap = getParentQuery().getVarOntologyConceptMap();
 
         List<RelationPlayer> allocatedRelationPlayers = new ArrayList<>();

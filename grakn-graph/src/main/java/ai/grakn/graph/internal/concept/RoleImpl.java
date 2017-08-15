@@ -18,7 +18,7 @@
 
 package ai.grakn.graph.internal.concept;
 
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.graph.internal.cache.Cache;
@@ -39,7 +39,7 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     This ontological element defines the roles which make up a {@link RelationType}.
+ *     This ontological element defines the roles which make up a {@link RelationshipType}.
  *     It behaves similarly to {@link Type} when relating to other types.
  *     It has some additional functionality:
  *     1. It cannot play a role to itself.
@@ -51,7 +51,7 @@ import java.util.stream.Stream;
  */
 public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     private final Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(Cacheable.set(), () -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private final Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(Cacheable.set(), () -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private final Cache<Set<RelationshipType>> cachedRelationTypes = new Cache<>(Cacheable.set(), () -> this.<RelationshipType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RoleImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -76,7 +76,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     }
 
     @Override
-    public Stream<RelationType> relationTypes() {
+    public Stream<RelationshipType> relationTypes() {
         return cachedRelationTypes.get().stream();
     }
 
@@ -84,20 +84,20 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      * Caches a new relation type which this role will be part of. This may result in a DB hit if the cache has not been
      * initialised.
      *
-     * @param newRelationType The new relation type to cache in the role.
+     * @param newRelationshipType The new relation type to cache in the role.
      */
-    void addCachedRelationType(RelationType newRelationType){
-        cachedRelationTypes.ifPresent(set -> set.add(newRelationType));
+    void addCachedRelationType(RelationshipType newRelationshipType){
+        cachedRelationTypes.ifPresent(set -> set.add(newRelationshipType));
     }
 
     /**
      * Removes an old relation type which this role is no longer part of. This may result in a DB hit if the cache has
      * not been initialised.
      *
-     * @param oldRelationType The new relation type to cache in the role.
+     * @param oldRelationshipType The new relation type to cache in the role.
      */
-    void deleteCachedRelationType(RelationType oldRelationType){
-        cachedRelationTypes.ifPresent(set -> set.remove(oldRelationType));
+    void deleteCachedRelationType(RelationshipType oldRelationshipType){
+        cachedRelationTypes.ifPresent(set -> set.remove(oldRelationshipType));
     }
 
     /**
@@ -123,7 +123,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      */
     public Stream<Casting> rolePlayers(){
         return relationTypes().
-                flatMap(RelationType::instances).
+                flatMap(RelationshipType::instances).
                 map(relation -> RelationshipImpl.from(relation).reified()).
                 flatMap(CommonUtil::optionalToStream).
                 flatMap(relation -> relation.castingsRelation(this));

@@ -23,7 +23,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -56,7 +56,7 @@ public class EntityTest extends GraphTestBase {
     public void whenDeletingInstanceInRelationShip_TheInstanceAndCastingsAreDeletedAndTheRelationRemains() throws GraphOperationException{
         //Ontology
         EntityType type = graknGraph.putEntityType("Concept Type");
-        RelationType relationType = graknGraph.putRelationType("relationTypes");
+        RelationshipType relationshipType = graknGraph.putRelationType("relationTypes");
         Role role1 = graknGraph.putRole("role1");
         Role role2 = graknGraph.putRole("role2");
         Role role3 = graknGraph.putRole("role3");
@@ -66,12 +66,12 @@ public class EntityTest extends GraphTestBase {
         ThingImpl<?, ?> rolePlayer2 = (ThingImpl) type.addEntity();
         ThingImpl<?, ?> rolePlayer3 = (ThingImpl) type.addEntity();
 
-        relationType.relates(role1);
-        relationType.relates(role2);
-        relationType.relates(role3);
+        relationshipType.relates(role1);
+        relationshipType.relates(role2);
+        relationshipType.relates(role3);
 
         //Check Structure is in order
-        RelationshipImpl relation = (RelationshipImpl) relationType.addRelation().
+        RelationshipImpl relation = (RelationshipImpl) relationshipType.addRelation().
                 addRolePlayer(role1, rolePlayer1).
                 addRolePlayer(role2, rolePlayer2).
                 addRolePlayer(role3, rolePlayer3);
@@ -93,11 +93,11 @@ public class EntityTest extends GraphTestBase {
     @Test
     public void whenDeletingLastRolePlayerInRelation_TheRelationIsDeleted() throws GraphOperationException {
         EntityType type = graknGraph.putEntityType("Concept Type");
-        RelationType relationType = graknGraph.putRelationType("relationTypes");
+        RelationshipType relationshipType = graknGraph.putRelationType("relationTypes");
         Role role1 = graknGraph.putRole("role1");
         Thing rolePlayer1 = type.addEntity();
 
-        Relationship relationship = relationType.addRelation().
+        Relationship relationship = relationshipType.addRelation().
                 addRolePlayer(role1, rolePlayer1);
 
         assertNotNull(graknGraph.getConcept(relationship.getId()));

@@ -23,7 +23,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -65,7 +65,7 @@ import java.util.stream.Stream;
  * @param <T> The leaf interface of the object concept which extends {@link Thing}.
  *           For example {@link ai.grakn.concept.Entity} or {@link Relationship}.
  * @param <V> The type of the concept which extends {@link Type} of the concept.
- *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
+ *           For example {@link ai.grakn.concept.EntityType} or {@link RelationshipType}
  */
 public abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
     private final Cache<Label> cachedInternalType = new Cache<>(Cacheable.label(), () -> {
@@ -254,7 +254,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
 
         Label label = resource.type().getLabel();
-        RelationType hasResource = vertex().graph().getOntologyConcept(has.getLabel(label));
+        RelationshipType hasResource = vertex().graph().getOntologyConcept(has.getLabel(label));
         Role hasResourceOwner = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
         Role hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
 

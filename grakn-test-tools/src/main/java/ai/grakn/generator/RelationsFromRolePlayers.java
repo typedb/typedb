@@ -20,7 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 
@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  * A generator that produces {@link Relationship}s from existing role-players.
  *
  * This means the relation is navigated to from another {@link Thing} attached to it. This will find relations even
- * if they are not returned by {@link RelationType#instances}.
+ * if they are not returned by {@link RelationshipType#instances}.
  *
  * @author Felix Chapman
  */

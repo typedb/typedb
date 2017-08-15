@@ -21,7 +21,7 @@ package ai.grakn.graph.internal.concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.GraphTestBase;
@@ -77,18 +77,18 @@ public class SchemaConceptTest extends GraphTestBase {
 
         entityType.resource(resourceType);
 
-        RelationType relationType = graknGraph.getRelationType(hasResourceLabel.getValue());
-        Assert.assertEquals(hasResourceLabel, relationType.getLabel());
+        RelationshipType relationshipType = graknGraph.getRelationType(hasResourceLabel.getValue());
+        Assert.assertEquals(hasResourceLabel, relationshipType.getLabel());
 
-        Set<Label> roleLabels = relationType.relates().map(SchemaConcept::getLabel).collect(toSet());
+        Set<Label> roleLabels = relationshipType.relates().map(SchemaConcept::getLabel).collect(toSet());
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
         assertThat(entityType.plays().collect(toSet()), containsInAnyOrder(graknGraph.getRole(hasResourceOwnerLabel.getValue())));
         assertThat(resourceType.plays().collect(toSet()), containsInAnyOrder(graknGraph.getRole(hasResourceValueLabel.getValue())));
 
         //Check everything is implicit
-        assertTrue(relationType.isImplicit());
-        relationType.relates().forEach(role -> assertTrue(role.isImplicit()));
+        assertTrue(relationshipType.isImplicit());
+        relationshipType.relates().forEach(role -> assertTrue(role.isImplicit()));
 
         // Check that resource is not required
         EdgeElement entityPlays = ((EntityTypeImpl) entityType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();

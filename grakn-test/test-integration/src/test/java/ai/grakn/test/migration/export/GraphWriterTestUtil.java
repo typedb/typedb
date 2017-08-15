@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -103,7 +103,7 @@ public abstract class GraphWriterTestUtil {
             return;
         }
 
-        RelationType relationType = two.getRelationType(relationship1.type().getLabel().getValue());
+        RelationshipType relationshipType = two.getRelationType(relationship1.type().getLabel().getValue());
         Map<Role, Set<Thing>> rolemap = relationship1.allRolePlayers().entrySet().stream().collect(toMap(
                 e -> two.getRole(e.getKey().getLabel().getValue()),
                 e -> e.getValue().stream().
@@ -111,7 +111,7 @@ public abstract class GraphWriterTestUtil {
                         collect(Collectors.toSet())
         ));
 
-        boolean relationFound = relationType.instances().
+        boolean relationFound = relationshipType.instances().
                 anyMatch(relation -> relation.allRolePlayers().equals(rolemap));
 
         assertTrue("The copied relation [" + relationship1 + "] was not found.", relationFound);

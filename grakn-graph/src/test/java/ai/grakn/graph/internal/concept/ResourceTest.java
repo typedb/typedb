@@ -21,7 +21,7 @@ package ai.grakn.graph.internal.concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -59,7 +59,7 @@ public class ResourceTest extends GraphTestBase {
     public void whenAttachingResourcesToInstances_EnsureInstancesAreReturnedAsOwners() throws Exception {
         EntityType randomThing = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
-        RelationType hasResource = graknGraph.putRelationType("Has Resource");
+        RelationshipType hasResource = graknGraph.putRelationType("Has Resource");
         Role resourceRole = graknGraph.putRole("Resource Role");
         Role actorRole = graknGraph.putRole("Actor");
         Thing pacino = randomThing.addEntity();

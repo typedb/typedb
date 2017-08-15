@@ -22,7 +22,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -30,7 +30,7 @@ import ai.grakn.graph.internal.concept.ConceptImpl;
 import ai.grakn.graph.internal.concept.EntityTypeImpl;
 import ai.grakn.graph.internal.concept.RelationshipImpl;
 import ai.grakn.graph.internal.concept.RelationshipReified;
-import ai.grakn.graph.internal.concept.RelationTypeImpl;
+import ai.grakn.graph.internal.concept.RelationshipTypeImpl;
 import ai.grakn.graph.internal.concept.ResourceImpl;
 import ai.grakn.graph.internal.concept.ResourceTypeImpl;
 import ai.grakn.graph.internal.concept.ThingImpl;
@@ -56,7 +56,7 @@ import static org.junit.Assert.assertTrue;
 public class PostProcessingTest extends GraphTestBase{
     private Role role1;
     private Role role2;
-    private RelationType relationType;
+    private RelationshipType relationshipType;
     private ThingImpl instance1;
     private ThingImpl instance2;
 
@@ -64,14 +64,14 @@ public class PostProcessingTest extends GraphTestBase{
     public void buildSampleGraph(){
         role1 = graknGraph.putRole("role 1");
         role2 = graknGraph.putRole("role 2");
-        relationType = graknGraph.putRelationType("rel type").relates(role1).relates(role2);
+        relationshipType = graknGraph.putRelationType("rel type").relates(role1).relates(role2);
         EntityType thing = graknGraph.putEntityType("thingy").plays(role1).plays(role2);
         instance1 = (ThingImpl) thing.addEntity();
         instance2 = (ThingImpl) thing.addEntity();
         thing.addEntity();
         thing.addEntity();
 
-        relationType.addRelation().addRolePlayer(role1, instance1).addRolePlayer(role2, instance2);
+        relationshipType.addRelation().addRolePlayer(role1, instance1).addRolePlayer(role2, instance2);
     }
 
     @Test
@@ -99,7 +99,7 @@ public class PostProcessingTest extends GraphTestBase{
     public void whenMergingDuplicateResourcesWithRelations_EnsureSingleResourceRemainsAndNoDuplicateRelationsAreCreated(){
         Role roleEntity = graknGraph.putRole("Entity Role");
         Role roleResource = graknGraph.putRole("Resource Role");
-        RelationType relationType = graknGraph.putRelationType("Relationship Type").relates(roleEntity).relates(roleResource);
+        RelationshipType relationshipType = graknGraph.putRelationType("Relationship Type").relates(roleEntity).relates(roleResource);
         ResourceTypeImpl<String> resourceType = (ResourceTypeImpl<String>) graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).plays(roleResource);
         EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity).resource(resourceType);
         Entity e1 = entityType.addEntity();
@@ -117,13 +117,13 @@ public class PostProcessingTest extends GraphTestBase{
         resourceIds.add(r111.getId());
 
         //Give resources some relationships
-        addReifiedRelation(roleEntity, roleResource, relationType, e1, r1);
+        addReifiedRelation(roleEntity, roleResource, relationshipType, e1, r1);
 
         //When merging this relation should not be absorbed
-        addReifiedRelation(roleEntity, roleResource, relationType, e1, r11);
+        addReifiedRelation(roleEntity, roleResource, relationshipType, e1, r11);
 
         //Absorb
-        addReifiedRelation(roleEntity, roleResource, relationType, e2, r11);
+        addReifiedRelation(roleEntity, roleResource, relationshipType, e2, r11);
 
         //Don't Absorb
         addEdgeRelation(e2, r111);
@@ -165,8 +165,8 @@ public class PostProcessingTest extends GraphTestBase{
         entity.resource(resource);
     }
 
-    private void addReifiedRelation(Role roleEntity, Role roleResource, RelationType relationType, Entity entity, Resource<?> resource) {
-        Relationship relationship = relationType.addRelation().addRolePlayer(roleResource, resource).addRolePlayer(roleEntity, entity);
+    private void addReifiedRelation(Role roleEntity, Role roleResource, RelationshipType relationshipType, Entity entity, Resource<?> resource) {
+        Relationship relationship = relationshipType.addRelation().addRolePlayer(roleResource, resource).addRolePlayer(roleEntity, entity);
         String hash = RelationshipReified.generateNewHash(relationship.type(), relationship.allRolePlayers());
         RelationshipImpl.from(relationship).reify().setHash(hash);
     }
@@ -190,7 +190,7 @@ public class PostProcessingTest extends GraphTestBase{
         //Create Some Types;
         EntityTypeImpl t1 = (EntityTypeImpl) graknGraph.putEntityType("t1");
         ResourceTypeImpl t2 = (ResourceTypeImpl)  graknGraph.putResourceType("t2", ResourceType.DataType.STRING);
-        RelationTypeImpl t3 = (RelationTypeImpl) graknGraph.putRelationType("t3");
+        RelationshipTypeImpl t3 = (RelationshipTypeImpl) graknGraph.putRelationType("t3");
 
         //Lets Set Some Counts
         types.put(t1.getId(), 5L);
@@ -215,9 +215,9 @@ public class PostProcessingTest extends GraphTestBase{
     public void whenMergingDuplicateResourceEdges_EnsureNoDuplicatesRemain(){
         ResourceTypeImpl<String> resourceType = (ResourceTypeImpl <String>) graknGraph.putResourceType("My Sad Resource", ResourceType.DataType.STRING);
         EntityType entityType = graknGraph.putEntityType("My Happy EntityType").resource(resourceType);
-        RelationType relationType = graknGraph.putRelationType("My Miserable RelationType").resource(resourceType);
+        RelationshipType relationshipType = graknGraph.putRelationType("My Miserable RelationshipType").resource(resourceType);
         Entity entity = entityType.addEntity();
-        Relationship relationship = relationType.addRelation();
+        Relationship relationship = relationshipType.addRelation();
 
         ResourceImpl<?> r1dup1 = createFakeResource(resourceType, "1");
         ResourceImpl<?> r1dup2 = createFakeResource(resourceType, "1");

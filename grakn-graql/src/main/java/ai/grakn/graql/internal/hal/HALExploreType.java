@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import com.theoryinpractise.halbuilder.api.Representation;
@@ -58,7 +58,7 @@ class HALExploreType extends HALExploreConcept{
         attachSubTypes(halResource, type);
 
         if (type.isRelationType()) {
-            // Role types that make up this RelationType
+            // Role types that make up this RelationshipType
             relationTypeRoles(halResource, type.asRelationType());
         } else if (type.isRole()) {
             // Types that can play this role && Relationship types this role can take part in.
@@ -96,8 +96,8 @@ class HALExploreType extends HALExploreConcept{
         });
     }
 
-    private void relationTypeRoles(Representation halResource, RelationType relationType) {
-        relationType.relates().forEach(role -> {
+    private void relationTypeRoles(Representation halResource, RelationshipType relationshipType) {
+        relationshipType.relates().forEach(role -> {
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + role.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, role);

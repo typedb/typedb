@@ -21,7 +21,7 @@ package ai.grakn.test.graphs;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.test.GraphContext;
 
@@ -65,7 +65,7 @@ public class PathGraphII extends TestGraph {
         Role arcFrom = graph.getRole("arc-from");
         Role arcTo = graph.getRole("arc-to");
 
-        RelationType arc = graph.getRelationType("arc");
+        RelationshipType arc = graph.getRelationType("arc");
         putEntity(graph, "a0", startVertex, key);
 
         for(int i = 0 ; i < n ;i++) {

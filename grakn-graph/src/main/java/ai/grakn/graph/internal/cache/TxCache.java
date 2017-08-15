@@ -24,9 +24,9 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -78,7 +78,7 @@ public class TxCache {
     private final Set<Role> modifiedRoles = new HashSet<>();
     private final Set<Casting> modifiedCastings = new HashSet<>();
 
-    private final Set<RelationType> modifiedRelationTypes = new HashSet<>();
+    private final Set<RelationshipType> modifiedRelationshipTypes = new HashSet<>();
     private final Set<Relationship> modifiedRelationships = new HashSet<>();
 
     private final Set<Rule> modifiedRules = new HashSet<>();
@@ -150,7 +150,7 @@ public class TxCache {
         } else if (concept.isRole()) {
             modifiedRoles.add(concept.asRole());
         } else if (concept.isRelationType()) {
-            modifiedRelationTypes.add(concept.asRelationType());
+            modifiedRelationshipTypes.add(concept.asRelationType());
         } else if (concept.isRelation()){
             Relationship relationship = concept.asRelation();
             modifiedRelationships.add(relationship);
@@ -214,7 +214,7 @@ public class TxCache {
     public void remove(Concept concept){
         modifiedEntities.remove(concept);
         modifiedRoles.remove(concept);
-        modifiedRelationTypes.remove(concept);
+        modifiedRelationshipTypes.remove(concept);
         modifiedRelationships.remove(concept);
         modifiedRules.remove(concept);
         modifiedResources.remove(concept);
@@ -367,8 +367,8 @@ public class TxCache {
         return modifiedRoles;
     }
 
-    public Set<RelationType> getModifiedRelationTypes() {
-        return modifiedRelationTypes;
+    public Set<RelationshipType> getModifiedRelationshipTypes() {
+        return modifiedRelationshipTypes;
     }
     public Set<Relationship> getModifiedRelationships() {
         return modifiedRelationships;
@@ -397,7 +397,7 @@ public class TxCache {
         //Clear Collection Caches
         modifiedEntities.clear();
         modifiedRoles.clear();
-        modifiedRelationTypes.clear();
+        modifiedRelationshipTypes.clear();
         modifiedRelationships.clear();
         modifiedRules.clear();
         modifiedResources.clear();

@@ -28,7 +28,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -489,17 +489,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public RelationType putRelationType(String label) {
+    public RelationshipType putRelationType(String label) {
         return putRelationType(Label.of(label));
     }
 
     @Override
-    public RelationType putRelationType(Label label) {
+    public RelationshipType putRelationType(Label label) {
         return putOntologyElement(label, Schema.BaseType.RELATION_TYPE,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE));
     }
 
-    public RelationType putRelationTypeImplicit(Label label) {
+    public RelationshipType putRelationTypeImplicit(Label label) {
         return putOntologyElement(label, Schema.BaseType.RELATION_TYPE,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE));
     }
@@ -630,7 +630,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public RelationType getRelationType(String label) {
+    public RelationshipType getRelationType(String label) {
         return getOntologyConcept(Label.of(label), Schema.BaseType.RELATION_TYPE);
     }
 
@@ -655,7 +655,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public RelationType getMetaRelationType() {
+    public RelationshipType getMetaRelationType() {
         return getOntologyConcept(Schema.MetaSchema.RELATION.getId());
     }
 

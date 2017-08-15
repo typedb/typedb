@@ -24,7 +24,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.test.GraphContext;
 
 import java.util.function.Consumer;
@@ -64,7 +64,7 @@ public class MatrixGraphII extends TestGraph {
         Role Qto = graph.getRole("Q-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
-        RelationType Q = graph.getRelationType("Q");
+        RelationshipType Q = graph.getRelationType("Q");
         ConceptId[][] aInstancesIds = new ConceptId[n+1][m+1];
         Thing aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
         for(int i = 1 ; i <= n ;i++) {

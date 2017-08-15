@@ -25,7 +25,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -255,15 +255,15 @@ public class ClusteringTest {
             Role role2 = graph.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
+            RelationshipType relationshipType = graph.putRelationType(related).relates(role1).relates(role2);
 
-            ConceptId relationId12 = relationType.addRelation()
+            ConceptId relationId12 = relationshipType.addRelation()
                     .addRolePlayer(role1, entity1)
                     .addRolePlayer(role2, entity2).getId();
-            ConceptId relationId23 = relationType.addRelation()
+            ConceptId relationId23 = relationshipType.addRelation()
                     .addRolePlayer(role1, entity2)
                     .addRolePlayer(role2, entity3).getId();
-            ConceptId relationId24 = relationType.addRelation()
+            ConceptId relationId24 = relationshipType.addRelation()
                     .addRolePlayer(role1, entity2)
                     .addRolePlayer(role2, entity4).getId();
             List<ConceptId> instanceIds = Lists.newArrayList(entityId1, entityId2, entityId3, entityId4,
@@ -359,47 +359,47 @@ public class ClusteringTest {
             Role resourceValue5 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType5)));
             Role resourceValue6 = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
 
-            RelationType relationType1 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)));
-            relationType1.addRelation()
+            RelationshipType relationshipType1 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)));
+            relationshipType1.addRelation()
                     .addRolePlayer(resourceOwner1, entity1)
                     .addRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.2));
-            relationType1.addRelation()
+            relationshipType1.addRelation()
                     .addRolePlayer(resourceOwner1, entity1)
                     .addRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.5));
-            relationType1.addRelation()
+            relationshipType1.addRelation()
                     .addRolePlayer(resourceOwner1, entity3)
                     .addRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.8));
 
-            RelationType relationType2 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)));
-            relationType2.addRelation()
+            RelationshipType relationshipType2 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)));
+            relationshipType2.addRelation()
                     .addRolePlayer(resourceOwner2, entity1)
                     .addRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(4L));
-            relationType2.addRelation()
+            relationshipType2.addRelation()
                     .addRolePlayer(resourceOwner2, entity1)
                     .addRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(-1L));
-            relationType2.addRelation()
+            relationshipType2.addRelation()
                     .addRolePlayer(resourceOwner2, entity4)
                     .addRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(0L));
 
-            RelationType relationType5 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)));
-            relationType5.addRelation()
+            RelationshipType relationshipType5 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)));
+            relationshipType5.addRelation()
                     .addRolePlayer(resourceOwner5, entity1)
                     .addRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
-            relationType5.addRelation()
+            relationshipType5.addRelation()
                     .addRolePlayer(resourceOwner5, entity2)
                     .addRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
-            relationType5.addRelation()
+            relationshipType5.addRelation()
                     .addRolePlayer(resourceOwner5, entity4)
                     .addRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
 
-            RelationType relationType6 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)));
-            relationType6.addRelation()
+            RelationshipType relationshipType6 = graph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)));
+            relationshipType6.addRelation()
                     .addRolePlayer(resourceOwner6, entity1)
                     .addRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
-            relationType6.addRelation()
+            relationshipType6.addRelation()
                     .addRolePlayer(resourceOwner6, entity2)
                     .addRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
-            relationType6.addRelation()
+            relationshipType6.addRelation()
                     .addRolePlayer(resourceOwner6, entity4)
                     .addRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
 

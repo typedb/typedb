@@ -21,7 +21,7 @@ package ai.grakn.graph.internal.concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graph.internal.cache.Cache;
@@ -53,7 +53,7 @@ import java.util.stream.Stream;
 public class RelationshipEdge implements RelationshipStructure {
     private final EdgeElement edgeElement;
 
-    private final Cache<RelationType> relationType = new Cache<>(Cacheable.concept(), () ->
+    private final Cache<RelationshipType> relationType = new Cache<>(Cacheable.concept(), () ->
             edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
 
     private final Cache<Role> ownerRole = new Cache<>(Cacheable.concept(), () -> edge().graph().getOntologyConcept(LabelId.of(
@@ -69,14 +69,14 @@ public class RelationshipEdge implements RelationshipStructure {
         this.edgeElement = edgeElement;
     }
 
-    RelationshipEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
+    RelationshipEdge(RelationshipType relationshipType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
         this(edgeElement);
 
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.getLabelId().getValue());
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.getLabelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationType, null, t -> t.getLabelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationshipType, null, t -> t.getLabelId().getValue());
 
-        this.relationType.set(relationType);
+        this.relationType.set(relationshipType);
         this.ownerRole.set(ownerRole);
         this.valueRole.set(valueRole);
     }
@@ -108,7 +108,7 @@ public class RelationshipEdge implements RelationshipStructure {
     }
 
     @Override
-    public RelationType type() {
+    public RelationshipType type() {
         return relationType.get();
     }
 

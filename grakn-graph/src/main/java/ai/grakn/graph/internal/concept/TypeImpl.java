@@ -20,7 +20,7 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -58,7 +58,7 @@ import java.util.stream.Stream;
  *
  * @author fppt
  *
- * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
+ * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationshipType}
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link Relationship}
  */
 public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type{
@@ -305,9 +305,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     /**
-     * This is a temporary patch to prevent accidentally disconnecting implicit {@link RelationType}s from their
-     * {@link RelationshipEdge}s. This Disconnection happens because {@link RelationType#instances()} depends on the
-     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link Type} and the implicit {@link RelationType}.
+     * This is a temporary patch to prevent accidentally disconnecting implicit {@link RelationshipType}s from their
+     * {@link RelationshipEdge}s. This Disconnection happens because {@link RelationshipType#instances()} depends on the
+     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link Type} and the implicit {@link RelationshipType}.
      *
      * When changing the super you may accidentally cause this disconnection. So we prevent it here.
      *
@@ -398,7 +398,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Label resourceLabel = resourceType.getLabel();
         Role ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(resourceLabel));
         Role valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(resourceLabel));
-        RelationType relationType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceLabel)).
+        RelationshipType relationshipType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceLabel)).
                 relates(ownerRole).
                 relates(valueRole);
 
@@ -408,13 +408,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
             Role ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
             Role valueRoleSuper = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-            RelationType relationTypeSuper = vertex().graph().putRelationTypeImplicit(has.getLabel(superLabel)).
+            RelationshipType relationshipTypeSuper = vertex().graph().putRelationTypeImplicit(has.getLabel(superLabel)).
                     relates(ownerRoleSuper).relates(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation
             ownerRole.sup(ownerRoleSuper);
             valueRole.sup(valueRoleSuper);
-            relationType.sup(relationTypeSuper);
+            relationshipType.sup(relationshipTypeSuper);
 
             //Make sure the supertype resource is linked with the role as well
             ((ResourceTypeImpl) resourceTypeSuper).plays(valueRoleSuper);
