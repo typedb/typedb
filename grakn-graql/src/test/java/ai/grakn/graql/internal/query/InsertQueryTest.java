@@ -484,9 +484,9 @@ public class InsertQueryTest {
         VarPattern hasResourceValue = Graql.label(HAS_VALUE.getLabel(resourceType));
 
         // Make sure the expected ontology elements are created
-        assertTrue(qb.match(hasResource.sub("relation")).ask().execute());
-        assertTrue(qb.match(hasResourceOwner.sub("role")).ask().execute());
-        assertTrue(qb.match(hasResourceValue.sub("role")).ask().execute());
+        assertTrue(qb.match(hasResource.sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue())).ask().execute());
+        assertTrue(qb.match(hasResourceOwner.sub(Schema.MetaSchema.ROLE.getLabel().getValue())).ask().execute());
+        assertTrue(qb.match(hasResourceValue.sub(Schema.MetaSchema.ROLE.getLabel().getValue())).ask().execute());
         assertTrue(qb.match(hasResource.relates(hasResourceOwner)).ask().execute());
         assertTrue(qb.match(hasResource.relates(hasResourceValue)).ask().execute());
         assertTrue(qb.match(label("a-new-type").plays(hasResourceOwner)).ask().execute());
@@ -513,9 +513,9 @@ public class InsertQueryTest {
         VarPattern keyValue = Graql.label(KEY_VALUE.getLabel(resourceType));
 
         // Make sure the expected ontology elements are created
-        assertTrue(qb.match(key.sub("relation")).ask().execute());
-        assertTrue(qb.match(keyOwner.sub("role")).ask().execute());
-        assertTrue(qb.match(keyValue.sub("role")).ask().execute());
+        assertTrue(qb.match(key.sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue())).ask().execute());
+        assertTrue(qb.match(keyOwner.sub(Schema.MetaSchema.ROLE.getLabel().getValue())).ask().execute());
+        assertTrue(qb.match(keyValue.sub(Schema.MetaSchema.ROLE.getLabel().getValue())).ask().execute());
         assertTrue(qb.match(key.relates(keyOwner)).ask().execute());
         assertTrue(qb.match(key.relates(keyValue)).ask().execute());
         assertTrue(qb.match(label("a-new-type").plays(keyOwner)).ask().execute());

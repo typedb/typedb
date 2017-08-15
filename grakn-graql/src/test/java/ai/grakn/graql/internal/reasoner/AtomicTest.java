@@ -52,7 +52,6 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import java.util.HashSet;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -62,6 +61,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -69,7 +69,6 @@ import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -638,7 +637,7 @@ public class AtomicTest {
     @Test
     public void testRuleApplicability_OntologicalTypes(){
         GraknGraph graph = ruleApplicabilitySet.graph();
-        String typeString = "{$x sub relation;}";
+        String typeString = "{$x sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";}";
         String typeString2 = "{$x relates role1;}";
         String typeString3 = "{$x plays role1;}";
         String typeString4 = "{$x has res1;}";

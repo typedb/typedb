@@ -946,7 +946,7 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryingForSuperRelationType_ReturnResults() {
-        AskQuery query = qb.match(var().isa("relation").rel(x).rel(y)).ask();
+        AskQuery query = qb.match(var().isa(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()).rel(x).rel(y)).ask();
         assertTrue("Query had no results", query.execute());
     }
 
