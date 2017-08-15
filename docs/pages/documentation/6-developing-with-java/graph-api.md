@@ -245,7 +245,7 @@ It is worth remembering that adding a type hierarchy allows you to create a more
 All rule instances are of type inference-rule which can be retrieved by:
 
 ```java
-RuleType inferenceRule = graknGraph.getMetaRuleInference();
+RuleType inferenceRule = graknTx.getMetaRuleInference();
 ```
 
 Rule instances can be added to the graph both through the Graph API as well as through Graql. We will consider an example:

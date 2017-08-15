@@ -18,7 +18,7 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
@@ -84,7 +84,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         }
     }
 
-    private void checkOtherGraphOpen(GraknGraph otherGraph){
+    private void checkOtherGraphOpen(GraknTx otherGraph){
         if(otherGraph != null && !otherGraph.isClosed()) throw GraphOperationException.transactionOpen(otherGraph);
     }
 

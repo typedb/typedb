@@ -19,7 +19,7 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
@@ -40,16 +40,16 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * @author Felix Chapman
  */
 public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
-    private Supplier<GraknGraph> graphSupplier =
+    private Supplier<GraknTx> graphSupplier =
             () -> gen().make(GraknGraphs.class).setOpen(true).generate(random, status);
 
-    private GraknGraph graph;
+    private GraknTx graph;
 
     FromGraphGenerator(Class<T> type) {
         super(type);
     }
 
-    protected final GraknGraph graph() {
+    protected final GraknTx graph() {
         return graph;
     }
 
@@ -71,7 +71,7 @@ public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
         fromLastGeneratedGraph();
     }
 
-    final FromGraphGenerator<T> fromGraph(Supplier<GraknGraph> graphSupplier) {
+    final FromGraphGenerator<T> fromGraph(Supplier<GraknTx> graphSupplier) {
         this.graphSupplier = graphSupplier;
         return this;
     }

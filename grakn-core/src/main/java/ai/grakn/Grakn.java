@@ -45,32 +45,32 @@ import java.util.Map;
  location and specific database instance within that location.
 
  Once you've instantiated a session, you can obtain multiple concurrent graph connections,
- represented by the {@link GraknGraph} interface.
+ represented by the {@link GraknTx} interface.
 
  If you are running the Grakn server locally then you can initialise a graph with:
 
- <pre>{@code GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, "keyspace").getGraph();}</pre>
+ <pre>{@code GraknTx graph = Grakn.session(Grakn.DEFAULT_URI, "keyspace").getGraph();}</pre>
  If you are running the Grakn server remotely you must initialise the graph by providing the IP address of your server:
 
- <pre>{@code GraknGraph graph = Grakn.session("127.6.21.2", "keyspace").getGraph();}</pre>
+ <pre>{@code GraknTx graph = Grakn.session("127.6.21.2", "keyspace").getGraph();}</pre>
  The string “keyspace” uniquely identifies the graph and allows you to create different graphs.
 
  Please note that graph keyspaces are not case sensitive so the following two graphs are actually the same graph:
 
- <pre>{@code GraknGraph graph1 = Grakn.session("127.6.21.2", "keyspace").getGraph();
- GraknGraph graph2 = Grakn.session("127.6.21.2", "KeYsPaCe").getGraph();}</pre>
+ <pre>{@code GraknTx graph1 = Grakn.session("127.6.21.2", "keyspace").getGraph();
+ GraknTx graph2 = Grakn.session("127.6.21.2", "KeYsPaCe").getGraph();}</pre>
  All graphs are also singletons specific to their keyspaces so be aware that in the following case:
 
- <pre>{@code GraknGraph graph1 = Grakn.session("127.6.21.2", "keyspace").getGraph();
- GraknGraph graph2 = Grakn.session("127.6.21.2", "keyspace").getGraph();
- GraknGraph graph3 = Grakn.session("127.6.21.2", "keyspace").getGraph();}</pre>
+ <pre>{@code GraknTx graph1 = Grakn.session("127.6.21.2", "keyspace").getGraph();
+ GraknTx graph2 = Grakn.session("127.6.21.2", "keyspace").getGraph();
+ GraknTx graph3 = Grakn.session("127.6.21.2", "keyspace").getGraph();}</pre>
 
  any changes to <code>graph1</code>, <code>graph2</code>, or <code>graph3</code> will all be persisted to the same graph.
 
  You can alternatively instantiate a 'toy' knowledge graph (which runs in-memory) for experimentation purposes.
  You can initialise an in memory graph without having the Grakn server running:
 
- <pre>{@code GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "keyspace").getGraph();}</pre>
+ <pre>{@code GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "keyspace").getGraph();}</pre>
  This in memory graph serves as a toy graph for you to become accustomed to the API without needing to setup a
  Grakn Server. It is also useful for testing purposes.
  </p>

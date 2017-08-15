@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.ResourceType;
@@ -37,7 +37,7 @@ import java.util.Set;
 
 class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements SumQuery {
 
-    SumQueryImpl(Optional<GraknGraph> graph) {
+    SumQueryImpl(Optional<GraknTx> graph) {
         this.graph = graph;
     }
 
@@ -89,7 +89,7 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public SumQuery withGraph(GraknGraph graph) {
+    public SumQuery withGraph(GraknTx graph) {
         return (SumQuery) super.withGraph(graph);
     }
 

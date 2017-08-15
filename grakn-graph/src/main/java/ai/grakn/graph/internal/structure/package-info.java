@@ -17,7 +17,7 @@
  */
 
 /**
- * Internal implementation of structures embedded in a {@link ai.grakn.GraknGraph}.
+ * Internal implementation of structures embedded in a {@link ai.grakn.GraknTx}.
  */
 
 package ai.grakn.graph.internal.structure;

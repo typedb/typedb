@@ -20,7 +20,7 @@
 package ai.grakn.test.docs;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTxType;
@@ -47,7 +47,7 @@ public class DocTestUtil {
         String keyspace = UUID.randomUUID().toString().replaceAll("-", "");
         GraknSession session = Grakn.session(uri, keyspace);
 
-        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             GenealogyGraph.get().accept(graph);
 
             // TODO: Remove custom genealogy ontology when not used

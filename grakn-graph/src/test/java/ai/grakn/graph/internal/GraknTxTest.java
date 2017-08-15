@@ -1,7 +1,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class GraknGraphTest extends GraphTestBase {
+public class GraknTxTest extends GraphTestBase {
 
     @Test
     public void whenGettingConceptById_ReturnTheConcept(){
@@ -152,7 +152,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenPassingGraphToAnotherThreadWithoutOpening_Throw() throws ExecutionException, InterruptedException {
         ExecutorService pool = Executors.newSingleThreadExecutor();
-        GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "testing").open(GraknTxType.WRITE);
+        GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "testing").open(GraknTxType.WRITE);
 
         expectedException.expectCause(IsInstanceOf.instanceOf(GraphOperationException.class));
         expectedException.expectMessage(GraphOperationException.transactionClosed(graph, null).getMessage());
@@ -165,7 +165,7 @@ public class GraknGraphTest extends GraphTestBase {
 
     @Test
     public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws InvalidGraphException {
-        GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "testing-again").open(GraknTxType.WRITE);
+        GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "testing-again").open(GraknTxType.WRITE);
         graph.close();
 
         boolean errorThrown = false;
@@ -208,7 +208,7 @@ public class GraknGraphTest extends GraphTestBase {
         ExecutorService pool = Executors.newSingleThreadExecutor();
         //Mutate Ontology in a separate thread
         pool.submit(() -> {
-            GraknGraph innerGraph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+            GraknTx innerGraph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
             EntityType entityType = innerGraph.getEntityType("e1");
             Role role = innerGraph.getRole("r1");
             entityType.deletePlays(role);
@@ -272,7 +272,7 @@ public class GraknGraphTest extends GraphTestBase {
         failMutation(graknGraph, () -> relationT1.relates(roleT2));
         failMutation(graknGraph, () -> relationT2.relates(roleT1));
     }
-    private void failMutation(GraknGraph graph, Runnable mutator){
+    private void failMutation(GraknTx graph, Runnable mutator){
         int vertexCount = graph.admin().getTinkerTraversal().V().toList().size();
         int eddgeCount = graph.admin().getTinkerTraversal().E().toList().size();
 
@@ -295,7 +295,7 @@ public class GraknGraphTest extends GraphTestBase {
         String keyspace = "akeyspacewithkeys";
         GraknSession session = Grakn.session(Grakn.IN_MEMORY, keyspace);
 
-        GraknGraph graph = session.open(GraknTxType.READ);
+        GraknTx graph = session.open(GraknTxType.READ);
         failAtOpeningGraph(session, GraknTxType.WRITE, keyspace);
         failAtOpeningGraph(session, GraknTxType.BATCH, keyspace);
         graph.close();
@@ -363,7 +363,7 @@ public class GraknGraphTest extends GraphTestBase {
 
         executor.submit(() -> {
             //Resources
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
                 ResourceType<Long> int_ = graph.putResourceType("int", ResourceType.DataType.LONG);
                 ResourceType<Long> foo = graph.putResourceType("foo", ResourceType.DataType.LONG).sup(int_);
                 graph.putResourceType("bar", ResourceType.DataType.LONG).sup(int_);
@@ -374,7 +374,7 @@ public class GraknGraphTest extends GraphTestBase {
         }).get();
 
         //Relation Which Has Resources
-        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             graph.putEntityType("BAR").resource(graph.getResourceType("bar"));
             graph.commit();
         }

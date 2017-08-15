@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -99,7 +99,7 @@ import static java.util.stream.Collectors.toSet;
  * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
  * @author fppt
  */
-public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin {
+public abstract class AbstractGraknGraph<G extends Graph> implements GraknTx, GraknAdmin {
     final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
     private static final String QUERY_BUILDER_CLASS_NAME = "ai.grakn.graql.internal.query.QueryBuilderImpl";
 
@@ -120,7 +120,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     static {
         try {
-            queryConstructor = Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(GraknGraph.class);
+            queryConstructor = Class.forName(QUERY_BUILDER_CLASS_NAME).getConstructor(GraknTx.class);
         } catch (NoSuchMethodException | SecurityException | ClassNotFoundException e) {
             queryConstructor = null;
         }
@@ -334,7 +334,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public QueryBuilder graql() {
         if (queryConstructor == null) {
             throw new RuntimeException("The query builder implementation " + QUERY_BUILDER_CLASS_NAME +
-                    " must be accessible in the classpath and have a one argument constructor taking a GraknGraph");
+                    " must be accessible in the classpath and have a one argument constructor taking a GraknTx");
         }
         try {
             return (QueryBuilder) queryConstructor.newInstance(this);

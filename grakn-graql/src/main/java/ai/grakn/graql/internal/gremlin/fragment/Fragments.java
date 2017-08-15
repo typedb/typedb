@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.ResourceType;
@@ -213,7 +213,7 @@ public class Fragments {
     }
 
     static void applyTypeLabelsToTraversal(
-            GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property, Optional<Set<Label>> typeLabels, GraknGraph graph) {
+            GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property, Optional<Set<Label>> typeLabels, GraknTx graph) {
         typeLabels.ifPresent(labels -> {
             Set<Integer> typeIds = labels.stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
             traversal.has(property.name(), P.within(typeIds));

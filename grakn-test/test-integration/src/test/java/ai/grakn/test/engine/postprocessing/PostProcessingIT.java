@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
@@ -78,7 +78,7 @@ public class PostProcessingIT {
         ExecutorService pool = Executors.newFixedThreadPool(40);
         Set<Future> futures = new HashSet<>();
 
-        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             //Create Simple Ontology
             for (int i = 0; i < numEntTypes; i++) {
                 EntityType entityType = graph.putEntityType("ent" + i);
@@ -99,7 +99,7 @@ public class PostProcessingIT {
 
         for(int i = 0; i < numAttempts; i++){
             futures.add(pool.submit(() -> {
-                try(GraknGraph graph = session.open(GraknTxType.WRITE)){
+                try(GraknTx graph = session.open(GraknTxType.WRITE)){
                     Random r = new Random();
 
                     for(int j = 0; j < transactionSize; j ++) {
@@ -143,7 +143,7 @@ public class PostProcessingIT {
 
         assertFalse("Failed at fixing graph", graphIsBroken(session));
 
-        try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
+        try(GraknTx graph = session.open(GraknTxType.WRITE)) {
             //Check the resource indices are working
             graph.admin().getMetaResourceType().instances().forEach(object -> {
                 Resource resource = (Resource) object;
@@ -155,7 +155,7 @@ public class PostProcessingIT {
 
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     private boolean graphIsBroken(GraknSession session){
-        try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
+        try(GraknTx graph = session.open(GraknTxType.WRITE)) {
             Stream<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subs();
             return resourceTypes.anyMatch(resourceType -> {
                 if (!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
@@ -173,7 +173,7 @@ public class PostProcessingIT {
         }
     }
 
-    private void forceDuplicateResources(GraknGraph graph, int resourceTypeNum, int resourceValueNum, int entityTypeNum, int entityNum){
+    private void forceDuplicateResources(GraknTx graph, int resourceTypeNum, int resourceValueNum, int entityTypeNum, int entityNum){
         Resource resource = graph.getResourceType("res" + resourceTypeNum).putResource(resourceValueNum);
         Entity entity = (Entity) graph.getEntityType("ent" + entityTypeNum).instances().toArray()[entityNum]; //Randomly pick an entity
         entity.resource(resource);

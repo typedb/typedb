@@ -1,6 +1,6 @@
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
@@ -61,7 +61,7 @@ public class ShortestPathTest {
     @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFound() throws Exception {
         // test on an empty graph
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId2).execute();
         }
     }
@@ -69,7 +69,7 @@ public class ShortestPathTest {
     @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFoundSubgraph() throws Exception {
         addOntologyAndEntities();
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId4).in(thing, related).execute();
         }
     }
@@ -77,7 +77,7 @@ public class ShortestPathTest {
     @Test
     public void testShortestPathExceptionPathNotFound() throws Exception {
         addOntologyAndEntities();
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             assertFalse(graph.graql().compute().path().from(entityId1).to(entityId5).execute().isPresent());
         }
     }
@@ -88,7 +88,7 @@ public class ShortestPathTest {
         List<String> computedPath;
         addOntologyAndEntities();
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             // directly connected vertices
             correctPath = Lists.newArrayList(entityId1.getValue(), relationId12.getValue());
             computedPath = graph.graql().compute().path().from(entityId1).to(relationId12).execute()
@@ -149,7 +149,7 @@ public class ShortestPathTest {
             list.add(i);
         }
         Set<List<String>> result = list.parallelStream().map(i -> {
-            try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            try (GraknTx graph = factory.open(GraknTxType.READ)) {
                 return graph.graql().compute().path().in(thing, related).from(entityId2).to(entityId1)
                         .execute().get().stream().map(concept -> concept.getId().getValue())
                         .collect(Collectors.toList());
@@ -164,7 +164,7 @@ public class ShortestPathTest {
         List<String> computedPath;
         addOntologyAndEntities2();
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(),
                     entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
             computedPath = graph.graql().compute().path().from(entityId2).to(entityId3).execute()
@@ -195,7 +195,7 @@ public class ShortestPathTest {
         ConceptId startId;
         ConceptId endId;
 
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 
             Role role1 = graph.putRole("role1");
@@ -238,7 +238,7 @@ public class ShortestPathTest {
             graph.commit();
         }
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Optional<List<Concept>> result = graph.graql().compute().path().from(startId).to(endId).execute();
             assertEquals(1, validPaths.stream().filter(path -> checkPathsAreEqual(path, result)).count());
         }
@@ -270,7 +270,7 @@ public class ShortestPathTest {
     }
 
     private void addOntologyAndEntities() throws InvalidGraphException {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -310,7 +310,7 @@ public class ShortestPathTest {
     }
 
     private void addOntologyAndEntities2() throws InvalidGraphException {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 
             Entity entity1 = entityType.addEntity();

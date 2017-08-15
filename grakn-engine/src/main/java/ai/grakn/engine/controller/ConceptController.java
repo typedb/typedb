@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -109,7 +109,7 @@ public class ConceptController {
         ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID_PARAMETER));
         int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
-        try(GraknGraph graph = factory.getGraph(keyspace, READ); Context context = conceptIdGetTimer.time()){
+        try(GraknTx graph = factory.getGraph(keyspace, READ); Context context = conceptIdGetTimer.time()){
             Concept concept = retrieveExistingConcept(graph, conceptId);
 
             response.type(APPLICATION_HAL);
@@ -129,7 +129,7 @@ public class ConceptController {
     private String ontology(Request request, Response response) {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         validateRequest(request, APPLICATION_ALL, APPLICATION_JSON);
-        try(GraknGraph graph = factory.getGraph(keyspace, READ); Context context = ontologyGetTimer.time()){
+        try(GraknTx graph = factory.getGraph(keyspace, READ); Context context = ontologyGetTimer.time()){
             Json responseObj = Json.object();
             responseObj.set(ROLES_JSON_FIELD, subLabels(graph.admin().getMetaRole()));
             responseObj.set(ENTITIES_JSON_FIELD, subLabels(graph.admin().getMetaEntityType()));
@@ -144,7 +144,7 @@ public class ConceptController {
         }
     }
 
-    static Concept retrieveExistingConcept(GraknGraph graph, ConceptId conceptId){
+    static Concept retrieveExistingConcept(GraknTx graph, ConceptId conceptId){
         Concept concept = graph.getConcept(conceptId);
 
         if (notPresent(concept)) {

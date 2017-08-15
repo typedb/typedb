@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
@@ -71,5 +71,5 @@ public interface MedianQuery extends ComputeQuery<Optional<Number>> {
      * @return a MedianQuery with the graph set
      */
     @Override
-    MedianQuery withGraph(GraknGraph graph);
+    MedianQuery withGraph(GraknTx graph);
 }

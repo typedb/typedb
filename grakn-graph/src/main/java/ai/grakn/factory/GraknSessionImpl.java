@@ -20,7 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
@@ -71,7 +71,7 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     @Override
-    public GraknGraph open(GraknTxType transactionType) {
+    public GraknTx open(GraknTxType transactionType) {
         final InternalFactory<?> factory = getConfiguredFactory();
         switch (transactionType){
             case READ:

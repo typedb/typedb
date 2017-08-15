@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.postprocessing;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -109,7 +109,7 @@ public class PostProcessingTask extends BackgroundTask {
      * @param conceptIndex
      * @param conceptIds
      */
-    private void runPostProcessingMethod(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
+    private void runPostProcessingMethod(GraknTx graph, String conceptIndex, Set<ConceptId> conceptIds){
         Preconditions.checkNotNull(this.getLockProvider(), "Lock provider was null, possible race condition in initialisation");
         if(graph.admin().duplicateResourcesExist(conceptIndex, conceptIds)){
 
@@ -145,7 +145,7 @@ public class PostProcessingTask extends BackgroundTask {
      * @param conceptIds The concpet ids which should only return 1 valid concept
      * @return An error if one of the above rules are not satisfied.
      */
-    private Optional<String> validateMerged(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
+    private Optional<String> validateMerged(GraknTx graph, String conceptIndex, Set<ConceptId> conceptIds){
         //Check number of valid concept Ids
         int numConceptFound = 0;
         for (ConceptId conceptId : conceptIds) {

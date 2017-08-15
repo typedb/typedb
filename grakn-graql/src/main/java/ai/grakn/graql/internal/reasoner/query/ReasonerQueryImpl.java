@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.exception.GraqlQueryException;
@@ -85,11 +85,11 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEquals
  */
 public class ReasonerQueryImpl implements ReasonerQuery {
 
-    private final GraknGraph graph;
+    private final GraknTx graph;
     private final Set<Atomic> atomSet = new HashSet<>();
     private int priority = Integer.MAX_VALUE;
 
-    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
+    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx graph) {
         this.graph = graph;
         atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
         inferTypes();
@@ -100,7 +100,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         q.getAtoms().forEach(at -> addAtomic(AtomicFactory.create(at, this)));
     }
 
-    ReasonerQueryImpl(Set<Atom> atoms, GraknGraph graph){
+    ReasonerQueryImpl(Set<Atom> atoms, GraknTx graph){
         this.graph = graph;
 
         atoms.stream()
@@ -175,7 +175,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public GraknGraph graph() {
+    public GraknTx graph() {
         return graph;
     }
 

@@ -19,7 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
@@ -52,19 +52,19 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class GraknJanusGraphTest extends JanusTestBase {
-    private GraknGraph graknGraph;
+    private GraknTx graknTx;
 
     @Before
     public void setup(){
-        if(graknGraph == null || graknGraph.isClosed()) {
-            graknGraph = janusGraphFactory.open(GraknTxType.WRITE);
+        if(graknTx == null || graknTx.isClosed()) {
+            graknTx = janusGraphFactory.open(GraknTxType.WRITE);
         }
     }
 
     @After
     public void cleanup(){
-        if(!graknGraph.isClosed()) {
-            graknGraph.close();
+        if(!graknTx.isClosed()) {
+            graknTx.close();
         }
     }
 
@@ -73,8 +73,8 @@ public class GraknJanusGraphTest extends JanusTestBase {
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(40);
 
-        EntityType type = graknGraph.putEntityType("A Type");
-        graknGraph.commit();
+        EntityType type = graknTx.putEntityType("A Type");
+        graknTx.commit();
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> addEntity(type)));
@@ -84,8 +84,8 @@ public class GraknJanusGraphTest extends JanusTestBase {
             future.get();
         }
 
-        graknGraph = janusGraphFactory.open(GraknTxType.WRITE);
-        assertEquals(100L, graknGraph.admin().getMetaEntityType().instances().count());
+        graknTx = janusGraphFactory.open(GraknTxType.WRITE);
+        assertEquals(100L, graknTx.admin().getMetaEntityType().instances().count());
     }
     private void addEntity(EntityType type){
         GraknJanusGraph graph = janusGraphFactory.open(GraknTxType.WRITE);
@@ -96,19 +96,19 @@ public class GraknJanusGraphTest extends JanusTestBase {
     @Test
     public void whenAbortingTransaction_ChangesNotCommitted(){
         String label = "My New Type";
-        graknGraph.putEntityType(label);
-        graknGraph.abort();
-        graknGraph = janusGraphFactory.open(GraknTxType.WRITE);
-        assertNull(graknGraph.getEntityType(label));
+        graknTx.putEntityType(label);
+        graknTx.abort();
+        graknTx = janusGraphFactory.open(GraknTxType.WRITE);
+        assertNull(graknTx.getEntityType(label));
     }
 
     @Test
     public void whenAbortingTransaction_GraphIsClosedBecauseOfAbort(){
-        graknGraph.abort();
-        assertTrue("Aborting transaction did not close the graph", graknGraph.isClosed());
+        graknTx.abort();
+        assertTrue("Aborting transaction did not close the graph", graknTx.isClosed());
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graknGraph.getKeyspace()));
-        graknGraph.putEntityType("This should fail");
+        expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graknTx.getKeyspace()));
+        graknTx.putEntityType("This should fail");
     }
 
     @Test
@@ -150,23 +150,23 @@ public class GraknJanusGraphTest extends JanusTestBase {
 
     @Test
     public void whenLookingUpRelationEdgeViaConceptId_EnsureTheRelationEdgeIsReturned(){
-        ResourceType<String> resourceType = graknGraph.putResourceType("Looky a resource type", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknTx.putResourceType("Looky a resource type", ResourceType.DataType.STRING);
         Resource<String> resource = resourceType.putResource("A Resource Thing");
 
-        EntityType entityType = graknGraph.putEntityType("My entity").resource(resourceType);
+        EntityType entityType = graknTx.putEntityType("My entity").resource(resourceType);
         Relation relation = Iterators.getOnlyElement(entityType.addEntity().resource(resource).relations().iterator());
 
         //Closing so the cache is not accessed when doing the lookup
-        graknGraph.commit();
-        graknGraph = janusGraphFactory.open(GraknTxType.WRITE);
+        graknTx.commit();
+        graknTx = janusGraphFactory.open(GraknTxType.WRITE);
 
-        assertEquals(relation, graknGraph.getConcept(relation.getId()));
+        assertEquals(relation, graknTx.getConcept(relation.getId()));
     }
 
     @Test //This test is performed here because it depends on actual transaction behaviour which tinker does not exhibit
     public void whenClosingTransaction_EnsureConceptTransactionCachesAreCleared(){
         JanusInternalFactory factory = newFactory();
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
+        GraknTx graph = factory.open(GraknTxType.WRITE);
 
         EntityType entityType = graph.admin().getMetaEntityType();
         EntityType newEntityType = graph.putEntityType("New Entity Type");
@@ -183,7 +183,7 @@ public class GraknJanusGraphTest extends JanusTestBase {
     @Test
     public void whenCommitting_EnsureGraphTransactionIsClosed() throws Exception {
         JanusInternalFactory factory = newFactory();
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
+        GraknTx graph = factory.open(GraknTxType.WRITE);
         graph.putEntityType("thingy");
         graph.commit();
         assertTrue(graph.isClosed());
@@ -199,7 +199,7 @@ public class GraknJanusGraphTest extends JanusTestBase {
     }
 
     private void addThingToBatch(JanusInternalFactory factory){
-        try(GraknGraph graphBatchLoading = factory.open(GraknTxType.WRITE)) {
+        try(GraknTx graphBatchLoading = factory.open(GraknTxType.WRITE)) {
             graphBatchLoading.getEntityType("thingy").addEntity();
             graphBatchLoading.commit();
         } catch (Exception e){
@@ -210,9 +210,9 @@ public class GraknJanusGraphTest extends JanusTestBase {
     @Test
     public void checkNumberOfOpenTransactionsChangesAsExpected() throws ExecutionException, InterruptedException {
         JanusInternalFactory factory = newFactory();
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
+        GraknTx graph = factory.open(GraknTxType.WRITE);
         graph.close();
-        GraknGraph batchGraph = factory.open(GraknTxType.BATCH);
+        GraknTx batchGraph = factory.open(GraknTxType.BATCH);
 
         for(int i = 0; i < 6; i ++){
             Executors.newSingleThreadExecutor().submit(() -> factory.open(GraknTxType.WRITE)).get();
@@ -232,13 +232,13 @@ public class GraknJanusGraphTest extends JanusTestBase {
     @Test
     public void afterCommitting_NumberOfOpenTransactionsDecrementsOnce() {
         JanusInternalFactory factory = newFactory();
-        GraknGraph graph = factory.open(GraknTxType.READ);
+        GraknTx graph = factory.open(GraknTxType.READ);
         assertEquals(1, openTransactions(graph));
         graph.commit();
         assertEquals(0, openTransactions(graph));
     }
 
-    private int openTransactions(GraknGraph graph){
+    private int openTransactions(GraknTx graph){
         if(graph == null) return 0;
         return ((AbstractGraknGraph) graph).numOpenTx();
     }
@@ -249,7 +249,7 @@ public class GraknJanusGraphTest extends JanusTestBase {
 
         String label = "An Abstract thingy";
 
-        try(GraknGraph graph = factory.open(GraknTxType.WRITE)){
+        try(GraknTx graph = factory.open(GraknTxType.WRITE)){
             graph.putEntityType(label).setAbstract(true);
             graph.commit();
         }
@@ -257,7 +257,7 @@ public class GraknJanusGraphTest extends JanusTestBase {
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(IS_ABSTRACT.getMessage(label));
 
-        try(GraknGraph graph = factory.open(GraknTxType.WRITE)){
+        try(GraknTx graph = factory.open(GraknTxType.WRITE)){
             graph.getEntityType(label).addEntity();
         }
     }

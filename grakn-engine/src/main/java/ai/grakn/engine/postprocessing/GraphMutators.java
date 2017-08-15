@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.postprocessing;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknBackendException;
@@ -50,7 +50,7 @@ public abstract class GraphMutators {
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
     public static void runBatchMutationWithRetry(
-            EngineGraknGraphFactory factory, String keyspace, int maxRetry, Consumer<GraknGraph> mutatingFunction){
+            EngineGraknGraphFactory factory, String keyspace, int maxRetry, Consumer<GraknTx> mutatingFunction){
         runGraphMutationWithRetry(factory, keyspace, GraknTxType.BATCH, maxRetry, mutatingFunction);
     }
 
@@ -60,7 +60,7 @@ public abstract class GraphMutators {
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
     static void runGraphMutationWithRetry(
-            EngineGraknGraphFactory factory, String keyspace, int maxRetry, Consumer<GraknGraph> mutatingFunction){
+            EngineGraknGraphFactory factory, String keyspace, int maxRetry, Consumer<GraknTx> mutatingFunction){
         runGraphMutationWithRetry(factory, keyspace, GraknTxType.WRITE, maxRetry, mutatingFunction);
     }
 
@@ -71,7 +71,7 @@ public abstract class GraphMutators {
      */
     private static void runGraphMutationWithRetry(
             EngineGraknGraphFactory factory , String keyspace, GraknTxType txType, int maxRetry,
-            Consumer<GraknGraph> mutatingFunction
+            Consumer<GraknTx> mutatingFunction
     ){
         if(!factory.systemKeyspace().containsKeyspace(keyspace)){ //This may be slow.
             LOG.warn("Attempting to execute mutation on graph [" + keyspace + "] which no longer exists");
@@ -79,7 +79,7 @@ public abstract class GraphMutators {
         }
 
         for(int retry = 0; retry < maxRetry; retry++) {
-            try(GraknGraph graph = factory.getGraph(keyspace, txType))  {
+            try(GraknTx graph = factory.getGraph(keyspace, txType))  {
 
                 mutatingFunction.accept(graph);
 

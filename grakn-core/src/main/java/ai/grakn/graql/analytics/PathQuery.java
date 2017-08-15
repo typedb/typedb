@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -74,5 +74,5 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
      * @return a PathQuery with the graph set
      */
     @Override
-    PathQuery withGraph(GraknGraph graph);
+    PathQuery withGraph(GraknTx graph);
 }

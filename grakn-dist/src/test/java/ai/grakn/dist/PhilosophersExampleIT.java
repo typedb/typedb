@@ -1,7 +1,7 @@
 package ai.grakn.dist;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -23,7 +23,7 @@ public class PhilosophersExampleIT {
 
     @BeforeClass
     public static void setUp() throws IOException {
-        GraknGraph graph = Grakn.session("in-memory", "my-graph").open(GraknTxType.WRITE);
+        GraknTx graph = Grakn.session("in-memory", "my-graph").open(GraknTxType.WRITE);
         qb = graph.graql();
         runInsertQuery("src/examples/philosophers.gql");
     }

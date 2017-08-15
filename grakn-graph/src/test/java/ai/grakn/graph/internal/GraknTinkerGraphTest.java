@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
@@ -60,7 +60,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         assertEquals(20, graknGraph.getEntityType("Thing").instances().count());
     }
     private synchronized void addRandomEntity(){
-        try(GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE)){
+        try(GraknTx graph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE)){
             graph.getEntityType("Thing").addEntity();
             graph.commit();
         }

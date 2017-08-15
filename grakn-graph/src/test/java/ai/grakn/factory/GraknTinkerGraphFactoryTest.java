@@ -19,7 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
@@ -66,23 +66,23 @@ public class GraknTinkerGraphFactoryTest {
 
     @Test
     public void whenBuildingGraphUsingTinkerFactory_ReturnGraknTinkerGraph() throws Exception {
-        GraknGraph graph = tinkerGraphFactory.open(GraknTxType.WRITE);
+        GraknTx graph = tinkerGraphFactory.open(GraknTxType.WRITE);
         assertThat(graph, instanceOf(GraknTinkerGraph.class));
         assertThat(graph, instanceOf(AbstractGraknGraph.class));
     }
 
     @Test
     public void whenBuildingGraphFromTheSameFactory_ReturnSingletonGraphs(){
-        GraknGraph graph1 = tinkerGraphFactory.open(GraknTxType.WRITE);
+        GraknTx graph1 = tinkerGraphFactory.open(GraknTxType.WRITE);
         TinkerGraph tinkerGraph1 = ((GraknTinkerGraph) graph1).getTinkerPopGraph();
         graph1.close();
-        GraknGraph graph1_copy = tinkerGraphFactory.open(GraknTxType.WRITE);
+        GraknTx graph1_copy = tinkerGraphFactory.open(GraknTxType.WRITE);
         graph1_copy.close();
 
-        GraknGraph graph2 = tinkerGraphFactory.open(GraknTxType.BATCH);
+        GraknTx graph2 = tinkerGraphFactory.open(GraknTxType.BATCH);
         TinkerGraph tinkerGraph2 = ((GraknTinkerGraph) graph2).getTinkerPopGraph();
         graph2.close();
-        GraknGraph graph2_copy = tinkerGraphFactory.open(GraknTxType.BATCH);
+        GraknTx graph2_copy = tinkerGraphFactory.open(GraknTxType.BATCH);
 
         assertEquals(graph1, graph1_copy);
         assertEquals(graph2, graph2_copy);
@@ -114,7 +114,7 @@ public class GraknTinkerGraphFactoryTest {
     @Test
     public void whenGettingGraphFromFactoryClosingItAndGettingItAgain_ReturnGraph(){
         TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        GraknGraph graph1 = factory.open(GraknTxType.WRITE);
+        GraknTx graph1 = factory.open(GraknTxType.WRITE);
         graph1.close();
         GraknTinkerGraph graph2 = factory.open(GraknTxType.WRITE);
         assertEquals(graph1, graph2);

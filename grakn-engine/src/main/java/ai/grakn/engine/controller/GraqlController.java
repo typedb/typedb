@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.exception.GraphOperationException;
@@ -118,7 +118,7 @@ public class GraqlController {
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = getAcceptType(request);
 
-        try(GraknGraph graph = factory.getGraph(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
+        try(GraknTx graph = factory.getGraph(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
             Object resp = respond(response, acceptType, executeQuery(keyspace, limitEmbedded, query, acceptType));
             graph.commit();
@@ -145,7 +145,7 @@ public class GraqlController {
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = getAcceptType(request);
 
-        try(GraknGraph graph = factory.getGraph(keyspace, WRITE); Timer.Context context = executeGraqlGetTimer.time()) {
+        try(GraknTx graph = factory.getGraph(keyspace, WRITE); Timer.Context context = executeGraqlGetTimer.time()) {
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
 
             if(!query.isReadOnly()) throw GraknServerException.invalidQuery("\"read-only\"");

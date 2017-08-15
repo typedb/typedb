@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
@@ -71,5 +71,5 @@ public interface SumQuery extends ComputeQuery<Optional<Number>> {
      * @return a SumQuery with the graph set
      */
     @Override
-    SumQuery withGraph(GraknGraph graph);
+    SumQuery withGraph(GraknTx graph);
 }

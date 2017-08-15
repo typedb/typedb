@@ -38,10 +38,10 @@ public class GraknTest {
 
     @Test
     public void testInMemorySingleton(){
-        GraknGraph test1 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTxType.WRITE);
+        GraknTx test1 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTxType.WRITE);
         test1.close();
-        GraknGraph test11 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTxType.WRITE);
-        GraknGraph test2 = Grakn.session(Grakn.IN_MEMORY, "test2").open(GraknTxType.WRITE);
+        GraknTx test11 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTxType.WRITE);
+        GraknTx test2 = Grakn.session(Grakn.IN_MEMORY, "test2").open(GraknTxType.WRITE);
 
         assertEquals(test1, test11);
         assertNotEquals(test1, test2);
@@ -49,7 +49,7 @@ public class GraknTest {
 
     @Test
     public void testInMemoryClear(){
-        GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
+        GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
         graph.admin().delete();
         graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
         graph.putEntityType("A thing");

@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
@@ -45,19 +45,19 @@ public class TailRecursionGraph extends TestGraph {
         this.m = m;
     }
 
-    public static Consumer<GraknGraph> get(int n, int m) {
+    public static Consumer<GraknTx> get(int n, int m) {
         return new TailRecursionGraph(n, m).build();
     }
 
     @Override
-    public Consumer<GraknGraph> build(){
-        return (GraknGraph graph) -> {
+    public Consumer<GraknTx> build(){
+        return (GraknTx graph) -> {
             GraphContext.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };
     }
 
-    private void buildExtensionalDB(GraknGraph graph, int n, int m) {
+    private void buildExtensionalDB(GraknTx graph, int n, int m) {
         Role qfrom = graph.getRole("Q-from");
         Role qto = graph.getRole("Q-to");
 
