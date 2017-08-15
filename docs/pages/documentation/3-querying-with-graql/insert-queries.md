@@ -118,8 +118,6 @@ qb.insert(var().val("Ash").isa("surname")).execute();
 
 ### has
 
-<!-- TODO: Describe new reified syntax -->
-
 Add a resource of the given type to the concept.
 
 <ul id="profileTabs" class="nav nav-tabs">
@@ -136,6 +134,27 @@ insert isa person, has identifier "Fuchsia Groan" has gender "female";
 <div role="tabpanel" class="tab-pane" id="java5">
 <pre>
 qb.insert(var().isa("person").has("identifier", "Fuchsia Groan").has("gender", "female")).execute();
+</pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
+You can also specify a variable to represent the relation connecting the thing and the resource:
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell6" data-toggle="tab">Graql</a></li>
+    <li><a href="#java6" data-toggle="tab">Java</a></li>
+</ul>
+
+<!-- TODO: Update to final syntax -->
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell6">
+<pre>
+insert isa person has REIFIED {{ $r }} identifier "Fuchsia Groan";
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java6">
+<pre>
+qb.insert(var().isa("person").has(Label.of("identifier"), var().val("Fuchsia Groan"), var("r"))).execute();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->

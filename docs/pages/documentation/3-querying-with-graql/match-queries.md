@@ -106,6 +106,27 @@ qb.match(var("x").has("identifier", contains("Bar")));
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
+You can also specify a variable to represent the relation connecting the thing and the resource:
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell5" data-toggle="tab">Graql</a></li>
+    <li><a href="#java5" data-toggle="tab">Java</a></li>
+</ul>
+
+<!-- TODO: Update to final syntax -->
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell5">
+<pre>
+match $x has REIFIED {{ $r }} identifier "Bar";
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java5">
+<pre>
+qb.match(var("x").has(Label.of("identifier"), var().val("Bar"), var("r")));
+</pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
 
 ### relation
 
