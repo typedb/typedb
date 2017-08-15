@@ -49,36 +49,36 @@ import java.util.stream.Stream;
  *
  */
 public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTxCache {
-    private RelationStructure relationStructure;
+    private RelationshipStructure relationshipStructure;
 
-    RelationshipImpl(RelationStructure relationStructure) {
-        this.relationStructure = relationStructure;
+    RelationshipImpl(RelationshipStructure relationshipStructure) {
+        this.relationshipStructure = relationshipStructure;
     }
 
     /**
-     * Gets the {@link RelationReified} if the {@link Relationship} has been reified.
+     * Gets the {@link RelationshipReified} if the {@link Relationship} has been reified.
      * To reify the {@link Relationship} you use {@link RelationshipImpl#reify()}.
      *
      * NOTE: This approach is done to make sure that only write operations will cause the {@link Relationship} to reify
      *
-     * @return The {@link RelationReified} if the {@link Relationship} has been reified
+     * @return The {@link RelationshipReified} if the {@link Relationship} has been reified
      */
-    public Optional<RelationReified> reified(){
-        if(!relationStructure.isReified()) return Optional.empty();
-        return Optional.of(relationStructure.reify());
+    public Optional<RelationshipReified> reified(){
+        if(!relationshipStructure.isReified()) return Optional.empty();
+        return Optional.of(relationshipStructure.reify());
     }
 
     /**
-     * Reifys and returns the {@link RelationReified}
+     * Reifys and returns the {@link RelationshipReified}
      */
-    public RelationReified reify(){
-        if(relationStructure.isReified()) return relationStructure.reify();
+    public RelationshipReified reify(){
+        if(relationshipStructure.isReified()) return relationshipStructure.reify();
 
         //Get the role players to transfer
         Map<Role, Set<Thing>> rolePlayers = structure().allRolePlayers();
 
         //Now Reify
-        relationStructure = relationStructure.reify();
+        relationshipStructure = relationshipStructure.reify();
 
         //Transfer relationships
         rolePlayers.forEach((role, things) -> {
@@ -86,11 +86,11 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
             addRolePlayer(role, thing);
         });
 
-        return relationStructure.reify();
+        return relationshipStructure.reify();
     }
 
-    public RelationStructure structure(){
-        return relationStructure;
+    public RelationshipStructure structure(){
+        return relationshipStructure;
     }
 
     @Override
@@ -120,10 +120,10 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     }
 
     /**
-     * Reads some data from a {@link RelationReified}. If the {@link Relationship} has not been reified then an empty
+     * Reads some data from a {@link RelationshipReified}. If the {@link Relationship} has not been reified then an empty
      * {@link Stream} is returned.
      */
-    private <X> Stream<X> readFromReified(Function<RelationReified, Stream<X>> producer){
+    private <X> Stream<X> readFromReified(Function<RelationshipReified, Stream<X>> producer){
         return reified().map(producer).orElseGet(Stream::empty);
     }
 

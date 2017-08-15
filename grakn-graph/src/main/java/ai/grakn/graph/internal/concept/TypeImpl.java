@@ -306,7 +306,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     /**
      * This is a temporary patch to prevent accidentally disconnecting implicit {@link RelationType}s from their
-     * {@link RelationEdge}s. This Disconnection happens because {@link RelationType#instances()} depends on the
+     * {@link RelationshipEdge}s. This Disconnection happens because {@link RelationType#instances()} depends on the
      * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link Type} and the implicit {@link RelationType}.
      *
      * When changing the super you may accidentally cause this disconnection. So we prevent it here.

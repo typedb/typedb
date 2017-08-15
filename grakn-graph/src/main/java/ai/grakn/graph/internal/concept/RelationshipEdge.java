@@ -44,13 +44,13 @@ import java.util.stream.Stream;
  *
  * <p>
  *     This wraps up a {@link Relationship} as a {@link EdgeElement}. It is used to represent any binary {@link Relationship}.
- *     This also includes the ability to automatically reify a {@link RelationEdge} into a {@link RelationReified}.
+ *     This also includes the ability to automatically reify a {@link RelationshipEdge} into a {@link RelationshipReified}.
  * </p>
  *
  * @author fppt
  *
  */
-public class RelationEdge implements RelationStructure{
+public class RelationshipEdge implements RelationshipStructure {
     private final EdgeElement edgeElement;
 
     private final Cache<RelationType> relationType = new Cache<>(Cacheable.concept(), () ->
@@ -65,11 +65,11 @@ public class RelationEdge implements RelationStructure{
     private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> edge().graph().factory().buildConcept(edge().source()));
     private final Cache<Thing> value = new Cache<>(Cacheable.concept(), () -> edge().graph().factory().buildConcept(edge().target()));
 
-    RelationEdge(EdgeElement edgeElement) {
+    RelationshipEdge(EdgeElement edgeElement) {
         this.edgeElement = edgeElement;
     }
 
-    RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
+    RelationshipEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
         this(edgeElement);
 
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.getLabelId().getValue());
@@ -91,10 +91,10 @@ public class RelationEdge implements RelationStructure{
     }
 
     @Override
-    public RelationReified reify() {
+    public RelationshipReified reify() {
         //Build the Relationship Vertex
         VertexElement relationVertex = edge().graph().addVertex(Schema.BaseType.RELATION, getId());
-        RelationReified relationReified = edge().graph().factory().buildRelationReified(relationVertex, type());
+        RelationshipReified relationReified = edge().graph().factory().buildRelationReified(relationVertex, type());
 
         //Delete the old edge
         delete();

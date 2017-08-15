@@ -46,8 +46,8 @@ import ai.grakn.graph.internal.concept.ConceptVertex;
 import ai.grakn.graph.internal.concept.ElementFactory;
 import ai.grakn.graph.internal.concept.RelationshipImpl;
 import ai.grakn.graph.internal.concept.SchemaConceptImpl;
-import ai.grakn.graph.internal.concept.RelationEdge;
-import ai.grakn.graph.internal.concept.RelationReified;
+import ai.grakn.graph.internal.concept.RelationshipEdge;
+import ai.grakn.graph.internal.concept.RelationshipReified;
 import ai.grakn.graph.internal.concept.ResourceImpl;
 import ai.grakn.graph.internal.concept.TypeImpl;
 import ai.grakn.graph.internal.structure.EdgeElement;
@@ -689,7 +689,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return getOntologyConcept(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
-    public void putShortcutEdge(Thing toThing, RelationReified fromRelation, Role roleType) {
+    public void putShortcutEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {
         boolean exists = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
@@ -922,19 +922,19 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private void copyRelation(Resource main, Resource other, Relationship otherRelationship) {
         //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
         //This allows us to find relations far more quickly.
-        Optional<RelationReified> reifiedRelation = ((RelationshipImpl) otherRelationship).reified();
+        Optional<RelationshipReified> reifiedRelation = ((RelationshipImpl) otherRelationship).reified();
 
         if (reifiedRelation.isPresent()) {
             copyRelation(main, other, otherRelationship, reifiedRelation.get());
         } else {
-            copyRelation(main, other, otherRelationship, (RelationEdge) RelationshipImpl.from(otherRelationship).structure());
+            copyRelation(main, other, otherRelationship, (RelationshipEdge) RelationshipImpl.from(otherRelationship).structure());
         }
     }
 
     /**
-     * Copy a relation which has been reified - {@link RelationReified}
+     * Copy a relation which has been reified - {@link RelationshipReified}
      */
-    private void copyRelation(Resource main, Resource other, Relationship otherRelationship, RelationReified reifiedRelation) {
+    private void copyRelation(Resource main, Resource other, Relationship otherRelationship, RelationshipReified reifiedRelation) {
         String newIndex = reifiedRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
         Relationship foundRelationship = txCache().getCachedRelation(newIndex);
         if (foundRelationship == null) foundRelationship = getConcept(Schema.VertexProperty.INDEX, newIndex);
@@ -945,7 +945,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             foundRelationship = otherRelationship;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
             otherRelationship.allRolePlayers().forEach((roleType, instances) -> {
-                Optional<RelationReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
+                Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
                 if (instances.contains(other) && relationReified.isPresent()) {
                     putShortcutEdge(main, relationReified.get(), roleType);
                 }
@@ -957,9 +957,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
-     * Copy a relation which is an edge - {@link RelationEdge}
+     * Copy a relation which is an edge - {@link RelationshipEdge}
      */
-    private void copyRelation(Resource main, Resource other, Relationship otherRelationship, RelationEdge relationEdge) {
+    private void copyRelation(Resource main, Resource other, Relationship otherRelationship, RelationshipEdge relationEdge) {
         ConceptVertex newOwner;
         ConceptVertex newValue;
 

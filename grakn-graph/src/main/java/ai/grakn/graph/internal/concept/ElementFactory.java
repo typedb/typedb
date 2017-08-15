@@ -117,13 +117,13 @@ public final class ElementFactory {
         return getOrBuildConcept(vertex, (v) -> new RelationshipImpl(buildRelationReified(v, type)));
     }
     public RelationshipImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value){
-        return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationEdge(type, owner, value, edge)));
+        return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationshipEdge(type, owner, value, edge)));
     }
     RelationshipImpl buildRelation(EdgeElement edge){
-        return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationEdge(edge)));
+        return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationshipEdge(edge)));
     }
-    RelationReified buildRelationReified(VertexElement vertex, RelationType type){
-        return new RelationReified(vertex, type);
+    RelationshipReified buildRelationReified(VertexElement vertex, RelationType type){
+        return new RelationshipReified(vertex, type);
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
@@ -179,7 +179,7 @@ public final class ElementFactory {
             Concept concept;
             switch (type) {
                 case RELATION:
-                    concept = new RelationshipImpl(new RelationReified(vertexElement));
+                    concept = new RelationshipImpl(new RelationshipReified(vertexElement));
                     break;
                 case TYPE:
                     concept = new TypeImpl<>(vertexElement);
@@ -245,7 +245,7 @@ public final class ElementFactory {
             Concept concept;
             switch (label) {
                 case RESOURCE:
-                    concept = new RelationshipImpl(new RelationEdge(edgeElement));
+                    concept = new RelationshipImpl(new RelationshipEdge(edgeElement));
                     break;
                 default:
                     throw GraphOperationException.unknownConcept(label.name());

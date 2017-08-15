@@ -37,7 +37,7 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     This wraps up the structure of a {@link Relationship} as either a {@link RelationReified} or a TODO
+ *     This wraps up the structure of a {@link Relationship} as either a {@link RelationshipReified} or a TODO
  *     It contains methods which can be accessed regardless of the {@link Relationship} being a represented by a
  *     {@link VertexElement} or an {@link EdgeElement}
  * </p>
@@ -45,7 +45,7 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-interface RelationStructure extends ContainsTxCache {
+interface RelationshipStructure extends ContainsTxCache {
 
     /**
      *
@@ -57,7 +57,7 @@ interface RelationStructure extends ContainsTxCache {
      *
      * @return The relation structure which has been reified
      */
-    RelationReified reify();
+    RelationshipReified reify();
 
     /**
      *

@@ -32,7 +32,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.graph.internal.concept.SchemaConceptImpl;
-import ai.grakn.graph.internal.concept.RelationReified;
+import ai.grakn.graph.internal.concept.RelationshipReified;
 import ai.grakn.graph.internal.concept.ThingImpl;
 import ai.grakn.graph.internal.structure.Casting;
 import ai.grakn.util.REST;
@@ -155,7 +155,7 @@ public class TxCache {
             Relationship relationship = concept.asRelation();
             modifiedRelationships.add(relationship);
             //Caching of relations in memory so they can be retrieved without needing a commit
-            relationIndexCache.put(RelationReified.generateNewHash(relationship.type(), relationship.allRolePlayers()), relationship);
+            relationIndexCache.put(RelationshipReified.generateNewHash(relationship.type(), relationship.allRolePlayers()), relationship);
         } else if (concept.isRule()){
             modifiedRules.add(concept.asRule());
         } else if (concept.isResource()){

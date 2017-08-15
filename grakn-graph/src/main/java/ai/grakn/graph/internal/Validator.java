@@ -24,7 +24,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.graph.internal.concept.RelationshipImpl;
-import ai.grakn.graph.internal.concept.RelationReified;
+import ai.grakn.graph.internal.concept.RelationshipReified;
 import ai.grakn.graph.internal.structure.Casting;
 
 import java.util.ArrayList;
@@ -114,7 +114,7 @@ class Validator {
      */
     private void validateRelation(AbstractGraknGraph<?> graph, Relationship relationship){
         validateThing(relationship);
-        Optional<RelationReified> relationReified = ((RelationshipImpl) relationship).reified();
+        Optional<RelationshipReified> relationReified = ((RelationshipImpl) relationship).reified();
         //TODO: We need new validation mechanisms for non-reified relations
         relationReified.ifPresent(relationReified1 -> {
             ValidateGlobalRules.validateRelationshipStructure(relationReified1).ifPresent(errorsFound::add);

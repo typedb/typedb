@@ -32,7 +32,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.concept.RelationshipImpl;
 import ai.grakn.graph.internal.concept.SchemaConceptImpl;
-import ai.grakn.graph.internal.concept.RelationReified;
+import ai.grakn.graph.internal.concept.RelationshipReified;
 import ai.grakn.graph.internal.concept.RelationTypeImpl;
 import ai.grakn.graph.internal.concept.RuleImpl;
 import ai.grakn.graph.internal.concept.TypeImpl;
@@ -167,7 +167,7 @@ class ValidateGlobalRules {
      * @return An error message indicating if the relation has an incorrect structure. This includes checking if there an equal
      * number of castings and roles as well as looping the structure to make sure castings lead to the same relation type.
      */
-    static Optional<String> validateRelationshipStructure(RelationReified relation){
+    static Optional<String> validateRelationshipStructure(RelationshipReified relation){
         RelationType relationType = relation.type();
         Collection<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
         Collection<Role> roles = relationType.relates().collect(Collectors.toSet());
@@ -268,7 +268,7 @@ class ValidateGlobalRules {
      * @param relationReified The {@link Relationship} whose hash needs to be set.
      * @return An error message if the {@link Relationship} is not unique.
      */
-    static Optional<String> validateRelationIsUnique(AbstractGraknGraph<?> graph, RelationReified relationReified){
+    static Optional<String> validateRelationIsUnique(AbstractGraknGraph<?> graph, RelationshipReified relationReified){
         Iterator<ResourceType> keys = relationReified.type().keys().iterator();
         if(keys.hasNext()){
             return validateKeyControlledRelation(graph, relationReified, keys);
@@ -286,7 +286,7 @@ class ValidateGlobalRules {
      * @param keys the {@link ResourceType} indicating the key which the relation must be bound to and unique to
      * @return An error message if the {@link Relationship} is not unique.
      */
-    private static Optional<String> validateKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified, Iterator<ResourceType> keys) {
+    private static Optional<String> validateKeyControlledRelation(AbstractGraknGraph<?> graph, RelationshipReified relationReified, Iterator<ResourceType> keys) {
         TreeMap<String, String> resources = new TreeMap<>();
         while(keys.hasNext()){
             Optional<Resource<?>> foundResource = relationReified.resources(keys.next()).findAny();
@@ -295,7 +295,7 @@ class ValidateGlobalRules {
             foundResource.ifPresent(resource -> resources.put(resource.type().getId().getValue(), resource.getId().getValue()));
         }
 
-        String hash = RelationReified.generateNewHash(relationReified.type(), resources);
+        String hash = RelationshipReified.generateNewHash(relationReified.type(), resources);
 
         return setRelationUnique(graph, relationReified, hash);
     }
@@ -308,8 +308,8 @@ class ValidateGlobalRules {
      * @param relationReified the {@link Relationship} to check
      * @return An error message if the {@link Relationship} is not unique.
      */
-    private static Optional<String> validateNonKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified){
-        String hash = RelationReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers());
+    private static Optional<String> validateNonKeyControlledRelation(AbstractGraknGraph<?> graph, RelationshipReified relationReified){
+        String hash = RelationshipReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers());
         return setRelationUnique(graph, relationReified, hash);
     }
 
@@ -322,7 +322,7 @@ class ValidateGlobalRules {
      * @param hash The hash to use to find other potential {@link Relationship}s
      * @return An error message if the provided {@link Relationship} is not unique and were unable to set the hash
      */
-    private static Optional<String> setRelationUnique(AbstractGraknGraph<?> graph, RelationReified relationReified, String hash){
+    private static Optional<String> setRelationUnique(AbstractGraknGraph<?> graph, RelationshipReified relationReified, String hash){
         RelationshipImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
 
         if(foundRelation == null){
