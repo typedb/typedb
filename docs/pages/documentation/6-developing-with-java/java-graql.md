@@ -35,10 +35,10 @@ import ai.grakn.graql.QueryBuilder;
 import static ai.grakn.graql.Graql.*;
 ```
 
-A `QueryBuilder` is constructed from a `GraknGraph`:
+A `QueryBuilder` is constructed from a `GraknTx`:
 
 ```java-test-ignore
-GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
+GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
 QueryBuilder qb = graph.graql();
 ```
 
@@ -136,14 +136,14 @@ Reasoning can be configured using `QueryBuilder` objects in the following way:
 ### Switching reasoning on
 
 ```java
-//graph is a GraknGraph instance
+//graph is a GraknTx instance
 qb = graph.graql().infer(true);
 ```
 
 ### Switching materialisation on
 
 ```java
-//graph is a GraknGraph instance
+//graph is a GraknTx instance
 qb = graph.graql().infer(true).materialise(true);
 ```
 

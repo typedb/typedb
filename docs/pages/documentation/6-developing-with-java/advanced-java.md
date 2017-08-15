@@ -33,14 +33,14 @@ Set<Future> futures = new HashSet<>();
 ExecutorService pool = Executors.newFixedThreadPool(10);
 
 //Create sample ontology
-GraknGraph graph = session.open(GraknTxType.WRITE);
+GraknTx graph = session.open(GraknTxType.WRITE);
 EntityType entityType = graph.putEntityType("Some Entity Type");
 graph.commit();
 
 //Load the data concurrently
 for(int i = 0; i < 100; i ++){
     futures.add(pool.submit(() -> {
-        GraknGraph innerGraph = session.open(GraknTxType.WRITE);
+        GraknTx innerGraph = session.open(GraknTxType.WRITE);
         entityType.addEntity();
         innerGraph.commit();
     }));

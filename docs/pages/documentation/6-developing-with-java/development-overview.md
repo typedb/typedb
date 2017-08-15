@@ -81,7 +81,7 @@ You can initialise an in memory graph without having the Grakn server running wi
 
 <!-- These are ignored in tests because they connect to non-existent servers -->
 ```java
-GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "keyspace").open(GraknTxType.WRITE);
+GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "keyspace").open(GraknTxType.WRITE);
 ```    
     
 If you are running the Grakn server locally then you can initialise a graph with:
@@ -101,8 +101,8 @@ The string "keyspace" uniquely identifies the graph and allows you to create dif
 Please note that graph keyspaces are **not** case sensitive so the following two graphs are actually the same graph:
 
 ```java-test-ignore
-    GraknGraph graph1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
-    GraknGraph graph2 = Grakn.session("127.6.21.2", "KeYsPaCe").open(GraknTxType.WRITE);
+    GraknTx graph1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
+    GraknTx graph2 = Grakn.session("127.6.21.2", "KeYsPaCe").open(GraknTxType.WRITE);
 ```
    
 All graphs are also singletons specific to their keyspaces so be aware that in the following case:

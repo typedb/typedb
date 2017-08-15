@@ -15,9 +15,9 @@ To get set up to use this API, please read through our [Setup Guide](../get-star
 
 ## Graph API vs Graql
 
-On this page we will focus primarily on the methods provided by the `GraknGraph` interface which is used by all graph mutation operations executed by Graql statements. If you are primarily interested in mutating the graph, as well as doing simple concept lookups the `GraknGraph` interface will be sufficient. 
+On this page we will focus primarily on the methods provided by the `GraknTx` interface which is used by all graph mutation operations executed by Graql statements. If you are primarily interested in mutating the graph, as well as doing simple concept lookups the `GraknTx` interface will be sufficient. 
 
-It is also possible to interact with the graph using a Java API to form Graql queries via `GraknGraph.graql()`, which is discussed separately [here](./java-graql.html), and is best suited for advanced querying.
+It is also possible to interact with the graph using a Java API to form Graql queries via `GraknTx.graql()`, which is discussed separately [here](./java-graql.html), and is best suited for advanced querying.
 
 ## Building an Ontology with the Graph API
 
@@ -26,7 +26,7 @@ Let's see how we can build the same ontology exclusively via the graph API.
 First we need a graph. For this example we will just use an [in-memory graph](./java-setup.html#initialising-a-graph):
 
 ```java
-GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
+GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
 ```
 
 We need to define our constructs before we can use them. We will begin by defining our resource types since they are used everywhere. In Graql, they were defined as follows:
@@ -284,7 +284,7 @@ Pattern rule2when = and(
 Pattern rule2then = var().rel("ancestor", "p").rel("descendant", "d").isa("Ancestor");
 ```
 
-If we have a specific `GraknGraph graph` already defined, we can use the Graql pattern parser:
+If we have a specific `GraknTx graph` already defined, we can use the Graql pattern parser:
 
 ```java
 rule1when = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;"));

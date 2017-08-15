@@ -43,9 +43,9 @@ cd [your Grakn install directory]
 ```
 
 
-## Graph API: GraknGraph
+## Graph API: GraknTx
 
-The Graph API, `GraknGraph`, is a low-level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). It provides Java object constructs for the Grakn ontological elements (entity types, relation types, etc.) and data instances (entities, relations, etc.), allowing you to build up a graph programmatically. It is also possible to perform simple concept lookups using the graph API, which I’ll illustrate presently. First, let’s look at building up the graph.
+The Graph API, `GraknTx`, is a low-level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). It provides Java object constructs for the Grakn ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build up a graph programmatically. It is also possible to perform simple concept lookups using the graph API, which I’ll illustrate presently. First, let’s look at building up the graph.
 
 ### Building the Ontology
 
@@ -55,7 +55,7 @@ First we need a [graph](../developing-with-java/java-setup.html#initialising-a-t
 
 ```java
 GraknSession session = Grakn.session(uri, keyspace);
-GraknGraph graph = session.open(GraknTxType.WRITE)
+GraknTx graph = session.open(GraknTxType.WRITE)
 ```
 
 
@@ -83,7 +83,7 @@ parent = graph.putRole("parent");
 child = graph.putRole("child");
 ```
 
-Then to add the relation types, `putRelationType()`, which is followed by `relates()` to set the roles associated with the relation and resource() to state that it has a date resource:
+Then to add the relationship types, `putRelationType()`, which is followed by `relates()` to set the roles associated with the relationship and resource() to state that it has a date resource:
 
 ```java
 marriage = graph.putRelationType("marriage");
@@ -150,9 +150,9 @@ Resource marriageDate = date.putResource(LocalDateTime.of(1880, 8, 12, 0, 0, 0).
 theMarriage.resource(marriageDate);
 ```
 
-## Querying the Graph Using GraknGraph
+## Querying the Graph Using GraknTx
 
-The `runSampleQueries()` method shows how to run a simple query using the `GraknGraph` API. For example, take the query "What are the instances of type person?". In Graql, this is simply:
+The `runSampleQueries()` method shows how to run a simple query using the `GraknTx` API. For example, take the query "What are the instances of type person?". In Graql, this is simply:
 
 ```graql
 match $x isa person;
@@ -168,7 +168,7 @@ for (Thing p: graph.getEntityType("person").instances()) {
 
 ## Querying the Graph Using QueryBuilder
 
-It is also possible to interact with the graph using a separate Java API that forms Graql queries. This is via `GraknGraph.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
+It is also possible to interact with the graph using a separate Java API that forms Graql queries. This is via `GraknTx.graql()`, which returns a `QueryBuilder` object, discussed in the documentation. It is useful to use `QueryBuilder` if you want to make queries using Java, without having to construct a string containing the appropriate Graql expression. Taking the same query "What are the instances of type person?":
 
 ```java
 for (Answer a: graph.graql().match(var("x").isa("person"))) {
@@ -178,7 +178,7 @@ for (Answer a: graph.graql().match(var("x").isa("person"))) {
 
 Which leads us to the common question...
 
-## When to use GraknGraph and when to use QueryBuilder?
+## When to use GraknTx and when to use QueryBuilder?
 
 **Graph API**
 If you are primarily interested in mutating the graph, as well as doing simple concept lookups the Graph API will be sufficient, e.g. for
