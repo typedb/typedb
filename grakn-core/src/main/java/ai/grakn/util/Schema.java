@@ -85,7 +85,7 @@ public final class Schema {
         ENTITY("entity", 2),
         ROLE("role", 3),
         RESOURCE("resource", 4),
-        RELATION("relation", 5),
+        RELATION("relationship", 5),
         RULE("rule", 6),
         INFERENCE_RULE("inference-rule", 7),
         CONSTRAINT_RULE("constraint-rule", 8);
