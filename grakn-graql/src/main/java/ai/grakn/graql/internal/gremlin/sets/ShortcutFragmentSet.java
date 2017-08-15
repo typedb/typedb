@@ -100,16 +100,22 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
             @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar.get(), fragmentSets);
 
-            if (roleLabel != null) {
-                ShortcutFragmentSet newShortcut;
+            if (roleLabel == null) continue;
 
-                if (roleLabel.label().equals(Schema.MetaSchema.ROLE.getLabel())) {
-                    newShortcut = shortcut.removeRoleVar();
-                } else {
-                    Role role = graph.getOntologyConcept(roleLabel.label());
+            @Nullable ShortcutFragmentSet newShortcut = null;
+
+            if (roleLabel.label().equals(Schema.MetaSchema.ROLE.getLabel())) {
+                newShortcut = shortcut.removeRoleVar();
+            } else {
+                OntologyConcept ontologyConcept = graph.getOntologyConcept(roleLabel.label());
+
+                if (ontologyConcept != null && ontologyConcept.isRole()) {
+                    Role role = ontologyConcept.asRole();
                     newShortcut = shortcut.substituteRoleTypeLabel(role);
                 }
+            }
 
+            if (newShortcut != null) {
                 fragmentSets.remove(shortcut);
                 fragmentSets.add(newShortcut);
                 return true;
@@ -154,8 +160,12 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
             @Nullable LabelFragmentSet relationLabel = EquivalentFragmentSets.typeLabelOf(isa.type(), fragmentSets);
 
-            if (relationLabel != null) {
-                RelationType relationType = graph.getOntologyConcept(relationLabel.label());
+            if (relationLabel == null) continue;
+
+            OntologyConcept ontologyConcept = graph.getOntologyConcept(relationLabel.label());
+
+            if (ontologyConcept != null && ontologyConcept.isRelationType()) {
+                RelationType relationType = ontologyConcept.asRelationType();
 
                 fragmentSets.remove(shortcut);
                 fragmentSets.add(shortcut.addRelationTypeLabel(relationType));

@@ -97,23 +97,21 @@ public class GraqlTraversalTest {
 
         Label wifeLabel = Label.of("wife");
         Role wife = mock(Role.class);
+        when(wife.isRole()).thenReturn(true);
+        when(wife.asRole()).thenReturn(wife);
+        when(wife.subs()).thenAnswer(inv -> Stream.of(wife));
+        when(wife.getLabel()).thenReturn(wifeLabel);
 
-        when(graph.getOntologyConcept(wifeLabel)).thenAnswer(invocation -> {
-            //noinspection unchecked
-            when(wife.subs()).thenReturn(Stream.of(wife));
-            when(wife.getLabel()).thenReturn(wifeLabel);
-            return wife;
-        });
+        when(graph.getOntologyConcept(wifeLabel)).thenReturn(wife);
 
         Label marriageLabel = Label.of("marriage");
         RelationType marriage = mock(RelationType.class);
+        when(marriage.isRelationType()).thenReturn(true);
+        when(marriage.asRelationType()).thenReturn(marriage);
+        when(marriage.subs()).thenAnswer(inv -> Stream.of(marriage));
+        when(marriage.getLabel()).thenReturn(marriageLabel);
 
-        when(graph.getOntologyConcept(marriageLabel)).thenAnswer(invocation -> {
-            //noinspection unchecked
-            when(marriage.subs()).thenReturn(Stream.of(marriage));
-            when(marriage.getLabel()).thenReturn(marriageLabel);
-            return marriage;
-        });
+        when(graph.getOntologyConcept(marriageLabel)).thenReturn(marriage);
     }
 
     @Test
