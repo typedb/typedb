@@ -45,7 +45,7 @@ cd [your Grakn install directory]
 
 ## Graph API: GraknGraph
 
-The Graph API, `GraknGraph`, is a low-level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). It provides Java object constructs for the Grakn ontological elements (entity types, relation types, etc.) and data instances (entities, relations, etc.), allowing you to build up a graph programmatically. It is also possible to perform simple concept lookups using the graph API, which I’ll illustrate presently. First, let’s look at building up the graph.
+The Graph API, `GraknGraph`, is a low-level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). It provides Java object constructs for the Grakn ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build up a graph programmatically. It is also possible to perform simple concept lookups using the graph API, which I’ll illustrate presently. First, let’s look at building up the graph.
 
 ### Building the Ontology
 
@@ -83,7 +83,7 @@ parent = graph.putRole("parent");
 child = graph.putRole("child");
 ```
 
-Then to add the relation types, `putRelationType()`, which is followed by `relates()` to set the roles associated with the relation and resource() to state that it has a date resource:
+Then to add the relationship types, `putRelationType()`, which is followed by `relates()` to set the roles associated with the relationship and resource() to state that it has a date resource:
 
 ```java
 marriage = graph.putRelationType("marriage");

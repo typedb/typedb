@@ -18,7 +18,7 @@
 
 package ai.grakn.graph.internal.concept;
 
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
@@ -45,18 +45,18 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Encapsulates The {@link Relation} as a {@link VertexElement}
+ *     Encapsulates The {@link Relationship} as a {@link VertexElement}
  * </p>
  *
  * <p>
- *     This wraps up a {@link Relation} as a {@link VertexElement}. It is used to represent any {@link Relation} which
+ *     This wraps up a {@link Relationship} as a {@link VertexElement}. It is used to represent any {@link Relationship} which
  *     has been reified.
  * </p>
  *
  * @author fppt
  *
  */
-public class RelationReified extends ThingImpl<Relation, RelationType> implements RelationStructure {
+public class RelationReified extends ThingImpl<Relationship, RelationType> implements RelationStructure {
     public RelationReified(VertexElement vertexElement) {
         super(vertexElement);
     }
@@ -100,7 +100,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
      *
      * @param relationType The type of this relation
      * @param roleMap The roles and their corresponding role players
-     * @return A unique hash identifying this {@link Relation}
+     * @return A unique hash identifying this {@link Relationship}
      */
     public static String generateNewHash(RelationType relationType, Map<Role, Set<Thing>> roleMap){
         SortedSet<Role> sortedRoleIds = new TreeSet<>(roleMap.keySet());
@@ -122,9 +122,9 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     /**
      * Creates a hash for a relation based on it's {@link RelationType} and the {@link Resource} which serves as it's key
      *
-     * @param relationType the {@link RelationType} of the {@link Relation}
+     * @param relationType the {@link RelationType} of the {@link Relationship}
      * @param resourceMap a sorted map of {@link ai.grakn.concept.ResourceType} Ids to {@link Resource} Ids
-     * @return A unique hash identifying this {@link Relation}
+     * @return A unique hash identifying this {@link Relationship}
      */
     public static String generateNewHash(RelationType relationType, TreeMap<String, String> resourceMap){
         StringBuilder hashMain = new StringBuilder();
@@ -146,10 +146,10 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     }
 
     /**
-     * Castings are retrieved from the perspective of the {@link Relation}
+     * Castings are retrieved from the perspective of the {@link Relationship}
      *
      * @param roles The role which the instances are playing
-     * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relation}
+     * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relationship}
      */
     public Stream<Casting> castingsRelation(Role... roles){
         if(roles.length == 0){

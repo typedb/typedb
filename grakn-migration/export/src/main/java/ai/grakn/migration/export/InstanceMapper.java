@@ -18,9 +18,9 @@
 package ai.grakn.migration.export;
 
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
@@ -72,19 +72,19 @@ public class InstanceMapper {
     }
 
     /**
-     * Map a relation to a var, along with all of the roleplayers
+     * Map a {@link Relationship} to a var, along with all of the roleplayers
      * Exclude any relations that are mapped to an encountered resource
-     * @param relation relation to be mapped
+     * @param relationship {@link Relationship} to be mapped
      * @return var patterns representing the given instance
      */
     //TODO resources on relations
-    private static VarPattern map(Relation relation){
-        if(relation.type().isImplicit()){
+    private static VarPattern map(Relationship relationship){
+        if(relationship.type().isImplicit()){
             return var();
         }
 
-        VarPattern var = base(relation);
-        var = roleplayers(var, relation);
+        VarPattern var = base(relationship);
+        var = roleplayers(var, relationship);
         return var;
     }
 
@@ -130,13 +130,13 @@ public class InstanceMapper {
     }
 
     /**
-     * Add the roleplayers of a relation to the relation var
-     * @param var var representing the relation
-     * @param relation relation that contains roleplayer data
+     * Add the roleplayers of a {@link Relationship} to the relationship var
+     * @param var var representing the relationship
+     * @param relationship {@link Relationship} that contains roleplayer data
      * @return var pattern with roleplayers
      */
-    private static VarPattern roleplayers(VarPattern var, Relation relation){
-        for(Map.Entry<Role, Set<Thing>> entry:relation.allRolePlayers().entrySet()){
+    private static VarPattern roleplayers(VarPattern var, Relationship relationship){
+        for(Map.Entry<Role, Set<Thing>> entry: relationship.allRolePlayers().entrySet()){
             Role role = entry.getKey();
             for (Thing thing : entry.getValue()) {
                 var = var.rel(Graql.label(role.getLabel()), thing.getId().getValue());

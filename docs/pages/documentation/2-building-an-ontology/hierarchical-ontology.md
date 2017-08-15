@@ -57,7 +57,7 @@ insert
 
 # Roles and Relations
 
-  marriage sub relation
+  marriage sub relationship
     relates spouse1
     relates spouse2
     has picture;
@@ -65,7 +65,7 @@ insert
   spouse1 sub role;
   spouse2 sub role;
 
-  parentship sub relation
+  parentship sub relationship
     relates parent
     relates child;
 
@@ -131,14 +131,14 @@ Notice that for the `event` entity type we added `is-abstract`, this is an optio
 
 ## Hierarchies of Relation Types and Role Types
 
-Grakn also allows you to design hierarchies of relation types and role types, enabling the ontology to be deeper and more expressive. For example, if we have a relation type called `partnership` between two people we can expand on this by defining more detailed partnerships; `civil-partnership`, `marriage`, `unions`, etc.
+Grakn also allows you to design hierarchies of relationship types and role types, enabling the ontology to be deeper and more expressive. For example, if we have a relationship type called `partnership` between two people we can expand on this by defining more detailed partnerships; `civil-partnership`, `marriage`, `unions`, etc.
 
-Now lets take a look at expanding our genealogy ontology. When modelling a domain there are many ways of doing so. For this example we are going to redo the `marriage` relation type so that it can provide more meaning:
+Now lets take a look at expanding our genealogy ontology. When modelling a domain there are many ways of doing so. For this example we are going to redo the `marriage` relationship type so that it can provide more meaning:
 
 ```graql
 insert
 
-relatives sub relation
+relatives sub relationship
   is-abstract;
 
 marriage sub relatives
@@ -156,7 +156,7 @@ wife sub spouse;
 ```
     
 	    
-We have defined a new super type called `relatives` which enables us to link generic relatives together, and we have said that marriage is a type of relative relation. We have also expanded on the roles which make up a marriage, enabling us to be more expressive and detailed about the domain we are modelling.
+We have defined a new super type called `relatives` which enables us to link generic relatives together, and we have said that marriage is a type of relative relationship. We have also expanded on the roles which make up a marriage, enabling us to be more expressive and detailed about the domain we are modelling.
 From now on, we can be clear if a person is a `husband` or a `wife` or just a `spouse` in a marriage. Note that, when we query for people who play the role of a `spouse` we will get all the `husbands` and `wives` as well.
  
  
@@ -182,7 +182,7 @@ daughter sub child;
 ```
 
 Now we have provided more detail about being a parent. 
-We have also said that being a parent is a `relatives` relation. 
+We have also said that being a parent is a `relatives` relationship. 
 This is quite useful because when we ask for all relatives we will be getting relatives via birth and via marriage.
  
 ## Wrapping up 
@@ -247,7 +247,7 @@ insert
     
 ## Relations
     
-  relatives sub relation
+  relatives sub relationship
     is-abstract;
     
   marriage sub relatives

@@ -357,7 +357,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
                      .addRolePlayer(resourceRole, resource);
         }
         catch (GraphOperationException ex) {
-            if (ex.getMessage().contains("The Relation with the provided role players already exists")) {
+            if (ex.getMessage().contains("The Relationship with the provided role players already exists")) {
                 System.err.println("[WARN] Grakn does not support multiple values per data property/resource, ignoring axiom " + axiom);
             } else {
                 ex.printStackTrace(System.err);

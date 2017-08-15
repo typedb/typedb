@@ -34,7 +34,7 @@ import javax.annotation.CheckReturnValue;
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
  *     ({@link EntityType}, {@link Role}, {@link RelationType}, {@link RuleType} or {@link ResourceType})
- *     or an {@link Thing} ({@link Entity}, {@link Relation} , {@link Resource}, {@link Rule}).
+ *     or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Resource}, {@link Rule}).
  * </p>
  *
  * @author fppt
@@ -141,13 +141,13 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Return as a {@link Relation} if the {@link Concept} is a {@link Relation} {@link Thing}.
+     * Return as a {@link Relationship} if the {@link Concept} is a {@link Relationship} {@link Thing}.
      *
-     * @return A {@link Relation}  if the {@link Concept} is a {@link Relation}
+     * @return A {@link Relationship}  if the {@link Concept} is a {@link Relationship}
      */
     @CheckReturnValue
-    default Relation asRelation(){
-        throw GraphOperationException.invalidCasting(this, Relation.class);
+    default Relationship asRelation(){
+        throw GraphOperationException.invalidCasting(this, Relationship.class);
     }
 
     /**
@@ -261,9 +261,9 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link Relation}.
+     * Determine if the {@link Concept} is a {@link Relationship}.
      *
-     * @return true if the {@link Concept} is a {@link Relation}
+     * @return true if the {@link Concept} is a {@link Relationship}
      */
     @CheckReturnValue
     default boolean isRelation(){

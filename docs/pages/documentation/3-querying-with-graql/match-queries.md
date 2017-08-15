@@ -105,9 +105,9 @@ qb.match(var("x").has("identifier", contains("Bar")));
 </div> <!-- tab-content -->
 
 
-### relation
+### relationship
 
-Match things that have a relation with the given variable. If a role is provided, the role player must be playing that role.
+Match things that have a relationship with the given variable. If a role is provided, the role player must be playing that role.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell6" data-toggle="tab">Graql</a></li>
@@ -182,7 +182,7 @@ match $x sub thing; # List all types
 match $x sub resource; # List all resource types
 match $x sub entity; # List all entity types
 match $x sub role; # List all role types
-match $x sub relation; # List all relation types
+match $x sub relationship; # List all relationship types
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java7">
@@ -194,7 +194,7 @@ qb.match(var("x").sub("thing"));
 
 
 ### relates
-Match roles to a given relation.
+Match roles to a given relationship.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell8" data-toggle="tab">Graql</a></li>

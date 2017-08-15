@@ -107,20 +107,20 @@ public final class ElementFactory {
         return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(v, type, persitedValue));
     }
 
-    // ---------------------------------------- Building Relation Types  -----------------------------------------------
+    // ---------------------------------------- Building Relationship Types  -----------------------------------------------
     public RelationTypeImpl buildRelationType(VertexElement vertex, RelationType type, Boolean isImplicit){
         return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(v, type, isImplicit));
     }
 
     // -------------------------------------------- Building Relations
-    RelationImpl buildRelation(VertexElement vertex, RelationType type){
-        return getOrBuildConcept(vertex, (v) -> new RelationImpl(buildRelationReified(v, type)));
+    RelationshipImpl buildRelation(VertexElement vertex, RelationType type){
+        return getOrBuildConcept(vertex, (v) -> new RelationshipImpl(buildRelationReified(v, type)));
     }
-    public RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value){
-        return getOrBuildConcept(edge, (e) -> new RelationImpl(new RelationEdge(type, owner, value, edge)));
+    public RelationshipImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value){
+        return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationEdge(type, owner, value, edge)));
     }
-    RelationImpl buildRelation(EdgeElement edge){
-        return getOrBuildConcept(edge, (e) -> new RelationImpl(new RelationEdge(edge)));
+    RelationshipImpl buildRelation(EdgeElement edge){
+        return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationEdge(edge)));
     }
     RelationReified buildRelationReified(VertexElement vertex, RelationType type){
         return new RelationReified(vertex, type);
@@ -179,7 +179,7 @@ public final class ElementFactory {
             Concept concept;
             switch (type) {
                 case RELATION:
-                    concept = new RelationImpl(new RelationReified(vertexElement));
+                    concept = new RelationshipImpl(new RelationReified(vertexElement));
                     break;
                 case TYPE:
                     concept = new TypeImpl<>(vertexElement);
@@ -245,7 +245,7 @@ public final class ElementFactory {
             Concept concept;
             switch (label) {
                 case RESOURCE:
-                    concept = new RelationImpl(new RelationEdge(edgeElement));
+                    concept = new RelationshipImpl(new RelationEdge(edgeElement));
                     break;
                 default:
                     throw GraphOperationException.unknownConcept(label.name());

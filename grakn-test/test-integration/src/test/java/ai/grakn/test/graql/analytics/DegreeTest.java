@@ -25,7 +25,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -235,9 +235,9 @@ public class DegreeTest {
         Entity dave = person.addEntity();
         Resource coconut = name.putResource("coconut");
         Resource stinky = altName.putResource("stinky");
-        Relation daveOwnsCoco = mansBestFriend.addRelation().addRolePlayer(owner, dave).addRolePlayer(pet, coco);
-        Relation cocoName = hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, coconut);
-        Relation cocoAltName = hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, stinky);
+        Relationship daveOwnsCoco = mansBestFriend.addRelation().addRolePlayer(owner, dave).addRolePlayer(pet, coco);
+        Relationship cocoName = hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, coconut);
+        Relationship cocoAltName = hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, stinky);
 
         // manually compute the degree for small graph
         Map<ConceptId, Long> subGraphReferenceDegrees = new HashMap<>();
@@ -317,7 +317,7 @@ public class DegreeTest {
         // make one person breeder and owner
         Entity coco = animal.addEntity();
         Entity dave = person.addEntity();
-        Relation daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
+        Relationship daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
                 .addRolePlayer(pet, coco).addRolePlayer(owner, dave);
 
         // manual degrees
@@ -367,12 +367,12 @@ public class DegreeTest {
         Entity dave = person.addEntity();
         Resource coconut = name.putResource("coconut");
         Resource stinky = altName.putResource("stinky");
-        Relation daveOwnsCoco = mansBestFriend.addRelation()
+        Relationship daveOwnsCoco = mansBestFriend.addRelation()
                 .addRolePlayer(owner, dave).addRolePlayer(pet, coco);
         hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, coconut);
         hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, stinky);
         Resource sd = startDate.putResource("01/01/01");
-        Relation ownsFrom = hasOwnershipResource.addRelation()
+        Relationship ownsFrom = hasOwnershipResource.addRelation()
                 .addRolePlayer(ownershipResource, sd).addRolePlayer(ownership, daveOwnsCoco);
 
         // manually compute the degree
@@ -427,7 +427,7 @@ public class DegreeTest {
     @Test
     public void testDegreeTernaryRelationships()
             throws InvalidGraphException, ExecutionException, InterruptedException {
-        // make relation
+        // make relationship
         Role productionWithCast = graph.putRole("production-with-cast");
         Role actor = graph.putRole("actor");
         Role characterBeingPlayed = graph.putRole("character-being-played");
@@ -445,11 +445,11 @@ public class DegreeTest {
         ConceptId marlonId = marlonBrando.getId();
         Entity donVitoCorleone = character.addEntity();
 
-        Relation relation = hasCast.addRelation()
+        Relationship relationship = hasCast.addRelation()
                 .addRolePlayer(productionWithCast, godfather)
                 .addRolePlayer(actor, marlonBrando)
                 .addRolePlayer(characterBeingPlayed, donVitoCorleone);
-        ConceptId relationId = relation.getId();
+        ConceptId relationId = relationship.getId();
 
         graph.commit();
 
@@ -476,7 +476,7 @@ public class DegreeTest {
         Entity coco = animal.addEntity();
         Entity dave = person.addEntity();
 
-        Relation daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
+        Relationship daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
                 .addRolePlayer(pet, coco)
                 .addRolePlayer(owner, dave)
                 .addRolePlayer(breeder, dave);
@@ -557,9 +557,9 @@ public class DegreeTest {
         Entity beast = dog.addEntity();
         Entity coco = cat.addEntity();
         Entity dave = person.addEntity();
-        Relation daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
+        Relationship daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
                 .addRolePlayer(owner, dave).addRolePlayer(breeder, dave).addRolePlayer(pet, coco);
-        Relation daveBreedsAndOwnsBeast = mansBestFriend.addRelation()
+        Relationship daveBreedsAndOwnsBeast = mansBestFriend.addRelation()
                 .addRolePlayer(owner, dave).addRolePlayer(breeder, dave).addRolePlayer(pet, beast);
 
         // manual degrees

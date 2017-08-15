@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
@@ -268,7 +268,7 @@ public class ConceptPropertyTest {
                 Role role = schemaConcept.asRole();
                 assumeThat(role.playedByTypes().collect(toSet()), empty());
                 assumeThat(role.relationTypes().collect(toSet()), empty());
-                Stream<Relation> allRelations = graph.admin().getMetaRelationType().instances();
+                Stream<Relationship> allRelations = graph.admin().getMetaRelationType().instances();
                 Set<Role> allRolesPlayed = allRelations.flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
                 assumeThat(allRolesPlayed, not(hasItem(role)));
             } else if (schemaConcept.isRelationType()) {

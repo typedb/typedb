@@ -93,7 +93,7 @@ public interface GraknAdmin {
     SchemaConcept getMetaConcept();
 
     /**
-     * Get the root of all Relation Types.
+     * Get the root of all {@link RelationType}.
      *
      * @return The meta relation type -> relation-type.
      */

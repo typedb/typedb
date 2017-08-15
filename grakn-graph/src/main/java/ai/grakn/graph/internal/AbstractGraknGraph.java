@@ -26,8 +26,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -44,9 +44,9 @@ import ai.grakn.graph.internal.cache.TxCache;
 import ai.grakn.graph.internal.concept.ConceptImpl;
 import ai.grakn.graph.internal.concept.ConceptVertex;
 import ai.grakn.graph.internal.concept.ElementFactory;
+import ai.grakn.graph.internal.concept.RelationshipImpl;
 import ai.grakn.graph.internal.concept.SchemaConceptImpl;
 import ai.grakn.graph.internal.concept.RelationEdge;
-import ai.grakn.graph.internal.concept.RelationImpl;
 import ai.grakn.graph.internal.concept.RelationReified;
 import ai.grakn.graph.internal.concept.ResourceImpl;
 import ai.grakn.graph.internal.concept.TypeImpl;
@@ -893,7 +893,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if (duplicates.size() > 0) {
             //Remove any resources associated with this index that are not the main resource
             for (Resource otherResource : duplicates) {
-                Stream<Relation> otherRelations = otherResource.relations();
+                Stream<Relationship> otherRelations = otherResource.relations();
 
                 //Copy the actual relation
                 otherRelations.forEach(otherRelation -> copyRelation(mainResource, otherResource, otherRelation));
@@ -917,35 +917,35 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     /**
      * @param main          The main instance to possibly acquire a new relation
      * @param other         The other instance which already posses the relation
-     * @param otherRelation The other relation to potentially be absorbed
+     * @param otherRelationship The other relation to potentially be absorbed
      */
-    private void copyRelation(Resource main, Resource other, Relation otherRelation) {
+    private void copyRelation(Resource main, Resource other, Relationship otherRelationship) {
         //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
         //This allows us to find relations far more quickly.
-        Optional<RelationReified> reifiedRelation = ((RelationImpl) otherRelation).reified();
+        Optional<RelationReified> reifiedRelation = ((RelationshipImpl) otherRelationship).reified();
 
         if (reifiedRelation.isPresent()) {
-            copyRelation(main, other, otherRelation, reifiedRelation.get());
+            copyRelation(main, other, otherRelationship, reifiedRelation.get());
         } else {
-            copyRelation(main, other, otherRelation, (RelationEdge) RelationImpl.from(otherRelation).structure());
+            copyRelation(main, other, otherRelationship, (RelationEdge) RelationshipImpl.from(otherRelationship).structure());
         }
     }
 
     /**
      * Copy a relation which has been reified - {@link RelationReified}
      */
-    private void copyRelation(Resource main, Resource other, Relation otherRelation, RelationReified reifiedRelation) {
+    private void copyRelation(Resource main, Resource other, Relationship otherRelationship, RelationReified reifiedRelation) {
         String newIndex = reifiedRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
-        Relation foundRelation = txCache().getCachedRelation(newIndex);
-        if (foundRelation == null) foundRelation = getConcept(Schema.VertexProperty.INDEX, newIndex);
+        Relationship foundRelationship = txCache().getCachedRelation(newIndex);
+        if (foundRelationship == null) foundRelationship = getConcept(Schema.VertexProperty.INDEX, newIndex);
 
-        if (foundRelation != null) {//If it exists delete the other one
+        if (foundRelationship != null) {//If it exists delete the other one
             reifiedRelation.deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
-            foundRelation = otherRelation;
+            foundRelationship = otherRelationship;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
-            otherRelation.allRolePlayers().forEach((roleType, instances) -> {
-                Optional<RelationReified> relationReified = RelationImpl.from(otherRelation).reified();
+            otherRelationship.allRolePlayers().forEach((roleType, instances) -> {
+                Optional<RelationReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
                 if (instances.contains(other) && relationReified.isPresent()) {
                     putShortcutEdge(main, relationReified.get(), roleType);
                 }
@@ -953,13 +953,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         //Explicitly track this new relation so we don't create duplicates
-        txCache().getRelationIndexCache().put(newIndex, foundRelation);
+        txCache().getRelationIndexCache().put(newIndex, foundRelationship);
     }
 
     /**
      * Copy a relation which is an edge - {@link RelationEdge}
      */
-    private void copyRelation(Resource main, Resource other, Relation otherRelation, RelationEdge relationEdge) {
+    private void copyRelation(Resource main, Resource other, Relationship otherRelationship, RelationEdge relationEdge) {
         ConceptVertex newOwner;
         ConceptVertex newValue;
 

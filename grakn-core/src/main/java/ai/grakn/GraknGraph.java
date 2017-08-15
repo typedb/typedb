@@ -255,10 +255,10 @@ public interface GraknGraph extends AutoCloseable{
     EntityType getEntityType(String label);
 
     /**
-     * Get the Relation Type with the label provided, if it exists.
+     * Get the {@link RelationType} with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the Relation Type in the graph.
-     * @return The Relation Type with the provided label or null if no such Relation Type exists.
+     * @param label A unique label which identifies the {@link RelationType} in the graph.
+     * @return The {@link RelationType} with the provided label or null if no such {@link RelationType} exists.
      *
      * @throws GraphOperationException if the graph is closed
      */

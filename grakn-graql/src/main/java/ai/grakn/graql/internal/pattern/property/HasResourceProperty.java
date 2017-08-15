@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -152,8 +152,8 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
                 .forEach(Concept::delete);
     }
 
-    private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relation relation, Role resourceRole) {
-        Object value = relation.rolePlayers(resourceRole).iterator().next().asResource().getValue();
+    private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relationship relationship, Role resourceRole) {
+        Object value = relationship.rolePlayers(resourceRole).iterator().next().asResource().getValue();
 
         return optPredicate
                 .flatMap(ValuePredicateAdmin::getPredicate)

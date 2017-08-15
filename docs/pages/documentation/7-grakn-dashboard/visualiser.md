@@ -93,7 +93,7 @@ Holding shift and making a click on a node also brings up the resources associat
 
 ![Single click](/images/shift-click.png)
 
-A double click on a node will bring up the relations associated with the node, as shown below.
+A double click on a node will bring up the relationships associated with the node, as shown below.
 
 ![Double click](/images/double-click.png)
 
@@ -104,7 +104,7 @@ A single click and hold on a node in the graph brings up a pane on the lower lef
 <!--Add this back in when it works as expected in release 0.13 or beyond
 ### Explore Types
 
-We have already shown an example of how to examine `person` entities using the entity selector. As another example, select "Types", followed by "Relations" and filter on `marriage` relations. The query will be shown in the query section at the top of the main pane, as previously, and the visualiser displays all the `marriage` relations in the graph. 
+We have already shown an example of how to examine `person` entities using the entity selector. As another example, select "Types", followed by "Relations" and filter on `marriage` relationships. The query will be shown in the query section at the top of the main pane, as previously, and the visualiser displays all the `marriage` relationships in the graph. 
 
 ![Marriages query](/images/marriages.png)
 
@@ -166,15 +166,15 @@ match $x isa person has firstname "Susan" has surname "Dudley"; $y isa person ha
 compute path from "102432" to "192584"; # (The ID values in the strings will be different for each graph)
 ```
  
-Submit the query as usual by clicking '>' (or *Enter*) and the graph will display the relations and nodes that connect the two by the shortest path. For Susan Dudley and Barbara Herchelroth, you should discover that Barbara is the great-grandmother of Susan’s husband.
+Submit the query as usual by clicking '>' (or *Enter*) and the graph will display the relationships and nodes that connect the two by the shortest path. For Susan Dudley and Barbara Herchelroth, you should discover that Barbara is the great-grandmother of Susan’s husband.
 
 ![Person query](/images/shortest-path.png)
 
 #### Explore Relations
 
-{% include note.html content="Make sure to [activate inference](#inference) before exploring relations!" %}
+{% include note.html content="Make sure to [activate inference](#inference) before exploring relationships!" %}
 
-The Query Builder menu that is brought up from a right click of the mouse also has an "Explore Relations" option. This option allows you to determine the relations between nodes. To illustrate that, clear the graph and submit a query as follows:
+The Query Builder menu that is brought up from a right click of the mouse also has an "Explore Relations" option. This option allows you to determine the relationships between nodes. To illustrate that, clear the graph and submit a query as follows:
 
 ```graql
 match $x isa person has surname "Niesz"; offset 0; limit 100; # Find everyone with surname Niesz
@@ -188,7 +188,7 @@ match $x isa person has surname "Niesz"; offset 0; limit 100; # Find everyone wi
 match $x id "651472"; $y id "889000"; $r ($x, $y);
 ```
 
-Submit the query as usual by clicking '>' or *Enter* and the graph will display the relations, and nodes, that connect the two. The visualiser will display the relations between the two nodes you selected (e.g. siblings).
+Submit the query as usual by clicking '>' or *Enter* and the graph will display the relationships, and nodes, that connect the two. The visualiser will display the relationships between the two nodes you selected (e.g. siblings).
 
 #### Align Nodes
 

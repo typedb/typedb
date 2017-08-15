@@ -21,7 +21,7 @@ package ai.grakn.graph.internal.concept;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -293,8 +293,8 @@ public class OntologyMutationTest extends GraphTestBase {
         Resource<String> nameBob = name.putResource("Bob");
         man.addEntity().resource(nameBob);
 
-        //Get The Relation which says that our man is name bob
-        Relation expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));
+        //Get The Relationship which says that our man is name bob
+        Relationship expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));
         Role hasNameOwner = graknGraph.getRole("has-name-owner");
 
         assertThat(expectedEdge.type().instances().collect(toSet()), hasItem(expectedEdge));

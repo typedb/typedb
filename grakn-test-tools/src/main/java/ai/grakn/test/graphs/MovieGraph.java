@@ -20,9 +20,9 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
@@ -317,9 +317,9 @@ public class MovieGraph extends TestGraph {
     }
 
     private static void hasCluster(Thing cluster, Thing... movies) {
-        Relation relation = hasCluster.addRelation().addRolePlayer(clusterOfProduction, cluster);
+        Relationship relationship = hasCluster.addRelation().addRolePlayer(clusterOfProduction, cluster);
         for (Thing movie : movies) {
-            relation.addRolePlayer(productionWithCluster, movie);
+            relationship.addRolePlayer(productionWithCluster, movie);
         }
     }
 }

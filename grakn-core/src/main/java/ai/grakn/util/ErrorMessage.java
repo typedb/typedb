@@ -76,13 +76,13 @@ public enum ErrorMessage {
             "which it's type [%s] is not connecting to via a relates connection \n"),
 
     VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play Role [%s] \n"),
-    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relation Type. \n"),
-    VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
+    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relationship Type. \n"),
+    VALIDATION_RELATION_TYPE("Relationship Type [%s] does not have one or more roles \n"),
 
     VALIDATION_NOT_EXACTLY_ONE_KEY("Thing [%s] does not have exactly one key of type [%s] \n"),
 
-    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role [%s] which is connected to Relation Type [%s] " +
-            "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),
+    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role [%s] which is connected to Relationship Type [%s] " +
+            "does not have a %s Role Type which is connected to the %s Relationship Type [%s] \n"),
 
     VALIDATION_RELATION_DUPLICATE("You have created one or more relations with the following roles and role player [%s] \n"),
     VALIDATION_REQUIRED_RELATION("The role player [%s] of type [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),

@@ -76,7 +76,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenGettingTypesByName_ReturnTypes(){
         String entityTypeLabel = "My Entity Type";
-        String relationTypeLabel = "My Relation Type";
+        String relationTypeLabel = "My Relationship Type";
         String roleTypeLabel = "My Role Type";
         String resourceTypeLabel = "My Resource Type";
         String ruleTypeLabel = "My Rule Type";
@@ -103,7 +103,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenGettingSubTypesFromRootMeta_IncludeAllTypes(){
         EntityType sampleEntityType = graknGraph.putEntityType("Sample Entity Type");
-        RelationType sampleRelationType = graknGraph.putRelationType("Sample Relation Type");
+        RelationType sampleRelationType = graknGraph.putRelationType("Sample Relationship Type");
 
         assertThat(graknGraph.admin().getMetaConcept().subs().collect(Collectors.toSet()), containsInAnyOrder(
                 graknGraph.admin().getMetaConcept(),
@@ -241,8 +241,8 @@ public class GraknGraphTest extends GraphTestBase {
         String entityType = "My Entity Type";
         String roleType1 = "My Role Type 1";
         String roleType2 = "My Role Type 2";
-        String relationType1 = "My Relation Type 1";
-        String relationType2 = "My Relation Type 2";
+        String relationType1 = "My Relationship Type 1";
+        String relationType2 = "My Relationship Type 2";
         String resourceType = "My Resource Type";
 
         //Fail Some Mutations
@@ -373,7 +373,7 @@ public class GraknGraphTest extends GraphTestBase {
             }
         }).get();
 
-        //Relation Which Has Resources
+        //Relationship Which Has Resources
         try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
             graph.putEntityType("BAR").resource(graph.getResourceType("bar"));
             graph.commit();

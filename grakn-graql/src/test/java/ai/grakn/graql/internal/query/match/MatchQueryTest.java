@@ -24,8 +24,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -978,11 +978,11 @@ public class MatchQueryTest {
     public void whenQueryingForAnImplicitRelationById_TheRelationIsReturned() {
         MatchQuery query = qb.match(var("x").isa(label(Schema.ImplicitType.HAS.getLabel("name"))));
 
-        Relation relation = query.get("x").findAny().get().asRelation();
+        Relationship relationship = query.get("x").findAny().get().asRelation();
 
-        MatchQuery queryById = qb.match(var("x").id(relation.getId()));
+        MatchQuery queryById = qb.match(var("x").id(relationship.getId()));
 
-        assertThat(queryById, variable("x", contains(MatchableConcept.of(relation))));
+        assertThat(queryById, variable("x", contains(MatchableConcept.of(relationship))));
     }
 
     @Test

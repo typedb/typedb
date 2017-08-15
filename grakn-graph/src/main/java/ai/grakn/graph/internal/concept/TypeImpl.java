@@ -21,6 +21,7 @@ package ai.grakn.graph.internal.concept;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -58,7 +59,7 @@ import java.util.stream.Stream;
  * @author fppt
  *
  * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
- * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
+ * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link Relationship}
  */
 public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
@@ -244,19 +245,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                 flatMap(Shard::<V>links);
     }
 
-    /**
-     *
-     * @return returns true if the type is set to be abstract.
-     */
     @Override
     public Boolean isAbstract() {
         return cachedIsAbstract.get();
     }
 
-    /**
-     *
-     * @return A list of the Instances which scope this Relation
-     */
     @Override
     public Stream<Thing> scopes() {
         return neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE);
@@ -273,10 +266,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return getThis();
     }
 
-    /**
-     * @param scope A concept which is currently scoping this concept.
-     * @return The Relation itself
-     */
     @Override
     public T deleteScope(Thing scope) {
         deleteEdge(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE, (Concept) scope);
@@ -323,7 +312,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * When changing the super you may accidentally cause this disconnection. So we prevent it here.
      *
      */
-    //TODO: Remove this when traversing to the instances of an implicit Relation Type is no longer done via plays edges
+    //TODO: Remove this when traversing to the instances of an implicit Relationship Type is no longer done via plays edges
     @Override
     boolean changingSuperAllowed(T oldSuperType, T newSuperType){
         boolean changingSuperAllowed = super.changingSuperAllowed(oldSuperType, newSuperType);

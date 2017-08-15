@@ -20,8 +20,8 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
@@ -57,7 +57,7 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Represents the relation property (e.g. {@code ($x, $y)} or {@code (wife: $x, husband: $y)}) on a {@link Relation}.
+ * Represents the relation property (e.g. {@code ($x, $y)} or {@code (wife: $x, husband: $y)}) on a {@link Relationship}.
  *
  * This property can be queried and inserted.
  *
@@ -180,21 +180,21 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Relation relation = executor.get(var).asRelation();
-        relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relation, relationPlayer));
+        Relationship relationship = executor.get(var).asRelation();
+        relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relationship, relationPlayer));
     }
 
     /**
-     * Add a roleplayer to the given relation
-     * @param relation the concept representing the relation
+     * Add a roleplayer to the given {@link Relationship}
+     * @param relationship the concept representing the {@link Relationship}
      * @param relationPlayer a casting between a role type and role player
      */
-    private void addRoleplayer(InsertQueryExecutor executor, Relation relation, RelationPlayer relationPlayer) {
+    private void addRoleplayer(InsertQueryExecutor executor, Relationship relationship, RelationPlayer relationPlayer) {
         VarPatternAdmin roleVar = getRole(relationPlayer);
 
         Role role = executor.get(roleVar.getVarName()).asRole();
         Thing roleplayer = executor.get(relationPlayer.getRolePlayer().getVarName()).asThing();
-        relation.addRolePlayer(role, roleplayer);
+        relationship.addRolePlayer(role, roleplayer);
     }
 
     @Override

@@ -18,12 +18,12 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
-import ai.grakn.graph.internal.concept.RelationImpl;
+import ai.grakn.graph.internal.concept.RelationshipImpl;
 import ai.grakn.graph.internal.concept.RelationReified;
 import ai.grakn.graph.internal.structure.Casting;
 
@@ -76,10 +76,10 @@ class Validator {
         //Validate Role Players
         graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
 
-        //Validate Relation Types
+        //Validate Relationship Types
         graknGraph.txCache().getModifiedRelationTypes().forEach(this::validateRelationType);
         //Validate Relations
-        graknGraph.txCache().getModifiedRelations().forEach(relation -> validateRelation(graknGraph, relation));
+        graknGraph.txCache().getModifiedRelationships().forEach(relation -> validateRelation(graknGraph, relation));
 
         //Validate Rule Types
         //Not Needed
@@ -110,11 +110,11 @@ class Validator {
 
     /**
      * Validation rules exclusive to relations
-     * @param relation The relation to validate
+     * @param relationship The {@link Relationship} to validate
      */
-    private void validateRelation(AbstractGraknGraph<?> graph, Relation relation){
-        validateThing(relation);
-        Optional<RelationReified> relationReified = ((RelationImpl) relation).reified();
+    private void validateRelation(AbstractGraknGraph<?> graph, Relationship relationship){
+        validateThing(relationship);
+        Optional<RelationReified> relationReified = ((RelationshipImpl) relationship).reified();
         //TODO: We need new validation mechanisms for non-reified relations
         relationReified.ifPresent(relationReified1 -> {
             ValidateGlobalRules.validateRelationshipStructure(relationReified1).ifPresent(errorsFound::add);

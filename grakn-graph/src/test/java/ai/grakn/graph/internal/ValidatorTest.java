@@ -23,9 +23,9 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.ErrorMessage;
@@ -151,10 +151,10 @@ public class ValidatorTest extends GraphTestBase{
 
         // now try to delete all assertions and then the movie
         godfather = graknGraph.getEntityType("movie").instances().iterator().next();
-        Collection<Relation> assertions = godfather.relations().collect(Collectors.toSet());
+        Collection<Relationship> assertions = godfather.relations().collect(Collectors.toSet());
         Set<ConceptId> assertionIds = new HashSet<>();
 
-        for (Relation a : assertions) {
+        for (Relationship a : assertions) {
             assertionIds.add(a.getId());
             a.delete();
         }
@@ -321,7 +321,7 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.commit();
     }
 
-    /*------------------------------- Relation Type to Role Type Validation (Schema) ---------------------------------*/
+    /*------------------------------- Relationship Type to Role Type Validation (Schema) ---------------------------------*/
     @Test
     public void whenARelationTypeHasASubTypeHierarchy_EnsureThatWhenARelationTypeHasMatchingRoleTypes1() throws InvalidGraphException {
         Role relative = graknGraph.putRole("relative");
@@ -468,17 +468,17 @@ public class ValidatorTest extends GraphTestBase{
     public void whenARoleInARelationIsPlayedTwice_TheGraphIsValid() {
         Role role1 = graknGraph.putRole("role-1");
         Role role2 = graknGraph.putRole("role-2");
-        RelationType relationType = graknGraph.putRelationType("my-relation").relates(role1).relates(role2);
+        RelationType relationType = graknGraph.putRelationType("my-relationship").relates(role1).relates(role2);
 
         EntityType entityType = graknGraph.putEntityType("my-entity").plays(role1);
         Thing thing1 = entityType.addEntity();
         Thing thing2 = entityType.addEntity();
 
-        Relation relation = relationType.addRelation();
-        relation.addRolePlayer(role1, thing1);
-        relation.addRolePlayer(role1, thing2);
+        Relationship relationship = relationType.addRelation();
+        relationship.addRolePlayer(role1, thing1);
+        relationship.addRolePlayer(role1, thing2);
 
-        assertThat(relation.rolePlayers(role1).collect(toSet()), hasItems(thing1, thing2));
+        assertThat(relationship.rolePlayers(role1).collect(toSet()), hasItems(thing1, thing2));
 
         graknGraph.commit();
     }
@@ -487,11 +487,11 @@ public class ValidatorTest extends GraphTestBase{
     public void whenARoleInARelationIsPlayedAZillionTimes_TheGraphIsValid() {
         Role role1 = graknGraph.putRole("role-1");
         Role role2 = graknGraph.putRole("role-2");
-        RelationType relationType = graknGraph.putRelationType("my-relation").relates(role1).relates(role2);
+        RelationType relationType = graknGraph.putRelationType("my-relationship").relates(role1).relates(role2);
 
         EntityType entityType = graknGraph.putEntityType("my-entity").plays(role1);
 
-        Relation relation = relationType.addRelation();
+        Relationship relationship = relationType.addRelation();
 
         Set<Thing> things = new HashSet<>();
 
@@ -499,10 +499,10 @@ public class ValidatorTest extends GraphTestBase{
         for (int i = 0 ; i < oneZillion; i ++) {
             Thing thing = entityType.addEntity();
             things.add(thing);
-            relation.addRolePlayer(role1, thing);
+            relationship.addRolePlayer(role1, thing);
         }
 
-        assertEquals(things, relation.rolePlayers(role1).collect(toSet()));
+        assertEquals(things, relationship.rolePlayers(role1).collect(toSet()));
 
         graknGraph.commit();
     }

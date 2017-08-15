@@ -27,8 +27,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -231,8 +231,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 RelationType relationType = relationType();
-                Relation relation = relationType.addRelation();
-                summaryAssign(relation, relationType, "addRelation");
+                Relationship relationship = relationType.addRelation();
+                summaryAssign(relationship, relationType, "addRelation");
             },
             () -> {
                 RelationType relationType = relationType();
@@ -278,11 +278,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary(type, "scope", thing);
             },
             () -> {
-                Relation relation = relation();
+                Relationship relationship = relation();
                 Role role = role();
                 Thing thing = instance();
-                relation.addRolePlayer(role, thing);
-                summary(relation, "addRolePlayer", role, thing);
+                relationship.addRolePlayer(role, thing);
+                summary(relationship, "addRolePlayer", role, thing);
             }
     );
 
@@ -348,7 +348,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return chooseOrThrow(allInstancesFrom(graph));
     }
 
-    private Relation relation() {
+    private Relationship relation() {
         return chooseOrThrow(graph.admin().getMetaRelationType().instances());
     }
 

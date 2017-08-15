@@ -25,7 +25,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -117,7 +117,7 @@ public class MigratorTestUtils {
         Role roleOwner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
         Role roleOther = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 
-        Stream<Relation> relations = thing.relations(roleOwner);
+        Stream<Relationship> relations = thing.relations(roleOwner);
         return relations.flatMap(r -> r.rolePlayers(roleOther)).map(Concept::asResource);
     }
 

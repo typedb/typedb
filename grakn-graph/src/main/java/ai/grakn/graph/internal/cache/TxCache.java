@@ -25,7 +25,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
@@ -79,14 +79,14 @@ public class TxCache {
     private final Set<Casting> modifiedCastings = new HashSet<>();
 
     private final Set<RelationType> modifiedRelationTypes = new HashSet<>();
-    private final Set<Relation> modifiedRelations = new HashSet<>();
+    private final Set<Relationship> modifiedRelationships = new HashSet<>();
 
     private final Set<Rule> modifiedRules = new HashSet<>();
 
     private final Set<Resource> modifiedResources = new HashSet<>();
 
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
-    private final Map<String, Relation> relationIndexCache = new HashMap<>();
+    private final Map<String, Relationship> relationIndexCache = new HashMap<>();
 
     //We Track the number of concept connections which have been made which may result in a new shard
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
@@ -152,10 +152,10 @@ public class TxCache {
         } else if (concept.isRelationType()) {
             modifiedRelationTypes.add(concept.asRelationType());
         } else if (concept.isRelation()){
-            Relation relation = concept.asRelation();
-            modifiedRelations.add(relation);
+            Relationship relationship = concept.asRelation();
+            modifiedRelationships.add(relationship);
             //Caching of relations in memory so they can be retrieved without needing a commit
-            relationIndexCache.put(RelationReified.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
+            relationIndexCache.put(RelationReified.generateNewHash(relationship.type(), relationship.allRolePlayers()), relationship);
         } else if (concept.isRule()){
             modifiedRules.add(concept.asRule());
         } else if (concept.isResource()){
@@ -170,7 +170,7 @@ public class TxCache {
      *
      * @return All the relations which have been affected in the transaction
      */
-    public Map<String, Relation> getRelationIndexCache(){
+    public Map<String, Relationship> getRelationIndexCache(){
         return relationIndexCache;
     }
 
@@ -215,7 +215,7 @@ public class TxCache {
         modifiedEntities.remove(concept);
         modifiedRoles.remove(concept);
         modifiedRelationTypes.remove(concept);
-        modifiedRelations.remove(concept);
+        modifiedRelationships.remove(concept);
         modifiedRules.remove(concept);
         modifiedResources.remove(concept);
 
@@ -232,7 +232,7 @@ public class TxCache {
      *
      * @param index The current index of the relation
      */
-    public Relation getCachedRelation(String index){
+    public Relationship getCachedRelation(String index){
         return relationIndexCache.get(index);
     }
 
@@ -370,8 +370,8 @@ public class TxCache {
     public Set<RelationType> getModifiedRelationTypes() {
         return modifiedRelationTypes;
     }
-    public Set<Relation> getModifiedRelations() {
-        return modifiedRelations;
+    public Set<Relationship> getModifiedRelationships() {
+        return modifiedRelationships;
     }
 
     public Set<Rule> getModifiedRules() {
@@ -398,7 +398,7 @@ public class TxCache {
         modifiedEntities.clear();
         modifiedRoles.clear();
         modifiedRelationTypes.clear();
-        modifiedRelations.clear();
+        modifiedRelationships.clear();
         modifiedRules.clear();
         modifiedResources.clear();
         modifiedCastings.clear();

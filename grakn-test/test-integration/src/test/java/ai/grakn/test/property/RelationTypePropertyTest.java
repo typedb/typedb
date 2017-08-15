@@ -19,7 +19,7 @@
 package ai.grakn.test.property;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraphOperationException;
@@ -80,30 +80,30 @@ public class RelationTypePropertyTest {
     @Property
     public void whenAddingARelation_TheDirectTypeOfTheRelationIsTheTypeItWasCreatedFrom(
             @NonMeta @NonAbstract RelationType type) {
-        Relation relation = type.addRelation();
+        Relationship relationship = type.addRelation();
 
-        assertEquals(type, relation.type());
+        assertEquals(type, relationship.type());
     }
 
     @Property
     public void whenAddingARelation_TheRelationIsInNoRelations(@NonMeta @NonAbstract RelationType type) {
-        Relation relation = type.addRelation();
+        Relationship relationship = type.addRelation();
 
-        assertThat(relation.relations().collect(toSet()), empty());
+        assertThat(relationship.relations().collect(toSet()), empty());
     }
 
     @Property
     public void whenAddingARelation_TheRelationHasNoResources(@NonMeta @NonAbstract RelationType type) {
-        Relation relation = type.addRelation();
+        Relationship relationship = type.addRelation();
 
-        assertThat(relation.resources().collect(toSet()), empty());
+        assertThat(relationship.resources().collect(toSet()), empty());
     }
 
     @Property
     public void whenAddingARelation_TheRelationHasNoRolePlayers(@NonMeta @NonAbstract RelationType type) {
-        Relation relation = type.addRelation();
+        Relationship relationship = type.addRelation();
 
-        assertThat(relation.rolePlayers().collect(toSet()), empty());
+        assertThat(relationship.rolePlayers().collect(toSet()), empty());
     }
 
     @Property

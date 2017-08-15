@@ -20,7 +20,7 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -48,20 +48,20 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
+public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTxCache {
     private RelationStructure relationStructure;
 
-    RelationImpl(RelationStructure relationStructure) {
+    RelationshipImpl(RelationStructure relationStructure) {
         this.relationStructure = relationStructure;
     }
 
     /**
-     * Gets the {@link RelationReified} if the {@link Relation} has been reified.
-     * To reify the {@link Relation} you use {@link RelationImpl#reify()}.
+     * Gets the {@link RelationReified} if the {@link Relationship} has been reified.
+     * To reify the {@link Relationship} you use {@link RelationshipImpl#reify()}.
      *
-     * NOTE: This approach is done to make sure that only write operations will cause the {@link Relation} to reify
+     * NOTE: This approach is done to make sure that only write operations will cause the {@link Relationship} to reify
      *
-     * @return The {@link RelationReified} if the {@link Relation} has been reified
+     * @return The {@link RelationReified} if the {@link Relationship} has been reified
      */
     public Optional<RelationReified> reified(){
         if(!relationStructure.isReified()) return Optional.empty();
@@ -94,7 +94,7 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     }
 
     @Override
-    public Relation resource(Resource resource) {
+    public Relationship resource(Resource resource) {
         reify().resource(resource);
         return this;
     }
@@ -110,7 +110,7 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     }
 
     @Override
-    public Stream<Relation> relations(Role... roles) {
+    public Stream<Relationship> relations(Role... roles) {
         return readFromReified((relationReified) -> relationReified.relations(roles));
     }
 
@@ -120,7 +120,7 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     }
 
     /**
-     * Reads some data from a {@link RelationReified}. If the {@link Relation} has not been reified then an empty
+     * Reads some data from a {@link RelationReified}. If the {@link Relationship} has not been reified then an empty
      * {@link Stream} is returned.
      */
     private <X> Stream<X> readFromReified(Function<RelationReified, Stream<X>> producer){
@@ -128,10 +128,10 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     }
 
     /**
-     * Retrieve a list of all {@link Thing} involved in the {@link Relation}, and the {@link Role} they play.
+     * Retrieve a list of all {@link Thing} involved in the {@link Relationship}, and the {@link Role} they play.
      * @see Role
      *
-     * @return A list of all the {@link Role}s and the {@link Thing}s playing them in this {@link Relation}.
+     * @return A list of all the {@link Role}s and the {@link Thing}s playing them in this {@link Relationship}.
      */
     @Override
     public Map<Role, Set<Thing>> allRolePlayers(){
@@ -144,13 +144,13 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     }
 
     /**
-     * Expands this Relation to include a new role player which is playing a specific role.
+     * Expands this {@link Relationship} to include a new role player which is playing a specific {@link Role}.
      * @param role The role of the new role player.
      * @param thing The new role player.
-     * @return The Relation itself
+     * @return The {@link Relationship} itself
      */
     @Override
-    public Relation addRolePlayer(Role role, Thing thing) {
+    public Relationship addRolePlayer(Role role, Thing thing) {
         reify().addRolePlayer(role, thing);
         vertex().graph().txCache().trackForValidation(this); //This is so we can reassign the hash if needed
         return this;
@@ -169,7 +169,7 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     public boolean equals(Object object) {
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
-        return getId().equals(((RelationImpl) object).getId());
+        return getId().equals(((RelationshipImpl) object).getId());
     }
 
     @Override
@@ -202,8 +202,8 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
         return reify().vertex();
     }
 
-    public static RelationImpl from(Relation relation){
-        return (RelationImpl) relation;
+    public static RelationshipImpl from(Relationship relationship){
+        return (RelationshipImpl) relationship;
     }
 
     @Override

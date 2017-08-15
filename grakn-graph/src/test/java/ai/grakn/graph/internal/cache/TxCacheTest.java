@@ -23,7 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -32,7 +32,7 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraphTestBase;
-import ai.grakn.graph.internal.concept.RelationImpl;
+import ai.grakn.graph.internal.concept.RelationshipImpl;
 import ai.grakn.graph.internal.structure.Casting;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -88,7 +88,7 @@ public class TxCacheTest extends GraphTestBase {
 
         assertThat(graknGraph.txCache().getModifiedCastings(), empty());
 
-        Set<Casting> castings = ((RelationImpl) rt1.addRelation().
+        Set<Casting> castings = ((RelationshipImpl) rt1.addRelation().
                 addRolePlayer(r1, e1).
                 addRolePlayer(r2, e2)).reified().get().
                 castingsRelation().collect(toSet());
@@ -105,7 +105,7 @@ public class TxCacheTest extends GraphTestBase {
         RelationType rt1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
         Entity i1 = t1.addEntity();
         Entity i2 = t1.addEntity();
-        RelationImpl relation = (RelationImpl) rt1.addRelation().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
+        RelationshipImpl relation = (RelationshipImpl) rt1.addRelation().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
 
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
@@ -141,9 +141,9 @@ public class TxCacheTest extends GraphTestBase {
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(graknGraph.txCache().getModifiedRelations(), is(empty()));
-        Relation rel1 = rt1.addRelation().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
-        assertThat(graknGraph.txCache().getModifiedRelations(), containsInAnyOrder(rel1));
+        assertThat(graknGraph.txCache().getModifiedRelationships(), is(empty()));
+        Relationship rel1 = rt1.addRelation().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
+        assertThat(graknGraph.txCache().getModifiedRelationships(), containsInAnyOrder(rel1));
     }
 
     @Test
@@ -184,7 +184,7 @@ public class TxCacheTest extends GraphTestBase {
     @Test
     public void whenAddingAndRemovingInstancesFromTypes_EnsureLogTracksNumberOfChanges(){
         EntityType entityType = graknGraph.putEntityType("My Type");
-        RelationType relationType = graknGraph.putRelationType("My Relation Type");
+        RelationType relationType = graknGraph.putRelationType("My Relationship Type");
 
         TxCache txCache = graknGraph.txCache();
         assertThat(txCache.getShardingCount().keySet(), empty());
@@ -216,7 +216,7 @@ public class TxCacheTest extends GraphTestBase {
         Role role1 = graknGraph.putRole("role 1");
         Role role2 = graknGraph.putRole("role 2");
         EntityType entityType = graknGraph.putEntityType("My Type").plays(role1).plays(role2).resource(resourceType);
-        RelationType relationType = graknGraph.putRelationType("My Relation Type").relates(role1).relates(role2);
+        RelationType relationType = graknGraph.putRelationType("My Relationship Type").relates(role1).relates(role2);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
         Resource<String> r1 = resourceType.putResource("test");
@@ -245,7 +245,7 @@ public class TxCacheTest extends GraphTestBase {
         assertThat(cache.getModifiedEntities(), empty());
         assertThat(cache.getModifiedRoles(), empty());
         assertThat(cache.getModifiedRelationTypes(), empty());
-        assertThat(cache.getModifiedRelations(), empty());
+        assertThat(cache.getModifiedRelationships(), empty());
         assertThat(cache.getModifiedRules(), empty());
         assertThat(cache.getModifiedResources(), empty());
         assertThat(cache.getModifiedCastings(), empty());

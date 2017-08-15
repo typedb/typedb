@@ -147,7 +147,7 @@ If we had not used the members syntax we would only know the size of the cluster
 
 ## Persist the Cluster Information
 
-Now that we have information about the clusters, it would be useful to add it to the graph so that we can visualise it. We can do this by creating a new entity type called `cluster` and a new relation type called `grouping` with the roles `group` and `member`. The ontology can be mutated as follows:
+Now that we have information about the clusters, it would be useful to add it to the graph so that we can visualise it. We can do this by creating a new entity type called `cluster` and a new relationship type called `grouping` with the roles `group` and `member`. The ontology can be mutated as follows:
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
 ```java-test-ignore
@@ -161,7 +161,7 @@ private static void mutateOntology() {
             // create set of vars representing the mutation
             Var group = Graql.var("group").label("group").sub("role");
             Var member = Graql.var("member").label("member").sub("role");
-            Var grouping = Graql.var("grouping").label("grouping").sub("relation").relates(group).relates(member);
+            Var grouping = Graql.var("grouping").label("grouping").sub("relationship").relates(group).relates(member);
             Var cluster = Graql.var("cluster").label("cluster").sub("entity").plays(group);
             Var personPlaysRole = Graql.var("person").label("person").plays("member");
             Var marriagePlaysRole = Graql.var("marriage").label("marriage").plays("member");

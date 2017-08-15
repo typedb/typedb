@@ -19,14 +19,14 @@ An ask query will return whether the given [match query](match-queries.html) has
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell1">
 <pre>
-match divorce sub relation; ask;
-match marriage sub relation; ask;
+match divorce sub relationship; ask;
+match marriage sub relationship; ask;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java1">
 <pre>
-qb.match(label("divorce").sub("relation")).ask().execute();
-qb.match(label("marriage").sub("relation")).ask().execute();
+qb.match(label("divorce").sub("relationship")).ask().execute();
+qb.match(label("marriage").sub("relationship")).ask().execute();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->

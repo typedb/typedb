@@ -20,7 +20,7 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -163,9 +163,9 @@ public class ResourceTest extends GraphTestBase {
 
         entity.resource(resource);
 
-        RelationStructure relationStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
+        RelationStructure relationStructure = RelationshipImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
         assertThat(relationStructure, instanceOf(RelationEdge.class));
-        assertTrue("Edge Relation id not starting with [" + Schema.PREFIX_EDGE + "]",relationStructure.getId().getValue().startsWith(Schema.PREFIX_EDGE));
+        assertTrue("Edge Relationship id not starting with [" + Schema.PREFIX_EDGE + "]",relationStructure.getId().getValue().startsWith(Schema.PREFIX_EDGE));
         assertEquals(entity, resource.owner());
         assertThat(entity.resources().collect(toSet()), containsInAnyOrder(resource));
     }
@@ -178,7 +178,7 @@ public class ResourceTest extends GraphTestBase {
         EntityType entityType = graknGraph.putEntityType("My entity type").resource(resourceType);
         Entity entity = entityType.addEntity();
         entity.resource(resource);
-        RelationImpl relation = RelationImpl.from(entity.relations().iterator().next());
+        RelationshipImpl relation = RelationshipImpl.from(entity.relations().iterator().next());
 
         //Check it's a relation edge.
         RelationStructure relationStructureBefore = relation.structure();
@@ -245,8 +245,8 @@ public class ResourceTest extends GraphTestBase {
         e1.resource(resource);
         e2.resource(resource);
 
-        Relation rel1 = Iterables.getOnlyElement(e1.relations().collect(toSet()));
-        Relation rel2 = Iterables.getOnlyElement(e2.relations().collect(toSet()));
+        Relationship rel1 = Iterables.getOnlyElement(e1.relations().collect(toSet()));
+        Relationship rel2 = Iterables.getOnlyElement(e2.relations().collect(toSet()));
 
         assertThat(resource.relations().collect(toSet()), containsInAnyOrder(rel1, rel2));
     }

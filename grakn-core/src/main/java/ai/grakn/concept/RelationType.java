@@ -47,14 +47,14 @@ public interface RelationType extends Type {
     RelationType setLabel(Label label);
 
     /**
-     * Creates and returns a new {@link Relation} instance, whose direct type will be this type.
-     * @see Relation
+     * Creates and returns a new {@link Relationship} instance, whose direct type will be this type.
+     * @see Relationship
      *
      * @return a new empty relation.
      *
      * @throws GraphOperationException if this is a meta type
      */
-    Relation addRelation();
+    Relationship addRelation();
 
     /**
      * Sets the supertype of the RelationType to be the RelationType specified.
@@ -185,13 +185,13 @@ public interface RelationType extends Type {
     RelationType deletePlays(Role role);
 
     /**
-     * Retrieve all the Relation instances of this RelationType
-     * @see Relation
+     * Retrieve all the {@link Relationship} instances of this {@link RelationType}
+     * @see Relationship
      *
-     * @return All the Relation instances of this relation type
+     * @return All the {@link Relationship} instances of this {@link RelationType}
      */
     @Override
-    Stream<Relation> instances();
+    Stream<Relationship> instances();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

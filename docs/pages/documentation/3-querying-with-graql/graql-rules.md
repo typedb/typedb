@@ -11,7 +11,7 @@ folder: documentation
 
 ## Introduction
 
-Graql uses machine reasoning to perform inference over data types, relation types, context disambiguation, implicit relationships and dynamic relationships. This allows you to discover hidden and implicit association between data instances through short and concise statements.
+Graql uses machine reasoning to perform inference over data types, relationship types, context disambiguation, implicit relationships and dynamic relationships. This allows you to discover hidden and implicit association between data instances through short and concise statements.
 
 The rule-based reasoning allows automated capture and evolution of patterns within the graph. Graql reasoning is performed at query time and is guaranteed to be complete.
 
@@ -81,7 +81,7 @@ $myRule has description 'this is my rule';
 
 In Graql the "when" of the rule is required to be a [conjunctive pattern](https://en.wikipedia.org/wiki/Logical_conjunction), whereas the "then" should contain a single pattern. If your use case requires a rule with a disjunction on the "when", please notice that, when using the disjunctive normal form, it can be decomposed into series of conjunctive rules.
 
-A classic reasoning example is the ancestor example. Yhe two Graql rules R1 and R2 stated below define the ancestor relationship, which can be understood as either happening between two generations directly between a parent and a child or between three generations when the first generation hop is expressed via a parentship relation and the second generation hop is captured by an ancestor relation.
+A classic reasoning example is the ancestor example. Yhe two Graql rules R1 and R2 stated below define the ancestor relationship, which can be understood as either happening between two generations directly between a parent and a child or between three generations when the first generation hop is expressed via a parentship relationship and the second generation hop is captured by an ancestor relationship.
 
 ```graql
 insert
@@ -136,7 +136,7 @@ That means atomic queries contain at most one statement that can potentially app
 | `id`  | `$x id "264597";` | ✓ | variable needs to be bound within the then  |
 | `val` | `$x val contains "Bar";`  | ✓ | indirect only  |
 | `has` | `$x has age < 20;` | ✓ | ✓ |
-| `relation` | `(parent: $x, child: $y) isa parentship;` | ✓ | ✓ |
+| `relationship` | `(parent: $x, child: $y) isa parentship;` | ✓ | ✓ |
 | resource comparison | `$x val > $y;`  | ✓ | x |
 | `!=` | `$x != $y;` | ✓ | x |
 | `has-scope` | `($x, $y) has-scope $z;$x has-scope $y;`  | ✓ | x |

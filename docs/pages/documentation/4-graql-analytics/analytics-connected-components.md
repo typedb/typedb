@@ -10,7 +10,7 @@ comment_issue_id: 71
 ---
 
 The connected components algorithm can be used to find clusters of instances in the graph that are connected.
-The algorithm finds all instances (relations, resources and entities) that are connected via relations in the graph and gives each set a unique label.
+The algorithm finds all instances (relationships, resources and entities) that are connected via relationships in the graph and gives each set a unique label.
 In the graph below you can see three connected components that correspond to people who are related through marriage.
 In this graph three unique labels will be created one corresponding to each of the sets of connected instances.
 

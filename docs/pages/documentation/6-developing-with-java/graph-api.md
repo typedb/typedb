@@ -9,7 +9,7 @@ permalink: /documentation/developing-with-java/graph-api.html
 folder: documentation
 ---
 
-The Java Graph API is the low level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). The API provides Java object constructs for ontological elements (entity types, relation types, etc.) and data instances (entities, relations, etc.), allowing you to build a graph programmatically. 
+The Java Graph API is the low level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). The API provides Java object constructs for ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build a graph programmatically. 
 
 To get set up to use this API, please read through our [Setup Guide](../get-started/setup-guide.html) and guide to [starting Java development with GRAKN.AI](./java-setup.html).
 
@@ -61,12 +61,12 @@ ResourceType deathDate = graph.putResourceType("death-date", ResourceType.DataTy
 ResourceType gender = graph.putResourceType("gender", ResourceType.DataType.STRING);
 ```
 
-Now the role and relation types. In Graql:
+Now the role and relationship types. In Graql:
 
 ```graql
 insert
 
-marriage sub relation
+marriage sub relationship
   relates spouse1
   relates spouse2
   has picture;
@@ -74,7 +74,7 @@ marriage sub relation
 spouse1 sub role;
 spouse2 sub role;
 
-parentship sub relation
+parentship sub relationship
   relates parent
   relates child;
 
@@ -172,7 +172,7 @@ Resource johnName = firstname.putResource("John"); //Create the resource
 person.addEntity().resource(johnName); //Link it to an entity
 ```   
 
-What if we want to create a relation between some entities? 
+What if we want to create a relationship between some entities? 
 
 In Graql we know we can do the following:
 
@@ -245,7 +245,7 @@ It is worth remembering that adding a type hierarchy allows you to create a more
 All rule instances are of type inference-rule which can be retrieved by:
 
 ```java
-RuleType inferenceRule = graknGraph.getMetaRuleInference();
+RuleType inferenceRule = graknTx.getMetaRuleInference();
 ```
 
 Rule instances can be added to the graph both through the Graph API as well as through Graql. We will consider an example:

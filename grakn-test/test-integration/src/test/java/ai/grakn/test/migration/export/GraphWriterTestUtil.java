@@ -21,7 +21,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
@@ -98,13 +98,13 @@ public abstract class GraphWriterTestUtil {
         return (Resource<V>) graph.getResourceType(resource.type().getLabel().getValue()).getResource(resource.getValue());
     }
 
-    public static void assertRelationCopied(Relation relation1, GraknGraph two){
-        if(relation1.rolePlayers().anyMatch(Concept::isResource)){
+    public static void assertRelationCopied(Relationship relationship1, GraknGraph two){
+        if(relationship1.rolePlayers().anyMatch(Concept::isResource)){
             return;
         }
 
-        RelationType relationType = two.getRelationType(relation1.type().getLabel().getValue());
-        Map<Role, Set<Thing>> rolemap = relation1.allRolePlayers().entrySet().stream().collect(toMap(
+        RelationType relationType = two.getRelationType(relationship1.type().getLabel().getValue());
+        Map<Role, Set<Thing>> rolemap = relationship1.allRolePlayers().entrySet().stream().collect(toMap(
                 e -> two.getRole(e.getKey().getLabel().getValue()),
                 e -> e.getValue().stream().
                         map(instance -> getInstanceUniqueByResourcesFromGraph(two, instance)).
@@ -114,7 +114,7 @@ public abstract class GraphWriterTestUtil {
         boolean relationFound = relationType.instances().
                 anyMatch(relation -> relation.allRolePlayers().equals(rolemap));
 
-        assertTrue("The copied relation [" + relation1 + "] was not found.", relationFound);
+        assertTrue("The copied relation [" + relationship1 + "] was not found.", relationFound);
     }
 
     public static void assertResourceCopied(Resource resource1, GraknGraph two){

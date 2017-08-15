@@ -20,7 +20,7 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -39,11 +39,11 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Encapsulates The {@link Relation} as a {@link EdgeElement}
+ *     Encapsulates The {@link Relationship} as a {@link EdgeElement}
  * </p>
  *
  * <p>
- *     This wraps up a {@link Relation} as a {@link EdgeElement}. It is used to represent any binary {@link Relation}.
+ *     This wraps up a {@link Relationship} as a {@link EdgeElement}. It is used to represent any binary {@link Relationship}.
  *     This also includes the ability to automatically reify a {@link RelationEdge} into a {@link RelationReified}.
  * </p>
  *
@@ -92,7 +92,7 @@ public class RelationEdge implements RelationStructure{
 
     @Override
     public RelationReified reify() {
-        //Build the Relation Vertex
+        //Build the Relationship Vertex
         VertexElement relationVertex = edge().graph().addVertex(Schema.BaseType.RELATION, getId());
         RelationReified relationReified = edge().graph().factory().buildRelationReified(relationVertex, type());
 

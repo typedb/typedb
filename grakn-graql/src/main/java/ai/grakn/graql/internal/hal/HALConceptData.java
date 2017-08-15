@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.hal;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -209,7 +209,7 @@ public class HALConceptData {
 
 
     private void generateEntityEmbedded(Representation halResource, Entity entity, int separationDegree) {
-        Stream<Relation> relationStream = entity.relations();
+        Stream<Relationship> relationStream = entity.relations();
 
         relationStream = relationStream.skip(offset);
         if (limit >= 0) relationStream = relationStream.limit(limit);
@@ -225,7 +225,7 @@ public class HALConceptData {
     }
 
 
-    private void generateRelationEmbedded(Representation halResource, Relation rel, int separationDegree) {
+    private void generateRelationEmbedded(Representation halResource, Relationship rel, int separationDegree) {
         rel.allRolePlayers().forEach((roleType, instanceSet) -> {
             instanceSet.forEach(instance -> {
                 if (instance != null) {
@@ -244,10 +244,10 @@ public class HALConceptData {
         });
     }
 
-    private void embedRelationsNotConnectedToResources(Representation halResource, Concept concept, Relation relation, int separationDegree) {
+    private void embedRelationsNotConnectedToResources(Representation halResource, Concept concept, Relationship relationship, int separationDegree) {
         Label rolePlayedByCurrentConcept = null;
         boolean isResource = false;
-        for (Map.Entry<Role, Set<Thing>> entry : relation.allRolePlayers().entrySet()) {
+        for (Map.Entry<Role, Set<Thing>> entry : relationship.allRolePlayers().entrySet()) {
             for (Thing thing : entry.getValue()) {
                 //Some role players can be null
                 if (thing != null) {
@@ -260,11 +260,11 @@ public class HALConceptData {
             }
         }
         if (!isResource) {
-            attachRelation(halResource, relation, rolePlayedByCurrentConcept, separationDegree);
+            attachRelation(halResource, relationship, rolePlayedByCurrentConcept, separationDegree);
         }
     }
 
-    private void embedRelationsPlays(Representation halResource, Relation rel) {
+    private void embedRelationsPlays(Representation halResource, Relationship rel) {
         rel.plays().forEach(roleTypeRel -> {
             rel.relations(roleTypeRel).forEach(relation -> {
                 embedRelationsNotConnectedToResources(halResource, rel, relation, 1);
