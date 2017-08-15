@@ -3,7 +3,7 @@ title: Migration Overview
 keywords: setup, getting started
 last_updated: February 2017
 tags: [getting-started, graql, migration]
-summary: "Landing page for documentation about loading data in different formats to populate a graph in Grakn."
+summary: "Landing page for documentation about loading data in different formats to populate a knowledge base in Grakn."
 sidebar: documentation_sidebar
 permalink: /documentation/migration/migration-overview.html
 folder: documentation
@@ -11,7 +11,7 @@ comment_issue_id: 32
 ---
 
 ## Introduction
-This page introduces the concept of data migration into a Grakn graph. We currently support migration of CSV, JSON, OWL, XML and SQL data. For each type of data, the steps to migrate to GRAKN.AI are:
+This page introduces the concept of data migration into a Grakn knowledge base. We currently support migration of CSV, JSON, OWL, XML and SQL data. For each type of data, the steps to migrate to GRAKN.AI are:
 
 - define an ontology for the data in Graql
 - create templated Graql to map the data to the ontology

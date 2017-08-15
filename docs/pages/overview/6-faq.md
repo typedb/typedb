@@ -60,7 +60,7 @@ If you have new data that requires a new model, which you have not considered be
 * can be circumvented if you want to. You can still add data that doesn’t fit your ontology, by creating a generic entity-relationship-resource model to ingest general information that doesn’t have any particular type. Imagine it to be “an abstract type”, but not really “abstract”. You will still get the benefit of having an intelligent and simple query language, but you won’t get the benefit of deep/advanced inference.
 * allows you to ask previously unimagined questions about the data because the ontology provides a reasoning model for the query language to interpret future questions in the most flexible and expressive manner. Without the ontology, you would be limited in this respect.
 
-### Is it practical to have to define an ontology before I’ve worked with the data. Why can’t I just put it into a graph as a set of entities and relationships?
+### Is it practical to have to define an ontology before I’ve worked with the data. Why can’t I just put it into a knowledge base as a set of entities and relationships?
 
 In the past, it hasn’t been practical with other technologies that use an ontology, but that is the main mission for us at GRAKN.AI: to make ontologies and knowledge representation practical for the very first time, by integrating seamlessly with a database. Our goal is to ensure that users don’t worry about perceived “baggage”, but simply get expressive modelling abilities without having to worry about how to implement data structure and constraints.
 

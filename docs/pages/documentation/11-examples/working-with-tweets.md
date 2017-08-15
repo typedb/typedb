@@ -11,11 +11,11 @@ comment_issue_id: 27
 ---
 
 # Working With Tweets
-In this tutorial we will look at how to stream public tweets into Grakn's knowledge graph. The tutorial aims to demonstrate key concepts such as receiving, inserting and querying data. Upon the completion of this tutorial, you will have learnt about these concepts:
+In this tutorial we will look at how to stream public tweets into Grakn's knowledge base. The tutorial aims to demonstrate key concepts such as receiving, inserting and querying data. Upon the completion of this tutorial, you will have learnt about these concepts:
 
 - Defining a simple Grakn.ai ontology using the Java API
 - Streaming public tweets into the application with the [Twitter4J](http://twitter4j.org/ "Twitter4J") library
-- Inserting tweets into the knowledge graph using Grakn's Graph API
+- Inserting tweets into the knowledge base using Grakn's Java API
 - Performing simple queries using Graql, the Grakn's query language
 
 A fully working example of this tutorial can be found in the [sample-projects repository](https://github.com/graknlabs/sample-projects/tree/master/example-working-with-tweets).
@@ -85,13 +85,13 @@ Now that you have basic project structure and `pom.xml` in place, let's start cu
 </build>
 ```
 
-Then continue to the `<dependencies>` section and make sure you have all the required dependencies, i.e., `grakn-graph`, `twitter4j-core`, and `twitter4j-stream`:
+Then continue to the `<dependencies>` section and make sure you have all the required dependencies, i.e., `grakn-kb`, `twitter4j-core`, and `twitter4j-stream`:
 
 ```xml
 <dependencies>
     <dependency>
         <groupId>ai.grakn</groupId>
-        <artifactId>grakn-graph</artifactId>
+        <artifactId>grakn-kb</artifactId>
         <version><Current Grakn Version></version>
     </dependency>
 
@@ -113,7 +113,7 @@ Then continue to the `<dependencies>` section and make sure you have all the req
 
 Let's kick things off by defining a `Main` class inside the `ai.grakn.twitterexample` package. Aside from Twitter credentials, it contains a few important Grakn settings.
 
-First, we have decided to use an **in-memory graph** for simplicity's sake — working with an in-memory graph frees us from having to set up a Grakn distribution in the local machine. The in-memory graph is not for storing data and will be lost once the program finishes execution. Second, the graph will be stored in a **keyspace** named `twitter-example`.
+First, we have decided to use an **in-memory knowledge base** for simplicity's sake — working with an in-memory graph frees us from having to set up a Grakn distribution in the local machine. The in-memory graph is not for storing data and will be lost once the program finishes execution. Second, the graph will be stored in a **keyspace** named `twitter-example`.
 
 <!-- A lot of these examples are not valid Groovy, so they've been ignored in tests -->
 ```java-test-ignore
@@ -149,7 +149,7 @@ public static void main(String[] args) {
 }
 ```
 
-Following that, another equally important object for operating on the graph is `GraknTx`. After performing the operations we desire, we must not forget to commit. For convenience, let's define a helper method which opens a `GraknTx` in write mode, and commits it after executing the function `fn`. We will be using this function in various places throughout the tutorial.
+Following that, another equally important object for operating on the knowledge base is `GraknTx`. After performing the operations we desire, we must not forget to commit. For convenience, let's define a helper method which opens a `GraknTx` in write mode, and commits it after executing the function `fn`. We will be using this function in various places throughout the tutorial.
 
 ```java-test-ignore
 public class GraknTweetOntologyHelper {
@@ -331,21 +331,21 @@ public static void main(String[] args) {
 }
 ```
 
-## Inserting Tweets Into The Knowledge Graph
+## Inserting Tweets Into The Knowledge Base
 
 At this point our little program already has a clearly defined ontology, and is able to listen to incoming tweets. However, we have yet to decide what exactly we're going to do with them. In this section we will have a look at how to:
 
-1. Insert an incoming tweet into the knowledge graph
+1. Insert an incoming tweet into the knowledge base
 2. Insert a user who posted the tweet, only once — we don't want to insert the same user twice
 3. Maintain an association between a tweet and the user
 
-We will be using the graph API for inserting the data in the graph because it is lightweight and efficient.
+We will be using the java API for inserting the data in the knowledge base because it is lightweight and efficient.
 
 ### Insert A Tweet
 
 To insert a tweet, we must create a `tweet` entity and a `text` resource to hold the tweet's textual data, before associating said resource with the entity.
 
-Let's do that with a new method. It will accept a single `String` and inserts it into the knowledge graph, before returning the `Entity` of said tweet.
+Let's do that with a new method. It will accept a single `String` and inserts it into the knowledge base, before returning the `Entity` of said tweet.
 
 Pay attention to how we need to retrieve the `EntityTypes` and `ResourceTypes` of entity and resource we are interested in — we need them in order to perform the actual insertion.
 
@@ -365,7 +365,7 @@ public static Entity insertTweet(GraknTx graknTx, String tweet) {
 
 In addition to the tweet, we also want to store who posted the tweet. A semantic we need to enforce is to insert a particular user only once, i.e., it doesn't make sense to store the same user twice.
 
-Therefore, let's add a method for checking whether we've previously stored a particular user. We will be using Java 8's `Optional<T>`, where we return the `Entity` object of that user only if it exists in the knowledge graph. Otherwise, an `Optional.empty()` will be returned.
+Therefore, let's add a method for checking whether we've previously stored a particular user. We will be using Java 8's `Optional<T>`, where we return the `Entity` object of that user only if it exists in the knowledge base. Otherwise, an `Optional.empty()` will be returned.
 
 ```java-test-ignore
 public static Optional<Entity> findUser(QueryBuilder queryBuilder, String user) {
@@ -391,7 +391,7 @@ public static Entity insertUser(GraknTx graknTx, String user) {
 }
 ```
 
-And finally, write a function for inserting a user only if it's not yet there in the knowledge graph.
+And finally, write a function for inserting a user only if it's not yet there in the knowledge base.
 
 ```java-test-ignore
 public static Entity insertUserIfNotExist(GraknTx graknTx, String screenName) {
@@ -449,7 +449,7 @@ public static void main(String[] args) {
 
 ## Crafting Simple Queries Using Graql
 
-We will perform a query which will count the number of tweets a user has posted since the program started. It can be achieved by utilizing the aggregate query feature. Graql has been chosen over the graph API for this task because it is declarative and therefore much easier to use for complex queries.
+We will perform a query which will count the number of tweets a user has posted since the program started. It can be achieved by utilizing the aggregate query feature. Graql has been chosen over the java API for this task because it is declarative and therefore much easier to use for complex queries.
 
 Let's look at how we can build it step-by-step, start by creating a `QueryBuilder` object which we will use to craft the query in Graql.
 

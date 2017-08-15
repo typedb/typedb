@@ -124,7 +124,7 @@ At this point, you are ready to start investigating statistics within the data u
 
 ## `aggregate`
 
-You cannot make [`aggregate`](../graql/aggregate-queries.html) queries from within the **Graph** view in the Grakn visualiser, so you will need to switch views using the left hand navigation pane, from **Graph** to **Console**. This shows a read-write view on Grakn, and you can now submit queries in the usual way, via the form. Alternatively, from your terminal, you can start the Graql shell in its interactive (REPL) mode by typing `graql.sh` at the terminal, from within the *bin* directory of the Grakn installation.
+You cannot make [`aggregate`](../graql/aggregate-queries.html) queries from within the **knowledge base** view in the Grakn visualiser, so you will need to switch views using the left hand navigation pane, from **Graph** to **Console**. This shows a read-write view on Grakn, and you can now submit queries in the usual way, via the form. Alternatively, from your terminal, you can start the Graql shell in its interactive (REPL) mode by typing `graql.sh` at the terminal, from within the *bin* directory of the Grakn installation.
 
 Here are some example `aggregate` queries to try:
 
@@ -161,7 +161,7 @@ match $x isa car, has gear $g; aggregate min $g; # 3
 
 ## `compute`
 
-Graql also provides [compute queries](../graql/compute-queries.html) that can be used to determine values such as mean, minimum and maximum. These can be submitted using the **Graph** view on the Visualiser. For example, type each of the following into the form and submit:
+Graql also provides [compute queries](../graql/compute-queries.html) that can be used to determine values such as mean, minimum and maximum. These can be submitted using the **knowledge base** view on the Visualiser. For example, type each of the following into the form and submit:
 
 ```graql
 # Number of automatic and manual cars

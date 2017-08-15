@@ -22,14 +22,14 @@ You can run this example by running the [`Main`](https://github.com/graknlabs/sa
 
 We run a few queries in the example to prove that the data has been migrated. After running the example, you should be able to answer the following questions (see the bottom of the page for answers - but please don't peek until you've tried it!):
 
-+ What are the Types in the Family Tree graph in Grakn?
++ What are the Types in the Family Tree knowledge base in Grakn?
 + How many people are in the family tree?
 + How many descendants does Eleanor Pringle have?
 + Who are the great uncles of Ethel Archer?
 
 ## Test Yourself Answers
 
-**What are the Types in the Family Tree graph?**   
+**What are the Types in the Family Tree knowledge base?**   
 Answer:
 
 ```

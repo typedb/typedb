@@ -9,7 +9,7 @@ permalink: /documentation/graql/graql-overview.html
 folder: documentation
 ---
 
-Graql enables users to write queries against a Grakn graph leveraging the inherent semantics of the data. Concepts can be retrieved by specifying the patterns of types and relationships that identify them. Graql is declarative and therefore it handles the optimisation of the graph traversals needed to retrieve information.
+Graql enables users to write queries against a Grakn knowledge base leveraging the inherent semantics of the data. Concepts can be retrieved by specifying the patterns of types and relationships that identify them. Graql is declarative and therefore it handles the optimisation of the graph traversals needed to retrieve information.
 
 You can execute Graql in the [Graql Shell](graql-shell.html) or using [Java
 Graql](../developing-with-java/java-graql.html).
@@ -17,11 +17,11 @@ Graql](../developing-with-java/java-graql.html).
 ## Query types
 
 There are five types of queries, which are begun with the following keywords:  
-- [match](match-queries.html) - for matching patterns in the graph  
-- [ask](ask-queries.html) - for querying if certain patterns exist in the graph  
+- [match](match-queries.html) - for matching patterns in the knowledge base  
+- [ask](ask-queries.html) - for querying if certain patterns exist in the knowledge base  
 - [insert](insert-queries.html) - for inserting types and instances  
 - [delete](delete-queries.html) - for deleting types and instances    
-- [compute](compute-queries.html) - for computing useful information about your graph
+- [compute](compute-queries.html) - for computing useful information about your knowledge base
 
 ## Reserved keywords
 

@@ -44,7 +44,7 @@ This will start:
 {% include note.html content="**Useful commands**  <br />
 To start Grakn, run `grakn.sh start`.   
 To stop Grakn, run `grakn.sh stop`.    
-To remove all graphs from Grakn, run `grakn.sh clean`" %}
+To remove all knowledge bases from Grakn, run `grakn.sh clean`" %}
 
 Grakn Engine is configured by default to use port 4567, but this can be changed in the *grakn-engine.properties* file, found within the */conf* directory of the installation.
 
@@ -52,7 +52,7 @@ Grakn Engine is configured by default to use port 4567, but this can be changed 
 
 To test that the installation is working correctly, we will load a simple ontology and some data from a file and test it in the Graql shell and Grakn visualiser. The file we will use is *basic-genealogy.gql*, which is included in the */examples* folder of the Grakn installation zip.
 
-Type in the following in the terminal to load the example graph. This starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete.
+Type in the following in the terminal to load the example knowledge base. This starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete.
 
 ```bash
 ./bin/graql.sh -f ./examples/basic-genealogy.gql
