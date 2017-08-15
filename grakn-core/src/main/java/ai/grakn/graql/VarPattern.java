@@ -107,21 +107,21 @@ public interface VarPattern extends Pattern {
      * the variable must have a resource of the given type that matches the given atom
      *
      * @param type a resource type in the ontology
-     * @param varPattern a variable pattern representing a resource
+     * @param resource a variable pattern representing a resource
      * @return this
      */
     @CheckReturnValue
-    VarPattern has(String type, VarPattern varPattern);
+    VarPattern has(String type, VarPattern resource);
 
     /**
      * the variable must have a resource of the given type that matches the given atom
      *
      * @param type a resource type in the ontology
-     * @param varPattern a variable pattern representing a resource
+     * @param resource a variable pattern representing a resource
      * @return this
      */
     @CheckReturnValue
-    VarPattern has(Label type, VarPattern varPattern);
+    VarPattern has(Label type, VarPattern resource);
 
     /**
      * the variable must have a resource of the given type that matches {@code resource}. The relation associating
