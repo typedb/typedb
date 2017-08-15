@@ -33,6 +33,7 @@ import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.PlaysAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -50,19 +51,16 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  *
  * @author Felix Chapman
  */
-public class PlaysProperty extends AbstractVarProperty implements NamedProperty {
+@AutoValue
+public abstract class PlaysProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final VarPatternAdmin role;
-    private final boolean required;
-
-    public PlaysProperty(VarPatternAdmin role, boolean required) {
-        this.role = role;
-        this.required = required;
+    public static PlaysProperty of(VarPatternAdmin role, boolean required) {
+        return new AutoValue_PlaysProperty(role, required);
     }
 
-    public VarPatternAdmin getRole() {
-        return role;
-    }
+    abstract VarPatternAdmin role();
+
+    abstract boolean required();
 
     @Override
     public String getName() {
@@ -71,63 +69,45 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public String getProperty() {
-        return role.getPrintableName();
+        return role().getPrintableName();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.plays(this, start, role.var(), required));
+        return ImmutableSet.of(EquivalentFragmentSets.plays(this, start, role().var(), required()));
     }
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return Stream.of(role);
+        return Stream.of(role());
     }
 
     @Override
     public Stream<VarPatternAdmin> innerVarPatterns() {
-        return Stream.of(role);
+        return Stream.of(role());
     }
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Role role = executor.get(this.role.var()).asRole();
+        Role role = executor.get(this.role().var()).asRole();
         executor.get(var).asType().plays(role);
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, role.var());
+        return ImmutableSet.of(var, role().var());
     }
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        Label roleLabel = role.getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
+        Label roleLabel = role().getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
         concept.asType().deletePlays(graph.getOntologyConcept(roleLabel));
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        PlaysProperty that = (PlaysProperty) o;
-
-        return required == that.required && role.equals(that.role);
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = role.hashCode();
-        result = 31 * result + (required ? 1 : 0);
-        return result;
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.var().asUserDefined();
-        VarPatternAdmin typeVar = this.getRole();
+        VarPatternAdmin typeVar = this.role();
         Var typeVariable = typeVar.var().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 

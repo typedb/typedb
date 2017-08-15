@@ -41,6 +41,7 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.utils.conversion.OntologyConceptConverter;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
@@ -50,7 +51,6 @@ import javafx.util.Pair;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -74,25 +74,6 @@ import static java.util.stream.Collectors.toSet;
  *
  */
 public class ReasonerUtils {
-
-    /**
-     *
-     * @param graph to be checked against
-     * @return set of inference rule contained in the graph
-     */
-    public static Set<Rule> getRules(GraknGraph graph) {
-        return new HashSet<>(graph.admin().getMetaRuleInference().instances());
-    }
-
-    /**
-     *
-     * @param graph to be checked against
-     * @return true if at least one inference rule is present in the graph
-     */
-    public static boolean hasRules(GraknGraph graph) {
-        Label inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getLabel();
-        return graph.graql().infer(false).match(var("x").isa(Graql.label(inferenceRule))).ask().execute();
-    }
 
     /**
      * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
@@ -147,14 +128,14 @@ public class ReasonerUtils {
         if(valueVar.var().isUserDefinedName()){
             vars.stream()
                     .filter(v -> v.var().equals(valueVariable))
-                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.var(), vp.getPredicate(), parent)))
+                    .flatMap(v -> v.getProperties(ValueProperty.class).map(vp -> new ValuePredicate(v.var(), vp.predicate(), parent)))
                     .forEach(predicates::add);
         }
         //add value atom
         else {
             valueVar.getProperties(ValueProperty.class)
                     .forEach(vp -> predicates
-                            .add(new ValuePredicate(createValueVar(valueVariable, vp.getPredicate()), parent)));
+                            .add(new ValuePredicate(createValueVar(valueVariable, vp.predicate()), parent)));
         }
         return predicates;
     }
@@ -251,9 +232,9 @@ public class ReasonerUtils {
      * @param relRoles relation type of interest
      * @return set of role types the type can play in relType
      */
-    public static Set<Role> getCompatibleRoleTypes(Type type, Set<Role> relRoles) {
-        Collection<Role> typeRoles = type.plays();
-        return relRoles.stream().filter(typeRoles::contains).collect(toSet());
+    public static Set<Role> getCompatibleRoleTypes(Type type, Stream<Role> relRoles) {
+        Set<Role> typeRoles = type.plays().collect(toSet());
+        return relRoles.filter(typeRoles::contains).collect(toSet());
     }
 
     /**
@@ -331,8 +312,7 @@ public class ReasonerUtils {
      * @return rule instance
      */
     public static Rule createTransitiveRule(RelationType relType, Label fromRoleLabel, Label toRoleLabel, GraknGraph graph){
-        final int arity = relType.relates().size();
-        if (arity != 2) throw GraqlQueryException.ruleCreationArityMismatch();
+        if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPatternAdmin startVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "z").admin();
         VarPatternAdmin endVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "z").rel(Graql.label(toRoleLabel), "y").admin();
@@ -350,8 +330,7 @@ public class ReasonerUtils {
      * @return rule instance
      */
     public static Rule createReflexiveRule(RelationType relType, Label fromRoleLabel, Label toRoleLabel, GraknGraph graph){
-        final int arity = relType.relates().size();
-        if (arity != 2) throw GraqlQueryException.ruleCreationArityMismatch();
+        if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPattern body = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y");
         VarPattern head = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "x");
@@ -368,8 +347,8 @@ public class ReasonerUtils {
      */
     public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<Label, Label> roleMappings,
                                              GraknGraph graph){
-        final int parentArity = parent.relates().size();
-        final int childArity = child.relates().size();
+        final long parentArity = parent.relates().count();
+        final long childArity = child.relates().count();
         if (parentArity != childArity || parentArity != roleMappings.size()) {
             throw GraqlQueryException.ruleCreationArityMismatch();
         }

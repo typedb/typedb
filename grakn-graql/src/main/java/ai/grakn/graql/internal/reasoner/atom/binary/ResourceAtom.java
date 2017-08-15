@@ -39,6 +39,7 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -83,7 +84,7 @@ public class ResourceAtom extends Binary{
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getOntologyConcept().getLabel() + " " +
                 multiPredicateString +
-                getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
+                getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
     }
 
     @Override
@@ -161,8 +162,8 @@ public class ResourceAtom extends Binary{
         ResourceAtom childAtom = (ResourceAtom) ruleAtom;
 
         //check types
-        TypeAtom parentTypeConstraint = this.getTypeConstraints().stream().findFirst().orElse(null);
-        TypeAtom childTypeConstraint = childAtom.getTypeConstraints().stream().findFirst().orElse(null);
+        TypeAtom parentTypeConstraint = this.getTypeConstraints().findFirst().orElse(null);
+        TypeAtom childTypeConstraint = childAtom.getTypeConstraints().findFirst().orElse(null);
 
         OntologyConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getOntologyConcept() : null;
         OntologyConcept childType = childTypeConstraint != null? childTypeConstraint.getOntologyConcept() : null;
@@ -217,7 +218,7 @@ public class ResourceAtom extends Binary{
 
         if (ownerType != null
                 && ownerType.isType()
-                && !ownerType.asType().resources().contains(type.asResourceType())){
+                && ownerType.asType().resources().noneMatch(rt -> rt.equals(type.asResourceType()))){
             errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(type.getLabel(), ownerType.getLabel()));
         }
         return errors;
@@ -235,7 +236,7 @@ public class ResourceAtom extends Binary{
     @Override
     public int computePriority(Set<Var> subbedVars){
         int priority = super.computePriority(subbedVars);
-        Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(Collectors.toSet());
+        Set<ValuePredicateAdmin> vps = getPredicates(ValuePredicate.class).map(ValuePredicate::getPredicate).collect(Collectors.toSet());
         priority += ResolutionPlan.IS_RESOURCE_ATOM;
 
         if (vps.isEmpty()) {
@@ -306,15 +307,19 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public Set<ValuePredicate> getValuePredicates(){
-        Set<ValuePredicate> valuePredicates = super.getValuePredicates();
-        getMultiPredicate().forEach(valuePredicates::add);
-        return valuePredicates;
+    public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
+        if(type.equals(ValuePredicate.class)){
+            return Stream.concat(
+                    super.getPredicates(type),
+                    getMultiPredicate().stream()
+            ).map(type::cast);
+        }
+        return super.getPredicates(type);
     }
 
     @Override
     public Set<TypeAtom> getSpecificTypeConstraints() {
-        return getTypeConstraints().stream()
+        return getTypeConstraints()
                 .filter(t -> t.getVarName().equals(getVarName()))
                 .filter(t -> Objects.nonNull(t.getOntologyConcept()))
                 .collect(Collectors.toSet());

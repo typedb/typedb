@@ -168,7 +168,7 @@ public class HALUtils {
     }
 
     private static boolean bothRolePlayersAreSelectedNoReasoner(VarPatternAdmin var, MatchQuery matchQuery) {
-        Set<Var> rolePlayersInVar =  var.getProperty(RelationProperty.class).get().getRelationPlayers().map(x->x.getRolePlayer().var()).collect(Collectors.toSet());
+        Set<Var> rolePlayersInVar =  var.getProperty(RelationProperty.class).get().relationPlayers().stream().map(x->x.getRolePlayer().var()).collect(Collectors.toSet());
         Set<Var> selectedVars = matchQuery.admin().getSelectedNames();
         //If all the role players contained in the current relation are also selected in the user query
         return Sets.intersection(rolePlayersInVar, selectedVars).equals(rolePlayersInVar);
@@ -180,14 +180,14 @@ public class HALUtils {
             if (var.getProperty(RelationProperty.class).isPresent() && !var.var().isUserDefinedName() && bothRolePlayersAreSelectedNoReasoner(var,matchQuery)) {
                 Map<Var, String> tempMap = new HashMap<>();
                 var.getProperty(RelationProperty.class).get()
-                        .getRelationPlayers().forEach(x -> {
+                        .relationPlayers().forEach(x -> {
                             tempMap.put(x.getRolePlayer().var(),
                                     (x.getRole().isPresent()) ? x.getRole().get().getPrintableName() : HAS_EMPTY_ROLE_EDGE);
                         }
                 );
                 String relationType = null;
                 if (var.getProperty(IsaProperty.class).isPresent()) {
-                    Optional<Label> relOptional = var.getProperty(IsaProperty.class).get().getType().getTypeLabel();
+                    Optional<Label> relOptional = var.getProperty(IsaProperty.class).get().type().getTypeLabel();
                     relationType = (relOptional.isPresent()) ? relOptional.get().getValue() : "";
                 } else {
                     relationType = "";

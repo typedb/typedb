@@ -22,7 +22,7 @@ import ai.grakn.exception.GraphOperationException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -116,7 +116,7 @@ public interface RelationType extends Type {
      * @return A list of the RoleTypes which make up this RelationType.
      */
     @CheckReturnValue
-    Collection<Role> relates();
+    Stream<Role> relates();
 
     //------------------------------------- Edge Handling ----------------------------------
 
@@ -164,7 +164,7 @@ public interface RelationType extends Type {
      * @return All the sub types of this RelationType
      */
     @Override
-    Collection<RelationType> subs();
+    Stream<RelationType> subs();
 
     /**
      * Sets the Role which instances of this RelationType may play.
@@ -191,7 +191,7 @@ public interface RelationType extends Type {
      * @return All the Relation instances of this relation type
      */
     @Override
-    Collection<Relation> instances();
+    Stream<Relation> instances();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

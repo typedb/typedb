@@ -30,12 +30,11 @@ import ai.grakn.graph.internal.cache.ContainsTxCache;
 import ai.grakn.graph.internal.structure.VertexElement;
 import com.google.common.collect.Iterables;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -101,7 +100,7 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     }
 
     @Override
-    public Collection<Resource<?>> resources(ResourceType[] resourceTypes) {
+    public Stream<Resource<?>> resources(ResourceType[] resourceTypes) {
         return readFromReified((relationReified) -> relationReified.resources(resourceTypes));
     }
 
@@ -111,21 +110,21 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     }
 
     @Override
-    public Collection<Relation> relations(Role... roles) {
+    public Stream<Relation> relations(Role... roles) {
         return readFromReified((relationReified) -> relationReified.relations(roles));
     }
 
     @Override
-    public Collection<Role> plays() {
+    public Stream<Role> plays() {
         return readFromReified(ThingImpl::plays);
     }
 
     /**
      * Reads some data from a {@link RelationReified}. If the {@link Relation} has not been reified then an empty
-     * collection is returned.
+     * {@link Stream} is returned.
      */
-    private <X> Collection<X> readFromReified(Function<RelationReified, Collection<X>> producer){
-        return reified().map(producer).orElseGet(Collections::emptyList);
+    private <X> Stream<X> readFromReified(Function<RelationReified, Stream<X>> producer){
+        return reified().map(producer).orElseGet(Stream::empty);
     }
 
     /**
@@ -140,7 +139,7 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     }
 
     @Override
-    public Collection<Thing> rolePlayers(Role... roles) {
+    public Stream<Thing> rolePlayers(Role... roles) {
         return structure().rolePlayers(roles);
     }
 
@@ -161,18 +160,9 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
      * When a relation is deleted this cleans up any solitary casting and resources.
      */
     void cleanUp() {
-        boolean performDeletion = true;
-        Collection<Thing> rolePlayers = rolePlayers();
-
-        for(Thing thing : rolePlayers){
-            if(thing != null && (thing.getId() != null )){
-                performDeletion = false;
-            }
-        }
-
-        if(performDeletion){
-            delete();
-        }
+        Stream<Thing> rolePlayers = rolePlayers();
+        boolean performDeletion = rolePlayers.noneMatch(thing -> thing != null && thing.getId() != null);
+        if(performDeletion) delete();
     }
 
     @Override

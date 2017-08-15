@@ -31,6 +31,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.ScopeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -49,17 +50,14 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  *
  * @author Felix Chapman
  */
-public class HasScopeProperty extends AbstractVarProperty implements NamedProperty {
+@AutoValue
+public abstract class HasScopeProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final VarPatternAdmin scope;
-
-    public HasScopeProperty(VarPatternAdmin scope) {
-        this.scope = scope;
+    public static HasScopeProperty of(VarPatternAdmin scope) {
+        return new AutoValue_HasScopeProperty(scope);
     }
 
-    public VarPatternAdmin getScope() {
-        return scope;
-    }
+    abstract VarPatternAdmin scope();
 
     @Override
     public String getName() {
@@ -68,57 +66,41 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public String getProperty() {
-        return scope.getPrintableName();
+        return scope().getPrintableName();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(hasScope(this, start, scope.var()));
+        return ImmutableSet.of(hasScope(this, start, scope().var()));
     }
 
     @Override
     public Stream<VarPatternAdmin> innerVarPatterns() {
-        return Stream.of(scope);
+        return Stream.of(scope());
     }
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Thing scopeThing = executor.get(scope.var()).asThing();
+        Thing scopeThing = executor.get(scope().var()).asThing();
         executor.get(var).asType().scope(scopeThing);
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, scope.var());
+        return ImmutableSet.of(var, scope().var());
     }
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
         IdProperty scopeId =
-                scope.getProperty(IdProperty.class).orElseThrow(() -> GraqlQueryException.failDelete(this));
-        concept.asType().deleteScope(graph.getConcept(scopeId.getId()));
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        HasScopeProperty that = (HasScopeProperty) o;
-
-        return scope.equals(that.scope);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return scope.hashCode();
+                scope().getProperty(IdProperty.class).orElseThrow(() -> GraqlQueryException.failDelete(this));
+        concept.asType().deleteScope(graph.getConcept(scopeId.id()));
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.var().asUserDefined();
-        VarPatternAdmin scopeVar = this.getScope();
+        VarPatternAdmin scopeVar = this.scope();
         Var scopeVariable = scopeVar.var().asUserDefined();
         IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent);
 

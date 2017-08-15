@@ -57,7 +57,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         }
 
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
-        assertEquals(20, graknGraph.getEntityType("Thing").instances().size());
+        assertEquals(20, graknGraph.getEntityType("Thing").instances().count());
     }
     private synchronized void addRandomEntity(){
         try(GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE)){

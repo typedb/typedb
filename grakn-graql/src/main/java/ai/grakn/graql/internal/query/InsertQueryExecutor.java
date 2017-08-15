@@ -25,7 +25,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Pair;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.util.Partition;
@@ -52,6 +51,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static java.util.stream.Collectors.toList;
 
 /**
  * A class for executing insert queries.
@@ -163,13 +163,17 @@ public class InsertQueryExecutor {
 
         Partition<Var> equivalentVars = Partition.singletons(Collections.emptyList());
 
-        equivalentProperties(properties).forEach(props -> {
-            // These properties must refer to the same concept, so share their dependencies
-            Collection<VarAndProperty> producers = varDependencies.get(props.first.var());
-            producers.addAll(varDependencies.get(props.second.var()));
-            varDependencies.replaceValues(props.second.var(), Sets.newHashSet(producers));
+        equivalentProperties(properties).asMap().values().forEach(vars -> {
+            // These vars must refer to the same concept, so share their dependencies
+            Collection<VarAndProperty> producers =
+                    vars.stream().flatMap(var -> varDependencies.get(var).stream()).collect(toList());
 
-            equivalentVars.merge(props.first.var(), props.second.var());
+            Var first = vars.iterator().next();
+
+            vars.forEach(var -> {
+                varDependencies.replaceValues(var, producers);
+                equivalentVars.merge(first, var);
+            });
         });
 
         /*
@@ -193,13 +197,16 @@ public class InsertQueryExecutor {
         return new InsertQueryExecutor(graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies));
     }
 
-    private static Stream<Pair<VarAndProperty, VarAndProperty>> equivalentProperties(Set<VarAndProperty> properties) {
-        Set<VarAndProperty> identifyingProperties = Sets.filter(properties, VarAndProperty::uniquelyIdentifiesConcept);
+    private static Multimap<VarProperty, Var> equivalentProperties(Set<VarAndProperty> properties) {
+        Multimap<VarProperty, Var> equivalentProperties = HashMultimap.create();
 
-        return identifyingProperties.stream()
-                .flatMap(vp1 -> identifyingProperties.stream()
-                        .filter(vp2 -> vp1.property().equals(vp2.property())).map(vp2 -> Pair.of(vp1, vp2))
-                );
+        for (VarAndProperty varAndProperty : properties) {
+            if (varAndProperty.uniquelyIdentifiesConcept()) {
+                equivalentProperties.put(varAndProperty.property(), varAndProperty.var());
+            }
+        }
+
+        return equivalentProperties;
     }
 
     /**

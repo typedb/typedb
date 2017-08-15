@@ -38,10 +38,10 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
-import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -55,6 +55,7 @@ import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import java.util.stream.Stream;
 import javafx.util.Pair;
 
 import javax.annotation.Nullable;
@@ -109,7 +110,7 @@ public class RelationAtom extends IsaAtom {
         String relationString = (isUserDefinedName()? getVarName() + " ": "") +
                 (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") +
                 getRelationPlayers().toString();
-        return relationString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
+        return relationString + getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
     }
 
     private List<RelationPlayer> getRelationPlayers() {
@@ -117,7 +118,7 @@ public class RelationAtom extends IsaAtom {
             relationPlayers = new ArrayList<>();
             getPattern().asVarPattern()
                     .getProperty(RelationProperty.class)
-                    .ifPresent(prop -> prop.getRelationPlayers()
+                    .ifPresent(prop -> prop.relationPlayers()
                             .forEach(relationPlayers::add));
         }
         return relationPlayers;
@@ -225,21 +226,20 @@ public class RelationAtom extends IsaAtom {
         }
 
         //check roles are ok
-        Collection<Role> possibleRoles = type != null? type.asRelationType().relates() : Collections.EMPTY_SET;
         Map<Var, OntologyConcept> varOntologyConceptMap = getParentQuery().getVarOntologyConceptMap();
 
         for (Map.Entry<Role, Collection<Var>> e : getRoleVarMap().asMap().entrySet() ){
             Role role = e.getKey();
             if (!Schema.MetaSchema.isMetaLabel(role.getLabel())) {
                 //check whether this role can be played in this relation
-                if (type != null && !possibleRoles.contains(role)) {
+                if (type != null && type.asRelationType().relates().noneMatch(r -> r.equals(role))) {
                     errors.add(ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage(role.getLabel(), type.getLabel()));
                 }
 
                 //check whether the role player's type allows playing this role
                 for (Var player : e.getValue()) {
                     OntologyConcept playerType = varOntologyConceptMap.get(player);
-                    if (playerType != null && !playerType.asType().plays().contains(role)) {
+                    if (playerType != null && playerType.asType().plays().noneMatch(plays -> plays.equals(role))) {
                         errors.add(ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE.getMessage(playerType.getLabel(), role.getLabel(), type == null? "" : type.getLabel()));
                     }
                 }
@@ -256,11 +256,10 @@ public class RelationAtom extends IsaAtom {
     }
 
     @Override
-    public Set<IdPredicate> getPartialSubstitutions() {
+    public Stream<IdPredicate> getPartialSubstitutions() {
         Set<Var> rolePlayers = getRolePlayers();
-        return getIdPredicates().stream()
-                .filter(pred -> rolePlayers.contains(pred.getVarName()))
-                .collect(toSet());
+        return getPredicates(IdPredicate.class)
+                .filter(pred -> rolePlayers.contains(pred.getVarName()));
     }
 
     /**
@@ -270,7 +269,7 @@ public class RelationAtom extends IsaAtom {
         if (roleConceptIdMap == null) {
             roleConceptIdMap = ArrayListMultimap.create();
 
-            Map<Var, IdPredicate> varSubMap = getPartialSubstitutions().stream()
+            Map<Var, IdPredicate> varSubMap = getPartialSubstitutions()
                     .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
             Multimap<Role, Var> roleMap = getRoleVarMap();
 
@@ -490,7 +489,7 @@ public class RelationAtom extends IsaAtom {
     @Override
     public Set<TypeAtom> getSpecificTypeConstraints() {
         Set<Var> mappedVars = getSpecificRolePlayers();
-        return getTypeConstraints().stream()
+        return getTypeConstraints()
                 .filter(t -> mappedVars.contains(t.getVarName()))
                 .filter(t -> Objects.nonNull(t.getOntologyConcept()))
                 .collect(toSet());
@@ -550,7 +549,7 @@ public class RelationAtom extends IsaAtom {
         //remaining roles
         //role types can repeat so no matter what has been allocated still the full spectrum of possibilities is present
         //TODO make restrictions based on cardinality constraints
-        Set<Role> possibleRoles = Sets.newHashSet(relType.relates());
+        Set<Role> possibleRoles = relType.relates().collect(toSet());
 
         //possible role types for each casting based on its type
         Map<RelationPlayer, Set<Role>> mappings = new HashMap<>();
@@ -560,7 +559,7 @@ public class RelationAtom extends IsaAtom {
                     Var varName = casting.getRolePlayer().var();
                     OntologyConcept ontologyConcept = varOntologyConceptMap.get(varName);
                     if (ontologyConcept != null && !Schema.MetaSchema.isMetaLabel(ontologyConcept.getLabel()) && ontologyConcept.isType()) {
-                        mappings.put(casting, ReasonerUtils.getCompatibleRoleTypes(ontologyConcept.asType(), possibleRoles));
+                        mappings.put(casting, ReasonerUtils.getCompatibleRoleTypes(ontologyConcept.asType(), possibleRoles.stream()));
                     } else {
                         mappings.put(casting, ReasonerUtils.getOntologyConcepts(possibleRoles));
                     }
@@ -662,7 +661,6 @@ public class RelationAtom extends IsaAtom {
         Map<Var, OntologyConcept> parentVarOntologyConceptMap = parentAtom.getParentQuery().getVarOntologyConceptMap();
         Map<Var, OntologyConcept> childVarOntologyConceptMap = this.getParentQuery().getVarOntologyConceptMap();
 
-        Set<Role> relationRoles = new HashSet<>(getOntologyConcept().asRelationType().relates());
         Set<Role> childRoles = new HashSet<>(childRoleRPMap.keySet());
 
         parentAtom.getRelationPlayers().stream()
@@ -679,14 +677,14 @@ public class RelationAtom extends IsaAtom {
                         Var parentRolePlayer = prp.getRolePlayer().var();
                         OntologyConcept parent = parentVarOntologyConceptMap.get(parentRolePlayer);
 
-                        Set<Role> compatibleChildRoles = isMetaRole? childRoles : Sets.intersection(new HashSet<>(parentRole.subs()), childRoles);
+                        Set<Role> compatibleChildRoles = isMetaRole? childRoles : Sets.intersection(parentRole.subs().collect(toSet()), childRoles);
 
                         if (parent != null && parent.isType()){
                             boolean isMetaType = Schema.MetaSchema.isMetaLabel(parent.getLabel());
-                            Set<Role> typeRoles = isMetaType? childRoles : new HashSet<>(parent.asType().plays());
+                            Set<Role> typeRoles = isMetaType? childRoles : parent.asType().plays().collect(toSet());
 
                             //incompatible type
-                            if (Sets.intersection(relationRoles, typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
+                            if (Sets.intersection(getOntologyConcept().asRelationType().relates().collect(toSet()), typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
                             else {
                                 compatibleChildRoles = compatibleChildRoles.stream()
                                         .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || typeRoles.contains(rc))
@@ -729,10 +727,10 @@ public class RelationAtom extends IsaAtom {
                                     }))
                                     //prioritise mappings with sam var substitution (idpredicates)
                                     .sorted(Comparator.comparing(e -> {
-                                        IdPredicate parentId = parentAtom.getIdPredicates().stream()
+                                        IdPredicate parentId = parentAtom.getPredicates(IdPredicate.class)
                                                 .filter(p -> p.getVarName().equals(e.getKey().getRolePlayer().var()))
                                                 .findFirst().orElse(null);
-                                        IdPredicate childId = getIdPredicates().stream()
+                                        IdPredicate childId = getPredicates(IdPredicate.class)
                                                 .filter(p -> p.getVarName().equals(e.getValue().getRolePlayer().var()))
                                                 .findFirst().orElse(null);
                                         return !(parentId != null && childId != null && parentId.getPredicate().equals(childId.getPredicate()));
@@ -774,7 +772,7 @@ public class RelationAtom extends IsaAtom {
     public Atom rewriteToUserDefined(){
         VarPattern newVar = Graql.var().asUserDefined();
         VarPattern relVar = getPattern().asVarPattern().getProperty(IsaProperty.class)
-                .map(prop -> newVar.isa(prop.getType()))
+                .map(prop -> newVar.isa(prop.type()))
                 .orElse(newVar);
 
         for (RelationPlayer c: getRelationPlayers()) {

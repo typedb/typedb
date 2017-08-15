@@ -18,7 +18,6 @@
 
 package ai.grakn.graph.internal.concept;
 
-import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
@@ -28,8 +27,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -85,20 +83,18 @@ public class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
 
     /**
      *
-     * @param ontologyConcept The {@link OntologyConcept} which this {@link Rule} applies to.
-     * @return The {@link Rule} itself
+     * @param type The {@link Type} which this {@link Rule} applies to.
      */
-    public void addHypothesis(OntologyConcept ontologyConcept) {
-        putEdge(ConceptVertex.from(ontologyConcept), Schema.EdgeLabel.HYPOTHESIS);
+    public void addHypothesis(Type type) {
+        putEdge(ConceptVertex.from(type), Schema.EdgeLabel.HYPOTHESIS);
     }
 
     /**
      *
-     * @param ontologyConcept The {@link OntologyConcept} which is the conclusion of this {@link Rule}.
-     * @return The {@link Rule} itself
+     * @param type The {@link Type} which is the conclusion of this {@link Rule}.
      */
-    public void addConclusion(OntologyConcept ontologyConcept) {
-        putEdge(ConceptVertex.from(ontologyConcept), Schema.EdgeLabel.CONCLUSION);
+    public void addConclusion(Type type) {
+        putEdge(ConceptVertex.from(type), Schema.EdgeLabel.CONCLUSION);
     }
 
     /**
@@ -106,10 +102,8 @@ public class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @return A collection of Concept Types that constitute a part of the hypothesis of the rule
      */
     @Override
-    public Collection<Type> getHypothesisTypes() {
-        Collection<Type> types = new HashSet<>();
-        neighbours(Direction.OUT, Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> types.add(concept.asType()));
-        return types;
+    public Stream<Type> getHypothesisTypes() {
+        return neighbours(Direction.OUT, Schema.EdgeLabel.HYPOTHESIS);
     }
 
     /**
@@ -117,10 +111,8 @@ public class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
      * @return A collection of Concept Types that constitute a part of the conclusion of the rule
      */
     @Override
-    public Collection<Type> getConclusionTypes() {
-        Collection<Type> types = new HashSet<>();
-        neighbours(Direction.OUT, Schema.EdgeLabel.CONCLUSION).forEach(concept -> types.add(concept.asType()));
-        return types;
+    public Stream<Type> getConclusionTypes() {
+        return neighbours(Direction.OUT, Schema.EdgeLabel.CONCLUSION);
     }
 
     /**

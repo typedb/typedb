@@ -29,6 +29,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.graph.internal.concept.ConceptImpl;
 import ai.grakn.graph.internal.concept.EntityTypeImpl;
 import ai.grakn.graph.internal.concept.RelationImpl;
+import ai.grakn.graph.internal.concept.RelationReified;
 import ai.grakn.graph.internal.concept.RelationTypeImpl;
 import ai.grakn.graph.internal.concept.ResourceImpl;
 import ai.grakn.graph.internal.concept.ResourceTypeImpl;
@@ -45,6 +46,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -84,13 +86,13 @@ public class PostProcessingTest extends GraphTestBase{
         resourceIds.add(createFakeResource(resourceType, "1").getId());
 
         //Check we have duplicate resources
-        assertEquals(3, resourceType.instances().size());
+        assertEquals(3, resourceType.instances().count());
 
         //Fix duplicates
         graknGraph.fixDuplicateResources(mainResource.getIndex(), resourceIds);
 
         //Check we no longer have duplicates
-        assertEquals(1, resourceType.instances().size());
+        assertEquals(1, resourceType.instances().count());
     }
 
     @Test
@@ -130,24 +132,24 @@ public class PostProcessingTest extends GraphTestBase{
         addEdgeRelation(e3, r111);
 
         //Check everything is broken
-        assertEquals(3, resourceType.instances().size());
-        assertEquals(1, r1.relations().size());
-        assertEquals(2, r11.relations().size());
-        assertEquals(1, r1.relations().size());
+        assertEquals(3, resourceType.instances().count());
+        assertEquals(1, r1.relations().count());
+        assertEquals(2, r11.relations().count());
+        assertEquals(1, r1.relations().count());
         assertEquals(4, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
         assertEquals(2, graknGraph.getTinkerTraversal().E().hasLabel(Schema.EdgeLabel.RESOURCE.getLabel()).toList().size());
 
-        r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().contains(e1)));
+        r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().anyMatch(thing -> thing.equals(e1))));
 
         //Now fix everything
         graknGraph.fixDuplicateResources(r1.getIndex(), resourceIds);
 
         //Check everything is in order
-        assertEquals(1, resourceType.instances().size());
+        assertEquals(1, resourceType.instances().count());
 
         //Get back the surviving resource
         Resource<String> foundR1 = null;
-        for (Resource<String> resource : resourceType.instances()) {
+        for (Resource<String> resource : resourceType.instances().collect(toSet())) {
             if(resource.getValue().equals("1")){
                 foundR1 = resource;
                 break;
@@ -155,8 +157,8 @@ public class PostProcessingTest extends GraphTestBase{
         }
 
         assertNotNull(foundR1);
-        assertThat(foundR1.ownerInstances(), containsInAnyOrder(e1, e2, e3));
-        assertEquals(5, graknGraph.admin().getMetaRelationType().instances().size());
+        assertThat(foundR1.ownerInstances().collect(toSet()), containsInAnyOrder(e1, e2, e3));
+        assertEquals(5, graknGraph.admin().getMetaRelationType().instances().count());
     }
 
     private void addEdgeRelation(Entity entity, Resource<?> resource) {
@@ -165,7 +167,8 @@ public class PostProcessingTest extends GraphTestBase{
 
     private void addReifiedRelation(Role roleEntity, Role roleResource, RelationType relationType, Entity entity, Resource<?> resource) {
         Relation relation = relationType.addRelation().addRolePlayer(roleResource, resource).addRolePlayer(roleEntity, entity);
-        RelationImpl.from(relation).reify().setHash();
+        String hash = RelationReified.generateNewHash(relation.type(), relation.allRolePlayers());
+        RelationImpl.from(relation).reify().setHash(hash);
     }
 
 
@@ -236,26 +239,26 @@ public class PostProcessingTest extends GraphTestBase{
 
         //Check everything is broken
         //Entities Too Many Resources
-        assertEquals(4, entity.resources().size());
-        assertEquals(3, relation.resources().size());
+        assertEquals(4, entity.resources().count());
+        assertEquals(3, relation.resources().count());
 
         //There are too many resources
-        assertEquals(6, graknGraph.admin().getMetaResourceType().instances().size());
+        assertEquals(6, graknGraph.admin().getMetaResourceType().instances().count());
 
         //Now fix everything for resource 1
         graknGraph.fixDuplicateResources(r1dup1.getIndex(), new HashSet<>(Arrays.asList(r1dup1.getId(), r1dup2.getId(), r1dup3.getId())));
 
         //Check resource one has been sorted out
-        assertEquals(2, entity.resources().size());
-        assertEquals(2, entity.resources().size());
-        assertEquals(4, graknGraph.admin().getMetaResourceType().instances().size()); // 4 because we still have 2 dups on r2
+        assertEquals(2, entity.resources().count());
+        assertEquals(2, entity.resources().count());
+        assertEquals(4, graknGraph.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
 
         //Now fix everything for resource 2
         graknGraph.fixDuplicateResources(r2dup1.getIndex(), new HashSet<>(Arrays.asList(r2dup1.getId(), r2dup2.getId(), r2dup3.getId())));
 
         //Check resource one has been sorted out
-        assertEquals(2, entity.resources().size());
-        assertEquals(2, entity.resources().size());
-        assertEquals(2, graknGraph.admin().getMetaResourceType().instances().size()); // 4 because we still have 2 dups on r2
+        assertEquals(2, entity.resources().count());
+        assertEquals(2, entity.resources().count());
+        assertEquals(2, graknGraph.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
     }
 }

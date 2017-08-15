@@ -45,7 +45,7 @@ public class IdPredicate extends Predicate<ConceptId>{
         super(pattern, par);
     }
     public IdPredicate(Var varName, IdProperty prop, ReasonerQuery par){
-        this(createIdVar(varName, prop.getId()), par);
+        this(createIdVar(varName, prop.id()), par);
     }
     public IdPredicate(Var varName, LabelProperty prop, ReasonerQuery par){
         this(createIdVar(varName, prop, par.graph()), par);
@@ -67,14 +67,11 @@ public class IdPredicate extends Predicate<ConceptId>{
     }
 
     @Override
-    public boolean isIdPredicate(){ return true;}
-
-    @Override
     public String getPredicateValue() { return getPredicate().getValue();}
 
     @Override
     protected ConceptId extractPredicate(VarPatternAdmin var){
-        return var.admin().getProperty(IdProperty.class).map(IdProperty::getId).orElse(null);
+        return var.admin().getProperty(IdProperty.class).map(IdProperty::id).orElse(null);
     }
 
     private static VarPatternAdmin createIdVar(Var varName, ConceptId typeId){
@@ -82,8 +79,8 @@ public class IdPredicate extends Predicate<ConceptId>{
     }
 
     private static VarPatternAdmin createIdVar(Var varName, LabelProperty prop, GraknGraph graph){
-        OntologyConcept ontologyConcept = graph.getOntologyConcept(prop.getLabelValue());
-        if (ontologyConcept == null) throw GraqlQueryException.labelNotFound(prop.getLabelValue());
+        OntologyConcept ontologyConcept = graph.getOntologyConcept(prop.label());
+        if (ontologyConcept == null) throw GraqlQueryException.labelNotFound(prop.label());
         return varName.id(ontologyConcept.getId()).admin();
     }
 }

@@ -39,8 +39,8 @@ public class DataTypeAtom extends AtomicBase {
     private final ResourceType.DataType<?> datatype;
 
     public DataTypeAtom(Var varName, DataTypeProperty prop, ReasonerQuery parent){
-        super(varName.datatype(prop.getDataType()).admin(), parent);
-        this.datatype = prop.getDataType();
+        super(varName.datatype(prop.dataType()).admin(), parent);
+        this.datatype = prop.dataType();
     }
 
     private DataTypeAtom(DataTypeAtom a) {

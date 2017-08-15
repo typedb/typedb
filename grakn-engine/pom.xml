@@ -201,6 +201,13 @@
             <artifactId>guava-retrying</artifactId>
             <version>${guava-retrying.version}</version>
         </dependency>
+
+        <!-- Required For REST Components and Headers-->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>${apache-http-core.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
