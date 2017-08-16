@@ -117,7 +117,7 @@ You can also specify a variable to represent the relation connecting the thing a
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell5">
 <pre>
-match $x has 🍌 $r identifier "Bar";
+match $x has identifier "Bar" as $r;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java5">

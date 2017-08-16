@@ -92,11 +92,6 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     public String getProperty() {
         Stream.Builder<String> repr = Stream.builder();
 
-        if (hasReifiedRelation()) {
-            // TODO: Replace with actual reification syntax
-            repr.add("🍌").add(relation().getPrintableName());
-        }
-
         repr.add(typeLabelToString(type()));
 
         if (resource().getVarName().isUserDefinedName()) {
@@ -104,6 +99,12 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         } else {
             resource().getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.predicate().toString()));
         }
+
+        if (hasReifiedRelation()) {
+            // TODO: Replace with actual reification syntax
+            repr.add("as").add(relation().getPrintableName());
+        }
+
         return repr.build().collect(joining(" "));
     }
 
