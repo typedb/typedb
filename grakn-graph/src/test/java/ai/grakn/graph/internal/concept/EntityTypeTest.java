@@ -346,11 +346,11 @@ public class EntityTypeTest extends GraphTestBase {
         AttributeType r2 = graknGraph.putAttributeType("r2", AttributeType.DataType.LONG);
         AttributeType r3 = graknGraph.putAttributeType("r3", AttributeType.DataType.BOOLEAN);
 
-        assertTrue("Entity is linked to resources when it shouldn't", e1.resources().collect(toSet()).isEmpty());
+        assertTrue("Entity is linked to resources when it shouldn't", e1.attributes().collect(toSet()).isEmpty());
         e1.attribute(r1);
         e1.attribute(r2);
         e1.attribute(r3);
-        assertThat(e1.resources().collect(toSet()), containsInAnyOrder(r1, r2, r3));
+        assertThat(e1.attributes().collect(toSet()), containsInAnyOrder(r1, r2, r3));
     }
 
     @Test
@@ -362,9 +362,9 @@ public class EntityTypeTest extends GraphTestBase {
         EntityType entityType2 = graknGraph.putEntityType("EntityType 2");
 
         assertThat(entityType1.keys().collect(toSet()), is(empty()));
-        assertThat(entityType1.resources().collect(toSet()), is(empty()));
+        assertThat(entityType1.attributes().collect(toSet()), is(empty()));
         assertThat(entityType2.keys().collect(toSet()), is(empty()));
-        assertThat(entityType2.resources().collect(toSet()), is(empty()));
+        assertThat(entityType2.attributes().collect(toSet()), is(empty()));
 
         //Link the resources
         entityType1.attribute(attributeType1);
@@ -373,8 +373,8 @@ public class EntityTypeTest extends GraphTestBase {
         entityType2.key(attributeType1);
         entityType2.key(attributeType2);
 
-        assertThat(entityType1.resources().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
-        assertThat(entityType2.resources().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
+        assertThat(entityType1.attributes().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
+        assertThat(entityType2.attributes().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
 
         assertThat(entityType1.keys().collect(toSet()), containsInAnyOrder(attributeType2));
         assertThat(entityType2.keys().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));

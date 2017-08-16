@@ -120,7 +120,7 @@ public interface Type extends OntologyConcept {
      * @return The {@link AttributeType}s which this {@link Type} is linked with.
      */
     @CheckReturnValue
-    Stream<AttributeType> resources();
+    Stream<AttributeType> attributes();
 
     /**
      *

@@ -108,7 +108,7 @@ class HALExploreType extends HALExploreConcept{
     }
 
     private void attachTypeResources(Representation halResource, Type conceptType) {
-        conceptType.resources().forEach(currentResourceType -> {
+        conceptType.attributes().forEach(currentResourceType -> {
             Representation embeddedResource = factory
                     .newRepresentation(resourceLinkPrefix + currentResourceType.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
