@@ -26,6 +26,8 @@ import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
+import ai.grakn.engine.controller.graph.EntityTypeController;
+import ai.grakn.engine.controller.graph.ResourceTypeController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.data.RedisWrapper.Builder;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
@@ -227,6 +229,8 @@ public class GraknEngineServer implements AutoCloseable {
         new UserController(spark, usersHandler);
         new CommitLogController(spark, defaultKeyspace, postProcessingDelay, taskManager);
         new TasksController(spark, taskManager, metricRegistry);
+        new EntityTypeController(factory, spark, metricRegistry);
+        new ResourceTypeController(factory, spark, metricRegistry);
 
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();
