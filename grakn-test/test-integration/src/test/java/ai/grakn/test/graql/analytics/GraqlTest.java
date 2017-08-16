@@ -144,20 +144,20 @@ public class GraqlTest {
                     .relates(resourceOwner)
                     .relates(resourceValue);
 
-            AttributeType<Long> resource = graph.putResourceType(resourceTypeId, AttributeType.DataType.LONG)
+            AttributeType<Long> resource = graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG)
                     .plays(resourceValue);
             EntityType thingy = graph.putEntityType("thingy").plays(resourceOwner);
             Entity theResourceOwner = thingy.addEntity();
 
             relationType.addRelation()
                     .addRolePlayer(resourceOwner, theResourceOwner)
-                    .addRolePlayer(resourceValue, resource.putResource(1L));
+                    .addRolePlayer(resourceValue, resource.putAttribute(1L));
             relationType.addRelation()
                     .addRolePlayer(resourceOwner, theResourceOwner)
-                    .addRolePlayer(resourceValue, resource.putResource(2L));
+                    .addRolePlayer(resourceValue, resource.putAttribute(2L));
             relationType.addRelation()
                     .addRolePlayer(resourceOwner, theResourceOwner)
-                    .addRolePlayer(resourceValue, resource.putResource(3L));
+                    .addRolePlayer(resourceValue, resource.putAttribute(3L));
 
             graph.commit();
         }
@@ -236,7 +236,7 @@ public class GraqlTest {
     @Test
     public void testAnalyticsDoesNotCommitByMistake() throws InvalidGraphException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
-            graph.putResourceType("number", AttributeType.DataType.LONG);
+            graph.putAttributeType("number", AttributeType.DataType.LONG);
             graph.commit();
         }
 

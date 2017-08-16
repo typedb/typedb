@@ -226,15 +226,15 @@ public class DegreeTest {
         RelationType hasName = graph.putRelationType("has-name").relates(value).relates(target);
         EntityType person = graph.putEntityType("person").plays(owner);
         EntityType animal = graph.putEntityType("animal").plays(pet).plays(target);
-        AttributeType<String> name = graph.putResourceType("name", AttributeType.DataType.STRING).plays(value);
+        AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING).plays(value);
         AttributeType<String> altName =
-                graph.putResourceType("alternate-name", AttributeType.DataType.STRING).plays(value);
+                graph.putAttributeType("alternate-name", AttributeType.DataType.STRING).plays(value);
 
         // add data to the graph
         Entity coco = animal.addEntity();
         Entity dave = person.addEntity();
-        Attribute coconut = name.putResource("coconut");
-        Attribute stinky = altName.putResource("stinky");
+        Attribute coconut = name.putAttribute("coconut");
+        Attribute stinky = altName.putAttribute("stinky");
         Relation daveOwnsCoco = mansBestFriend.addRelation().addRolePlayer(owner, dave).addRolePlayer(pet, coco);
         Relation cocoName = hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, coconut);
         Relation cocoAltName = hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, stinky);
@@ -351,27 +351,27 @@ public class DegreeTest {
         RelationType hasName = graph.putRelationType("has-name").relates(value).relates(target);
         EntityType person = graph.putEntityType("person").plays(owner);
         EntityType animal = graph.putEntityType("animal").plays(pet).plays(target);
-        AttributeType<String> name = graph.putResourceType("name", AttributeType.DataType.STRING).plays(value);
+        AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING).plays(value);
         AttributeType<String> altName =
-                graph.putResourceType("alternate-name", AttributeType.DataType.STRING).plays(value);
+                graph.putAttributeType("alternate-name", AttributeType.DataType.STRING).plays(value);
         Role ownership = graph.putRole("ownership");
         Role ownershipResource = graph.putRole("ownership-resource");
         RelationType hasOwnershipResource =
                 graph.putRelationType("has-ownership-resource").relates(ownership).relates(ownershipResource);
         AttributeType<String> startDate =
-                graph.putResourceType("start-date", AttributeType.DataType.STRING).plays(ownershipResource);
+                graph.putAttributeType("start-date", AttributeType.DataType.STRING).plays(ownershipResource);
         mansBestFriend.plays(ownership);
 
         // add data to the graph
         Entity coco = animal.addEntity();
         Entity dave = person.addEntity();
-        Attribute coconut = name.putResource("coconut");
-        Attribute stinky = altName.putResource("stinky");
+        Attribute coconut = name.putAttribute("coconut");
+        Attribute stinky = altName.putAttribute("stinky");
         Relation daveOwnsCoco = mansBestFriend.addRelation()
                 .addRolePlayer(owner, dave).addRolePlayer(pet, coco);
         hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, coconut);
         hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, stinky);
-        Attribute sd = startDate.putResource("01/01/01");
+        Attribute sd = startDate.putAttribute("01/01/01");
         Relation ownsFrom = hasOwnershipResource.addRelation()
                 .addRolePlayer(ownershipResource, sd).addRolePlayer(ownership, daveOwnsCoco);
 
@@ -504,10 +504,10 @@ public class DegreeTest {
     @Test
     public void testDegreeWithHasResourceEdges() {
         EntityType thingy = graph.putEntityType("thingy");
-        AttributeType<String> name = graph.putResourceType("name", AttributeType.DataType.STRING);
+        AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
         thingy.resource(name);
         Entity entity1 = thingy.addEntity();
-        entity1.resource(name.putResource("1"));
+        entity1.resource(name.putAttribute("1"));
         graph.commit();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {

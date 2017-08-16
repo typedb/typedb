@@ -521,13 +521,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public <V> AttributeType<V> putResourceType(String label, AttributeType.DataType<V> dataType) {
-        return putResourceType(Label.of(label), dataType);
+    public <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType) {
+        return putAttributeType(Label.of(label), dataType);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <V> AttributeType<V> putResourceType(Label label, AttributeType.DataType<V> dataType) {
+    public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
         AttributeType<V> attributeType = putOntologyElement(label, Schema.BaseType.ATTRIBUTE_TYPE,
                 v -> factory().buildResourceType(v, getMetaResourceType(), dataType));
@@ -592,7 +592,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public <V> Collection<Attribute<V>> getResourcesByValue(V value) {
+    public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
         if (value == null) return Collections.emptySet();
 
         //Make sure you trying to retrieve supported data type
@@ -635,7 +635,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public <V> AttributeType<V> getResourceType(String label) {
+    public <V> AttributeType<V> getAttributeType(String label) {
         return getOntologyConcept(Label.of(label), Schema.BaseType.ATTRIBUTE_TYPE);
     }
 

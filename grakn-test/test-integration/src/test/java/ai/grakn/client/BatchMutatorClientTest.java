@@ -223,8 +223,8 @@ public class BatchMutatorClientTest {
         // load ontology
         try(GraknTx graph = session.open(GraknTxType.WRITE)){
             EntityType nameTag = graph.putEntityType("name_tag");
-            AttributeType<String> nameTagString = graph.putResourceType("name_tag_string", AttributeType.DataType.STRING);
-            AttributeType<String> nameTagId = graph.putResourceType("name_tag_id", AttributeType.DataType.STRING);
+            AttributeType<String> nameTagString = graph.putAttributeType("name_tag_string", AttributeType.DataType.STRING);
+            AttributeType<String> nameTagId = graph.putAttributeType("name_tag_id", AttributeType.DataType.STRING);
 
             nameTag.resource(nameTagString);
             nameTag.resource(nameTagId);

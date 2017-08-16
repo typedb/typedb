@@ -55,9 +55,6 @@ import java.util.Collection;
 public interface GraknTx extends AutoCloseable{
 
     //------------------------------------- Concept Construction ----------------------------------
-    // TODO: For all 'put' methods state the expected behaviour when there is a type with the same label but a different
-    // kind or params (e.g. putRelationType("person"), putResourceType("name", BOOLEAN))
-
     /**
      * Create a new {@link EntityType} with super-type {@code entity}, or return a pre-existing {@link EntityType},
      * with the specified label.
@@ -98,7 +95,7 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraphOperationException if the {@param label} is already in use by an existing {@link AttributeType} which is
      *                          unique or has a different datatype.
      */
-    <V> AttributeType<V> putResourceType(String label, AttributeType.DataType<V> dataType);
+    <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType);
 
     /**
      * Create a new non-unique {@link AttributeType} with super-type {@code resource}, or return a pre-existing
@@ -116,7 +113,7 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraphOperationException if the {@param label} is already in use by an existing {@link AttributeType} which is
      *                          unique or has a different datatype.
      */
-    <V> AttributeType<V> putResourceType(Label label, AttributeType.DataType<V> dataType);
+    <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType);
 
     /**
      * Create a {@link RuleType} with super-type {@code rule}, or return a pre-existing {@link RuleType}, with the
@@ -231,7 +228,7 @@ public interface GraknTx extends AutoCloseable{
     <T extends Type> T getType(Label label);
 
     /**
-     * Get all Resources holding the value provided, if they exist.
+     * Get all {@link Attribute} holding the value provided, if they exist.
      *
      * @param value A value which a {@link Attribute} in the graph may be holding.
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
@@ -240,7 +237,7 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      */
     @CheckReturnValue
-    <V> Collection<Attribute<V>> getResourcesByValue(V value);
+    <V> Collection<Attribute<V>> getAttributesByValue(V value);
 
     /**
      * Get the Entity Type with the label provided, if it exists.
@@ -277,7 +274,7 @@ public interface GraknTx extends AutoCloseable{
      */
     @CheckReturnValue
     @Nullable
-    <V> AttributeType<V> getResourceType(String label);
+    <V> AttributeType<V> getAttributeType(String label);
 
     /**
      * Get the Role Type with the label provided, if it exists.

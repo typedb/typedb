@@ -129,14 +129,14 @@ public class GraknTxPutPropertyTest {
     @Property
     public void whenCallingPutResourceType_CreateATypeWithSuperTypeResource(
             @Open GraknTx graph, @Unused Label label, AttributeType.DataType<?> dataType) {
-        AttributeType<?> attributeType = graph.putResourceType(label, dataType);
+        AttributeType<?> attributeType = graph.putAttributeType(label, dataType);
         assertEquals(graph.admin().getMetaResourceType(), attributeType.sup());
     }
 
     @Property
     public void whenCallingPutResourceType_CreateATypeWithDefaultProperties(
             @Open GraknTx graph, @Unused Label label, AttributeType.DataType<?> dataType) {
-        AttributeType<?> attributeType = graph.putResourceType(label, dataType);
+        AttributeType<?> attributeType = graph.putAttributeType(label, dataType);
 
         assertEquals("The data-type should be as specified", dataType, attributeType.getDataType());
         assertNull("The resource type should have no regex constraint", attributeType.getRegex());
@@ -150,7 +150,7 @@ public class GraknTxPutPropertyTest {
         Label label = attributeType.getLabel();
         AttributeType.DataType<?> dataType = attributeType.getDataType();
 
-        AttributeType<?> newType = graph.putResourceType(label, dataType);
+        AttributeType<?> newType = graph.putAttributeType(label, dataType);
 
         assertEquals(attributeType, newType);
     }
@@ -166,7 +166,7 @@ public class GraknTxPutPropertyTest {
         } else {
             exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.ONTOLOGY_LABEL, type.getLabel()).getMessage());
         }
-        graph.putResourceType(type.getLabel(), dataType);
+        graph.putAttributeType(type.getLabel(), dataType);
     }
 
     @Property
@@ -183,7 +183,7 @@ public class GraknTxPutPropertyTest {
             exception.expectMessage(GraphOperationException.immutableProperty(attributeType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE).getMessage());
         }
 
-        graph.putResourceType(label, dataType);
+        graph.putAttributeType(label, dataType);
     }
 
     @Property

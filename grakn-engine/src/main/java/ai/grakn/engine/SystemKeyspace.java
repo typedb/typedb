@@ -102,7 +102,7 @@ public class SystemKeyspace {
             if (keyspaceName == null) {
                 throw GraknBackendException.initializationException(keyspace);
             }
-            Attribute<String> attribute = keyspaceName.putResource(keyspace);
+            Attribute<String> attribute = keyspaceName.putAttribute(keyspace);
             if (attribute.owner() == null) {
                 graph.<EntityType>getOntologyConcept(KEYSPACE_ENTITY).addEntity().resource(attribute);
             }
@@ -123,7 +123,7 @@ public class SystemKeyspace {
      */
     public boolean containsKeyspace(String keyspace){
         try (GraknTx graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
-            return graph.getResourceType(KEYSPACE_RESOURCE.getValue()).getResource(keyspace) != null;
+            return graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).getAttribute(keyspace) != null;
         }
     }
 
@@ -140,7 +140,7 @@ public class SystemKeyspace {
 
         try (GraknTx graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = graph.getOntologyConcept(KEYSPACE_RESOURCE);
-            Attribute<String> attribute = keyspaceName.getResource(keyspace);
+            Attribute<String> attribute = keyspaceName.getAttribute(keyspace);
 
             if(attribute == null) return false;
             Thing thing = attribute.owner();
@@ -169,7 +169,7 @@ public class SystemKeyspace {
             }
             LOG.info("No other version found, loading ontology for version {}", GraknVersion.VERSION);
             loadSystemOntology(graph);
-            graph.getResourceType(SYSTEM_VERSION).putResource(GraknVersion.VERSION);
+            graph.getAttributeType(SYSTEM_VERSION).putAttribute(GraknVersion.VERSION);
             graph.admin().commitNoLogs();
             LOG.info("Loaded system ontology to system keyspace. Took: {}", timer.stop());
         } catch (Exception e) {
@@ -185,7 +185,7 @@ public class SystemKeyspace {
      * @throws ai.grakn.exception.GraphOperationException when the versions do not match
      */
     private void checkVersion(GraknTx graph){
-        Attribute existingVersion = graph.getResourceType(SYSTEM_VERSION).instances().iterator().next();
+        Attribute existingVersion = graph.getAttributeType(SYSTEM_VERSION).instances().iterator().next();
         if(!GraknVersion.VERSION.equals(existingVersion.getValue())) {
             throw GraphOperationException.versionMistmatch(existingVersion);
         } else {
@@ -200,17 +200,17 @@ public class SystemKeyspace {
      */
     private void loadSystemOntology(GraknTx graph){
         //Keyspace data
-        AttributeType<String> keyspaceName = graph.putResourceType("keyspace-name", AttributeType.DataType.STRING);
+        AttributeType<String> keyspaceName = graph.putAttributeType("keyspace-name", AttributeType.DataType.STRING);
         graph.putEntityType("keyspace").key(keyspaceName);
 
         //User Data
-        AttributeType<String> userName = graph.putResourceType("user-name", AttributeType.DataType.STRING);
-        AttributeType<String> userPassword = graph.putResourceType("user-password", AttributeType.DataType.STRING);
-        AttributeType<String> userPasswordSalt = graph.putResourceType("user-password-salt", AttributeType.DataType.STRING);
-        AttributeType<String> userFirstName = graph.putResourceType("user-first-name", AttributeType.DataType.STRING);
-        AttributeType<String> userLastName = graph.putResourceType("user-last-name", AttributeType.DataType.STRING);
-        AttributeType<String> userEmail = graph.putResourceType("user-email", AttributeType.DataType.STRING);
-        AttributeType<Boolean> userIsAdmin = graph.putResourceType("user-is-admin", AttributeType.DataType.BOOLEAN);
+        AttributeType<String> userName = graph.putAttributeType("user-name", AttributeType.DataType.STRING);
+        AttributeType<String> userPassword = graph.putAttributeType("user-password", AttributeType.DataType.STRING);
+        AttributeType<String> userPasswordSalt = graph.putAttributeType("user-password-salt", AttributeType.DataType.STRING);
+        AttributeType<String> userFirstName = graph.putAttributeType("user-first-name", AttributeType.DataType.STRING);
+        AttributeType<String> userLastName = graph.putAttributeType("user-last-name", AttributeType.DataType.STRING);
+        AttributeType<String> userEmail = graph.putAttributeType("user-email", AttributeType.DataType.STRING);
+        AttributeType<Boolean> userIsAdmin = graph.putAttributeType("user-is-admin", AttributeType.DataType.BOOLEAN);
 
         graph.putEntityType("user").key(userName).
                 resource(userPassword).
@@ -221,6 +221,6 @@ public class SystemKeyspace {
                 resource(userIsAdmin);
 
         //System Version
-        graph.putResourceType("system-version", AttributeType.DataType.STRING);
+        graph.putAttributeType("system-version", AttributeType.DataType.STRING);
     }
 }

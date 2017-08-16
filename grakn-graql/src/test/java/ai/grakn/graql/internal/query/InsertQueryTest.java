@@ -854,7 +854,7 @@ public class InsertQueryTest {
 
     @Test
     public void whenSpecifyingExistingTypeWithIncorrectDataType_Throw() {
-        AttributeType name = movieGraph.graph().getResourceType("name");
+        AttributeType name = movieGraph.graph().getAttributeType("name");
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(

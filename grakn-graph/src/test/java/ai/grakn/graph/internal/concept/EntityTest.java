@@ -111,11 +111,11 @@ public class EntityTest extends GraphTestBase {
     public void whenAddingResourceToAnEntity_EnsureTheImplicitStructureIsCreated(){
         Label resourceLabel = Label.of("A Attribute Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        AttributeType<String> attributeType = graknGraph.putResourceType(resourceLabel, AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = graknGraph.putAttributeType(resourceLabel, AttributeType.DataType.STRING);
         entityType.resource(attributeType);
 
         Entity entity = entityType.addEntity();
-        Attribute attribute = attributeType.putResource("A attribute thing");
+        Attribute attribute = attributeType.putAttribute("A attribute thing");
 
         entity.resource(attribute);
         Relation relation = entity.relations().iterator().next();
@@ -126,10 +126,10 @@ public class EntityTest extends GraphTestBase {
     @Test
     public void whenAddingResourceToEntityWithoutAllowingItBetweenTypes_Throw(){
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        AttributeType<String> attributeType = graknGraph.putResourceType("A Attribute Thing", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = graknGraph.putAttributeType("A Attribute Thing", AttributeType.DataType.STRING);
 
         Entity entity = entityType.addEntity();
-        Attribute attribute = attributeType.putResource("A attribute thing");
+        Attribute attribute = attributeType.putAttribute("A attribute thing");
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.hasNotAllowed(entity, attribute).getMessage());
@@ -141,12 +141,12 @@ public class EntityTest extends GraphTestBase {
     public void whenAddingMultipleResourcesToEntity_EnsureDifferentRelationsAreBuilt() throws InvalidGraphException {
         String resourceTypeId = "A Attribute Thing";
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        AttributeType<String> attributeType = graknGraph.putResourceType(resourceTypeId, AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = graknGraph.putAttributeType(resourceTypeId, AttributeType.DataType.STRING);
         entityType.resource(attributeType);
 
         Entity entity = entityType.addEntity();
-        Attribute attribute1 = attributeType.putResource("A resource thing");
-        Attribute attribute2 = attributeType.putResource("Another resource thing");
+        Attribute attribute1 = attributeType.putAttribute("A resource thing");
+        Attribute attribute2 = attributeType.putAttribute("Another resource thing");
 
         assertEquals(0, entity.relations().count());
         entity.resource(attribute1);
@@ -161,11 +161,11 @@ public class EntityTest extends GraphTestBase {
     public void checkKeyCreatesCorrectResourceStructure(){
         Label resourceLabel = Label.of("A Attribute Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        AttributeType<String> attributeType = graknGraph.putResourceType(resourceLabel, AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = graknGraph.putAttributeType(resourceLabel, AttributeType.DataType.STRING);
         entityType.key(attributeType);
 
         Entity entity = entityType.addEntity();
-        Attribute attribute = attributeType.putResource("A attribute thing");
+        Attribute attribute = attributeType.putAttribute("A attribute thing");
 
         entity.resource(attribute);
         Relation relation = entity.relations().iterator().next();
@@ -177,7 +177,7 @@ public class EntityTest extends GraphTestBase {
     public void whenCreatingAnEntityAndNotLinkingARequiredKey_Throw() throws InvalidGraphException {
         String resourceTypeId = "A Attribute Thing";
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        AttributeType<String> attributeType = graknGraph.putResourceType(resourceTypeId, AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = graknGraph.putAttributeType(resourceTypeId, AttributeType.DataType.STRING);
         entityType.key(attributeType);
 
         Entity entity = entityType.addEntity();

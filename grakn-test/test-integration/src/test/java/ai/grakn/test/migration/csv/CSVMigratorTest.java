@@ -123,10 +123,10 @@ public class CSVMigratorTest {
             Stream<Entity> cats = graph.getEntityType("cat").instances();
             assertEquals(1, cats.count());
 
-            AttributeType<String> name = graph.getResourceType("name");
-            AttributeType<String> death = graph.getResourceType("death");
+            AttributeType<String> name = graph.getAttributeType("name");
+            AttributeType<String> death = graph.getAttributeType("death");
 
-            Entity fluffy = name.getResource("Fluffy").ownerInstances().iterator().next().asEntity();
+            Entity fluffy = name.getAttribute("Fluffy").ownerInstances().iterator().next().asEntity();
             assertEquals(1, fluffy.resources(death).count());
         }
     }
@@ -162,7 +162,7 @@ public class CSVMigratorTest {
         assertEquals(4, models.count());
 
         // test empty value not created
-        AttributeType description = graph.getResourceType("description");
+        AttributeType description = graph.getAttributeType("description");
 
         Entity venture = graph.getConcept(ConceptId.of("Venture"));
         assertEquals(1, venture.resources(description).count());

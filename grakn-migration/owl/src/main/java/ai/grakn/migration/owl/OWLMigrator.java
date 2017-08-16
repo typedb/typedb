@@ -125,12 +125,12 @@ public class OWLMigrator {
     }
 
     public AttributeType<String> owlIriResource(){
-        return graph.putResourceType(OwlModel.IRI.owlname(), AttributeType.DataType.STRING);
+        return graph.putAttributeType(OwlModel.IRI.owlname(), AttributeType.DataType.STRING);
     }
 
     @Nullable
     public <T> Entity getEntity(T id, AttributeType<T> rtype){
-        Attribute<T> iri = rtype.getResource(id);
+        Attribute<T> iri = rtype.getAttribute(id);
         Thing inst = iri != null? iri.ownerInstances().findFirst().orElse(null) : null;
         return inst != null? inst.asEntity() : null;
     }
@@ -147,7 +147,7 @@ public class OWLMigrator {
                 .relates(hasIriOwner).relates(hasIriValue);
 
         Entity entity = type.addEntity();
-        Attribute attributeInstance = iriResource.putResource(id);
+        Attribute attributeInstance = iriResource.putAttribute(id);
         hasIriRelation.addRelation()
                 .addRolePlayer(hasIriOwner, entity)
                 .addRolePlayer(hasIriValue, attributeInstance);
@@ -201,7 +201,7 @@ public class OWLMigrator {
 
     public RelationType relation(OWLAnnotationProperty property) {
         RelationType relType = graph.putRelationType(namer.resourceRelation(property.getIRI()));
-        AttributeType<?> attributeType = graph.putResourceType(namer.fromIri(property.getIRI()), AttributeType.DataType.STRING);
+        AttributeType<?> attributeType = graph.putAttributeType(namer.fromIri(property.getIRI()), AttributeType.DataType.STRING);
         relType.relates(entityRole(owlThingEntityType(), attributeType));
         relType.relates(resourceRole(attributeType));
         return relType;
@@ -236,7 +236,7 @@ public class OWLMigrator {
             return ax.isPresent() ? ax.get().getRange().asOWLDatatype().getBuiltInDatatype() : null;
         });
         AttributeType.DataType<?> graknType = propertyType == null ? AttributeType.DataType.STRING : owlBuiltInToGraknDatatype(propertyType);
-        AttributeType<?> attributeType = graph.putResourceType(namer.fromIri(property.getIRI()), graknType);
+        AttributeType<?> attributeType = graph.putAttributeType(namer.fromIri(property.getIRI()), graknType);
         return attributeType;
     }
 

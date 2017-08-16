@@ -89,16 +89,16 @@ public class MovieGraph extends TestGraph {
         hasCluster = graph.putRelationType("has-cluster")
                 .relates(clusterOfProduction).relates(productionWithCluster);
 
-        title = graph.putResourceType("title", AttributeType.DataType.STRING);
+        title = graph.putAttributeType("title", AttributeType.DataType.STRING);
         title.resource(title);
 
-        tmdbVoteCount = graph.putResourceType("tmdb-vote-count", AttributeType.DataType.LONG);
-        tmdbVoteAverage = graph.putResourceType("tmdb-vote-average", AttributeType.DataType.DOUBLE);
-        releaseDate = graph.putResourceType("release-date", AttributeType.DataType.DATE);
-        runtime = graph.putResourceType("runtime", AttributeType.DataType.LONG);
-        gender = graph.putResourceType("gender", AttributeType.DataType.STRING).setRegex("(fe)?male");
-        realName = graph.putResourceType("real-name", AttributeType.DataType.STRING);
-        name = graph.putResourceType("name", AttributeType.DataType.STRING);
+        tmdbVoteCount = graph.putAttributeType("tmdb-vote-count", AttributeType.DataType.LONG);
+        tmdbVoteAverage = graph.putAttributeType("tmdb-vote-average", AttributeType.DataType.DOUBLE);
+        releaseDate = graph.putAttributeType("release-date", AttributeType.DataType.DATE);
+        runtime = graph.putAttributeType("runtime", AttributeType.DataType.LONG);
+        gender = graph.putAttributeType("gender", AttributeType.DataType.STRING).setRegex("(fe)?male");
+        realName = graph.putAttributeType("real-name", AttributeType.DataType.STRING);
+        name = graph.putAttributeType("name", AttributeType.DataType.STRING);
 
         production = graph.putEntityType("production")
                 .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast)

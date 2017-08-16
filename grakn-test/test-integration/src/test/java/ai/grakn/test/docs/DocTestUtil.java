@@ -51,28 +51,28 @@ public class DocTestUtil {
             GenealogyGraph.get().accept(tx);
 
             // TODO: Remove custom genealogy ontology when not used
-            AttributeType<Long> age = tx.putResourceType("age", AttributeType.DataType.LONG);
+            AttributeType<Long> age = tx.putAttributeType("age", AttributeType.DataType.LONG);
             tx.getEntityType("person").resource(age);
-            tx.putResourceType("nickname", AttributeType.DataType.STRING);
+            tx.putAttributeType("nickname", AttributeType.DataType.STRING);
 
             // TODO: Remove plant ontology when not used
             EntityType plant = tx.putEntityType("plant");
-            AttributeType<String> common = tx.putResourceType("common", AttributeType.DataType.STRING);
-            AttributeType<String> botanical = tx.putResourceType("botanical", AttributeType.DataType.STRING);
-            AttributeType<String> zone = tx.putResourceType("zone", AttributeType.DataType.STRING);
-            AttributeType<String> light = tx.putResourceType("light", AttributeType.DataType.STRING);
-            AttributeType<Long> availability = tx.putResourceType("availability", AttributeType.DataType.LONG);
+            AttributeType<String> common = tx.putAttributeType("common", AttributeType.DataType.STRING);
+            AttributeType<String> botanical = tx.putAttributeType("botanical", AttributeType.DataType.STRING);
+            AttributeType<String> zone = tx.putAttributeType("zone", AttributeType.DataType.STRING);
+            AttributeType<String> light = tx.putAttributeType("light", AttributeType.DataType.STRING);
+            AttributeType<Long> availability = tx.putAttributeType("availability", AttributeType.DataType.LONG);
             plant.resource(common).resource(botanical).resource(zone).resource(light).resource(availability);
 
             // TODO: Remove pokemon ontology when not used
             EntityType pokemon = tx.putEntityType("pokemon");
             EntityType pokemonType = tx.putEntityType("pokemon-type");
 
-            AttributeType<String> typeId = tx.putResourceType("type-id", AttributeType.DataType.STRING);
-            AttributeType<String> description = tx.putResourceType("description", AttributeType.DataType.STRING);
-            AttributeType<Long> pokedexNo = tx.putResourceType("pokedex-no", AttributeType.DataType.LONG);
-            AttributeType<Double> weight = tx.putResourceType("weight", AttributeType.DataType.DOUBLE);
-            AttributeType<Double> height = tx.putResourceType("height", AttributeType.DataType.DOUBLE);
+            AttributeType<String> typeId = tx.putAttributeType("type-id", AttributeType.DataType.STRING);
+            AttributeType<String> description = tx.putAttributeType("description", AttributeType.DataType.STRING);
+            AttributeType<Long> pokedexNo = tx.putAttributeType("pokedex-no", AttributeType.DataType.LONG);
+            AttributeType<Double> weight = tx.putAttributeType("weight", AttributeType.DataType.DOUBLE);
+            AttributeType<Double> height = tx.putAttributeType("height", AttributeType.DataType.DOUBLE);
 
             tx.putRelationType("has-type")
                     .relates(tx.putRole("type-of-pokemon")).relates(tx.putRole("pokemon-with-type"));

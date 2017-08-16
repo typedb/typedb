@@ -59,18 +59,18 @@ GraknTx tx = session.open(GraknTxType.WRITE)
 ```
 
 
-Building the ontology is covered in `writeOntology()`. First, the method adds the resource types using putResourceType():
+Building the ontology is covered in `writeOntology()`. First, the method adds the resource types using putAttributeType():
 
 ```java
-identifier = tx.putResourceType("identifier", ResourceType.DataType.STRING);
-name = tx.putResourceType("name", ResourceType.DataType.STRING);
-firstname = tx.putResourceType("firstname", ResourceType.DataType.STRING).sup(name);
-surname = tx.putResourceType("surname", ResourceType.DataType.STRING).sup(name);
-middlename = tx.putResourceType("middlename", ResourceType.DataType.STRING).sup(name);
-date = tx.putResourceType("date", ResourceType.DataType.STRING);
-birthDate = tx.putResourceType("birth-date", ResourceType.DataType.STRING).sup(date);
-deathDate = tx.putResourceType("death-date", ResourceType.DataType.STRING).sup(date);
-gender = tx.putResourceType("gender", ResourceType.DataType.STRING);
+identifier = tx.putAttributeType("identifier", AttributeType.DataType.STRING);
+name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+firstname = tx.putAttributeType("firstname", AttributeType.DataType.STRING).sup(name);
+surname = tx.putAttributeType("surname", AttributeType.DataType.STRING).sup(name);
+middlename = tx.putAttributeType("middlename", AttributeType.DataType.STRING).sup(name);
+date = tx.putAttributeType("date", AttributeType.DataType.STRING);
+birthDate = tx.putAttributeType("birth-date", AttributeType.DataType.STRING).sup(date);
+deathDate = tx.putAttributeType("death-date", AttributeType.DataType.STRING).sup(date);
+gender = tx.putAttributeType("gender", AttributeType.DataType.STRING);
 ```
 
 Then it adds roles using `putRole()`:
@@ -123,9 +123,9 @@ The example project does this in `writeSampleRelation_Marriage()`. First it crea
 tx = session.open(GraknTxType.WRITE)
 
 // Define the resources
-Resource<String> firstNameJohn = firstname.putResource("John");
-Resource<String> surnameNiesz = surname.putResource("Niesz");
-Resource<String> male = gender.putResource("male");
+Attribute<String> firstNameJohn = firstname.putAttribute("John");
+Attribute<String> surnameNiesz = surname.putAttribute("Niesz");
+Attribute<String> male = gender.putAttribute("male");
 //Now we can create the actual husband entity
 Entity johnNiesz = person.addEntity();
 //Add the resources
@@ -146,7 +146,7 @@ The code goes on to create another `person` entity, named `maryYoung`, and then 
 Entity maryYoung = person.addEntity();
 
 Relation theMarriage = marriage.addRelation().addRolePlayer(spouse1, johnNiesz).addRolePlayer(spouse2, maryYoung);
-Resource marriageDate = date.putResource(LocalDateTime.of(1880, 8, 12, 0, 0, 0).toString());
+Attribute marriageDate = date.putAttribute(LocalDateTime.of(1880, 8, 12, 0, 0, 0).toString());
 theMarriage.resource(marriageDate);
 ```
 

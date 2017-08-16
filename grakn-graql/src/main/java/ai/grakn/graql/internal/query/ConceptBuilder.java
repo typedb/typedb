@@ -335,7 +335,7 @@ public class ConceptBuilder {
         } else if (type.isRelationType()) {
             return type.asRelationType().addRelation();
         } else if (type.isAttributeType()) {
-            return type.asAttributeType().putResource(use(VALUE));
+            return type.asAttributeType().putAttribute(use(VALUE));
         } else if (type.isRuleType()) {
             return type.asRuleType().putRule(use(WHEN), use(THEN));
         } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
@@ -360,7 +360,7 @@ public class ConceptBuilder {
         } else if (superConcept.isAttributeType()) {
             AttributeType attributeType = superConcept.asAttributeType();
             AttributeType.DataType<?> dataType = useOrDefault(DATA_TYPE, attributeType.getDataType());
-            concept = executor.graph().putResourceType(label, dataType);
+            concept = executor.graph().putAttributeType(label, dataType);
         } else if (superConcept.isRuleType()) {
             concept = executor.graph().putRuleType(label);
         } else {

@@ -104,7 +104,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
     @SuppressWarnings("unchecked")
     @Override
-    public Attribute<D> putResource(D value) {
+    public Attribute<D> putAttribute(D value) {
         Objects.requireNonNull(value);
 
         BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
@@ -116,7 +116,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         };
 
         return putInstance(Schema.BaseType.ATTRIBUTE,
-                () -> getResource(value), instanceBuilder);
+                () -> getAttribute(value), instanceBuilder);
     }
 
     /**
@@ -159,7 +159,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     }
 
     @Override
-    public Attribute<D> getResource(D value) {
+    public Attribute<D> getAttribute(D value) {
         String index = Schema.generateAttributeIndex(getLabel(), value.toString());
         return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
     }

@@ -260,8 +260,8 @@ public class EntityTypeTest extends GraphTestBase {
         Label superLabel = Label.of("Super Attribute Type");
         Label label = Label.of("Attribute Type");
 
-        AttributeType rtSuper = graknGraph.putResourceType(superLabel, AttributeType.DataType.STRING);
-        AttributeType rt = graknGraph.putResourceType(label, AttributeType.DataType.STRING).sup(rtSuper);
+        AttributeType rtSuper = graknGraph.putAttributeType(superLabel, AttributeType.DataType.STRING);
+        AttributeType rt = graknGraph.putAttributeType(label, AttributeType.DataType.STRING).sup(rtSuper);
 
         entityType1.resource(rtSuper);
         entityType2.resource(rt);
@@ -342,9 +342,9 @@ public class EntityTypeTest extends GraphTestBase {
     @Test
     public void checkThatResourceTypesCanBeRetrievedFromTypes(){
         EntityType e1 = graknGraph.putEntityType("e1");
-        AttributeType r1 = graknGraph.putResourceType("r1", AttributeType.DataType.STRING);
-        AttributeType r2 = graknGraph.putResourceType("r2", AttributeType.DataType.LONG);
-        AttributeType r3 = graknGraph.putResourceType("r3", AttributeType.DataType.BOOLEAN);
+        AttributeType r1 = graknGraph.putAttributeType("r1", AttributeType.DataType.STRING);
+        AttributeType r2 = graknGraph.putAttributeType("r2", AttributeType.DataType.LONG);
+        AttributeType r3 = graknGraph.putAttributeType("r3", AttributeType.DataType.BOOLEAN);
 
         assertTrue("Entity is linked to resources when it shouldn't", e1.resources().collect(toSet()).isEmpty());
         e1.resource(r1);
@@ -355,8 +355,8 @@ public class EntityTypeTest extends GraphTestBase {
 
     @Test
     public void addResourceTypeAsKeyToOneEntityTypeAndAsResourceToAnotherEntityType(){
-        AttributeType<String> attributeType1 = graknGraph.putResourceType("Shared Attribute 1", AttributeType.DataType.STRING);
-        AttributeType<String> attributeType2 = graknGraph.putResourceType("Shared Attribute 2", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType1 = graknGraph.putAttributeType("Shared Attribute 1", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType2 = graknGraph.putAttributeType("Shared Attribute 2", AttributeType.DataType.STRING);
 
         EntityType entityType1 = graknGraph.putEntityType("EntityType 1");
         EntityType entityType2 = graknGraph.putEntityType("EntityType 2");
@@ -382,9 +382,9 @@ public class EntityTypeTest extends GraphTestBase {
         //Add resource which is a key for one entity and a resource for another
         Entity entity1 = entityType1.addEntity();
         Entity entity2 = entityType2.addEntity();
-        Attribute<String> attribute1 = attributeType1.putResource("Test 1");
-        Attribute<String> attribute2 = attributeType2.putResource("Test 2");
-        Attribute<String> attribute3 = attributeType2.putResource("Test 3");
+        Attribute<String> attribute1 = attributeType1.putAttribute("Test 1");
+        Attribute<String> attribute2 = attributeType2.putAttribute("Test 2");
+        Attribute<String> attribute3 = attributeType2.putAttribute("Test 3");
 
         //Attribute 1 is a key to one and a resource to another
         entity1.resource(attribute1);
@@ -398,7 +398,7 @@ public class EntityTypeTest extends GraphTestBase {
 
     @Test
     public void whenAddingResourceTypeAsKeyAfterResource_Throw(){
-        AttributeType<String> attributeType = graknGraph.putResourceType("Shared Attribute", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = graknGraph.putAttributeType("Shared Attribute", AttributeType.DataType.STRING);
         EntityType entityType = graknGraph.putEntityType("EntityType");
 
         entityType.resource(attributeType);
@@ -411,7 +411,7 @@ public class EntityTypeTest extends GraphTestBase {
 
     @Test
     public void whenAddingResourceTypeAsResourceAfterResource_Throw(){
-        AttributeType<String> attributeType = graknGraph.putResourceType("Shared Attribute", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = graknGraph.putAttributeType("Shared Attribute", AttributeType.DataType.STRING);
         EntityType entityType = graknGraph.putEntityType("EntityType");
 
         entityType.key(attributeType);

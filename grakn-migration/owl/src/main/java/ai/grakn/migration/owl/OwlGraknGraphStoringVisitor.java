@@ -347,7 +347,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         } else if (attributeType.getDataType() == AttributeType.DataType.DOUBLE) {
             value = Double.parseDouble(valueAsString);
         }
-        Attribute attribute = attributeType.putResource(value);
+        Attribute attribute = attributeType.putAttribute(value);
         RelationType propertyRelation = migrator.relation(axiom.getProperty().asOWLDataProperty());
         Role entityRole = migrator.entityRole(entity.type(), attribute.type());
         Role resourceRole = migrator.resourceRole(attribute.type());
@@ -378,7 +378,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         @SuppressWarnings("unchecked")
         AttributeType<String> attributeType = (AttributeType<String>)visit(axiom.getProperty());
         Entity entity = migrator.entity((OWLNamedIndividual)axiom.getSubject());
-        Attribute<String> attribute = attributeType.putResource(value.get().getLiteral());
+        Attribute<String> attribute = attributeType.putAttribute(value.get().getLiteral());
         RelationType propertyRelation = migrator.relation(axiom.getProperty());
         return propertyRelation.addRelation()
                  .addRolePlayer(migrator.entityRole(entity.type(), attribute.type()), entity)

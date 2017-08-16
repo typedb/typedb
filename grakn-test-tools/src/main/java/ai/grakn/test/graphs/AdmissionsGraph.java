@@ -56,20 +56,20 @@ public class AdmissionsGraph extends TestGraph {
 
     @Override
     protected void buildOntology(GraknTx graph) {
-        key = graph.putResourceType("name", AttributeType.DataType.STRING);
+        key = graph.putAttributeType("name", AttributeType.DataType.STRING);
 
-        TOEFL = graph.putResourceType("TOEFL", AttributeType.DataType.LONG);
-        GRE = graph.putResourceType("GRE", AttributeType.DataType.LONG);
-        vGRE = graph.putResourceType("vGRE", AttributeType.DataType.LONG);
-        GPR = graph.putResourceType("GPR", AttributeType.DataType.DOUBLE);
-        specialHonours = graph.putResourceType("specialHonours", AttributeType.DataType.STRING);
-        considerGPR = graph.putResourceType("considerGPR", AttributeType.DataType.STRING);
-        transcript = graph.putResourceType("transcript", AttributeType.DataType.STRING);
-        priorGraduateWork = graph.putResourceType("priorGraduateWork", AttributeType.DataType.STRING);
-        languageRequirement= graph.putResourceType("languageRequirement", AttributeType.DataType.STRING);
-        degreeOrigin = graph.putResourceType("degreeOrigin", AttributeType.DataType.STRING);
-        admissionStatus = graph.putResourceType("admissionStatus", AttributeType.DataType.STRING);
-        decisionType = graph.putResourceType("decisionType", AttributeType.DataType.STRING);
+        TOEFL = graph.putAttributeType("TOEFL", AttributeType.DataType.LONG);
+        GRE = graph.putAttributeType("GRE", AttributeType.DataType.LONG);
+        vGRE = graph.putAttributeType("vGRE", AttributeType.DataType.LONG);
+        GPR = graph.putAttributeType("GPR", AttributeType.DataType.DOUBLE);
+        specialHonours = graph.putAttributeType("specialHonours", AttributeType.DataType.STRING);
+        considerGPR = graph.putAttributeType("considerGPR", AttributeType.DataType.STRING);
+        transcript = graph.putAttributeType("transcript", AttributeType.DataType.STRING);
+        priorGraduateWork = graph.putAttributeType("priorGraduateWork", AttributeType.DataType.STRING);
+        languageRequirement= graph.putAttributeType("languageRequirement", AttributeType.DataType.STRING);
+        degreeOrigin = graph.putAttributeType("degreeOrigin", AttributeType.DataType.STRING);
+        admissionStatus = graph.putAttributeType("admissionStatus", AttributeType.DataType.STRING);
+        decisionType = graph.putAttributeType("decisionType", AttributeType.DataType.STRING);
 
         applicant = graph.putEntityType("applicant");
         applicant.resource(TOEFL);

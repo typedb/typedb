@@ -336,7 +336,7 @@ public class RuleTest {
     }
     
     private void initGraph(GraknTx graph){
-        AttributeType<Integer> res1 = graph.putResourceType("res1", AttributeType.DataType.INTEGER);
+        AttributeType<Integer> res1 = graph.putAttributeType("res1", AttributeType.DataType.INTEGER);
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");
         Role role3 = graph.putRole("role3");

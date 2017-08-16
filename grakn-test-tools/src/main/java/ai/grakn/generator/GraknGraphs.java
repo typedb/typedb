@@ -164,7 +164,7 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
                 Label label = typeLabel();
                 AttributeType.DataType dataType = gen(AttributeType.DataType.class);
                 AttributeType superType = resourceType();
-                AttributeType attributeType = graph.putResourceType(label, dataType).sup(superType);
+                AttributeType attributeType = graph.putAttributeType(label, dataType).sup(superType);
                 summaryAssign(attributeType, "graph", "putResourceType", label, dataType);
                 summary(attributeType, "superType", superType);
             },
@@ -249,7 +249,7 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
             () -> {
                 AttributeType attributeType = resourceType();
                 Object value = gen().make(ResourceValues.class).generate(random, status);
-                Attribute attribute = attributeType.putResource(value);
+                Attribute attribute = attributeType.putAttribute(value);
                 summaryAssign(attribute, attributeType, "putResource", valueToString(value));
             },
             // () -> resourceType().setRegex(gen(String.class)), // TODO: Enable this when doesn't throw a NPE

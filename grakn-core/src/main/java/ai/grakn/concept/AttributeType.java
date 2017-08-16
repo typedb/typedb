@@ -117,7 +117,7 @@ public interface AttributeType<D> extends Type {
      * @param value A value for the {@link Attribute} which is unique to its type
      * @return new or existing {@link Attribute} of this type with the provided value.
      */
-    Attribute<D> putResource(D value);
+    Attribute<D> putAttribute(D value);
 
     /**
      * Classifies the type to a specific scope. This allows you to optionally categorise types.
@@ -174,7 +174,7 @@ public interface AttributeType<D> extends Type {
      */
     @CheckReturnValue
     @Nullable
-    Attribute<D> getResource(D value);
+    Attribute<D> getAttribute(D value);
 
     /**
      * Returns a collection of subtypes of this {@link AttributeType}.

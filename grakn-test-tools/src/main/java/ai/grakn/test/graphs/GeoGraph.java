@@ -58,7 +58,7 @@ public class GeoGraph extends TestGraph {
 
     @Override
     public void buildOntology(GraknTx graph) {
-        key = graph.putResourceType("name", AttributeType.DataType.STRING);
+        key = graph.putAttributeType("name", AttributeType.DataType.STRING);
 
         geoEntity = graph.putRole("geo-entity");
         entityLocation = graph.putRole("entity-location");

@@ -77,7 +77,7 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
             //Create a new attribute type
             AttributeType.DataType<?> dataType = gen(AttributeType.DataType.class);
             Label label = genFromGraph(Labels.class).mustBeUnused().generate(random, status);
-            AttributeType attributeType = graph().putResourceType(label, dataType);
+            AttributeType attributeType = graph().putAttributeType(label, dataType);
 
             //Create new attribute
             Attribute attribute = newResource(attributeType);
@@ -93,7 +93,7 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
     protected Attribute newResource(AttributeType type) {
         AttributeType.DataType<?> dataType = type.getDataType();
         Object value = gen().make(ResourceValues.class).dataType(dataType).generate(random, status);
-        return type.putResource(value);
+        return type.putAttribute(value);
     }
 
     public final void configure(NonMeta nonMeta) {

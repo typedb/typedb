@@ -163,7 +163,7 @@ public class JsonMigratorTest {
             Attribute aString = getResource(graph, thing, Label.of("a-string"));
             assertEquals("hi", aString.getValue());
 
-            assertEquals(0, graph.getResourceType("a-null").instances().count());
+            assertEquals(0, graph.getAttributeType("a-null").instances().count());
         }
     }
 

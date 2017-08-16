@@ -187,9 +187,9 @@ public class MatchQueryTest {
     // This is a graph to contain unusual edge cases
     @ClassRule
     public static final GraphContext weirdGraph = GraphContext.preLoad(graph -> {
-        AttributeType<String> weirdLoopType = graph.putResourceType("name", AttributeType.DataType.STRING);
+        AttributeType<String> weirdLoopType = graph.putAttributeType("name", AttributeType.DataType.STRING);
         weirdLoopType.resource(weirdLoopType);
-        Attribute<String> weird = weirdLoopType.putResource("weird");
+        Attribute<String> weird = weirdLoopType.putAttribute("weird");
         weird.resource(weird);
     });
 
@@ -811,7 +811,7 @@ public class MatchQueryTest {
     public void testMatchAllResourcesUsingResourceName() {
         MatchQuery query = qb.match(var().has("title", "Godfather").has(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue(), x));
 
-        Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = movieGraph.graph().getAttributeType("title").getAttribute("Godfather").owner();
         Set<Attribute<?>> expected = godfather.resources().collect(toSet());
 
         Set<Attribute<?>> results = query.get("x").map(Concept::asAttribute).collect(toSet());
@@ -833,7 +833,7 @@ public class MatchQueryTest {
 
     @Test
     public void testLookupResourcesOnId() {
-        Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = movieGraph.graph().getAttributeType("title").getAttribute("Godfather").owner();
         ConceptId id = godfather.getId();
         MatchQuery query = qb.match(var().id(id).has("title", x));
 

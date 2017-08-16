@@ -69,7 +69,7 @@ public class TxCacheTest extends GraphTestBase {
         RelationType t2 = graknGraph.putRelationType("2");
         Role t3 = graknGraph.putRole("3");
         RuleType t4 = graknGraph.putRuleType("4");
-        AttributeType t5 = graknGraph.putResourceType("5", AttributeType.DataType.STRING);
+        AttributeType t5 = graknGraph.putAttributeType("5", AttributeType.DataType.STRING);
 
         // verify the concepts that we expected are returned in the set
         assertThat(graknGraph.txCache().getModifiedRoles(), containsInAnyOrder(t3));
@@ -212,14 +212,14 @@ public class TxCacheTest extends GraphTestBase {
         TxCache cache = graknGraph.txCache();
 
         //Load some sample data
-        AttributeType<String> attributeType = graknGraph.putResourceType("Attribute Type", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = graknGraph.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
         Role role1 = graknGraph.putRole("role 1");
         Role role2 = graknGraph.putRole("role 2");
         EntityType entityType = graknGraph.putEntityType("My Type").plays(role1).plays(role2).resource(attributeType);
         RelationType relationType = graknGraph.putRelationType("My Relation Type").relates(role1).relates(role2);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
-        Attribute<String> r1 = attributeType.putResource("test");
+        Attribute<String> r1 = attributeType.putAttribute("test");
 
         e1.resource(r1);
         relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);

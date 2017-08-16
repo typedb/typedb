@@ -50,15 +50,15 @@ gender sub resource datatype string;
 These same resource types can be built with the Java API as follows:
 
 ```java
-ResourceType identifier = tx.putResourceType("identifier", ResourceType.DataType.STRING);
-ResourceType firstname = tx.putResourceType("firstname", ResourceType.DataType.STRING);
-ResourceType surname = tx.putResourceType("surname", ResourceType.DataType.STRING);
-ResourceType middlename = tx.putResourceType("middlename", ResourceType.DataType.STRING);
-ResourceType picture = tx.putResourceType("picture", ResourceType.DataType.STRING);
-ResourceType age = tx.putResourceType("age", ResourceType.DataType.LONG);
-ResourceType birthDate = tx.putResourceType("birth-date", ResourceType.DataType.STRING);
-ResourceType deathDate = tx.putResourceType("death-date", ResourceType.DataType.STRING);
-ResourceType gender = tx.putResourceType("gender", ResourceType.DataType.STRING);
+AttributeType identifier = tx.putAttributeType("identifier", AttributeType.DataType.STRING);
+AttributeType firstname = tx.putAttributeType("firstname", AttributeType.DataType.STRING);
+AttributeType surname = tx.putAttributeType("surname", AttributeType.DataType.STRING);
+AttributeType middlename = tx.putAttributeType("middlename", AttributeType.DataType.STRING);
+AttributeType picture = tx.putAttributeType("picture", AttributeType.DataType.STRING);
+AttributeType age = tx.putAttributeType("age", AttributeType.DataType.LONG);
+AttributeType birthDate = tx.putAttributeType("birth-date", AttributeType.DataType.STRING);
+AttributeType deathDate = tx.putAttributeType("death-date", AttributeType.DataType.STRING);
+AttributeType gender = tx.putAttributeType("gender", AttributeType.DataType.STRING);
 ```
 
 Now the role and relation types. In Graql:
@@ -168,7 +168,7 @@ Now the equivalent Java API:
 ```java
 tx = Grakn.session(Grakn.IN_MEMORY, "MyKnowlegdeBase").open(GraknTxType.WRITE);
 
-Resource johnName = firstname.putResource("John"); //Create the resource
+Attribute johnName = firstname.putAttribute("John"); //Create the resource
 person.addEntity().resource(johnName); //Link it to an entity
 ```   
 
@@ -187,8 +187,8 @@ With the Java API this would be:
 
 ```java
 //Create the resources
-johnName = firstname.putResource("John");
-Resource maryName = firstname.putResource("Mary");
+johnName = firstname.putAttribute("John");
+Attribute maryName = firstname.putAttribute("Mary");
 
 //Create the entities
 Entity john = person.addEntity();
@@ -212,7 +212,7 @@ insert
 Now the equivalent using the Java API:
 
 ```java
-Resource weddingPicture = picture.putResource("www.LocationOfMyPicture.com");
+Attribute weddingPicture = picture.putAttribute("www.LocationOfMyPicture.com");
 theMarriage.resource(weddingPicture);
 ```
 

@@ -79,9 +79,9 @@ public class PostProcessingTest {
 
         //Create Graph With Duplicate Resources
         GraknTx graph = session.open(GraknTxType.WRITE);
-        AttributeType<String> attributeType = graph.putResourceType(sample, AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = graph.putAttributeType(sample, AttributeType.DataType.STRING);
 
-        Attribute<String> attribute = attributeType.putResource(value);
+        Attribute<String> attribute = attributeType.putAttribute(value);
         graph.admin().commitNoLogs();
         graph = session.open(GraknTxType.WRITE);
 
@@ -127,7 +127,7 @@ public class PostProcessingTest {
         graph = session.open(GraknTxType.READ);
 
         //Check it's fixed
-        assertEquals(1, graph.getResourceType(sample).instances().count());
+        assertEquals(1, graph.getAttributeType(sample).instances().count());
 
         graph.close();
     }

@@ -136,7 +136,7 @@ public class OntologyMutationTest extends GraphTestBase {
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
-        graknGraphBatch.putResourceType("This Will Fail", AttributeType.DataType.STRING);
+        graknGraphBatch.putAttributeType("This Will Fail", AttributeType.DataType.STRING);
     }
 
     @Test
@@ -248,10 +248,10 @@ public class OntologyMutationTest extends GraphTestBase {
     @Test
     public void whenAddingResourceToSubTypeOfEntityType_EnsureNoValidationErrorsOccur(){
         //Create initial Ontology
-        AttributeType<String> name = graknGraph.putResourceType("name", AttributeType.DataType.STRING);
+        AttributeType<String> name = graknGraph.putAttributeType("name", AttributeType.DataType.STRING);
         EntityType person = graknGraph.putEntityType("perspn").resource(name);
         EntityType animal = graknGraph.putEntityType("animal").sup(person);
-        Attribute bob = name.putResource("Bob");
+        Attribute bob = name.putAttribute("Bob");
         person.addEntity().resource(bob);
         graknGraph.commit();
 
@@ -280,7 +280,7 @@ public class OntologyMutationTest extends GraphTestBase {
 
     @Test
     public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstances_ByPreventingChange(){
-        AttributeType<String> name = graknGraph.putResourceType("name", AttributeType.DataType.STRING);
+        AttributeType<String> name = graknGraph.putAttributeType("name", AttributeType.DataType.STRING);
 
         //Create a person and allow person to have a name
         EntityType person = graknGraph.putEntityType("person").resource(name);
@@ -290,7 +290,7 @@ public class OntologyMutationTest extends GraphTestBase {
         RelationType has_name = graknGraph.putRelationType("has-name");
 
         //Create a Man and name him Bob
-        Attribute<String> nameBob = name.putResource("Bob");
+        Attribute<String> nameBob = name.putAttribute("Bob");
         man.addEntity().resource(nameBob);
 
         //Get The Relation which says that our man is name bob

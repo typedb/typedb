@@ -289,7 +289,7 @@ class GraqlSession {
         queryExecutor.execute(() -> {
             AttributeType[] displayOptions = json.at(DISPLAY).asJsonList().stream()
                     .map(Json::asString)
-                    .map(graph::getResourceType)
+                    .map(graph::getAttributeType)
                     .filter(Objects::nonNull)
                     .toArray(AttributeType[]::new);
             printer = getPrinter(displayOptions);

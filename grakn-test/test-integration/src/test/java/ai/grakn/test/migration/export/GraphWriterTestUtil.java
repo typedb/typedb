@@ -95,7 +95,7 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static <V> Attribute<V> getResourceFromGraph(GraknTx graph, Attribute<V> attribute){
-        return (Attribute<V>) graph.getResourceType(attribute.type().getLabel().getValue()).getResource(attribute.getValue());
+        return (Attribute<V>) graph.getAttributeType(attribute.type().getLabel().getValue()).getAttribute(attribute.getValue());
     }
 
     public static void assertRelationCopied(Relation relation1, GraknTx two){
@@ -118,7 +118,7 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertResourceCopied(Attribute attribute1, GraknTx two){
-        assertEquals(true, two.getResourcesByValue(attribute1.getValue()).stream()
+        assertEquals(true, two.getAttributesByValue(attribute1.getValue()).stream()
                 .map(Thing::type)
                 .map(Type::getLabel)
                 .anyMatch(t -> attribute1.type().getLabel().equals(t)));

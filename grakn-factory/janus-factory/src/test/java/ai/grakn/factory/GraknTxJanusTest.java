@@ -142,16 +142,16 @@ public class GraknTxJanusTest extends JanusTestBase {
     @Test
     public void whenCreatingDateResource_EnsureDateCanBeRetrieved(){
         GraknTxJanus graph = new TxFactoryJanus("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
-        AttributeType<LocalDateTime> dateType = graph.putResourceType("date", AttributeType.DataType.DATE);
+        AttributeType<LocalDateTime> dateType = graph.putAttributeType("date", AttributeType.DataType.DATE);
         LocalDateTime now = LocalDateTime.now();
-        Attribute<LocalDateTime> date = dateType.putResource(now);
+        Attribute<LocalDateTime> date = dateType.putAttribute(now);
         assertEquals(now, date.getValue());
     }
 
     @Test
     public void whenLookingUpRelationEdgeViaConceptId_EnsureTheRelationEdgeIsReturned(){
-        AttributeType<String> attributeType = graknTx.putResourceType("Looky a attribute type", AttributeType.DataType.STRING);
-        Attribute<String> attribute = attributeType.putResource("A Attribute Thing");
+        AttributeType<String> attributeType = graknTx.putAttributeType("Looky a attribute type", AttributeType.DataType.STRING);
+        Attribute<String> attribute = attributeType.putAttribute("A Attribute Thing");
 
         EntityType entityType = graknTx.putEntityType("My entity").resource(attributeType);
         Relation relation = Iterators.getOnlyElement(entityType.addEntity().resource(attribute).relations().iterator());

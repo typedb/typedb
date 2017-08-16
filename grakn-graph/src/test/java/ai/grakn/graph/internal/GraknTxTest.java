@@ -61,16 +61,16 @@ public class GraknTxTest extends GraphTestBase {
     @Test
     public void whenGettingResourcesByValue_ReturnTheMatchingResources(){
         String targetValue = "Geralt";
-        assertThat(graknGraph.getResourcesByValue(targetValue), is(empty()));
+        assertThat(graknGraph.getAttributesByValue(targetValue), is(empty()));
 
-        AttributeType<String> t1 = graknGraph.putResourceType("Parent 1", AttributeType.DataType.STRING);
-        AttributeType<String> t2 = graknGraph.putResourceType("Parent 2", AttributeType.DataType.STRING);
+        AttributeType<String> t1 = graknGraph.putAttributeType("Parent 1", AttributeType.DataType.STRING);
+        AttributeType<String> t2 = graknGraph.putAttributeType("Parent 2", AttributeType.DataType.STRING);
 
-        Attribute<String> r1 = t1.putResource(targetValue);
-        Attribute<String> r2 = t2.putResource(targetValue);
-        t2.putResource("Dragon");
+        Attribute<String> r1 = t1.putAttribute(targetValue);
+        Attribute<String> r2 = t2.putAttribute(targetValue);
+        t2.putAttribute("Dragon");
 
-        assertThat(graknGraph.getResourcesByValue(targetValue), containsInAnyOrder(r1, r2));
+        assertThat(graknGraph.getAttributesByValue(targetValue), containsInAnyOrder(r1, r2));
     }
 
     @Test
@@ -84,19 +84,19 @@ public class GraknTxTest extends GraphTestBase {
         assertNull(graknGraph.getEntityType(entityTypeLabel));
         assertNull(graknGraph.getRelationType(relationTypeLabel));
         assertNull(graknGraph.getRole(roleTypeLabel));
-        assertNull(graknGraph.getResourceType(resourceTypeLabel));
+        assertNull(graknGraph.getAttributeType(resourceTypeLabel));
         assertNull(graknGraph.getRuleType(ruleTypeLabel));
 
         EntityType entityType = graknGraph.putEntityType(entityTypeLabel);
         RelationType relationType = graknGraph.putRelationType(relationTypeLabel);
         Role role = graknGraph.putRole(roleTypeLabel);
-        AttributeType attributeType = graknGraph.putResourceType(resourceTypeLabel, AttributeType.DataType.STRING);
+        AttributeType attributeType = graknGraph.putAttributeType(resourceTypeLabel, AttributeType.DataType.STRING);
         RuleType ruleType = graknGraph.putRuleType(ruleTypeLabel);
 
         assertEquals(entityType, graknGraph.getEntityType(entityTypeLabel));
         assertEquals(relationType, graknGraph.getRelationType(relationTypeLabel));
         assertEquals(role, graknGraph.getRole(roleTypeLabel));
-        assertEquals(attributeType, graknGraph.getResourceType(resourceTypeLabel));
+        assertEquals(attributeType, graknGraph.getAttributeType(resourceTypeLabel));
         assertEquals(ruleType, graknGraph.getRuleType(ruleTypeLabel));
     }
 
@@ -260,13 +260,13 @@ public class GraknTxTest extends GraphTestBase {
         Role roleT2 = graknGraph.putRole(roleType2);
         RelationType relationT1 = graknGraph.putRelationType(relationType1).relates(roleT1);
         RelationType relationT2 = graknGraph.putRelationType(relationType2).relates(roleT2);
-        AttributeType<String> resourceT = graknGraph.putResourceType(resourceType, AttributeType.DataType.STRING);
+        AttributeType<String> resourceT = graknGraph.putAttributeType(resourceType, AttributeType.DataType.STRING);
         graknGraph.commit();
 
         //Fail some mutations again
         graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
         failMutation(graknGraph, entityT::addEntity);
-        failMutation(graknGraph, () -> resourceT.putResource("A resource"));
+        failMutation(graknGraph, () -> resourceT.putAttribute("A resource"));
         failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));
         failMutation(graknGraph, () -> entityT.plays(roleT1));
         failMutation(graknGraph, () -> relationT1.relates(roleT2));
@@ -364,9 +364,9 @@ public class GraknTxTest extends GraphTestBase {
         executor.submit(() -> {
             //Resources
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-                AttributeType<Long> int_ = graph.putResourceType("int", AttributeType.DataType.LONG);
-                AttributeType<Long> foo = graph.putResourceType("foo", AttributeType.DataType.LONG).sup(int_);
-                graph.putResourceType("bar", AttributeType.DataType.LONG).sup(int_);
+                AttributeType<Long> int_ = graph.putAttributeType("int", AttributeType.DataType.LONG);
+                AttributeType<Long> foo = graph.putAttributeType("foo", AttributeType.DataType.LONG).sup(int_);
+                graph.putAttributeType("bar", AttributeType.DataType.LONG).sup(int_);
                 graph.putEntityType("FOO").resource(foo);
 
                 graph.commit();
@@ -375,7 +375,7 @@ public class GraknTxTest extends GraphTestBase {
 
         //Relation Which Has Resources
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            graph.putEntityType("BAR").resource(graph.getResourceType("bar"));
+            graph.putEntityType("BAR").resource(graph.getAttributeType("bar"));
             graph.commit();
         }
     }

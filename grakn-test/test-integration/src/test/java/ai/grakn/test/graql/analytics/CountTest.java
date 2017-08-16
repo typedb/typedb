@@ -122,10 +122,10 @@ public class CountTest {
     public void testDegreeWithHasResourceEdges() {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType person = graph.putEntityType("person");
-            AttributeType<String> name = graph.putResourceType("name", AttributeType.DataType.STRING);
+            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
             person.resource(name);
             Entity aPerson = person.addEntity();
-            aPerson.resource(name.putResource("jason"));
+            aPerson.resource(name.putAttribute("jason"));
             graph.commit();
         }
 
@@ -152,8 +152,8 @@ public class CountTest {
             // manually construct the relation type and instance
             EntityType person = graph.putEntityType("person");
             Entity aPerson = person.addEntity();
-            AttributeType<String> name = graph.putResourceType("name", AttributeType.DataType.STRING);
-            Attribute jason = name.putResource("jason");
+            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+            Attribute jason = name.putAttribute("jason");
 
             Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
             person.plays(resourceOwner);

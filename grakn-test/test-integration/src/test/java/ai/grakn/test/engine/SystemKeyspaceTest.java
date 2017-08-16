@@ -100,12 +100,12 @@ public class SystemKeyspaceTest {
         try(GraknTx graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
 
             EntityType user = graph.getEntityType("user");
-            AttributeType userName = graph.getResourceType("user-name");
-            AttributeType userPassword = graph.getResourceType("user-password");
-            AttributeType userFirstName = graph.getResourceType("user-first-name");
-            AttributeType userLastName = graph.getResourceType("user-last-name");
-            AttributeType userEmail = graph.getResourceType("user-email");
-            AttributeType userIsAdmin = graph.getResourceType("user-is-admin");
+            AttributeType userName = graph.getAttributeType("user-name");
+            AttributeType userPassword = graph.getAttributeType("user-password");
+            AttributeType userFirstName = graph.getAttributeType("user-first-name");
+            AttributeType userLastName = graph.getAttributeType("user-last-name");
+            AttributeType userEmail = graph.getAttributeType("user-email");
+            AttributeType userIsAdmin = graph.getAttributeType("user-is-admin");
 
             //Check Plays
             assertTrue(user.plays().anyMatch(role -> role.equals(
@@ -177,9 +177,9 @@ public class SystemKeyspaceTest {
         //Insert fake version number
         try(GraknTx graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
             //Delete old version number
-            graph.getResourceType(versionResourceType).instances().forEach(Concept::delete);
+            graph.getAttributeType(versionResourceType).instances().forEach(Concept::delete);
             //Add Fake Version
-            graph.getResourceType(versionResourceType).putResource(version);
+            graph.getAttributeType(versionResourceType).putAttribute(version);
             graph.commit();
         }
     }
@@ -192,7 +192,7 @@ public class SystemKeyspaceTest {
 
     private Set<String> getSystemKeyspaces(){
         try(GraknTx graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.READ)){
-            AttributeType<String> keyspaceName = graph.getResourceType("keyspace-name");
+            AttributeType<String> keyspaceName = graph.getAttributeType("keyspace-name");
             return graph.getEntityType("keyspace").instances().
                     map(e -> e.resources(keyspaceName).iterator().next().getValue().toString()).
                     collect(Collectors.toSet());

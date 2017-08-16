@@ -355,7 +355,7 @@ public class GraknQueryHandlers {
             }).collect(Collectors.toList());
         }
         private static <T> T getSingleResource(Entity entity, Label resourceType, GraknTx graknTx) {
-            return (T) entity.resources(graknTx.getResourceType(resourceType.toString())).
+            return (T) entity.resources(graknTx.getAttributeType(resourceType.toString())).
                     iterator().next().getValue();
         }
         private static long getSingleDateResource(Entity entity, Label resourceType, GraknTx graknTx) {
@@ -363,7 +363,7 @@ public class GraknQueryHandlers {
                     toInstant(ZoneOffset.UTC).toEpochMilli();
         }
         private static <T> List<T> getListResources(Entity entity, Label resourceType, GraknTx graknTx) {
-            Stream<Attribute<?>> rawResources = entity.resources(graknTx.getResourceType(resourceType.toString()));
+            Stream<Attribute<?>> rawResources = entity.resources(graknTx.getAttributeType(resourceType.toString()));
             return rawResources.map((resource) -> (T) resource.getValue()).collect(Collectors.<T>toList());
         }
     }

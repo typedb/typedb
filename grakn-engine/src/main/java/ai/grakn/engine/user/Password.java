@@ -62,7 +62,7 @@ public class Password {
      * @return a 16 bytes random salt
      */
     static byte[] getNextSalt(GraknTx graph) {
-        AttributeType<String> saltAttributeType = graph.getResourceType(UsersHandler.USER_SALT);
+        AttributeType<String> saltAttributeType = graph.getAttributeType(UsersHandler.USER_SALT);
 
         String saltString;
         byte[] salt;
@@ -70,7 +70,7 @@ public class Password {
             salt = new byte[16];
             saltString = getString(salt);
             RANDOM.nextBytes(salt);
-        } while(saltAttributeType.getResource(saltString) != null); //Make sure we generate unique salts every time
+        } while(saltAttributeType.getAttribute(saltString) != null); //Make sure we generate unique salts every time
 
         return salt;
     }

@@ -235,13 +235,13 @@ public class RelationTest extends GraphTestBase {
         Role entityRole = graknGraph.putRole("Entity Role");
         Role degreeRole = graknGraph.putRole("Degree Role");
         EntityType entityType = graknGraph.putEntityType("Entity Type").plays(entityRole);
-        AttributeType<Long> degreeType = graknGraph.putResourceType("Attribute Type", AttributeType.DataType.LONG).plays(degreeRole);
+        AttributeType<Long> degreeType = graknGraph.putAttributeType("Attribute Type", AttributeType.DataType.LONG).plays(degreeRole);
 
         RelationType hasDegree = graknGraph.putRelationType("Has Degree").relates(entityRole).relates(degreeRole);
 
         Entity entity = entityType.addEntity();
-        Attribute<Long> degree1 = degreeType.putResource(100L);
-        Attribute<Long> degree2 = degreeType.putResource(101L);
+        Attribute<Long> degree1 = degreeType.putAttribute(100L);
+        Attribute<Long> degree2 = degreeType.putAttribute(101L);
 
         Relation relation1 = hasDegree.addRelation().addRolePlayer(entityRole, entity).addRolePlayer(degreeRole, degree1);
         hasDegree.addRelation().addRolePlayer(entityRole, entity).addRolePlayer(degreeRole, degree2);
@@ -284,8 +284,8 @@ public class RelationTest extends GraphTestBase {
 
     @Test
     public void whenAttemptingToLinkTheInstanceOfAResourceRelationToTheResourceWhichCreatedIt_ThrowIfTheRelationTypeDoesNotHavePermissionToPlayTheNecessaryRole(){
-        AttributeType<String> attributeType = graknGraph.putResourceType("what a pain", AttributeType.DataType.STRING);
-        Attribute<String> attribute = attributeType.putResource("a real pain");
+        AttributeType<String> attributeType = graknGraph.putAttributeType("what a pain", AttributeType.DataType.STRING);
+        Attribute<String> attribute = attributeType.putAttribute("a real pain");
 
         EntityType entityType = graknGraph.putEntityType("yay").resource(attributeType);
         Relation implicitRelation = Iterables.getOnlyElement(entityType.addEntity().resource(attribute).relations().collect(Collectors.toSet()));
@@ -301,15 +301,15 @@ public class RelationTest extends GraphTestBase {
     public void whenAddingDuplicateRelationsWithDifferentKeys_EnsureTheyCanBeCommitted(){
         Role role1 = graknGraph.putRole("dark");
         Role role2 = graknGraph.putRole("souls");
-        AttributeType<Long> attributeType = graknGraph.putResourceType("Death Number", AttributeType.DataType.LONG);
+        AttributeType<Long> attributeType = graknGraph.putAttributeType("Death Number", AttributeType.DataType.LONG);
         RelationType relationType = graknGraph.putRelationType("Dark Souls").relates(role1).relates(role2).key(attributeType);
         EntityType entityType = graknGraph.putEntityType("Dead Guys").plays(role1).plays(role2);
 
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
 
-        Attribute<Long> r1 = attributeType.putResource(1000000L);
-        Attribute<Long> r2 = attributeType.putResource(2000000L);
+        Attribute<Long> r1 = attributeType.putAttribute(1000000L);
+        Attribute<Long> r2 = attributeType.putAttribute(2000000L);
 
         Relation rel1 = relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
         Relation rel2 = relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
@@ -329,14 +329,14 @@ public class RelationTest extends GraphTestBase {
     public void whenAddingDuplicateRelationsWithSameKeys_Throw(){
         Role role1 = graknGraph.putRole("dark");
         Role role2 = graknGraph.putRole("souls");
-        AttributeType<Long> attributeType = graknGraph.putResourceType("Death Number", AttributeType.DataType.LONG);
+        AttributeType<Long> attributeType = graknGraph.putAttributeType("Death Number", AttributeType.DataType.LONG);
         RelationType relationType = graknGraph.putRelationType("Dark Souls").relates(role1).relates(role2).key(attributeType);
         EntityType entityType = graknGraph.putEntityType("Dead Guys").plays(role1).plays(role2);
 
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
 
-        Attribute<Long> r1 = attributeType.putResource(1000000L);
+        Attribute<Long> r1 = attributeType.putAttribute(1000000L);
 
         relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2).resource(r1);
         relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2).resource(r1);

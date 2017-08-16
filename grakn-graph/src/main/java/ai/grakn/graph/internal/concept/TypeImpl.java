@@ -201,7 +201,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
                 filter(roleLabel -> roleLabel.startsWith(prefix) && roleLabel.endsWith(suffix)).
                 map(roleLabel -> {
                     String resourceTypeLabel = roleLabel.replace(prefix, "").replace(suffix, "");
-                    return vertex().graph().getResourceType(resourceTypeLabel);
+                    return vertex().graph().getAttributeType(resourceTypeLabel);
                 });
     }
 

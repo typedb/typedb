@@ -62,12 +62,12 @@ public class CWGraph extends TestGraph {
 
     @Override
     protected void buildOntology(GraknTx graph) {
-        key = graph.putResourceType("name", AttributeType.DataType.STRING);
+        key = graph.putAttributeType("name", AttributeType.DataType.STRING);
 
         //Resources
-        nationality = graph.putResourceType("nationality", AttributeType.DataType.STRING);
-        propulsion = graph.putResourceType("propulsion", AttributeType.DataType.STRING);
-        alignment = graph.putResourceType("alignment", AttributeType.DataType.STRING);
+        nationality = graph.putAttributeType("nationality", AttributeType.DataType.STRING);
+        propulsion = graph.putAttributeType("propulsion", AttributeType.DataType.STRING);
+        alignment = graph.putAttributeType("alignment", AttributeType.DataType.STRING);
 
         //Roles
         owner = graph.putRole("item-owner");

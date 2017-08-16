@@ -189,9 +189,9 @@ Start by defining our resources:
 
 ```java
 // resources
-ResourceType idType = tx.putResourceType("identifier", ResourceType.DataType.STRING);
-ResourceType textType = tx.putResourceType("text", ResourceType.DataType.STRING);
-ResourceType screenNameType = tx.putResourceType("screen_name", ResourceType.DataType.STRING);
+AttributeType idType = tx.putAttributeType("identifier", AttributeType.DataType.STRING);
+AttributeType textType = tx.putAttributeType("text", AttributeType.DataType.STRING);
+AttributeType screenNameType = tx.putAttributeType("screen_name", AttributeType.DataType.STRING);
 ```
 
 Entities:
@@ -347,17 +347,17 @@ To insert a tweet, we must create a `tweet` entity and a `text` resource to hold
 
 Let's do that with a new method. It will accept a single `String` and inserts it into the knowledge base, before returning the `Entity` of said tweet.
 
-Pay attention to how we need to retrieve the `EntityTypes` and `ResourceTypes` of entity and resource we are interested in — we need them in order to perform the actual insertion.
+Pay attention to how we need to retrieve the `EntityTypes` and `AttributeTypes` of entity and resource we are interested in — we need them in order to perform the actual insertion.
 
 ```java-test-ignore
 public static Entity insertTweet(GraknTx tx, String tweet) {
     EntityType tweetEntityType = tx.getEntityType("tweet");
-    ResourceType tweetResouceType = tx.getResourceType("text");
+    AttributeType tweetResouceType = tx.getAttributeType("text");
 
     Entity tweetEntity = tweetEntityType.addEntity();
-    Resource tweetResource = tweetResouceType.putResource(tweet);
+    Attribute tweetAttribute = tweetResouceType.putAttribute(tweet);
 
-    return tweetEntity.resource(tweetResource);
+    return tweetEntity.resource(tweetAttribute);
   }
 ```
 
@@ -384,10 +384,10 @@ And the following method for inserting a user. This one is quite similar to the 
 ```java-test-ignore
 public static Entity insertUser(GraknTx tx, String user) {
   EntityType userEntityType = tx.getEntityType("user");
-  ResourceType userResourceType = tx.getResourceType("screen_name");
+  AttributeType userAttributeType = tx.getAttributeType("screen_name");
   Entity userEntity = userEntityType.addEntity();
-  Resource userResource = userResourceType.putResource(user);
-  return userEntity.resource(userResource);
+  Attribute userAttribute = userAttributeType.putAttribute(user);
+  return userEntity.resource(userAttribute);
 }
 ```
 
@@ -489,12 +489,12 @@ qb.match(
   Map<Concept, Long> result = ((Map<Concept, Long>) q.execute());
 
   // map Map<Concept, Long> into Stream<Map.Entry<String, Long>> before returning
-  ResourceType screenNameResourceType = tx.getResourceType("screen_name");
+  AttributeType screenNameAttributeType = tx.getAttributeType("screen_name");
 
   Stream<Map.Entry<String, Long>> mapped = result.entrySet().stream().map(entry -> {
     Concept key = entry.getKey();
     Long value = entry.getValue();
-    String screenName = (String) key.asEntity().resources(screenNameResourceType).iterator().next().getValue();
+    String screenName = (String) key.asEntity().resources(screenNameAttributeType).iterator().next().getValue();
     return new HashMap.SimpleImmutableEntry<>(screenName, value);
   });
 ```
@@ -515,12 +515,12 @@ public static Stream<Map.Entry<String, Long>> calculateTweetCountPerUser(GraknTx
   Map<Concept, Long> result = ((Map<Concept, Long>) q.execute());
 
   // map Map<Concept, Long> into Stream<Map.Entry<String, Long>> before returning
-  ResourceType screenNameResourceType = tx.getResourceType("screen_name");
+  AttributeType screenNameAttributeType = tx.getAttributeType("screen_name");
 
   Stream<Map.Entry<String, Long>> mapped = result.entrySet().stream().map(entry -> {
     Concept key = entry.getKey();
     Long value = entry.getValue();
-    String screenName = (String) key.asEntity().resources(screenNameResourceType).iterator().next().getValue();
+    String screenName = (String) key.asEntity().resources(screenNameAttributeType).iterator().next().getValue();
     return new HashMap.SimpleImmutableEntry<>(screenName, value);
   });
 

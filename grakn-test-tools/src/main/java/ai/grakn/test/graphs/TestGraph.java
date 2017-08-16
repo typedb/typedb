@@ -61,12 +61,12 @@ public abstract class TestGraph {
     }
 
     public static <T> void putResource(Thing thing, AttributeType<T> attributeType, T resource) {
-        Attribute attributeInstance = attributeType.putResource(resource);
+        Attribute attributeInstance = attributeType.putAttribute(resource);
         thing.resource(attributeInstance);
     }
 
     public static Thing getInstance(GraknTx graph, String id){
-        Set<Thing> things = graph.getResourcesByValue(id)
+        Set<Thing> things = graph.getAttributesByValue(id)
                 .stream().flatMap(Attribute::ownerInstances).collect(toSet());
         if (things.size() != 1) {
             throw new IllegalStateException("Multiple things with given resource value");

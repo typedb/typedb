@@ -74,12 +74,12 @@ public class AnalyticsTest {
     public void testInferredResourceRelation() throws InvalidGraphException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             Label resourceLabel = Label.of("degree");
-            AttributeType<Long> degree = graph.putResourceType(resourceLabel, AttributeType.DataType.LONG);
+            AttributeType<Long> degree = graph.putAttributeType(resourceLabel, AttributeType.DataType.LONG);
             EntityType thingy = graph.putEntityType("thingy");
             thingy.resource(degree);
 
             Entity thisThing = thingy.addEntity();
-            Attribute thisAttribute = degree.putResource(1L);
+            Attribute thisAttribute = degree.putAttribute(1L);
             thisThing.resource(thisAttribute);
             graph.commit();
         }
@@ -103,7 +103,7 @@ public class AnalyticsTest {
             Label resourceTypeId = Label.of("degree");
             EntityType thingy = graph.putEntityType("thingy");
 
-            graph.putResourceType(resourceTypeId, AttributeType.DataType.LONG);
+            graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
             Role degreeOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
             Role degreeValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
             RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))

@@ -63,8 +63,8 @@ public class RelationTypeTest extends GraphTestBase {
 
     @Test
     public void whenCallingInstancesOnImplicitRelationType_RelationEdgesAreReturned(){
-        AttributeType<String> attributeType = graknGraph.putResourceType("My Special Attribute Type", AttributeType.DataType.STRING);
-        Attribute<String> attribute = attributeType.putResource("Ad thing");
+        AttributeType<String> attributeType = graknGraph.putAttributeType("My Special Attribute Type", AttributeType.DataType.STRING);
+        Attribute<String> attribute = attributeType.putAttribute("Ad thing");
 
         EntityType entityType = graknGraph.putEntityType("My Special Entity Type").resource(attributeType);
         Entity entity = entityType.addEntity();
@@ -81,8 +81,8 @@ public class RelationTypeTest extends GraphTestBase {
 
     @Test
     public void whenSettingAnImplicitRelationTypeWithInstancesAbstract_Throw(){
-        AttributeType<String> attributeType = graknGraph.putResourceType("My Special Attribute Type", AttributeType.DataType.STRING);
-        Attribute<String> attribute = attributeType.putResource("Ad thing");
+        AttributeType<String> attributeType = graknGraph.putAttributeType("My Special Attribute Type", AttributeType.DataType.STRING);
+        Attribute<String> attribute = attributeType.putAttribute("Ad thing");
 
         EntityType entityType = graknGraph.putEntityType("My Special Entity Type").resource(attributeType);
         entityType.addEntity().resource(attribute);

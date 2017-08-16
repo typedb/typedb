@@ -85,10 +85,10 @@ public class TestOwlGraknBase {
         }
     }
 
-    AttributeType<String> owlIriResource(){ return graph.getResourceType(OwlModel.IRI.owlname());}
+    AttributeType<String> owlIriResource(){ return graph.getAttributeType(OwlModel.IRI.owlname());}
 
     <T> Entity getEntity(T id, AttributeType<T> rtype){
-        Attribute<T> iri = rtype.getResource(id);
+        Attribute<T> iri = rtype.getAttribute(id);
         Thing inst = iri != null? iri.ownerInstances().findFirst().orElse(null) : null;
         return inst != null? inst.asEntity() : null;
     }

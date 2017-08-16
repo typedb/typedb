@@ -108,8 +108,8 @@ public class JsonPrinterTest {
 
     @Test
     public void testJsonResource() {
-        AttributeType<String> attributeType = movieContext.graph().getResourceType("title");
-        Attribute<String> attribute = attributeType.getResource("The Muppets");
+        AttributeType<String> attributeType = movieContext.graph().getAttributeType("title");
+        Attribute<String> attribute = attributeType.getAttribute("The Muppets");
 
         assertJsonEquals(
                 Json.object("id", attribute.getId().getValue(), "isa", "title", "value", "The Muppets"),
@@ -119,7 +119,7 @@ public class JsonPrinterTest {
 
     @Test
     public void testJsonRule() {
-        Rule jsonRule = movieContext.graph().getResourceType("name").getResource("expectation-rule").owner().asRule();
+        Rule jsonRule = movieContext.graph().getAttributeType("name").getAttribute("expectation-rule").owner().asRule();
         assertJsonEquals(
                 Json.object("id", jsonRule.getId().getValue(), "isa", "a-rule-type", "when", jsonRule.getWhen().toString(), "then", jsonRule.getThen().toString()),
                 jsonRule
