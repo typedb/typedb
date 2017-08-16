@@ -157,7 +157,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
         maybeLabel.ifPresent(label -> {
             SchemaConcept schemaConcept = graph.getSchemaConcept(label);
 
-            if (schemaConcept == null || !schemaConcept.isRelationType()) {
+            if (schemaConcept == null || !schemaConcept.isRelationshipType()) {
                 throw GraqlQueryException.notARelationType(label);
             }
         });
@@ -180,7 +180,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Relationship relationship = executor.get(var).asRelation();
+        Relationship relationship = executor.get(var).asRelationship();
         relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relationship, relationPlayer));
     }
 

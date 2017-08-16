@@ -780,7 +780,7 @@ public class InsertQueryTest {
         Thing cluster = results.get(0).get("c").asThing();
         Thing godfather = results.get(0).get("g").asThing();
         Thing muppets = results.get(0).get("m").asThing();
-        Relationship relationship = results.get(0).get("r").asRelation();
+        Relationship relationship = results.get(0).get("r").asRelationship();
 
         Role clusterOfProduction = movieGraph.graph().getRole("cluster-of-production");
         Role productionWithCluster = movieGraph.graph().getRole("production-with-cluster");

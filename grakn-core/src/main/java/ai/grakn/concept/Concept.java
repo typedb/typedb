@@ -57,7 +57,7 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link SchemaConcept} if the {@link Concept} is a {@link SchemaConcept}
      */
     @CheckReturnValue
-    default SchemaConcept asOntologyConcept(){
+    default SchemaConcept asSchemaConcept(){
         throw GraphOperationException.invalidCasting(this, SchemaConcept.class);
     }
 
@@ -107,7 +107,7 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
-    default RelationshipType asRelationType(){
+    default RelationshipType asRelationshipType(){
         throw GraphOperationException.invalidCasting(this, RelationshipType.class);
     }
 
@@ -146,7 +146,7 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link Relationship}  if the {@link Concept} is a {@link Relationship}
      */
     @CheckReturnValue
-    default Relationship asRelation(){
+    default Relationship asRelationship(){
         throw GraphOperationException.invalidCasting(this, Relationship.class);
     }
 
@@ -176,7 +176,7 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the{@link Concept} concept is a {@link SchemaConcept}
      */
     @CheckReturnValue
-    default boolean isOntologyConcept(){
+    default boolean isSchemaConcept(){
         return false;
     }
 
@@ -226,7 +226,7 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
-    default boolean isRelationType(){
+    default boolean isRelationshipType(){
         return false;
     }
 
@@ -266,7 +266,7 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the {@link Concept} is a {@link Relationship}
      */
     @CheckReturnValue
-    default boolean isRelation(){
+    default boolean isRelationship(){
         return false;
     }
 

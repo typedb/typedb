@@ -130,13 +130,13 @@ public class ConceptPropertyTest {
     public void whenConceptIsASubClass_TheConceptCanBeConvertedToThatSubClass(Concept concept) {
         // These are all in one test only because they are trivial
 
-        if (concept.isOntologyConcept()) assertEquals(concept, concept.asOntologyConcept());
+        if (concept.isSchemaConcept()) assertEquals(concept, concept.asSchemaConcept());
 
         if (concept.isType()) assertEquals(concept, concept.asType());
 
         if (concept.isEntityType()) assertEquals(concept, concept.asEntityType());
 
-        if (concept.isRelationType()) assertEquals(concept, concept.asRelationType());
+        if (concept.isRelationshipType()) assertEquals(concept, concept.asRelationshipType());
 
         if (concept.isRole()) assertEquals(concept, concept.asRole());
 
@@ -148,7 +148,7 @@ public class ConceptPropertyTest {
 
         if (concept.isEntity()) assertEquals(concept, concept.asEntity());
 
-        if (concept.isRelation()) assertEquals(concept, concept.asRelation());
+        if (concept.isRelationship()) assertEquals(concept, concept.asRelationship());
 
         if (concept.isResource()) assertEquals(concept, concept.asResource());
 
@@ -165,10 +165,10 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotAnOntologyConcept_TheConceptCannotBeConvertedToAnOntologyConcept(Concept concept) {
-        assumeFalse(concept.isOntologyConcept());
+        assumeFalse(concept.isSchemaConcept());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asOntologyConcept();
+        concept.asSchemaConcept();
     }
 
     @Property
@@ -181,10 +181,10 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotARelationType_TheConceptCannotBeConvertedToARelationType(Concept concept) {
-        assumeFalse(concept.isRelationType());
+        assumeFalse(concept.isRelationshipType());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asRelationType();
+        concept.asRelationshipType();
     }
 
     @Property
@@ -229,10 +229,10 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotARelation_TheConceptCannotBeConvertedToARelation(Concept concept) {
-        assumeFalse(concept.isRelation());
+        assumeFalse(concept.isRelationship());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asRelation();
+        concept.asRelationship();
     }
 
     @Property
@@ -254,8 +254,8 @@ public class ConceptPropertyTest {
     private static void assumeDeletable(GraknGraph graph, Concept concept) {
         // Confirm this concept is allowed to be deleted
         // TODO: A better way to handle these assumptions?
-        if (concept.isOntologyConcept()) {
-            SchemaConcept schemaConcept = concept.asOntologyConcept();
+        if (concept.isSchemaConcept()) {
+            SchemaConcept schemaConcept = concept.asSchemaConcept();
             assumeThat(schemaConcept.subs().collect(toSet()), contains(schemaConcept));
             if(schemaConcept.isType()) {
                 Type type = schemaConcept.asType();
@@ -271,8 +271,8 @@ public class ConceptPropertyTest {
                 Stream<Relationship> allRelations = graph.admin().getMetaRelationType().instances();
                 Set<Role> allRolesPlayed = allRelations.flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
                 assumeThat(allRolesPlayed, not(hasItem(role)));
-            } else if (schemaConcept.isRelationType()) {
-                assumeThat(schemaConcept.asRelationType().relates().collect(toSet()), empty());
+            } else if (schemaConcept.isRelationshipType()) {
+                assumeThat(schemaConcept.asRelationshipType().relates().collect(toSet()), empty());
             }
         }
     }

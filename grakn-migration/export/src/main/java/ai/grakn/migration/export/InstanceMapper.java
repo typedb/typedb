@@ -52,8 +52,8 @@ public class InstanceMapper {
             return map(thing.asEntity());
         } else if(thing.isResource()){
             return map(thing.asResource());
-        } else if(thing.isRelation()){
-            return map(thing.asRelation());
+        } else if(thing.isRelationship()){
+            return map(thing.asRelationship());
         } else if(thing.isRule()){
             return map(thing.asRule());
         } else {

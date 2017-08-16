@@ -65,8 +65,8 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             // Display values for resources and ids for everything else
             if (concept.isResource()) {
                 sb.append(colorKeyword("val ")).append(StringUtil.valueToString(concept.asResource().getValue()));
-            } else if (concept.isOntologyConcept()) {
-                SchemaConcept ontoConcept = concept.asOntologyConcept();
+            } else if (concept.isSchemaConcept()) {
+                SchemaConcept ontoConcept = concept.asSchemaConcept();
                 sb.append(colorKeyword("label ")).append(colorType(ontoConcept));
 
                 SchemaConcept superConcept = ontoConcept.sup();
@@ -78,8 +78,8 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                 sb.append(colorKeyword("id ")).append(idToString(concept.getId()));
             }
 
-            if (concept.isRelation()) {
-                String relationString = concept.asRelation().allRolePlayers().entrySet().stream().flatMap(entry -> {
+            if (concept.isRelationship()) {
+                String relationString = concept.asRelationship().allRolePlayers().entrySet().stream().flatMap(entry -> {
                     Role role = entry.getKey();
                     Set<Thing> things = entry.getValue();
 

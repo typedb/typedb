@@ -89,14 +89,14 @@ public abstract class SubProperty extends AbstractVarProperty implements NamedPr
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        SchemaConcept superConcept = executor.get(superType().getVarName()).asOntologyConcept();
+        SchemaConcept superConcept = executor.get(superType().getVarName()).asSchemaConcept();
 
         Optional<ConceptBuilder> builder = executor.tryBuilder(var);
 
         if (builder.isPresent()) {
             builder.get().sub(superConcept);
         } else {
-            ConceptBuilder.setSuper(executor.get(var).asOntologyConcept(), superConcept);
+            ConceptBuilder.setSuper(executor.get(var).asSchemaConcept(), superConcept);
         }
     }
 

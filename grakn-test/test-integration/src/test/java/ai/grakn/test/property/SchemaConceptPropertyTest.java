@@ -228,7 +228,7 @@ public class SchemaConceptPropertyTest {
 
     private boolean sameOntologyConcept(SchemaConcept concept1, SchemaConcept concept2) {
         return concept1.isEntityType() && concept2.isEntityType() ||
-                concept1.isRelationType() && concept2.isRelationType() ||
+                concept1.isRelationshipType() && concept2.isRelationshipType() ||
                 concept1.isRole() && concept2.isRole() ||
                 concept1.isResourceType() && concept2.isResourceType() ||
                 concept1.isRuleType() && concept2.isRuleType();
@@ -237,8 +237,8 @@ public class SchemaConceptPropertyTest {
     private void setDirectSuper(SchemaConcept subConcept, SchemaConcept superConcept) {
         if (subConcept.isEntityType()) {
             subConcept.asEntityType().sup(superConcept.asEntityType());
-        } else if (subConcept.isRelationType()) {
-            subConcept.asRelationType().sup(superConcept.asRelationType());
+        } else if (subConcept.isRelationshipType()) {
+            subConcept.asRelationshipType().sup(superConcept.asRelationshipType());
         } else if (subConcept.isRole()) {
             subConcept.asRole().sup(superConcept.asRole());
         } else if (subConcept.isResourceType()) {
@@ -253,8 +253,8 @@ public class SchemaConceptPropertyTest {
     private void addDirectSub(SchemaConcept superConcept, SchemaConcept subConcept) {
         if (superConcept.isEntityType()) {
             superConcept.asEntityType().sub(subConcept.asEntityType());
-        } else if (superConcept.isRelationType()) {
-            superConcept.asRelationType().sub(subConcept.asRelationType());
+        } else if (superConcept.isRelationshipType()) {
+            superConcept.asRelationshipType().sub(subConcept.asRelationshipType());
         } else if (superConcept.isRole()) {
             superConcept.asRole().sub(subConcept.asRole());
         } else if (superConcept.isResourceType()) {

@@ -42,9 +42,9 @@ class JsonPrinter implements Printer<Json> {
     public Json graqlString(boolean inner, Concept concept) {
         Json json = Json.object("id", concept.getId().getValue());
 
-        if (concept.isOntologyConcept()) {
-            json.set("name", concept.asOntologyConcept().getLabel().getValue());
-            SchemaConcept superConcept = concept.asOntologyConcept().sup();
+        if (concept.isSchemaConcept()) {
+            json.set("name", concept.asSchemaConcept().getLabel().getValue());
+            SchemaConcept superConcept = concept.asSchemaConcept().sup();
             if (superConcept != null) json.set("sub", superConcept.getLabel().getValue());
         } else if (concept.isThing()) {
             json.set("isa", concept.asThing().type().getLabel().getValue());

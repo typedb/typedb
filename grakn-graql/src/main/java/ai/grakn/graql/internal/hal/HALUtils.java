@@ -83,7 +83,7 @@ public class HALUtils {
     static Schema.BaseType getBaseType(Thing thing) {
         if (thing.isEntity()) {
             return Schema.BaseType.ENTITY;
-        } else if (thing.isRelation()) {
+        } else if (thing.isRelationship()) {
             return Schema.BaseType.RELATION;
         } else if (thing.isResource()) {
             return Schema.BaseType.RESOURCE;
@@ -97,7 +97,7 @@ public class HALUtils {
     static Schema.BaseType getBaseType(SchemaConcept schemaConcept) {
         if (schemaConcept.isEntityType()) {
             return Schema.BaseType.ENTITY_TYPE;
-        } else if (schemaConcept.isRelationType()) {
+        } else if (schemaConcept.isRelationshipType()) {
             return Schema.BaseType.RELATION_TYPE;
         } else if (schemaConcept.isResourceType()) {
             return Schema.BaseType.RESOURCE_TYPE;
@@ -121,7 +121,7 @@ public class HALUtils {
             resource.withProperty(TYPE_PROPERTY, thing.type().getLabel().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(thing).name());
         } else {
-            resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asOntologyConcept()).name());
+            resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asSchemaConcept()).name());
         }
 
         if (concept.isResource()) {

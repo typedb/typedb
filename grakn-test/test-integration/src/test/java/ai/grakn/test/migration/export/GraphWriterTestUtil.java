@@ -57,8 +57,8 @@ public abstract class GraphWriterTestUtil {
     public static void assertInstanceCopied(Thing thing, GraknGraph two){
         if(thing.isEntity()){
             assertEntityCopied(thing.asEntity(), two);
-        } else if(thing.isRelation()){
-            assertRelationCopied(thing.asRelation(), two);
+        } else if(thing.isRelationship()){
+            assertRelationCopied(thing.asRelationship(), two);
         } else if(thing.isRule()){
             assertRuleCopied(thing.asRule(), two);
         } else if(thing.isResource()){

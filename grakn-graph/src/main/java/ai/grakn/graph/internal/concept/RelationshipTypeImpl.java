@@ -179,7 +179,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
                             outE(Schema.EdgeLabel.RESOURCE.getLabel()).
                             has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), getLabelId().getValue()).
                             toStream().
-                            map(edge -> vertex().graph().factory().buildConcept(edge).asRelation());
+                            map(edge -> vertex().graph().factory().buildConcept(edge).asRelationship());
                 });
     }
 }

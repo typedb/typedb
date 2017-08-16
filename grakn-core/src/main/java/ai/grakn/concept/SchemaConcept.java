@@ -113,14 +113,14 @@ public interface SchemaConcept extends Concept {
     @Deprecated
     @CheckReturnValue
     @Override
-    default SchemaConcept asOntologyConcept(){
+    default SchemaConcept asSchemaConcept(){
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isOntologyConcept(){
+    default boolean isSchemaConcept(){
         return true;
     }
 }

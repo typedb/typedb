@@ -57,9 +57,9 @@ class HALExploreType extends HALExploreConcept{
         // Subtypes
         attachSubTypes(halResource, type);
 
-        if (type.isRelationType()) {
+        if (type.isRelationshipType()) {
             // Role types that make up this RelationshipType
-            relationTypeRoles(halResource, type.asRelationType());
+            relationTypeRoles(halResource, type.asRelationshipType());
         } else if (type.isRole()) {
             // Types that can play this role && Relationship types this role can take part in.
             roleTypeOntology(halResource, type.asRole());

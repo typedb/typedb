@@ -90,7 +90,7 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         Role role = executor.get(this.role().getVarName()).asRole();
-        executor.get(var).asRelationType().relates(role);
+        executor.get(var).asRelationshipType().relates(role);
     }
 
     @Override
@@ -101,7 +101,7 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     @Override
     public void delete(GraknGraph graph, Concept concept) {
         Label roleLabel = role().getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
-        concept.asRelationType().deleteRelates(graph.getSchemaConcept(roleLabel));
+        concept.asRelationshipType().deleteRelates(graph.getSchemaConcept(roleLabel));
     }
 
     @Override

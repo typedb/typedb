@@ -978,7 +978,7 @@ public class MatchQueryTest {
     public void whenQueryingForAnImplicitRelationById_TheRelationIsReturned() {
         MatchQuery query = qb.match(var("x").isa(label(Schema.ImplicitType.HAS.getLabel("name"))));
 
-        Relationship relationship = query.get("x").findAny().get().asRelation();
+        Relationship relationship = query.get("x").findAny().get().asRelationship();
 
         MatchQuery queryById = qb.match(var("x").id(relationship.getId()));
 

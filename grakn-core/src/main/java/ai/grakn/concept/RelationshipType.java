@@ -197,14 +197,14 @@ public interface RelationshipType extends Type {
     @Deprecated
     @CheckReturnValue
     @Override
-    default RelationshipType asRelationType(){
+    default RelationshipType asRelationshipType(){
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isRelationType(){
+    default boolean isRelationshipType(){
         return true;
     }
 }

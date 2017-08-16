@@ -95,14 +95,14 @@ public interface Relationship extends Thing {
     @Deprecated
     @CheckReturnValue
     @Override
-    default Relationship asRelation(){
+    default Relationship asRelationship(){
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isRelation(){
+    default boolean isRelationship(){
         return true;
     }
 }

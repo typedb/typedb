@@ -190,7 +190,7 @@ public class ConceptBuilder {
             // The super can be changed on an existing concept
             if (has(SUPER_CONCEPT)) {
                 SchemaConcept superConcept = use(SUPER_CONCEPT);
-                setSuper(concept.asOntologyConcept(), superConcept);
+                setSuper(concept.asSchemaConcept(), superConcept);
             }
 
             validate(concept);
@@ -332,8 +332,8 @@ public class ConceptBuilder {
 
         if (type.isEntityType()) {
             return type.asEntityType().addEntity();
-        } else if (type.isRelationType()) {
-            return type.asRelationType().addRelationship();
+        } else if (type.isRelationshipType()) {
+            return type.asRelationshipType().addRelationship();
         } else if (type.isResourceType()) {
             return type.asResourceType().putResource(use(VALUE));
         } else if (type.isRuleType()) {
@@ -353,7 +353,7 @@ public class ConceptBuilder {
 
         if (superConcept.isEntityType()) {
             concept = executor.graph().putEntityType(label);
-        } else if (superConcept.isRelationType()) {
+        } else if (superConcept.isRelationshipType()) {
             concept = executor.graph().putRelationshipType(label);
         } else if (superConcept.isRole()) {
             concept = executor.graph().putRole(label);
@@ -380,8 +380,8 @@ public class ConceptBuilder {
     public static void setSuper(SchemaConcept subConcept, SchemaConcept superConcept) {
         if (superConcept.isEntityType()) {
             subConcept.asEntityType().sup(superConcept.asEntityType());
-        } else if (superConcept.isRelationType()) {
-            subConcept.asRelationType().sup(superConcept.asRelationType());
+        } else if (superConcept.isRelationshipType()) {
+            subConcept.asRelationshipType().sup(superConcept.asRelationshipType());
         } else if (superConcept.isRole()) {
             subConcept.asRole().sup(superConcept.asRole());
         } else if (superConcept.isResourceType()) {

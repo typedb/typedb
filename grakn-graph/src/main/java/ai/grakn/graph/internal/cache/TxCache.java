@@ -149,10 +149,10 @@ public class TxCache {
             modifiedEntities.add(concept.asEntity());
         } else if (concept.isRole()) {
             modifiedRoles.add(concept.asRole());
-        } else if (concept.isRelationType()) {
-            modifiedRelationshipTypes.add(concept.asRelationType());
-        } else if (concept.isRelation()){
-            Relationship relationship = concept.asRelation();
+        } else if (concept.isRelationshipType()) {
+            modifiedRelationshipTypes.add(concept.asRelationshipType());
+        } else if (concept.isRelationship()){
+            Relationship relationship = concept.asRelationship();
             modifiedRelationships.add(relationship);
             //Caching of relations in memory so they can be retrieved without needing a commit
             relationIndexCache.put(RelationshipReified.generateNewHash(relationship.type(), relationship.allRolePlayers()), relationship);
@@ -220,7 +220,7 @@ public class TxCache {
         modifiedResources.remove(concept);
 
         conceptCache.remove(concept.getId());
-        if (concept.isOntologyConcept()) {
+        if (concept.isSchemaConcept()) {
             Label label = ((SchemaConceptImpl) concept).getLabel();
             ontologyConceptCache.remove(label);
             labelCache.remove(label);
@@ -243,7 +243,7 @@ public class TxCache {
      */
     public void cacheConcept(Concept concept){
         conceptCache.put(concept.getId(), concept);
-        if(concept.isOntologyConcept()){
+        if(concept.isSchemaConcept()){
             SchemaConceptImpl ontologyElement = (SchemaConceptImpl) concept;
             ontologyConceptCache.put(ontologyElement.getLabel(), ontologyElement);
             labelCache.put(ontologyElement.getLabel(), ontologyElement.getLabelId());

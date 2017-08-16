@@ -164,8 +164,8 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
             SchemaConcept schemaConcept = graph.getSchemaConcept(relationLabel.label());
 
-            if (schemaConcept != null && schemaConcept.isRelationType()) {
-                RelationshipType relationshipType = schemaConcept.asRelationType();
+            if (schemaConcept != null && schemaConcept.isRelationshipType()) {
+                RelationshipType relationshipType = schemaConcept.asRelationshipType();
 
                 fragmentSets.remove(shortcut);
                 fragmentSets.add(shortcut.addRelationTypeLabel(relationshipType));

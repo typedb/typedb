@@ -220,7 +220,7 @@ public class RelationAtom extends IsaAtom {
     public Set<String> validateOntologically() {
         Set<String> errors = new HashSet<>();
         SchemaConcept type = getOntologyConcept();
-        if (type != null && !type.isRelationType()){
+        if (type != null && !type.isRelationshipType()){
             errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage(type.getLabel()));
             return errors;
         }
@@ -232,7 +232,7 @@ public class RelationAtom extends IsaAtom {
             Role role = e.getKey();
             if (!Schema.MetaSchema.isMetaLabel(role.getLabel())) {
                 //check whether this role can be played in this relation
-                if (type != null && type.asRelationType().relates().noneMatch(r -> r.equals(role))) {
+                if (type != null && type.asRelationshipType().relates().noneMatch(r -> r.equals(role))) {
                     errors.add(ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED.getMessage(role.getLabel(), type.getLabel()));
                 }
 
@@ -389,7 +389,7 @@ public class RelationAtom extends IsaAtom {
      * @return list of relation types this atom can have ordered by the number of compatible role types
      */
     public List<RelationshipType> inferPossibleRelationTypes(Answer sub) {
-        if (getPredicate() != null) return Collections.singletonList(getOntologyConcept().asRelationType());
+        if (getPredicate() != null) return Collections.singletonList(getOntologyConcept().asRelationshipType());
 
         //look at available role types
         Multimap<RelationshipType, Role> compatibleTypesFromRoles = getCompatibleRelationTypesWithRoles(getExplicitRoleTypes(), new RoleTypeConverter());
@@ -684,7 +684,7 @@ public class RelationAtom extends IsaAtom {
                             Set<Role> typeRoles = isMetaType? childRoles : parent.asType().plays().collect(toSet());
 
                             //incompatible type
-                            if (Sets.intersection(getOntologyConcept().asRelationType().relates().collect(toSet()), typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
+                            if (Sets.intersection(getOntologyConcept().asRelationshipType().relates().collect(toSet()), typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
                             else {
                                 compatibleChildRoles = compatibleChildRoles.stream()
                                         .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || typeRoles.contains(rc))

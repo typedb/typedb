@@ -106,8 +106,8 @@ public class GraqlTraversalTest {
 
         Label marriageLabel = Label.of("marriage");
         RelationshipType marriage = mock(RelationshipType.class);
-        when(marriage.isRelationType()).thenReturn(true);
-        when(marriage.asRelationType()).thenReturn(marriage);
+        when(marriage.isRelationshipType()).thenReturn(true);
+        when(marriage.asRelationshipType()).thenReturn(marriage);
         when(marriage.subs()).thenAnswer(inv -> Stream.of(marriage));
         when(marriage.getLabel()).thenReturn(marriageLabel);
 

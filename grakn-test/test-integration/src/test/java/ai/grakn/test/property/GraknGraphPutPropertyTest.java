@@ -238,7 +238,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRelationTypeWithAnExistingNonRelationTypeLabel_Throw(
             @Open GraknGraph graph, @FromGraph Type type) {
-        assumeFalse(type.isRelationType());
+        assumeFalse(type.isRelationshipType());
 
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){

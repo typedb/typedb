@@ -259,8 +259,8 @@ public class GraknGraphPropertyTest {
         graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
-            assertTrue(concept.isOntologyConcept());
-            assertTrue(isMetaLabel(concept.asOntologyConcept().getLabel()));
+            assertTrue(concept.isSchemaConcept());
+            assertTrue(isMetaLabel(concept.asSchemaConcept().getLabel()));
         });
         graph.close();
     }

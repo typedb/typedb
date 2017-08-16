@@ -42,8 +42,8 @@ public class OntologyConceptMapper {
      */
     public static VarPattern map(SchemaConcept schemaConcept) {
         VarPattern mapped = formatBase(schemaConcept);
-        if (schemaConcept.isRelationType()) {
-            mapped = map(mapped, schemaConcept.asRelationType());
+        if (schemaConcept.isRelationshipType()) {
+            mapped = map(mapped, schemaConcept.asRelationshipType());
         } else if (schemaConcept.isResourceType()) {
             mapped = map(mapped, schemaConcept.asResourceType());
         }

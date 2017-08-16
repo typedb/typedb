@@ -119,8 +119,8 @@ public class HALConceptData {
         }
 
         //If a match query contains an assertion we always embed the role players
-        if (concept.isRelation() && separationDegree == 0) {
-            generateRelationEmbedded(halResource, concept.asRelation(), 1);
+        if (concept.isRelationship() && separationDegree == 0) {
+            generateRelationEmbedded(halResource, concept.asRelationship(), 1);
         }
 
         if (concept.isRule()) {
@@ -134,10 +134,10 @@ public class HALConceptData {
             generateEntityEmbedded(halResource, concept.asEntity(), separationDegree);
         }
 
-        if (concept.isRelation()) {
-            generateRelationEmbedded(halResource, concept.asRelation(), separationDegree);
+        if (concept.isRelationship()) {
+            generateRelationEmbedded(halResource, concept.asRelationship(), separationDegree);
             //Only when double clicking on a specific relation we want to fetch also the other relations the current one plays a role into.
-            embedRelationsPlays(halResource, concept.asRelation());
+            embedRelationsPlays(halResource, concept.asRelationship());
         }
         if (concept.isResource()) {
             generateOwnerInstances(halResource, concept.asResource(), separationDegree);
@@ -231,7 +231,7 @@ public class HALConceptData {
                 if (instance != null) {
                     Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
                             .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-                    if (!instance.isRelation()) {
+                    if (!instance.isRelationship()) {
                         handleConcept(roleResource, instance, separationDegree - 1);
                     } else {
                         // If instance is a relation we just add state properties to HAL representation
@@ -285,7 +285,7 @@ public class HALConceptData {
         }
         // We only limit the number of instances and not subtypes.
         // TODO: This `asOntologyElement` is a hack because `thing.subTypes()` will contain `Role`, which is not `Type`
-        type.asOntologyConcept().subs().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
+        type.asSchemaConcept().subs().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
             Representation subResource = factory.newRepresentation(resourceLinkPrefix + sub.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             handleConcept(subResource, sub, separationDegree - 1);
