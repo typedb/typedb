@@ -120,7 +120,7 @@ for (Concept x : qb.<MatchQuery>parse("match $x isa person;").get("x")) {
     System.out.println(x);
 }
 
-if (qb.<AggregateQuery<Boolean>parse("match has name 'Bob' isa person; aggregate ask;").execute()) {
+if (qb.<AggregateQuery<Boolean>>parse("match has name 'Bob' isa person; aggregate ask;").execute()) {
   System.out.println("There is someone called Bob!");
 }
 
