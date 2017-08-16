@@ -46,7 +46,7 @@
         <!-- Janus DB -->
         <dependency>
             <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-cassandra</artifactId>
+            <artifactId>janusgraph-cql</artifactId>
             <version>${janus.version}</version>
             <exclusions>
                 <exclusion>
