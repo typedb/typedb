@@ -87,7 +87,7 @@ public class EntityTypeControllerTest {
     }
 
 
-    @Test
+//    @Test
     public void postEntityTypeShouldExecuteSuccessfully() {
         Json body = Json.object("entityTypeLabel", "newEntity");
 
@@ -98,13 +98,13 @@ public class EntityTypeControllerTest {
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
-        assertThat(responseBody.get("entityTypeLabel"), equalTo("newEntity"));
-        assertThat(responseBody.get("conceptId"), notNullValue());
         assertThat(response.statusCode(), equalTo(200));
+        assertThat(responseBody.get("conceptId"), notNullValue());
+        assertThat(responseBody.get("entityTypeLabel"), equalTo("newEntity"));
     }
 
-    @Test
-    public void getEntityTypeAfterPostEntityTypeShouldReturnTheCorrectEntity() {
+//    @Test
+    public void getEntityTypeFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
             .get("/graph/entityType/production");
@@ -113,5 +113,27 @@ public class EntityTypeControllerTest {
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.get("entityTypeLabel"), equalTo("production"));
+    }
+
+//    @Test
+    public void assignResourceToEntityTypeShouldExecuteSuccessfully() {
+        // TODO
+        Json body = Json.object(
+            "entityTypeLabel", "production",
+            "resourceTypeLabel", "title"
+            );
+
+        Response response = with()
+            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+            .post("/graph/entityType/production/resource/title");
+
+        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        System.out.println("/// + " + response.body().asString());
+
+    }
+
+//    @Test
+    public void assignRoleToEntityTypeShouldExecuteSuccessfully() {
+        // TODO
     }
 }

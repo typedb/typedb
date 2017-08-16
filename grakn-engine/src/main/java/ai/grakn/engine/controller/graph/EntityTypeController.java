@@ -130,10 +130,11 @@ public class EntityTypeController {
                     "conceptId", entityType1.getId().getValue(),
                     "entityTypeLabel", entityType1.getLabel().getValue()
                 );
+                LOG.info("assignResourceToEntityType - resourceType " + resourceTypeLabel  + " assigned to entityType " + entityTypeLabel + ". request processed.");
                 response.status(200);
                 return responseBody;
             } else {
-                LOG.info("assignResourceToEntityType - either entityType or resourceType is not found. request processed.");
+                LOG.info("assignResourceToEntityType - either entityType or resourceType not found. request processed.");
                 response.status(400);
                 return Json.nil();
             }
@@ -145,10 +146,11 @@ public class EntityTypeController {
     }
 
     private Json assignRoleToEntityType(Request request, Response response) {
+        LOG.info("assignResourceToEntityType - request received.");
         String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
         String roleLabel = mandatoryPathParameter(request, "roleLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-
+        LOG.info("assignResourceToEntityType - attempting to assign roleLabel " + roleLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
         try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
             Optional<EntityType> entityTypeOptional = Optional.ofNullable(graph.getEntityType(entityTypeLabel));
             Optional<Role> roleOptional = Optional.ofNullable(graph.getRole(roleLabel));
@@ -166,6 +168,7 @@ public class EntityTypeController {
                 response.status(200);
                 return responseBody;
             } else {
+                LOG.info("assignResourceToEntityType - either entityType or role not found. request processed.");
                 response.status(400);
                 return Json.nil();
             }
