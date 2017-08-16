@@ -89,8 +89,8 @@ public class InstanceMapper {
     }
 
     /**
-     * Map a Resource to a var IF it is not attached in a has relation to another instance
-     * @param resource resource to be mapped
+     * Map a {@link Resource} to a var IF it is not attached in a has relation to another instance
+     * @param resource {@link Resource} to be mapped
      * @return var patterns representing the given instance
      */
     private static VarPattern map(Resource resource){
@@ -156,9 +156,9 @@ public class InstanceMapper {
     }
 
     /**
-     * Check if the given resource conforms to the has syntax and structural requirements
-     * @param resource resource to check
-     * @return true if the resource is target of has relation
+     * Check if the given {@link Resource} conforms to the has syntax and structural requirements
+     * @param resource {@link Resource} to check
+     * @return true if the {@link Resource} is target of has relation
      */
     private static boolean isHasResourceResource(Resource resource){
         ResourceType resourceType = resource.type();

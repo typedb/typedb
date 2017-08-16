@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Represent a literal resource in the graph.
+ *     Represent a literal {@link Resource} in the graph.
  * </p>
  *
  * <p>
@@ -42,50 +42,50 @@ import java.util.stream.Stream;
 public interface Resource<D> extends Thing {
     //------------------------------------- Accessors ----------------------------------
     /**
-     * Retrieves the value of the Resource.
+     * Retrieves the value of the {@link Resource}.
      *
-     * @return The Resource itself
+     * @return The value itself
      */
     @CheckReturnValue
     D getValue();
 
     /**
-     * Retrieves the type of the Resource, that is, the ResourceType of which this resource is an Thing.
+     * Retrieves the type of the {@link Resource}, that is, the {@link ResourceType} of which this resource is an Thing.
      *
-     * @return The ResourceType of which this resource is an Thing.
+     * @return The {@link ResourceType of which this resource is an Thing.
      */
     @Override
     ResourceType<D> type();
 
     /**
-     * Retrieves the data type of this Resource's ResourceType.
+     * Retrieves the data type of this {@link Resource}'s {@link ResourceType}.
      *
-     * @return The data type of this Resource's type.
+     * @return The data type of this {@link Resource}'s type.
      */
     @CheckReturnValue
     ResourceType.DataType<D> dataType();
 
     /**
-     * Retrieves the set of all Instances that possess this Resource.
+     * Retrieves the set of all Instances that possess this {@link Resource}.
      *
-     * @return The list of all Instances that possess this Resource.
+     * @return The list of all Instances that possess this {@link Resource}.
      */
     @CheckReturnValue
     Stream<Thing> ownerInstances();
 
     /**
-     * If the Resource is unique, this method retrieves the Thing that possesses it.
+     * If the {@link Resource} is unique, this method retrieves the Thing that possesses it.
      *
-     * @return The Thing which is connected to a unique Resource.
+     * @return The Thing which is connected to a unique {@link Resource}.
      */
     @CheckReturnValue
     @Nullable
     Thing owner();
 
     /**
-     * Creates a relation from this instance to the provided resource.
+     * Creates a relation from this instance to the provided {@link Resource}.
      *
-     * @param resource The resource to which a relationship is created
+     * @param resource The {@link Resource} to which a relationship is created
      * @return The instance itself
      */
     @Override

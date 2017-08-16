@@ -56,7 +56,7 @@ public class ResourceImpl<D> extends ThingImpl<Resource<D>, ResourceType<D>> imp
 
     /**
      *
-     * @return The data type of this Resource's type.
+     * @return The data type of this {@link Resource}'s {@link ResourceType}.
      */
     @Override
     public ResourceType.DataType<D> dataType() {

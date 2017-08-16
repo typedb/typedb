@@ -70,7 +70,7 @@ public class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> 
 
     /**
      * @param regex The regular expression which instances of this resource must conform to.
-     * @return The Resource Type itself.
+     * @return The {@link ResourceType} itself.
      */
     @Override
     public ResourceType<D> setRegex(String regex) {

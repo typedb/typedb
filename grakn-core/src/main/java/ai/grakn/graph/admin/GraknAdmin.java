@@ -101,7 +101,7 @@ public interface GraknAdmin {
     RelationType getMetaRelationType();
 
     /**
-     * Get the root of all the Role Types.
+     * Get the root of all the {@link Role}.
      *
      * @return The meta role type -> role-type.
      */
@@ -109,7 +109,7 @@ public interface GraknAdmin {
     Role getMetaRole();
 
     /**
-     * Get the root of all the Resource Types.
+     * Get the root of all the {@link ResourceType}.
      *
      * @return The meta resource type -> resource-type.
      */

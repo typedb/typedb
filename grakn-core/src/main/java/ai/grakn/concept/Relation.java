@@ -43,9 +43,9 @@ import java.util.stream.Stream;
 public interface Relation extends Thing {
     //------------------------------------- Modifiers ----------------------------------
     /**
-     * Creates a relation from this instance to the provided resource.
+     * Creates a relation from this instance to the provided {@link Resource}.
      *
-     * @param resource The resource to which a relationship is created
+     * @param resource The {@link Resource} to which a relationship is created
      * @return The instance itself
      */
     @Override

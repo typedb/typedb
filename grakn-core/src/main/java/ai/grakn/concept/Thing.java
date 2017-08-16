@@ -72,18 +72,18 @@ public interface Thing extends Concept{
     Stream<Role> plays();
 
     /**
-     * Creates a relation from this instance to the provided resource.
+     * Creates a relation from this instance to the provided {@link Resource}.
      *
-     * @param resource The resource to which a relationship is created
+     * @param resource The {@link Resource} to which a relationship is created
      * @return The instance itself
      */
     Thing resource(Resource resource);
 
     /**
-     * Retrieves a collection of Resources attached to this Instances
+     * Retrieves a collection of {@link Resource} attached to this Instances
      * @see Resource
      *
-     * @param resourceTypes Resource Types of the resources attached to this entity
+     * @param resourceTypes {@link ResourceType}s of the resources attached to this entity
      * @return A collection of resources attached to this Thing.
      */
     @CheckReturnValue

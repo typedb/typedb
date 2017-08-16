@@ -233,9 +233,9 @@ public interface GraknGraph extends AutoCloseable{
     /**
      * Get all Resources holding the value provided, if they exist.
      *
-     * @param value A value which a Resource in the graph may be holding.
+     * @param value A value which a {@link Resource} in the graph may be holding.
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The Resources holding the provided value or an empty collection if no such Resource exists.
+     * @return The {@link Resource}s holding the provided value or an empty collection if no such {@link Resource} exists.
      *
      * @throws GraphOperationException if the graph is closed
      */
@@ -267,11 +267,11 @@ public interface GraknGraph extends AutoCloseable{
     RelationType getRelationType(String label);
 
     /**
-     * Get the Resource Type with the label provided, if it exists.
+     * Get the {@link ResourceType} with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the Resource Type in the graph.
+     * @param label A unique label which identifies the {@link ResourceType} in the graph.
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The Resource Type with the provided label or null if no such Resource Type exists.
+     * @return The {@link ResourceType} with the provided label or null if no such {@link ResourceType} exists.
      *
      * @throws GraphOperationException if the graph is closed
      */

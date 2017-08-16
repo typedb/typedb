@@ -224,21 +224,11 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return stream.map(edge -> vertex().graph().factory().buildRelation(edge));
     }
 
-    /**
-     *
-     * @return A set of all the Role Types which this instance plays.
-     */
     @Override
     public Stream<Role> plays() {
         return castingsInstance().map(Casting::getRoleType);
     }
 
-
-    /**
-     * Creates a relation from this instance to the provided resource.
-     * @param resource The resource to creating a relationship to
-     * @return The instance itself
-     */
     @Override
     public T resource(Resource resource){
         Schema.ImplicitType has = Schema.ImplicitType.HAS;

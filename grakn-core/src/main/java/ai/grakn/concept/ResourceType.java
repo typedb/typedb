@@ -112,10 +112,10 @@ public interface ResourceType<D> extends Type {
     ResourceType<D> setRegex(String regex);
 
     /**
-     * Set the value for the Resource, unique to its type.
+     * Set the value for the {@link Resource}, unique to its type.
      *
-     * @param value A value for the Resource which is unique to its type
-     * @return new or existing Resource of this type with the provided value.
+     * @param value A value for the {@link Resource} which is unique to its type
+     * @return new or existing {@link Resource} of this type with the provided value.
      */
     Resource<D> putResource(D value);
 
@@ -166,11 +166,11 @@ public interface ResourceType<D> extends Type {
     ResourceType<D> sup();
 
     /**
-     * Get the Resource with the value provided, and its type, or return NULL
+     * Get the {@link Resource} with the value provided, and its type, or return NULL
      * @see Resource
      *
-     * @param value A value which a Resource in the graph may be holding
-     * @return The Resource with the provided value and type or null if no such Resource exists.
+     * @param value A value which a {@link Resource} in the graph may be holding
+     * @return The {@link Resource} with the provided value and type or null if no such {@link Resource} exists.
      */
     @CheckReturnValue
     @Nullable
@@ -185,17 +185,17 @@ public interface ResourceType<D> extends Type {
     Stream<ResourceType<D>> subs();
 
     /**
-     * Returns a collection of all Resource Instances of this ResourceType.
+     * Returns a collection of all {@link Resource} of this {@link ResourceType}.
      *
-     * @return The resource instances of this ResourceType
+     * @return The resource instances of this {@link ResourceType}
      */
     @Override
     Stream<Resource<D>> instances();
 
     /**
-     * Get the data type to which instances of the ResourceType must conform.
+     * Get the data type to which instances of the {@link ResourceType} must conform.
      *
-     * @return The data type to which instances of this resource must conform.
+     * @return The data type to which instances of this {@link Resource}  must conform.
      */
     @CheckReturnValue
     DataType<D> getDataType();

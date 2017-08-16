@@ -45,9 +45,9 @@ public interface Entity extends Thing {
     EntityType type();
 
     /**
-     * Creates a relation from this instance to the provided resource.
+     * Creates a relation from this instance to the provided {@link Resource}.
      *
-     * @param resource The resource to which a relationship is created
+     * @param resource The {@link Resource} to which a relationship is created
      * @return The instance itself
      */
     @Override

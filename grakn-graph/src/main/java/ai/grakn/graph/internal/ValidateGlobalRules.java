@@ -80,14 +80,14 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_T
  *        assigned to a {@link RelationType} via {@link RelationType#relates(Role)}.
  *     3. Minimum Role Validation which ensures that every {@link RelationType} has at least 2 {@link Role}
  *        assigned to it via {@link RelationType#relates(Role)}.
- *     4. Relation Structure Validation which ensures that each {@link ai.grakn.concept.Relation} has the
+ *     4. Relation Structure Validation which ensures that each {@link Relation} has the
  *        correct structure.
  *     5. Abstract Type Validation which ensures that each abstract {@link Type} has no {@link Thing}.
  *     6. Relation Type Hierarchy Validation which ensures that {@link RelationType} with a hierarchical structure
  *        have a valid matching {@link Role} hierarchical structure.
  *     7. Required Resources validation which ensures that each {@link Thing} with required
- *        {@link ai.grakn.concept.Resource} has a valid {@link ai.grakn.concept.Relation} to that Resource.
- *     8. Unique Relation Validation which ensures that no duplicate {@link ai.grakn.concept.Relation} are created.
+ *        {@link Resource} has a valid {@link Relation} to that {@link Resource}.
+ *     8. Unique Relation Validation which ensures that no duplicate {@link Relation} are created.
  * </p>
  *
  * @author fppt
