@@ -210,7 +210,7 @@ Role postsType = tx.putRole("posts");
 Role postedByType = tx.putRole("posted_by");
 
 // relationships
-RelationType userTweetRelationType = tx.putRelationType("user-tweet-relationship").relates(postsType).relates(postedByType);
+RelationshipType userTweetRelationType = tx.putRelationshipType("user-tweet-relationship").relates(postsType).relates(postedByType);
 ```
 
 And finally, assign attributes and roles appropriately.
@@ -407,12 +407,12 @@ We're almost there with a complete tweet insertion functionality! There's only o
 The following function will create a relationship between the user and tweet that we specify.
 
 ```java-test-ignore
-public static Relation insertUserTweetRelation(GraknTx tx, Entity user, Entity tweet) {
+public static Relationship insertUserTweetRelation(GraknTx tx, Entity user, Entity tweet) {
   RelationType userTweetRelationType = tx.getRelationType("user-tweet-relationship");
   RoleType postsType = tx.getRoleType("posts");
   RoleType postedByType = tx.getRoleType("posted_by");
 
-  Relation userTweetRelation = userTweetRelationType.addRelation()
+  Relationship userTweetRelation = userTweetRelationType.addRelationship()
       .addRolePlayer(postsType, user)
       .addRolePlayer(postedByType, tweet);
 
@@ -425,7 +425,7 @@ public static Relation insertUserTweetRelation(GraknTx tx, Entity user, Entity t
 Finally, let's wrap up by defining a function of which the sole responsibility is to execute all of the methods we have defined above.
 
 ```java-test-ignore
-public static Relation insertUserTweet(GraknTx tx, String screenName, String tweet) {
+public static Relationship insertUserTweet(GraknTx tx, String screenName, String tweet) {
   Entity tweetEntity = insertTweet(tx, tweet);
   Entity userEntity = insertUserIfNotExist(tx, screenName);
   return insertUserTweetRelation(tx, userEntity, tweetEntity);

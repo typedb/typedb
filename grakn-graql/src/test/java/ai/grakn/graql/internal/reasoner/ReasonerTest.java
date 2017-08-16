@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Graql;
@@ -108,8 +108,8 @@ public class ReasonerTest {
     public void testSubPropertyRuleCreation() {
         GraknTx graph = testSnbGraph.graph();
         Map<Label, Label> roleMap = new HashMap<>();
-        RelationType parent = graph.getRelationType("sublocate");
-        RelationType child = graph.getRelationType("resides");
+        RelationshipType parent = graph.getRelationshipType("sublocate");
+        RelationshipType child = graph.getRelationshipType("resides");
 
         roleMap.put(graph.getRole("member-location").getLabel(), graph.getRole("subject-location").getLabel());
         roleMap.put(graph.getRole("container-location").getLabel(), graph.getRole("located-subject").getLabel());
@@ -129,7 +129,7 @@ public class ReasonerTest {
     public void testTransitiveRuleCreation() {
         GraknTx graph = testSnbGraph.graph();
         Rule rule = ReasonerUtils.createTransitiveRule(
-                graph.getRelationType("sublocate"),
+                graph.getRelationshipType("sublocate"),
                 graph.getRole("member-location").getLabel(),
                 graph.getRole("container-location").getLabel(),
                 graph);
@@ -149,7 +149,7 @@ public class ReasonerTest {
     public void testReflexiveRuleCreation() {
         GraknTx graph = testSnbGraph.graph();
         Rule rule = ReasonerUtils.createReflexiveRule(
-                graph.getRelationType("knows"),
+                graph.getRelationshipType("knows"),
                 graph.getRole("acquaintance1").getLabel(),
                 graph.getRole("acquaintance2").getLabel(),
                 graph);
@@ -166,10 +166,10 @@ public class ReasonerTest {
     @Test
     public void testPropertyChainRuleCreation() {
         GraknTx graph = testSnbGraph.graph();
-        RelationType resides = graph.getRelationType("resides");
-        RelationType sublocate = graph.getRelationType("sublocate");
+        RelationshipType resides = graph.getRelationshipType("resides");
+        RelationshipType sublocate = graph.getRelationshipType("sublocate");
 
-        LinkedHashMap<RelationType, Pair<Label, Label>> chain = new LinkedHashMap<>();
+        LinkedHashMap<RelationshipType, Pair<Label, Label>> chain = new LinkedHashMap<>();
 
         chain.put(resides, new Pair<>(graph.getRole("located-subject").getLabel(), graph.getRole("subject-location").getLabel()));
         chain.put(sublocate, new Pair<>(graph.getRole("member-location").getLabel(), graph.getRole("container-location").getLabel()));

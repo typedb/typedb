@@ -21,8 +21,8 @@ package ai.grakn.graph.internal.concept;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.GraphTestBase;
 import ai.grakn.graph.internal.structure.EdgeElement;
@@ -42,7 +42,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class OntologyConceptTest extends GraphTestBase {
+public class SchemaConceptTest extends GraphTestBase {
 
     @Test
     public void whenChangingOntologyConceptLabel_EnsureLabelIsChangedAndOldLabelIsDead(){
@@ -77,18 +77,18 @@ public class OntologyConceptTest extends GraphTestBase {
 
         entityType.attribute(attributeType);
 
-        RelationType relationType = graknGraph.getRelationType(hasResourceLabel.getValue());
-        Assert.assertEquals(hasResourceLabel, relationType.getLabel());
+        RelationshipType relationshipType = graknGraph.getRelationshipType(hasResourceLabel.getValue());
+        Assert.assertEquals(hasResourceLabel, relationshipType.getLabel());
 
-        Set<Label> roleLabels = relationType.relates().map(OntologyConcept::getLabel).collect(toSet());
+        Set<Label> roleLabels = relationshipType.relates().map(SchemaConcept::getLabel).collect(toSet());
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
         assertThat(entityType.plays().collect(toSet()), containsInAnyOrder(graknGraph.getRole(hasResourceOwnerLabel.getValue())));
         assertThat(attributeType.plays().collect(toSet()), containsInAnyOrder(graknGraph.getRole(hasResourceValueLabel.getValue())));
 
         //Check everything is implicit
-        assertTrue(relationType.isImplicit());
-        relationType.relates().forEach(role -> assertTrue(role.isImplicit()));
+        assertTrue(relationshipType.isImplicit());
+        relationshipType.relates().forEach(role -> assertTrue(role.isImplicit()));
 
         // Check that resource is not required
         EdgeElement entityPlays = ((EntityTypeImpl) entityType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();

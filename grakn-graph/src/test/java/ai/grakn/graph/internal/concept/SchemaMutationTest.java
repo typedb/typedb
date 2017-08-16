@@ -22,8 +22,8 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -43,10 +43,10 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertThat;
 
-public class OntologyMutationTest extends GraphTestBase {
+public class SchemaMutationTest extends GraphTestBase {
     private Role husband;
     private Role wife;
-    private RelationType marriage;
+    private RelationshipType marriage;
     private EntityType person;
     private EntityType woman;
     private EntityType man;
@@ -62,8 +62,8 @@ public class OntologyMutationTest extends GraphTestBase {
         driver = graknGraph.putRole("Driver");
         Role driven = graknGraph.putRole("Driven");
 
-        marriage = graknGraph.putRelationType("marriage").relates(husband).relates(wife);
-        graknGraph.putRelationType("car being driven by").relates(driven).relates(driver);
+        marriage = graknGraph.putRelationshipType("marriage").relates(husband).relates(wife);
+        graknGraph.putRelationshipType("car being driven by").relates(driven).relates(driver);
 
         person = graknGraph.putEntityType("Person").plays(husband).plays(wife);
         man = graknGraph.putEntityType("Man").sup(person);
@@ -72,7 +72,7 @@ public class OntologyMutationTest extends GraphTestBase {
 
         alice = woman.addEntity();
         bob = man.addEntity();
-        marriage.addRelation().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
+        marriage.addRelationship().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
         graknGraph.commit();
         graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
     }
@@ -154,7 +154,7 @@ public class OntologyMutationTest extends GraphTestBase {
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
-        graknGraphBatch.putRelationType("This Will Fail");
+        graknGraphBatch.putRelationshipType("This Will Fail");
     }
 
     @Test
@@ -162,16 +162,16 @@ public class OntologyMutationTest extends GraphTestBase {
         String roleTypeId = "role-thing";
         String relationTypeId = "relationtype";
         graknGraph.putRole(roleTypeId);
-        graknGraph.putRelationType(relationTypeId);
+        graknGraph.putRelationshipType(relationTypeId);
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         Role role = graknGraphBatch.getRole(roleTypeId);
-        RelationType relationType = graknGraphBatch.getRelationType(relationTypeId);
+        RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
-        relationType.relates(role);
+        relationshipType.relates(role);
     }
 
     @Test
@@ -232,17 +232,17 @@ public class OntologyMutationTest extends GraphTestBase {
         String roleTypeId = "role-thing";
         String relationTypeId = "relationtype";
         Role role = graknGraph.putRole(roleTypeId);
-        graknGraph.putRelationType(relationTypeId).relates(role);
+        graknGraph.putRelationshipType(relationTypeId).relates(role);
         graknGraph.commit();
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         role = graknGraphBatch.getRole(roleTypeId);
-        RelationType relationType = graknGraphBatch.getRelationType(relationTypeId);
+        RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
-        relationType.deleteRelates(role);
+        relationshipType.deleteRelates(role);
     }
 
     @Test
@@ -264,7 +264,7 @@ public class OntologyMutationTest extends GraphTestBase {
     @Test
     public void whenDeletingRelationTypeAndLeavingRoleByItself_Thow(){
         Role role = graknGraph.putRole("my wonderful role");
-        RelationType relation = graknGraph.putRelationType("my wonderful relation").relates(role);
+        RelationshipType relation = graknGraph.putRelationshipType("my wonderful relation").relates(role);
         relation.relates(role);
         graknGraph.commit();
 
@@ -287,14 +287,14 @@ public class OntologyMutationTest extends GraphTestBase {
 
         //Create a man which is a person and is therefore allowed to have a name
         EntityType man = graknGraph.putEntityType("man").sup(person);
-        RelationType has_name = graknGraph.putRelationType("has-name");
+        RelationshipType has_name = graknGraph.putRelationshipType("has-name");
 
         //Create a Man and name him Bob
         Attribute<String> nameBob = name.putAttribute("Bob");
         man.addEntity().attribute(nameBob);
 
-        //Get The Relation which says that our man is name bob
-        Relation expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));
+        //Get The Relationship which says that our man is name bob
+        Relationship expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));
         Role hasNameOwner = graknGraph.getRole("has-name-owner");
 
         assertThat(expectedEdge.type().instances().collect(toSet()), hasItem(expectedEdge));

@@ -22,7 +22,7 @@ package ai.grakn.generator;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import com.google.common.collect.ImmutableList;
 
 import java.util.function.BiFunction;
@@ -32,19 +32,19 @@ import java.util.function.BiFunction;
  *
  * @author Felix Chapman
  */
-public class PutOntologyConceptFunctions extends AbstractGenerator<BiFunction> {
+public class PutSchemaConceptFunctions extends AbstractGenerator<BiFunction> {
 
-    public PutOntologyConceptFunctions() {
+    public PutSchemaConceptFunctions() {
         super(BiFunction.class);
     }
 
     @Override
-    protected BiFunction<GraknTx, Label, OntologyConcept> generate() {
+    protected BiFunction<GraknTx, Label, SchemaConcept> generate() {
         return random.choose(ImmutableList.of(
                 GraknTx::putEntityType,
                 (graph, label) -> graph.putAttributeType(label, gen(AttributeType.DataType.class)),
                 GraknTx::putRuleType,
-                GraknTx::putRelationType,
+                GraknTx::putRelationshipType,
                 GraknTx::putRole
         ));
     }

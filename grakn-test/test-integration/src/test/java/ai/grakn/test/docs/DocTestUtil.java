@@ -74,7 +74,7 @@ public class DocTestUtil {
             AttributeType<Double> weight = tx.putAttributeType("weight", AttributeType.DataType.DOUBLE);
             AttributeType<Double> height = tx.putAttributeType("height", AttributeType.DataType.DOUBLE);
 
-            tx.putRelationType("has-type")
+            tx.putRelationshipType("has-type")
                     .relates(tx.putRole("type-of-pokemon")).relates(tx.putRole("pokemon-with-type"));
 
             pokemonType.attribute(typeId).attribute(description);

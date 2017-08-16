@@ -1,6 +1,6 @@
 insert person sub entity, has identifier; identifier sub attribute, datatype string;
 insert spouse1 sub role; spouse2 sub role; person plays spouse1; person plays spouse2;
-insert marriage sub relation, relates spouse1, relates spouse2, has "date"; "date" sub attribute datatype string;
+insert marriage sub relationship, relates spouse1, relates spouse2, has "date"; "date" sub attribute datatype string;
 commit;
 
 insert isa person, has identifier "Andrew Smith";

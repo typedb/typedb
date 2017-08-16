@@ -36,7 +36,7 @@ match $x sub concept; # List all concepts
 match $x sub attribute; # List all resources
 match $x sub entity; # List all entities
 match $x sub role; # List all roles
-match $x sub relation; # List all relations
+match $x sub relationship; # List all relationships
 
 match $x isa pokemon; (ancestor: $x, $y); $x has name $xn; $y has name $yn;
 match evolution relates $x;
@@ -62,7 +62,7 @@ insert has name "Totodile" isa pokemon;
 insert val "Ash" isa name;
 insert isa pokemon, has name "Pichu" has height 30;
 insert gen2-pokemon sub pokemon;
-insert trained-by sub relation, relates trainer, relates pokemon-trained;
+insert trained-by sub relationship, relates trainer, relates pokemon-trained;
 insert pokemon plays pokemon-trained;
 insert pokemon has pokedex-no;
 

@@ -56,7 +56,7 @@ public abstract class TestGraph {
 
     public static Thing putEntity(GraknTx graph, String id, EntityType type, Label key) {
         Thing inst = type.addEntity();
-        putResource(inst, graph.getOntologyConcept(key), id);
+        putResource(inst, graph.getSchemaConcept(key), id);
         return inst;
     }
 

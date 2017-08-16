@@ -8,7 +8,7 @@ entity1 sub entity
 	plays role2
 	plays role1;
 
-relation1 sub relation
+relation1 sub relationship
 	relates role1
 	relates role2
 	has res1;

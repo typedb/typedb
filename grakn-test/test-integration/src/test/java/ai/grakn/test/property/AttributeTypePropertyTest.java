@@ -20,7 +20,7 @@ package ai.grakn.test.property;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
+import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
 import ai.grakn.generator.ResourceValues;
 import com.pholser.junit.quickcheck.From;

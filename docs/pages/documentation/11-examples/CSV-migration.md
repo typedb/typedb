@@ -39,7 +39,7 @@ The ontology is a way to describe the entities and their relationships, so the u
 * logical reasoning over the represented knowledge, such as the extraction of implicit information from explicit data (inference)
 * discovery of inconsistencies in the data (validation).
 
-The ontology is shown below. There is a single entity, `person`, which has a number of resources and can play various roles (`parent`, `child`, `spouse1` and `spouse2`) in two possible relations (`parentship` and `marriage`).
+The ontology is shown below. There is a single entity, `person`, which has a number of resources and can play various roles (`parent`, `child`, `spouse1` and `spouse2`) in two possible relationships (`parentship` and `marriage`).
 
 ```graql
 insert
@@ -64,7 +64,7 @@ person sub entity
 
 # Roles and Relations
 
-marriage sub relation
+marriage sub relationship
   relates spouse1
   relates spouse2
   has picture;
@@ -72,7 +72,7 @@ marriage sub relation
 spouse1 sub role;
 spouse2 sub role;
 
-parentship sub relation
+parentship sub relationship
   relates parent
   relates child;
 
@@ -220,9 +220,9 @@ insert
 
 ```
 
-For each row in the CSV file, the template matches the child and parent cells to their corresponding `person` entities, and then inserts a `parentship` relation, placing the entities it has matched into the `child` and `parent` roles.
+For each row in the CSV file, the template matches the child and parent cells to their corresponding `person` entities, and then inserts a `parentship` relationship, placing the entities it has matched into the `child` and `parent` roles.
 
-{% include note.html content="You must ensure that all entities exist in a graph before inserting relations." %}
+{% include note.html content="You must ensure that all entities exist in a graph before inserting relationships." %}
 
 Calling the Grakn migrator on the *births.csv* file using the above template (named `births-migrator.gql`) is performed as follows:
 
@@ -274,7 +274,7 @@ insert
 		};
 ```
 
-For each row in the CSV file, the template matches the two spouse cells to their corresponding `person` entities, and then inserts a `marriage` relation, placing the entities it has matched into the `spouse1` and `spouse2` roles. If there is data in the picture cell, a `picture` attribute is also created for the `marriage` relation.
+For each row in the CSV file, the template matches the two spouse cells to their corresponding `person` entities, and then inserts a `marriage` relationship, placing the entities it has matched into the `spouse1` and `spouse2` roles. If there is data in the picture cell, a `picture` attribute is also created for the `marriage` relationship.
 
 Calling the Grakn migrator on the *weddings.csv* file using the above template (named `weddings-migrator.gql`) is performed as follows:
 

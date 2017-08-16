@@ -23,8 +23,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -57,15 +57,15 @@ import java.util.stream.Stream;
  * <p>
  *     Instances represent data in the graph.
  *     Every instance belongs to a {@link Type} which serves as a way of categorising them.
- *     Instances can relate to one another via {@link Relation}
+ *     Instances can relate to one another via {@link Relationship}
  * </p>
  *
  * @author fppt
  *
  * @param <T> The leaf interface of the object concept which extends {@link Thing}.
- *           For example {@link ai.grakn.concept.Entity} or {@link Relation}.
+ *           For example {@link ai.grakn.concept.Entity} or {@link Relationship}.
  * @param <V> The type of the concept which extends {@link Type} of the concept.
- *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
+ *           For example {@link ai.grakn.concept.EntityType} or {@link RelationshipType}
  */
 public abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
     private final Cache<Label> cachedInternalType = new Cache<>(Cacheable.label(), () -> {
@@ -99,16 +99,16 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     @Override
     public void delete() {
-        Set<Relation> relations = castingsInstance().map(Casting::getRelation).collect(Collectors.toSet());
+        Set<Relationship> relationships = castingsInstance().map(Casting::getRelation).collect(Collectors.toSet());
 
         vertex().graph().txCache().removedInstance(type().getId());
         deleteNode();
 
-        relations.forEach(relation -> {
-            if(relation.type().isImplicit()){//For now implicit relations die
+        relationships.forEach(relation -> {
+            if(relation.type().isImplicit()){//For now implicit relationships die
                 relation.delete();
             } else {
-                RelationImpl rel = (RelationImpl) relation;
+                RelationshipImpl rel = (RelationshipImpl) relation;
                 vertex().graph().txCache().trackForValidation(rel);
                 rel.cleanUp();
             }
@@ -159,7 +159,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     /**
-     * Castings are retrieved from the perspective of the {@link Thing} which is a role player in a {@link Relation}
+     * Castings are retrieved from the perspective of the {@link Thing} which is a role player in a {@link Relationship}
      *
      * @return All the {@link Casting} which this instance is cast into the role
      */
@@ -191,11 +191,11 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
      */
     @Override
-    public Stream<Relation> relations(Role... roles) {
+    public Stream<Relationship> relations(Role... roles) {
         return Stream.concat(reifiedRelations(roles), edgeRelations(roles));
     }
 
-    private Stream<Relation> reifiedRelations(Role... roles){
+    private Stream<Relationship> reifiedRelations(Role... roles){
         GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue());
 
@@ -210,13 +210,13 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return traversal.toStream().map(vertex -> vertex().graph().buildConcept(vertex));
     }
 
-    private Stream<Relation> edgeRelations(Role... roles){
+    private Stream<Relationship> edgeRelations(Role... roles){
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
         Stream<EdgeElement> stream = vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.RESOURCE);
 
         if(!roleSet.isEmpty()){
             stream = stream.filter(edge -> {
-                Role roleOwner = vertex().graph().getOntologyConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID)));
+                Role roleOwner = vertex().graph().getOntologyConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID)));
                 return roleSet.contains(roleOwner);
             });
         }
@@ -244,9 +244,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
 
         Label label = attribute.type().getLabel();
-        RelationType hasResource = vertex().graph().getOntologyConcept(has.getLabel(label));
-        Role hasResourceOwner = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
-        Role hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
+        RelationshipType hasResource = vertex().graph().getSchemaConcept(has.getLabel(label));
+        Role hasResourceOwner = vertex().graph().getSchemaConcept(hasOwner.getLabel(label));
+        Role hasResourceValue = vertex().graph().getSchemaConcept(hasValue.getLabel(label));
 
         if(hasResource == null || hasResourceOwner == null || hasResourceValue == null || type().plays().noneMatch(play -> play.equals(hasResourceOwner))){
             throw GraphOperationException.hasNotAllowed(this, attribute);

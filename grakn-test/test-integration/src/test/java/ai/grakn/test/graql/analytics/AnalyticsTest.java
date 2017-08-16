@@ -26,7 +26,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
@@ -106,13 +106,13 @@ public class AnalyticsTest {
             graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
             Role degreeOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
             Role degreeValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
-            RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
+            RelationshipType relationshipType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
                     .relates(degreeOwner)
                     .relates(degreeValue);
             thingy.plays(degreeOwner);
 
             Entity thisThing = thingy.addEntity();
-            relationType.addRelation().addRolePlayer(degreeOwner, thisThing);
+            relationshipType.addRelationship().addRolePlayer(degreeOwner, thisThing);
 
             graph.commit();
         }
@@ -166,12 +166,12 @@ public class AnalyticsTest {
             Role role2 = graph.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
-            relationId12 = relationType.addRelation()
+            relationId12 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity1)
                     .addRolePlayer(role2, entity2).getId().getValue();
-            relationId24 = relationType.addRelation()
+            relationId24 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity2)
                     .addRolePlayer(role2, entity4).getId().getValue();
 

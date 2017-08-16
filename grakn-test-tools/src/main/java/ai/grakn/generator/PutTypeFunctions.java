@@ -44,7 +44,7 @@ public class PutTypeFunctions extends AbstractGenerator<BiFunction> {
                 GraknTx::putEntityType,
                 (graph, label) -> graph.putAttributeType(label, gen(AttributeType.DataType.class)),
                 GraknTx::putRuleType,
-                GraknTx::putRelationType
+                GraknTx::putRelationshipType
         ));
     }
 }

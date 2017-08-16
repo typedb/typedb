@@ -213,7 +213,7 @@ public class GraqlShellIT {
     @Test
     public void testAskQuery() throws Exception {
         assertShellMatches(
-                "match $x isa relation; ask;",
+                "match $x isa " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()+ "; ask;",
                 containsString("False")
         );
     }
@@ -273,7 +273,7 @@ public class GraqlShellIT {
     @Test
     public void testAutocompleteFill() throws Exception {
         String result = testShell("match $x sub thin\t;\n");
-        assertThat(result, containsString(Schema.MetaSchema.RELATION.getLabel().getValue()));
+        assertThat(result, containsString(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()));
     }
 
     @Test
@@ -604,7 +604,7 @@ public class GraqlShellIT {
     public void testDuplicateRelation() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell(
-                "insert R sub relation, relates R1, relates R2; R1 sub role; R2 sub role;\n" +
+                "insert R sub " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue() + ", relates R1, relates R2; R1 sub role; R2 sub role;\n" +
                         "insert X sub entity, plays R1, plays R2;\n" +
                         "insert $x isa X; (R1: $x, R2: $x) isa R;\n" +
                         "match $x isa X; insert (R1: $x, R2: $x) isa R;\n" +
@@ -614,7 +614,7 @@ public class GraqlShellIT {
 
         assertThat(err.toString().toLowerCase(), allOf(
                 anyOf(containsString("exists"), containsString("one or more")),
-                containsString("relation")
+                containsString("relationships")
         ));
     }
 

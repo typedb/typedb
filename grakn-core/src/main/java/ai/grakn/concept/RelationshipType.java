@@ -30,47 +30,47 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     A relation type defines how {@link Type} may relate to one another.
- *     They are used to model and categorise n-ary relationships.
+ *     A {@link RelationshipType} defines how {@link Type} may relate to one another.
+ *     They are used to model and categorise n-ary {@link Relationship}s.
  * </p>
  *
  * @author fppt
  *
  */
-public interface RelationType extends Type {
+public interface RelationshipType extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    RelationType setLabel(Label label);
+    RelationshipType setLabel(Label label);
 
     /**
-     * Creates and returns a new {@link Relation} instance, whose direct type will be this type.
-     * @see Relation
+     * Creates and returns a new {@link Relationship} instance, whose direct type will be this type.
+     * @see Relationship
      *
      * @return a new empty relation.
      *
      * @throws GraphOperationException if this is a meta type
      */
-    Relation addRelation();
+    Relationship addRelationship();
 
     /**
-     * Sets the supertype of the RelationType to be the RelationType specified.
+     * Sets the supertype of the {@link RelationshipType} to be the {@link RelationshipType} specified.
      *
-     * @param type The supertype of this RelationType
-     * @return  The RelationType itself.
+     * @param type The supertype of this {@link RelationshipType}
+     * @return  The {@link RelationshipType} itself.
      */
-    RelationType sup(RelationType type);
+    RelationshipType sup(RelationshipType type);
 
     /**
      * Adds another subtype to this type
      *
-     * @param type The sub type of this relation type
-     * @return The RelationType itself
+     * @param type The sub type of this {@link RelationshipType}
+     * @return The {@link RelationshipType} itself
      */
-    RelationType sub(RelationType type);
+    RelationshipType sub(RelationshipType type);
 
     /**
      * Classifies the type to a specific scope. This allows you to optionally categorise types.
@@ -79,7 +79,7 @@ public interface RelationType extends Type {
      * @return The Type itself.
      */
     @Override
-    RelationType scope(Thing scope);
+    RelationshipType scope(Thing scope);
 
     /**
      * Delete the scope specified.
@@ -88,32 +88,32 @@ public interface RelationType extends Type {
      * @return The Type itself
      */
     @Override
-    RelationType deleteScope(Thing scope);
+    RelationshipType deleteScope(Thing scope);
 
     /**
-     * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
      * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    RelationType key(AttributeType attributeType);
+    RelationshipType key(AttributeType attributeType);
 
     /**
-     * Creates a RelationType which allows this type and a resource type to be linked.
+     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked.
      *
      * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    RelationType attribute(AttributeType attributeType);
+    RelationshipType attribute(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
     /**
-     * Retrieves a list of the RoleTypes that make up this RelationType.
+     * Retrieves a list of the RoleTypes that make up this {@link RelationshipType}.
      * @see Role
      *
-     * @return A list of the RoleTypes which make up this RelationType.
+     * @return A list of the RoleTypes which make up this {@link RelationshipType}.
      */
     @CheckReturnValue
     Stream<Role> relates();
@@ -121,90 +121,90 @@ public interface RelationType extends Type {
     //------------------------------------- Edge Handling ----------------------------------
 
     /**
-     * Sets a new Role for this RelationType.
+     * Sets a new Role for this {@link RelationshipType}.
      * @see Role
      *
      * @param role A new role which is part of this relationship.
-     * @return The RelationType itself.
+     * @return The {@link RelationshipType} itself.
      */
-    RelationType relates(Role role);
+    RelationshipType relates(Role role);
 
     //------------------------------------- Other ----------------------------------
 
     /**
-     * Delete a Role from this RelationType
+     * Delete a Role from this {@link RelationshipType}
      * @see Role
      *
-     * @param role The Role to delete from the RelationType.
-     * @return The RelationType itself.
+     * @param role The Role to delete from the {@link RelationshipType}.
+     * @return The {@link RelationshipType} itself.
      */
-    RelationType deleteRelates(Role role);
+    RelationshipType deleteRelates(Role role);
 
     //---- Inherited Methods
     /**
-     * Sets the RelationType to be abstract - which prevents it from having any instances.
+     * Sets the {@link RelationshipType} to be abstract - which prevents it from having any instances.
      *
      * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
-     * @return The RelationType itself.
+     * @return The {@link RelationshipType} itself.
      */
     @Override
-    RelationType setAbstract(Boolean isAbstract);
+    RelationshipType setAbstract(Boolean isAbstract);
 
     /**
-     * Returns the direct supertype of this RelationType.
-     * @return The direct supertype of this RelationType
+     * Returns the direct supertype of this {@link RelationshipType}.
+     * @return The direct supertype of this {@link RelationshipType}
      */
     @Override
     @Nonnull
-    RelationType sup();
+    RelationshipType sup();
 
     /**
-     * Returns a collection of subtypes of this RelationType.
+     * Returns a collection of subtypes of this {@link RelationshipType}.
      *
-     * @return All the sub types of this RelationType
+     * @return All the sub types of this {@link RelationshipType}
      */
     @Override
-    Stream<RelationType> subs();
+    Stream<RelationshipType> subs();
 
     /**
-     * Sets the Role which instances of this RelationType may play.
+     * Sets the Role which instances of this {@link RelationshipType} may play.
      *
      * @param role The Role which the instances of this Type are allowed to play.
-     * @return  The RelationType itself.
+     * @return  The {@link RelationshipType} itself.
      */
     @Override
-    RelationType plays(Role role);
+    RelationshipType plays(Role role);
 
     /**
-     * Removes the Role to prevent instances of this RelationType from playing it.
+     * Removes the Role to prevent instances of this {@link RelationshipType} from playing it.
      *
      * @param role The Role which the instances of this Type should no longer be allowed to play.
-     * @return The RelationType itself.
+     * @return The {@link RelationshipType} itself.
      */
     @Override
-    RelationType deletePlays(Role role);
+    RelationshipType deletePlays(Role role);
 
     /**
-     * Retrieve all the Relation instances of this RelationType
-     * @see Relation
+     * Retrieve all the {@link Relationship} instances of this {@link RelationshipType}
+     * @see Relationship
      *
-     * @return All the Relation instances of this relation type
+     * @return All the {@link Relationship} instances of this {@link RelationshipType}
      */
     @Override
-    Stream<Relation> instances();
+    Stream<Relationship> instances();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated
     @CheckReturnValue
     @Override
-    default RelationType asRelationType(){
+    default RelationshipType asRelationshipType(){
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isRelationType(){
+    default boolean isRelationshipType(){
         return true;
     }
 }

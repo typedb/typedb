@@ -23,7 +23,7 @@ In this example, we will explore how to use Grakn to make inferences and find in
 
 ## Ontology and Data
 
-On GRAKN.AI, the first step when working with a dataset is to define its ontology in Graql. The ontology is a way to describe the entities and their relations, so the underlying knowledge base can store them as nodes and edges. You can find out more in our guide to the Grakn Knowledge Model. The ontology allows Grakn to perform:
+On GRAKN.AI, the first step when working with a dataset is to define its ontology in Graql. The ontology is a way to describe the entities and their relationships, so the underlying knowledge base can store them as nodes and edges. You can find out more in our guide to the Grakn Knowledge Model. The ontology allows Grakn to perform:
 
 * logical reasoning over the represented knowledge, such as the extraction of implicit information from explicit data (inference)
 * discovery of inconsistencies in the data (validation).
@@ -58,7 +58,7 @@ You will receive parentship results, but if you clear the query and then submit 
 match (mother: $c, daughter: $p) isa parentship;
 ```
 
-You will receive no results at all. To find inferred relations between the people in our dataset, you need to activate inference in the Grakn visualiser. Open the Query settings under the cog button, which is on the far right hand side of the horizontal icon menu (at the top of the screen).
+You will receive no results at all. To find inferred relationships between the people in our dataset, you need to activate inference in the Grakn visualiser. Open the Query settings under the cog button, which is on the far right hand side of the horizontal icon menu (at the top of the screen).
 
 You will see the "Activate inference" checkbox. Check it, and Grakn is ready to start building some new information about the family. Try the query again:
 
@@ -95,7 +95,7 @@ This is how reasoning in Graql works. It checks whether the statements in the fi
 {% include note.html content="The full documentation for writing rules in Graql is available from [here](https://grakn.ai/pages/documentation/graql/graql-rules.html)." %}
 
 
-### Example 1: Specific relations between parents and children
+### Example 1: Specific relationships between parents and children
 
 As we saw above, it is possible for Grakn to infer the gender-specific roles (`mother`, `father`, `daughter`, `son`) that a `person` entity plays. It does this by applying the following rules:
 
@@ -141,14 +141,14 @@ then
 
 The four rules can be broken down as follows:
 
-* when: In the `parentship` relation between child `$c` and parent `$p`, do they both have a `gender` attribute that is `male`?
-	* then: The `parentship` relation is between `father` and `son`
-* when: In the `parentship` relation between child `$c` and parent `$p`, does `$c` have a `gender` attribute that is `female` and `$p` have a `gender` attribute that is `male`?
-	* then: The `parentship` relation is between `father` and `daughter`
-* when: In the `parentship` relation between child `$c` and parent `$p`, does `$c` have a `gender` attribute that is `male` and `$p` have a `gender` attribute that is `female`?
-	* then: The `parentship` relation is between `mother` and `son`
-* when: In the `parentship` relation between child `$c` and parent `$p`, do both have a `gender` attribute that is `female`?
-	* then: The `parentship` relation is between `mother` and `daughter`
+* when: In the `parentship` relationship between child `$c` and parent `$p`, do they both have a `gender` attribute that is `male`?
+	* then: The `parentship` relationship is between `father` and `son`
+* when: In the `parentship` relationship between child `$c` and parent `$p`, does `$c` have a `gender` attribute that is `female` and `$p` have a `gender` attribute that is `male`?
+	* then: The `parentship` relationship is between `father` and `daughter`
+* when: In the `parentship` relationship between child `$c` and parent `$p`, does `$c` have a `gender` attribute that is `male` and `$p` have a `gender` attribute that is `female`?
+	* then: The `parentship` relationship is between `mother` and `son`
+* when: In the `parentship` relationship between child `$c` and parent `$p`, do both have a `gender` attribute that is `female`?
+	* then: The `parentship` relationship is between `mother` and `daughter`
 
 We can use the rule to easily discover the sons who have the same name as their fathers:
 
@@ -158,9 +158,9 @@ match (father: $p, son: $c) isa parentship; $p has firstname $n; $c has firstnam
 
 In the genealogy-knowledge-base example, there should be two results returned. William and John are names shared between father/son pairs.
 
-### Example 2: A `grandparentship` relation
+### Example 2: A `grandparentship` relationship
 
-The *basic-genealogy* file contains a number of rules for setting up family relationships, such as siblings, cousins, in-laws and the following, which sets up a relation called `grandparentship`:
+The *basic-genealogy* file contains a number of rules for setting up family relationships, such as siblings, cousins, in-laws and the following, which sets up a relationship called `grandparentship`:
 
 ```graql
 insert
@@ -176,12 +176,12 @@ then
 
 Here, the "when" rules check two statements:
 
-* does `$p` play the `parent` role in a `parentship` relation, with (`$gc`) playing the `child` role?
-* does `$p` also play the `child` role in a `parentship` relation, with (`$gp`) playing the `parent` role?
+* does `$p` play the `parent` role in a `parentship` relationship, with (`$gc`) playing the `child` role?
+* does `$p` also play the `child` role in a `parentship` relationship, with (`$gp`) playing the `parent` role?
 
 If so, the right hand side of the rules state that:
 
-* `$gp` and `$gc` are in a `grandparentship` relation, where `$gp` plays the `grandparent` role and `$gc` plays the `grandchild` role.
+* `$gp` and `$gc` are in a `grandparentship` relationship, where `$gp` plays the `grandparent` role and `$gc` plays the `grandchild` role.
 
 Some additional rules can add more specifics to the `grandparentship` and assign the entities to the roles `grandson`, `granddaughter`, `grandmother` and `grandfather`:
 
@@ -221,18 +221,18 @@ then
 {(grandmother: $gp, grandson: $gc) isa grandparentship;};
 ```
 
-Much as above for the `parentship` relation, the rules can be broken down as follows:
+Much as above for the `parentship` relationship, the rules can be broken down as follows:
 
-* when: There is a `parentship` relation between son `$gc` and parent `$p`, and another `parentship` relation where `$p` is now in the child role and `$gp` is a father.
-	* then: The `grandparentship` relation is between `grandfather` and `grandson`
-* when: There is a `parentship` relation between daughter `$gc` and parent `$p`, and another `parentship` relation where `$p` is now in the child role and `$gp` is a father.
-	* then: The `grandparentship` relation is between `grandfather` and `granddaughter`
-* when: There is a `parentship` relation between daughter `$gc` and parent `$p`, and another `parentship` relation where `$p` is now in the child role and `$gp` is a mother.
-	* then: The `grandparentship` relation is between `grandmother` and `granddaughter`
-* when: There is a `parentship` relation between son `$gc` and parent `$p`, and another `parentship` relation where `$p` is now in the child role and `$gp` is a mother.
-	* then: The `grandparentship` relation is between `grandmother` and `grandson`
+* when: There is a `parentship` relationship between son `$gc` and parent `$p`, and another `parentship` relationship where `$p` is now in the child role and `$gp` is a father.
+	* then: The `grandparentship` relationship is between `grandfather` and `grandson`
+* when: There is a `parentship` relationship between daughter `$gc` and parent `$p`, and another `parentship` relationship where `$p` is now in the child role and `$gp` is a father.
+	* then: The `grandparentship` relationship is between `grandfather` and `granddaughter`
+* when: There is a `parentship` relationship between daughter `$gc` and parent `$p`, and another `parentship` relationship where `$p` is now in the child role and `$gp` is a mother.
+	* then: The `grandparentship` relationship is between `grandmother` and `granddaughter`
+* when: There is a `parentship` relationship between son `$gc` and parent `$p`, and another `parentship` relationship where `$p` is now in the child role and `$gp` is a mother.
+	* then: The `grandparentship` relationship is between `grandmother` and `grandson`
 
-These rules allow us to find all `grandparentship` relations, and further, it allows us to query, for example, which grandfather/grandson pairs share the same name:
+These rules allow us to find all `grandparentship` relationships, and further, it allows us to query, for example, which grandfather/grandson pairs share the same name:
 
 ```graql
 match (grandfather: $x, grandson: $y) isa grandparentship; $x has firstname $n; $y has firstname $n;
@@ -242,7 +242,7 @@ In the genealogy-knowledge-base example, there should be three results returned.
 
 ![Person query](/images/match-grandfather-grandson-names.png)
 
-### Example 3: A `cousins` relation
+### Example 3: A `cousins` relationship
 
 Another rule can be used to infer `person` entities who are cousins:
 

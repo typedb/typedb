@@ -21,7 +21,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
@@ -178,12 +178,12 @@ public class TestSamplesImport extends TestOwlGraknBase {
             assertTrue(item1.attributes().anyMatch(r -> r.getValue().equals("First Item")));
             item1.attributes().forEach(System.out::println);
             Entity item2 = getEntity("eItem2");
-            Role subjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(Label.of("op-related")));
-            Role objectRole = graph.getOntologyConcept(migrator.namer().objectRole(Label.of("op-related")));
+            Role subjectRole = graph.getSchemaConcept(migrator.namer().subjectRole(Label.of("op-related")));
+            Role objectRole = graph.getSchemaConcept(migrator.namer().objectRole(Label.of("op-related")));
             assertTrue(item2.relations(subjectRole).anyMatch(
                     relation -> item1.equals(relation.rolePlayers(objectRole).iterator().next())));
-            Role catsubjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(Label.of("op-hasCategory")));
-            Role catobjectRole = graph.getOntologyConcept(migrator.namer().objectRole(Label.of("op-hasCategory")));
+            Role catsubjectRole = graph.getSchemaConcept(migrator.namer().subjectRole(Label.of("op-hasCategory")));
+            Role catobjectRole = graph.getSchemaConcept(migrator.namer().objectRole(Label.of("op-hasCategory")));
             assertTrue(catobjectRole.playedByTypes().collect(toSet()).contains(migrator.graph().getEntityType("tCategory")));
             assertTrue(catsubjectRole.playedByTypes().collect(toSet()).contains(migrator.graph().getEntityType("tThing")));
             //Assert.assertFalse(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("Thing")));
@@ -221,11 +221,11 @@ public class TestSamplesImport extends TestOwlGraknBase {
             EntityType type = migrator.graph().getEntityType("tPerson");
             Assert.assertNotNull(type);
 
-            RelationType ancestor = migrator.graph().getRelationType("op-hasAncestor");
-            RelationType isSiblingOf = migrator.graph().getRelationType("op-isSiblingOf");
-            RelationType isAuntOf = migrator.graph().getRelationType("op-isAuntOf");
-            RelationType isUncleOf = migrator.graph().getRelationType("op-isUncleOf");
-            RelationType bloodRelation = migrator.graph().getRelationType("op-isBloodRelationOf");
+            RelationshipType ancestor = migrator.graph().getRelationshipType("op-hasAncestor");
+            RelationshipType isSiblingOf = migrator.graph().getRelationshipType("op-isSiblingOf");
+            RelationshipType isAuntOf = migrator.graph().getRelationshipType("op-isAuntOf");
+            RelationshipType isUncleOf = migrator.graph().getRelationshipType("op-isUncleOf");
+            RelationshipType bloodRelation = migrator.graph().getRelationshipType("op-isBloodRelationOf");
 
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(ancestor)));
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(isSiblingOf)));

@@ -77,7 +77,7 @@ economical sub attribute datatype string;
 
 # Roles and Relations
 
-manufactured sub relation
+manufactured sub relationship
 	relates maker
 	relates made;
 

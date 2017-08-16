@@ -32,15 +32,15 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     A relation which is an instance of a {@link RelationType} defines how instances may relate to one another.
+ *     A relation which is an instance of a {@link RelationshipType} defines how instances may relate to one another.
  *     It represents how different entities relate to one another.
- *     Relations are used to model n-ary relationships between instances.
+ *     {@link Relationship} are used to model n-ary relationships between instances.
  * </p>
  *
  * @author fppt
  *
  */
-public interface Relation extends Thing {
+public interface Relationship extends Thing {
     //------------------------------------- Modifiers ----------------------------------
     /**
      * Creates a relation from this instance to the provided {@link Attribute}.
@@ -49,60 +49,60 @@ public interface Relation extends Thing {
      * @return The instance itself
      */
     @Override
-    Relation attribute(Attribute attribute);
+    Relationship attribute(Attribute attribute);
 
     //------------------------------------- Accessors ----------------------------------
 
     /**
-     * Retrieve the associated Relation Type for this Relation.
-     * @see RelationType
+     * Retrieve the associated {@link RelationshipType} for this {@link Relationship}.
+     * @see RelationshipType
      *
-     * @return The associated Relation Type for this Relation.
+     * @return The associated {@link RelationshipType} for this {@link Relationship}.
      */
     @Override
-    RelationType type();
+    RelationshipType type();
 
     /**
-     * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
+     * Retrieve a list of all Instances involved in the {@link Relationship}, and the {@link Role} they play.
      * @see Role
      *
-     * @return A list of all the role types and the instances playing them in this relation.
+     * @return A list of all the role types and the instances playing them in this {@link Relationship}.
      */
     @CheckReturnValue
     Map<Role, Set<Thing>> allRolePlayers();
 
     /**
-     * Retrieves a list of every {@link Thing} involved in the {@link Relation}, filtered by {@link Role} played.
+     * Retrieves a list of every {@link Thing} involved in the {@link Relationship}, filtered by {@link Role} played.
      * @param roles used to filter the returned instances only to ones that play any of the role types.
      *                  If blank, returns all role players.
-     * @return a list of every {@link Thing} involved in the {@link Relation}.
+     * @return a list of every {@link Thing} involved in the {@link Relationship}.
      */
     @CheckReturnValue
     Stream<Thing> rolePlayers(Role... roles);
 
     /**
-     * Expands this Relation to include a new role player which is playing a specific role.
+     * Expands this {@link Relationship} to include a new role player which is playing a specific role.
      *
      * @param role The Role Type of the new role player.
      * @param thing The new role player.
-     * @return The Relation itself.
+     * @return The {@link Relationship} itself.
      *
      * @throws PropertyNotUniqueException if the concept is only allowed to play this role once.
      */
-    Relation addRolePlayer(Role role, Thing thing);
+    Relationship addRolePlayer(Role role, Thing thing);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated
     @CheckReturnValue
     @Override
-    default Relation asRelation(){
+    default Relationship asRelationship(){
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isRelation(){
+    default boolean isRelationship(){
         return true;
     }
 }

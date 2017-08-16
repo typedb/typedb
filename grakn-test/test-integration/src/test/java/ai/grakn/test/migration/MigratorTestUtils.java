@@ -26,9 +26,9 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
@@ -83,9 +83,9 @@ public class MigratorTestUtils {
     }
 
     public static void assertRelationBetweenInstancesExists(GraknTx graph, Thing thing1, Thing thing2, Label relation){
-        RelationType relationType = graph.getOntologyConcept(relation);
+        RelationshipType relationshipType = graph.getSchemaConcept(relation);
 
-        Role role1 = thing1.plays().filter(r -> r.relationTypes().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
+        Role role1 = thing1.plays().filter(r -> r.relationTypes().anyMatch(rel -> rel.equals(relationshipType))).findFirst().get();
         assertTrue(thing1.relations(role1).anyMatch(rel -> rel.rolePlayers().anyMatch(r -> r.equals(thing2))));
     }
 
@@ -96,7 +96,7 @@ public class MigratorTestUtils {
     }
 
     public static Collection<Thing> getProperties(GraknTx graph, Thing thing, String label) {
-        RelationType relation = graph.getRelationType(label);
+        RelationshipType relation = graph.getRelationshipType(label);
 
         Set<Thing> things = new HashSet<>();
 
@@ -114,10 +114,10 @@ public class MigratorTestUtils {
     }
 
     public static Stream<Attribute> getResources(GraknTx graph, Thing thing, Label label) {
-        Role roleOwner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
-        Role roleOther = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
+        Role roleOwner = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
+        Role roleOther = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 
-        Stream<Relation> relations = thing.relations(roleOwner);
+        Stream<Relationship> relations = thing.relations(roleOwner);
         return relations.flatMap(r -> r.rolePlayers(roleOther)).map(Concept::asAttribute);
     }
 
@@ -160,7 +160,7 @@ public class MigratorTestUtils {
             Entity grass = typeid.getAttribute("12").ownerInstances().iterator().next().asEntity();
             Entity poison = typeid.getAttribute("4").ownerInstances().iterator().next().asEntity();
             Entity bulbasaur = pokedexno.getAttribute("1").ownerInstances().iterator().next().asEntity();
-            RelationType relation = graph.getRelationType("has-type");
+            RelationshipType relation = graph.getRelationshipType("has-type");
 
             assertNotNull(grass);
             assertNotNull(poison);

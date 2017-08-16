@@ -12,13 +12,13 @@ state sub entity
 
 #Relations
 
-achieved sub relation
+achieved sub relationship
     relates related-state;
 
-prior sub relation
+prior sub relationship
     relates related-state;
 
-holds sub relation
+holds sub relationship
     relates related-state;
 
 name sub attribute datatype string;

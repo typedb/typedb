@@ -89,7 +89,7 @@ gender sub attribute datatype string;
 
 # Roles and Relations
 
-marriage sub relation
+marriage sub relationship
   relates spouse1
   relates spouse2
   has picture;
@@ -97,7 +97,7 @@ marriage sub relation
 spouse1 sub role;
 spouse2 sub role;
 
-parentship sub relation
+parentship sub relationship
   relates parent
   relates child;
 
@@ -109,9 +109,9 @@ There are a number of things we can say about ontology shown above:
 
 * there is one entity, `person`, which represents a person in the family whose genealogy data we are studying. 
 * the `person` entity has a number of attributes to describe aspects of them, such as their name, age, dates of birth and death, gender and a URL to a picture of them (if one exists). Those attributes are all expressed as strings, except for the age, which is of datatype long.
-* there are two relations that a `person` can participate in: `marriage` and `parentship`
-* the person can play different roles in those relations, as a spouse (`spouse1` or `spouse2` - we aren't assigning them by gender to be husband or wife) and as a `parent` or `child` (again, we are not assigning a gender such as mother or father).   
-* the `marriage` relation has an attribute, which is a URL to a wedding picture, if one exists. 
+* there are two relationships that a `person` can participate in: `marriage` and `parentship`
+* the person can play different roles in those relationships, as a spouse (`spouse1` or `spouse2` - we aren't assigning them by gender to be husband or wife) and as a `parent` or `child` (again, we are not assigning a gender such as mother or father).   
+* the `marriage` relationship has an attribute, which is a URL to a wedding picture, if one exists. 
 
 ### The Data
 
@@ -151,7 +151,7 @@ Find all the people who are married:
 match (spouse1: $x, spouse2: $y) isa marriage; $x has identifier $xi; $y has identifier $yi;  
 ```
 
-List parent-child relations with the names of each person:
+List parent-child relationships with the names of each person:
 
 ```graql
 match (parent: $p, child: $c) isa parentship; $p has identifier $pi; $c has identifier $ci; 
@@ -207,7 +207,7 @@ You can zoom the display in and out, and move the nodes around for better visibi
 
 ## Using Inference
 
-We will move on to discuss the use of GRAKN.AI to infer new information about a dataset. In the ontology, so far, we have dealt only with a person, not a man or woman, and the parentship relations were simply between parent and child roles. We did not directly add information about the nature of the parent and child in each relation - they could be father and son, father and daughter, mother and son or mother and daughter.
+We will move on to discuss the use of GRAKN.AI to infer new information about a dataset. In the ontology, so far, we have dealt only with a person, not a man or woman, and the parentship relationships were simply between parent and child roles. We did not directly add information about the nature of the parent and child in each relationship - they could be father and son, father and daughter, mother and son or mother and daughter.
 
 However, the `person` entity does have a gender attribute, and we can use Grakn to infer more information about each relationship by using that property. The ontology accommodates the more specific roles of mother, father, daughter and son:
 
@@ -220,7 +220,7 @@ person
   plays mother
   plays father;
 	
-parentship sub relation
+parentship sub relationship
   relates mother
   relates father
   relates son
@@ -234,7 +234,7 @@ daughter sub child;
 
 {% include note.html content="You don't need to reload the *basic-genealogy.gql* file into Grakn pick up these extra roles. We simply didn't show this part in our earlier discussion of the ontology, to keep things as simple as possible." %}
 
-Included in *basic-genealogy.gql* are a set of Graql rules to instruct Grakn's reasoner on how to label each parentship relation:
+Included in *basic-genealogy.gql* are a set of Graql rules to instruct Grakn's reasoner on how to label each parentship relationship:
 
 ```graql
 insert
@@ -276,11 +276,11 @@ then
 {(mother: $p, daughter: $c) isa parentship;};
 ```
 
-If you're unfamiliar with the syntax of rules, don't worry too much about it too much just now. It is sufficient to know that, for each `parentship` relation, Graql checks whether the pattern in the first block (when) can be verified and, if it can, infers the statement in the second block (then) to be true, so inserts a relation between gendered parents and children.
+If you're unfamiliar with the syntax of rules, don't worry too much about it too much just now. It is sufficient to know that, for each `parentship` relationship, Graql checks whether the pattern in the first block (when) can be verified and, if it can, infers the statement in the second block (then) to be true, so inserts a relationship between gendered parents and children.
 
 Let's test it out!
 
-First, try making a match query to find `parentship` relations between fathers and sons in the Graql shell:
+First, try making a match query to find `parentship` relationships between fathers and sons in the Graql shell:
 
 ```graql
 match (father: $p, son: $c) isa parentship; $p has identifier $n1; $c has identifier $n2;
@@ -355,18 +355,18 @@ compute path from "id1" to "id2"; # Use the actual values of identifier for each
 
 You can see below that the two people selected are married.
 
-The path query uses a scalable shortest path algorithm to determine the smallest number of relations required to get from once concept to the other.
+The path query uses a scalable shortest path algorithm to determine the smallest number of relationships required to get from once concept to the other.
 
 ![Shortest path between people](/images/analytics_path_marriage.png)
 
-To narrow the path to specific relations between specific entities:
+To narrow the path to specific relationships between specific entities:
 
 <!-- Ignoring because uses fake IDs -->
 ```graql-test-ignore
 compute path from "id1" to "id2" in person, parentship;
 ```
 
-The above limits the path to blood relations (parent/child relations) thus excludes marriage. As a result, the shortest path between the two people is now longer: Barbara Shafner and Jacob J. Niesz are cousins (their mothers, Mary Young and Catherine Young, are sisters, with *their* father being Jacob Young).
+The above limits the path to blood relationships (parent/child relationships) thus excludes marriage. As a result, the shortest path between the two people is now longer: Barbara Shafner and Jacob J. Niesz are cousins (their mothers, Mary Young and Catherine Young, are sisters, with *their* father being Jacob Young).
 
 ![Shortest path between people](/images/analytics_path_parentship.png)
 

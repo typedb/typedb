@@ -28,7 +28,7 @@ import javax.annotation.CheckReturnValue;
  * <p>
  *     This represents an entity in the graph.
  *     Entities are objects which are defined by their {@link Attribute} and their links to
- *     other entities via {@link Relation}
+ *     other entities via {@link Relationship}
  * </p>
  *
  * @author fppt

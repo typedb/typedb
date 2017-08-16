@@ -29,9 +29,9 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
@@ -177,10 +177,10 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
             },
             () -> {
                 Label label = typeLabel();
-                RelationType superType = relationType();
-                RelationType relationType = graph.putRelationType(label).sup(superType);
-                summaryAssign(relationType, "graph", "putRelationType", label);
-                summary(relationType, "superType", superType);
+                RelationshipType superType = relationType();
+                RelationshipType relationshipType = graph.putRelationshipType(label).sup(superType);
+                summaryAssign(relationshipType, "graph", "putRelationshipType", label);
+                summary(relationshipType, "superType", superType);
             },
             () -> {
                 Type type = type();
@@ -224,21 +224,21 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
                 summary(role1, "superType", role2);
             },
             () -> {
-                RelationType relationType1 = relationType();
-                RelationType relationType2 = relationType();
-                relationType1.sup(relationType2);
-                summary(relationType1, "superType", relationType2);
+                RelationshipType relationshipType1 = relationType();
+                RelationshipType relationshipType2 = relationType();
+                relationshipType1.sup(relationshipType2);
+                summary(relationshipType1, "superType", relationshipType2);
             },
             () -> {
-                RelationType relationType = relationType();
-                Relation relation = relationType.addRelation();
-                summaryAssign(relation, relationType, "addRelation");
+                RelationshipType relationshipType = relationType();
+                Relationship relationship = relationshipType.addRelationship();
+                summaryAssign(relationship, relationshipType, "addRelationship");
             },
             () -> {
-                RelationType relationType = relationType();
+                RelationshipType relationshipType = relationType();
                 Role role = role();
-                relationType.relates(role);
-                summary(relationType, "relates", role);
+                relationshipType.relates(role);
+                summary(relationshipType, "relates", role);
             },
             () -> {
                 AttributeType attributeType1 = resourceType();
@@ -278,11 +278,11 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
                 summary(type, "scope", thing);
             },
             () -> {
-                Relation relation = relation();
+                Relationship relationship = relation();
                 Role role = role();
                 Thing thing = instance();
-                relation.addRolePlayer(role, thing);
-                summary(relation, "addRolePlayer", role, thing);
+                relationship.addRolePlayer(role, thing);
+                summary(relationship, "addRolePlayer", role, thing);
             }
     );
 
@@ -301,8 +301,8 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
     }
 
     private String summaryFormat(Object object) {
-        if (object instanceof OntologyConcept) {
-            return ((OntologyConcept) object).getLabel().getValue().replaceAll("-", "_");
+        if (object instanceof SchemaConcept) {
+            return ((SchemaConcept) object).getLabel().getValue().replaceAll("-", "_");
         } else if (object instanceof Thing) {
             Thing thing = (Thing) object;
             return summaryFormat(thing.type()) + thing.getId().getValue();
@@ -336,7 +336,7 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
         return random.choose((Collection<AttributeType>) graph.admin().getMetaResourceType().subs().collect(toSet()));
     }
 
-    private RelationType relationType() {
+    private RelationshipType relationType() {
         return random.choose(graph.admin().getMetaRelationType().subs().collect(toSet()));
     }
 
@@ -348,7 +348,7 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
         return chooseOrThrow(allInstancesFrom(graph));
     }
 
-    private Relation relation() {
+    private Relationship relation() {
         return chooseOrThrow(graph.admin().getMetaRelationType().instances());
     }
 
@@ -376,11 +376,11 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
         return concepts;
     }
 
-    public static Collection<? extends OntologyConcept> allOntologyElementsFrom(GraknTx graph) {
-        Set<OntologyConcept> allOntologyConcepts = new HashSet<>();
-        allOntologyConcepts.addAll(graph.admin().getMetaConcept().subs().collect(toSet()));
-        allOntologyConcepts.addAll(graph.admin().getMetaRole().subs().collect(toSet()));
-        return allOntologyConcepts;
+    public static Collection<? extends SchemaConcept> allOntologyElementsFrom(GraknTx graph) {
+        Set<SchemaConcept> allSchemaConcepts = new HashSet<>();
+        allSchemaConcepts.addAll(graph.admin().getMetaConcept().subs().collect(toSet()));
+        allSchemaConcepts.addAll(graph.admin().getMetaRole().subs().collect(toSet()));
+        return allSchemaConcepts;
     }
 
     public static Stream<? extends Thing> allInstancesFrom(GraknTx graph) {

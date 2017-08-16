@@ -19,13 +19,13 @@
 package ai.grakn.test.property;
 
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
+import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
+import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -154,7 +154,7 @@ public class TypePropertyTest {
     @Property
     public void whenAddingAPlaysToATypesIndirectSuperType_TheTypePlaysThatRole(
             Type type, @FromGraph Role role, long seed) {
-        OntologyConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(type), seed);
+        SchemaConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(type), seed);
         assumeTrue(superConcept.isType());
         assumeFalse(isMetaLabel(superConcept.getLabel()));
 

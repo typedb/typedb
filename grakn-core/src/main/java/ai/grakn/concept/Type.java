@@ -36,14 +36,14 @@ import java.util.stream.Stream;
  *
  * @see EntityType
  * @see Role
- * @see RelationType
+ * @see RelationshipType
  * @see AttributeType
  * @see RuleType
  *
  * @author fppt
  *
  */
-public interface Type extends OntologyConcept {
+public interface Type extends SchemaConcept {
     //------------------------------------- Modifiers ----------------------------------
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.
@@ -72,7 +72,7 @@ public interface Type extends OntologyConcept {
     Type plays(Role role) throws GraphOperationException;
 
     /**
-     * Creates a RelationType which allows this type and a {@link AttributeType} to be linked in a strictly one-to-one mapping.
+     * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType} to be linked in a strictly one-to-one mapping.
      *
      * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
      * @return The Type itself.
@@ -82,7 +82,7 @@ public interface Type extends OntologyConcept {
     Type key(AttributeType attributeType) throws GraphOperationException;
 
     /**
-     * Creates a RelationType which allows this type and a {@link AttributeType}  to be linked.
+     * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType}  to be linked.
      *
      * @param attributeType The {@link AttributeType}  which instances of this type should be allowed to play.
      * @return The Type itself.

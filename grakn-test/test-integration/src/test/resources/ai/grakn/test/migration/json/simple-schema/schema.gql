@@ -32,8 +32,8 @@ insert
   person-with-phone sub role;
   phone-of-person sub role;
 
-  address-has-street sub relation relates street-of-address relates address-with-street;
-  has-address sub relation relates address-of-person relates person-with-address;
-  has-phone sub relation relates phone-of-person relates person-with-phone;
+  address-has-street sub relationship relates street-of-address relates address-with-street;
+  has-address sub relationship relates address-of-person relates person-with-address;
+  has-phone sub relationship relates phone-of-person relates person-with-phone;
 
 

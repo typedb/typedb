@@ -83,13 +83,13 @@ parent = tx.putRole("parent");
 child = tx.putRole("child");
 ```
 
-Then to add the relationship types, `putRelationType()`, which is followed by `relates()` to set the roles associated with the relationship and attribute() to state that it has a date attribute:
+Then to add the relationship types, `putRelationshipType()`, which is followed by `relates()` to set the roles associated with the relationship and attribute() to state that it has a date attribute:
 
 ```java
-marriage = tx.putRelationType("marriage");
+marriage = tx.putRelationshipType("marriage");
 marriage.relates(spouse).relates(spouse1).relates(spouse2);
 marriage.attribute(date);
-parentship = tx.putRelationType("parentship");
+parentship = tx.putRelationshipType("parentship");
 parentship.relates(parent).relates(child);
 ```
 
@@ -145,7 +145,7 @@ The code goes on to create another `person` entity, named `maryYoung`, and then 
 ```java
 Entity maryYoung = person.addEntity();
 
-Relation theMarriage = marriage.addRelation().addRolePlayer(spouse1, johnNiesz).addRolePlayer(spouse2, maryYoung);
+Relationship theMarriage = marriage.addRelationship().addRolePlayer(spouse1, johnNiesz).addRolePlayer(spouse2, maryYoung);
 Attribute marriageDate = date.putAttribute(LocalDateTime.of(1880, 8, 12, 0, 0, 0).toString());
 theMarriage.attribute(marriageDate);
 ```

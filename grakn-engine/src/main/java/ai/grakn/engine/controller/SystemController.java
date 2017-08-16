@@ -212,10 +212,10 @@ public class SystemController {
     private String getKeyspaces(Request request, Response response) {
         try (GraknTx graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
 
-            AttributeType<String> keyspaceName = graph.getOntologyConcept(SystemKeyspace.KEYSPACE_RESOURCE);
+            AttributeType<String> keyspaceName = graph.getSchemaConcept(SystemKeyspace.KEYSPACE_RESOURCE);
             Json result = Json.array();
 
-            graph.<EntityType>getOntologyConcept(SystemKeyspace.KEYSPACE_ENTITY).instances().forEach(keyspace -> {
+            graph.<EntityType>getSchemaConcept(SystemKeyspace.KEYSPACE_ENTITY).instances().forEach(keyspace -> {
                 Collection<Attribute<?>> names = keyspace.attributes(keyspaceName).collect(Collectors.toSet());
                 if (names.size() != 1) {
                     throw GraknServerException.internalError(ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " has no unique name."));

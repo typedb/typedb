@@ -21,8 +21,8 @@ package ai.grakn.test.property;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
@@ -32,7 +32,7 @@ import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.Labels.Unused;
-import ai.grakn.generator.PutOntologyConceptFunctions;
+import ai.grakn.generator.PutSchemaConceptFunctions;
 import ai.grakn.generator.PutTypeFunctions;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -67,18 +67,18 @@ public class GraknTxPutPropertyTest {
     @Property
     public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyConceptWithTheGivenLabel(
             @Open GraknTx graph, @Unused Label label,
-            @From(PutOntologyConceptFunctions.class) BiFunction<GraknTx, Label, OntologyConcept> putOntologyConcept
+            @From(PutSchemaConceptFunctions.class) BiFunction<GraknTx, Label, SchemaConcept> putOntologyConcept
     ) {
-        OntologyConcept type = putOntologyConcept.apply(graph, label);
+        SchemaConcept type = putOntologyConcept.apply(graph, label);
         assertEquals(label, type.getLabel());
     }
 
     @Property
     public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyConceptWithDefaultProperties(
             @Open GraknTx graph, @Unused Label label,
-            @From(PutOntologyConceptFunctions.class) BiFunction<GraknTx, Label, OntologyConcept> putOntologyConcept
+            @From(PutSchemaConceptFunctions.class) BiFunction<GraknTx, Label, SchemaConcept> putOntologyConcept
     ) {
-        OntologyConcept concept = putOntologyConcept.apply(graph, label);
+        SchemaConcept concept = putOntologyConcept.apply(graph, label);
 
         assertThat("Concept should only have one sub-type: itself", concept.subs().collect(toSet()), contains(concept));
         assertFalse("Concept should not be implicit", concept.isImplicit());
@@ -121,7 +121,7 @@ public class GraknTxPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.ONTOLOGY_LABEL, type.getLabel()).getMessage());
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
         }
         graph.putEntityType(type.getLabel());
     }
@@ -164,7 +164,7 @@ public class GraknTxPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.ONTOLOGY_LABEL, type.getLabel()).getMessage());
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
         }
         graph.putAttributeType(type.getLabel(), dataType);
     }
@@ -208,7 +208,7 @@ public class GraknTxPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.ONTOLOGY_LABEL, type.getLabel()).getMessage());
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
         }
 
         graph.putRuleType(type.getLabel());
@@ -217,36 +217,36 @@ public class GraknTxPutPropertyTest {
     @Property
     public void whenCallingPutRelationType_CreateATypeWithSuperTypeRelation(
             @Open GraknTx graph, @Unused Label label) {
-        RelationType relationType = graph.putRelationType(label);
-        assertEquals(graph.admin().getMetaRelationType(), relationType.sup());
+        RelationshipType relationshipType = graph.putRelationshipType(label);
+        assertEquals(graph.admin().getMetaRelationType(), relationshipType.sup());
     }
 
     @Property
     public void whenCallingPutRelationType_CreateATypeThatOwnsNoRoles(
             @Open GraknTx graph, @Unused Label label) {
-        RelationType relationType = graph.putRelationType(label);
-        assertThat(relationType.relates().collect(toSet()), empty());
+        RelationshipType relationshipType = graph.putRelationshipType(label);
+        assertThat(relationshipType.relates().collect(toSet()), empty());
     }
 
     @Property
     public void whenCallingPutRelationTypeWithAnExistingRelationTypeLabel_ItReturnsThatType(
-            @Open GraknTx graph, @FromGraph RelationType relationType) {
-        RelationType newType = graph.putRelationType(relationType.getLabel());
-        assertEquals(relationType, newType);
+            @Open GraknTx graph, @FromGraph RelationshipType relationshipType) {
+        RelationshipType newType = graph.putRelationshipType(relationshipType.getLabel());
+        assertEquals(relationshipType, newType);
     }
 
     @Property
     public void whenCallingPutRelationTypeWithAnExistingNonRelationTypeLabel_Throw(
             @Open GraknTx graph, @FromGraph Type type) {
-        assumeFalse(type.isRelationType());
+        assumeFalse(type.isRelationshipType());
 
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.ONTOLOGY_LABEL, type.getLabel()).getMessage());
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
         }
-        graph.putRelationType(type.getLabel());
+        graph.putRelationshipType(type.getLabel());
     }
 
     @Property
@@ -278,7 +278,7 @@ public class GraknTxPutPropertyTest {
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
-            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.ONTOLOGY_LABEL, type.getLabel()).getMessage());
+            exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
         }
         graph.putRole(type.getLabel());
     }

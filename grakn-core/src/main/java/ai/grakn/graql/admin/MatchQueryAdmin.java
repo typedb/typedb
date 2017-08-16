@@ -19,7 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 
@@ -39,13 +39,13 @@ public interface MatchQueryAdmin extends MatchQuery {
      * @return all concept types referred to explicitly in the query
      */
     @CheckReturnValue
-    Set<OntologyConcept> getOntologyConcepts(GraknTx graph);
+    Set<SchemaConcept> getOntologyConcepts(GraknTx graph);
 
     /**
      * @return all concept types referred to explicitly in the query
      */
     @CheckReturnValue
-    Set<OntologyConcept> getOntologyConcepts();
+    Set<SchemaConcept> getOntologyConcepts();
 
     /**
      * @return the pattern to match in the graph

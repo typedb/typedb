@@ -22,7 +22,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraphOperationException;
@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static ai.grakn.util.Schema.BaseType.RELATION_TYPE;
+import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
 import static ai.grakn.util.Schema.BaseType.RULE_TYPE;
 
 /**
@@ -107,23 +107,23 @@ public final class ElementFactory {
         return getOrBuildConcept(vertex, (v) -> new AttributeImpl<>(v, type, persitedValue));
     }
 
-    // ---------------------------------------- Building Relation Types  -----------------------------------------------
-    public RelationTypeImpl buildRelationType(VertexElement vertex, RelationType type, Boolean isImplicit){
-        return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(v, type, isImplicit));
+    // ---------------------------------------- Building Relationship Types  -----------------------------------------------
+    public RelationshipTypeImpl buildRelationType(VertexElement vertex, RelationshipType type, Boolean isImplicit){
+        return getOrBuildConcept(vertex, (v) -> new RelationshipTypeImpl(v, type, isImplicit));
     }
 
     // -------------------------------------------- Building Relations
-    RelationImpl buildRelation(VertexElement vertex, RelationType type){
-        return getOrBuildConcept(vertex, (v) -> new RelationImpl(buildRelationReified(v, type)));
+    RelationshipImpl buildRelation(VertexElement vertex, RelationshipType type){
+        return getOrBuildConcept(vertex, (v) -> new RelationshipImpl(buildRelationReified(v, type)));
     }
-    public RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value){
-        return getOrBuildConcept(edge, (e) -> new RelationImpl(new RelationEdge(type, owner, value, edge)));
+    public RelationshipImpl buildRelation(EdgeElement edge, RelationshipType type, Role owner, Role value){
+        return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationshipEdge(type, owner, value, edge)));
     }
-    RelationImpl buildRelation(EdgeElement edge){
-        return getOrBuildConcept(edge, (e) -> new RelationImpl(new RelationEdge(edge)));
+    RelationshipImpl buildRelation(EdgeElement edge){
+        return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationshipEdge(edge)));
     }
-    RelationReified buildRelationReified(VertexElement vertex, RelationType type){
-        return new RelationReified(vertex, type);
+    RelationshipReified buildRelationReified(VertexElement vertex, RelationshipType type){
+        return new RelationshipReified(vertex, type);
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
@@ -178,8 +178,8 @@ public final class ElementFactory {
         if(!graknGraph.txCache().isConceptCached(conceptId)){
             Concept concept;
             switch (type) {
-                case RELATION:
-                    concept = new RelationImpl(new RelationReified(vertexElement));
+                case RELATIONSHIP:
+                    concept = new RelationshipImpl(new RelationshipReified(vertexElement));
                     break;
                 case TYPE:
                     concept = new TypeImpl<>(vertexElement);
@@ -187,8 +187,8 @@ public final class ElementFactory {
                 case ROLE:
                     concept = new RoleImpl(vertexElement);
                     break;
-                case RELATION_TYPE:
-                    concept = new RelationTypeImpl(vertexElement);
+                case RELATIONSHIP_TYPE:
+                    concept = new RelationshipTypeImpl(vertexElement);
                     break;
                 case ENTITY:
                     concept = new EntityImpl(vertexElement);
@@ -245,7 +245,7 @@ public final class ElementFactory {
             Concept concept;
             switch (label) {
                 case RESOURCE:
-                    concept = new RelationImpl(new RelationEdge(edgeElement));
+                    concept = new RelationshipImpl(new RelationshipEdge(edgeElement));
                     break;
                 default:
                     throw GraphOperationException.unknownConcept(label.name());
@@ -273,7 +273,7 @@ public final class ElementFactory {
             if(type.isPresent()){
                 String label = type.get().target().label();
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
-                if(label.equals(RELATION_TYPE.name())) return Schema.BaseType.RELATION;
+                if(label.equals(RELATIONSHIP_TYPE.name())) return Schema.BaseType.RELATIONSHIP;
                 if(label.equals(Schema.BaseType.ATTRIBUTE_TYPE.name())) return Schema.BaseType.ATTRIBUTE;
                 if(label.equals(RULE_TYPE.name())) return Schema.BaseType.RULE;
             }

@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.internal.analytics.CountMapReduce;
@@ -56,8 +56,8 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
         }
 
         Set<LabelId> rolePlayerLabelIds = subTypes.stream()
-                .filter(Concept::isRelationType)
-                .map(relationType -> ((RelationType) relationType).relates().collect(toSet()))
+                .filter(Concept::isRelationshipType)
+                .map(relationType -> ((RelationshipType) relationType).relates().collect(toSet()))
                 .filter(roles -> roles.size() == 2)
                 .flatMap(roles -> roles.stream().flatMap(Role::playedByTypes))
                 .map(type -> graph.get().admin().convertToId(type.getLabel()))

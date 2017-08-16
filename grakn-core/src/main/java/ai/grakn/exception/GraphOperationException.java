@@ -23,7 +23,7 @@ import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -100,8 +100,8 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when a {@link Type} has incoming edges and therefore cannot be deleted
      */
-    public static GraphOperationException cannotBeDeleted(OntologyConcept ontologyConcept){
-        return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(ontologyConcept.getLabel()));
+    public static GraphOperationException cannotBeDeleted(SchemaConcept schemaConcept){
+        return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(schemaConcept.getLabel()));
     }
 
     /**
@@ -114,7 +114,7 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when setting {@code superType} as the super type of {@code type} and a loop is created
      */
-    public static GraphOperationException loopCreated(OntologyConcept type, OntologyConcept superElement){
+    public static GraphOperationException loopCreated(SchemaConcept type, SchemaConcept superElement){
         throw new GraphOperationException(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(type.getLabel(), superElement.getLabel()));
     }
 
@@ -252,7 +252,7 @@ public class GraphOperationException extends GraknException{
     }
 
     /**
-     * Thrown when changing the {@link Label} of an {@link OntologyConcept} which is owned by another {@link OntologyConcept}
+     * Thrown when changing the {@link Label} of an {@link SchemaConcept} which is owned by another {@link SchemaConcept}
      */
     public static GraphOperationException labelTaken(Label label){
         throw new GraphOperationException(LABEL_TAKEN.getMessage(label));

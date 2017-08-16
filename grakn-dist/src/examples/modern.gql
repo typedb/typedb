@@ -29,7 +29,7 @@ known-about sub role;
 person plays knower;
 person plays known-about;
 
-knows sub relation
+knows sub relationship
 	relates knower
 	relates known-about
 	has weight;
@@ -58,7 +58,7 @@ programmed sub role;
 person plays programmer;
 software plays programmed;
 
-programming sub relation
+programming sub relationship
 	relates programmer
 	relates programmed
 	has weight;

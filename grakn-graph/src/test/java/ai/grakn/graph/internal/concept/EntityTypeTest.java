@@ -23,7 +23,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -72,7 +72,7 @@ public class EntityTypeTest extends GraphTestBase {
     public void whenCreatingEntityTypeUsingLabelTakenByAnotherType_Throw(){
         Role original = graknGraph.putRole("Role Type");
         expectedException.expect(PropertyNotUniqueException.class);
-        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original, Schema.VertexProperty.ONTOLOGY_LABEL, original.getLabel()).getMessage());
+        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original, Schema.VertexProperty.SCHEMA_LABEL, original.getLabel()).getMessage());
         graknGraph.putEntityType(original.getLabel());
     }
 
@@ -274,13 +274,13 @@ public class EntityTypeTest extends GraphTestBase {
                 containsInAnyOrder(graknGraph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
 
         //Check Implicit Types Follow SUB Structure
-        RelationType rtSuperRelation = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(rtSuper.getLabel()));
-        Role rtSuperRoleOwner = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rtSuper.getLabel()));
-        Role rtSuperRoleValue = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rtSuper.getLabel()));
+        RelationshipType rtSuperRelation = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(rtSuper.getLabel()));
+        Role rtSuperRoleOwner = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rtSuper.getLabel()));
+        Role rtSuperRoleValue = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rtSuper.getLabel()));
 
-        RelationType rtRelation = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(rt.getLabel()));
-        Role reRoleOwner = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rt.getLabel()));
-        Role reRoleValue = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rt.getLabel()));
+        RelationshipType rtRelation = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(rt.getLabel()));
+        Role reRoleOwner = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rt.getLabel()));
+        Role reRoleValue = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rt.getLabel()));
 
         assertEquals(rtSuperRoleOwner, reRoleOwner.sup());
         assertEquals(rtSuperRoleValue, reRoleValue.sup());

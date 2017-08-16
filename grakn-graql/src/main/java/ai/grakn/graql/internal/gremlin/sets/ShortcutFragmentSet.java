@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
@@ -107,10 +107,10 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
             if (roleLabel.label().equals(Schema.MetaSchema.ROLE.getLabel())) {
                 newShortcut = shortcut.removeRoleVar();
             } else {
-                OntologyConcept ontologyConcept = graph.getOntologyConcept(roleLabel.label());
+                SchemaConcept schemaConcept = graph.getSchemaConcept(roleLabel.label());
 
-                if (ontologyConcept != null && ontologyConcept.isRole()) {
-                    Role role = ontologyConcept.asRole();
+                if (schemaConcept != null && schemaConcept.isRole()) {
+                    Role role = schemaConcept.asRole();
                     newShortcut = shortcut.substituteRoleTypeLabel(role);
                 }
             }
@@ -162,13 +162,13 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
             if (relationLabel == null) continue;
 
-            OntologyConcept ontologyConcept = graph.getOntologyConcept(relationLabel.label());
+            SchemaConcept schemaConcept = graph.getSchemaConcept(relationLabel.label());
 
-            if (ontologyConcept != null && ontologyConcept.isRelationType()) {
-                RelationType relationType = ontologyConcept.asRelationType();
+            if (schemaConcept != null && schemaConcept.isRelationshipType()) {
+                RelationshipType relationshipType = schemaConcept.asRelationshipType();
 
                 fragmentSets.remove(shortcut);
-                fragmentSets.add(shortcut.addRelationTypeLabel(relationType));
+                fragmentSets.add(shortcut.addRelationTypeLabel(relationshipType));
 
                 return true;
             }
@@ -186,7 +186,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         Preconditions.checkState(this.role.isPresent());
         Preconditions.checkState(!roleTypeLabels.isPresent());
 
-        Set<Label> newRoleLabels = role.subs().map(OntologyConcept::getLabel).collect(toSet());
+        Set<Label> newRoleLabels = role.subs().map(SchemaConcept::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleLabels), relationTypeLabels
@@ -195,13 +195,13 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
     /**
      * Apply an optimisation where we check the relation-type property.
-     * @param relationType the relation-type that this shortcut fragment must link to
+     * @param relationshipType the relation-type that this shortcut fragment must link to
      * @return a new {@link ShortcutFragmentSet} with the same properties excepting relation-type labels
      */
-    private ShortcutFragmentSet addRelationTypeLabel(RelationType relationType) {
+    private ShortcutFragmentSet addRelationTypeLabel(RelationshipType relationshipType) {
         Preconditions.checkState(!relationTypeLabels.isPresent());
 
-        Set<Label> newRelationLabels = relationType.subs().map(Type::getLabel).collect(toSet());
+        Set<Label> newRelationLabels = relationshipType.subs().map(Type::getLabel).collect(toSet());
 
         return new ShortcutFragmentSet(varProperty,
                 relation, edge, rolePlayer, role, roleTypeLabels, Optional.of(newRelationLabels)

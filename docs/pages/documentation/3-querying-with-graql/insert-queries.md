@@ -138,9 +138,9 @@ qb.insert(var().isa("person").has("identifier", "Fuchsia Groan").has("gender", "
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
-### relation
+### relationship
 
-Make the concept a relation that relates the given role players, playing the given roles.   
+Make the concept a relationship that relates the given role players, playing the given roles.   
 *(With apologies to 'Gormenghast' fans, who will be aware that Titus and Fuchsia are siblings and thus cannot marry).*
 
 <ul id="profileTabs" class="nav nav-tabs">
@@ -201,7 +201,7 @@ qb.insert(label("woman").sub("person")).execute();
 
 
 ### relates
-Add a role to a relation.
+Add a role to a relationship.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell9" data-toggle="tab">Graql</a></li>
@@ -211,13 +211,13 @@ Add a role to a relation.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell9">
 <pre>
-insert siblings sub relation, relates sibling1, relates sibling2;
+insert siblings sub relationship, relates sibling1, relates sibling2;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java9">
 <pre>
 qb.insert(
-  label("siblings").sub("relation")
+  label("siblings").sub("relationship")
     .relates("sibling1").relates("sibling2")
 ).execute();
 </pre>
@@ -253,7 +253,7 @@ qb.insert(label("person").plays("sibling2")).execute();
 
 Allow the concept type to have the given attribute.
 
-This is done by creating a specific relation relating the concept and attribute.
+This is done by creating a specific relationship relating the concept and attribute.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell11" data-toggle="tab">Graql</a></li>

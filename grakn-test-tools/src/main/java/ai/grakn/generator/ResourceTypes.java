@@ -41,7 +41,7 @@ public class ResourceTypes extends AbstractTypeGenerator<AttributeType> {
     }
 
     @Override
-    protected AttributeType metaOntologyConcept() {
+    protected AttributeType metaSchemaConcept() {
         return graph().admin().getMetaResourceType();
     }
 }

@@ -25,8 +25,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -660,9 +660,9 @@ public class MatchQueryTest {
             Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get("x").collect(Collectors.toSet());
             Collection<Role> graphAPIPlays;
 
-            OntologyConcept ontologyConcept = graph.getOntologyConcept(type);
-            if (ontologyConcept.isType()) {
-                graphAPIPlays = ontologyConcept.asType().plays().collect(toSet());
+            SchemaConcept schemaConcept = graph.getSchemaConcept(type);
+            if (schemaConcept.isType()) {
+                graphAPIPlays = schemaConcept.asType().plays().collect(toSet());
             } else {
                 graphAPIPlays = Collections.EMPTY_SET;
             }
@@ -672,7 +672,7 @@ public class MatchQueryTest {
 
         Stream.of(d, e, f).forEach(type -> {
             Set<Concept> graqlPlayedBy = qb.match(x.plays(Graql.label(type))).get("x").collect(toSet());
-            Collection<Type> graphAPIPlayedBy = graph.<Role>getOntologyConcept(type).playedByTypes().collect(toSet());
+            Collection<Type> graphAPIPlayedBy = graph.<Role>getSchemaConcept(type).playedByTypes().collect(toSet());
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });
@@ -946,7 +946,7 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryingForSuperRelationType_ReturnResults() {
-        AskQuery query = qb.match(var().isa("relation").rel(x).rel(y)).ask();
+        AskQuery query = qb.match(var().isa(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()).rel(x).rel(y)).ask();
         assertTrue("Query had no results", query.execute());
     }
 
@@ -978,11 +978,11 @@ public class MatchQueryTest {
     public void whenQueryingForAnImplicitRelationById_TheRelationIsReturned() {
         MatchQuery query = qb.match(var("x").isa(label(Schema.ImplicitType.HAS.getLabel("name"))));
 
-        Relation relation = query.get("x").findAny().get().asRelation();
+        Relationship relationship = query.get("x").findAny().get().asRelationship();
 
-        MatchQuery queryById = qb.match(var("x").id(relation.getId()));
+        MatchQuery queryById = qb.match(var("x").id(relationship.getId()));
 
-        assertThat(queryById, variable("x", contains(MatchableConcept.of(relation))));
+        assertThat(queryById, variable("x", contains(MatchableConcept.of(relationship))));
     }
 
     @Test

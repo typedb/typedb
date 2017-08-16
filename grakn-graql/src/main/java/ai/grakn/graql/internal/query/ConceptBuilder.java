@@ -24,7 +24,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -108,7 +108,7 @@ public class ConceptBuilder {
      * if (has(LABEL)) {
      *      Label label = expect(LABEL);                          // usedParams = {LABEL}
      *      // Retrieve SUPER_CONCEPT and adds it to usedParams
-     *      OntologyConcept superConcept = expect(SUPER_CONCEPT); // usedParams = {LABEL, SUPER_CONCEPT}
+     *      SchemaConcept superConcept = expect(SUPER_CONCEPT); // usedParams = {LABEL, SUPER_CONCEPT}
      *      return graph.putEntityType(label).sup(superConcept.asRole());
      * }
      *
@@ -127,7 +127,7 @@ public class ConceptBuilder {
         return set(TYPE, type);
     }
 
-    public ConceptBuilder sub(OntologyConcept superConcept) {
+    public ConceptBuilder sub(SchemaConcept superConcept) {
         return set(SUPER_CONCEPT, superConcept);
     }
 
@@ -183,14 +183,14 @@ public class ConceptBuilder {
         if (has(ID)) {
             concept = executor.graph().getConcept(use(ID));
         } else if (has(LABEL)) {
-            concept = executor.graph().getOntologyConcept(use(LABEL));
+            concept = executor.graph().getSchemaConcept(use(LABEL));
         }
 
         if (concept != null) {
             // The super can be changed on an existing concept
             if (has(SUPER_CONCEPT)) {
-                OntologyConcept superConcept = use(SUPER_CONCEPT);
-                setSuper(concept.asOntologyConcept(), superConcept);
+                SchemaConcept superConcept = use(SUPER_CONCEPT);
+                setSuper(concept.asSchemaConcept(), superConcept);
             }
 
             validate(concept);
@@ -238,7 +238,7 @@ public class ConceptBuilder {
     }
 
     private static final BuilderParam<Type> TYPE = () -> IsaProperty.NAME;
-    private static final BuilderParam<OntologyConcept> SUPER_CONCEPT = () -> SubProperty.NAME;
+    private static final BuilderParam<SchemaConcept> SUPER_CONCEPT = () -> SubProperty.NAME;
     private static final BuilderParam<Label> LABEL = () -> LabelProperty.NAME;
     private static final BuilderParam<ConceptId> ID = () -> IdProperty.NAME;
     private static final BuilderParam<Object> VALUE = () -> ValueProperty.NAME;
@@ -299,8 +299,8 @@ public class ConceptBuilder {
      */
     private void validate(Concept concept) {
         validateParam(concept, TYPE, Thing.class, Thing::type);
-        validateParam(concept, SUPER_CONCEPT, OntologyConcept.class, OntologyConcept::sup);
-        validateParam(concept, LABEL, OntologyConcept.class, OntologyConcept::getLabel);
+        validateParam(concept, SUPER_CONCEPT, SchemaConcept.class, SchemaConcept::sup);
+        validateParam(concept, LABEL, SchemaConcept.class, SchemaConcept::getLabel);
         validateParam(concept, ID, Concept.class, Concept::getId);
         validateParam(concept, VALUE, Attribute.class, Attribute::getValue);
         validateParam(concept, DATA_TYPE, AttributeType.class, AttributeType::getDataType);
@@ -332,8 +332,8 @@ public class ConceptBuilder {
 
         if (type.isEntityType()) {
             return type.asEntityType().addEntity();
-        } else if (type.isRelationType()) {
-            return type.asRelationType().addRelation();
+        } else if (type.isRelationshipType()) {
+            return type.asRelationshipType().addRelationship();
         } else if (type.isAttributeType()) {
             return type.asAttributeType().putAttribute(use(VALUE));
         } else if (type.isRuleType()) {
@@ -345,16 +345,16 @@ public class ConceptBuilder {
         }
     }
 
-    private OntologyConcept putOntologyConcept() {
-        OntologyConcept superConcept = use(SUPER_CONCEPT);
+    private SchemaConcept putOntologyConcept() {
+        SchemaConcept superConcept = use(SUPER_CONCEPT);
         Label label = use(LABEL);
 
-        OntologyConcept concept;
+        SchemaConcept concept;
 
         if (superConcept.isEntityType()) {
             concept = executor.graph().putEntityType(label);
-        } else if (superConcept.isRelationType()) {
-            concept = executor.graph().putRelationType(label);
+        } else if (superConcept.isRelationshipType()) {
+            concept = executor.graph().putRelationshipType(label);
         } else if (superConcept.isRole()) {
             concept = executor.graph().putRole(label);
         } else if (superConcept.isAttributeType()) {
@@ -377,11 +377,11 @@ public class ConceptBuilder {
      *
      * @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
      */
-    public static void setSuper(OntologyConcept subConcept, OntologyConcept superConcept) {
+    public static void setSuper(SchemaConcept subConcept, SchemaConcept superConcept) {
         if (superConcept.isEntityType()) {
             subConcept.asEntityType().sup(superConcept.asEntityType());
-        } else if (superConcept.isRelationType()) {
-            subConcept.asRelationType().sup(superConcept.asRelationType());
+        } else if (superConcept.isRelationshipType()) {
+            subConcept.asRelationshipType().sup(superConcept.asRelationshipType());
         } else if (superConcept.isRole()) {
             subConcept.asRole().sup(superConcept.asRole());
         } else if (superConcept.isAttributeType()) {

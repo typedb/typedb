@@ -20,7 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -39,17 +39,17 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Abstract class for generating {@link OntologyConcept}s.
+ * Abstract class for generating {@link SchemaConcept}s.
  *
- * @param <T> the kind of {@link OntologyConcept} to generate
+ * @param <T> the kind of {@link SchemaConcept} to generate
  *
  * @author Felix Chapman
  */
-public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept> extends FromGraphGenerator<T> {
+public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> extends FromGraphGenerator<T> {
 
     private Optional<Boolean> meta = Optional.empty();
 
-    AbstractOntologyConceptGenerator(Class<T> type) {
+    AbstractSchemaConceptGenerator(Class<T> type) {
         super(type);
     }
 
@@ -58,22 +58,22 @@ public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept
         Collection<T> ontologyConcepts;
 
         if (!includeNonMeta()) {
-            ontologyConcepts = Sets.newHashSet(otherMetaOntologyConcepts());
-            ontologyConcepts.add(metaOntologyConcept());
+            ontologyConcepts = Sets.newHashSet(otherMetaSchemaConcepts());
+            ontologyConcepts.add(metaSchemaConcept());
         } else {
-            ontologyConcepts = (Collection<T>) metaOntologyConcept().subs().collect(toSet());
+            ontologyConcepts = (Collection<T>) metaSchemaConcept().subs().collect(toSet());
         }
 
         ontologyConcepts = ontologyConcepts.stream().filter(this::filter).collect(toSet());
 
         if (!includeMeta()) {
-            ontologyConcepts.remove(metaOntologyConcept());
-            ontologyConcepts.removeAll(otherMetaOntologyConcepts());
+            ontologyConcepts.remove(metaSchemaConcept());
+            ontologyConcepts.removeAll(otherMetaSchemaConcepts());
         }
 
         if (ontologyConcepts.isEmpty() && includeNonMeta()) {
             Label label = genFromGraph(Labels.class).mustBeUnused().generate(random, status);
-            assert graph().getOntologyConcept(label) == null;
+            assert graph().getSchemaConcept(label) == null;
             return newOntologyConcept(label);
         } else {
             return random.choose(ontologyConcepts);
@@ -82,13 +82,13 @@ public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept
 
     protected abstract T newOntologyConcept(Label label);
 
-    protected abstract T metaOntologyConcept();
+    protected abstract T metaSchemaConcept();
 
-    protected Collection<T> otherMetaOntologyConcepts() {
+    protected Collection<T> otherMetaSchemaConcepts() {
         return ImmutableSet.of();
     }
 
-    protected boolean filter(T ontologyConcept) {
+    protected boolean filter(T schemaConcept) {
         return true;
     }
 
@@ -100,7 +100,7 @@ public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept
         return !meta.orElse(false);
     }
 
-    final AbstractOntologyConceptGenerator<T> excludeMeta() {
+    final AbstractSchemaConceptGenerator<T> excludeMeta() {
         meta = Optional.of(false);
         return this;
     }
@@ -118,7 +118,7 @@ public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept
     }
 
     /**
-     * Specify whether the generated {@link OntologyConcept} should be a meta concept
+     * Specify whether the generated {@link SchemaConcept} should be a meta concept
      */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
@@ -127,7 +127,7 @@ public abstract class AbstractOntologyConceptGenerator<T extends OntologyConcept
     }
 
     /**
-     * Specify whether the generated {@link OntologyConcept} should not be a meta concept
+     * Specify whether the generated {@link SchemaConcept} should not be a meta concept
      */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)

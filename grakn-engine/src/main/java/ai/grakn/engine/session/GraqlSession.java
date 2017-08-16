@@ -23,7 +23,7 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.ComputeQuery;
@@ -362,7 +362,7 @@ class GraqlSession {
      * @return all type IDs in the ontology
      */
     private static Stream<Label> getTypes(GraknTx graph) {
-        return graph.admin().getMetaConcept().subs().map(OntologyConcept::getLabel);
+        return graph.admin().getMetaConcept().subs().map(SchemaConcept::getLabel);
     }
 
     private Printer getPrinter(AttributeType... resources) {

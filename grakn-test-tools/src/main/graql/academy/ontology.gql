@@ -35,23 +35,23 @@ region sub entity
 
 
 affected sub role; information sub role;
-affects sub relation
+affects sub relationship
   relates affected
   relates information;
 
 issuer sub role; issued sub role;
-issues sub relation
+issues sub relationship
   relates issuer
   relates issued;
 
 owner sub role; owned sub role;
-owns sub relation
+owns sub relationship
   relates owner
   relates owned;
 
 
 location sub role; located sub role;
-located-in sub relation
+located-in sub relationship
   relates location
   relates located;
 

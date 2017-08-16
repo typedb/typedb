@@ -10,17 +10,17 @@ insert
 
 "friendA" sub role;
 "friendB" sub role;
-"Friend" sub relation, relates friendA, relates friendB;
+"Friend" sub relationship, relates friendA, relates friendB;
 Person plays friendA, plays friendB;
 
 "parent" sub role;
 "child" sub role;
-"Parent" sub relation, relates parent, relates child;
+"Parent" sub relationship, relates parent, relates child;
 Person plays parent, plays child;
 
 "person" sub role;
 "ancestor-friend" sub role;
-"Ancestor-friend" sub relation, relates person, relates ancestor-friend;
+"Ancestor-friend" sub relationship, relates person, relates ancestor-friend;
 Person plays person, plays ancestor-friend;
 
 "name" sub attribute, datatype string;

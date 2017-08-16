@@ -20,8 +20,8 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
@@ -46,23 +46,23 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Encapsulates The {@link Relation} as a {@link VertexElement}
+ *     Encapsulates The {@link Relationship} as a {@link VertexElement}
  * </p>
  *
  * <p>
- *     This wraps up a {@link Relation} as a {@link VertexElement}. It is used to represent any {@link Relation} which
+ *     This wraps up a {@link Relationship} as a {@link VertexElement}. It is used to represent any {@link Relationship} which
  *     has been reified.
  * </p>
  *
  * @author fppt
  *
  */
-public class RelationReified extends ThingImpl<Relation, RelationType> implements RelationStructure {
-    public RelationReified(VertexElement vertexElement) {
+public class RelationshipReified extends ThingImpl<Relationship, RelationshipType> implements RelationshipStructure {
+    public RelationshipReified(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    public RelationReified(VertexElement vertexElement, RelationType type) {
+    public RelationshipReified(VertexElement vertexElement, RelationshipType type) {
         super(vertexElement, type);
     }
 
@@ -99,14 +99,14 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
 
     /**
      *
-     * @param relationType The type of this relation
+     * @param relationshipType The type of this relation
      * @param roleMap The roles and their corresponding role players
-     * @return A unique hash identifying this {@link Relation}
+     * @return A unique hash identifying this {@link Relationship}
      */
-    public static String generateNewHash(RelationType relationType, Map<Role, Set<Thing>> roleMap){
+    public static String generateNewHash(RelationshipType relationshipType, Map<Role, Set<Thing>> roleMap){
         SortedSet<Role> sortedRoleIds = new TreeSet<>(roleMap.keySet());
         StringBuilder hash = new StringBuilder();
-        hash.append("RelationType_").append(StringUtil.escapeString(relationType.getId().getValue())).append("_Relation");
+        hash.append("RelationType_").append(StringUtil.escapeString(relationshipType.getId().getValue())).append("_Relation");
 
         for(Role role: sortedRoleIds){
             hash.append("_").append(StringUtil.escapeString(role.getId().getValue()));
@@ -121,15 +121,15 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     }
 
     /**
-     * Creates a hash for a relation based on it's {@link RelationType} and the {@link Attribute} which serves as it's key
+     * Creates a hash for a relation based on it's {@link RelationshipType} and the {@link Attribute} which serves as it's key
      *
-     * @param relationType the {@link RelationType} of the {@link Relation}
+     * @param relationshipType the {@link RelationshipType} of the {@link Relationship}
      * @param resourceMap a sorted map of {@link AttributeType} Ids to {@link Attribute} Ids
-     * @return A unique hash identifying this {@link Relation}
+     * @return A unique hash identifying this {@link Relationship}
      */
-    public static String generateNewHash(RelationType relationType, TreeMap<String, String> resourceMap){
+    public static String generateNewHash(RelationshipType relationshipType, TreeMap<String, String> resourceMap){
         StringBuilder hashMain = new StringBuilder();
-        hashMain.append("RelationType_").append(StringUtil.escapeString(relationType.getId().getValue())).append("_");
+        hashMain.append("RelationType_").append(StringUtil.escapeString(relationshipType.getId().getValue())).append("_");
 
         StringBuilder hashResourceTypes = new StringBuilder();
         hashResourceTypes.append("ResourceTypes_");
@@ -147,10 +147,10 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     }
 
     /**
-     * Castings are retrieved from the perspective of the {@link Relation}
+     * Castings are retrieved from the perspective of the {@link Relationship}
      *
      * @param roles The role which the instances are playing
-     * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relation}
+     * @return The {@link Casting} which unify a {@link Role} and {@link Thing} with this {@link Relationship}
      */
     public Stream<Casting> castingsRelation(Role... roles){
         if(roles.length == 0){
@@ -163,7 +163,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         return vertex().graph().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().getLabelId().getValue()).
+                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), type().getLabelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).
                 toStream().map(edge -> vertex().graph().factory().buildCasting(edge));
     }
@@ -188,7 +188,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     }
 
     @Override
-    public RelationReified reify() {
+    public RelationshipReified reify() {
         return this;
     }
 

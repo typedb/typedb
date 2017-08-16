@@ -369,7 +369,7 @@ public class ReasoningTests {
                 {
                     assertTrue(ans.get(var("x")).isEntity());
                     assertTrue(ans.get(var("y")).isAttribute());
-                    assertTrue(ans.get(var("z")).isRelation());
+                    assertTrue(ans.get(var("z")).isRelationship());
                 }
         );
 
@@ -378,7 +378,7 @@ public class ReasoningTests {
         assertEquals(answers2.size(), 1);
         answers2.forEach(ans ->
                 {
-                    assertTrue(ans.get(var("x")).isRelation());
+                    assertTrue(ans.get(var("x")).isRelationship());
                     assertTrue(ans.get(var("y")).isAttribute());
                 }
         );

@@ -10,4 +10,4 @@ folder: overview
 toc: false
 ---
 
-Grakn is perfect when you have heterogeneous data with complex relations that is challenging, unscalable, and cumbersome to model, query and maintain.
+Grakn is perfect when you have heterogeneous data with complex relationships that is challenging, unscalable, and cumbersome to model, query and maintain.

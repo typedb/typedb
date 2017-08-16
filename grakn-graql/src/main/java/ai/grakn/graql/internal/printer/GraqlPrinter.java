@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -65,11 +65,11 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             // Display values for resources and ids for everything else
             if (concept.isAttribute()) {
                 sb.append(colorKeyword("val ")).append(StringUtil.valueToString(concept.asAttribute().getValue()));
-            } else if (concept.isOntologyConcept()) {
-                OntologyConcept ontoConcept = concept.asOntologyConcept();
+            } else if (concept.isSchemaConcept()) {
+                SchemaConcept ontoConcept = concept.asSchemaConcept();
                 sb.append(colorKeyword("label ")).append(colorType(ontoConcept));
 
-                OntologyConcept superConcept = ontoConcept.sup();
+                SchemaConcept superConcept = ontoConcept.sup();
 
                 if (superConcept != null) {
                     sb.append(colorKeyword(" sub ")).append(colorType(superConcept));
@@ -78,8 +78,8 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                 sb.append(colorKeyword("id ")).append(idToString(concept.getId()));
             }
 
-            if (concept.isRelation()) {
-                String relationString = concept.asRelation().allRolePlayers().entrySet().stream().flatMap(entry -> {
+            if (concept.isRelationship()) {
+                String relationString = concept.asRelationship().allRolePlayers().entrySet().stream().flatMap(entry -> {
                     Role role = entry.getKey();
                     Set<Thing> things = entry.getValue();
 
@@ -197,14 +197,14 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
 
     /**
      * Color-codes the given type if colorization enabled
-     * @param ontologyConcept a type to color-code using ANSI colors
+     * @param schemaConcept a type to color-code using ANSI colors
      * @return the type, color-coded
      */
-    private String colorType(OntologyConcept ontologyConcept) {
+    private String colorType(SchemaConcept schemaConcept) {
         if(colorize) {
-            return ANSI.color(typeLabelToString(ontologyConcept.getLabel()), ANSI.PURPLE);
+            return ANSI.color(typeLabelToString(schemaConcept.getLabel()), ANSI.PURPLE);
         } else {
-            return typeLabelToString(ontologyConcept.getLabel());
+            return typeLabelToString(schemaConcept.getLabel());
         }
     }
 }

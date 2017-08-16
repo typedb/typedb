@@ -10,7 +10,7 @@ comment_issue_id: 71
 ---
 
 The connected components algorithm can be used to find clusters of instances in the knowledge base that are connected.
-The algorithm finds all instances (relations, resources and entities) that are connected via relations in the knowledge base and gives each set a unique label.
+The algorithm finds all instances (relationships, resources and entities) that are connected via relationships in the knowledge base and gives each set a unique label.
 In the knowledge base below you can see three connected components that correspond to people who are related through marriage.
 In this knowledge base three unique labels will be created one corresponding to each of the sets of connected instances.
 
