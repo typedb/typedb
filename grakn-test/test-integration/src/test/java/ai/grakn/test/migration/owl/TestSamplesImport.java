@@ -106,7 +106,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             assertTrue(
                 type.instances()
                         .flatMap(inst -> inst
-                                .resources(graph.getAttributeType(OwlModel.IRI.owlname())))
+                                .attributes(graph.getAttributeType(OwlModel.IRI.owlname())))
                         .anyMatch(s -> s.getValue().equals("eShakespeare"))
             );
             final Entity author = getEntity("eShakespeare");
@@ -141,7 +141,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Assert.assertNotNull(type);
             Optional<Entity> e = findById(type.instances().collect(toSet()), "eProduct5");
             assertTrue(e.isPresent());
-            e.get().resources().map(Attribute::type).forEach(System.out::println);
+            e.get().attributes().map(Attribute::type).forEach(System.out::println);
             assertResourceEntityRelationExists(graph, "Product_Available", "14", e.get());
         }
         catch (Throwable t) {
@@ -170,13 +170,13 @@ public class TestSamplesImport extends TestOwlGraknBase {
             EntityType type = migrator.entityType(owlManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));          
             Assert.assertNotNull(type);         
             assertTrue(type.instances().flatMap(inst -> inst
-                    .resources(graph.getAttributeType(OwlModel.IRI.owlname())))
+                    .attributes(graph.getAttributeType(OwlModel.IRI.owlname())))
                     .anyMatch(s -> s.getValue().equals("eItem1")));
 
             Entity item1 = getEntity("eItem1");
             // Item1 name data property is "First Name"
-            assertTrue(item1.resources().anyMatch(r -> r.getValue().equals("First Item")));
-            item1.resources().forEach(System.out::println);
+            assertTrue(item1.attributes().anyMatch(r -> r.getValue().equals("First Item")));
+            item1.attributes().forEach(System.out::println);
             Entity item2 = getEntity("eItem2");
             Role subjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(Label.of("op-related")));
             Role objectRole = graph.getOntologyConcept(migrator.namer().objectRole(Label.of("op-related")));
@@ -192,7 +192,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             assertTrue(category2.relations(catobjectRole).anyMatch(
                     relation -> item1.equals(relation.rolePlayers(catsubjectRole).iterator().next())));
             Entity category1 = getEntity("eCategory1");
-            category1.resources().forEach(System.out::println);
+            category1.attributes().forEach(System.out::println);
             // annotation assertion axioms don't seem to be visited for some reason...need to troubleshoot seems like 
             // OWLAPI issue
             //this.checkResource(category1, "comment", "category 1 comment");

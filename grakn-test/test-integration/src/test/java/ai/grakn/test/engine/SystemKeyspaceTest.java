@@ -194,7 +194,7 @@ public class SystemKeyspaceTest {
         try(GraknTx graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.READ)){
             AttributeType<String> keyspaceName = graph.getAttributeType("keyspace-name");
             return graph.getEntityType("keyspace").instances().
-                    map(e -> e.resources(keyspaceName).iterator().next().getValue().toString()).
+                    map(e -> e.attributes(keyspaceName).iterator().next().getValue().toString()).
                     collect(Collectors.toSet());
         }
     }

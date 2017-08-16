@@ -215,13 +215,13 @@ public class TxCacheTest extends GraphTestBase {
         AttributeType<String> attributeType = graknGraph.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
         Role role1 = graknGraph.putRole("role 1");
         Role role2 = graknGraph.putRole("role 2");
-        EntityType entityType = graknGraph.putEntityType("My Type").plays(role1).plays(role2).resource(attributeType);
+        EntityType entityType = graknGraph.putEntityType("My Type").plays(role1).plays(role2).attribute(attributeType);
         RelationType relationType = graknGraph.putRelationType("My Relation Type").relates(role1).relates(role2);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
         Attribute<String> r1 = attributeType.putAttribute("test");
 
-        e1.resource(r1);
+        e1.attribute(r1);
         relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
 
         //Check the caches are not empty

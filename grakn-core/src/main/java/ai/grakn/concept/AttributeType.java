@@ -153,7 +153,7 @@ public interface AttributeType<D> extends Type {
      * @return The Type itself.
      */
     @Override
-    AttributeType<D> resource(AttributeType attributeType);
+    AttributeType<D> attribute(AttributeType attributeType);
 
     //------------------------------------- Accessors ---------------------------------
     /**

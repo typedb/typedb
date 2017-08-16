@@ -62,7 +62,7 @@ public abstract class TestGraph {
 
     public static <T> void putResource(Thing thing, AttributeType<T> attributeType, T resource) {
         Attribute attributeInstance = attributeType.putAttribute(resource);
-        thing.resource(attributeInstance);
+        thing.attribute(attributeInstance);
     }
 
     public static Thing getInstance(GraknTx graph, String id){

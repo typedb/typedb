@@ -336,7 +336,7 @@ public class GraknTxPropertyTest {
         } else {
             exception.expectMessage(GraphOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
         }
-        type.resource(resource);
+        type.attribute(resource);
     }
 
     private <T> void assertSameResult(Supplier<T> expectedMethod, Supplier<T> actualMethod) {

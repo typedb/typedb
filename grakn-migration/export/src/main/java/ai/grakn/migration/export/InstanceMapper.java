@@ -123,7 +123,7 @@ public class InstanceMapper {
      * @return var pattern with resources
      */
     private static VarPattern hasResources(VarPattern var, Thing thing){
-        for(Attribute attribute : thing.resources().collect(Collectors.toSet())){
+        for(Attribute attribute : thing.attributes().collect(Collectors.toSet())){
            var = var.has(attribute.type().getLabel(), var().val(attribute.getValue()));
         }
         return var;

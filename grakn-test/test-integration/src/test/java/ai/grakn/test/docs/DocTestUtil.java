@@ -52,7 +52,7 @@ public class DocTestUtil {
 
             // TODO: Remove custom genealogy ontology when not used
             AttributeType<Long> age = tx.putAttributeType("age", AttributeType.DataType.LONG);
-            tx.getEntityType("person").resource(age);
+            tx.getEntityType("person").attribute(age);
             tx.putAttributeType("nickname", AttributeType.DataType.STRING);
 
             // TODO: Remove plant ontology when not used
@@ -62,7 +62,7 @@ public class DocTestUtil {
             AttributeType<String> zone = tx.putAttributeType("zone", AttributeType.DataType.STRING);
             AttributeType<String> light = tx.putAttributeType("light", AttributeType.DataType.STRING);
             AttributeType<Long> availability = tx.putAttributeType("availability", AttributeType.DataType.LONG);
-            plant.resource(common).resource(botanical).resource(zone).resource(light).resource(availability);
+            plant.attribute(common).attribute(botanical).attribute(zone).attribute(light).attribute(availability);
 
             // TODO: Remove pokemon ontology when not used
             EntityType pokemon = tx.putEntityType("pokemon");
@@ -77,8 +77,8 @@ public class DocTestUtil {
             tx.putRelationType("has-type")
                     .relates(tx.putRole("type-of-pokemon")).relates(tx.putRole("pokemon-with-type"));
 
-            pokemonType.resource(typeId).resource(description);
-            pokemon.resource(weight).resource(height).resource(pokedexNo).resource(description);
+            pokemonType.attribute(typeId).attribute(description);
+            pokemon.attribute(weight).attribute(height).attribute(pokedexNo).attribute(description);
 
             // TODO: Remove these random types when not used
             tx.putEntityType("cluster");

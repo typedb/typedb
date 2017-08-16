@@ -289,7 +289,7 @@ class ValidateGlobalRules {
     private static Optional<String> validateKeyControlledRelation(GraknTxAbstract<?> graph, RelationReified relationReified, Iterator<AttributeType> keys) {
         TreeMap<String, String> resources = new TreeMap<>();
         while(keys.hasNext()){
-            Optional<Attribute<?>> foundResource = relationReified.resources(keys.next()).findAny();
+            Optional<Attribute<?>> foundResource = relationReified.attributes(keys.next()).findAny();
             //Lack of resource key is handled by another method.
             //Handling the lack of a key here would result in duplicate error messages
             foundResource.ifPresent(resource -> resources.put(resource.type().getId().getValue(), resource.getId().getValue()));

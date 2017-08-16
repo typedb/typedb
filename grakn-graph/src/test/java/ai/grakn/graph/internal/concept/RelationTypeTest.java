@@ -66,7 +66,7 @@ public class RelationTypeTest extends GraphTestBase {
         AttributeType<String> attributeType = graknGraph.putAttributeType("My Special Attribute Type", AttributeType.DataType.STRING);
         Attribute<String> attribute = attributeType.putAttribute("Ad thing");
 
-        EntityType entityType = graknGraph.putEntityType("My Special Entity Type").resource(attributeType);
+        EntityType entityType = graknGraph.putEntityType("My Special Entity Type").attribute(attributeType);
         Entity entity = entityType.addEntity();
 
         RelationType implicitRelationType = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(attributeType.getLabel()).getValue());
@@ -74,7 +74,7 @@ public class RelationTypeTest extends GraphTestBase {
         assertNotNull(implicitRelationType);
         assertThat(implicitRelationType.instances().collect(toSet()), empty());
 
-        entity.resource(attribute);
+        entity.attribute(attribute);
 
         assertEquals(1, implicitRelationType.instances().count());
     }
@@ -84,8 +84,8 @@ public class RelationTypeTest extends GraphTestBase {
         AttributeType<String> attributeType = graknGraph.putAttributeType("My Special Attribute Type", AttributeType.DataType.STRING);
         Attribute<String> attribute = attributeType.putAttribute("Ad thing");
 
-        EntityType entityType = graknGraph.putEntityType("My Special Entity Type").resource(attributeType);
-        entityType.addEntity().resource(attribute);
+        EntityType entityType = graknGraph.putEntityType("My Special Entity Type").attribute(attributeType);
+        entityType.addEntity().attribute(attribute);
 
         RelationType implicitRelationType = graknGraph.getRelationType(Schema.ImplicitType.HAS.getLabel(attributeType.getLabel()).getValue());
 

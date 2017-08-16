@@ -140,7 +140,7 @@ public interface EntityType extends Type{
      * @return The Type itself.
      */
     @Override
-    EntityType resource(AttributeType attributeType);
+    EntityType attribute(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
     /**

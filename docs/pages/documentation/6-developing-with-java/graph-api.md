@@ -213,7 +213,7 @@ Now the equivalent using the Java API:
 
 ```java
 Attribute weddingPicture = picture.putAttribute("www.LocationOfMyPicture.com");
-theMarriage.resource(weddingPicture);
+theMarriage.attribute(weddingPicture);
 ```
 
 

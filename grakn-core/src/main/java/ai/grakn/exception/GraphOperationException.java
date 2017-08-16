@@ -105,7 +105,7 @@ public class GraphOperationException extends GraknException{
     }
 
     /**
-     * Thrown when {@code type} has {@code attributeType} as a {@link Type#key(AttributeType)} and a {@link Type#resource(AttributeType)}
+     * Thrown when {@code type} has {@code attributeType} as a {@link Type#key(AttributeType)} and a {@link Type#attribute(AttributeType)}
      */
     public static GraphOperationException duplicateHas(Type type, AttributeType attributeType){
         return new GraphOperationException(ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE.getMessage(type.getLabel(), attributeType.getLabel()));

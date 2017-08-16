@@ -90,7 +90,7 @@ public class PostProcessingIT {
             for (int i = 0; i < numResTypes; i++) {
                 AttributeType<Integer> rt = graph.putAttributeType("res" + i, AttributeType.DataType.INTEGER);
                 for (int j = 0; j < numEntTypes; j++) {
-                    graph.getEntityType("ent" + j).resource(rt);
+                    graph.getEntityType("ent" + j).attribute(rt);
                 }
             }
 
@@ -176,6 +176,6 @@ public class PostProcessingIT {
     private void forceDuplicateResources(GraknTx graph, int resourceTypeNum, int resourceValueNum, int entityTypeNum, int entityNum){
         Attribute attribute = graph.getAttributeType("res" + resourceTypeNum).putAttribute(resourceValueNum);
         Entity entity = (Entity) graph.getEntityType("ent" + entityTypeNum).instances().toArray()[entityNum]; //Randomly pick an entity
-        entity.resource(attribute);
+        entity.attribute(attribute);
     }
 }

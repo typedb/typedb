@@ -167,7 +167,7 @@ We have decided to omit exception handling to keep the tutorial simple. In produ
 
 Let's define the ontology. As we are mainly interested in both the **tweet** and **who posted the tweet**, let us capture these concepts by defining two **entity types**: `user` and `tweet`.
 
-The `user` entity will hold the user's actual username in a **resource** called `screen_name`, while the `tweet` entity will contain the user's tweet in another resource called `text`. We will also define a resource `identifier` for the id.
+The `user` entity will hold the user's actual username in a **attribute** called `screen_name`, while the `tweet` entity will contain the user's tweet in another attribute called `text`. We will also define a attribute `identifier` for the id.
 
 Next we will define two **roles** - `posts` and `posted_by` to express that a `user` posts a `tweet`, and similarly, a `tweet` is posted by a `user`. We will tie this two roles by a **relationship** called `user-tweet-relationship`.
 
@@ -185,10 +185,10 @@ public class GraknTweetOntologyHelper {
 }
 ```
 
-Start by defining our resources:
+Start by defining our attributes:
 
 ```java
-// resources
+// attributes
 AttributeType idType = tx.putAttributeType("identifier", AttributeType.DataType.STRING);
 AttributeType textType = tx.putAttributeType("text", AttributeType.DataType.STRING);
 AttributeType screenNameType = tx.putAttributeType("screen_name", AttributeType.DataType.STRING);
@@ -213,13 +213,13 @@ Role postedByType = tx.putRole("posted_by");
 RelationType userTweetRelationType = tx.putRelationType("user-tweet-relationship").relates(postsType).relates(postedByType);
 ```
 
-And finally, assign resources and roles appropriately.
+And finally, assign attributes and roles appropriately.
 
 ```java
-// resource and relationship assignments
-tweetType.resource(idType);
-tweetType.resource(textType);
-userType.resource(screenNameType);
+// attribute and relationship assignments
+tweetType.attribute(idType);
+tweetType.attribute(textType);
+userType.attribute(screenNameType);
 userType.plays(postsType);
 tweetType.plays(postedByType);
 ```
@@ -343,11 +343,11 @@ We will be using the java API for inserting the data in the knowledge base becau
 
 ### Insert A Tweet
 
-To insert a tweet, we must create a `tweet` entity and a `text` resource to hold the tweet's textual data, before associating said resource with the entity.
+To insert a tweet, we must create a `tweet` entity and a `text` attribute to hold the tweet's textual data, before associating said attribute with the entity.
 
 Let's do that with a new method. It will accept a single `String` and inserts it into the knowledge base, before returning the `Entity` of said tweet.
 
-Pay attention to how we need to retrieve the `EntityTypes` and `AttributeTypes` of entity and resource we are interested in — we need them in order to perform the actual insertion.
+Pay attention to how we need to retrieve the `EntityTypes` and `AttributeTypes` of entity and attribute we are interested in — we need them in order to perform the actual insertion.
 
 ```java-test-ignore
 public static Entity insertTweet(GraknTx tx, String tweet) {
@@ -357,7 +357,7 @@ public static Entity insertTweet(GraknTx tx, String tweet) {
     Entity tweetEntity = tweetEntityType.addEntity();
     Attribute tweetAttribute = tweetResouceType.putAttribute(tweet);
 
-    return tweetEntity.resource(tweetAttribute);
+    return tweetEntity.attribute(tweetAttribute);
   }
 ```
 
@@ -387,7 +387,7 @@ public static Entity insertUser(GraknTx tx, String user) {
   AttributeType userAttributeType = tx.getAttributeType("screen_name");
   Entity userEntity = userEntityType.addEntity();
   Attribute userAttribute = userAttributeType.putAttribute(user);
-  return userEntity.resource(userAttribute);
+  return userEntity.attribute(userAttribute);
 }
 ```
 
@@ -494,7 +494,7 @@ qb.match(
   Stream<Map.Entry<String, Long>> mapped = result.entrySet().stream().map(entry -> {
     Concept key = entry.getKey();
     Long value = entry.getValue();
-    String screenName = (String) key.asEntity().resources(screenNameAttributeType).iterator().next().getValue();
+    String screenName = (String) key.asEntity().attributes(screenNameAttributeType).iterator().next().getValue();
     return new HashMap.SimpleImmutableEntry<>(screenName, value);
   });
 ```
@@ -520,7 +520,7 @@ public static Stream<Map.Entry<String, Long>> calculateTweetCountPerUser(GraknTx
   Stream<Map.Entry<String, Long>> mapped = result.entrySet().stream().map(entry -> {
     Concept key = entry.getKey();
     Long value = entry.getValue();
-    String screenName = (String) key.asEntity().resources(screenNameAttributeType).iterator().next().getValue();
+    String screenName = (String) key.asEntity().attributes(screenNameAttributeType).iterator().next().getValue();
     return new HashMap.SimpleImmutableEntry<>(screenName, value);
   });
 

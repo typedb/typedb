@@ -104,7 +104,7 @@ public class SystemKeyspace {
             }
             Attribute<String> attribute = keyspaceName.putAttribute(keyspace);
             if (attribute.owner() == null) {
-                graph.<EntityType>getOntologyConcept(KEYSPACE_ENTITY).addEntity().resource(attribute);
+                graph.<EntityType>getOntologyConcept(KEYSPACE_ENTITY).addEntity().attribute(attribute);
             }
             graph.admin().commitNoLogs();
         } catch (InvalidGraphException e) {
@@ -213,12 +213,12 @@ public class SystemKeyspace {
         AttributeType<Boolean> userIsAdmin = graph.putAttributeType("user-is-admin", AttributeType.DataType.BOOLEAN);
 
         graph.putEntityType("user").key(userName).
-                resource(userPassword).
-                resource(userPasswordSalt).
-                resource(userFirstName).
-                resource(userLastName).
-                resource(userEmail).
-                resource(userIsAdmin);
+                attribute(userPassword).
+                attribute(userPasswordSalt).
+                attribute(userFirstName).
+                attribute(userLastName).
+                attribute(userEmail).
+                attribute(userIsAdmin);
 
         //System Version
         graph.putAttributeType("system-version", AttributeType.DataType.STRING);

@@ -105,7 +105,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
 
             // Display any requested resources
             if (concept.isThing() && attributeTypes.length > 0) {
-                concept.asThing().resources(attributeTypes).forEach(resource -> {
+                concept.asThing().attributes(attributeTypes).forEach(resource -> {
                     String resourceType = colorType(resource.type());
                     String value = StringUtil.valueToString(resource.getValue());
                     sb.append(colorKeyword(" has ")).append(resourceType).append(" ").append(value);

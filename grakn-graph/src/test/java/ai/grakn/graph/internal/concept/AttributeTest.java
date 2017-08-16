@@ -158,16 +158,16 @@ public class AttributeTest extends GraphTestBase {
         AttributeType<String> attributeType = graknGraph.putAttributeType("My attribute type", AttributeType.DataType.STRING);
         Attribute<String> attribute = attributeType.putAttribute("A String");
 
-        EntityType entityType = graknGraph.putEntityType("My entity type").resource(attributeType);
+        EntityType entityType = graknGraph.putEntityType("My entity type").attribute(attributeType);
         Entity entity = entityType.addEntity();
 
-        entity.resource(attribute);
+        entity.attribute(attribute);
 
         RelationStructure relationStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
         assertThat(relationStructure, instanceOf(RelationEdge.class));
         assertTrue("Edge Relation id not starting with [" + Schema.PREFIX_EDGE + "]",relationStructure.getId().getValue().startsWith(Schema.PREFIX_EDGE));
         assertEquals(entity, attribute.owner());
-        assertThat(entity.resources().collect(toSet()), containsInAnyOrder(attribute));
+        assertThat(entity.attributes().collect(toSet()), containsInAnyOrder(attribute));
     }
 
     @Test
@@ -175,9 +175,9 @@ public class AttributeTest extends GraphTestBase {
         //Create boring attribute which creates a relation edge
         AttributeType<String> attributeType = graknGraph.putAttributeType("My attribute type", AttributeType.DataType.STRING);
         Attribute<String> attribute = attributeType.putAttribute("A String");
-        EntityType entityType = graknGraph.putEntityType("My entity type").resource(attributeType);
+        EntityType entityType = graknGraph.putEntityType("My entity type").attribute(attributeType);
         Entity entity = entityType.addEntity();
-        entity.resource(attribute);
+        entity.attribute(attribute);
         RelationImpl relation = RelationImpl.from(entity.relations().iterator().next());
 
         //Check it's a relation edge.
@@ -223,8 +223,8 @@ public class AttributeTest extends GraphTestBase {
         Attribute<String> key1 = attributeType.putAttribute("key 1");
         Attribute<String> key2 = attributeType.putAttribute("key 2");
 
-        entity.resource(key1);
-        entity.resource(key2);
+        entity.attribute(key1);
+        entity.attribute(key2);
 
         expectedException.expect(InvalidGraphException.class);
 
@@ -242,8 +242,8 @@ public class AttributeTest extends GraphTestBase {
 
         assertThat(attribute.relations().collect(toSet()), empty());
 
-        e1.resource(attribute);
-        e2.resource(attribute);
+        e1.attribute(attribute);
+        e2.attribute(attribute);
 
         Relation rel1 = Iterables.getOnlyElement(e1.relations().collect(toSet()));
         Relation rel2 = Iterables.getOnlyElement(e2.relations().collect(toSet()));

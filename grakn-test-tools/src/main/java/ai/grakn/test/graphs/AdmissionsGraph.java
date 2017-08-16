@@ -72,19 +72,19 @@ public class AdmissionsGraph extends TestGraph {
         decisionType = graph.putAttributeType("decisionType", AttributeType.DataType.STRING);
 
         applicant = graph.putEntityType("applicant");
-        applicant.resource(TOEFL);
-        applicant.resource(GRE);
-        applicant.resource(vGRE);
-        applicant.resource(GPR);
-        applicant.resource(specialHonours);
-        applicant.resource(considerGPR);
-        applicant.resource(transcript);
-        applicant.resource(priorGraduateWork);
-        applicant.resource(languageRequirement);
-        applicant.resource(degreeOrigin);
-        applicant.resource(admissionStatus);
-        applicant.resource(decisionType);
-        applicant.resource(key);
+        applicant.attribute(TOEFL);
+        applicant.attribute(GRE);
+        applicant.attribute(vGRE);
+        applicant.attribute(GPR);
+        applicant.attribute(specialHonours);
+        applicant.attribute(considerGPR);
+        applicant.attribute(transcript);
+        applicant.attribute(priorGraduateWork);
+        applicant.attribute(languageRequirement);
+        applicant.attribute(degreeOrigin);
+        applicant.attribute(admissionStatus);
+        applicant.attribute(decisionType);
+        applicant.attribute(key);
     }
 
     @Override

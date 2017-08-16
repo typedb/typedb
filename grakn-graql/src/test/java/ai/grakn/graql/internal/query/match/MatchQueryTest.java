@@ -188,9 +188,9 @@ public class MatchQueryTest {
     @ClassRule
     public static final GraphContext weirdGraph = GraphContext.preLoad(graph -> {
         AttributeType<String> weirdLoopType = graph.putAttributeType("name", AttributeType.DataType.STRING);
-        weirdLoopType.resource(weirdLoopType);
+        weirdLoopType.attribute(weirdLoopType);
         Attribute<String> weird = weirdLoopType.putAttribute("weird");
-        weird.resource(weird);
+        weird.attribute(weird);
     });
 
     @Rule
@@ -812,7 +812,7 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var().has("title", "Godfather").has(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue(), x));
 
         Thing godfather = movieGraph.graph().getAttributeType("title").getAttribute("Godfather").owner();
-        Set<Attribute<?>> expected = godfather.resources().collect(toSet());
+        Set<Attribute<?>> expected = godfather.attributes().collect(toSet());
 
         Set<Attribute<?>> results = query.get("x").map(Concept::asAttribute).collect(toSet());
 

@@ -76,11 +76,11 @@ public class AnalyticsTest {
             Label resourceLabel = Label.of("degree");
             AttributeType<Long> degree = graph.putAttributeType(resourceLabel, AttributeType.DataType.LONG);
             EntityType thingy = graph.putEntityType("thingy");
-            thingy.resource(degree);
+            thingy.attribute(degree);
 
             Entity thisThing = thingy.addEntity();
             Attribute thisAttribute = degree.putAttribute(1L);
-            thisThing.resource(thisAttribute);
+            thisThing.attribute(thisAttribute);
             graph.commit();
         }
 

@@ -131,7 +131,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         Attribute attributeConcept = executor.get(resource().getVarName()).asAttribute();
         Thing thing = executor.get(var).asThing();
-        thing.resource(attributeConcept);
+        thing.attribute(attributeConcept);
     }
 
     @Override

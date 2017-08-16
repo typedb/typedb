@@ -226,7 +226,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             boolean exists = !results.isEmpty();
             results.forEach(map -> {
                 map.forEach( (k,v) -> {
-                    v.asThing().resources().forEach(Concept::delete);
+                    v.asThing().attributes().forEach(Concept::delete);
                     v.delete();
                 });
             });

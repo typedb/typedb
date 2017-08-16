@@ -84,31 +84,31 @@ public class CWGraph extends TestGraph {
         person = graph.putEntityType("person")
                 .plays(seller)
                 .plays(payee)
-                .resource(key)
-                .resource(nationality);
+                .attribute(key)
+                .attribute(nationality);
 
         graph.putEntityType("criminal")
                 .plays(seller)
                 .plays(payee)
-                .resource(key)
-                .resource(nationality);
+                .attribute(key)
+                .attribute(nationality);
 
         weapon = graph.putEntityType("weapon")
                 .plays(transactionItem)
                 .plays(ownedItem)
-                .resource(key);
+                .attribute(key);
 
         rocket = graph.putEntityType("rocket")
                 .plays(transactionItem)
                 .plays(ownedItem)
-                .resource(key)
-                .resource(propulsion);
+                .attribute(key)
+                .attribute(propulsion);
 
         graph.putEntityType("missile")
                 .sup(weapon)
                 .plays(transactionItem)
-                .resource(propulsion)
-                .resource(key);
+                .attribute(propulsion)
+                .attribute(key);
 
         country = graph.putEntityType("country")
                 .plays(buyer)
@@ -116,8 +116,8 @@ public class CWGraph extends TestGraph {
                 .plays(enemyTarget)
                 .plays(payer)
                 .plays(enemySource)
-                .resource(key)
-                .resource(alignment);
+                .attribute(key)
+                .attribute(alignment);
 
         //Relations
         owns = graph.putRelationType("owns")

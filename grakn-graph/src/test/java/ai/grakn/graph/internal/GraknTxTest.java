@@ -367,7 +367,7 @@ public class GraknTxTest extends GraphTestBase {
                 AttributeType<Long> int_ = graph.putAttributeType("int", AttributeType.DataType.LONG);
                 AttributeType<Long> foo = graph.putAttributeType("foo", AttributeType.DataType.LONG).sup(int_);
                 graph.putAttributeType("bar", AttributeType.DataType.LONG).sup(int_);
-                graph.putEntityType("FOO").resource(foo);
+                graph.putEntityType("FOO").attribute(foo);
 
                 graph.commit();
             }
@@ -375,7 +375,7 @@ public class GraknTxTest extends GraphTestBase {
 
         //Relation Which Has Resources
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            graph.putEntityType("BAR").resource(graph.getAttributeType("bar"));
+            graph.putEntityType("BAR").attribute(graph.getAttributeType("bar"));
             graph.commit();
         }
     }

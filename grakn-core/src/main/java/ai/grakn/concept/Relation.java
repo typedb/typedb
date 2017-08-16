@@ -49,7 +49,7 @@ public interface Relation extends Thing {
      * @return The instance itself
      */
     @Override
-    Relation resource(Attribute attribute);
+    Relation attribute(Attribute attribute);
 
     //------------------------------------- Accessors ----------------------------------
 

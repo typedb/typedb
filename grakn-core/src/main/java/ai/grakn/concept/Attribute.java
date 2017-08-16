@@ -89,7 +89,7 @@ public interface Attribute<D> extends Thing {
      * @return The instance itself
      */
     @Override
-    Attribute resource(Attribute attribute);
+    Attribute attribute(Attribute attribute);
 
     //------------------------------------- Other ---------------------------------
     @SuppressWarnings("unchecked")

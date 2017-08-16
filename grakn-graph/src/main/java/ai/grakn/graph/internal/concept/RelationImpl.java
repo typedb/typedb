@@ -94,14 +94,14 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     }
 
     @Override
-    public Relation resource(Attribute attribute) {
-        reify().resource(attribute);
+    public Relation attribute(Attribute attribute) {
+        reify().attribute(attribute);
         return this;
     }
 
     @Override
-    public Stream<Attribute<?>> resources(AttributeType[] attributeTypes) {
-        return readFromReified((relationReified) -> relationReified.resources(attributeTypes));
+    public Stream<Attribute<?>> attributes(AttributeType[] attributeTypes) {
+        return readFromReified((relationReified) -> relationReified.attributes(attributeTypes));
     }
 
     @Override

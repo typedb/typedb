@@ -249,15 +249,15 @@ public class OntologyMutationTest extends GraphTestBase {
     public void whenAddingResourceToSubTypeOfEntityType_EnsureNoValidationErrorsOccur(){
         //Create initial Ontology
         AttributeType<String> name = graknGraph.putAttributeType("name", AttributeType.DataType.STRING);
-        EntityType person = graknGraph.putEntityType("perspn").resource(name);
+        EntityType person = graknGraph.putEntityType("perspn").attribute(name);
         EntityType animal = graknGraph.putEntityType("animal").sup(person);
         Attribute bob = name.putAttribute("Bob");
-        person.addEntity().resource(bob);
+        person.addEntity().attribute(bob);
         graknGraph.commit();
 
         //Now make animal have the same resource type
         graknGraph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
-        animal.resource(name);
+        animal.attribute(name);
         graknGraph.commit();
     }
 
@@ -283,7 +283,7 @@ public class OntologyMutationTest extends GraphTestBase {
         AttributeType<String> name = graknGraph.putAttributeType("name", AttributeType.DataType.STRING);
 
         //Create a person and allow person to have a name
-        EntityType person = graknGraph.putEntityType("person").resource(name);
+        EntityType person = graknGraph.putEntityType("person").attribute(name);
 
         //Create a man which is a person and is therefore allowed to have a name
         EntityType man = graknGraph.putEntityType("man").sup(person);
@@ -291,7 +291,7 @@ public class OntologyMutationTest extends GraphTestBase {
 
         //Create a Man and name him Bob
         Attribute<String> nameBob = name.putAttribute("Bob");
-        man.addEntity().resource(nameBob);
+        man.addEntity().attribute(nameBob);
 
         //Get The Relation which says that our man is name bob
         Relation expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));

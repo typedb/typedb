@@ -86,7 +86,7 @@ public class TypePropertyTest {
     public void whenGivingAMetaTypeAResource_Throw(@Meta Type type, AttributeType attributeType) {
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
-        type.resource(attributeType);
+        type.attribute(attributeType);
     }
 
     @Ignore // TODO: Fails very rarely and only remotely

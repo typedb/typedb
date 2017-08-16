@@ -77,17 +77,17 @@ public interface Thing extends Concept{
      * @param attribute The {@link Attribute} to which a relationship is created
      * @return The instance itself
      */
-    Thing resource(Attribute attribute);
+    Thing attribute(Attribute attribute);
 
     /**
      * Retrieves a collection of {@link Attribute} attached to this Instances
      * @see Attribute
      *
-     * @param attributeTypes {@link AttributeType}s of the resources attached to this entity
-     * @return A collection of resources attached to this Thing.
+     * @param attributeTypes {@link AttributeType}s of the {@link Attribute}s attached to this entity
+     * @return A collection of {@link AttributeType}s attached to this Thing.
      */
     @CheckReturnValue
-    Stream<Attribute<?>> resources(AttributeType... attributeTypes);
+    Stream<Attribute<?>> attributes(AttributeType... attributeTypes);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

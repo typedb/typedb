@@ -287,13 +287,13 @@ public class RelationTest extends GraphTestBase {
         AttributeType<String> attributeType = graknGraph.putAttributeType("what a pain", AttributeType.DataType.STRING);
         Attribute<String> attribute = attributeType.putAttribute("a real pain");
 
-        EntityType entityType = graknGraph.putEntityType("yay").resource(attributeType);
-        Relation implicitRelation = Iterables.getOnlyElement(entityType.addEntity().resource(attribute).relations().collect(Collectors.toSet()));
+        EntityType entityType = graknGraph.putEntityType("yay").attribute(attributeType);
+        Relation implicitRelation = Iterables.getOnlyElement(entityType.addEntity().attribute(attribute).relations().collect(Collectors.toSet()));
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.hasNotAllowed(implicitRelation, attribute).getMessage());
 
-        implicitRelation.resource(attribute);
+        implicitRelation.attribute(attribute);
     }
 
 
@@ -315,8 +315,8 @@ public class RelationTest extends GraphTestBase {
         Relation rel2 = relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
 
         //Set the keys and commit. Without this step it should fail
-        rel1.resource(r1);
-        rel2.resource(r2);
+        rel1.attribute(r1);
+        rel2.attribute(r2);
 
         graknGraph.commit();
         graknGraph = (GraknTxAbstract<?>) graknSession.open(GraknTxType.WRITE);
@@ -338,8 +338,8 @@ public class RelationTest extends GraphTestBase {
 
         Attribute<Long> r1 = attributeType.putAttribute(1000000L);
 
-        relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2).resource(r1);
-        relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2).resource(r1);
+        relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2).attribute(r1);
+        relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2).attribute(r1);
 
         String message = ErrorMessage.VALIDATION_RELATION_DUPLICATE.getMessage("");
         message = message.substring(0, message.length() - 5);

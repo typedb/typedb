@@ -127,7 +127,7 @@ public class CSVMigratorTest {
             AttributeType<String> death = graph.getAttributeType("death");
 
             Entity fluffy = name.getAttribute("Fluffy").ownerInstances().iterator().next().asEntity();
-            assertEquals(1, fluffy.resources(death).count());
+            assertEquals(1, fluffy.attributes(death).count());
         }
     }
 
@@ -165,10 +165,10 @@ public class CSVMigratorTest {
         AttributeType description = graph.getAttributeType("description");
 
         Entity venture = graph.getConcept(ConceptId.of("Venture"));
-        assertEquals(1, venture.resources(description).count());
+        assertEquals(1, venture.attributes(description).count());
 
         Entity ventureLarge = graph.getConcept(ConceptId.of("Venture Large"));
-        assertEquals(0, ventureLarge.resources(description).count());
+        assertEquals(0, ventureLarge.attributes(description).count());
     }
 
     @Test

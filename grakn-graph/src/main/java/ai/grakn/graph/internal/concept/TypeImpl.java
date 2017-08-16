@@ -444,7 +444,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
      * @return The Type itself
      */
     @Override
-    public T resource(AttributeType attributeType){
+    public T attribute(AttributeType attributeType){
         checkNonOverlapOfImplicitRelations(Schema.ImplicitType.KEY_OWNER, attributeType);
         return has(attributeType, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_VALUE, Schema.ImplicitType.HAS_OWNER, false);
     }

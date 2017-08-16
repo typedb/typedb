@@ -147,7 +147,7 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
         if (required()) {
             entityTypeConcept.key(attributeTypeConcept);
         } else {
-            entityTypeConcept.resource(attributeTypeConcept);
+            entityTypeConcept.attribute(attributeTypeConcept);
         }
     }
 

@@ -51,7 +51,7 @@ public interface Entity extends Thing {
      * @return The instance itself
      */
     @Override
-    Entity resource(Attribute attribute);
+    Entity attribute(Attribute attribute);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

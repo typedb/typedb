@@ -216,7 +216,7 @@ public class SystemController {
             Json result = Json.array();
 
             graph.<EntityType>getOntologyConcept(SystemKeyspace.KEYSPACE_ENTITY).instances().forEach(keyspace -> {
-                Collection<Attribute<?>> names = keyspace.resources(keyspaceName).collect(Collectors.toSet());
+                Collection<Attribute<?>> names = keyspace.attributes(keyspaceName).collect(Collectors.toSet());
                 if (names.size() != 1) {
                     throw GraknServerException.internalError(ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " has no unique name."));
                 }

@@ -136,11 +136,11 @@ public class ClusteringTest {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             AttributeType<String> attributeType =
                     graph.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
-            graph.getEntityType(thing).resource(attributeType);
-            graph.getEntityType(anotherThing).resource(attributeType);
+            graph.getEntityType(thing).attribute(attributeType);
+            graph.getEntityType(anotherThing).attribute(attributeType);
             Attribute aAttribute = attributeType.putAttribute("blah");
-            graph.getEntityType(thing).instances().forEach(instance -> instance.resource(aAttribute));
-            graph.getEntityType(anotherThing).instances().forEach(instance -> instance.resource(aAttribute));
+            graph.getEntityType(thing).instances().forEach(instance -> instance.attribute(aAttribute));
+            graph.getEntityType(anotherThing).instances().forEach(instance -> instance.attribute(aAttribute));
             graph.commit();
         }
 

@@ -134,7 +134,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      *
      * @return All the {@link Attribute} that this Thing is linked with
      */
-    public Stream<Attribute<?>> resources(AttributeType... attributeTypes) {
+    public Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
         Set<ConceptId> resourceTypesIds = Arrays.stream(attributeTypes).map(Concept::getId).collect(Collectors.toSet());
         return resources(getShortcutNeighbours(), resourceTypesIds);
     }
@@ -230,7 +230,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     @Override
-    public T resource(Attribute attribute){
+    public T attribute(Attribute attribute){
         Schema.ImplicitType has = Schema.ImplicitType.HAS;
         Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_VALUE;
         Schema.ImplicitType hasOwner  = Schema.ImplicitType.HAS_OWNER;

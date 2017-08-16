@@ -226,8 +226,8 @@ public class BatchMutatorClientTest {
             AttributeType<String> nameTagString = graph.putAttributeType("name_tag_string", AttributeType.DataType.STRING);
             AttributeType<String> nameTagId = graph.putAttributeType("name_tag_id", AttributeType.DataType.STRING);
 
-            nameTag.resource(nameTagString);
-            nameTag.resource(nameTagId);
+            nameTag.attribute(nameTagString);
+            nameTag.attribute(nameTagId);
             graph.admin().commitNoLogs();
 
             return spy(new BatchMutatorClient(graph.getKeyspace(), engine.uri()));

@@ -122,16 +122,16 @@ The example project does this in `writeSampleRelation_Marriage()`. First it crea
 // After committing we need to open a new transaction
 tx = session.open(GraknTxType.WRITE)
 
-// Define the resources
+// Define the attributes
 Attribute<String> firstNameJohn = firstname.putAttribute("John");
 Attribute<String> surnameNiesz = surname.putAttribute("Niesz");
 Attribute<String> male = gender.putAttribute("male");
 //Now we can create the actual husband entity
 Entity johnNiesz = person.addEntity();
-//Add the resources
-johnNiesz.resource(firstNameJohn);
-johnNiesz.resource(surnameNiesz);
-johnNiesz.resource(male);
+//Add the attributes
+johnNiesz.attribute(firstNameJohn);
+johnNiesz.attribute(surnameNiesz);
+johnNiesz.attribute(male);
 ```
 
 We can compare how a Graql statement maps to the Java API. This is the equivalent in Graql:
@@ -147,7 +147,7 @@ Entity maryYoung = person.addEntity();
 
 Relation theMarriage = marriage.addRelation().addRolePlayer(spouse1, johnNiesz).addRolePlayer(spouse2, maryYoung);
 Attribute marriageDate = date.putAttribute(LocalDateTime.of(1880, 8, 12, 0, 0, 0).toString());
-theMarriage.resource(marriageDate);
+theMarriage.attribute(marriageDate);
 ```
 
 ## Querying the Knowledge Base Using GraknTx

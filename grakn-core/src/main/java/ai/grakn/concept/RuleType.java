@@ -91,7 +91,7 @@ public interface RuleType extends Type {
      * @return The Type itself.
      */
     @Override
-    RuleType resource(AttributeType attributeType);
+    RuleType attribute(AttributeType attributeType);
 
     //---- Inherited Methods
     /**

@@ -75,7 +75,7 @@ public class OntologyConceptTest extends GraphTestBase {
         Label hasResourceValueLabel = Schema.ImplicitType.HAS_VALUE.getLabel(resourceLabel);
         Label hasResourceLabel = Schema.ImplicitType.HAS.getLabel(resourceLabel);
 
-        entityType.resource(attributeType);
+        entityType.attribute(attributeType);
 
         RelationType relationType = graknGraph.getRelationType(hasResourceLabel.getValue());
         Assert.assertEquals(hasResourceLabel, relationType.getLabel());

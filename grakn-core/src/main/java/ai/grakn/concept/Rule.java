@@ -46,7 +46,7 @@ public interface Rule extends Thing {
      * @return The instance itself
      */
     @Override
-    Rule resource(Attribute attribute);
+    Rule attribute(Attribute attribute);
 
     //------------------------------------- Accessors ----------------------------------
     /**

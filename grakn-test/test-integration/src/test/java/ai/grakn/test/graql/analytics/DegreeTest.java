@@ -505,9 +505,9 @@ public class DegreeTest {
     public void testDegreeWithHasResourceEdges() {
         EntityType thingy = graph.putEntityType("thingy");
         AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
-        thingy.resource(name);
+        thingy.attribute(name);
         Entity entity1 = thingy.addEntity();
-        entity1.resource(name.putAttribute("1"));
+        entity1.attribute(name.putAttribute("1"));
         graph.commit();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {

@@ -153,8 +153,8 @@ public class GraknTxJanusTest extends JanusTestBase {
         AttributeType<String> attributeType = graknTx.putAttributeType("Looky a attribute type", AttributeType.DataType.STRING);
         Attribute<String> attribute = attributeType.putAttribute("A Attribute Thing");
 
-        EntityType entityType = graknTx.putEntityType("My entity").resource(attributeType);
-        Relation relation = Iterators.getOnlyElement(entityType.addEntity().resource(attribute).relations().iterator());
+        EntityType entityType = graknTx.putEntityType("My entity").attribute(attributeType);
+        Relation relation = Iterators.getOnlyElement(entityType.addEntity().attribute(attribute).relations().iterator());
 
         //Closing so the cache is not accessed when doing the lookup
         graknTx.commit();

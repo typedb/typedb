@@ -263,8 +263,8 @@ public class EntityTypeTest extends GraphTestBase {
         AttributeType rtSuper = graknGraph.putAttributeType(superLabel, AttributeType.DataType.STRING);
         AttributeType rt = graknGraph.putAttributeType(label, AttributeType.DataType.STRING).sup(rtSuper);
 
-        entityType1.resource(rtSuper);
-        entityType2.resource(rt);
+        entityType1.attribute(rtSuper);
+        entityType2.attribute(rt);
 
         //Check role types are only built explicitly
         assertThat(entityType1.plays().collect(toSet()),
@@ -347,9 +347,9 @@ public class EntityTypeTest extends GraphTestBase {
         AttributeType r3 = graknGraph.putAttributeType("r3", AttributeType.DataType.BOOLEAN);
 
         assertTrue("Entity is linked to resources when it shouldn't", e1.resources().collect(toSet()).isEmpty());
-        e1.resource(r1);
-        e1.resource(r2);
-        e1.resource(r3);
+        e1.attribute(r1);
+        e1.attribute(r2);
+        e1.attribute(r3);
         assertThat(e1.resources().collect(toSet()), containsInAnyOrder(r1, r2, r3));
     }
 
@@ -367,7 +367,7 @@ public class EntityTypeTest extends GraphTestBase {
         assertThat(entityType2.resources().collect(toSet()), is(empty()));
 
         //Link the resources
-        entityType1.resource(attributeType1);
+        entityType1.attribute(attributeType1);
 
         entityType1.key(attributeType2);
         entityType2.key(attributeType1);
@@ -387,11 +387,11 @@ public class EntityTypeTest extends GraphTestBase {
         Attribute<String> attribute3 = attributeType2.putAttribute("Test 3");
 
         //Attribute 1 is a key to one and a resource to another
-        entity1.resource(attribute1);
-        entity2.resource(attribute1);
+        entity1.attribute(attribute1);
+        entity2.attribute(attribute1);
 
-        entity1.resource(attribute2);
-        entity2.resource(attribute3);
+        entity1.attribute(attribute2);
+        entity2.attribute(attribute3);
 
         graknGraph.commit();
     }
@@ -401,7 +401,7 @@ public class EntityTypeTest extends GraphTestBase {
         AttributeType<String> attributeType = graknGraph.putAttributeType("Shared Attribute", AttributeType.DataType.STRING);
         EntityType entityType = graknGraph.putEntityType("EntityType");
 
-        entityType.resource(attributeType);
+        entityType.attribute(attributeType);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), attributeType.getLabel()));
@@ -419,7 +419,7 @@ public class EntityTypeTest extends GraphTestBase {
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), attributeType.getLabel()));
 
-        entityType.resource(attributeType);
+        entityType.attribute(attributeType);
     }
 
     @Test

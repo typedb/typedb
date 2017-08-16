@@ -68,7 +68,7 @@ public class GeoGraph extends TestGraph {
         geographicalObject = graph.putEntityType("geoObject")
                 .plays(geoEntity)
                 .plays(entityLocation);
-        geographicalObject.resource(key);
+        geographicalObject.attribute(key);
 
         continent = graph.putEntityType("continent")
                 .sup(geographicalObject)
@@ -87,7 +87,7 @@ public class GeoGraph extends TestGraph {
                 .plays(entityLocation);
         university = graph.putEntityType("university")
                         .plays(geoEntity);
-        university.resource(key);
+        university.attribute(key);
     }
 
     @Override

@@ -68,7 +68,7 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
             thing = random.choose(instances);
         }
 
-        if(withResource && !thing.resources().findAny().isPresent()){
+        if(withResource && !thing.attributes().findAny().isPresent()){
             //A new attribute type is created every time a attribute is lacking.
             //Existing attribute types and resources of those types are not used because we end up mutating the
             // the ontology in strange ways. This approach is less complex but ensures everything has a attribute
@@ -83,8 +83,8 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
             Attribute attribute = newResource(attributeType);
 
             //Link everything together
-            type.resource(attributeType);
-            thing.resource(attribute);
+            type.attribute(attributeType);
+            thing.attribute(attribute);
         }
 
         return thing;

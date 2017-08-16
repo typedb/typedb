@@ -61,7 +61,7 @@ public class MatchableConcept {
             return "hasValue(" + valueToString(concept.asAttribute().getValue()) + ")";
         } else if (concept.isThing()) {
             Thing thing = concept.asThing();
-            Stream<Attribute<?>> resources = thing.resources();
+            Stream<Attribute<?>> resources = thing.attributes();
             Optional<?> value = resources
                     .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
                     .map(Attribute::getValue).findFirst();

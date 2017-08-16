@@ -90,7 +90,7 @@ public class MovieGraph extends TestGraph {
                 .relates(clusterOfProduction).relates(productionWithCluster);
 
         title = graph.putAttributeType("title", AttributeType.DataType.STRING);
-        title.resource(title);
+        title.attribute(title);
 
         tmdbVoteCount = graph.putAttributeType("tmdb-vote-count", AttributeType.DataType.LONG);
         tmdbVoteAverage = graph.putAttributeType("tmdb-vote-average", AttributeType.DataType.DOUBLE);
@@ -104,11 +104,11 @@ public class MovieGraph extends TestGraph {
                 .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast)
                 .plays(productionWithGenre);
 
-        production.resource(title);
-        production.resource(tmdbVoteCount);
-        production.resource(tmdbVoteAverage);
-        production.resource(releaseDate);
-        production.resource(runtime);
+        production.attribute(title);
+        production.attribute(tmdbVoteCount);
+        production.attribute(tmdbVoteAverage);
+        production.attribute(releaseDate);
+        production.attribute(runtime);
 
         movie = graph.putEntityType("movie").sup(production);
 
@@ -117,9 +117,9 @@ public class MovieGraph extends TestGraph {
         person = graph.putEntityType("person")
                 .plays(director).plays(actor).plays(characterBeingPlayed);
 
-        person.resource(gender);
-        person.resource(name);
-        person.resource(realName);
+        person.attribute(gender);
+        person.attribute(name);
+        person.attribute(realName);
 
         genre = graph.putEntityType("genre").plays(genreOfProduction);
         genre.key(name);
@@ -127,15 +127,15 @@ public class MovieGraph extends TestGraph {
         character = graph.putEntityType("character")
                 .plays(characterBeingPlayed);
 
-        character.resource(name);
+        character.attribute(name);
 
         graph.putEntityType("award");
         language = graph.putEntityType("language");
 
-        language.resource(name);
+        language.attribute(name);
 
         cluster = graph.putEntityType("cluster").plays(clusterOfProduction);
-        cluster.resource(name);
+        cluster.attribute(name);
     }
 
     @Override
@@ -287,7 +287,7 @@ public class MovieGraph extends TestGraph {
     protected void buildRules(GraknTx graph) {
         // These rules are totally made up for testing purposes and don't work!
         aRuleType = graph.putRuleType("a-rule-type");
-        aRuleType.resource(name);
+        aRuleType.attribute(name);
 
         Pattern when = graph.graql().parsePattern("$x plays actor");
         Pattern then = graph.graql().parsePattern("$x isa person");

@@ -191,7 +191,7 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
             () -> {
                 Type type = type();
                 AttributeType attributeType = resourceType();
-                type.resource(attributeType);
+                type.attribute(attributeType);
                 summary(type, "resource", attributeType);
             },
             () -> {
@@ -268,7 +268,7 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
             () -> {
                 Thing thing = instance();
                 Attribute attribute = resource();
-                thing.resource(attribute);
+                thing.attribute(attribute);
                 summary(thing, "resource", attribute);
             },
             () -> {

@@ -77,7 +77,7 @@ public class MigratorTestUtils {
     public static void assertResourceEntityRelationExists(GraknTx graph, String resourceName, Object resourceValue, Entity owner){
         AttributeType attributeType = graph.getAttributeType(resourceName);
         assertNotNull(attributeType);
-        assertEquals(resourceValue, owner.resources(attributeType)
+        assertEquals(resourceValue, owner.attributes(attributeType)
                 .map(Attribute::getValue)
                 .findFirst().get());
     }
@@ -139,10 +139,10 @@ public class MigratorTestUtils {
             AttributeType<String> death = graph.getAttributeType("death");
 
             Entity puffball = name.getAttribute("Puffball").ownerInstances().iterator().next().asEntity();
-            assertEquals(0, puffball.resources(death).count());
+            assertEquals(0, puffball.attributes(death).count());
 
             Entity bowser = name.getAttribute("Bowser").ownerInstances().iterator().next().asEntity();
-            assertEquals(1, bowser.resources(death).count());
+            assertEquals(1, bowser.attributes(death).count());
         }
     }
 

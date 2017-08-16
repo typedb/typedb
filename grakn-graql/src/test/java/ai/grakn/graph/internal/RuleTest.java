@@ -342,7 +342,7 @@ public class RuleTest {
         Role role3 = graph.putRole("role3");
 
         graph.putEntityType("entity1")
-                .resource(res1)
+                .attribute(res1)
                 .plays(role1)
                 .plays(role2);
 

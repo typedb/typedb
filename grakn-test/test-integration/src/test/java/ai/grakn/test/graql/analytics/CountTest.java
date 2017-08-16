@@ -123,9 +123,9 @@ public class CountTest {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType person = graph.putEntityType("person");
             AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
-            person.resource(name);
+            person.attribute(name);
             Entity aPerson = person.addEntity();
-            aPerson.resource(name.putAttribute("jason"));
+            aPerson.attribute(name.putAttribute("jason"));
             graph.commit();
         }
 
