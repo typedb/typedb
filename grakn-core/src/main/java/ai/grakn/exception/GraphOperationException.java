@@ -18,7 +18,7 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
@@ -158,7 +158,7 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when attempting to open a transaction which is already open
      */
-    public static GraphOperationException transactionOpen(GraknGraph graph){
+    public static GraphOperationException transactionOpen(GraknTx graph){
         return new GraphOperationException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(graph.getKeyspace()));
     }
 
@@ -172,7 +172,7 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when attempting to mutate a read only transaction
      */
-    public static GraphOperationException transactionReadOnly(GraknGraph graph){
+    public static GraphOperationException transactionReadOnly(GraknTx graph){
         return new GraphOperationException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
     }
 
@@ -186,7 +186,7 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when attempting to use the graph when the transaction is closed
      */
-    public static GraphOperationException transactionClosed(GraknGraph graph, String reason){
+    public static GraphOperationException transactionClosed(GraknTx graph, String reason){
         if(reason == null){
             return new GraphOperationException(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()));
         } else {
@@ -197,7 +197,7 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when the graph can not be closed due to an unknown reason.
      */
-    public static GraphOperationException closingGraphFailed(GraknGraph graph, Exception e){
+    public static GraphOperationException closingGraphFailed(GraknTx graph, Exception e){
         return new GraphOperationException(CLOSE_GRAPH_FAILURE.getMessage(graph.getKeyspace()), e);
     }
 

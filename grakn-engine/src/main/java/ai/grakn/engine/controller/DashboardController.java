@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Role;
@@ -106,7 +106,7 @@ public class DashboardController {
         int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
-        try (GraknGraph graph = factory.getGraph(keyspace, READ)) {
+        try (GraknTx graph = factory.getGraph(keyspace, READ)) {
             Concept concept = retrieveExistingConcept(graph, conceptId);
 
             response.type(APPLICATION_HAL);
@@ -134,7 +134,7 @@ public class DashboardController {
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID_PARAMETER));
 
-        try (GraknGraph graph = factory.getGraph(keyspace, READ)) {
+        try (GraknTx graph = factory.getGraph(keyspace, READ)) {
             Concept concept = retrieveExistingConcept(graph, conceptId);
             Json body = Json.object();
             Json responseField = Json.object();
@@ -168,7 +168,7 @@ public class DashboardController {
         String queryString = mandatoryQueryParameter(request, QUERY);
         Json body = Json.object();
 
-        try (GraknGraph graph = factory.getGraph(keyspace, READ)) {
+        try (GraknTx graph = factory.getGraph(keyspace, READ)) {
             Query<?> query = graph.graql().infer(true).parse(queryString);
             body.set(ORIGINAL_QUERY, query.toString());
 

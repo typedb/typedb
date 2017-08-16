@@ -18,7 +18,7 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.GraknJanusGraph;
+import ai.grakn.graph.internal.GraknTxJanus;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -58,18 +58,18 @@ import static java.util.Arrays.stream;
  *
  * <p>
  *     This produces a grakn graph on top of {@link JanusGraph}.
- *     The base construction process defined by {@link AbstractInternalFactory} ensures the graph factories are singletons.
+ *     The base construction process defined by {@link TxFactoryAbstract} ensures the graph factories are singletons.
  * </p>
  *
  * @author fppt
  */
-final public class JanusInternalFactory extends AbstractInternalFactory<GraknJanusGraph, JanusGraph> {
-    private final static Logger LOG = LoggerFactory.getLogger(JanusInternalFactory.class);
+final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusGraph> {
+    private final static Logger LOG = LoggerFactory.getLogger(TxFactoryJanus.class);
     private final static String DEFAULT_CONFIG = "backend-default";
 
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
 
-    JanusInternalFactory(String keyspace, String engineUrl, Properties properties) {
+    TxFactoryJanus(String keyspace, String engineUrl, Properties properties) {
         super(keyspace, engineUrl, properties);
     }
 
@@ -84,8 +84,8 @@ final public class JanusInternalFactory extends AbstractInternalFactory<GraknJan
     }
 
     @Override
-    GraknJanusGraph buildGraknGraphFromTinker(JanusGraph graph) {
-        return new GraknJanusGraph(graph, super.keyspace, super.engineUrl, super.properties);
+    GraknTxJanus buildGraknGraphFromTinker(JanusGraph graph) {
+        return new GraknTxJanus(graph, super.keyspace, super.engineUrl, super.properties);
     }
 
     @Override

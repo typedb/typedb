@@ -1,7 +1,7 @@
 package ai.grakn.engine.session;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.EngineTestHelper;
@@ -45,9 +45,9 @@ public class EngineGraknSessionTest {
     public void whenFetchingGraphsOfTheSameKeyspaceFromSessionOrEngineFactory_EnsureGraphsAreTheSame(){
         String keyspace = "mykeyspace";
 
-        GraknGraph graph1 = Grakn.session(factoryUri, keyspace).open(GraknTxType.WRITE);
+        GraknTx graph1 = Grakn.session(factoryUri, keyspace).open(GraknTxType.WRITE);
         graph1.close();
-        GraknGraph graph2 = graknFactory.getGraph(keyspace, GraknTxType.WRITE);
+        GraknTx graph2 = graknFactory.getGraph(keyspace, GraknTxType.WRITE);
 
         assertEquals(graph1, graph2);
         graph2.close();
@@ -56,9 +56,9 @@ public class EngineGraknSessionTest {
     @Test
     public void testBatchLoadingGraphsInitialisedCorrectly(){
         String keyspace = "mykeyspace";
-        GraknGraph graph1 = graknFactory.getGraph(keyspace, GraknTxType.WRITE);
+        GraknTx graph1 = graknFactory.getGraph(keyspace, GraknTxType.WRITE);
         graph1.close();
-        GraknGraph graph2 = graknFactory.getGraph(keyspace, GraknTxType.BATCH);
+        GraknTx graph2 = graknFactory.getGraph(keyspace, GraknTxType.BATCH);
 
         assertFalse(graph1.admin().isBatchGraph());
         assertTrue(graph2.admin().isBatchGraph());
@@ -72,7 +72,7 @@ public class EngineGraknSessionTest {
         assumeFalse(GraknTestSetup.usingTinker()); //Tinker does not have any connections to close
 
         GraknSession factory = Grakn.session(factoryUri, "RandomKeySpaceIsRandom");
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
+        GraknTx graph = factory.open(GraknTxType.WRITE);
         factory.close();
 
         expectedException.expect(GraphOperationException.class);

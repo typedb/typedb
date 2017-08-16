@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -48,7 +48,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     private ConceptId sourceId = null;
     private ConceptId destinationId = null;
 
-    PathQueryImpl(Optional<GraknGraph> graph) {
+    PathQueryImpl(Optional<GraknTx> graph) {
         this.graph = graph;
     }
 
@@ -133,7 +133,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     }
 
     @Override
-    public PathQuery withGraph(GraknGraph graph) {
+    public PathQuery withGraph(GraknTx graph) {
         return (PathQuery) super.withGraph(graph);
     }
 

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
@@ -43,7 +43,7 @@ abstract class MatchQueryModifier extends AbstractMatchQuery {
     }
 
     @Override
-    public final Set<OntologyConcept> getOntologyConcepts(GraknGraph graph) {
+    public final Set<OntologyConcept> getOntologyConcepts(GraknTx graph) {
         return inner.getOntologyConcepts(graph);
     }
 
@@ -53,7 +53,7 @@ abstract class MatchQueryModifier extends AbstractMatchQuery {
     }
 
     @Override
-    public Optional<GraknGraph> getGraph() {
+    public Optional<GraknTx> getGraph() {
         return inner.getGraph();
     }
 

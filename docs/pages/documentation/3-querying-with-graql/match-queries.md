@@ -9,7 +9,7 @@ permalink: /documentation/graql/match-queries.html
 folder: documentation
 ---
 
-A match query will search the graph for any subgraphs that match the given pattern, returning a result for each match found. The results of the query can be modified with various [modifiers](#modifiers). To follow along, or experiment further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
+A match query will search the knowledge base for anything that matchs the given pattern, returning a result for each match found. The results of the query can be modified with various [modifiers](#modifiers). To follow along, or experiment further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
 ```bash
 <relative-path-to-Grakn>/bin/grakn.sh start 

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.ComputeQueryBuilder;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.CountQuery;
@@ -44,14 +44,14 @@ import java.util.Optional;
 
 public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
 
-    private Optional<GraknGraph> graph;
+    private Optional<GraknTx> graph;
 
-    public ComputeQueryBuilderImpl(Optional<GraknGraph> graph) {
+    public ComputeQueryBuilderImpl(Optional<GraknTx> graph) {
         this.graph = graph;
     }
 
     @Override
-    public ComputeQueryBuilder withGraph(GraknGraph graph) {
+    public ComputeQueryBuilder withGraph(GraknTx graph) {
         this.graph = Optional.of(graph);
         return this;
     }

@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graql.reasoner;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -84,7 +84,7 @@ public class BenchmarkTests {
         graphContext.load(MatrixGraphII.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknGraph graph = graphContext.graph();
+        GraknTx graph = graphContext.graph();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         String queryString = "match (P-from: $x, P-to: $y) isa P;";
@@ -123,7 +123,7 @@ public class BenchmarkTests {
         graphContext.load(TransitivityChainGraph.get(N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknGraph graph = graphContext.graph();
+        GraknTx graph = graphContext.graph();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
 
@@ -190,7 +190,7 @@ public class BenchmarkTests {
         graphContext.load(TransitivityMatrixGraph.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknGraph graph = graphContext.graph();
+        GraknTx graph = graphContext.graph();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
 
@@ -262,7 +262,7 @@ public class BenchmarkTests {
         graphContext.load(DiagonalGraph.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknGraph graph = graphContext.graph();
+        GraknTx graph = graphContext.graph();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal;";

@@ -19,7 +19,7 @@
 package ai.grakn.test.migration.json;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
@@ -96,7 +96,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "simple-schema/data.json");
 
-        try(GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try(GraknTx graph = factory.open(GraknTxType.READ)) {
             EntityType personType = graph.getEntityType("person");
             assertEquals(1, personType.instances().count());
 
@@ -144,7 +144,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "all-types/data.json");
 
-        try(GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try(GraknTx graph = factory.open(GraknTxType.READ)) {
             EntityType rootType = graph.getEntityType("thingy");
             Set<Entity> things = rootType.instances().collect(toSet());
             assertEquals(1, things.size());
@@ -178,7 +178,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "string-or-object/data");
 
-        try(GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try(GraknTx graph = factory.open(GraknTxType.READ)) {
             EntityType theThing = graph.getEntityType("the-thing");
             assertEquals(2, theThing.instances().count());
 
@@ -203,7 +203,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "string-or-object/data");
 
-        try(GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try(GraknTx graph = factory.open(GraknTxType.READ)) {
             EntityType theThing = graph.getEntityType("the-thing");
             assertEquals(2, theThing.instances().count());
         }
@@ -215,7 +215,7 @@ public class JsonMigratorTest {
         String template = "insert $thing isa the-thing has a-string <the-thing.a-string>;";
         declareAndLoad(template, "string-or-object/data");
 
-        try(GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try(GraknTx graph = factory.open(GraknTxType.READ)) {
             EntityType theThing = graph.getEntityType("the-thing");
             assertEquals(1, theThing.instances().count());
         }

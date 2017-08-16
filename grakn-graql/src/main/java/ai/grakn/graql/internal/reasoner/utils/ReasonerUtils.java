@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.utils;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
@@ -311,7 +311,7 @@ public class ReasonerUtils {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createTransitiveRule(RelationType relType, Label fromRoleLabel, Label toRoleLabel, GraknGraph graph){
+    public static Rule createTransitiveRule(RelationType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx graph){
         if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPatternAdmin startVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "z").admin();
@@ -329,7 +329,7 @@ public class ReasonerUtils {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createReflexiveRule(RelationType relType, Label fromRoleLabel, Label toRoleLabel, GraknGraph graph){
+    public static Rule createReflexiveRule(RelationType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx graph){
         if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPattern body = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y");
@@ -346,7 +346,7 @@ public class ReasonerUtils {
      * @return rule instance
      */
     public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<Label, Label> roleMappings,
-                                             GraknGraph graph){
+                                             GraknTx graph){
         final long parentArity = parent.relates().count();
         final long childArity = child.relates().count();
         if (parentArity != childArity || parentArity != roleMappings.size()) {
@@ -373,7 +373,7 @@ public class ReasonerUtils {
      * @return rule instance
      */
     public static Rule createPropertyChainRule(RelationType relation, Label fromRoleLabel, Label toRoleLabel,
-                                               LinkedHashMap<RelationType, Pair<Label, Label>> chain, GraknGraph graph){
+                                               LinkedHashMap<RelationType, Pair<Label, Label>> chain, GraknTx graph){
         Stack<Var> varNames = new Stack<>();
         varNames.push(var("x"));
         Set<VarPatternAdmin> bodyVars = new HashSet<>();

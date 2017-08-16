@@ -1,7 +1,7 @@
 package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -84,10 +84,10 @@ public class UpdatingThingCountTaskTest {
         EntityType et2;
 
         //Create Simple Graph
-        try(GraknGraph graknGraph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
-            et1 = graknGraph.putEntityType("et1");
-            et2 = graknGraph.putEntityType("et2");
-            graknGraph.admin().commitNoLogs();
+        try(GraknTx graknTx = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
+            et1 = graknTx.putEntityType("et1");
+            et2 = graknTx.putEntityType("et2");
+            graknTx.admin().commitNoLogs();
         }
 
         checkShardCount(keyspace, et1, 1);
@@ -108,8 +108,8 @@ public class UpdatingThingCountTaskTest {
         checkShardCount(keyspace, et2, 1);
     }
     private void checkShardCount(String keyspace, Concept concept, int expectedValue){
-        try(GraknGraph graknGraph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
-            int shards = graknGraph.admin().getTinkerTraversal().V().
+        try(GraknTx graknTx = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
+            int shards = graknTx.admin().getTinkerTraversal().V().
                     has(Schema.VertexProperty.ID.name(), concept.getId().getValue()).
                     in(Schema.EdgeLabel.SHARD.getLabel()).toList().size();
 

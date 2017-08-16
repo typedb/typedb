@@ -30,7 +30,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
 import ai.grakn.graph.internal.GraphTestBase;
 import ai.grakn.graph.internal.concept.RelationImpl;
 import ai.grakn.graph.internal.structure.Casting;
@@ -108,7 +108,7 @@ public class TxCacheTest extends GraphTestBase {
         RelationImpl relation = (RelationImpl) rt1.addRelation().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         assertThat(graknGraph.txCache().getModifiedCastings(), is(empty()));
 
@@ -121,7 +121,7 @@ public class TxCacheTest extends GraphTestBase {
         EntityType t1 = graknGraph.putEntityType("1");
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         assertThat(graknGraph.txCache().getModifiedEntities(), is(empty()));
 
@@ -139,7 +139,7 @@ public class TxCacheTest extends GraphTestBase {
         Entity i2 = t1.addEntity();
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         assertThat(graknGraph.txCache().getModifiedRelations(), is(empty()));
         Relation rel1 = rt1.addRelation().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
@@ -152,7 +152,7 @@ public class TxCacheTest extends GraphTestBase {
         Entity i1 = t1.addEntity();
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         assertThat(graknGraph.txCache().getModifiedEntities(), is(empty()));
 
@@ -259,7 +259,7 @@ public class TxCacheTest extends GraphTestBase {
         graknGraph.commit();
 
         //Check everything is okay
-        graknGraph = (AbstractGraknGraph<?>) graknSession.open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) graknSession.open(GraknTxType.WRITE);
         assertTxBoundConceptMatches(e2, Type::sup, is(e1));
 
         //Mutate Super Type
@@ -277,7 +277,7 @@ public class TxCacheTest extends GraphTestBase {
         graknGraph.commit();
 
         //Check concepts match what is in transaction cache
-        graknGraph = (AbstractGraknGraph<?>) graknSession.open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) graknSession.open(GraknTxType.WRITE);
         assertTxBoundConceptMatches(e1, t -> t.plays().collect(toSet()), containsInAnyOrder(rol1, rol2));
         assertTxBoundConceptMatches(rel, t -> t.relates().collect(toSet()), containsInAnyOrder(rol1, rol2));
         assertTxBoundConceptMatches(rol1, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1));

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
@@ -71,5 +71,5 @@ public interface MinQuery extends ComputeQuery<Optional<Number>> {
      * @return a MinQuery with the graph set
      */
     @Override
-    MinQuery withGraph(GraknGraph graph);
+    MinQuery withGraph(GraknTx graph);
 }

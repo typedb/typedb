@@ -18,7 +18,7 @@
 package ai.grakn.migration.owl;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.migration.base.MigrationCLI;
 import org.semanticweb.owlapi.apibinding.OWLManager;
@@ -64,7 +64,7 @@ public class Main {
         printInitMessage(options);
 
         OWLMigrator migrator = new OWLMigrator();
-        try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE)) {
+        try(GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE)) {
             migrator.graph(graph)
                     .ontology(OWLManager.createOWLOntologyManager().loadOntologyFromOntologyDocument(owlfile))
                     .migrate();
