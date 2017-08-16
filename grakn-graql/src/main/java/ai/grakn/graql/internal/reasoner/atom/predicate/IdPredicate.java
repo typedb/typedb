@@ -70,7 +70,9 @@ public class IdPredicate extends Predicate<ConceptId>{
     public String getPredicateValue() { return getPredicate().getValue();}
 
     @Override
-    protected ConceptId extractPredicate(VarPatternAdmin var){ return var.admin().getId().orElse(null);}
+    protected ConceptId extractPredicate(VarPatternAdmin var){
+        return var.admin().getProperty(IdProperty.class).map(IdProperty::id).orElse(null);
+    }
 
     private static VarPatternAdmin createIdVar(Var varName, ConceptId typeId){
         return varName.id(typeId).admin();

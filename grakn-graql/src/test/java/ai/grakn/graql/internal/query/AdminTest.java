@@ -124,7 +124,7 @@ public class AdminTest {
     public void testInsertQueryGetVars() {
         InsertQuery query = qb.insert(var().id(ConceptId.of("123")).isa("movie"), var().id(ConceptId.of("123")).val("Hi"));
         // Should not merge variables
-        assertEquals(2, query.admin().getVars().size());
+        assertEquals(2, query.admin().varPatterns().size());
     }
 
     @Test

@@ -119,7 +119,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     public Set<Var> getVarNames(){
         Set<Var> vars = super.getVarNames();
         VarPatternAdmin innerVar = getPredicate().getInnerVar().orElse(null);
-        if(innerVar != null && innerVar.getVarName().isUserDefinedName()) vars.add(innerVar.getVarName());
+        if(innerVar != null && innerVar.var().isUserDefinedName()) vars.add(innerVar.var());
         return vars;
     }
 }

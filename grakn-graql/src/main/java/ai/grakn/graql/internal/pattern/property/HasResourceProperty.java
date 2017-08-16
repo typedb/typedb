@@ -94,8 +94,8 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
         repr.add(typeLabelToString(type()));
 
-        if (resource().getVarName().isUserDefinedName()) {
-            repr.add(resource().getVarName().toString());
+        if (resource().var().isUserDefinedName()) {
+            repr.add(resource().var().toString());
         } else {
             resource().getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.predicate().toString()));
         }
@@ -114,14 +114,14 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                shortcut(this, relation().getVarName(), edge1, start, Optional.empty()),
-                shortcut(this, relation().getVarName(), edge2, resource().getVarName(), Optional.empty()),
+                shortcut(this, relation().var(), edge1, start, Optional.empty()),
+                shortcut(this, relation().var(), edge2, resource().var(), Optional.empty()),
                 neq(this, edge1, edge2)
         );
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.of(resource(), relation());
     }
 
@@ -135,20 +135,20 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Resource resourceConcept = executor.get(resource().getVarName()).asResource();
+        Resource resourceConcept = executor.get(resource().var()).asResource();
         Thing thing = executor.get(var).asThing();
         ConceptId relationId = thing.resourceRelationship(resourceConcept).getId();
-        executor.builder(relation().getVarName()).id(relationId);
+        executor.builder(relation().var()).id(relationId);
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, resource().getVarName());
+        return ImmutableSet.of(var, resource().var());
     }
 
     @Override
     public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(relation().getVarName());
+        return ImmutableSet.of(relation().var());
     }
 
     @Override
@@ -179,7 +179,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     }
 
     private boolean hasReifiedRelation() {
-        return relation().getProperties().findAny().isPresent() || relation().getVarName().isUserDefinedName();
+        return relation().getProperties().findAny().isPresent() || relation().var().isUserDefinedName();
     }
 
     @Override
@@ -215,11 +215,11 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         // TODO: Support relation variable in reasoner
-        Var varName = var.getVarName().asUserDefined();
+        Var varName = var.var().asUserDefined();
 
         Label type = this.type();
         VarPatternAdmin resource = this.resource();
-        Var resourceVariable = resource.getVarName().asUserDefined();
+        Var resourceVariable = resource.var().asUserDefined();
         Set<ValuePredicate> predicates = getValuePredicates(resourceVariable, resource, vars, parent);
 
         IsaProperty isaProp = resource.getProperties(IsaProperty.class).findFirst().orElse(null);

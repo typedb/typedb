@@ -126,18 +126,18 @@ class ConjunctionQuery {
      */
     Stream<Label> getTypes() {
         return vars.stream()
-                .flatMap(v -> v.getInnerVars().stream())
+                .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream());
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarPatternAdmin var) {
-        return var.getImplicitInnerVars().stream().flatMap(ConjunctionQuery::equivalentFragmentSetsOfVar);
+        return var.implicitInnerVarPatterns().stream().flatMap(ConjunctionQuery::equivalentFragmentSetsOfVar);
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(VarPatternAdmin var) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
-        Var start = var.getVarName();
+        Var start = var.var();
 
         var.getProperties().forEach(property -> {
             VarPropertyInternal propertyInternal = (VarPropertyInternal) property;

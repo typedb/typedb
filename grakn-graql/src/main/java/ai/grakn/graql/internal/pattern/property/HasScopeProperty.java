@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
@@ -72,36 +71,37 @@ public abstract class HasScopeProperty extends AbstractVarProperty implements Na
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(hasScope(this, start, scope().getVarName()));
+        return ImmutableSet.of(hasScope(this, start, scope().var()));
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.of(scope());
     }
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Thing scopeThing = executor.get(scope().getVarName()).asThing();
+        Thing scopeThing = executor.get(scope().var()).asThing();
         executor.get(var).asType().scope(scopeThing);
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, scope().getVarName());
+        return ImmutableSet.of(var, scope().var());
     }
 
     @Override
     public void delete(GraknTx graph, Concept concept) {
-        ConceptId scopeId = scope().getId().orElseThrow(() -> GraqlQueryException.failDelete(this));
-        concept.asType().deleteScope(graph.getConcept(scopeId));
+        IdProperty scopeId =
+                scope().getProperty(IdProperty.class).orElseThrow(() -> GraqlQueryException.failDelete(this));
+        concept.asType().deleteScope(graph.getConcept(scopeId.id()));
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName().asUserDefined();
+        Var varName = var.var().asUserDefined();
         VarPatternAdmin scopeVar = this.scope();
-        Var scopeVariable = scopeVar.getVarName().asUserDefined();
+        Var scopeVariable = scopeVar.var().asUserDefined();
         IdPredicate predicate = getIdPredicate(scopeVariable, scopeVar, vars, parent);
 
         //isa part

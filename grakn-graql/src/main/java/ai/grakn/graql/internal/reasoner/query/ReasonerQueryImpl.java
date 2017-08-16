@@ -184,7 +184,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<PatternAdmin> patterns = new HashSet<>();
         atomSet.stream()
                 .map(Atomic::getCombinedPattern)
-                .flatMap(p -> p.getVars().stream())
+                .flatMap(p -> p.varPatterns().stream())
                 .forEach(patterns::add);
         return Patterns.conjunction(patterns);
     }

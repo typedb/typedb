@@ -82,7 +82,7 @@ public abstract class TypeAtom extends Binary{
         Atom ruleAtom = child.getHead().getAtom();
         return this.getOntologyConcept() != null
                 //ensure not ontological atom query
-                && getPattern().asVar().hasProperty(IsaProperty.class)
+                && getPattern().asVarPattern().hasProperty(IsaProperty.class)
                 && this.getOntologyConcept().subs().anyMatch(sub -> sub.equals(ruleAtom.getOntologyConcept()));
     }
 

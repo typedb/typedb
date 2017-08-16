@@ -65,8 +65,8 @@ abstract class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern i
     }
 
     @Override
-    public Set<Var> commonVarNames() {
-        return getPatterns().stream().map(PatternAdmin::commonVarNames).reduce(ImmutableSet.of(), Sets::union);
+    public Set<Var> commonVars() {
+        return getPatterns().stream().map(PatternAdmin::commonVars).reduce(ImmutableSet.of(), Sets::union);
     }
 
     @Override

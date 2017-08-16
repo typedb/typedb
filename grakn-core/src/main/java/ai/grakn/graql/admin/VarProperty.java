@@ -55,14 +55,14 @@ public interface VarProperty {
      * Get a stream of any inner {@link VarPatternAdmin} within this `VarProperty`.
      */
     @CheckReturnValue
-    Stream<VarPatternAdmin> getInnerVars();
+    Stream<VarPatternAdmin> innerVarPatterns();
 
     /**
      * Get a stream of any inner {@link VarPatternAdmin} within this `VarProperty`, including any that may have been
      * implicitly created (such as with "has").
      */
     @CheckReturnValue
-    Stream<VarPatternAdmin> getImplicitInnerVars();
+    Stream<VarPatternAdmin> implicitInnerVarPatterns();
 
     /**
      * True if there is at most one of these properties for each {@link VarPatternAdmin}
