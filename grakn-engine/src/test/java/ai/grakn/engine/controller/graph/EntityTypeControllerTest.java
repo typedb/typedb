@@ -35,11 +35,15 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.Map;
+
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -72,24 +76,40 @@ public class EntityTypeControllerTest {
 
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
 
-        when(mockGraph.getConcept(any())).thenAnswer(invocation -> {
-            ConceptId a = invocation.getArgument(0);
-            GraknGraph g = graphContext.graph();
-            return  g.getConcept(a);
-        });
+        when(mockGraph.putEntityType(anyString())).thenAnswer(invocation ->
+            graphContext.graph().putEntityType((String) invocation.getArgument(0)));
+        when(mockGraph.getEntityType(anyString())).thenAnswer(invocation ->
+            graphContext.graph().getEntityType(invocation.getArgument(0)));
 
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
+        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
+    }
+
+
+    public void postEntityTypeShouldExecuteSuccessfully() {
+        Json body = Json.object("entityTypeLabel", "newEntity");
+
+        Response response = with()
+            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+            .body(body.toString())
+            .post("/graph/entityType");
+
+        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+
+        assertThat(responseBody.get("entityTypeLabel"), equalTo("newEntity"));
+        assertThat(responseBody.get("conceptId"), notNull());
+        assertThat(response.statusCode(), equalTo(200));
     }
 
     @Test
-    public void postEntityTypeShouldExecuteSuccessfully() {
-        Json body = Json.object("entityTypeLabel", "newEntity");
+    public void getEntityTypeAfterPostEntityTypeShouldReturnTheCorrectEntity() {
         Response response = with()
-            .queryParam(KEYSPACE, "keyspace")
-            .body(body.asString())
-            .post("/graph/entityType");
+            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+            .get("/graph/entityType/production");
 
-//        assertThat(response.statusCode(), equalTo(200));
+        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
+        assertThat(response.statusCode(), equalTo(200));
+        assertThat(responseBody.get("entityTypeLabel"), equalTo("production"));
     }
 }

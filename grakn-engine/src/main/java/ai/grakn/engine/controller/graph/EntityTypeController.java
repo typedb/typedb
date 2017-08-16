@@ -68,36 +68,40 @@ public class EntityTypeController {
     }
 
     private Json postEntityType(Request request, Response response) {
+        LOG.info("postEntityType - request received");
         Json requestBody = Json.read(mandatoryBody(request));
         String entityTypeLabel = (String) requestBody.asMap().get("entityTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        LOG.info("postEntityType - attempting to add entity " + entityTypeLabel + " in keyspace " + keyspace);
         try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(entityTypeLabel);
-            LOG.info(" entity = " + entityType);
-            response.status(200);
-            Json responseBody = Json.object(
-                "conceptId", entityType.getId().getValue(),
-                "entityTypeLabel", entityType.getLabel().getValue()
-            );
             graph.commit();
+            response.status(200);
+            String jsonConceptId = entityType.getId().getValue();
+            String jsonEntityTypeLabel = entityType.getLabel().getValue();
+            Json responseBody = Json.object("conceptId", jsonConceptId, "entityTypeLabel", jsonEntityTypeLabel);
+            LOG.info("postEntityType - entity added - " + jsonConceptId + ", " + jsonEntityTypeLabel + ". request processed.");
             return responseBody;
         }
     }
 
     private Json getEntityType(Request request, Response response) {
+        LOG.info("getEntityType - request received.");
         String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        LOG.info("getEntityType - attempting to find entity " + entityTypeLabel + " in keyspace " + keyspace);
         try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.READ)) {
             Optional<EntityType> entityType = Optional.ofNullable(graph.getEntityType(entityTypeLabel));
             if (entityType.isPresent()) {
+                String jsonConceptId = entityType.get().getId().getValue();
+                String jsonEntityTypeLabel = entityType.get().getLabel().getValue();
                 response.status(200);
-                Json responseBody = Json.object(
-                    "conceptId", entityType.get().getId().getValue(),
-                    "entityTypeLabel", entityType.get().getLabel().getValue()
-                );
+                Json responseBody = Json.object("conceptId", jsonConceptId, "entityTypeLabel", jsonEntityTypeLabel);
+                LOG.info("getEntityType - entity found - " + jsonConceptId + ", " + jsonEntityTypeLabel + ". request processed.");
                 return responseBody;
             } else {
                 response.status(400);
+                LOG.info("getEntityType - entity NOT found - request processed.");
                 return Json.nil();
             }
         }
