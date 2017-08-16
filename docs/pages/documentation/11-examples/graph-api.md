@@ -59,7 +59,7 @@ GraknTx tx = session.open(GraknTxType.WRITE)
 ```
 
 
-Building the ontology is covered in `writeOntology()`. First, the method adds the resource types using putAttributeType():
+Building the ontology is covered in `writeOntology()`. First, the method adds the attribute types using putAttributeType():
 
 ```java
 identifier = tx.putAttributeType("identifier", AttributeType.DataType.STRING);
@@ -83,28 +83,28 @@ parent = tx.putRole("parent");
 child = tx.putRole("child");
 ```
 
-Then to add the relationship types, `putRelationType()`, which is followed by `relates()` to set the roles associated with the relationship and resource() to state that it has a date resource:
+Then to add the relationship types, `putRelationType()`, which is followed by `relates()` to set the roles associated with the relationship and attribute() to state that it has a date attribute:
 
 ```java
 marriage = tx.putRelationType("marriage");
 marriage.relates(spouse).relates(spouse1).relates(spouse2);
-marriage.resource(date);
+marriage.attribute(date);
 parentship = tx.putRelationType("parentship");
 parentship.relates(parent).relates(child);
 ```
 
-Finally, entity types are added using `putEntityType()`, `plays()` and `resource()`:
+Finally, entity types are added using `putEntityType()`, `plays()` and `attribute()`:
 
 ```java
 person = tx.putEntityType("person");
 person.plays(spouse1).plays(spouse2).plays(parent).plays(child);
-person.resource(gender);
-person.resource(birthDate);
-person.resource(deathDate);
-person.resource(identifier);
-person.resource(firstname);
-person.resource(middlename);
-person.resource(surname);
+person.attribute(gender);
+person.attribute(birthDate);
+person.attribute(deathDate);
+person.attribute(identifier);
+person.attribute(firstname);
+person.attribute(middlename);
+person.attribute(surname);
 ```
 
 Now to commit the ontology:

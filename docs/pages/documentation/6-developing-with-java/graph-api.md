@@ -29,25 +29,25 @@ First we need a knowledge base. For this example we will just use an [in-memory 
 GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "MyKnowlegdeBase").open(GraknTxType.WRITE);
 ```
 
-We need to define our constructs before we can use them. We will begin by defining our resource types since they are used everywhere. In Graql, they were defined as follows:
+We need to define our constructs before we can use them. We will begin by defining our attribute types since they are used everywhere. In Graql, they were defined as follows:
 
 ```graql
 insert
 
-identifier sub resource datatype string;
-name sub resource datatype string;
+identifier sub attribute datatype string;
+name sub attribute datatype string;
 firstname sub name datatype string;
 surname sub name datatype string;
 middlename sub name datatype string;
-picture sub resource datatype string;
-age sub resource datatype long;
-"date" sub resource datatype string;
+picture sub attribute datatype string;
+age sub attribute datatype long;
+"date" sub attribute datatype string;
 birth-date sub "date" datatype string;
 death-date sub "date" datatype string;
-gender sub resource datatype string;
+gender sub attribute datatype string;
 ```
 
-These same resource types can be built with the Java API as follows:
+These same attribute types can be built with the Java API as follows:
 
 ```java
 AttributeType identifier = tx.putAttributeType("identifier", AttributeType.DataType.STRING);
@@ -90,7 +90,7 @@ Role spouse2 = tx.putRole("spouse2");
 RelationType marriage = tx.putRelationType("marriage")
                             .relates(spouse1)
                             .relates(spouse2);
-marriage.resource(picture);
+marriage.attribute(picture);
                            
 Role parent = tx.putRole("parent");
 Role child = tx.putRole("child");
@@ -129,15 +129,15 @@ EntityType person = tx.putEntityType("person")
                         .plays(spouse1)
                         .plays(spouse2);
                         
-person.resource(identifier);
-person.resource(firstname);
-person.resource(surname);
-person.resource(middlename);
-person.resource(picture);
-person.resource(age);
-person.resource(birthDate);
-person.resource(deathDate);
-person.resource(gender);
+person.attribute(identifier);
+person.attribute(firstname);
+person.attribute(surname);
+person.attribute(middlename);
+person.attribute(picture);
+person.attribute(age);
+person.attribute(birthDate);
+person.attribute(deathDate);
+person.attribute(gender);
 ```
 
 Now to commit the schema using the Java API:
@@ -168,8 +168,8 @@ Now the equivalent Java API:
 ```java
 tx = Grakn.session(Grakn.IN_MEMORY, "MyKnowlegdeBase").open(GraknTxType.WRITE);
 
-Attribute johnName = firstname.putAttribute("John"); //Create the resource
-person.addEntity().resource(johnName); //Link it to an entity
+Attribute johnName = firstname.putAttribute("John"); //Create the attribute
+person.addEntity().attribute(johnName); //Link it to an entity
 ```   
 
 What if we want to create a relation between some entities? 
@@ -186,7 +186,7 @@ insert
 With the Java API this would be:
 
 ```java
-//Create the resources
+//Create the attributes
 johnName = firstname.putAttribute("John");
 Attribute maryName = firstname.putAttribute("Mary");
 
