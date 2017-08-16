@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -67,17 +66,11 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void testBuildAskQueryGraphLast() {
-        AskQuery query = match(var("x").isa("movie")).ask().withGraph(movieGraph.graph());
-        assertTrue(query.execute());
-    }
-
-    @Test
     public void testBuildInsertQueryGraphLast() {
-        assertFalse(movieGraph.graph().graql().match(var().has("title", "a-movie")).ask().execute());
+        assertFalse(movieGraph.graph().graql().match(var().has("title", "a-movie")).iterator().hasNext());
         InsertQuery query = insert(var().has("title", "a-movie").isa("movie")).withGraph(movieGraph.graph());
         query.execute();
-        assertTrue(movieGraph.graph().graql().match(var().has("title", "a-movie")).ask().execute());
+        assertTrue(movieGraph.graph().graql().match(var().has("title", "a-movie")).iterator().hasNext());
     }
 
     @Test
@@ -85,22 +78,22 @@ public class QueryBuilderTest {
         // Insert some data to delete
         movieGraph.graph().graql().insert(var().has("title", "123").isa("movie")).execute();
 
-        assertTrue(movieGraph.graph().graql().match(var().has("title", "123")).ask().execute());
+        assertTrue(movieGraph.graph().graql().match(var().has("title", "123")).iterator().hasNext());
 
         DeleteQuery query = match(var("x").has("title", "123")).delete("x").withGraph(movieGraph.graph());
         query.execute();
 
-        assertFalse(movieGraph.graph().graql().match(var().has("title", "123")).ask().execute());
+        assertFalse(movieGraph.graph().graql().match(var().has("title", "123")).iterator().hasNext());
     }
 
     @Test
     public void testBuildMatchInsertQueryGraphLast() {
-        assertFalse(movieGraph.graph().graql().match(var().has("title", "a-movie")).ask().execute());
+        assertFalse(movieGraph.graph().graql().match(var().has("title", "a-movie")).iterator().hasNext());
         InsertQuery query =
                 match(var("x").label("movie")).
                 insert(var().has("title", "a-movie").isa("movie")).withGraph(movieGraph.graph());
         query.execute();
-        assertTrue(movieGraph.graph().graql().match(var().has("title", "a-movie")).ask().execute());
+        assertTrue(movieGraph.graph().graql().match(var().has("title", "a-movie")).iterator().hasNext());
     }
 
     @Test
@@ -110,13 +103,6 @@ public class QueryBuilderTest {
         exception.expectMessage("graph");
         //noinspection ResultOfMethodCallIgnored
         query.iterator();
-    }
-
-    @Test
-    public void testErrorExecuteAskQueryWithoutGraph() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage("graph");
-        match(var("x").isa("movie")).ask().execute();
     }
 
     @Test

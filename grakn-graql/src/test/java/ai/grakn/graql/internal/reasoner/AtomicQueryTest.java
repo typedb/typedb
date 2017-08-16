@@ -85,7 +85,7 @@ public class AtomicQueryTest {
         GraknTx graph = geoGraph.graph();
         QueryBuilder qb = graph.graql().infer(false);
         String explicitQuery = "match (geo-entity: $x, entity-location: $y) isa is-located-in;$x has name 'Warsaw';$y has name 'Poland';";
-        assertTrue(!qb.<MatchQuery>parse(explicitQuery).ask().execute());
+        assertTrue(!qb.<MatchQuery>parse(explicitQuery).iterator().hasNext());
 
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
@@ -98,9 +98,9 @@ public class AtomicQueryTest {
         );
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
 
-        assertFalse(qb.<MatchQuery>parse(explicitQuery).ask().execute());
+        assertFalse(qb.<MatchQuery>parse(explicitQuery).iterator().hasNext());
         answers.stream().forEach(atomicQuery::materialise);
-        assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
+        assertTrue(qb.<MatchQuery>parse(explicitQuery).iterator().hasNext());
     }
 
     private Concept getConceptByResourceValue(GraknTx graph, String id){

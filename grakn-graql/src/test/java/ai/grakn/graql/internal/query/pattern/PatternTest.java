@@ -294,7 +294,7 @@ public class PatternTest {
 
     @Test
     public void testNegation() {
-        assertTrue(graph.graql().match(var().isa("movie").has("title", "Godfather")).ask().execute());
+        assertTrue(graph.graql().match(var().isa("movie").has("title", "Godfather")).iterator().hasNext());
         Set<Concept> result1 = graph.graql().match(
                 var("x").isa("movie").has("title", var("y")),
                 var("y").val(neq("Godfather"))).select("x").execute()

@@ -946,14 +946,14 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryingForSuperRelationType_ReturnResults() {
-        AskQuery query = qb.match(var().isa("relation").rel(x).rel(y)).ask();
-        assertTrue("Query had no results", query.execute());
+        MatchQuery query = qb.match(var().isa("relation").rel(x).rel(y));
+        assertTrue("Query had no results", query.iterator().hasNext());
     }
 
     @Test
     public void whenQueryingForSuperRoleType_ReturnResults() {
-        AskQuery query = qb.match(var().rel("role", x).rel(y)).ask();
-        assertTrue("Query had no results", query.execute());
+        MatchQuery query = qb.match(var().rel("role", x).rel(y));
+        assertTrue("Query had no results", query.iterator().hasNext());
     }
 
     @Test

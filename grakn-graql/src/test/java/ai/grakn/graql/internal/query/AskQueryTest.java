@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertFalse;
@@ -49,12 +50,12 @@ public class AskQueryTest {
 
     @Test
     public void testPositiveQuery() {
-        assertTrue(qb.match(var().isa("movie").has("tmdb-vote-count", 1000)).ask().execute());
+        assertTrue(qb.match(var().isa("movie").has("tmdb-vote-count", 1000)).aggregate(ask()).execute());
     }
 
     @Test
     public void testNegativeQuery() {
-        assertFalse(qb.match(var("y").isa("award")).ask().execute());
+        assertFalse(qb.match(var("y").isa("award")).aggregate(ask()).execute());
     }
 
     @Test
@@ -63,11 +64,11 @@ public class AskQueryTest {
                 var().rel("x").rel("y").isa("directed-by"),
                 var("x").val("Apocalypse Now"),
                 var("y").val("Martin Sheen")
-        ).ask().execute());
+        ).aggregate(ask()).execute());
     }
 
     @Test
     public void testAskNoVariables() {
-        assertTrue(qb.match(label("person").plays("actor")).ask().execute());
+        assertTrue(qb.match(label("person").plays("actor")).aggregate(ask()).execute());
     }
 }

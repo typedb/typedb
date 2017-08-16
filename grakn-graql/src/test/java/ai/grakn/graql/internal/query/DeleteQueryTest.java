@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
@@ -38,6 +37,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
@@ -94,7 +94,7 @@ public class DeleteQueryTest {
 
         qb.match(x.isa("fake-type")).delete(x).execute();
 
-        assertFalse(qb.match(var().isa("fake-type")).ask().execute());
+        assertFalse(qb.match(var().isa("fake-type")).iterator().hasNext());
     }
 
     @Test
@@ -106,22 +106,22 @@ public class DeleteQueryTest {
                         .has("gender", "male")
         ).execute();
 
-        assertTrue(qb.match(var().isa("person").has("real-name", "Bob")).ask().execute());
-        assertTrue(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
-        assertTrue(qb.match(var().isa("person").has("gender", "male")).ask().execute());
+        assertTrue(qb.match(var().isa("person").has("real-name", "Bob")).iterator().hasNext());
+        assertTrue(qb.match(var().isa("person").has("real-name", "Robert")).iterator().hasNext());
+        assertTrue(qb.match(var().isa("person").has("gender", "male")).iterator().hasNext());
 
         qb.match(x.has("real-name", "Bob")).delete(x.has("real-name", y)).execute();
 
-        assertFalse(qb.match(var().isa("person").has("real-name", "Bob")).ask().execute());
-        assertFalse(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
-        assertTrue(qb.match(var().isa("person").has("gender", "male")).ask().execute());
+        assertFalse(qb.match(var().isa("person").has("real-name", "Bob")).iterator().hasNext());
+        assertFalse(qb.match(var().isa("person").has("real-name", "Robert")).iterator().hasNext());
+        assertTrue(qb.match(var().isa("person").has("gender", "male")).iterator().hasNext());
 
         qb.match(x.has("gender", "male")).delete(x).execute();
-        assertFalse(qb.match(var().has("gender", "male")).ask().execute());
+        assertFalse(qb.match(var().has("gender", "male")).iterator().hasNext());
 
-        assertTrue(qb.match(var().isa("real-name").val("Bob")).ask().execute());
-        assertTrue(qb.match(var().isa("real-name").val("Robert")).ask().execute());
-        assertTrue(qb.match(var().isa("gender").val("male")).ask().execute());
+        assertTrue(qb.match(var().isa("real-name").val("Bob")).iterator().hasNext());
+        assertTrue(qb.match(var().isa("real-name").val("Robert")).iterator().hasNext());
+        assertTrue(qb.match(var().isa("gender").val("male")).iterator().hasNext());
     }
 
     @Test
@@ -129,16 +129,16 @@ public class DeleteQueryTest {
         VarPattern actor = label("has-cast").relates("actor");
         VarPattern productionWithCast = label("has-cast").relates("production-with-cast");
 
-        assertTrue(qb.match(actor).ask().execute());
-        assertTrue(qb.match(productionWithCast).ask().execute());
+        assertTrue(qb.match(actor).iterator().hasNext());
+        assertTrue(qb.match(productionWithCast).iterator().hasNext());
 
         qb.match(x.label("has-cast")).delete(x.relates("actor")).execute();
-        assertTrue(qb.match(label("has-cast")).ask().execute());
-        assertFalse(qb.match(actor).ask().execute());
-        assertTrue(qb.match(productionWithCast).ask().execute());
+        assertTrue(qb.match(label("has-cast")).iterator().hasNext());
+        assertFalse(qb.match(actor).iterator().hasNext());
+        assertTrue(qb.match(productionWithCast).iterator().hasNext());
 
         qb.insert(actor).execute();
-        assertTrue(qb.match(actor).ask().execute());
+        assertTrue(qb.match(actor).iterator().hasNext());
     }
 
     @Test
@@ -150,42 +150,42 @@ public class DeleteQueryTest {
                         .has("gender", "male")
         ).execute();
 
-        assertTrue(qb.match(var().isa("person").has("real-name", "Bob")).ask().execute());
-        assertTrue(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
-        assertTrue(qb.match(var().isa("person").has("gender", "male")).ask().execute());
+        assertTrue(qb.match(var().isa("person").has("real-name", "Bob")).iterator().hasNext());
+        assertTrue(qb.match(var().isa("person").has("real-name", "Robert")).iterator().hasNext());
+        assertTrue(qb.match(var().isa("person").has("gender", "male")).iterator().hasNext());
 
         qb.match(x.has("real-name", "Bob")).delete(x.has("real-name", "Robert")).execute();
 
-        assertTrue(qb.match(var().isa("person").has("real-name", "Bob")).ask().execute());
-        assertFalse(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
-        assertTrue(qb.match(var().isa("person").has("gender", "male")).ask().execute());
+        assertTrue(qb.match(var().isa("person").has("real-name", "Bob")).iterator().hasNext());
+        assertFalse(qb.match(var().isa("person").has("real-name", "Robert")).iterator().hasNext());
+        assertTrue(qb.match(var().isa("person").has("gender", "male")).iterator().hasNext());
 
         qb.match(x.has("real-name", "Bob")).delete(x).execute();
-        assertFalse(qb.match(var().has("real-name", "Bob").isa("person")).ask().execute());
+        assertFalse(qb.match(var().has("real-name", "Bob").isa("person")).iterator().hasNext());
 
-        assertTrue(qb.match(var().isa("real-name").val("Bob")).ask().execute());
-        assertTrue(qb.match(var().isa("real-name").val("Robert")).ask().execute());
-        assertTrue(qb.match(var().isa("gender").val("male")).ask().execute());
+        assertTrue(qb.match(var().isa("real-name").val("Bob")).iterator().hasNext());
+        assertTrue(qb.match(var().isa("real-name").val("Robert")).iterator().hasNext());
+        assertTrue(qb.match(var().isa("gender").val("male")).iterator().hasNext());
     }
 
     @Test
     public void testDeleteEntity() {
-        AskQuery godfatherExists = qb.match(var().has("title", "Godfather")).ask();
-        AskQuery godfatherHasRelations = qb.match(
+        Supplier<Boolean> godfatherExists = () -> exists(qb.match(var().has("title", "Godfather")));
+        Supplier<Boolean> godfatherHasRelations = () -> exists(qb.match(
                 x.has("title", "Godfather"),
                 var().rel(x).rel(y).isa("has-cast")
-        ).ask();
-        AskQuery donVitoCorleoneExists = qb.match(var().has("name", "Don Vito Corleone")).ask();
+        ));
+        Supplier<Boolean> donVitoCorleoneExists = () -> exists(qb.match(var().has("name", "Don Vito Corleone")));
 
-        assertTrue(godfatherExists.execute());
-        assertTrue(godfatherHasRelations.execute());
-        assertTrue(donVitoCorleoneExists.execute());
+        assertTrue(godfatherExists.get());
+        assertTrue(godfatherHasRelations.get());
+        assertTrue(donVitoCorleoneExists.get());
 
         qb.match(x.has("title", "Godfather")).delete(x).execute();
 
-        assertFalse(godfatherExists.execute());
-        assertFalse(godfatherHasRelations.execute());
-        assertTrue(donVitoCorleoneExists.execute());
+        assertFalse(godfatherExists.get());
+        assertFalse(godfatherHasRelations.get());
+        assertTrue(donVitoCorleoneExists.get());
     }
 
     @Test
@@ -296,7 +296,7 @@ public class DeleteQueryTest {
 
         qb.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).limit(1).delete(x, y).execute();
 
-        assertFalse(qb.match(var().isa("fake-type")).ask().execute());
+        assertFalse(qb.match(var().isa("fake-type")).iterator().hasNext());
     }
 
     @Test
@@ -366,6 +366,6 @@ public class DeleteQueryTest {
     }
 
     private boolean exists(MatchQuery query) {
-        return query.ask().execute();
+        return query.iterator().hasNext();
     }
 }
