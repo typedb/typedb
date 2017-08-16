@@ -20,7 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
@@ -60,25 +60,25 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Generator to create random {@link GraknGraph}s.
+ * Generator to create random {@link GraknTx}s.
  *
  * @author Felix Chapman
  */
 @SuppressWarnings("unchecked") // We're performing random operations. Generics will not constrain us!
-public class GraknGraphs extends AbstractGenerator<GraknGraph> implements MinimalCounterexampleHook {
+public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCounterexampleHook {
 
-    private static GraknGraph lastGeneratedGraph;
+    private static GraknTx lastGeneratedGraph;
 
     private static StringBuilder graphSummary;
 
-    private GraknGraph graph;
+    private GraknTx graph;
     private Boolean open = null;
 
     public GraknGraphs() {
-        super(GraknGraph.class);
+        super(GraknTx.class);
     }
 
-    public static GraknGraph lastGeneratedGraph() {
+    public static GraknTx lastGeneratedGraph() {
         return lastGeneratedGraph;
     }
 
@@ -100,7 +100,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     @Override
-    public GraknGraph generate() {
+    public GraknTx generate() {
         // TODO: Generate more keyspaces
         // We don't do this now because creating lots of keyspaces seems to slow the system graph
         String keyspace = gen().make(MetasyntacticStrings.class).generate(random, status);
@@ -132,11 +132,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return graph;
     }
 
-    private static void setLastGeneratedGraph(GraknGraph graph) {
+    private static void setLastGeneratedGraph(GraknTx graph) {
         lastGeneratedGraph = graph;
     }
 
-    private void closeGraph(GraknGraph graph){
+    private void closeGraph(GraknTx graph){
         if(graph != null && !graph.isClosed()){
             graph.close();
         }
@@ -370,20 +370,20 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         }
     }
 
-    public static List<Concept> allConceptsFrom(GraknGraph graph) {
+    public static List<Concept> allConceptsFrom(GraknTx graph) {
         List<Concept> concepts = Lists.newArrayList(GraknGraphs.allOntologyElementsFrom(graph));
         concepts.addAll(allInstancesFrom(graph).collect(toSet()));
         return concepts;
     }
 
-    public static Collection<? extends SchemaConcept> allOntologyElementsFrom(GraknGraph graph) {
+    public static Collection<? extends SchemaConcept> allOntologyElementsFrom(GraknTx graph) {
         Set<SchemaConcept> allSchemaConcepts = new HashSet<>();
         allSchemaConcepts.addAll(graph.admin().getMetaConcept().subs().collect(toSet()));
         allSchemaConcepts.addAll(graph.admin().getMetaRole().subs().collect(toSet()));
         return allSchemaConcepts;
     }
 
-    public static Stream<? extends Thing> allInstancesFrom(GraknGraph graph) {
+    public static Stream<? extends Thing> allInstancesFrom(GraknTx graph) {
         // TODO: Revise this when meta concept is a type
         return graph.admin().getMetaConcept().subs().
                 flatMap(element -> element.asType().instances());

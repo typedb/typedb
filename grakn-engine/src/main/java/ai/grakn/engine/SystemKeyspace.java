@@ -18,7 +18,7 @@
 
 package ai.grakn.engine;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
@@ -97,7 +97,7 @@ public class SystemKeyspace {
              return true;
          }
 
-        try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
             if (keyspaceName == null) {
                 throw GraknBackendException.initializationException(keyspace);
@@ -122,7 +122,7 @@ public class SystemKeyspace {
      * @return true if the keyspace is in the system
      */
     public boolean containsKeyspace(String keyspace){
-        try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
+        try (GraknTx graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
             return graph.getResourceType(KEYSPACE_RESOURCE.getValue()).getResource(keyspace) != null;
         }
     }
@@ -138,7 +138,7 @@ public class SystemKeyspace {
            return false;
         }
 
-        try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
             Resource<String> resource = keyspaceName.getResource(keyspace);
 
@@ -162,7 +162,7 @@ public class SystemKeyspace {
      */
     public void loadSystemOntology() {
         Stopwatch timer = Stopwatch.createStarted();
-        try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             if (graph.getSchemaConcept(KEYSPACE_ENTITY) != null) {
                 checkVersion(graph);
                 return;
@@ -184,7 +184,7 @@ public class SystemKeyspace {
      *
      * @throws ai.grakn.exception.GraphOperationException when the versions do not match
      */
-    private void checkVersion(GraknGraph graph){
+    private void checkVersion(GraknTx graph){
         Resource existingVersion = graph.getResourceType(SYSTEM_VERSION).instances().iterator().next();
         if(!GraknVersion.VERSION.equals(existingVersion.getValue())) {
             throw GraphOperationException.versionMistmatch(existingVersion);
@@ -198,7 +198,7 @@ public class SystemKeyspace {
      *
      * @param graph The graph to contain the system ontology
      */
-    private void loadSystemOntology(GraknGraph graph){
+    private void loadSystemOntology(GraknTx graph){
         //Keyspace data
         ResourceType<String> keyspaceName = graph.putResourceType("keyspace-name", ResourceType.DataType.STRING);
         graph.putEntityType("keyspace").key(keyspaceName);

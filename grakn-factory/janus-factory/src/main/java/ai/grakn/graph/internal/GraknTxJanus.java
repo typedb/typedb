@@ -51,8 +51,8 @@ import java.util.function.Supplier;
  *
  * @author fppt
  */
-public class GraknJanusGraph extends AbstractGraknGraph<JanusGraph> {
-    public GraknJanusGraph(JanusGraph graph, String name, String engineUrl, Properties properties){
+public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
+    public GraknTxJanus(JanusGraph graph, String name, String engineUrl, Properties properties){
         super(graph, name, engineUrl, properties);
     }
 

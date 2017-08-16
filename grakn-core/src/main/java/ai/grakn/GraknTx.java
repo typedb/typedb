@@ -52,7 +52,7 @@ import java.util.Collection;
  * @author fppt
  *
  */
-public interface GraknGraph extends AutoCloseable{
+public interface GraknTx extends AutoCloseable{
 
     //------------------------------------- Concept Construction ----------------------------------
     /**

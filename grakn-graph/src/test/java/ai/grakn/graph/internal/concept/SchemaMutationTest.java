@@ -29,7 +29,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
 import ai.grakn.graph.internal.GraphTestBase;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Iterables;
@@ -74,7 +74,7 @@ public class SchemaMutationTest extends GraphTestBase {
         bob = man.addEntity();
         marriage.addRelationship().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
     }
 
     @Test
@@ -117,7 +117,7 @@ public class SchemaMutationTest extends GraphTestBase {
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
-        AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putEntityType("This Will Fail");
     }
 
@@ -126,7 +126,7 @@ public class SchemaMutationTest extends GraphTestBase {
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
-        AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putRole("This Will Fail");
     }
 
@@ -135,7 +135,7 @@ public class SchemaMutationTest extends GraphTestBase {
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
-        AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putResourceType("This Will Fail", ResourceType.DataType.STRING);
     }
 
@@ -144,7 +144,7 @@ public class SchemaMutationTest extends GraphTestBase {
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
-        AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putRuleType("This Will Fail");
     }
 
@@ -153,7 +153,7 @@ public class SchemaMutationTest extends GraphTestBase {
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
-        AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putRelationshipType("This Will Fail");
     }
 
@@ -164,7 +164,7 @@ public class SchemaMutationTest extends GraphTestBase {
         graknGraph.putRole(roleTypeId);
         graknGraph.putRelationshipType(relationTypeId);
 
-        AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         Role role = graknGraphBatch.getRole(roleTypeId);
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
@@ -181,7 +181,7 @@ public class SchemaMutationTest extends GraphTestBase {
         graknGraph.putRole(roleTypeId);
         graknGraph.putEntityType(entityTypeId);
 
-        AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         Role role = graknGraphBatch.getRole(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
@@ -199,7 +199,7 @@ public class SchemaMutationTest extends GraphTestBase {
         graknGraph.putEntityType(entityTypeId1);
         graknGraph.putEntityType(entityTypeId2);
 
-        AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         EntityType entityType1 = graknGraphBatch.getEntityType(entityTypeId1);
         EntityType entityType2 = graknGraphBatch.getEntityType(entityTypeId2);
 
@@ -217,7 +217,7 @@ public class SchemaMutationTest extends GraphTestBase {
         Role role = graknGraph.putRole(roleTypeId);
         graknGraph.putEntityType(entityTypeId).plays(role);
 
-        AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         role = graknGraphBatch.getRole(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
@@ -235,7 +235,7 @@ public class SchemaMutationTest extends GraphTestBase {
         graknGraph.putRelationshipType(relationTypeId).relates(role);
         graknGraph.commit();
 
-        AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
+        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         role = graknGraphBatch.getRole(roleTypeId);
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
@@ -256,7 +256,7 @@ public class SchemaMutationTest extends GraphTestBase {
         graknGraph.commit();
 
         //Now make animal have the same resource type
-        graknGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
         animal.resource(name);
         graknGraph.commit();
     }
@@ -269,7 +269,7 @@ public class SchemaMutationTest extends GraphTestBase {
         graknGraph.commit();
 
         //Now delete the relation
-        graknGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
         relation.delete();
 
         expectedException.expect(InvalidGraphException.class);

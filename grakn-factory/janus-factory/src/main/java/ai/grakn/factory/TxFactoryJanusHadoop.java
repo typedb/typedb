@@ -18,7 +18,7 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
@@ -34,7 +34,7 @@ import java.util.Properties;
  *
  * <p>
  *     This produces a graph on top of {@link HadoopGraph}.
- *     The base construction process defined by {@link AbstractInternalFactory} ensures the graph factories are singletons.
+ *     The base construction process defined by {@link TxFactoryAbstract} ensures the graph factories are singletons.
  *     With this vendor some exceptions are in places:
  *     1. The Grakn API cannnot work on {@link HadoopGraph} this is due to not being able to directly write to a
  *     {@link HadoopGraph}.
@@ -44,12 +44,12 @@ import java.util.Properties;
  *
  * @author fppt
  */
-public class JanusHadoopInternalFactory extends AbstractInternalFactory<AbstractGraknGraph<HadoopGraph>, HadoopGraph> {
+public class TxFactoryJanusHadoop extends TxFactoryAbstract<GraknTxAbstract<HadoopGraph>, HadoopGraph> {
     private static final String CLUSTER_KEYSPACE = "janusmr.ioformat.conf.storage.cassandra.keyspace";
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
-    private final Logger LOG = LoggerFactory.getLogger(JanusHadoopInternalFactory.class);
+    private final Logger LOG = LoggerFactory.getLogger(TxFactoryJanusHadoop.class);
 
-    JanusHadoopInternalFactory(String keyspace, String engineUrl, Properties properties) {
+    TxFactoryJanusHadoop(String keyspace, String engineUrl, Properties properties) {
         super(keyspace, engineUrl, properties);
 
         properties.setProperty(CLUSTER_KEYSPACE, keyspace);
@@ -57,7 +57,7 @@ public class JanusHadoopInternalFactory extends AbstractInternalFactory<Abstract
     }
 
     @Override
-    AbstractGraknGraph<HadoopGraph> buildGraknGraphFromTinker(HadoopGraph graph) {
+    GraknTxAbstract<HadoopGraph> buildGraknGraphFromTinker(HadoopGraph graph) {
         throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_GRAPH.getMessage(HadoopGraph.class.getName()));
     }
 

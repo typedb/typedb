@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
@@ -52,12 +52,12 @@ public class GeoGraph extends TestGraph {
     private static Thing Imperial;
     private static Thing UCL;
 
-    public static Consumer<GraknGraph> get(){
+    public static Consumer<GraknTx> get(){
         return new GeoGraph().build();
     }
 
     @Override
-    public void buildOntology(GraknGraph graph) {
+    public void buildOntology(GraknTx graph) {
         key = graph.putResourceType("name", ResourceType.DataType.STRING);
 
         geoEntity = graph.putRole("geo-entity");
@@ -91,7 +91,7 @@ public class GeoGraph extends TestGraph {
     }
 
     @Override
-    public void buildInstances(GraknGraph graph) {
+    public void buildInstances(GraknTx graph) {
         Europe = putEntity(graph, "Europe", continent, key.getLabel());
 
         Poland = putEntity(graph, "Poland", country, key.getLabel());
@@ -123,7 +123,7 @@ public class GeoGraph extends TestGraph {
     }
 
     @Override
-    public void buildRelations(GraknGraph graph) {
+    public void buildRelations(GraknTx graph) {
         isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Poland)
                 .addRolePlayer(entityLocation, Europe);
@@ -199,7 +199,7 @@ public class GeoGraph extends TestGraph {
     }
 
     @Override
-    public void buildRules(GraknGraph graph) {
+    public void buildRules(GraknTx graph) {
         RuleType inferenceRule = graph.admin().getMetaRuleInference();
         Pattern transitivity_LHS = graph.graql().parsePattern(
                 "{(geo-entity: $x, entity-location: $y) isa is-located-in;" +

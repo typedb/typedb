@@ -33,10 +33,10 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class JanusHadoopInternalFactoryTest {
+public class TxFactoryJanusHadoopTest {
     private final static Properties TEST_PROPERTIES = new Properties();
 
-    private JanusHadoopInternalFactory factory;
+    private TxFactoryJanusHadoop factory;
 
     @Before
     public void setUp() throws Exception {
@@ -47,7 +47,7 @@ public class JanusHadoopInternalFactoryTest {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
         }
 
-        factory = new JanusHadoopInternalFactory("rubbish", "rubbish", TEST_PROPERTIES);
+        factory = new TxFactoryJanusHadoop("rubbish", "rubbish", TEST_PROPERTIES);
     }
 
     @Test(expected=UnsupportedOperationException.class)

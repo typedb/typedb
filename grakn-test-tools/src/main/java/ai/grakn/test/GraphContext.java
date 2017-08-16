@@ -18,7 +18,7 @@
 
 package ai.grakn.test;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.GraphLoader;
 import org.junit.rules.TestRule;
@@ -47,7 +47,7 @@ import java.util.function.Consumer;
 public class GraphContext extends GraphLoader implements TestRule {
     private boolean assumption = true;
 
-    private GraphContext(@Nullable Consumer<GraknGraph> preLoad){
+    private GraphContext(@Nullable Consumer<GraknTx> preLoad){
         super(preLoad);
     }
 
@@ -55,7 +55,7 @@ public class GraphContext extends GraphLoader implements TestRule {
         return getContext(null);
     }
 
-    public static GraphContext preLoad(Consumer<GraknGraph> build){
+    public static GraphContext preLoad(Consumer<GraknTx> build){
         return getContext(build);
     }
 
@@ -67,7 +67,7 @@ public class GraphContext extends GraphLoader implements TestRule {
         });
     }
 
-    private static GraphContext getContext(@Nullable Consumer<GraknGraph> preLoad){
+    private static GraphContext getContext(@Nullable Consumer<GraknTx> preLoad){
         GraknTestSetup.startCassandraIfNeeded();
         return new GraphContext(preLoad);
     }
@@ -77,7 +77,7 @@ public class GraphContext extends GraphLoader implements TestRule {
         return this;
     }
 
-    public static void loadFromFile(GraknGraph graph, String file) {
+    public static void loadFromFile(GraknTx graph, String file) {
         GraphLoader.loadFromFile(graph, GraknSystemProperty.PROJECT_RELATIVE_DIR.value()+"/grakn-test-tools/src/main/graql/" + file);
     }
 

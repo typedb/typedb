@@ -19,7 +19,7 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.function.BiFunction;
 
 /**
- * Generator that produces {@link GraknGraph} methods that put a type in the graph, given {@link Label}.
+ * Generator that produces {@link GraknTx} methods that put a type in the graph, given {@link Label}.
  *
  * @author Felix Chapman
  */
@@ -39,12 +39,12 @@ public class PutTypeFunctions extends AbstractGenerator<BiFunction> {
     }
 
     @Override
-    protected BiFunction<GraknGraph, Label, Type> generate() {
+    protected BiFunction<GraknTx, Label, Type> generate() {
         return random.choose(ImmutableList.of(
-                GraknGraph::putEntityType,
+                GraknTx::putEntityType,
                 (graph, label) -> graph.putResourceType(label, gen(ResourceType.DataType.class)),
-                GraknGraph::putRuleType,
-                GraknGraph::putRelationshipType
+                GraknTx::putRuleType,
+                GraknTx::putRelationshipType
         ));
     }
 }

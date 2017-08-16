@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -640,7 +640,7 @@ public class MatchQueryTest {
 
     @Test
     public void testGraqlPlaysSemanticsMatchGraphAPI() {
-        GraknGraph graph = GraphContext.empty().graph(); // TODO: Try and remove this call if possible
+        GraknTx graph = GraphContext.empty().graph(); // TODO: Try and remove this call if possible
         QueryBuilder qb = graph.graql();
 
         Label a = Label.of("a");

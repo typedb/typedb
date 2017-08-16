@@ -18,7 +18,7 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraphOperationException;
@@ -89,7 +89,7 @@ public class SchemaConceptPropertyTest {
 
     @Property
     public void whenCallingGetLabel_TheResultCanBeUsedToRetrieveTheSameConcept(
-            @Open GraknGraph graph, @FromGraph SchemaConcept concept) {
+            @Open GraknTx graph, @FromGraph SchemaConcept concept) {
         Label label = concept.getLabel();
         assertEquals(concept, graph.getSchemaConcept(label));
     }

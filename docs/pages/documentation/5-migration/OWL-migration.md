@@ -22,7 +22,7 @@ usage: migration.sh owl -input <arg> -keyspace <arg> [-help] [-uri <arg>] [-verb
  -c,--config <arg>     Configuration file.
  -h,--help             Print usage message.
  -i,--input <arg>      input csv file
- -k,--keyspace <arg>   Grakn graph. Required.
+ -k,--keyspace <arg>   Grakn knowledge base. Required.
  -u,--uri <arg>        Location of Grakn Engine.
  -v,--verbose          Print counts of migrated data.
 ```

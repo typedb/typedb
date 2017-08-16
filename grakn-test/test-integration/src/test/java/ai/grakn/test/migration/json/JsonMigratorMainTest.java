@@ -19,7 +19,7 @@
 package ai.grakn.test.migration.json;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
@@ -115,7 +115,7 @@ public class JsonMigratorMainTest {
     private void runAndAssertDataCorrect(String... args){
         run(args);
 
-        try(GraknGraph graph = session.open(GraknTxType.READ)) {
+        try(GraknTx graph = session.open(GraknTxType.READ)) {
             EntityType personType = graph.getEntityType("person");
             assertEquals(1, personType.instances().count());
 

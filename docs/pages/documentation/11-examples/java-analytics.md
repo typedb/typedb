@@ -74,7 +74,7 @@ First, we load the ontology and data we will be working with, which is the famil
 private static void loadBasicGenealogy() {
     ClassLoader classLoader = Main.class.getClassLoader();
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
-        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             try {
                 graph.graql().parse(IOUtils.toString(classLoader.getResourceAsStream("basic-genealogy.gql"))).execute();
                 } catch (IOException e) {
@@ -97,7 +97,7 @@ private static void testConnection() {
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
         // open a graph (database transaction)
-        try (GraknGraph graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
 
             // construct a match query to find people
             MatchQuery query = graph.graql().match(var("x").isa("person"));
@@ -124,7 +124,7 @@ private static Map<String, Set<String>> computeClusters() {
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
         // open a graph (database transaction)
-        try (GraknGraph graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
 
             // construct the analytics cluster query
             ClusterQuery<Map<String, Set<String>>> query = graph.graql().compute().cluster().in("person", "marriage").members();
@@ -156,7 +156,7 @@ private static void mutateOntology() {
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
         // open a graph (database transaction)
-        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
             // create set of vars representing the mutation
             Var group = Graql.var("group").label("group").sub("role");
@@ -194,7 +194,7 @@ private static void persistClusters(Map<String, Set<String>> results) {
         results.forEach((clusterID, memberSet) -> {
 
             // open a graph (database transaction)
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                     // collect the vars to insert
                     Set<Var> insertVars = new HashSet<>();
@@ -239,7 +239,7 @@ private static Map<Long, Set<String>> degreeOfClusters() {
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
         // open a graph (database transaction)
-        try (GraknGraph graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
 
             // construct the analytics cluster query
             DegreeQuery query = graph.graql().compute().degree().in("cluster", "grouping").of("cluster");
@@ -267,7 +267,7 @@ private static void persistDegrees(Map<Long, Set<String>> degrees) {
     // initialise the connection to Grakn engine
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
-        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
             // mutate the ontology
             Var degree = Graql.var().label("degree").sub("resource").datatype(ResourceType.DataType.LONG);
@@ -280,7 +280,7 @@ private static void persistDegrees(Map<Long, Set<String>> degrees) {
             graph.commit();
             }
 
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
             // add the degrees to the cluster
             Set<Var> degreeMutation = new HashSet<>();

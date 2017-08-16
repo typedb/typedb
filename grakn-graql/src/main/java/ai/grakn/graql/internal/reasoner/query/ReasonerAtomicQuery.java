@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.exception.GraqlQueryException;
@@ -80,7 +80,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     private Atom atom;
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
-    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
+    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, GraknTx graph) {
         super(pattern, graph);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }

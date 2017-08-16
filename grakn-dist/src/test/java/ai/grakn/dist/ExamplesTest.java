@@ -19,7 +19,7 @@
 package ai.grakn.dist;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import org.junit.After;
 import org.junit.Before;
@@ -34,7 +34,7 @@ import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertTrue;
 
 public class ExamplesTest {
-    private GraknGraph graph;
+    private GraknTx graph;
 
     @Before
     public void setUp() {

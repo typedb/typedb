@@ -1,8 +1,8 @@
 ---
-title: "Graph API pages"
-tagName: graph-api
+title: "Java API pages"
+tagName: java-api
 search: exclude
-permalink: tag_graph-api.html
+permalink: tag_java-api.html
 sidebar: documentation_sidebar
 folder: tags
 ---

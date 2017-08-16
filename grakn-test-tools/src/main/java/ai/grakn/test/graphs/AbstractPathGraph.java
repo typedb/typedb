@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -45,7 +45,7 @@ public abstract class AbstractPathGraph extends TestGraph {
         this.m = m;
     }
 
-    protected void buildExtensionalDB(GraknGraph graph, int n, int children) {
+    protected void buildExtensionalDB(GraknTx graph, int n, int children) {
         long startTime = System.currentTimeMillis();
 
         EntityType vertex = graph.getEntityType("vertex");
@@ -92,8 +92,8 @@ public abstract class AbstractPathGraph extends TestGraph {
     }
 
     @Override
-    public Consumer<GraknGraph> build(){
-        return (GraknGraph graph) -> {
+    public Consumer<GraknTx> build(){
+        return (GraknTx graph) -> {
             GraphContext.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };

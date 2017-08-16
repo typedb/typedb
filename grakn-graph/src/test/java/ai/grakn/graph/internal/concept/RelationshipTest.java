@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal.concept;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -33,7 +33,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
 import ai.grakn.graph.internal.GraphTestBase;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -140,7 +140,7 @@ public class RelationshipTest extends GraphTestBase {
         assertThat(followShortcutsToNeighbours(graknGraph, entity6r1r2r3),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
-    private Set<Concept> followShortcutsToNeighbours(GraknGraph graph, Thing thing) {
+    private Set<Concept> followShortcutsToNeighbours(GraknTx graph, Thing thing) {
         List<Vertex> vertices = graph.admin().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.getId().getValue()).
                 in(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 out(Schema.EdgeLabel.SHORTCUT.getLabel()).toList();
@@ -164,7 +164,7 @@ public class RelationshipTest extends GraphTestBase {
 
         relationshipType.addRelationship();
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         relation = (RelationshipImpl) graknGraph.getRelationshipType("relation type").instances().iterator().next();
 
@@ -178,7 +178,7 @@ public class RelationshipTest extends GraphTestBase {
         relation.addRolePlayer(role1, thing1);
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         relation = (RelationshipImpl) graknGraph.getRelationshipType("relation type").instances().iterator().next();
         assertEquals(getFakeId(relation.type(), roleMap), relation.reified().get().getIndex());
@@ -319,7 +319,7 @@ public class RelationshipTest extends GraphTestBase {
         rel2.resource(r2);
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) graknSession.open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) graknSession.open(GraknTxType.WRITE);
 
         assertThat(graknGraph.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel1));
         assertThat(graknGraph.admin().getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel2));

@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
@@ -61,7 +61,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
 
-    Optional<GraknGraph> graph = Optional.empty();
+    Optional<GraknTx> graph = Optional.empty();
     GraknComputer graknComputer = null;
     String keySpace;
 
@@ -71,7 +71,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     private String url;
 
     @Override
-    public ComputeQuery<T> withGraph(GraknGraph graph) {
+    public ComputeQuery<T> withGraph(GraknTx graph) {
         this.graph = Optional.of(graph);
         return this;
     }
@@ -118,14 +118,14 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     void initSubGraph() {
-        GraknGraph theGraph = graph.orElseThrow(GraqlQueryException::noGraph);
+        GraknTx theGraph = graph.orElseThrow(GraqlQueryException::noGraph);
         keySpace = theGraph.getKeyspace();
         url = theGraph.admin().getEngineUrl();
 
         getAllSubTypes(theGraph);
     }
 
-    private void getAllSubTypes(GraknGraph graph) {
+    private void getAllSubTypes(GraknTx graph) {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         if (subLabels.isEmpty()) {
             EntityType metaEntityType = graph.admin().getMetaEntityType();

@@ -18,7 +18,7 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -59,7 +59,7 @@ public class RelationshipTypePropertyTest {
 
     @Property
     public void whenANonMetaRelationTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
-            @Open GraknGraph graph, @FromGraph @NonMeta RelationshipType type) {
+            @Open GraknTx graph, @FromGraph @NonMeta RelationshipType type) {
         assumeThat(type.instances().collect(toSet()), empty());
         assumeThat(type.subs().collect(toSet()), contains(type));
         assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());

@@ -21,7 +21,7 @@ package ai.grakn.graph.internal.cache;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
 import ai.grakn.graph.internal.concept.SchemaConceptImpl;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -59,7 +59,7 @@ public class GraphCache {
     public GraphCache(Properties properties){
         cachedLabels = new ConcurrentHashMap<>();
 
-        int cacheTimeout = Integer.parseInt(properties.get(AbstractGraknGraph.NORMAL_CACHE_TIMEOUT_MS).toString());
+        int cacheTimeout = Integer.parseInt(properties.get(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS).toString());
         cachedTypes = CacheBuilder.newBuilder()
                 .maximumSize(1000)
                 .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)

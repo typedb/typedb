@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
@@ -56,7 +56,7 @@ public class DegreeTest {
     @ClassRule
     public static final EngineContext context = EngineContext.startInMemoryServer();
     private GraknSession factory;
-    private GraknGraph graph;
+    private GraknTx graph;
 
     @Before
     public void setUp() {
@@ -116,7 +116,7 @@ public class DegreeTest {
         graph.close();
 
         Set<Map<Long, Set<String>>> result = list.parallelStream().map(i -> {
-            try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            try (GraknTx graph = factory.open(GraknTxType.READ)) {
                 return graph.graql().compute().degree().execute();
             }
         }).collect(Collectors.toSet());
@@ -130,7 +130,7 @@ public class DegreeTest {
             ));
         });
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thingy").execute();
 
             assertEquals(2, degrees2.size());
@@ -204,7 +204,7 @@ public class DegreeTest {
         dog.addEntity();
         graph.commit();
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             // set subgraph
             HashSet<Label> ct = Sets.newHashSet(Label.of("person"), Label.of("animal"),
                     Label.of("mans-best-friend"));
@@ -265,7 +265,7 @@ public class DegreeTest {
         referenceDegrees.put(cocoAltName.getId(), 2L);
 
         graph.commit();
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
 
             // create a subgraph excluding resources and the relationship
             HashSet<Label> subGraphTypes = Sets.newHashSet(Label.of("animal"), Label.of("person"),
@@ -327,7 +327,7 @@ public class DegreeTest {
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
 
         graph.commit();
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
 
             // compute and persist degrees
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
@@ -390,7 +390,7 @@ public class DegreeTest {
         referenceDegrees2.put(daveOwnsCoco.getId(), 2L);
 
         graph.commit();
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
 
             // create a subgraph with assertion on assertion
             HashSet<Label> ct =
@@ -453,7 +453,7 @@ public class DegreeTest {
 
         graph.commit();
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
             assertTrue(degrees.get(3L).contains(relationId.getValue()));
             assertTrue(degrees.get(1L).contains(marlonId.getValue()));
@@ -489,7 +489,7 @@ public class DegreeTest {
 
         graph.commit();
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
             assertFalse(degrees.isEmpty());
             degrees.forEach((key, value) -> value.forEach(
@@ -510,7 +510,7 @@ public class DegreeTest {
         entity1.resource(name.putResource("1"));
         graph.commit();
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().in().execute();
             assertEquals(degrees.size(), 1);
             assertEquals(degrees.get(1L).size(), 2);
@@ -527,7 +527,7 @@ public class DegreeTest {
                 .addRolePlayer(role2, entity2);
         graph.commit();
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().in("thingy", "name").execute();
             assertEquals(degrees.size(), 2);
             assertEquals(degrees.get(0L).size(), 1);
@@ -572,7 +572,7 @@ public class DegreeTest {
         // validate
         graph.commit();
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             // check degree for dave owning cats
             //TODO: should we count the relationship even if there is no cat attached?
             HashSet<Label> ct = Sets.newHashSet(Label.of("mans-best-friend"), Label.of("cat"),

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
@@ -87,11 +87,11 @@ public class GraqlTraversalTest {
     private static final Fragment yTypeOfX = inIsa(null, y, x);
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
-    private static GraknGraph graph;
+    private static GraknTx graph;
 
     @BeforeClass
     public static void setUp() {
-        graph = mock(GraknGraph.class);
+        graph = mock(GraknTx.class);
 
         // We have to mock out the `subTypes` call because the shortcut edge optimisation checks it
 

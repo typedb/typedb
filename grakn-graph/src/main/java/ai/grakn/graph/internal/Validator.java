@@ -46,10 +46,10 @@ import java.util.Set;
  *
  */
 class Validator {
-    private final AbstractGraknGraph<?> graknGraph;
+    private final GraknTxAbstract<?> graknGraph;
     private final List<String> errorsFound = new ArrayList<>();
 
-    public Validator(AbstractGraknGraph graknGraph){
+    public Validator(GraknTxAbstract graknGraph){
         this.graknGraph = graknGraph;
     }
 
@@ -99,7 +99,7 @@ class Validator {
      * @param graph the graph to query against
      * @param rule the rule which needs to be validated
      */
-    private void validateRule(AbstractGraknGraph<?> graph, Rule rule){
+    private void validateRule(GraknTxAbstract<?> graph, Rule rule){
         Set<String> labelErrors = ValidateGlobalRules.validateRuleOntologyElementsExist(graph, rule);
         errorsFound.addAll(labelErrors);
         errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidHornClause(graph, rule));
@@ -112,7 +112,7 @@ class Validator {
      * Validation rules exclusive to relations
      * @param relationship The {@link Relationship} to validate
      */
-    private void validateRelation(AbstractGraknGraph<?> graph, Relationship relationship){
+    private void validateRelation(GraknTxAbstract<?> graph, Relationship relationship){
         validateThing(relationship);
         Optional<RelationshipReified> relationReified = ((RelationshipImpl) relationship).reified();
         //TODO: We need new validation mechanisms for non-reified relations

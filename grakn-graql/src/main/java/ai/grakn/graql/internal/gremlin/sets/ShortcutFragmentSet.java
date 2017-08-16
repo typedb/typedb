@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
@@ -90,7 +90,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * However, we must still retain the {@link LabelFragmentSet} because it is possible it is selected as a result or
      * referred to elsewhere in the query.
      */
-    static boolean applyShortcutRoleOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+    static boolean applyShortcutRoleOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
         Iterable<ShortcutFragmentSet> shortcuts = EquivalentFragmentSets.fragmentSetOfType(ShortcutFragmentSet.class, fragmentSets)::iterator;
 
         for (ShortcutFragmentSet shortcut : shortcuts) {
@@ -147,7 +147,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * it can help with performance: there are some instances where it makes sense to navigate from the relation-type
      * {@code foo} to all instances. In order to do that, the {@link IsaFragmentSet} must be present.
      */
-    static boolean applyShortcutRelationTypeOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+    static boolean applyShortcutRelationTypeOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
         Iterable<ShortcutFragmentSet> shortcuts = EquivalentFragmentSets.fragmentSetOfType(ShortcutFragmentSet.class, fragmentSets)::iterator;
 
         for (ShortcutFragmentSet shortcut : shortcuts) {

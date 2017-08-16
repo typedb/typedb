@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.hal;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.MatchQuery;
@@ -141,17 +141,17 @@ public class HALBuilderTest {
         });
     }
 
-    private Json getHALRepresentation(GraknGraph graph, String queryString) {
+    private Json getHALRepresentation(GraknTx graph, String queryString) {
         Query<?> query = graph.graql().materialise(false).infer(true).parse(queryString);
         return renderHALArrayData((MatchQuery) query, 0, 5);
     }
 
-    private Json getHALExploreRepresentation(GraknGraph graph, String conceptId) {
+    private Json getHALExploreRepresentation(GraknTx graph, String conceptId) {
         Concept concept = graph.getConcept(ConceptId.of(conceptId));
         return Json.read(HALExploreConcept(concept, graph.getKeyspace(), 0, 5));
     }
 
-    private Json getHALRepresentationNoInference(GraknGraph graph, String queryString) {
+    private Json getHALRepresentationNoInference(GraknTx graph, String queryString) {
         Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
         return renderHALArrayData((MatchQuery) query, 0, 5);
     }

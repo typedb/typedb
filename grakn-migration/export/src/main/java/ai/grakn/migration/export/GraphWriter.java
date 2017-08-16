@@ -17,7 +17,7 @@
  */
 package ai.grakn.migration.export;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
@@ -36,9 +36,9 @@ public class GraphWriter {
 
     private static final String EOL = ";\n";
 
-    private final GraknGraph graph;
+    private final GraknTx graph;
 
-    public GraphWriter(GraknGraph graph){
+    public GraphWriter(GraknTx graph){
         this.graph = graph;
     }
 

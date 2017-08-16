@@ -2,7 +2,7 @@
 title: Define a Basic Ontology
 keywords: schema
 last_updated: December, 2016
-tags: [graph-api, java, advanced-grakn]
+tags: [java-api, java, advanced-grakn]
 summary: "Demonstrates how to create a basic ontology"
 sidebar: documentation_sidebar
 permalink: /documentation/building-an-ontology/basic-ontology.html
@@ -18,15 +18,15 @@ comment_issue_id: 22
 
 In this section we are going to run through the construction of a basic ontology. We recommend that you refer to the [Knowledge Model](../the-fundamentals/grakn-knowledge-model.html) documentation before reading this page. The process we will follow is a general guideline as to how you may start designing an ontology.
 
-The ontology we will be building will be used for a genealogy graph used for mapping out a family tree. You can find the complete ontology, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
+The ontology we will be building will be used for a genealogy knowledge base used for mapping out a family tree. You can find the complete ontology, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
 
 
 ## Identifying Entity Types
 
-The first step is about identifying the categories of things that will be in your graph.
+The first step is about identifying the categories of things that will be in your knowledge base.
 For example if you are modelling a retail store, valid categories may be `product`, `electronics`, `books`, etc.  It is up to you to decide the granularity of your categories.
 
-For our genealogy graph we know that it will mostly be filled with people. So we can create an entity type:
+For our genealogy knowledge base we know that it will mostly be filled with people. So we can create an entity type:
 
 ```graql
 insert
@@ -182,7 +182,7 @@ insert
 
 In this tutorial we described our entity type `person` across separate steps. This was done to demonstrate the typical thought process when creating an ontology. It is typically good practice to group entity type definitions together as above.
 
-{% include note.html content="It is worth noting that the ontology does not need to be completely finalised before loading data. The ontology of a Grakn graph can be expanded even after loading data." %}
+{% include note.html content="It is worth noting that the ontology does not need to be completely finalised before loading data. The schema of a Grakn knowledge base can be expanded even after loading data." %}
 
 ## Where Next?
 

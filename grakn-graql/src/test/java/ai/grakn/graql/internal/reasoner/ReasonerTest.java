@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Rule;
@@ -106,7 +106,7 @@ public class ReasonerTest {
 
     @Test
     public void testSubPropertyRuleCreation() {
-        GraknGraph graph = testSnbGraph.graph();
+        GraknTx graph = testSnbGraph.graph();
         Map<Label, Label> roleMap = new HashMap<>();
         RelationshipType parent = graph.getRelationshipType("sublocate");
         RelationshipType child = graph.getRelationshipType("resides");
@@ -127,7 +127,7 @@ public class ReasonerTest {
 
     @Test
     public void testTransitiveRuleCreation() {
-        GraknGraph graph = testSnbGraph.graph();
+        GraknTx graph = testSnbGraph.graph();
         Rule rule = ReasonerUtils.createTransitiveRule(
                 graph.getRelationshipType("sublocate"),
                 graph.getRole("member-location").getLabel(),
@@ -147,7 +147,7 @@ public class ReasonerTest {
 
     @Test
     public void testReflexiveRuleCreation() {
-        GraknGraph graph = testSnbGraph.graph();
+        GraknTx graph = testSnbGraph.graph();
         Rule rule = ReasonerUtils.createReflexiveRule(
                 graph.getRelationshipType("knows"),
                 graph.getRole("acquaintance1").getLabel(),
@@ -165,7 +165,7 @@ public class ReasonerTest {
 
     @Test
     public void testPropertyChainRuleCreation() {
-        GraknGraph graph = testSnbGraph.graph();
+        GraknTx graph = testSnbGraph.graph();
         RelationshipType resides = graph.getRelationshipType("resides");
         RelationshipType sublocate = graph.getRelationshipType("sublocate");
 
@@ -194,7 +194,7 @@ public class ReasonerTest {
 
     @Test
     public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
-        GraknGraph graph = testGeoGraph.graph();
+        GraknTx graph = testGeoGraph.graph();
         RuleType inferenceRule = graph.admin().getMetaRuleInference();
 
         Pattern body1 = Graql.and(graph.graql().parsePatterns(
@@ -281,7 +281,7 @@ public class ReasonerTest {
 
     @Test
     public void testParsingQueryWithResourceVariable5(){
-        GraknGraph graph = snbGraph.graph();
+        GraknTx graph = snbGraph.graph();
         String patternString = "{$x has firstname 'Bob', has lastname 'Geldof';}";
         String patternString2 = "{$x has firstname 'Bob';$x has lastname 'Geldof';}";
         String patternString3 = "{$x has firstname $x1;$x has lastname $x2;$x1 val 'Bob';$x2 val 'Geldof';}";
@@ -329,7 +329,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryWithNoRelationType(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa city;$y isa country;($x, $y);$y has name 'Poland';$x has name $name;";
         String queryString2 = "match $x isa city;$y isa country;$y has name 'Poland';$x has name $name;" +
                 "($x, $y) isa is-located-in;";
@@ -341,7 +341,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryWithNoRelationTypeWithRoles(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa city;$y isa country;(geo-entity: $x, $y);$y has name 'Poland';";
         String queryString2 = "match $x isa city;$y isa country;" +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;$y has name 'Poland';";
@@ -353,7 +353,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryWithNoRelationTypeWithRoles2(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa city;$y isa country;(geo-entity: $x, $y);";
         String queryString2 = "match $x isa city;$y isa country;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;";
@@ -396,7 +396,7 @@ public class ReasonerTest {
     @Test
     public void testReasoningWithQueryContainingTypeVar2(){
         String thing = Schema.MetaSchema.THING.getLabel().getValue();
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa $type;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
         String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has resource $name;" +
@@ -417,7 +417,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingTypeVar3(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa $type;$type label 'university';" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
         String explicitQuery = "match $y has name 'Poland';" +
@@ -430,7 +430,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingSub(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match " +
                 "$x isa $type;$type sub geoObject;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;" +
@@ -471,7 +471,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingTautology(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match ($x, $y) isa is-located-in;city sub geoObject;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
         QueryBuilder iqb = graph.graql().infer(true);
@@ -484,7 +484,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingContradiction(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         //geoObject sub city always returns an empty set
         String queryString = "match ($x, $y) isa is-located-in;geoObject sub city;";
         QueryBuilder iqb = graph.graql().infer(true);
@@ -495,7 +495,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingPlays(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match " +
                 "$x isa $type;$type plays geo-entity;"+
                 "$y isa country;$y has name 'Poland';" +
@@ -535,7 +535,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingTypeHas(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa $type;$type has name;$y isa country;$y has name 'Poland';" +
                 "($x, $y) isa is-located-in;select $x, $y;";
         String queryString2 = "match $y isa country;$y has name 'Poland';" +
@@ -567,7 +567,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingRegex(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $y isa country;$y has name $name;"+
                 "$name val  /.*(.*)land(.*).*/;($x, $y) isa is-located-in;select $x, $y;";
         String queryString2 = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
@@ -580,7 +580,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingContains(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $y isa country;$y has name $name;"+
                 "$name val contains 'land';($x, $y) isa is-located-in;select $x, $y;";
         String queryString2 = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
@@ -593,7 +593,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingIndirectRelation(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match ($x, $y) isa $rel;$rel label is-located-in;select $x, $y;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
         QueryBuilder iqb = graph.graql().infer(true);
@@ -604,7 +604,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingTypeVariable(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa $type;$type label 'city';"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;select $x, $y;";
         String queryString2 = "match $x isa city;"+
@@ -617,7 +617,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingTypeVariable2(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa $type;$type label 'city';"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;$y has name 'Poland';select $x, $y;";
         String queryString2 = "match $x isa city;"+
@@ -630,7 +630,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingRelationTypeVar(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match (geo-entity: $x) isa $type;$type label 'is-located-in';";
         String queryString2 = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x;";
         QueryBuilder iqb = graph.graql().infer(true);
@@ -656,7 +656,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingUnspecifiedCastings(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match (geo-entity: $x) isa is-located-in;";
         String queryString2 = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x;";
         QueryBuilder iqb = graph.graql().infer(true);
@@ -667,7 +667,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingUnspecifiedCastings2(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match (geo-entity: $x);";
         String queryString2 = "match (geo-entity: $x, entity-location: $y)isa is-located-in;select $x;";
         QueryBuilder iqb = graph.graql().infer(true);
@@ -678,7 +678,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingLimit(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String limitQueryString = "match (geo-entity: $x, entity-location: $y)isa is-located-in;limit 5;";
         String queryString = "match (geo-entity: $x, entity-location: $y)isa is-located-in;";
         QueryBuilder iqb = graph.graql().infer(true);
@@ -721,7 +721,7 @@ public class ReasonerTest {
     @Ignore
     @Test
     public void testReasoningWithQueryContainingRelates() {
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match ($x, $y) isa $rel-type;$rel-type relates geo-entity;" +
                 "$y isa country;$y has name 'Poland';select $x;";
         String queryString2 = "match $y isa country;" +
@@ -782,7 +782,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingAmbiguousRolePlayers(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
+        GraknTx graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
         QueryBuilder iqb = graph.graql().infer(true);
@@ -907,7 +907,7 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknGraph graph){
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){
         Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

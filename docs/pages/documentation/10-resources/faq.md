@@ -93,10 +93,10 @@ tail -f grakn.log
 ```
 
 
-### I want to load a large amount of data into a graph - how do I do it?
+### I want to load a large amount of data into a knowledge base - how do I do it?
 Graql is single-threaded and doesn't support batch-loading. You may want to use the Java [loader client](../developing-with-java/loader-api.html), which provides multi-threaded batch loading, or the `-b` flag if you are using the [Graql shell](../graql/graql-shell.html).
 
-### What are the differences between a batch graph load and a normal graph load?
+### What are the differences between a batch load and a normal load?
 
 The batch load is faster for larger datasets because it ignores some consistency checks, on the assumption that you have pre-filtered your data. Checks ignored include:
 
@@ -127,7 +127,7 @@ It is possible for the system to record that `Brad Pitt` is an actor multiple ti
 
 {% include note.html content="This only happens when using a batch graph." %}
 
-When using a batch graph, many safety checks are skipped in favour of speed. One such check is the possible existence of a resource before creating it. So if the following transactions are executed simultaneously while batch loading: 
+When using a batch load, many safety checks are skipped in favour of speed. One such check is the possible existence of a resource before creating it. So if the following transactions are executed simultaneously while batch loading: 
 
 ```graql-test-ignore
 1. insert $a has unique-id '1'
@@ -162,25 +162,25 @@ Please refer to the [Janus documentation](http://docs.janusgraph.org/latest/conf
 
 Currently, there is no official support for languages other than Java, although you can find blog posts that describe our experiments with [Haskell](https://blog.grakn.ai/grakn-ai-and-haskell-c166c7cc1d23), [Python](https://blog.grakn.ai/grakn-pandas-celebrities-5854ad688a4f) and [R](https://blog.grakn.ai/there-r-pandas-in-my-graph-b8b5f40a2f99). We would be very willing to accept proposals from our community and work with contributors to extend these initial offerings, and/or create bindings to other languages. 
 
-### How do I visualise a graph?
+### How do I visualise a knowledge base?
 
-Grakn comes with a basic [visualiser](../grakn-dashboard/visualiser.html), with a web-interface. We appreciate any feedback you give us about it via the [discussion boards](https://discuss.grakn.ai/t/visualise-my-data/57). You will need to start Grakn, and then use your web browser to visit [localhost:4567](http://localhost:4567/) to visualise a graph.  Please see the [Get Started Guide](../get-started/setup-guide.html#test-the-visualiser) for more information about the visualiser.
+Grakn comes with a basic [visualiser](../grakn-dashboard/visualiser.html), with a web-interface. We appreciate any feedback you give us about it via the [discussion boards](https://discuss.grakn.ai/t/visualise-my-data/57). You will need to start Grakn, and then use your web browser to visit [localhost:4567](http://localhost:4567/) to visualise a knowledge base.  Please see the [Get Started Guide](../get-started/setup-guide.html#test-the-visualiser) for more information about the visualiser.
 
 
-### How do I clear a graph?
+### How do I clear a knowledge base?
 
-I want to clear the graph I've been experimenting with and try something with a new, different schema and dataset. How do I do it?
+I want to clear the knowledge base I've been experimenting with and try something with a new, different schema and dataset. How do I do it?
 
 If you are using the Java API, it's a simple as:
 
 ```java-test-ignore
-graph = Grakn.session(Grakn.DEFAULT_URI, "my-graph").open(GraknTxType.WRITE);
-graph.clear();
+tx = Grakn.session(Grakn.DEFAULT_URI, "my-knowledge-base").open(GraknTxType.WRITE);
+tx.clear();
 ```
 
-If you are using the Graql shell and have not committed what you have in the graph, you can just quit the shell and restart it, and all is clean.
+If you are using the Graql shell and have not committed what you have in the knowledge base, you can just quit the shell and restart it, and all is clean.
 
-If you've committed, then you must stop Grakn and specifically clean the graph:
+If you've committed, then you must stop Grakn and specifically clean the knowledge base:
 
 ```bash
 ./bin/grakn.sh stop

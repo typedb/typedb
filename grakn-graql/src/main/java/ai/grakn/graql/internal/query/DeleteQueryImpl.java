@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
@@ -76,7 +76,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public DeleteQuery withGraph(GraknGraph graph) {
+    public DeleteQuery withGraph(GraknTx graph) {
         return Queries.delete(deleters, matchQuery.withGraph(graph));
     }
 
@@ -114,7 +114,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
         }
     }
 
-    private GraknGraph getGraph() {
+    private GraknTx getGraph() {
         return matchQuery.getGraph().orElseThrow(GraqlQueryException::noGraph);
     }
 

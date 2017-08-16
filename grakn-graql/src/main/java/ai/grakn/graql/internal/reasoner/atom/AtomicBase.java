@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -89,8 +89,8 @@ public abstract class AtomicBase implements Atomic {
     public void setParentQuery(ReasonerQuery q){ parent = q;}
 
     /**
-     * @return GraknGraph this atomic is defined in
+     * @return GraknTx this atomic is defined in
      */
-    protected GraknGraph graph(){ return getParentQuery().graph();}
+    protected GraknTx graph(){ return getParentQuery().graph();}
 }
 

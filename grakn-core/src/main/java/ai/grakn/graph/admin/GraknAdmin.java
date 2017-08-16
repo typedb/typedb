@@ -18,7 +18,7 @@
 
 package ai.grakn.graph.admin;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
@@ -42,7 +42,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Admin interface for {@link GraknGraph}.
+ * Admin interface for {@link GraknTx}.
  *
  * @author Filipe Teixeira
  */

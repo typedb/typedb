@@ -13,12 +13,12 @@ folder: documentation
 
 Graql uses machine reasoning to perform inference over data types, relationship types, context disambiguation, implicit relationships and dynamic relationships. This allows you to discover hidden and implicit association between data instances through short and concise statements.
 
-The rule-based reasoning allows automated capture and evolution of patterns within the graph. Graql reasoning is performed at query time and is guaranteed to be complete.
+The rule-based reasoning allows automated capture and evolution of patterns within the knowledge base. Graql reasoning is performed at query time and is guaranteed to be complete.
 
-Thanks to the reasoning facility, common patterns in the graph can be defined and associated with existing ontology elements.
+Thanks to the reasoning facility, common patterns in the knowledge base can be defined and associated with existing ontology elements.
 The association happens by means of rules. This not only allows you to compress and simplify typical queries, but offers the ability to derive new non-trivial information by combining defined patterns.
 
-Provided reasoning is turned on, once a given query is executed, Graql will not only query the graph for exact matches but will also inspect the defined rules to check whether additional information can be found (inferred) by combining the patterns defined in the rules. The completeness property of Graql reasoning guarantees that, for a given content of the graph and the defined rule set, the query result shall contain all possible answers derived by combining database lookups and rule applications.
+Provided reasoning is turned on, once a given query is executed, Graql will not only query the knowledge base for exact matches but will also inspect the defined rules to check whether additional information can be found (inferred) by combining the patterns defined in the rules. The completeness property of Graql reasoning guarantees that, for a given content of the graph and the defined rule set, the query result shall contain all possible answers derived by combining database lookups and rule applications.
 
 In this section we shall briefly describe the logics behind the rules as well as how can we define pattern associations by suitably defined rules. You may also want to review our [example of how to work with Graql rules](../examples/graql-reasoning.html).
 
@@ -63,7 +63,7 @@ then {
 };
 ```
 
-Each dotted line corresponds to a single Graql variable. The rule name is optional and can be omitted, but it is useful if we want to be able to refer to and identify particular rules in the graph. This way, as inference-rule is a concept, we can attach resources to it:
+Each dotted line corresponds to a single Graql variable. The rule name is optional and can be omitted, but it is useful if we want to be able to refer to and identify particular rules in the knowledge base. This way, as inference-rule is a concept, we can attach resources to it:
 
 ```graql-test-ignore
 $myRule isa inference-rule,
@@ -104,7 +104,7 @@ then {
 };
 ```
 
-When adding rules such as those defined above with Graql, we simply use an `insert` statement, and load the rules, saved as a *.gql* file, into the graph in a standard manner, much as for an ontology.
+When adding rules such as those defined above with Graql, we simply use an `insert` statement, and load the rules, saved as a *.gql* file, into the knowledge base in a standard manner, much as for an ontology.
 
 Defining the above rules in terms of predicates and assuming left-to-right directionality of the roles, we can summarise them in the implication form as:
 
@@ -157,7 +157,7 @@ That means atomic queries contain at most one statement that can potentially app
 Graql offers certain degrees of freedom in deciding how and if reasoning should be performed. Namely it offers two options:
 
 * **whether reasoning should be on**. This option is self-explanatory. If the reasoning is not turned on, the rules will not be triggered and no knowledge will be inferred.
-* **whether inferred knowledge should be materialised (persisted to the graph) or stored in memory**. Persisting to graph has a huge impact on performance when compared to in-memory inference, and, for larger graphs, materialisation should either be avoided or queries be limited by employing the _limit_ modifier, which allows termination in sensible time.
+* **whether inferred knowledge should be materialised (persisted to the knowledge base) or stored in memory**. Persisting to graph has a huge impact on performance when compared to in-memory inference, and, for larger graphs, materialisation should either be avoided or queries be limited by employing the _limit_ modifier, which allows termination in sensible time.
 
 ## Where Next?
 

@@ -18,7 +18,7 @@
 
 package ai.grakn.graph.internal.structure;
 
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -47,7 +47,7 @@ import java.util.stream.StreamSupport;
  */
 public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty> {
 
-    public VertexElement(AbstractGraknGraph graknGraph, Vertex element) {
+    public VertexElement(GraknTxAbstract graknGraph, Vertex element) {
         super(graknGraph, element, Schema.PREFIX_VERTEX);
     }
 

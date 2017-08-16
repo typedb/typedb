@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
@@ -46,19 +46,19 @@ public class MatrixGraph extends TestGraph {
         this.n = n;
     }
 
-    public static Consumer<GraknGraph> get(int n, int m) {
+    public static Consumer<GraknTx> get(int n, int m) {
         return new MatrixGraph(n, m).build();
     }
 
     @Override
-    public Consumer<GraknGraph> build(){
-        return (GraknGraph graph) -> {
+    public Consumer<GraknTx> build(){
+        return (GraknTx graph) -> {
             GraphContext.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };
     }
 
-    private void buildExtensionalDB(GraknGraph graph, int n, int m) {
+    private void buildExtensionalDB(GraknTx graph, int n, int m) {
         Role R1from = graph.getRole("R1-from");
         Role R1to = graph.getRole("R1-to");
         Role R2from = graph.getRole("R2-from");
