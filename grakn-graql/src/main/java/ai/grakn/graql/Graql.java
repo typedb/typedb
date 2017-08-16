@@ -227,7 +227,7 @@ public class Graql {
      */
     @CheckReturnValue
     public static Aggregate<Object, Boolean> ask() {
-        return null;
+        return Aggregates.ask();
     }
 
     /**
