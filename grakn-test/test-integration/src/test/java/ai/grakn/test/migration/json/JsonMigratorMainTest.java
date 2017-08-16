@@ -24,10 +24,10 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.Label;
-import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.GraphLoader;
@@ -40,7 +40,6 @@ import org.junit.contrib.java.lang.system.SystemOutRule;
 
 import java.util.Collection;
 
-import static ai.grakn.graql.Graql.label;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static ai.grakn.test.migration.MigratorTestUtils.getProperties;
 import static ai.grakn.test.migration.MigratorTestUtils.getProperty;
@@ -113,7 +112,7 @@ public class JsonMigratorMainTest {
     @Test
     public void whenMigrationFailsOnTheServer_ErrorIsPrintedToSystemErr(){
         run("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", "wrong-keyspace");
-        String expectedMessage = GraqlQueryException.insertUndefinedVariable(label("person").admin()).getMessage();
+        String expectedMessage = GraknBackendException.noSuchKeyspace("wrong-keyspace").getMessage();
         assertThat(sysErr.getLog(), containsString(expectedMessage));
     }
 
