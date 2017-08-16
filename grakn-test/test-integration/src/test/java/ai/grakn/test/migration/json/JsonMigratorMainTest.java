@@ -27,6 +27,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Label;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.GraphLoader;
@@ -39,6 +40,7 @@ import org.junit.contrib.java.lang.system.SystemOutRule;
 
 import java.util.Collection;
 
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static ai.grakn.test.migration.MigratorTestUtils.getProperties;
 import static ai.grakn.test.migration.MigratorTestUtils.getProperty;
@@ -106,6 +108,13 @@ public class JsonMigratorMainTest {
     public void jsonMigratorCalledInvalidTemplateFile_ErrorIsPrintedToSystemErr(){
         run("-input", dataFile, "-template", templateFile + "wrong", "-u", engine.uri());
         assertThat(sysErr.getLog(), containsString("Cannot find file:"));
+    }
+
+    @Test
+    public void whenMigrationFailsOnTheServer_ErrorIsPrintedToSystemErr(){
+        run("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", "wrong-keyspace");
+        String expectedMessage = GraqlQueryException.insertUndefinedVariable(label("person").admin()).getMessage();
+        assertThat(sysErr.getLog(), containsString(expectedMessage));
     }
 
     private void run(String... args){
