@@ -73,7 +73,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
         this.originalVars = vars;
 
         // Get all variables, including ones nested in other variables
-        this.vars = vars.stream().flatMap(v -> v.getInnerVars().stream()).collect(toImmutableList());
+        this.vars = vars.stream().flatMap(v -> v.innerVarPatterns().stream()).collect(toImmutableList());
 
         for (VarPatternAdmin var : this.vars) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkInsertable(var));
@@ -130,7 +130,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
         GraknTx theGraph = getGraph().orElseThrow(GraqlQueryException::noGraph);
 
         Set<SchemaConcept> types = vars.stream()
-                .flatMap(v -> v.getInnerVars().stream())
+                .flatMap(v -> v.innerVarPatterns().stream())
                 .map(VarPatternAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(theGraph::<Type>getSchemaConcept)
@@ -142,7 +142,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Collection<VarPatternAdmin> getVars() {
+    public Collection<VarPatternAdmin> varPatterns() {
         return originalVars;
     }
 

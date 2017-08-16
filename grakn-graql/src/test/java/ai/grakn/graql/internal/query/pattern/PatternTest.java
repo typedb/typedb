@@ -58,18 +58,18 @@ public class PatternTest {
     public void testVarPattern() {
         Pattern x = var("x");
 
-        assertTrue(x.admin().isVar());
+        assertTrue(x.admin().isVarPattern());
         assertFalse(x.admin().isDisjunction());
         assertFalse(x.admin().isConjunction());
 
-        assertEquals(x.admin(), x.admin().asVar());
+        assertEquals(x.admin(), x.admin().asVarPattern());
     }
 
     @Test
     public void testSimpleDisjunction() {
         Pattern disjunction = or();
 
-        assertFalse(disjunction.admin().isVar());
+        assertFalse(disjunction.admin().isVarPattern());
         assertTrue(disjunction.admin().isDisjunction());
         assertFalse(disjunction.admin().isConjunction());
 
@@ -81,7 +81,7 @@ public class PatternTest {
     public void testSimpleConjunction() {
         Pattern conjunction = and();
 
-        assertFalse(conjunction.admin().isVar());
+        assertFalse(conjunction.admin().isVarPattern());
         assertFalse(conjunction.admin().isDisjunction());
         assertTrue(conjunction.admin().isConjunction());
 
@@ -92,7 +92,7 @@ public class PatternTest {
     @Test(expected = UnsupportedOperationException.class)
     public void testConjunctionAsVar() {
         //noinspection ResultOfMethodCallIgnored
-        Graql.and(var("x").isa("movie"), var("x").isa("person")).admin().asVar();
+        Graql.and(var("x").isa("movie"), var("x").isa("person")).admin().asVarPattern();
     }
 
     @Test(expected = UnsupportedOperationException.class)

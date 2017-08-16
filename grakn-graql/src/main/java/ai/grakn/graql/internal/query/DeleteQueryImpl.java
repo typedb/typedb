@@ -87,10 +87,10 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
     private void deleteResult(Answer result) {
         for (VarPatternAdmin deleter : deleters) {
-            Concept concept = result.get(deleter.getVarName());
+            Concept concept = result.get(deleter.var());
 
             if (concept == null) {
-                throw GraqlQueryException.varNotInQuery(deleter.getVarName());
+                throw GraqlQueryException.varNotInQuery(deleter.var());
             }
 
             deletePattern(concept, deleter);

@@ -69,7 +69,7 @@ class ValueFragment extends AbstractFragment {
 
     @Override
     public Set<Var> getDependencies() {
-        return optionalToStream(predicate.getInnerVar()).map(VarPatternAdmin::getVarName).collect(toSet());
+        return optionalToStream(predicate.getInnerVar()).map(VarPatternAdmin::var).collect(toSet());
     }
 
     @Override

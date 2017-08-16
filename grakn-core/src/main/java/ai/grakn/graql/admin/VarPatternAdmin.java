@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -36,12 +35,12 @@ import java.util.stream.Stream;
  */
 public interface VarPatternAdmin extends PatternAdmin, VarPattern {
     @Override
-    default boolean isVar() {
+    default boolean isVarPattern() {
         return true;
     }
 
     @Override
-    default VarPatternAdmin asVar() {
+    default VarPatternAdmin asVarPattern() {
         return this;
     }
 
@@ -49,7 +48,7 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
      * @return the variable name of this variable
      */
     @CheckReturnValue
-    Var getVarName();
+    Var var();
 
     /**
      * Get a stream of all properties on this variable
@@ -83,12 +82,6 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
     <T extends VarProperty> boolean hasProperty(Class<T> type);
 
     /**
-     * @return the ID this variable represents, if it represents something with a specific ID
-     */
-    @CheckReturnValue
-    Optional<ConceptId> getId();
-
-    /**
      * @return the name this variable represents, if it represents something with a specific name
      */
     @CheckReturnValue
@@ -98,13 +91,13 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
      * @return all variables that this variable references
      */
     @CheckReturnValue
-    Collection<VarPatternAdmin> getInnerVars();
+    Collection<VarPatternAdmin> innerVarPatterns();
 
     /**
      * Get all inner variables, including implicit variables such as in a has property
      */
     @CheckReturnValue
-    Collection<VarPatternAdmin> getImplicitInnerVars();
+    Collection<VarPatternAdmin> implicitInnerVarPatterns();
 
     /**
      * @return all type names that this variable refers to

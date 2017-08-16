@@ -92,6 +92,6 @@ public abstract class IdProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new IdPredicate(var.getVarName(), this, parent);
+        return new IdPredicate(var.var(), this, parent);
     }
 }
