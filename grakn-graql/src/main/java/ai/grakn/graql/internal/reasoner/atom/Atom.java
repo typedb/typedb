@@ -18,7 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -78,11 +78,11 @@ public abstract class Atom extends AtomicBase {
     @Override
     public boolean isRecursive(){
         if (isResource() || getOntologyConcept() == null) return false;
-        OntologyConcept ontologyConcept = getOntologyConcept();
+        SchemaConcept schemaConcept = getOntologyConcept();
         return getApplicableRules()
                 .filter(rule -> rule.getBody().selectAtoms().stream()
                         .filter(at -> Objects.nonNull(at.getOntologyConcept()))
-                        .filter(at -> checkCompatible(ontologyConcept, at.getOntologyConcept())).findFirst().isPresent())
+                        .filter(at -> checkCompatible(schemaConcept, at.getOntologyConcept())).findFirst().isPresent())
                 .filter(this::isRuleApplicable)
                 .findFirst().isPresent();
     }
@@ -174,7 +174,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return corresponding type if any
      */
-    public abstract OntologyConcept getOntologyConcept();
+    public abstract SchemaConcept getOntologyConcept();
 
     /**
      * @return type id of the corresponding type if any

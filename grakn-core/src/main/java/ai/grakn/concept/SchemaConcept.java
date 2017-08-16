@@ -37,14 +37,14 @@ import java.util.stream.Stream;
  *
  * @author fppt
  */
-public interface OntologyConcept extends Concept {
+public interface SchemaConcept extends Concept {
     //------------------------------------- Modifiers ----------------------------------
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    OntologyConcept setLabel(Label label);
+    SchemaConcept setLabel(Label label);
 
     //------------------------------------- Accessors ---------------------------------
     /**
@@ -69,7 +69,7 @@ public interface OntologyConcept extends Concept {
      */
     @CheckReturnValue
     @Nullable
-    OntologyConcept sup();
+    SchemaConcept sup();
 
     /**
      * Get all indirect subs of this concept.
@@ -79,7 +79,7 @@ public interface OntologyConcept extends Concept {
      * @return All the indirect sub-types of this Type
      */
     @CheckReturnValue
-    Stream<? extends OntologyConcept> subs();
+    Stream<? extends SchemaConcept> subs();
 
     /**
      * Return whether the Ontology Element was created implicitly.
@@ -92,19 +92,19 @@ public interface OntologyConcept extends Concept {
     Boolean isImplicit();
 
     /**
-     * Return the collection of {@link Rule} for which this {@link OntologyConcept} serves as a hypothesis.
+     * Return the collection of {@link Rule} for which this {@link SchemaConcept} serves as a hypothesis.
      * @see Rule
      *
-     * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a hypothesis
+     * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a hypothesis
      */
     @CheckReturnValue
     Stream<Rule> getRulesOfHypothesis();
 
     /**
-     * Return the collection of {@link Rule} for which this {@link OntologyConcept} serves as a conclusion.
+     * Return the collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion.
      * @see Rule
      *
-     * @return A collection of {@link Rule} for which this {@link OntologyConcept} serves as a conclusion
+     * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion
      */
     @CheckReturnValue
     Stream<Rule> getRulesOfConclusion();
@@ -113,14 +113,14 @@ public interface OntologyConcept extends Concept {
     @Deprecated
     @CheckReturnValue
     @Override
-    default OntologyConcept asOntologyConcept(){
+    default SchemaConcept asSchemaConcept(){
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isOntologyConcept(){
+    default boolean isSchemaConcept(){
         return true;
     }
 }

@@ -10,12 +10,12 @@ insert
 
 "parent" sub role;
 "child" sub role;
-"Parent" sub relation, relates parent, relates child;
+"Parent" sub relationship, relates parent, relates child;
 Person plays parent, plays child;
 
 "ancestor" sub role;
 "descendant" sub role;
-"Ancestor" sub relation, relates ancestor, relates descendant;
+"Ancestor" sub relationship, relates ancestor, relates descendant;
 Person plays ancestor, plays descendant;
 
 "name" sub resource, datatype string;

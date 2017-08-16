@@ -12,7 +12,7 @@ insert
 
 "subject-location" sub location;
 "located-subject" sub role;
-"resides" sub relation, relates subject-location, relates located-subject;
+"resides" sub relationship, relates subject-location, relates located-subject;
 
 # place
 "continent" sub place;
@@ -24,7 +24,7 @@ insert
 
 "member-location" sub location;
 "container-location" sub location;
-"sublocate" sub relation, relates member-location, relates container-location;
+"sublocate" sub relationship, relates member-location, relates container-location;
 place plays member-location, plays container-location, plays subject-location;
 
 # organization
@@ -57,14 +57,14 @@ person plays located-subject;
 "acquaintance" sub role;
 "acquaintance1" sub acquaintance;
 "acquaintance2" sub acquaintance;
-"knows" sub relation,
+"knows" sub relationship,
     relates acquaintance1,
     relates acquaintance2;
 person plays acquaintance1, plays acquaintance2;
 
 "student" sub role;
 "enrolled-university" sub role;
-"attends" sub relation,
+"attends" sub relationship,
     relates student,
     relates enrolled-university;
 person plays student;
@@ -72,21 +72,21 @@ university plays enrolled-university;
 
 "employee" sub role;
 "employer" sub role;
-"employment" sub relation, relates employee, relates employer;
+"employment" sub relationship, relates employee, relates employer;
 person plays employee;
 company plays employer;
 
 "class-year" sub resource, datatype string;
 "attends-resource-value" sub role;
 "attends-resource-owner" sub role;
-"attends-resource" sub relation, relates attends-resource-value, relates attends-resource-owner;
+"attends-resource" sub relationship, relates attends-resource-value, relates attends-resource-owner;
 attends plays attends-resource-owner;
 class-year plays attends-resource-value;
 
 "employment-startdate" sub resource, datatype string;
 "employment-resource-value" sub role;
 "employment-resource-owner" sub role;
-"employment-resource" sub relation, relates employment-resource-value, relates employment-resource-owner;
+"employment-resource" sub relationship, relates employment-resource-value, relates employment-resource-owner;
 employment plays employment-resource-owner;
 employment-startdate plays employment-resource-value;
 
@@ -95,7 +95,7 @@ employment-startdate plays employment-resource-value;
 
 "message-resource-owner" sub role;
 "message-resource-value" sub role;
-"message-resource" sub relation, relates message-resource-value, relates message-resource-owner;
+"message-resource" sub relationship, relates message-resource-value, relates message-resource-owner;
 message plays message-resource-owner;
 
 "content" sub resource, datatype string, plays message-resource-value;
@@ -103,13 +103,13 @@ message plays message-resource-owner;
 
 "liked" sub role;
 "liker" sub role;
-"likes" sub relation, relates liked, relates liker;
+"likes" sub relationship, relates liked, relates liker;
 message plays liked;
 person plays liker;
 
 "written" sub role;
 "writer" sub role;
-"writes" sub relation, relates written, relates writer;
+"writes" sub relationship, relates written, relates writer;
 message plays written;
 person plays writer;
 
@@ -119,7 +119,7 @@ message plays located-subject;
 
 "reply-owner" sub role;
 "reply-content" sub role;
-"reply" sub relation, relates reply-content, relates reply-owner;
+"reply" sub relationship, relates reply-content, relates reply-owner;
 comment plays reply-content;
 message plays reply-owner;
 
@@ -127,7 +127,7 @@ message plays reply-owner;
 
 "post-resource-owner" sub role;
 "post-resource-value" sub role;
-"post-resource" sub relation, relates post-resource-owner, relates post-resource-value;
+"post-resource" sub relationship, relates post-resource-owner, relates post-resource-value;
 post plays post-resource-owner;
 
 "image-file" sub resource, datatype string, plays post-resource-value;
@@ -135,31 +135,31 @@ post plays post-resource-owner;
 # forum
 "forum-resource-owner" sub role;
 "forum-resource-value" sub role;
-"forum-resource" sub relation, relates forum-resource-value, relates forum-resource-owner;
+"forum-resource" sub relationship, relates forum-resource-value, relates forum-resource-owner;
 forum plays forum-resource-owner;
 
 "moderator" sub role;
 "moderated" sub role;
-"moderates" sub relation, relates moderator, relates moderated;
+"moderates" sub relationship, relates moderator, relates moderated;
 person plays moderator;
 forum plays moderated;
 
 "forum-member" sub role;
 "membered-forum" sub role;
-"membership" sub relation, relates forum-member, relates membered-forum;
+"membership" sub relationship, relates forum-member, relates membered-forum;
 person plays forum-member;
 forum plays membered-forum;
 
 "post-container" sub role;
 "contained-post" sub role;
-"containing" sub relation, relates post-container, relates contained-post;
+"containing" sub relationship, relates post-container, relates contained-post;
 post plays contained-post;
 forum plays post-container;
 
 # tag
 "subject-tag" sub role;
 "tagged-subject" sub role;
-"tagging" sub relation, relates tagged-subject, relates subject-tag;
+"tagging" sub relationship, relates tagged-subject, relates subject-tag;
 tag plays subject-tag;
 forum plays tagged-subject;
 message plays tagged-subject;
@@ -169,20 +169,20 @@ person plays tagged-subject;
 "group" sub role;
 "subgroup" sub group;
 "supergroup" sub group;
-"subgrouping" sub relation, relates subgroup, relates supergroup;
+"subgrouping" sub relationship, relates subgroup, relates supergroup;
 category plays subgroup, plays supergroup;
 
 "grouped-tag" sub role;
 "tag-group" sub role;
-"grouping" sub relation, relates grouped-tag, relates tag-group;
+"grouping" sub relationship, relates grouped-tag, relates tag-group;
 tag plays grouped-tag;
 category plays tag-group;
 
 #TODO: Kill this rubbish
 #This should really be looked at and removed later on
-#Filler relation type to bypass role validation rule which states every role must be linked to at least on relation type
+#Filler relationship type to bypass role validation rule which states every role must be linked to at least on relationship type
 #Before these roles were abstract but now role cannot be abstract. Hence the hack you see blow
-"fake-relation" sub relation
+"fake-relationship" sub relationship
     relates group
     relates acquaintance
     relates location;

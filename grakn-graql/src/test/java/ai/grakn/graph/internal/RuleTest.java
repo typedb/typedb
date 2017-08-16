@@ -346,11 +346,11 @@ public class RuleTest {
                 .plays(role1)
                 .plays(role2);
 
-        graph.putRelationType("relation1")
+        graph.putRelationshipType("relation1")
                 .relates(role1)
                 .relates(role2)
                 .relates(role3);
-        graph.putRelationType("relation2")
+        graph.putRelationshipType("relation2")
                 .relates(role3);
     }
 

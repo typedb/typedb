@@ -26,9 +26,9 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -44,10 +44,10 @@ import ai.grakn.graph.internal.cache.TxCache;
 import ai.grakn.graph.internal.concept.ConceptImpl;
 import ai.grakn.graph.internal.concept.ConceptVertex;
 import ai.grakn.graph.internal.concept.ElementFactory;
-import ai.grakn.graph.internal.concept.OntologyConceptImpl;
-import ai.grakn.graph.internal.concept.RelationEdge;
-import ai.grakn.graph.internal.concept.RelationImpl;
-import ai.grakn.graph.internal.concept.RelationReified;
+import ai.grakn.graph.internal.concept.RelationshipImpl;
+import ai.grakn.graph.internal.concept.SchemaConceptImpl;
+import ai.grakn.graph.internal.concept.RelationshipEdge;
+import ai.grakn.graph.internal.concept.RelationshipReified;
 import ai.grakn.graph.internal.concept.ResourceImpl;
 import ai.grakn.graph.internal.concept.TypeImpl;
 import ai.grakn.graph.internal.structure.EdgeElement;
@@ -261,7 +261,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         if (isMetaOntologyNotInitialised()) {
             VertexElement type = addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
             VertexElement entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
-            VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
+            VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATIONSHIP.getId(), Schema.MetaSchema.RELATIONSHIP.getLabel(), Schema.BaseType.RELATIONSHIP_TYPE);
             VertexElement resourceType = addTypeVertex(Schema.MetaSchema.RESOURCE.getId(), Schema.MetaSchema.RESOURCE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
             VertexElement role = addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
             VertexElement ruleType = addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
@@ -304,13 +304,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     /**
-     * Copies the {@link OntologyConcept} and it's subs into the {@link TxCache}.
-     * This is important as lookups for {@link OntologyConcept}s based on {@link Label} depend on this caching.
+     * Copies the {@link SchemaConcept} and it's subs into the {@link TxCache}.
+     * This is important as lookups for {@link SchemaConcept}s based on {@link Label} depend on this caching.
      *
-     * @param ontologyConcept the {@link OntologyConcept} to be copied into the {@link TxCache}
+     * @param schemaConcept the {@link SchemaConcept} to be copied into the {@link TxCache}
      */
-    private void copyToCache(OntologyConcept ontologyConcept) {
-        ontologyConcept.subs().forEach(concept -> {
+    private void copyToCache(SchemaConcept schemaConcept) {
+        schemaConcept.subs().forEach(concept -> {
             getGraphCache().cacheLabel(concept.getLabel(), concept.getLabelId());
             getGraphCache().cacheType(concept.getLabel(), concept);
         });
@@ -402,7 +402,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
             if (!baseType.equals(concept.baseType())) {
-                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.ONTOLOGY_LABEL, label);
+                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.SCHEMA_LABEL, label);
             }
             vertex = concept.vertex();
         }
@@ -419,7 +419,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      */
     private VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
         VertexElement vertexElement = addVertex(baseType);
-        vertexElement.property(Schema.VertexProperty.ONTOLOGY_LABEL, label.getValue());
+        vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
         vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
         return vertexElement;
     }
@@ -447,18 +447,18 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
                 v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <T extends OntologyConcept> T putOntologyElement(Label label, Schema.BaseType baseType, Function<VertexElement, T> factory) {
+    private <T extends SchemaConcept> T putOntologyElement(Label label, Schema.BaseType baseType, Function<VertexElement, T> factory) {
         checkOntologyMutationAllowed();
-        OntologyConcept ontologyConcept = buildOntologyElement(label, () -> factory.apply(putVertex(label, baseType)));
+        SchemaConcept schemaConcept = buildOntologyElement(label, () -> factory.apply(putVertex(label, baseType)));
 
-        T finalType = validateOntologyElement(ontologyConcept, baseType, () -> {
+        T finalType = validateOntologyElement(schemaConcept, baseType, () -> {
             if (Schema.MetaSchema.isMetaLabel(label)) throw GraphOperationException.reservedLabel(label);
-            throw PropertyNotUniqueException.cannotCreateProperty(ontologyConcept, Schema.VertexProperty.ONTOLOGY_LABEL, label);
+            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, label);
         });
 
         //Automatic shard creation - If this type does not have a shard create one
-        if (!Schema.MetaSchema.isMetaLabel(label) && !OntologyConceptImpl.from(ontologyConcept).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()) {
-            OntologyConceptImpl.from(ontologyConcept).createShard();
+        if (!Schema.MetaSchema.isMetaLabel(label) && !SchemaConceptImpl.from(schemaConcept).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()) {
+            SchemaConceptImpl.from(schemaConcept).createShard();
         }
 
         return finalType;
@@ -480,7 +480,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      * @param dbBuilder A method which builds the type via a DB read or write
      * @return The type which was either cached or built via a DB read or write
      */
-    private OntologyConcept buildOntologyElement(Label label, Supplier<OntologyConcept> dbBuilder) {
+    private SchemaConcept buildOntologyElement(Label label, Supplier<SchemaConcept> dbBuilder) {
         if (txCache().isTypeCached(label)) {
             return txCache().getCachedOntologyElement(label);
         } else {
@@ -489,18 +489,18 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public RelationType putRelationType(String label) {
-        return putRelationType(Label.of(label));
+    public RelationshipType putRelationshipType(String label) {
+        return putRelationshipType(Label.of(label));
     }
 
     @Override
-    public RelationType putRelationType(Label label) {
-        return putOntologyElement(label, Schema.BaseType.RELATION_TYPE,
+    public RelationshipType putRelationshipType(Label label) {
+        return putOntologyElement(label, Schema.BaseType.RELATIONSHIP_TYPE,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE));
     }
 
-    public RelationType putRelationTypeImplicit(Label label) {
-        return putOntologyElement(label, Schema.BaseType.RELATION_TYPE,
+    public RelationshipType putRelationTypeImplicit(Label label) {
+        return putOntologyElement(label, Schema.BaseType.RELATIONSHIP_TYPE,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE));
     }
 
@@ -578,15 +578,15 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return null;
     }
 
-    private <T extends OntologyConcept> T getOntologyConcept(Label label, Schema.BaseType baseType) {
+    private <T extends SchemaConcept> T getOntologyConcept(Label label, Schema.BaseType baseType) {
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
-        OntologyConcept ontologyConcept = buildOntologyElement(label, () -> getOntologyConcept(convertToId(label)));
-        return validateOntologyElement(ontologyConcept, baseType, () -> null);
+        SchemaConcept schemaConcept = buildOntologyElement(label, () -> getOntologyConcept(convertToId(label)));
+        return validateOntologyElement(schemaConcept, baseType, () -> null);
     }
 
     @Nullable
-    public <T extends OntologyConcept> T getOntologyConcept(LabelId id) {
+    public <T extends SchemaConcept> T getOntologyConcept(LabelId id) {
         if (!id.isValid()) return null;
         return getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
     }
@@ -615,8 +615,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public <T extends OntologyConcept> T getOntologyConcept(Label label) {
-        return getOntologyConcept(label, Schema.BaseType.ONTOLOGY_ELEMENT);
+    public <T extends SchemaConcept> T getSchemaConcept(Label label) {
+        return getOntologyConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
     }
 
     @Override
@@ -630,8 +630,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public RelationType getRelationType(String label) {
-        return getOntologyConcept(Label.of(label), Schema.BaseType.RELATION_TYPE);
+    public RelationshipType getRelationshipType(String label) {
+        return getOntologyConcept(Label.of(label), Schema.BaseType.RELATIONSHIP_TYPE);
     }
 
     @Override
@@ -650,13 +650,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public OntologyConcept getMetaConcept() {
+    public SchemaConcept getMetaConcept() {
         return getOntologyConcept(Schema.MetaSchema.THING.getId());
     }
 
     @Override
-    public RelationType getMetaRelationType() {
-        return getOntologyConcept(Schema.MetaSchema.RELATION.getId());
+    public RelationshipType getMetaRelationType() {
+        return getOntologyConcept(Schema.MetaSchema.RELATIONSHIP.getId());
     }
 
     @Override
@@ -689,16 +689,16 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return getOntologyConcept(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
-    public void putShortcutEdge(Thing toThing, RelationReified fromRelation, Role roleType) {
+    public void putShortcutEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {
         boolean exists = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
+                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), roleType.getLabelId().getValue()).inV().
                 has(Schema.VertexProperty.ID.name(), toThing.getId()).hasNext();
 
         if (!exists) {
             EdgeElement edge = fromRelation.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.SHORTCUT);
-            edge.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, fromRelation.type().getLabelId().getValue());
+            edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, fromRelation.type().getLabelId().getValue());
             edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, roleType.getLabelId().getValue());
             txCache().trackForValidation(factory().buildCasting(edge));
         }
@@ -893,7 +893,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         if (duplicates.size() > 0) {
             //Remove any resources associated with this index that are not the main resource
             for (Resource otherResource : duplicates) {
-                Stream<Relation> otherRelations = otherResource.relations();
+                Stream<Relationship> otherRelations = otherResource.relations();
 
                 //Copy the actual relation
                 otherRelations.forEach(otherRelation -> copyRelation(mainResource, otherResource, otherRelation));
@@ -917,35 +917,35 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     /**
      * @param main          The main instance to possibly acquire a new relation
      * @param other         The other instance which already posses the relation
-     * @param otherRelation The other relation to potentially be absorbed
+     * @param otherRelationship The other relation to potentially be absorbed
      */
-    private void copyRelation(Resource main, Resource other, Relation otherRelation) {
+    private void copyRelation(Resource main, Resource other, Relationship otherRelationship) {
         //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
         //This allows us to find relations far more quickly.
-        Optional<RelationReified> reifiedRelation = ((RelationImpl) otherRelation).reified();
+        Optional<RelationshipReified> reifiedRelation = ((RelationshipImpl) otherRelationship).reified();
 
         if (reifiedRelation.isPresent()) {
-            copyRelation(main, other, otherRelation, reifiedRelation.get());
+            copyRelation(main, other, otherRelationship, reifiedRelation.get());
         } else {
-            copyRelation(main, other, otherRelation, (RelationEdge) RelationImpl.from(otherRelation).structure());
+            copyRelation(main, other, otherRelationship, (RelationshipEdge) RelationshipImpl.from(otherRelationship).structure());
         }
     }
 
     /**
-     * Copy a relation which has been reified - {@link RelationReified}
+     * Copy a relation which has been reified - {@link RelationshipReified}
      */
-    private void copyRelation(Resource main, Resource other, Relation otherRelation, RelationReified reifiedRelation) {
+    private void copyRelation(Resource main, Resource other, Relationship otherRelationship, RelationshipReified reifiedRelation) {
         String newIndex = reifiedRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
-        Relation foundRelation = txCache().getCachedRelation(newIndex);
-        if (foundRelation == null) foundRelation = getConcept(Schema.VertexProperty.INDEX, newIndex);
+        Relationship foundRelationship = txCache().getCachedRelation(newIndex);
+        if (foundRelationship == null) foundRelationship = getConcept(Schema.VertexProperty.INDEX, newIndex);
 
-        if (foundRelation != null) {//If it exists delete the other one
+        if (foundRelationship != null) {//If it exists delete the other one
             reifiedRelation.deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
-            foundRelation = otherRelation;
+            foundRelationship = otherRelationship;
             //Now that we know the relation needs to be copied we need to find the roles the other casting is playing
-            otherRelation.allRolePlayers().forEach((roleType, instances) -> {
-                Optional<RelationReified> relationReified = RelationImpl.from(otherRelation).reified();
+            otherRelationship.allRolePlayers().forEach((roleType, instances) -> {
+                Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
                 if (instances.contains(other) && relationReified.isPresent()) {
                     putShortcutEdge(main, relationReified.get(), roleType);
                 }
@@ -953,13 +953,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
 
         //Explicitly track this new relation so we don't create duplicates
-        txCache().getRelationIndexCache().put(newIndex, foundRelation);
+        txCache().getRelationIndexCache().put(newIndex, foundRelationship);
     }
 
     /**
-     * Copy a relation which is an edge - {@link RelationEdge}
+     * Copy a relation which is an edge - {@link RelationshipEdge}
      */
-    private void copyRelation(Resource main, Resource other, Relation otherRelation, RelationEdge relationEdge) {
+    private void copyRelation(Resource main, Resource other, Relationship otherRelationship, RelationshipEdge relationEdge) {
         ConceptVertex newOwner;
         ConceptVertex newValue;
 

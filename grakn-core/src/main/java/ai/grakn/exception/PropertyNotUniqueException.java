@@ -20,6 +20,7 @@ package ai.grakn.exception;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -34,7 +35,7 @@ import static ai.grakn.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
  *
  * <p>
  *     This occurs when attempting to add a globally unique property to a concept.
- *     For example when creating a {@link ai.grakn.concept.EntityType} and {@link ai.grakn.concept.RelationType} using
+ *     For example when creating a {@link ai.grakn.concept.EntityType} and {@link RelationshipType} using
  *     the same {@link Label}
  * </p>
  *

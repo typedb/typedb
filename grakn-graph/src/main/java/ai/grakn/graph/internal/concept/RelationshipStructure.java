@@ -19,8 +19,8 @@
 package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graph.internal.cache.ContainsTxCache;
@@ -33,23 +33,23 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Encapsulates The structure of a  {@link Relation}.
+ *     Encapsulates The structure of a  {@link Relationship}.
  * </p>
  *
  * <p>
- *     This wraps up the structure of a {@link Relation} as either a {@link RelationReified} or a TODO
- *     It contains methods which can be accessed regardless of the {@link Relation} being a represented by a
+ *     This wraps up the structure of a {@link Relationship} as either a {@link RelationshipReified} or a TODO
+ *     It contains methods which can be accessed regardless of the {@link Relationship} being a represented by a
  *     {@link VertexElement} or an {@link EdgeElement}
  * </p>
  *
  * @author fppt
  *
  */
-interface RelationStructure extends ContainsTxCache {
+interface RelationshipStructure extends ContainsTxCache {
 
     /**
      *
-     * @return The {@link ConceptId} of the {@link Relation}
+     * @return The {@link ConceptId} of the {@link Relationship}
      */
     ConceptId getId();
 
@@ -57,19 +57,19 @@ interface RelationStructure extends ContainsTxCache {
      *
      * @return The relation structure which has been reified
      */
-    RelationReified reify();
+    RelationshipReified reify();
 
     /**
      *
-     * @return true if the {@link Relation} has been reified meaning it can support n-ary relationships
+     * @return true if the {@link Relationship} has been reified meaning it can support n-ary relationships
      */
     boolean isReified();
 
     /**
      *
-     * @return The {@link RelationType} of the {@link Relation}
+     * @return The {@link RelationshipType} of the {@link Relationship}
      */
-    RelationType type();
+    RelationshipType type();
 
     /**
      *
@@ -85,7 +85,7 @@ interface RelationStructure extends ContainsTxCache {
     Stream<Thing> rolePlayers(Role... roles);
 
     /**
-     * Deletes the {@link VertexElement} or {@link EdgeElement} used to represent this {@link Relation}
+     * Deletes the {@link VertexElement} or {@link EdgeElement} used to represent this {@link Relationship}
      */
     void delete();
 }

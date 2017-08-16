@@ -22,8 +22,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -55,9 +55,6 @@ import java.util.Collection;
 public interface GraknTx extends AutoCloseable{
 
     //------------------------------------- Concept Construction ----------------------------------
-    // TODO: For all 'put' methods state the expected behaviour when there is a type with the same label but a different
-    // kind or params (e.g. putRelationType("person"), putResourceType("name", BOOLEAN))
-
     /**
      * Create a new {@link EntityType} with super-type {@code entity}, or return a pre-existing {@link EntityType},
      * with the specified label.
@@ -143,28 +140,28 @@ public interface GraknTx extends AutoCloseable{
     RuleType putRuleType(Label label);
 
     /**
-     * Create a {@link RelationType} with super-type {@code relation}, or return a pre-existing {@link RelationType},
+     * Create a {@link RelationshipType} with super-type {@code relation}, or return a pre-existing {@link RelationshipType},
      * with the specified label.
      *
-     * @param label A unique label for the {@link RelationType}
-     * @return A new or existing {@link RelationType} with the provided label.
+     * @param label A unique label for the {@link RelationshipType}
+     * @return A new or existing {@link RelationshipType} with the provided label.
      *
      * @throws GraphOperationException if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationshipType}.
      */
-    RelationType putRelationType(String label);
+    RelationshipType putRelationshipType(String label);
 
     /**
-     * Create a {@link RelationType} with super-type {@code relation}, or return a pre-existing {@link RelationType},
+     * Create a {@link RelationshipType} with super-type {@code relation}, or return a pre-existing {@link RelationshipType},
      * with the specified label.
      *
-     * @param label A unique label for the {@link RelationType}
-     * @return A new or existing {@link RelationType} with the provided label.
+     * @param label A unique label for the {@link RelationshipType}
+     * @return A new or existing {@link RelationshipType} with the provided label.
      *
      * @throws GraphOperationException if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationshipType}.
      */
-    RelationType putRelationType(Label label);
+    RelationshipType putRelationshipType(Label label);
 
     /**
      * Create a {@link Role} with super-type {@code role}, or return a pre-existing {@link Role}, with the
@@ -205,17 +202,17 @@ public interface GraknTx extends AutoCloseable{
     <T extends Concept> T getConcept(ConceptId id);
 
     /**
-     * Get the {@link OntologyConcept} with the label provided, if it exists.
+     * Get the {@link SchemaConcept} with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the {@link OntologyConcept} in the graph.
-     * @return The {@link OntologyConcept} with the provided label or null if no such {@link OntologyConcept} exists.
+     * @param label A unique label which identifies the {@link SchemaConcept} in the graph.
+     * @return The {@link SchemaConcept} with the provided label or null if no such {@link SchemaConcept} exists.
      *
      * @throws GraphOperationException if the graph is closed
      * @throws ClassCastException if the type is not an instance of {@link T}
      */
     @CheckReturnValue
     @Nullable
-    <T extends OntologyConcept> T getOntologyConcept(Label label);
+    <T extends SchemaConcept> T getSchemaConcept(Label label);
 
     /**
      * Get the {@link Type} with the label provided, if it exists.
@@ -255,16 +252,16 @@ public interface GraknTx extends AutoCloseable{
     EntityType getEntityType(String label);
 
     /**
-     * Get the Relation Type with the label provided, if it exists.
+     * Get the {@link RelationshipType} with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the Relation Type in the graph.
-     * @return The Relation Type with the provided label or null if no such Relation Type exists.
+     * @param label A unique label which identifies the {@link RelationshipType} in the graph.
+     * @return The {@link RelationshipType} with the provided label or null if no such {@link RelationshipType} exists.
      *
      * @throws GraphOperationException if the graph is closed
      */
     @CheckReturnValue
     @Nullable
-    RelationType getRelationType(String label);
+    RelationshipType getRelationshipType(String label);
 
     /**
      * Get the Resource Type with the label provided, if it exists.

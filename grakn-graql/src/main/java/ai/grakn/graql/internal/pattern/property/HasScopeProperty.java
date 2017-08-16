@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -42,11 +42,11 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasSco
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 /**
- * Represents the {@code has-scope} property on a {@link Relation}.
+ * Represents the {@code has-scope} property on a {@link Relationship}.
  *
  * This property can be queried, inserted or deleted.
  *
- * This property relates a {@link Relation} and an {@link Thing}, where the instance behaves as the "scope".
+ * This property relates a {@link Relationship} and an {@link Thing}, where the instance behaves as the "scope".
  *
  * @author Felix Chapman
  */

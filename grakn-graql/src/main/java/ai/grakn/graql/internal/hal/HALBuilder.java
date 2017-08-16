@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
@@ -85,7 +85,7 @@ public class HALBuilder {
             roleTypes = computeRoleTypesFromQuery(matchQuery, results.iterator().next());
         }
         //Collect all the types explicitly asked in the match query
-        Set<Label> typesAskedInQuery = matchQuery.admin().getOntologyConcepts().stream().map(OntologyConcept::getLabel).collect(toSet());
+        Set<Label> typesAskedInQuery = matchQuery.admin().getOntologyConcepts().stream().map(SchemaConcept::getLabel).collect(toSet());
 
         return buildHALRepresentations(results, typesAskedInQuery, roleTypes, keyspace, offset, limit, filterInstances);
     }
@@ -147,7 +147,7 @@ public class HALBuilder {
 
                 Json jsonRepresentation = Json.read(currentHal.toString(RepresentationFactory.HAL_JSON));
                 // If current concept is a relation obtained with inference (and we are not building an explanation response) override Explore URL and BaseType
-                if(!answer.getExplanation().isEmpty() && currentConcept.isRelation() && !filterInstances){
+                if(!answer.getExplanation().isEmpty() && currentConcept.isRelationship() && !filterInstances){
                     jsonRepresentation.set(BASETYPE_PROPERTY,INFERRED_RELATION);
                     jsonRepresentation.at(LINKS_PROPERTY).set("self",Json.object().set("href", computeHrefInferred(currentConcept, keyspace, limit)));
                 }
@@ -165,8 +165,8 @@ public class HALBuilder {
 
     private static String computeHrefInferred(Concept currentConcept, String keyspace, int limit){
         Set<Thing> thingSet = new HashSet<>();
-        currentConcept.asRelation().allRolePlayers().values().forEach(set -> set.forEach(thingSet::add));
-        String isaString =  "isa " + currentConcept.asRelation().type().getLabel();
+        currentConcept.asRelationship().allRolePlayers().values().forEach(set -> set.forEach(thingSet::add));
+        String isaString =  "isa " + currentConcept.asRelationship().type().getLabel();
         StringBuilder stringBuilderVarsWithIds = new StringBuilder();
         StringBuilder stringBuilderParenthesis = new StringBuilder().append('(');
         char currentVarLetter = 'a';

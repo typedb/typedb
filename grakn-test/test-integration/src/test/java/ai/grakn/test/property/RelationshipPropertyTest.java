@@ -18,10 +18,10 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
+import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs;
 import com.pholser.junit.quickcheck.Property;
@@ -43,64 +43,64 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 @RunWith(JUnitQuickcheck.class)
-public class RelationPropertyTest {
+public class RelationshipPropertyTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @Property
     public void whenAddingARolePlayer_ItIsAddedToTheCollectionOfRolePlayers(
-            Relation relation, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
+            Relationship relationship, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
 
-        relation.addRolePlayer(role, rolePlayer);
+        relationship.addRolePlayer(role, rolePlayer);
 
-        assertThat(relation.rolePlayers().collect(toSet()), hasItem(rolePlayer));
+        assertThat(relationship.rolePlayers().collect(toSet()), hasItem(rolePlayer));
     }
 
     @Property(onMinimalCounterexample = GraknGraphs.class)
     public void whenAddingARolePlayerPlayingARole_TheRolePlayerIsAddedToTheCollectionOfRolePlayersForThatRole(
-            Relation relation, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
+            Relationship relationship, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
 
-        relation.addRolePlayer(role, rolePlayer);
+        relationship.addRolePlayer(role, rolePlayer);
 
-        assertThat(relation.rolePlayers(role).collect(toSet()), hasItem(rolePlayer));
+        assertThat(relationship.rolePlayers(role).collect(toSet()), hasItem(rolePlayer));
     }
 
     @Property
     public void whenAddingARolePlayer_NoRolePlayersAreRemoved(
-            Relation relation, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
+            Relationship relationship, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
 
-        Thing[] rolePlayers = relation.rolePlayers(role).toArray(Thing[]::new);
+        Thing[] rolePlayers = relationship.rolePlayers(role).toArray(Thing[]::new);
 
-        relation.addRolePlayer(role, rolePlayer);
+        relationship.addRolePlayer(role, rolePlayer);
 
-        assertThat(relation.rolePlayers(role).collect(toSet()), hasItems(rolePlayers));
+        assertThat(relationship.rolePlayers(role).collect(toSet()), hasItems(rolePlayers));
     }
 
     @Property
-    public void whenCallingRolePlayers_TheResultIsASet(Relation relation, @FromGraph Role[] roles) {
-        Collection<Thing> rolePlayers = relation.rolePlayers(roles).collect(toSet());
+    public void whenCallingRolePlayers_TheResultIsASet(Relationship relationship, @FromGraph Role[] roles) {
+        Collection<Thing> rolePlayers = relationship.rolePlayers(roles).collect(toSet());
         Set<Thing> rolePlayersSet = newHashSet(rolePlayers);
         assertEquals(rolePlayers.size(), rolePlayersSet.size());
     }
 
     @Property
-    public void whenCallingRolePlayersWithoutArgs_ReturnRolePlayersOfAllRoleTypes(Relation relation) {
-        Role[] allRoles = new Role[relation.allRolePlayers().size()];
-        relation.allRolePlayers().keySet().toArray(allRoles);
+    public void whenCallingRolePlayersWithoutArgs_ReturnRolePlayersOfAllRoleTypes(Relationship relationship) {
+        Role[] allRoles = new Role[relationship.allRolePlayers().size()];
+        relationship.allRolePlayers().keySet().toArray(allRoles);
 
-        assertEquals(relation.rolePlayers().collect(toSet()), relation.rolePlayers(allRoles).collect(toSet()));
+        assertEquals(relationship.rolePlayers().collect(toSet()), relationship.rolePlayers(allRoles).collect(toSet()));
     }
 
     @Property
     public void whenCallingRolePlayersWithXandY_IsTheSameAsCallingRolePlayersXAndRolePlayersY(
-            Relation relation, @FromGraph Role[] rolesX, @FromGraph Role[] rolesY) {
+            Relationship relationship, @FromGraph Role[] rolesX, @FromGraph Role[] rolesY) {
 
         Role[] rolesXY = (Role[]) addAll(rolesX, rolesY);
 
         Set<Thing> expected =
-                union(relation.rolePlayers(rolesX).collect(toSet()), relation.rolePlayers(rolesY).collect(toSet()));
+                union(relationship.rolePlayers(rolesX).collect(toSet()), relationship.rolePlayers(rolesY).collect(toSet()));
 
-        assertEquals(expected, relation.rolePlayers(rolesXY).collect(toSet()));
+        assertEquals(expected, relationship.rolePlayers(rolesXY).collect(toSet()));
     }
 }

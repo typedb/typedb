@@ -17,7 +17,7 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -165,8 +165,8 @@ public class ResourceAtom extends Binary{
         TypeAtom parentTypeConstraint = this.getTypeConstraints().findFirst().orElse(null);
         TypeAtom childTypeConstraint = childAtom.getTypeConstraints().findFirst().orElse(null);
 
-        OntologyConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getOntologyConcept() : null;
-        OntologyConcept childType = childTypeConstraint != null? childTypeConstraint.getOntologyConcept() : null;
+        SchemaConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getOntologyConcept() : null;
+        SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getOntologyConcept() : null;
         if (parentType != null && childType != null && checkDisjoint(parentType, childType)) return false;
 
         //check predicates
@@ -203,7 +203,7 @@ public class ResourceAtom extends Binary{
 
     @Override
     public Set<String> validateOntologically() {
-        OntologyConcept type = getOntologyConcept();
+        SchemaConcept type = getOntologyConcept();
         if (type == null) {
             return new HashSet<>();
         }
@@ -214,7 +214,7 @@ public class ResourceAtom extends Binary{
             return errors;
         }
 
-        OntologyConcept ownerType = getParentQuery().getVarOntologyConceptMap().get(getVarName());
+        SchemaConcept ownerType = getParentQuery().getVarOntologyConceptMap().get(getVarName());
 
         if (ownerType != null
                 && ownerType.isType()

@@ -36,11 +36,11 @@ entity7 sub entity6;
 
 #Relations
 
-binary sub relation
+binary sub relationship
     relates role1
     relates role2;
 
-ternary sub relation
+ternary sub relationship
     relates role1
     relates role2
     relates role3;

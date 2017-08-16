@@ -20,8 +20,8 @@ package ai.grakn.graql.internal.reasoner.utils;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
@@ -40,7 +40,7 @@ import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.utils.conversion.OntologyConceptConverter;
+import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
@@ -189,12 +189,12 @@ public class ReasonerUtils {
     }
 
     /**
-     * @param ontologyConcept input type
+     * @param schemaConcept input type
      * @return set of all non-meta super types of the role
      */
-    public static Set<OntologyConcept> getSupers(OntologyConcept ontologyConcept){
-        Set<OntologyConcept> superTypes = new HashSet<>();
-        OntologyConcept superType = ontologyConcept.sup();
+    public static Set<SchemaConcept> getSupers(SchemaConcept schemaConcept){
+        Set<SchemaConcept> superTypes = new HashSet<>();
+        SchemaConcept superType = schemaConcept.sup();
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
             superTypes.add(superType);
             superType = superType.sup();
@@ -217,9 +217,9 @@ public class ReasonerUtils {
 
     /**
      * @param ontologyConcepts entry set
-     * @return top non-meta {@link OntologyConcept} from within the provided set of {@link Role}
+     * @return top non-meta {@link SchemaConcept} from within the provided set of {@link Role}
      */
-    public static <T extends OntologyConcept> Set<T> getOntologyConcepts(Set<T> ontologyConcepts) {
+    public static <T extends SchemaConcept> Set<T> getOntologyConcepts(Set<T> ontologyConcepts) {
         return ontologyConcepts.stream()
                 .filter(rt -> Sets.intersection(getSupers(rt), ontologyConcepts).isEmpty())
                 .collect(toSet());
@@ -262,13 +262,13 @@ public class ReasonerUtils {
      * @param <T> type generic
      * @return map of compatible relation types and their corresponding role types
      */
-    public static <T extends OntologyConcept> Multimap<RelationType, Role> getCompatibleRelationTypesWithRoles(Set<T> types, OntologyConceptConverter<T> ontologyConceptConverter) {
-        Multimap<RelationType, Role> compatibleTypes = HashMultimap.create();
+    public static <T extends SchemaConcept> Multimap<RelationshipType, Role> getCompatibleRelationTypesWithRoles(Set<T> types, SchemaConceptConverter<T> schemaConceptConverter) {
+        Multimap<RelationshipType, Role> compatibleTypes = HashMultimap.create();
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> it = types.iterator();
-        compatibleTypes.putAll(ontologyConceptConverter.toRelationMultimap(it.next()));
+        compatibleTypes.putAll(schemaConceptConverter.toRelationshipMultimap(it.next()));
         while(it.hasNext() && compatibleTypes.size() > 1) {
-            compatibleTypes = multimapIntersection(compatibleTypes, ontologyConceptConverter.toRelationMultimap(it.next()));
+            compatibleTypes = multimapIntersection(compatibleTypes, schemaConceptConverter.toRelationshipMultimap(it.next()));
         }
         return compatibleTypes;
     }
@@ -311,7 +311,7 @@ public class ReasonerUtils {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createTransitiveRule(RelationType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx graph){
+    public static Rule createTransitiveRule(RelationshipType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx graph){
         if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPatternAdmin startVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "z").admin();
@@ -329,7 +329,7 @@ public class ReasonerUtils {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createReflexiveRule(RelationType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx graph){
+    public static Rule createReflexiveRule(RelationshipType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx graph){
         if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPattern body = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y");
@@ -345,7 +345,7 @@ public class ReasonerUtils {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<Label, Label> roleMappings,
+    public static Rule createSubPropertyRule(RelationshipType parent, RelationshipType child, Map<Label, Label> roleMappings,
                                              GraknTx graph){
         final long parentArity = parent.relates().count();
         final long childArity = child.relates().count();
@@ -372,8 +372,8 @@ public class ReasonerUtils {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createPropertyChainRule(RelationType relation, Label fromRoleLabel, Label toRoleLabel,
-                                               LinkedHashMap<RelationType, Pair<Label, Label>> chain, GraknTx graph){
+    public static Rule createPropertyChainRule(RelationshipType relation, Label fromRoleLabel, Label toRoleLabel,
+                                               LinkedHashMap<RelationshipType, Pair<Label, Label>> chain, GraknTx graph){
         Stack<Var> varNames = new Stack<>();
         varNames.push(var("x"));
         Set<VarPatternAdmin> bodyVars = new HashSet<>();
@@ -395,9 +395,9 @@ public class ReasonerUtils {
      * @param child type
      * @return true if child is a subtype of parent
      */
-    public static boolean checkCompatible(OntologyConcept parent, OntologyConcept child) {
+    public static boolean checkCompatible(SchemaConcept parent, SchemaConcept child) {
         if(Schema.MetaSchema.isMetaLabel(parent.getLabel())) return true;
-        OntologyConcept superType = child;
+        SchemaConcept superType = child;
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())){
             if (superType.equals(parent)) return true;
             superType = superType.sup();
@@ -410,7 +410,7 @@ public class ReasonerUtils {
      * @param child type
      * @return true if types do not belong to the same type hierarchy
      */
-    public static boolean checkDisjoint(OntologyConcept parent, OntologyConcept child) {
+    public static boolean checkDisjoint(SchemaConcept parent, SchemaConcept child) {
         return !checkCompatible(parent, child) && !checkCompatible(child, parent);
     }
 }

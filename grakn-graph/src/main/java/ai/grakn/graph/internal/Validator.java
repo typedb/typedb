@@ -18,13 +18,13 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
-import ai.grakn.graph.internal.concept.RelationImpl;
-import ai.grakn.graph.internal.concept.RelationReified;
+import ai.grakn.graph.internal.concept.RelationshipImpl;
+import ai.grakn.graph.internal.concept.RelationshipReified;
 import ai.grakn.graph.internal.structure.Casting;
 
 import java.util.ArrayList;
@@ -76,10 +76,10 @@ class Validator {
         //Validate Role Players
         graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
 
-        //Validate Relation Types
-        graknGraph.txCache().getModifiedRelationTypes().forEach(this::validateRelationType);
+        //Validate Relationship Types
+        graknGraph.txCache().getModifiedRelationshipTypes().forEach(this::validateRelationType);
         //Validate Relations
-        graknGraph.txCache().getModifiedRelations().forEach(relation -> validateRelation(graknGraph, relation));
+        graknGraph.txCache().getModifiedRelationships().forEach(relation -> validateRelation(graknGraph, relation));
 
         //Validate Rule Types
         //Not Needed
@@ -110,11 +110,11 @@ class Validator {
 
     /**
      * Validation rules exclusive to relations
-     * @param relation The relation to validate
+     * @param relationship The {@link Relationship} to validate
      */
-    private void validateRelation(GraknTxAbstract<?> graph, Relation relation){
-        validateThing(relation);
-        Optional<RelationReified> relationReified = ((RelationImpl) relation).reified();
+    private void validateRelation(GraknTxAbstract<?> graph, Relationship relationship){
+        validateThing(relationship);
+        Optional<RelationshipReified> relationReified = ((RelationshipImpl) relationship).reified();
         //TODO: We need new validation mechanisms for non-reified relations
         relationReified.ifPresent(relationReified1 -> {
             ValidateGlobalRules.validateRelationshipStructure(relationReified1).ifPresent(errorsFound::add);
@@ -140,11 +140,11 @@ class Validator {
 
     /**
      * Validation rules exclusive to relation types
-     * @param relationType The relationTypes to validate
+     * @param relationshipType The relationTypes to validate
      */
-    private void validateRelationType(RelationType relationType){
-        ValidateGlobalRules.validateHasMinimumRoles(relationType).ifPresent(errorsFound::add);
-        errorsFound.addAll(ValidateGlobalRules.validateRelationTypesToRolesSchema(relationType));
+    private void validateRelationType(RelationshipType relationshipType){
+        ValidateGlobalRules.validateHasMinimumRoles(relationshipType).ifPresent(errorsFound::add);
+        errorsFound.addAll(ValidateGlobalRules.validateRelationTypesToRolesSchema(relationshipType));
     }
 
     /**

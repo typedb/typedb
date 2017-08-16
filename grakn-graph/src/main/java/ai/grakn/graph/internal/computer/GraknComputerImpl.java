@@ -136,10 +136,10 @@ public class GraknComputerImpl implements GraknComputer {
                 __.union(
                         __.bothE(Schema.EdgeLabel.SHORTCUT.getLabel()),
                         __.bothE(Schema.EdgeLabel.RESOURCE.getLabel())
-                                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), P.within(labelIds))) :
+                                .has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), P.within(labelIds))) :
                 __.union(
                         __.bothE(Schema.EdgeLabel.RESOURCE.getLabel())
-                                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), P.within(labelIds)));
+                                .has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), P.within(labelIds)));
 
         graphComputer.vertices(vertexFilter).edges(edgeFilter);
     }
