@@ -491,7 +491,7 @@ public class MatchQueryTest {
 
     @Test
     public void testIsResource() {
-        MatchQuery query = qb.match(x.isa("resource")).limit(10);
+        MatchQuery query = qb.match(x.isa(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue())).limit(10);
 
         assertThat(query.execute(), hasSize(10));
         assertThat(query, variable("x", everyItem(hasType(resource))));
@@ -809,7 +809,7 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchAllResourcesUsingResourceName() {
-        MatchQuery query = qb.match(var().has("title", "Godfather").has("resource", x));
+        MatchQuery query = qb.match(var().has("title", "Godfather").has(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue(), x));
 
         Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
         Set<Attribute<?>> expected = godfather.resources().collect(toSet());

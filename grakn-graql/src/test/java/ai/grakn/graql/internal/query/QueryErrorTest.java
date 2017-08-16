@@ -31,6 +31,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -151,7 +152,7 @@ public class QueryErrorTest {
         QueryBuilder emptyQb = empty.graph().graql();
         emptyQb.insert(
                 label("person").sub("entity"),
-                label("name").sub("resource").datatype(AttributeType.DataType.STRING)
+                label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
 
         exception.expect(GraphOperationException.class);

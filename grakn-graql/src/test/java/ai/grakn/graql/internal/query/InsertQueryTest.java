@@ -458,7 +458,7 @@ public class InsertQueryTest {
     public void testInsertResourceTypeAndInstance() {
         qb.insert(
                 label("movie").has("my-resource"),
-                label("my-resource").sub("resource").datatype(AttributeType.DataType.STRING),
+                label("my-resource").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
                 var("x").isa("movie").has("my-resource", "look a string")
         ).execute();
     }
@@ -469,7 +469,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").has(resourceType),
-                label(resourceType).sub("resource").datatype(AttributeType.DataType.STRING),
+                label(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
                 label("an-unconnected-resource-type").sub("resource").datatype(AttributeType.DataType.LONG)
         ).execute();
 
@@ -499,7 +499,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key(resourceType),
-                label(resourceType).sub("resource").datatype(AttributeType.DataType.STRING)
+                label(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
 
         // Make sure a-new-type can have the given resource type as a key or otherwise
@@ -529,7 +529,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub("resource").datatype(AttributeType.DataType.STRING),
+                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
     }
@@ -540,7 +540,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub("resource").datatype(AttributeType.DataType.STRING),
+                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
         ).execute();
 
@@ -570,7 +570,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub("resource").datatype(AttributeType.DataType.STRING),
+                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
                 var().isa("a-new-type")
         ).execute();
 
@@ -580,7 +580,7 @@ public class InsertQueryTest {
 
     @Test
     public void testResourceTypeRegex() {
-        qb.insert(label("greeting").sub("resource").datatype(AttributeType.DataType.STRING).regex("hello|good day")).execute();
+        qb.insert(label("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING).regex("hello|good day")).execute();
 
         MatchQuery match = qb.match(var("x").label("greeting"));
         assertEquals("hello|good day", match.get("x").findFirst().get().asAttributeType().getRegex());
