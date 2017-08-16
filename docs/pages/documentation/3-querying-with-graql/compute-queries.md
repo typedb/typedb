@@ -52,12 +52,12 @@ to you. A summary of the statistics algorithms is given in the table below.
 | Algorithm | Description                                   |
 | ----------- | --------------------------------------------- |
 | [`count`](#count)     | Count the number of instances.                        |
-| [`max`](#maximum)    | Compute the maximum value of a attribute. |
-| [`mean`](#mean)    | Compute the mean value of a attribute.                           |
-| [`median`](#mean)    | Compute the median value of a attribute.                           |
-| [`min`](#minimum)    | Compute the minimum value of a attribute. |
-| [`std`](#standard-deviation)    | Compute the standard deviation of a attribute. |
-| [`sum`](#sum)    | Compute the sum of a attribute. |
+| [`max`](#maximum)    | Compute the maximum value of an attribute. |
+| [`mean`](#mean)    | Compute the mean value of an attribute.                           |
+| [`median`](#mean)    | Compute the median value of an attribute.                           |
+| [`min`](#minimum)    | Compute the minimum value of an attribute. |
+| [`std`](#standard-deviation)    | Compute the standard deviation of an attribute. |
+| [`sum`](#sum)    | Compute the sum of an attribute. |
 
 For further information see the individual sections below.
 

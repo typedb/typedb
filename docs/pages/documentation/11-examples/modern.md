@@ -82,7 +82,7 @@ insert person plays known-about;
 insert knows sub relation, relates knower, relates known-about, has weight;
 ```
 
-Note that the  `knows` relation also has an attribute, in the form of a attribute called `weight` (though it's not clear from the TinkerPop example what this represents).
+Note that the  `knows` relation also has an attribute, in the form of an attribute called `weight` (though it's not clear from the TinkerPop example what this represents).
 
 We can set up a similar relationship between software and the people that created it:
 

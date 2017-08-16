@@ -258,7 +258,7 @@ The `in` syntax has again been used here to restrict the algorithm to the graph 
 
 ## Persist the Degrees
 
-As we did when computing the clusters, we need to put the information back into the graph. This time we will attach a attribute called `degree` to the cluster entity. The ontology mutation and persisting of the degrees is performed in a single method:
+As we did when computing the clusters, we need to put the information back into the graph. This time we will attach an attribute called `degree` to the cluster entity. The ontology mutation and persisting of the degrees is performed in a single method:
 
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->

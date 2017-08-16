@@ -167,7 +167,7 @@ We have decided to omit exception handling to keep the tutorial simple. In produ
 
 Let's define the ontology. As we are mainly interested in both the **tweet** and **who posted the tweet**, let us capture these concepts by defining two **entity types**: `user` and `tweet`.
 
-The `user` entity will hold the user's actual username in a **attribute** called `screen_name`, while the `tweet` entity will contain the user's tweet in another attribute called `text`. We will also define a attribute `identifier` for the id.
+The `user` entity will hold the user's actual username in a **attribute** called `screen_name`, while the `tweet` entity will contain the user's tweet in another attribute called `text`. We will also define an attribute `identifier` for the id.
 
 Next we will define two **roles** - `posts` and `posted_by` to express that a `user` posts a `tweet`, and similarly, a `tweet` is posted by a `user`. We will tie this two roles by a **relationship** called `user-tweet-relationship`.
 
