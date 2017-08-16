@@ -47,7 +47,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 
 public class ResourceTypeController {
     private final EngineGraknGraphFactory factory;
-    private static final Logger LOG = LoggerFactory.getLogger(EntityTypeController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResourceTypeController.class);
 
     public ResourceTypeController(EngineGraknGraphFactory factory, Service spark,
                                 MetricRegistry metricRegistry) {
@@ -67,7 +67,7 @@ public class ResourceTypeController {
             response.status(200);
             Json responseBody = Json.object(
                 "conceptId", resourceType.getId().getValue(),
-                "entityTypeLabel", resourceType.getLabel().getValue()
+                "resourceTypeLabel", resourceType.getLabel().getValue()
             );
             return responseBody;
         }

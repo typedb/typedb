@@ -86,7 +86,6 @@ public class EntityTypeControllerTest {
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
     }
 
-
 //    @Test
     public void postEntityTypeShouldExecuteSuccessfully() {
         Json body = Json.object("entityTypeLabel", "newEntity");
