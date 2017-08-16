@@ -30,17 +30,19 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import ai.grakn.util.Schema;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Sets;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Consumer;
 import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Consumer;
+
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -65,14 +67,16 @@ public class PostProcessingTaskTest {
         mockTaskSubmitter = mock(StandaloneTaskManager.class);
         mockResourceSet = Sets.newHashSet();
         mockConfiguration = mock(TaskConfiguration.class);
+        String keyspace = "testing";
         when(mockConfiguration.json()).thenReturn(Json.object(
-                KEYSPACE, "testing",
+                KEYSPACE, keyspace,
                 REST.Request.COMMIT_LOG_FIXING, Json.object(
                         Schema.BaseType.RESOURCE.name(), Json.object(mockResourceIndex, mockResourceSet)
                 )));
 
-        //Initialise system keyspace
+        //Initialise keyspaces
         Grakn.session(engine.uri(), SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTxType.WRITE).close();
+        Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE).close();
     }
 
     @Test
