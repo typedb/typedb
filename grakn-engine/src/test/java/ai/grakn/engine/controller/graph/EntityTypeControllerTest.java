@@ -41,6 +41,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.notNull;
@@ -86,6 +87,7 @@ public class EntityTypeControllerTest {
     }
 
 
+    @Test
     public void postEntityTypeShouldExecuteSuccessfully() {
         Json body = Json.object("entityTypeLabel", "newEntity");
 
@@ -97,7 +99,7 @@ public class EntityTypeControllerTest {
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
         assertThat(responseBody.get("entityTypeLabel"), equalTo("newEntity"));
-        assertThat(responseBody.get("conceptId"), notNull());
+        assertThat(responseBody.get("conceptId"), notNullValue());
         assertThat(response.statusCode(), equalTo(200));
     }
 
