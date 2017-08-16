@@ -88,7 +88,7 @@ public class EntityTypeControllerTest {
 
 //    @Test
     public void postEntityTypeShouldExecuteSuccessfully() {
-        Json body = Json.object("entityTypeLabel", "newEntity");
+        Json body = Json.object("entityTypeLabel", "newEntityType");
 
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
@@ -99,7 +99,7 @@ public class EntityTypeControllerTest {
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("entityTypeLabel"), equalTo("newEntity"));
+        assertThat(responseBody.get("entityTypeLabel"), equalTo("newEntityType"));
     }
 
 //    @Test

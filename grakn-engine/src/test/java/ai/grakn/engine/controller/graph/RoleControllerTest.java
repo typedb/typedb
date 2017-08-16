@@ -27,7 +27,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ResourceTypeControllerTest {
+public class RoleControllerTest {
     private static GraknGraph mockGraph;
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
 
@@ -38,7 +38,7 @@ public class ResourceTypeControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
 
-        new ResourceTypeController(mockFactory, spark, metricRegistry);
+        new RoleController(mockFactory, spark, metricRegistry);
     });
 
     @Before
@@ -47,47 +47,40 @@ public class ResourceTypeControllerTest {
 
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
 
-        when(mockGraph.putResourceType(anyString(), any())).thenAnswer(invocation -> {
-            String label = invocation.getArgument(0);
-            ResourceType.DataType<?> dataType = invocation.getArgument(1);
-            return graphContext.graph().putResourceType(label, dataType);
-        });
-        when(mockGraph.getResourceType(anyString())).thenAnswer(invocation ->
-            graphContext.graph().getResourceType(invocation.getArgument(0)));
+        when(mockGraph.putRole(anyString())).thenAnswer(invocation ->
+            graphContext.graph().putRole((String) invocation.getArgument(0)));
+        when(mockGraph.getRole(anyString())).thenAnswer(invocation ->
+            graphContext.graph().getRole(invocation.getArgument(0)));
 
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
     }
 
 //    @Test
-    public void postResourceTypeShouldExecuteSuccessfully() {
-        Json body = Json.object(
-            "resourceTypeLabel", "newResourceType",
-            "resourceTypeDataType", "string"
-            );
+    public void postRoleTypeShouldExecuteSuccessfully() {
+        Json body = Json.object("roleLabel", "newRole");
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
             .body(body.toString())
-            .post("/graph/resourceType");
+            .post("/graph/role");
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("resourceTypeLabel"), equalTo("newResourceType"));
+        assertThat(responseBody.get("roleLabel"), equalTo("newRole"));
     }
 
-//    @Test
-    public void getResourceTypeFromMovieGraphShouldExecuteSuccessfully() {
+    @Test
+    public void getRoleFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .get("/graph/resourceType/tmdb-vote-count");
+            .get("/graph/role/production-with-cluster");
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("resourceTypeLabel"), equalTo("tmdb-vote-count"));
-        assertThat(responseBody.get("resourceTypeDataType"), equalTo("long"));
+        assertThat(responseBody.get("roleLabel"), equalTo("production-with-cluster"));
     }
 }
