@@ -127,20 +127,20 @@ public interface EntityType extends Type{
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    EntityType key(ResourceType resourceType);
+    EntityType key(AttributeType attributeType);
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked.
      *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    EntityType resource(ResourceType resourceType);
+    EntityType resource(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
     /**

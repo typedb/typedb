@@ -21,9 +21,9 @@ package ai.grakn.engine.session;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.ComputeQuery;
@@ -287,11 +287,11 @@ class GraqlSession {
 
     void setDisplayOptions(Json json) {
         queryExecutor.execute(() -> {
-            ResourceType[] displayOptions = json.at(DISPLAY).asJsonList().stream()
+            AttributeType[] displayOptions = json.at(DISPLAY).asJsonList().stream()
                     .map(Json::asString)
                     .map(graph::getResourceType)
                     .filter(Objects::nonNull)
-                    .toArray(ResourceType[]::new);
+                    .toArray(AttributeType[]::new);
             printer = getPrinter(displayOptions);
         });
     }
@@ -365,7 +365,7 @@ class GraqlSession {
         return graph.admin().getMetaConcept().subs().map(OntologyConcept::getLabel);
     }
 
-    private Printer getPrinter(ResourceType... resources) {
+    private Printer getPrinter(AttributeType... resources) {
         switch (outputFormat) {
             case "json":
                 return Printers.json();

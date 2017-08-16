@@ -18,11 +18,11 @@
 package ai.grakn.migration.export;
 
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarPattern;
@@ -161,11 +161,11 @@ public class InstanceMapper {
      * @return true if the {@link Attribute} is target of has relation
      */
     private static boolean isHasResourceResource(Attribute attribute){
-        ResourceType resourceType = attribute.type();
+        AttributeType attributeType = attribute.type();
 
         // TODO: Make sure this is tested
-        boolean plays = resourceType.plays().map(Role::getLabel)
-                .allMatch(c -> c.equals(HAS_VALUE.getLabel(resourceType.getLabel())));
+        boolean plays = attributeType.plays().map(Role::getLabel)
+                .allMatch(c -> c.equals(HAS_VALUE.getLabel(attributeType.getLabel())));
         return attribute.ownerInstances().findAny().isPresent() && plays;
     }
 }

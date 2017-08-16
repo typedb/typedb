@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
@@ -151,7 +151,7 @@ public class QueryErrorTest {
         QueryBuilder emptyQb = empty.graph().graql();
         emptyQb.insert(
                 label("person").sub("entity"),
-                label("name").sub("resource").datatype(ResourceType.DataType.STRING)
+                label("name").sub("resource").datatype(AttributeType.DataType.STRING)
         ).execute();
 
         exception.expect(GraphOperationException.class);

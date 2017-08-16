@@ -23,7 +23,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
@@ -212,7 +212,7 @@ public class SystemController {
     private String getKeyspaces(Request request, Response response) {
         try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
 
-            ResourceType<String> keyspaceName = graph.getOntologyConcept(SystemKeyspace.KEYSPACE_RESOURCE);
+            AttributeType<String> keyspaceName = graph.getOntologyConcept(SystemKeyspace.KEYSPACE_RESOURCE);
             Json result = Json.array();
 
             graph.<EntityType>getOntologyConcept(SystemKeyspace.KEYSPACE_ENTITY).instances().forEach(keyspace -> {

@@ -18,11 +18,11 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
@@ -61,7 +61,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import static ai.grakn.concept.ResourceType.DataType.BOOLEAN;
+import static ai.grakn.concept.AttributeType.DataType.BOOLEAN;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
@@ -264,26 +264,26 @@ public class InsertQueryTest {
     @Test
     public void testInsertDatatype() {
         qb.insert(
-                label("my-type").sub(Schema.MetaSchema.RESOURCE.getLabel().getValue()).datatype(ResourceType.DataType.LONG)
+                label("my-type").sub(Schema.MetaSchema.RESOURCE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
         ).execute();
 
         MatchQuery query = qb.match(var("x").label("my-type"));
-        ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
+        AttributeType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
-        Assert.assertEquals(ResourceType.DataType.LONG, datatype);
+        Assert.assertEquals(AttributeType.DataType.LONG, datatype);
     }
 
     @Test
     public void testInsertSubResourceType() {
         qb.insert(
-                label("my-type").sub(Schema.MetaSchema.RESOURCE.getLabel().getValue()).datatype(ResourceType.DataType.STRING),
+                label("my-type").sub(Schema.MetaSchema.RESOURCE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
                 label("sub-type").sub("my-type")
         ).execute();
 
         MatchQuery query = qb.match(var("x").label("sub-type"));
-        ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
+        AttributeType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
-        Assert.assertEquals(ResourceType.DataType.STRING, datatype);
+        Assert.assertEquals(AttributeType.DataType.STRING, datatype);
     }
 
     @Test
@@ -458,7 +458,7 @@ public class InsertQueryTest {
     public void testInsertResourceTypeAndInstance() {
         qb.insert(
                 label("movie").has("my-resource"),
-                label("my-resource").sub("resource").datatype(ResourceType.DataType.STRING),
+                label("my-resource").sub("resource").datatype(AttributeType.DataType.STRING),
                 var("x").isa("movie").has("my-resource", "look a string")
         ).execute();
     }
@@ -469,8 +469,8 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").has(resourceType),
-                label(resourceType).sub("resource").datatype(ResourceType.DataType.STRING),
-                label("an-unconnected-resource-type").sub("resource").datatype(ResourceType.DataType.LONG)
+                label(resourceType).sub("resource").datatype(AttributeType.DataType.STRING),
+                label("an-unconnected-resource-type").sub("resource").datatype(AttributeType.DataType.LONG)
         ).execute();
 
         // Make sure a-new-type can have the given resource type, but not other resource types
@@ -499,7 +499,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key(resourceType),
-                label(resourceType).sub("resource").datatype(ResourceType.DataType.STRING)
+                label(resourceType).sub("resource").datatype(AttributeType.DataType.STRING)
         ).execute();
 
         // Make sure a-new-type can have the given resource type as a key or otherwise
@@ -529,7 +529,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
+                label("a-new-resource-type").sub("resource").datatype(AttributeType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
     }
@@ -540,7 +540,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
+                label("a-new-resource-type").sub("resource").datatype(AttributeType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
         ).execute();
 
@@ -555,7 +555,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
+                label("a-new-resource-type").sub("resource").datatype(AttributeType.DataType.STRING),
                 var("x").isa("a-new-type").has("a-new-resource-type", "hello"),
                 var("y").isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
@@ -570,7 +570,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
+                label("a-new-resource-type").sub("resource").datatype(AttributeType.DataType.STRING),
                 var().isa("a-new-type")
         ).execute();
 
@@ -580,7 +580,7 @@ public class InsertQueryTest {
 
     @Test
     public void testResourceTypeRegex() {
-        qb.insert(label("greeting").sub("resource").datatype(ResourceType.DataType.STRING).regex("hello|good day")).execute();
+        qb.insert(label("greeting").sub("resource").datatype(AttributeType.DataType.STRING).regex("hello|good day")).execute();
 
         MatchQuery match = qb.match(var("x").label("greeting"));
         assertEquals("hello|good day", match.get("x").findFirst().get().asResourceType().getRegex());
@@ -854,7 +854,7 @@ public class InsertQueryTest {
 
     @Test
     public void whenSpecifyingExistingTypeWithIncorrectDataType_Throw() {
-        ResourceType name = movieGraph.graph().getResourceType("name");
+        AttributeType name = movieGraph.graph().getResourceType("name");
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(

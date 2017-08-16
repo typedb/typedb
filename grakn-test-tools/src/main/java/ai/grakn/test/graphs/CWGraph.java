@@ -19,11 +19,11 @@
 package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
 
@@ -36,14 +36,14 @@ import java.util.function.Consumer;
  */
 public class CWGraph extends TestGraph {
 
-    private static ResourceType<String> key;
+    private static AttributeType<String> key;
 
     private static EntityType person;
     private static EntityType weapon;
     private static EntityType rocket;
     private static EntityType country;
     
-    private static ResourceType<String> alignment, propulsion, nationality;
+    private static AttributeType<String> alignment, propulsion, nationality;
 
     private static RelationType isEnemyOf;
     private static RelationType isPaidBy;
@@ -62,12 +62,12 @@ public class CWGraph extends TestGraph {
 
     @Override
     protected void buildOntology(GraknGraph graph) {
-        key = graph.putResourceType("name", ResourceType.DataType.STRING);
+        key = graph.putResourceType("name", AttributeType.DataType.STRING);
 
         //Resources
-        nationality = graph.putResourceType("nationality", ResourceType.DataType.STRING);
-        propulsion = graph.putResourceType("propulsion", ResourceType.DataType.STRING);
-        alignment = graph.putResourceType("alignment", ResourceType.DataType.STRING);
+        nationality = graph.putResourceType("nationality", AttributeType.DataType.STRING);
+        propulsion = graph.putResourceType("propulsion", AttributeType.DataType.STRING);
+        alignment = graph.putResourceType("alignment", AttributeType.DataType.STRING);
 
         //Roles
         owner = graph.putRole("item-owner");

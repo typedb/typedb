@@ -22,11 +22,11 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
@@ -74,7 +74,7 @@ public class AnalyticsTest {
     public void testInferredResourceRelation() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             Label resourceLabel = Label.of("degree");
-            ResourceType<Long> degree = graph.putResourceType(resourceLabel, ResourceType.DataType.LONG);
+            AttributeType<Long> degree = graph.putResourceType(resourceLabel, AttributeType.DataType.LONG);
             EntityType thingy = graph.putEntityType("thingy");
             thingy.resource(degree);
 
@@ -103,7 +103,7 @@ public class AnalyticsTest {
             Label resourceTypeId = Label.of("degree");
             EntityType thingy = graph.putEntityType("thingy");
 
-            graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
+            graph.putResourceType(resourceTypeId, AttributeType.DataType.LONG);
             Role degreeOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
             Role degreeValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
             RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))

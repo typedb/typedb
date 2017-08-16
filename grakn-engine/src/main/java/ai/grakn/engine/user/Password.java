@@ -19,7 +19,7 @@
 package ai.grakn.engine.user;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -62,7 +62,7 @@ public class Password {
      * @return a 16 bytes random salt
      */
     static byte[] getNextSalt(GraknGraph graph) {
-        ResourceType<String> saltResourceType = graph.getResourceType(UsersHandler.USER_SALT);
+        AttributeType<String> saltAttributeType = graph.getResourceType(UsersHandler.USER_SALT);
 
         String saltString;
         byte[] salt;
@@ -70,7 +70,7 @@ public class Password {
             salt = new byte[16];
             saltString = getString(salt);
             RANDOM.nextBytes(salt);
-        } while(saltResourceType.getResource(saltString) != null); //Make sure we generate unique salts every time
+        } while(saltAttributeType.getResource(saltString) != null); //Make sure we generate unique salts every time
 
         return salt;
     }

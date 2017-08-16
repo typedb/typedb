@@ -24,7 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
@@ -269,7 +269,7 @@ class ValidateGlobalRules {
      * @return An error message if the {@link Relation} is not unique.
      */
     static Optional<String> validateRelationIsUnique(AbstractGraknGraph<?> graph, RelationReified relationReified){
-        Iterator<ResourceType> keys = relationReified.type().keys().iterator();
+        Iterator<AttributeType> keys = relationReified.type().keys().iterator();
         if(keys.hasNext()){
             return validateKeyControlledRelation(graph, relationReified, keys);
         } else {
@@ -283,10 +283,10 @@ class ValidateGlobalRules {
      *
      * @param graph the {@link GraknGraph} used to check for uniqueness
      * @param relationReified the {@link Relation} to check
-     * @param keys the {@link ResourceType} indicating the key which the relation must be bound to and unique to
+     * @param keys the {@link AttributeType} indicating the key which the relation must be bound to and unique to
      * @return An error message if the {@link Relation} is not unique.
      */
-    private static Optional<String> validateKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified, Iterator<ResourceType> keys) {
+    private static Optional<String> validateKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified, Iterator<AttributeType> keys) {
         TreeMap<String, String> resources = new TreeMap<>();
         while(keys.hasNext()){
             Optional<Attribute<?>> foundResource = relationReified.resources(keys.next()).findAny();

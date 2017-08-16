@@ -19,10 +19,10 @@
 package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
@@ -36,7 +36,7 @@ import java.util.function.Consumer;
  */
 public class GeoGraph extends TestGraph {
 
-    private static ResourceType<String> key;
+    private static AttributeType<String> key;
 
     private static EntityType university, city, region, country, continent, geographicalObject;
     private static RelationType isLocatedIn;
@@ -58,7 +58,7 @@ public class GeoGraph extends TestGraph {
 
     @Override
     public void buildOntology(GraknGraph graph) {
-        key = graph.putResourceType("name", ResourceType.DataType.STRING);
+        key = graph.putResourceType("name", AttributeType.DataType.STRING);
 
         geoEntity = graph.putRole("geo-entity");
         entityLocation = graph.putRole("entity-location");

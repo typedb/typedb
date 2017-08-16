@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -46,12 +46,12 @@ import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
  */
 class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
 
-    private final ResourceType[] resourceTypes;
+    private final AttributeType[] attributeTypes;
     private final boolean colorize;
 
-    GraqlPrinter(boolean colorize, ResourceType... resourceTypes) {
+    GraqlPrinter(boolean colorize, AttributeType... attributeTypes) {
         this.colorize = colorize;
-        this.resourceTypes = resourceTypes;
+        this.attributeTypes = attributeTypes;
     }
 
     @Override
@@ -104,8 +104,8 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             }
 
             // Display any requested resources
-            if (concept.isThing() && resourceTypes.length > 0) {
-                concept.asThing().resources(resourceTypes).forEach(resource -> {
+            if (concept.isThing() && attributeTypes.length > 0) {
+                concept.asThing().resources(attributeTypes).forEach(resource -> {
                     String resourceType = colorType(resource.type());
                     String value = StringUtil.valueToString(resource.getValue());
                     sb.append(colorKeyword(" has ")).append(resourceType).append(" ").append(value);

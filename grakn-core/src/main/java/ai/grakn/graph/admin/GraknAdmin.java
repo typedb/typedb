@@ -19,6 +19,7 @@
 package ai.grakn.graph.admin;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
@@ -26,7 +27,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.InvalidGraphException;
@@ -109,12 +109,12 @@ public interface GraknAdmin {
     Role getMetaRole();
 
     /**
-     * Get the root of all the {@link ResourceType}.
+     * Get the root of all the {@link AttributeType}.
      *
      * @return The meta resource type -> resource-type.
      */
     @CheckReturnValue
-    ResourceType getMetaResourceType();
+    AttributeType getMetaResourceType();
 
     /**
      * Get the root of all the Entity Types.

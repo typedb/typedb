@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Thing;
 import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
@@ -35,8 +35,8 @@ import java.util.stream.Stream;
  *
  * <p>
  *     Acts as an {@link Thing} when relating to other instances except it has the added functionality of:
- *     1. It is unique to its {@link ResourceType} based on it's value.
- *     2. It has a {@link ai.grakn.concept.ResourceType.DataType} associated with it which constrains the allowed values.
+ *     1. It is unique to its {@link AttributeType} based on it's value.
+ *     2. It has a {@link AttributeType.DataType} associated with it which constrains the allowed values.
  * </p>
  *
  * @author fppt
@@ -44,22 +44,22 @@ import java.util.stream.Stream;
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
-public class AttributeImpl<D> extends ThingImpl<Attribute<D>, ResourceType<D>> implements Attribute<D> {
+public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> implements Attribute<D> {
     public AttributeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    AttributeImpl(VertexElement vertexElement, ResourceType<D> type, Object value) {
+    AttributeImpl(VertexElement vertexElement, AttributeType<D> type, Object value) {
         super(vertexElement, type);
         setValue(value);
     }
 
     /**
      *
-     * @return The data type of this {@link Attribute}'s {@link ResourceType}.
+     * @return The data type of this {@link Attribute}'s {@link AttributeType}.
      */
     @Override
-    public ResourceType.DataType<D> dataType() {
+    public AttributeType.DataType<D> dataType() {
         return type().getDataType();
     }
 

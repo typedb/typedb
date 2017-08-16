@@ -5,12 +5,12 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraphOperationException;
@@ -63,8 +63,8 @@ public class GraknGraphTest extends GraphTestBase {
         String targetValue = "Geralt";
         assertThat(graknGraph.getResourcesByValue(targetValue), is(empty()));
 
-        ResourceType<String> t1 = graknGraph.putResourceType("Parent 1", ResourceType.DataType.STRING);
-        ResourceType<String> t2 = graknGraph.putResourceType("Parent 2", ResourceType.DataType.STRING);
+        AttributeType<String> t1 = graknGraph.putResourceType("Parent 1", AttributeType.DataType.STRING);
+        AttributeType<String> t2 = graknGraph.putResourceType("Parent 2", AttributeType.DataType.STRING);
 
         Attribute<String> r1 = t1.putResource(targetValue);
         Attribute<String> r2 = t2.putResource(targetValue);
@@ -90,13 +90,13 @@ public class GraknGraphTest extends GraphTestBase {
         EntityType entityType = graknGraph.putEntityType(entityTypeLabel);
         RelationType relationType = graknGraph.putRelationType(relationTypeLabel);
         Role role = graknGraph.putRole(roleTypeLabel);
-        ResourceType resourceType = graknGraph.putResourceType(resourceTypeLabel, ResourceType.DataType.STRING);
+        AttributeType attributeType = graknGraph.putResourceType(resourceTypeLabel, AttributeType.DataType.STRING);
         RuleType ruleType = graknGraph.putRuleType(ruleTypeLabel);
 
         assertEquals(entityType, graknGraph.getEntityType(entityTypeLabel));
         assertEquals(relationType, graknGraph.getRelationType(relationTypeLabel));
         assertEquals(role, graknGraph.getRole(roleTypeLabel));
-        assertEquals(resourceType, graknGraph.getResourceType(resourceTypeLabel));
+        assertEquals(attributeType, graknGraph.getResourceType(resourceTypeLabel));
         assertEquals(ruleType, graknGraph.getRuleType(ruleTypeLabel));
     }
 
@@ -260,7 +260,7 @@ public class GraknGraphTest extends GraphTestBase {
         Role roleT2 = graknGraph.putRole(roleType2);
         RelationType relationT1 = graknGraph.putRelationType(relationType1).relates(roleT1);
         RelationType relationT2 = graknGraph.putRelationType(relationType2).relates(roleT2);
-        ResourceType<String> resourceT = graknGraph.putResourceType(resourceType, ResourceType.DataType.STRING);
+        AttributeType<String> resourceT = graknGraph.putResourceType(resourceType, AttributeType.DataType.STRING);
         graknGraph.commit();
 
         //Fail some mutations again
@@ -364,9 +364,9 @@ public class GraknGraphTest extends GraphTestBase {
         executor.submit(() -> {
             //Resources
             try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
-                ResourceType<Long> int_ = graph.putResourceType("int", ResourceType.DataType.LONG);
-                ResourceType<Long> foo = graph.putResourceType("foo", ResourceType.DataType.LONG).sup(int_);
-                graph.putResourceType("bar", ResourceType.DataType.LONG).sup(int_);
+                AttributeType<Long> int_ = graph.putResourceType("int", AttributeType.DataType.LONG);
+                AttributeType<Long> foo = graph.putResourceType("foo", AttributeType.DataType.LONG).sup(int_);
+                graph.putResourceType("bar", AttributeType.DataType.LONG).sup(int_);
                 graph.putEntityType("FOO").resource(foo);
 
                 graph.commit();

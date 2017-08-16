@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
@@ -38,9 +38,9 @@ import java.util.regex.Pattern;
  * <p>
  *     This ontological element behaves similarly to {@link ai.grakn.concept.Type} when defining how it relates to other
  *     types. It has two additional functions to be aware of:
- *     1. It has a {@link ai.grakn.concept.ResourceType.DataType} constraining the data types of the values it's instances may take.
+ *     1. It has a {@link AttributeType.DataType} constraining the data types of the values it's instances may take.
  *     2. Any of it's instances are unique to the type.
- *     For example if you have a {@link ResourceType} modelling month throughout the year there can only be one January.
+ *     For example if you have a {@link AttributeType} modelling month throughout the year there can only be one January.
  * </p>
  *
  * @author fppt
@@ -48,12 +48,12 @@ import java.util.regex.Pattern;
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
-public class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Attribute<D>> implements ResourceType<D> {
-    ResourceTypeImpl(VertexElement vertexElement) {
+public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
+    AttributeTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    ResourceTypeImpl(VertexElement vertexElement, ResourceType<D> type, DataType<D> dataType) {
+    AttributeTypeImpl(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType) {
         super(vertexElement, type);
         vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
     }
@@ -63,17 +63,17 @@ public class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Attribute<D>>
      * can be applied to all the existing instances.
      */
     @Override
-    public ResourceType<D> sup(ResourceType<D> superType){
-        ((ResourceTypeImpl<D>) superType).superSet().forEach(st -> checkInstancesMatchRegex(st.getRegex()));
+    public AttributeType<D> sup(AttributeType<D> superType){
+        ((AttributeTypeImpl<D>) superType).superSet().forEach(st -> checkInstancesMatchRegex(st.getRegex()));
         return super.sup(superType);
     }
 
     /**
      * @param regex The regular expression which instances of this resource must conform to.
-     * @return The {@link ResourceType} itself.
+     * @return The {@link AttributeType} itself.
      */
     @Override
-    public ResourceType<D> setRegex(String regex) {
+    public AttributeType<D> setRegex(String regex) {
         if(getDataType() == null || !getDataType().equals(DataType.STRING)) {
             throw GraphOperationException.cannotSetRegex(this);
         }
@@ -107,7 +107,7 @@ public class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Attribute<D>>
     public Attribute<D> putResource(D value) {
         Objects.requireNonNull(value);
 
-        BiFunction<VertexElement, ResourceType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
+        BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
             if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
             Object persistenceValue = castValue(value);
             AttributeImpl<D> resource = vertex().graph().factory().buildResource(vertex, type, persistenceValue);
@@ -125,11 +125,11 @@ public class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Attribute<D>>
      * @return The value casted to the correct type
      */
     private Object castValue(D value){
-        ResourceType.DataType<D> dataType = getDataType();
+        AttributeType.DataType<D> dataType = getDataType();
         try {
-            if (dataType.equals(ResourceType.DataType.DOUBLE)) {
+            if (dataType.equals(AttributeType.DataType.DOUBLE)) {
                 return ((Number) value).doubleValue();
-            } else if (dataType.equals(ResourceType.DataType.LONG)) {
+            } else if (dataType.equals(AttributeType.DataType.LONG)) {
                 if (value instanceof Double) {
                     throw new ClassCastException();
                 }

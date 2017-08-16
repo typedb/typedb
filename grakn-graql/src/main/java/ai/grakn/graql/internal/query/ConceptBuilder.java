@@ -20,11 +20,11 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -143,7 +143,7 @@ public class ConceptBuilder {
         return set(VALUE, value);
     }
 
-    public ConceptBuilder dataType(ResourceType.DataType<?> dataType) {
+    public ConceptBuilder dataType(AttributeType.DataType<?> dataType) {
         return set(DATA_TYPE, dataType);
     }
 
@@ -242,7 +242,7 @@ public class ConceptBuilder {
     private static final BuilderParam<Label> LABEL = () -> LabelProperty.NAME;
     private static final BuilderParam<ConceptId> ID = () -> IdProperty.NAME;
     private static final BuilderParam<Object> VALUE = () -> ValueProperty.NAME;
-    private static final BuilderParam<ResourceType.DataType<?>> DATA_TYPE = () -> DataTypeProperty.NAME;
+    private static final BuilderParam<AttributeType.DataType<?>> DATA_TYPE = () -> DataTypeProperty.NAME;
     private static final BuilderParam<Pattern> WHEN = () -> WhenProperty.NAME;
     private static final BuilderParam<Pattern> THEN = () -> ThenProperty.NAME;
 
@@ -303,7 +303,7 @@ public class ConceptBuilder {
         validateParam(concept, LABEL, OntologyConcept.class, OntologyConcept::getLabel);
         validateParam(concept, ID, Concept.class, Concept::getId);
         validateParam(concept, VALUE, Attribute.class, Attribute::getValue);
-        validateParam(concept, DATA_TYPE, ResourceType.class, ResourceType::getDataType);
+        validateParam(concept, DATA_TYPE, AttributeType.class, AttributeType::getDataType);
         validateParam(concept, WHEN, Rule.class, Rule::getWhen);
         validateParam(concept, THEN, Rule.class, Rule::getThen);
     }
@@ -358,8 +358,8 @@ public class ConceptBuilder {
         } else if (superConcept.isRole()) {
             concept = executor.graph().putRole(label);
         } else if (superConcept.isResourceType()) {
-            ResourceType resourceType = superConcept.asResourceType();
-            ResourceType.DataType<?> dataType = useOrDefault(DATA_TYPE, resourceType.getDataType());
+            AttributeType attributeType = superConcept.asResourceType();
+            AttributeType.DataType<?> dataType = useOrDefault(DATA_TYPE, attributeType.getDataType());
             concept = executor.graph().putResourceType(label, dataType);
         } else if (superConcept.isRuleType()) {
             concept = executor.graph().putRuleType(label);

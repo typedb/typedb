@@ -21,10 +21,10 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknJanusGraph;
@@ -142,7 +142,7 @@ public class GraknJanusGraphTest extends JanusTestBase {
     @Test
     public void whenCreatingDateResource_EnsureDateCanBeRetrieved(){
         GraknJanusGraph graph = new JanusInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
-        ResourceType<LocalDateTime> dateType = graph.putResourceType("date", ResourceType.DataType.DATE);
+        AttributeType<LocalDateTime> dateType = graph.putResourceType("date", AttributeType.DataType.DATE);
         LocalDateTime now = LocalDateTime.now();
         Attribute<LocalDateTime> date = dateType.putResource(now);
         assertEquals(now, date.getValue());
@@ -150,10 +150,10 @@ public class GraknJanusGraphTest extends JanusTestBase {
 
     @Test
     public void whenLookingUpRelationEdgeViaConceptId_EnsureTheRelationEdgeIsReturned(){
-        ResourceType<String> resourceType = graknGraph.putResourceType("Looky a attribute type", ResourceType.DataType.STRING);
-        Attribute<String> attribute = resourceType.putResource("A Attribute Thing");
+        AttributeType<String> attributeType = graknGraph.putResourceType("Looky a attribute type", AttributeType.DataType.STRING);
+        Attribute<String> attribute = attributeType.putResource("A Attribute Thing");
 
-        EntityType entityType = graknGraph.putEntityType("My entity").resource(resourceType);
+        EntityType entityType = graknGraph.putEntityType("My entity").resource(attributeType);
         Relation relation = Iterators.getOnlyElement(entityType.addEntity().resource(attribute).relations().iterator());
 
         //Closing so the cache is not accessed when doing the lookup

@@ -25,7 +25,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -134,16 +134,16 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      *
      * @return All the {@link Attribute} that this Thing is linked with
      */
-    public Stream<Attribute<?>> resources(ResourceType... resourceTypes) {
-        Set<ConceptId> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
+    public Stream<Attribute<?>> resources(AttributeType... attributeTypes) {
+        Set<ConceptId> resourceTypesIds = Arrays.stream(attributeTypes).map(Concept::getId).collect(Collectors.toSet());
         return resources(getShortcutNeighbours(), resourceTypesIds);
     }
 
     /**
-     * Helper class which filters a {@link Stream} of {@link Attribute} to those of a specific set of {@link ResourceType}.
+     * Helper class which filters a {@link Stream} of {@link Attribute} to those of a specific set of {@link AttributeType}.
      *
      * @param conceptStream The {@link Stream} to filter
-     * @param resourceTypesIds The {@link ResourceType} {@link ConceptId}s to filter to.
+     * @param resourceTypesIds The {@link AttributeType} {@link ConceptId}s to filter to.
      * @return the filtered stream
      */
     private <X extends Concept> Stream<Attribute<?>> resources(Stream<X> conceptStream, Set<ConceptId> resourceTypesIds){

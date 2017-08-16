@@ -20,10 +20,10 @@ package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.ResourceType;
 
 import java.util.Set;
 import java.util.function.Consumer;
@@ -60,8 +60,8 @@ public abstract class TestGraph {
         return inst;
     }
 
-    public static <T> void putResource(Thing thing, ResourceType<T> resourceType, T resource) {
-        Attribute attributeInstance = resourceType.putResource(resource);
+    public static <T> void putResource(Thing thing, AttributeType<T> attributeType, T resource) {
+        Attribute attributeInstance = attributeType.putResource(resource);
         thing.resource(attributeInstance);
     }
 

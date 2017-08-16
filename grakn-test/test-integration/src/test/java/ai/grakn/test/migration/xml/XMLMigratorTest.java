@@ -4,9 +4,9 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.xml.XmlMigrator;
 import ai.grakn.test.EngineContext;
@@ -43,7 +43,7 @@ public class XMLMigratorTest {
     @After
     public void clearGraph(){
         try(GraknGraph graph = session.open(GraknTxType.WRITE)){
-            ResourceType<String> nameType = graph.getResourceType("name");
+            AttributeType<String> nameType = graph.getResourceType("name");
             nameType.instances().forEach(Concept::delete);
 
             EntityType thingType = graph.getEntityType("thingy");
@@ -89,7 +89,7 @@ public class XMLMigratorTest {
         try(GraknGraph graph = session.open(GraknTxType.READ)){
 
             EntityType thingType = graph.getEntityType("thingy");
-            ResourceType nameType = graph.getResourceType("name");
+            AttributeType nameType = graph.getResourceType("name");
 
             assertEquals(1, thingType.instances().count());
             thingType.instances().forEach(thing ->{

@@ -19,9 +19,9 @@
 
 package ai.grakn.graql.internal.pattern;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -311,7 +311,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final VarPattern datatype(ResourceType.DataType<?> datatype) {
+    public final VarPattern datatype(AttributeType.DataType<?> datatype) {
         return addProperty(DataTypeProperty.of(datatype));
     }
 

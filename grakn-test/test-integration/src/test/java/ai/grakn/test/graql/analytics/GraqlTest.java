@@ -27,7 +27,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
@@ -144,7 +144,7 @@ public class GraqlTest {
                     .relates(resourceOwner)
                     .relates(resourceValue);
 
-            ResourceType<Long> resource = graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG)
+            AttributeType<Long> resource = graph.putResourceType(resourceTypeId, AttributeType.DataType.LONG)
                     .plays(resourceValue);
             EntityType thingy = graph.putEntityType("thingy").plays(resourceOwner);
             Entity theResourceOwner = thingy.addEntity();
@@ -236,7 +236,7 @@ public class GraqlTest {
     @Test
     public void testAnalyticsDoesNotCommitByMistake() throws InvalidGraphException {
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            graph.putResourceType("number", ResourceType.DataType.LONG);
+            graph.putResourceType("number", AttributeType.DataType.LONG);
             graph.commit();
         }
 

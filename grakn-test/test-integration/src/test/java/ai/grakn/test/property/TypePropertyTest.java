@@ -18,8 +18,8 @@
 
 package ai.grakn.test.property;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -76,17 +76,17 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void whenGivingAMetaTypeAKey_Throw(@Meta Type type, ResourceType resourceType) {
+    public void whenGivingAMetaTypeAKey_Throw(@Meta Type type, AttributeType attributeType) {
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
-        type.key(resourceType);
+        type.key(attributeType);
     }
 
     @Property
-    public void whenGivingAMetaTypeAResource_Throw(@Meta Type type, ResourceType resourceType) {
+    public void whenGivingAMetaTypeAResource_Throw(@Meta Type type, AttributeType attributeType) {
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
-        type.resource(resourceType);
+        type.resource(attributeType);
     }
 
     @Ignore // TODO: Fails very rarely and only remotely

@@ -22,13 +22,13 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
@@ -235,7 +235,7 @@ public class RelationTest extends GraphTestBase {
         Role entityRole = graknGraph.putRole("Entity Role");
         Role degreeRole = graknGraph.putRole("Degree Role");
         EntityType entityType = graknGraph.putEntityType("Entity Type").plays(entityRole);
-        ResourceType<Long> degreeType = graknGraph.putResourceType("Attribute Type", ResourceType.DataType.LONG).plays(degreeRole);
+        AttributeType<Long> degreeType = graknGraph.putResourceType("Attribute Type", AttributeType.DataType.LONG).plays(degreeRole);
 
         RelationType hasDegree = graknGraph.putRelationType("Has Degree").relates(entityRole).relates(degreeRole);
 
@@ -284,10 +284,10 @@ public class RelationTest extends GraphTestBase {
 
     @Test
     public void whenAttemptingToLinkTheInstanceOfAResourceRelationToTheResourceWhichCreatedIt_ThrowIfTheRelationTypeDoesNotHavePermissionToPlayTheNecessaryRole(){
-        ResourceType<String> resourceType = graknGraph.putResourceType("what a pain", ResourceType.DataType.STRING);
-        Attribute<String> attribute = resourceType.putResource("a real pain");
+        AttributeType<String> attributeType = graknGraph.putResourceType("what a pain", AttributeType.DataType.STRING);
+        Attribute<String> attribute = attributeType.putResource("a real pain");
 
-        EntityType entityType = graknGraph.putEntityType("yay").resource(resourceType);
+        EntityType entityType = graknGraph.putEntityType("yay").resource(attributeType);
         Relation implicitRelation = Iterables.getOnlyElement(entityType.addEntity().resource(attribute).relations().collect(Collectors.toSet()));
 
         expectedException.expect(GraphOperationException.class);
@@ -301,15 +301,15 @@ public class RelationTest extends GraphTestBase {
     public void whenAddingDuplicateRelationsWithDifferentKeys_EnsureTheyCanBeCommitted(){
         Role role1 = graknGraph.putRole("dark");
         Role role2 = graknGraph.putRole("souls");
-        ResourceType<Long> resourceType = graknGraph.putResourceType("Death Number", ResourceType.DataType.LONG);
-        RelationType relationType = graknGraph.putRelationType("Dark Souls").relates(role1).relates(role2).key(resourceType);
+        AttributeType<Long> attributeType = graknGraph.putResourceType("Death Number", AttributeType.DataType.LONG);
+        RelationType relationType = graknGraph.putRelationType("Dark Souls").relates(role1).relates(role2).key(attributeType);
         EntityType entityType = graknGraph.putEntityType("Dead Guys").plays(role1).plays(role2);
 
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
 
-        Attribute<Long> r1 = resourceType.putResource(1000000L);
-        Attribute<Long> r2 = resourceType.putResource(2000000L);
+        Attribute<Long> r1 = attributeType.putResource(1000000L);
+        Attribute<Long> r2 = attributeType.putResource(2000000L);
 
         Relation rel1 = relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
         Relation rel2 = relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
@@ -329,14 +329,14 @@ public class RelationTest extends GraphTestBase {
     public void whenAddingDuplicateRelationsWithSameKeys_Throw(){
         Role role1 = graknGraph.putRole("dark");
         Role role2 = graknGraph.putRole("souls");
-        ResourceType<Long> resourceType = graknGraph.putResourceType("Death Number", ResourceType.DataType.LONG);
-        RelationType relationType = graknGraph.putRelationType("Dark Souls").relates(role1).relates(role2).key(resourceType);
+        AttributeType<Long> attributeType = graknGraph.putResourceType("Death Number", AttributeType.DataType.LONG);
+        RelationType relationType = graknGraph.putRelationType("Dark Souls").relates(role1).relates(role2).key(attributeType);
         EntityType entityType = graknGraph.putEntityType("Dead Guys").plays(role1).plays(role2);
 
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
 
-        Attribute<Long> r1 = resourceType.putResource(1000000L);
+        Attribute<Long> r1 = attributeType.putResource(1000000L);
 
         relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2).resource(r1);
         relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2).resource(r1);

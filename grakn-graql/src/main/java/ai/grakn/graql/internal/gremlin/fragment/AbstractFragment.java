@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -69,7 +69,7 @@ abstract class AbstractFragment implements Fragment {
 
     static final double COST_SAME_AS_PREVIOUS = Math.log1p(1);
     static final double COST_NEQ = Math.log1p(0.5);
-    static final double COST_DATA_TYPE = Math.log1p(2D / ResourceType.DataType.SUPPORTED_TYPES.size());
+    static final double COST_DATA_TYPE = Math.log1p(2D / AttributeType.DataType.SUPPORTED_TYPES.size());
     static final double COST_UNSPECIFIC_PREDICATE = Math.log1p(0.5);
 
     private final Var start;

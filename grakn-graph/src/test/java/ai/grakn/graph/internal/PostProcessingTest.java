@@ -19,20 +19,20 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.graph.internal.concept.AttributeImpl;
+import ai.grakn.graph.internal.concept.AttributeTypeImpl;
 import ai.grakn.graph.internal.concept.ConceptImpl;
 import ai.grakn.graph.internal.concept.EntityTypeImpl;
 import ai.grakn.graph.internal.concept.RelationImpl;
 import ai.grakn.graph.internal.concept.RelationReified;
 import ai.grakn.graph.internal.concept.RelationTypeImpl;
-import ai.grakn.graph.internal.concept.ResourceTypeImpl;
 import ai.grakn.graph.internal.concept.ThingImpl;
 import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
@@ -76,7 +76,7 @@ public class PostProcessingTest extends GraphTestBase{
 
     @Test
     public void whenMergingDuplicateResources_EnsureSingleResourceRemains(){
-        ResourceTypeImpl<String> resourceType = (ResourceTypeImpl<String>) graknGraph.putResourceType("Attribute Type", ResourceType.DataType.STRING);
+        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) graknGraph.putResourceType("Attribute Type", AttributeType.DataType.STRING);
 
         //Create fake resources
         Set<ConceptId> resourceIds = new HashSet<>();
@@ -100,7 +100,7 @@ public class PostProcessingTest extends GraphTestBase{
         Role roleEntity = graknGraph.putRole("Entity Role");
         Role roleResource = graknGraph.putRole("Attribute Role");
         RelationType relationType = graknGraph.putRelationType("Relation Type").relates(roleEntity).relates(roleResource);
-        ResourceTypeImpl<String> resourceType = (ResourceTypeImpl<String>) graknGraph.putResourceType("Attribute Type", ResourceType.DataType.STRING).plays(roleResource);
+        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) graknGraph.putResourceType("Attribute Type", AttributeType.DataType.STRING).plays(roleResource);
         EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity).resource(resourceType);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
@@ -172,7 +172,7 @@ public class PostProcessingTest extends GraphTestBase{
     }
 
 
-    private AttributeImpl<String> createFakeResource(ResourceTypeImpl<String> type, String value){
+    private AttributeImpl<String> createFakeResource(AttributeTypeImpl<String> type, String value){
         String index = Schema.generateResourceIndex(type.getLabel(), value);
         Vertex resourceVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
 
@@ -189,7 +189,7 @@ public class PostProcessingTest extends GraphTestBase{
         Map<ConceptId, Long> types = new HashMap<>();
         //Create Some Types;
         EntityTypeImpl t1 = (EntityTypeImpl) graknGraph.putEntityType("t1");
-        ResourceTypeImpl t2 = (ResourceTypeImpl)  graknGraph.putResourceType("t2", ResourceType.DataType.STRING);
+        AttributeTypeImpl t2 = (AttributeTypeImpl)  graknGraph.putResourceType("t2", AttributeType.DataType.STRING);
         RelationTypeImpl t3 = (RelationTypeImpl) graknGraph.putRelationType("t3");
 
         //Lets Set Some Counts
@@ -213,7 +213,7 @@ public class PostProcessingTest extends GraphTestBase{
 
     @Test
     public void whenMergingDuplicateResourceEdges_EnsureNoDuplicatesRemain(){
-        ResourceTypeImpl<String> resourceType = (ResourceTypeImpl <String>) graknGraph.putResourceType("My Sad Attribute", ResourceType.DataType.STRING);
+        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) graknGraph.putResourceType("My Sad Attribute", AttributeType.DataType.STRING);
         EntityType entityType = graknGraph.putEntityType("My Happy EntityType").resource(resourceType);
         RelationType relationType = graknGraph.putRelationType("My Miserable RelationType").resource(resourceType);
         Entity entity = entityType.addEntity();

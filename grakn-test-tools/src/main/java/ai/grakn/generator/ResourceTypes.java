@@ -19,29 +19,29 @@
 
 package ai.grakn.generator;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
 
 /**
- * A generator that produces {@link ResourceType}s
+ * A generator that produces {@link AttributeType}s
  *
  * @author Felix Chapman
  */
-public class ResourceTypes extends AbstractTypeGenerator<ResourceType> {
+public class ResourceTypes extends AbstractTypeGenerator<AttributeType> {
 
     public ResourceTypes() {
-        super(ResourceType.class);
+        super(AttributeType.class);
     }
 
     @Override
-    protected ResourceType newOntologyConcept(Label label) {
-        ResourceType.DataType<?> dataType = gen(ResourceType.DataType.class);
+    protected AttributeType newOntologyConcept(Label label) {
+        AttributeType.DataType<?> dataType = gen(AttributeType.DataType.class);
 
         return graph().putResourceType(label, dataType);
     }
 
     @Override
-    protected ResourceType metaOntologyConcept() {
+    protected AttributeType metaOntologyConcept() {
         return graph().admin().getMetaResourceType();
     }
 }

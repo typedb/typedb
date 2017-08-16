@@ -22,13 +22,13 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
@@ -226,9 +226,9 @@ public class DegreeTest {
         RelationType hasName = graph.putRelationType("has-name").relates(value).relates(target);
         EntityType person = graph.putEntityType("person").plays(owner);
         EntityType animal = graph.putEntityType("animal").plays(pet).plays(target);
-        ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING).plays(value);
-        ResourceType<String> altName =
-                graph.putResourceType("alternate-name", ResourceType.DataType.STRING).plays(value);
+        AttributeType<String> name = graph.putResourceType("name", AttributeType.DataType.STRING).plays(value);
+        AttributeType<String> altName =
+                graph.putResourceType("alternate-name", AttributeType.DataType.STRING).plays(value);
 
         // add data to the graph
         Entity coco = animal.addEntity();
@@ -351,15 +351,15 @@ public class DegreeTest {
         RelationType hasName = graph.putRelationType("has-name").relates(value).relates(target);
         EntityType person = graph.putEntityType("person").plays(owner);
         EntityType animal = graph.putEntityType("animal").plays(pet).plays(target);
-        ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING).plays(value);
-        ResourceType<String> altName =
-                graph.putResourceType("alternate-name", ResourceType.DataType.STRING).plays(value);
+        AttributeType<String> name = graph.putResourceType("name", AttributeType.DataType.STRING).plays(value);
+        AttributeType<String> altName =
+                graph.putResourceType("alternate-name", AttributeType.DataType.STRING).plays(value);
         Role ownership = graph.putRole("ownership");
         Role ownershipResource = graph.putRole("ownership-resource");
         RelationType hasOwnershipResource =
                 graph.putRelationType("has-ownership-resource").relates(ownership).relates(ownershipResource);
-        ResourceType<String> startDate =
-                graph.putResourceType("start-date", ResourceType.DataType.STRING).plays(ownershipResource);
+        AttributeType<String> startDate =
+                graph.putResourceType("start-date", AttributeType.DataType.STRING).plays(ownershipResource);
         mansBestFriend.plays(ownership);
 
         // add data to the graph
@@ -504,7 +504,7 @@ public class DegreeTest {
     @Test
     public void testDegreeWithHasResourceEdges() {
         EntityType thingy = graph.putEntityType("thingy");
-        ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING);
+        AttributeType<String> name = graph.putResourceType("name", AttributeType.DataType.STRING);
         thingy.resource(name);
         Entity entity1 = thingy.addEntity();
         entity1.resource(name.putResource("1"));

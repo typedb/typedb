@@ -18,7 +18,7 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
 import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
@@ -40,14 +40,14 @@ import static org.junit.Assume.assumeTrue;
  * @author Felix Chapman
  */
 @RunWith(JUnitQuickcheck.class)
-public class ResourceTypePropertyTest {
+public class AttributeTypePropertyTest {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
     @Property
     public void whenPuttingAResourceAndMethodThrows_DoNotCreateTheResource(
-            @NonMeta @NonAbstract ResourceType type, @From(ResourceValues.class) Object value) {
+            @NonMeta @NonAbstract AttributeType type, @From(ResourceValues.class) Object value) {
 
         Collection previousResources = (Collection) type.instances().collect(toSet());
 

@@ -21,12 +21,12 @@ package ai.grakn.test.graql.analytics;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
@@ -532,14 +532,14 @@ public class StatisticsTest {
                     .addRolePlayer(relation1, entity2)
                     .addRolePlayer(relation2, entity4);
 
-            List<ResourceType> resourceTypeList = new ArrayList<>();
-            resourceTypeList.add(graph.putResourceType(resourceType1, ResourceType.DataType.DOUBLE));
-            resourceTypeList.add(graph.putResourceType(resourceType2, ResourceType.DataType.LONG));
-            resourceTypeList.add(graph.putResourceType(resourceType3, ResourceType.DataType.LONG));
-            resourceTypeList.add(graph.putResourceType(resourceType4, ResourceType.DataType.STRING));
-            resourceTypeList.add(graph.putResourceType(resourceType5, ResourceType.DataType.LONG));
-            resourceTypeList.add(graph.putResourceType(resourceType6, ResourceType.DataType.DOUBLE));
-            resourceTypeList.add(graph.putResourceType(resourceType7, ResourceType.DataType.DOUBLE));
+            List<AttributeType> attributeTypeList = new ArrayList<>();
+            attributeTypeList.add(graph.putResourceType(resourceType1, AttributeType.DataType.DOUBLE));
+            attributeTypeList.add(graph.putResourceType(resourceType2, AttributeType.DataType.LONG));
+            attributeTypeList.add(graph.putResourceType(resourceType3, AttributeType.DataType.LONG));
+            attributeTypeList.add(graph.putResourceType(resourceType4, AttributeType.DataType.STRING));
+            attributeTypeList.add(graph.putResourceType(resourceType5, AttributeType.DataType.LONG));
+            attributeTypeList.add(graph.putResourceType(resourceType6, AttributeType.DataType.DOUBLE));
+            attributeTypeList.add(graph.putResourceType(resourceType7, AttributeType.DataType.DOUBLE));
 
             Role resourceOwner1 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType1)));
             Role resourceOwner2 = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of(resourceType2)));
@@ -587,7 +587,7 @@ public class StatisticsTest {
                     .plays(resourceOwner6)
                     .plays(resourceOwner7);
 
-            resourceTypeList.forEach(resourceType -> resourceType
+            attributeTypeList.forEach(resourceType -> resourceType
                     .plays(resourceValue1)
                     .plays(resourceValue2)
                     .plays(resourceValue3)

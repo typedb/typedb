@@ -19,6 +19,7 @@
 package ai.grakn.util;
 
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
@@ -26,7 +27,6 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
@@ -127,7 +127,7 @@ public final class Schema {
         TYPE(Type.class),
         ROLE(Role.class),
         RELATION_TYPE(RelationType.class),
-        RESOURCE_TYPE(ResourceType.class),
+        RESOURCE_TYPE(AttributeType.class),
         ENTITY_TYPE(EntityType.class),
         RULE_TYPE(RuleType.class),
 

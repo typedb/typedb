@@ -20,8 +20,8 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
@@ -75,23 +75,23 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
             // without conflicting with the ontology
 
             //Create a new attribute type
-            ResourceType.DataType<?> dataType = gen(ResourceType.DataType.class);
+            AttributeType.DataType<?> dataType = gen(AttributeType.DataType.class);
             Label label = genFromGraph(Labels.class).mustBeUnused().generate(random, status);
-            ResourceType resourceType = graph().putResourceType(label, dataType);
+            AttributeType attributeType = graph().putResourceType(label, dataType);
 
             //Create new attribute
-            Attribute attribute = newResource(resourceType);
+            Attribute attribute = newResource(attributeType);
 
             //Link everything together
-            type.resource(resourceType);
+            type.resource(attributeType);
             thing.resource(attribute);
         }
 
         return thing;
     }
 
-    protected Attribute newResource(ResourceType type) {
-        ResourceType.DataType<?> dataType = type.getDataType();
+    protected Attribute newResource(AttributeType type) {
+        AttributeType.DataType<?> dataType = type.getDataType();
         Object value = gen().make(ResourceValues.class).dataType(dataType).generate(random, status);
         return type.putResource(value);
     }

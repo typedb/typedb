@@ -20,7 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 
 /**
  * A generator that produces {@link Attribute}s
@@ -30,14 +30,14 @@ import ai.grakn.concept.ResourceType;
  * @author Felix Chapman
 >>>>>>> Stashed changes:grakn-test-tools/src/main/java/ai/grakn/generator/Resources.java
  */
-public class Resources extends AbstractThingGenerator<Attribute, ResourceType> {
+public class Resources extends AbstractThingGenerator<Attribute, AttributeType> {
 
     public Resources() {
         super(Attribute.class, ResourceTypes.class);
     }
 
     @Override
-    protected Attribute newInstance(ResourceType type) {
+    protected Attribute newInstance(AttributeType type) {
         return newResource(type);
     }
 }

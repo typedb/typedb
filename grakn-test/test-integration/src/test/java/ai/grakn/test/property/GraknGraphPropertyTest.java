@@ -22,13 +22,13 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
@@ -162,11 +162,11 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingGetResourcesByValueAfterAddingAResource_TheResultIncludesTheResource(
             @Open GraknGraph graph,
-            @FromGraph @NonMeta @NonAbstract ResourceType resourceType, @From(ResourceValues.class) Object value) {
-        assumeThat(value.getClass().getName(), is(resourceType.getDataType().getName()));
+            @FromGraph @NonMeta @NonAbstract AttributeType attributeType, @From(ResourceValues.class) Object value) {
+        assumeThat(value.getClass().getName(), is(attributeType.getDataType().getName()));
 
         Collection<Attribute<Object>> expectedAttributes = graph.getResourcesByValue(value);
-        Attribute attribute = resourceType.putResource(value);
+        Attribute attribute = attributeType.putResource(value);
         Collection<Attribute<Object>> resourcesAfter = graph.getResourcesByValue(value);
 
         expectedAttributes.add(attribute);
@@ -223,7 +223,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingGetResourceType_TheResultIsTheSameAsGetOntologyConcept(
-            @Open GraknGraph graph, @FromGraph ResourceType type) {
+            @Open GraknGraph graph, @FromGraph AttributeType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getOntologyConcept(label), () -> graph.getResourceType(label.getValue()));
     }
@@ -294,7 +294,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenSetRegexOnMetaResourceType_Throw(@Open GraknGraph graph, String regex) {
-        ResourceType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaResourceType();
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.cannotSetRegex(resource).getMessage());
@@ -305,7 +305,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCreateInstanceOfMetaResourceType_Throw(
             @Open GraknGraph graph, @From(ResourceValues.class) Object value) {
-        ResourceType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaResourceType();
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
@@ -316,7 +316,7 @@ public class GraknGraphPropertyTest {
     @Ignore // TODO: Fix this
     @Property
     public void whenCallingSuperTypeOnMetaResourceType_Throw(@Open GraknGraph graph) {
-        ResourceType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaResourceType();
 
         // TODO: Test for a better error message
         exception.expect(GraphOperationException.class);
@@ -328,7 +328,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingHasWithMetaResourceType_ThrowMetaTypeImmutableException(
             @Open GraknGraph graph, @FromGraph Type type) {
-        ResourceType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaResourceType();
 
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())) {

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -35,7 +35,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static ai.grakn.concept.ResourceType.DataType.SUPPORTED_TYPES;
+import static ai.grakn.concept.AttributeType.DataType.SUPPORTED_TYPES;
 
 abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
@@ -45,7 +45,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
     private static final String[] VALUE_PROPERTIES =
             SUPPORTED_TYPES.values().stream()
-                    .map(ResourceType.DataType::getVertexProperty)
+                    .map(AttributeType.DataType::getVertexProperty)
                     .distinct()
                     .map(Enum::name)
                     .toArray(String[]::new);
@@ -67,7 +67,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
             this.originalValue = Optional.of(value);
 
             // Convert values to how they are stored in the graph
-            ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getName());
+            AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value.getClass().getName());
 
             if (dataType == null) {
                 throw GraqlQueryException.invalidValueClass(value);
@@ -157,7 +157,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
         value.ifPresent(theValue -> {
             // Compare to a given value
-            ResourceType.DataType<?> dataType = SUPPORTED_TYPES.get(originalValue.get().getClass().getTypeName());
+            AttributeType.DataType<?> dataType = SUPPORTED_TYPES.get(originalValue.get().getClass().getTypeName());
             Schema.VertexProperty property = dataType.getVertexProperty();
             traversal.has(property.name(), gremlinPredicate(theValue));
         });

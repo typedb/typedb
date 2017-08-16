@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -27,7 +28,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -187,7 +187,7 @@ public class MatchQueryTest {
     // This is a graph to contain unusual edge cases
     @ClassRule
     public static final GraphContext weirdGraph = GraphContext.preLoad(graph -> {
-        ResourceType<String> weirdLoopType = graph.putResourceType("name", ResourceType.DataType.STRING);
+        AttributeType<String> weirdLoopType = graph.putResourceType("name", AttributeType.DataType.STRING);
         weirdLoopType.resource(weirdLoopType);
         Attribute<String> weird = weirdLoopType.putResource("weird");
         weird.resource(weird);
@@ -577,19 +577,19 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchDataType() {
-        MatchQuery query = qb.match(x.datatype(ResourceType.DataType.DOUBLE));
+        MatchQuery query = qb.match(x.datatype(AttributeType.DataType.DOUBLE));
         assertThat(query, variable("x", contains(tmdbVoteAverage)));
 
-        query = qb.match(x.datatype(ResourceType.DataType.LONG));
+        query = qb.match(x.datatype(AttributeType.DataType.LONG));
         assertThat(query, variable("x", containsInAnyOrder(tmdbVoteCount, runtime)));
 
-        query = qb.match(x.datatype(ResourceType.DataType.BOOLEAN));
+        query = qb.match(x.datatype(AttributeType.DataType.BOOLEAN));
         assertThat(query, variable("x", empty()));
 
-        query = qb.match(x.datatype(ResourceType.DataType.STRING));
+        query = qb.match(x.datatype(AttributeType.DataType.STRING));
 
         assertThat(query, variable("x", containsInAnyOrder(title, gender, realName, name)));
-        query = qb.match(x.datatype(ResourceType.DataType.DATE));
+        query = qb.match(x.datatype(AttributeType.DataType.DATE));
         assertThat(query, variable("x", contains(releaseDate)));
     }
 

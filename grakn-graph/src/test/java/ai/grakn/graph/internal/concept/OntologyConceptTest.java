@@ -18,11 +18,11 @@
 
 package ai.grakn.graph.internal.concept;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.GraphTestBase;
 import ai.grakn.graph.internal.structure.EdgeElement;
@@ -68,14 +68,14 @@ public class OntologyConceptTest extends GraphTestBase {
     public void whenSpecifyingTheResourceTypeOfAnEntityType_EnsureTheImplicitStructureIsCreated(){
         Label resourceLabel = Label.of("Attribute Type");
         EntityType entityType = graknGraph.putEntityType("Entity1");
-        ResourceType resourceType = graknGraph.putResourceType("Attribute Type", ResourceType.DataType.STRING);
+        AttributeType attributeType = graknGraph.putResourceType("Attribute Type", AttributeType.DataType.STRING);
 
         //Implicit Names
         Label hasResourceOwnerLabel = Schema.ImplicitType.HAS_OWNER.getLabel(resourceLabel);
         Label hasResourceValueLabel = Schema.ImplicitType.HAS_VALUE.getLabel(resourceLabel);
         Label hasResourceLabel = Schema.ImplicitType.HAS.getLabel(resourceLabel);
 
-        entityType.resource(resourceType);
+        entityType.resource(attributeType);
 
         RelationType relationType = graknGraph.getRelationType(hasResourceLabel.getValue());
         Assert.assertEquals(hasResourceLabel, relationType.getLabel());
@@ -84,7 +84,7 @@ public class OntologyConceptTest extends GraphTestBase {
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
         assertThat(entityType.plays().collect(toSet()), containsInAnyOrder(graknGraph.getRole(hasResourceOwnerLabel.getValue())));
-        assertThat(resourceType.plays().collect(toSet()), containsInAnyOrder(graknGraph.getRole(hasResourceValueLabel.getValue())));
+        assertThat(attributeType.plays().collect(toSet()), containsInAnyOrder(graknGraph.getRole(hasResourceValueLabel.getValue())));
 
         //Check everything is implicit
         assertTrue(relationType.isImplicit());
@@ -93,7 +93,7 @@ public class OntologyConceptTest extends GraphTestBase {
         // Check that resource is not required
         EdgeElement entityPlays = ((EntityTypeImpl) entityType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
         assertFalse(entityPlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
-        EdgeElement resourcePlays = ((ResourceTypeImpl<?>) resourceType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
+        EdgeElement resourcePlays = ((AttributeTypeImpl<?>) attributeType).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
         assertFalse(resourcePlays.propertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 

@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
@@ -79,19 +79,19 @@ public class PostProcessingTest {
 
         //Create Graph With Duplicate Resources
         GraknGraph graph = session.open(GraknTxType.WRITE);
-        ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
+        AttributeType<String> attributeType = graph.putResourceType(sample, AttributeType.DataType.STRING);
 
-        Attribute<String> attribute = resourceType.putResource(value);
+        Attribute<String> attribute = attributeType.putResource(value);
         graph.admin().commitNoLogs();
         graph = session.open(GraknTxType.WRITE);
 
-        assertEquals(1, resourceType.instances().count());
+        assertEquals(1, attributeType.instances().count());
         //Check duplicates have been created
-        Set<Vertex> resource1 = createDuplicateResource(graph, resourceType, attribute);
-        Set<Vertex> resource2 = createDuplicateResource(graph, resourceType, attribute);
-        Set<Vertex> resource3 = createDuplicateResource(graph, resourceType, attribute);
-        Set<Vertex> resource4 = createDuplicateResource(graph, resourceType, attribute);
-        assertEquals(5, resourceType.instances().count());
+        Set<Vertex> resource1 = createDuplicateResource(graph, attributeType, attribute);
+        Set<Vertex> resource2 = createDuplicateResource(graph, attributeType, attribute);
+        Set<Vertex> resource3 = createDuplicateResource(graph, attributeType, attribute);
+        Set<Vertex> resource4 = createDuplicateResource(graph, attributeType, attribute);
+        assertEquals(5, attributeType.instances().count());
 
         // Attribute vertex index
         String resourceIndex = resource1.iterator().next().value(INDEX.name()).toString();

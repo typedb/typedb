@@ -33,7 +33,7 @@ import javax.annotation.CheckReturnValue;
  *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
- *     ({@link EntityType}, {@link Role}, {@link RelationType}, {@link RuleType} or {@link ResourceType})
+ *     ({@link EntityType}, {@link Role}, {@link RelationType}, {@link RuleType} or {@link AttributeType})
  *     or an {@link Thing} ({@link Entity}, {@link Relation} , {@link Attribute}, {@link Rule}).
  * </p>
  *
@@ -117,8 +117,8 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link RelationType} if the {@link Concept} is a {@link RelationType}
      */
     @CheckReturnValue
-    default <D> ResourceType<D> asResourceType(){
-        throw GraphOperationException.invalidCasting(this, ResourceType.class);
+    default <D> AttributeType<D> asResourceType(){
+        throw GraphOperationException.invalidCasting(this, AttributeType.class);
     }
 
     /**
@@ -231,9 +231,9 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link ResourceType}.
+     * Determine if the {@link Concept} is a {@link AttributeType}.
      *
-     * @return true if the{@link Concept} concept is a {@link ResourceType}
+     * @return true if the{@link Concept} concept is a {@link AttributeType}
      */
     @CheckReturnValue
     default boolean isResourceType(){

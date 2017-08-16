@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
@@ -43,7 +43,7 @@ import static java.util.stream.Collectors.joining;
 abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     Set<Label> statisticsResourceLabels = new HashSet<>();
-    private final Map<Label, ResourceType.DataType> resourceTypesDataTypeMap = new HashMap<>();
+    private final Map<Label, AttributeType.DataType> resourceTypesDataTypeMap = new HashMap<>();
 
     AbstractStatisticsQuery<T> setStatisticsResourceType(String... statisticsResourceTypeLabels) {
         this.statisticsResourceLabels = Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(Collectors.toSet());
@@ -92,17 +92,17 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
             type.subs().forEach(subtype -> this.statisticsResourceLabels.add(subtype.getLabel()));
         }
 
-        ResourceType<?> metaResourceType = graph.admin().getMetaResourceType();
-        metaResourceType.subs()
-                .filter(type -> !type.equals(metaResourceType))
+        AttributeType<?> metaAttributeType = graph.admin().getMetaResourceType();
+        metaAttributeType.subs()
+                .filter(type -> !type.equals(metaAttributeType))
                 .forEach(type -> resourceTypesDataTypeMap.put(type.getLabel(), type.getDataType()));
     }
 
     @Nullable
-    ResourceType.DataType getDataTypeOfSelectedResourceTypes(Set<Label> resourceTypes) {
+    AttributeType.DataType getDataTypeOfSelectedResourceTypes(Set<Label> resourceTypes) {
         assert resourceTypes != null && !resourceTypes.isEmpty();
 
-        ResourceType.DataType dataType = null;
+        AttributeType.DataType dataType = null;
         for (Label resourceType : resourceTypes) {
             // check if the selected type is a resource-type
             if (!resourceTypesDataTypeMap.containsKey(resourceType)) {
@@ -113,8 +113,8 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
                 // check if the resource-type has data-type LONG or DOUBLE
                 dataType = resourceTypesDataTypeMap.get(resourceType);
 
-                if (!dataType.equals(ResourceType.DataType.LONG) &&
-                        !dataType.equals(ResourceType.DataType.DOUBLE)) {
+                if (!dataType.equals(AttributeType.DataType.LONG) &&
+                        !dataType.equals(AttributeType.DataType.DOUBLE)) {
                     throw GraqlQueryException.resourceMustBeANumber(dataType, resourceType);
                 }
 

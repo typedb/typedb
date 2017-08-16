@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom.property;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -36,7 +36,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
  */
 public class DataTypeAtom extends AtomicBase {
 
-    private final ResourceType.DataType<?> datatype;
+    private final AttributeType.DataType<?> datatype;
 
     public DataTypeAtom(Var varName, DataTypeProperty prop, ReasonerQuery parent){
         super(varName.datatype(prop.dataType()).admin(), parent);
@@ -82,5 +82,5 @@ public class DataTypeAtom extends AtomicBase {
     @Override
     public Atomic copy() { return new DataTypeAtom(this);}
 
-    public ResourceType.DataType<?> getDataType(){ return datatype;}
+    public AttributeType.DataType<?> getDataType(){ return datatype;}
 }

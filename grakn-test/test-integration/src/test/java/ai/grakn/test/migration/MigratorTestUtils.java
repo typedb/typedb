@@ -22,13 +22,13 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
@@ -75,9 +75,9 @@ public class MigratorTestUtils {
     }
 
     public static void assertResourceEntityRelationExists(GraknGraph graph, String resourceName, Object resourceValue, Entity owner){
-        ResourceType resourceType = graph.getResourceType(resourceName);
-        assertNotNull(resourceType);
-        assertEquals(resourceValue, owner.resources(resourceType)
+        AttributeType attributeType = graph.getResourceType(resourceName);
+        assertNotNull(attributeType);
+        assertEquals(resourceValue, owner.resources(attributeType)
                 .map(Attribute::getValue)
                 .findFirst().get());
     }
@@ -135,8 +135,8 @@ public class MigratorTestUtils {
             Collection<Entity> hamsters = graph.getEntityType("hamster").instances().collect(Collectors.toSet());
             assertEquals(1, hamsters.size());
 
-            ResourceType<String> name = graph.getResourceType("name");
-            ResourceType<String> death = graph.getResourceType("death");
+            AttributeType<String> name = graph.getResourceType("name");
+            AttributeType<String> death = graph.getResourceType("death");
 
             Entity puffball = name.getResource("Puffball").ownerInstances().iterator().next().asEntity();
             assertEquals(0, puffball.resources(death).count());
@@ -154,8 +154,8 @@ public class MigratorTestUtils {
             Collection<Entity> pokemon = graph.getEntityType("pokemon").instances().collect(Collectors.toSet());
             assertEquals(9, pokemon.size());
 
-            ResourceType<String> typeid = graph.getResourceType("type-id");
-            ResourceType<String> pokedexno = graph.getResourceType("pokedex-no");
+            AttributeType<String> typeid = graph.getResourceType("type-id");
+            AttributeType<String> pokedexno = graph.getResourceType("pokedex-no");
 
             Entity grass = typeid.getResource("12").ownerInstances().iterator().next().asEntity();
             Entity poison = typeid.getResource("4").ownerInstances().iterator().next().asEntity();

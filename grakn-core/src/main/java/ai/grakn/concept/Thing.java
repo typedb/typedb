@@ -83,11 +83,11 @@ public interface Thing extends Concept{
      * Retrieves a collection of {@link Attribute} attached to this Instances
      * @see Attribute
      *
-     * @param resourceTypes {@link ResourceType}s of the resources attached to this entity
+     * @param attributeTypes {@link AttributeType}s of the resources attached to this entity
      * @return A collection of resources attached to this Thing.
      */
     @CheckReturnValue
-    Stream<Attribute<?>> resources(ResourceType ... resourceTypes);
+    Stream<Attribute<?>> resources(AttributeType... attributeTypes);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

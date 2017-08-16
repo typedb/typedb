@@ -20,11 +20,11 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
@@ -136,7 +136,7 @@ public class OntologyMutationTest extends GraphTestBase {
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
-        graknGraphBatch.putResourceType("This Will Fail", ResourceType.DataType.STRING);
+        graknGraphBatch.putResourceType("This Will Fail", AttributeType.DataType.STRING);
     }
 
     @Test
@@ -248,7 +248,7 @@ public class OntologyMutationTest extends GraphTestBase {
     @Test
     public void whenAddingResourceToSubTypeOfEntityType_EnsureNoValidationErrorsOccur(){
         //Create initial Ontology
-        ResourceType<String> name = graknGraph.putResourceType("name", ResourceType.DataType.STRING);
+        AttributeType<String> name = graknGraph.putResourceType("name", AttributeType.DataType.STRING);
         EntityType person = graknGraph.putEntityType("perspn").resource(name);
         EntityType animal = graknGraph.putEntityType("animal").sup(person);
         Attribute bob = name.putResource("Bob");
@@ -280,7 +280,7 @@ public class OntologyMutationTest extends GraphTestBase {
 
     @Test
     public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstances_ByPreventingChange(){
-        ResourceType<String> name = graknGraph.putResourceType("name", ResourceType.DataType.STRING);
+        AttributeType<String> name = graknGraph.putResourceType("name", AttributeType.DataType.STRING);
 
         //Create a person and allow person to have a name
         EntityType person = graknGraph.putEntityType("person").resource(name);

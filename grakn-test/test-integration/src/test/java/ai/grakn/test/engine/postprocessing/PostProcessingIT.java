@@ -24,7 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -88,7 +88,7 @@ public class PostProcessingIT {
             }
 
             for (int i = 0; i < numResTypes; i++) {
-                ResourceType<Integer> rt = graph.putResourceType("res" + i, ResourceType.DataType.INTEGER);
+                AttributeType<Integer> rt = graph.putResourceType("res" + i, AttributeType.DataType.INTEGER);
                 for (int j = 0; j < numEntTypes; j++) {
                     graph.getEntityType("ent" + j).resource(rt);
                 }
@@ -156,7 +156,7 @@ public class PostProcessingIT {
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     private boolean graphIsBroken(GraknSession session){
         try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
-            Stream<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subs();
+            Stream<AttributeType<?>> resourceTypes = graph.admin().getMetaResourceType().subs();
             return resourceTypes.anyMatch(resourceType -> {
                 if (!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
                     Set<Integer> foundValues = new HashSet<>();

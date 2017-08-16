@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
@@ -104,7 +104,7 @@ public class Fragments {
         return new OutHasScopeFragment(varProperty, start, end);
     }
 
-    public static Fragment dataType(VarProperty varProperty, Var start, ResourceType.DataType dataType) {
+    public static Fragment dataType(VarProperty varProperty, Var start, AttributeType.DataType dataType) {
         return new DataTypeFragment(varProperty, start, dataType);
     }
 

@@ -5,7 +5,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.test.EngineContext;
@@ -100,12 +100,12 @@ public class SystemKeyspaceTest {
         try(GraknGraph graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
 
             EntityType user = graph.getEntityType("user");
-            ResourceType userName = graph.getResourceType("user-name");
-            ResourceType userPassword = graph.getResourceType("user-password");
-            ResourceType userFirstName = graph.getResourceType("user-first-name");
-            ResourceType userLastName = graph.getResourceType("user-last-name");
-            ResourceType userEmail = graph.getResourceType("user-email");
-            ResourceType userIsAdmin = graph.getResourceType("user-is-admin");
+            AttributeType userName = graph.getResourceType("user-name");
+            AttributeType userPassword = graph.getResourceType("user-password");
+            AttributeType userFirstName = graph.getResourceType("user-first-name");
+            AttributeType userLastName = graph.getResourceType("user-last-name");
+            AttributeType userEmail = graph.getResourceType("user-email");
+            AttributeType userIsAdmin = graph.getResourceType("user-is-admin");
 
             //Check Plays
             assertTrue(user.plays().anyMatch(role -> role.equals(
@@ -192,7 +192,7 @@ public class SystemKeyspaceTest {
 
     private Set<String> getSystemKeyspaces(){
         try(GraknGraph graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.READ)){
-            ResourceType<String> keyspaceName = graph.getResourceType("keyspace-name");
+            AttributeType<String> keyspaceName = graph.getResourceType("keyspace-name");
             return graph.getEntityType("keyspace").instances().
                     map(e -> e.resources(keyspaceName).iterator().next().getValue().toString()).
                     collect(Collectors.toSet());

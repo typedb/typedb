@@ -24,8 +24,8 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.test.graphs.GenealogyGraph;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
@@ -51,28 +51,28 @@ public class DocTestUtil {
             GenealogyGraph.get().accept(graph);
 
             // TODO: Remove custom genealogy ontology when not used
-            ResourceType<Long> age = graph.putResourceType("age", ResourceType.DataType.LONG);
+            AttributeType<Long> age = graph.putResourceType("age", AttributeType.DataType.LONG);
             graph.getEntityType("person").resource(age);
-            graph.putResourceType("nickname", ResourceType.DataType.STRING);
+            graph.putResourceType("nickname", AttributeType.DataType.STRING);
 
             // TODO: Remove plant ontology when not used
             EntityType plant = graph.putEntityType("plant");
-            ResourceType<String> common = graph.putResourceType("common", ResourceType.DataType.STRING);
-            ResourceType<String> botanical = graph.putResourceType("botanical", ResourceType.DataType.STRING);
-            ResourceType<String> zone = graph.putResourceType("zone", ResourceType.DataType.STRING);
-            ResourceType<String> light = graph.putResourceType("light", ResourceType.DataType.STRING);
-            ResourceType<Long> availability = graph.putResourceType("availability", ResourceType.DataType.LONG);
+            AttributeType<String> common = graph.putResourceType("common", AttributeType.DataType.STRING);
+            AttributeType<String> botanical = graph.putResourceType("botanical", AttributeType.DataType.STRING);
+            AttributeType<String> zone = graph.putResourceType("zone", AttributeType.DataType.STRING);
+            AttributeType<String> light = graph.putResourceType("light", AttributeType.DataType.STRING);
+            AttributeType<Long> availability = graph.putResourceType("availability", AttributeType.DataType.LONG);
             plant.resource(common).resource(botanical).resource(zone).resource(light).resource(availability);
 
             // TODO: Remove pokemon ontology when not used
             EntityType pokemon = graph.putEntityType("pokemon");
             EntityType pokemonType = graph.putEntityType("pokemon-type");
 
-            ResourceType<String> typeId = graph.putResourceType("type-id", ResourceType.DataType.STRING);
-            ResourceType<String> description = graph.putResourceType("description", ResourceType.DataType.STRING);
-            ResourceType<Long> pokedexNo = graph.putResourceType("pokedex-no", ResourceType.DataType.LONG);
-            ResourceType<Double> weight = graph.putResourceType("weight", ResourceType.DataType.DOUBLE);
-            ResourceType<Double> height = graph.putResourceType("height", ResourceType.DataType.DOUBLE);
+            AttributeType<String> typeId = graph.putResourceType("type-id", AttributeType.DataType.STRING);
+            AttributeType<String> description = graph.putResourceType("description", AttributeType.DataType.STRING);
+            AttributeType<Long> pokedexNo = graph.putResourceType("pokedex-no", AttributeType.DataType.LONG);
+            AttributeType<Double> weight = graph.putResourceType("weight", AttributeType.DataType.DOUBLE);
+            AttributeType<Double> height = graph.putResourceType("height", AttributeType.DataType.DOUBLE);
 
             graph.putRelationType("has-type")
                     .relates(graph.putRole("type-of-pokemon")).relates(graph.putRole("pokemon-with-type"));

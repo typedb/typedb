@@ -30,8 +30,8 @@ import java.util.stream.Stream;
  *
  * <p>
  *     Acts as an {@link Thing} when relating to other instances except it has the added functionality of:
- *     1. It is unique to its {@link ResourceType} based on it's value.
- *     2. It has a {@link ai.grakn.concept.ResourceType.DataType} associated with it which constrains the allowed values.
+ *     1. It is unique to its {@link AttributeType} based on it's value.
+ *     2. It has a {@link AttributeType.DataType} associated with it which constrains the allowed values.
  * </p>
  *
  * @author fppt
@@ -50,20 +50,20 @@ public interface Attribute<D> extends Thing {
     D getValue();
 
     /**
-     * Retrieves the type of the {@link Attribute}, that is, the {@link ResourceType} of which this resource is an Thing.
+     * Retrieves the type of the {@link Attribute}, that is, the {@link AttributeType} of which this resource is an Thing.
      *
-     * @return The {@link ResourceType of which this resource is an Thing.
+     * @return The {@link AttributeType of which this resource is an Thing.
      */
     @Override
-    ResourceType<D> type();
+    AttributeType<D> type();
 
     /**
-     * Retrieves the data type of this {@link Attribute}'s {@link ResourceType}.
+     * Retrieves the data type of this {@link Attribute}'s {@link AttributeType}.
      *
      * @return The data type of this {@link Attribute}'s type.
      */
     @CheckReturnValue
-    ResourceType.DataType<D> dataType();
+    AttributeType.DataType<D> dataType();
 
     /**
      * Retrieves the set of all Instances that possess this {@link Attribute}.

@@ -18,11 +18,11 @@
 
 package ai.grakn.graph.internal.concept;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraphOperationException;
@@ -98,12 +98,12 @@ public final class ElementFactory {
     }
 
     // ---------------------------------------- Building Attribute Types  -----------------------------------------------
-    public <V> ResourceTypeImpl<V> buildResourceType(VertexElement vertex, ResourceType<V> type, ResourceType.DataType<V> dataType){
-        return getOrBuildConcept(vertex, (v) -> new ResourceTypeImpl<>(v, type, dataType));
+    public <V> AttributeTypeImpl<V> buildResourceType(VertexElement vertex, AttributeType<V> type, AttributeType.DataType<V> dataType){
+        return getOrBuildConcept(vertex, (v) -> new AttributeTypeImpl<>(v, type, dataType));
     }
 
     // ------------------------------------------ Building Resources
-    <V> AttributeImpl<V> buildResource(VertexElement vertex, ResourceType<V> type, Object persitedValue){
+    <V> AttributeImpl<V> buildResource(VertexElement vertex, AttributeType<V> type, Object persitedValue){
         return getOrBuildConcept(vertex, (v) -> new AttributeImpl<>(v, type, persitedValue));
     }
 
@@ -197,7 +197,7 @@ public final class ElementFactory {
                     concept = new EntityTypeImpl(vertexElement);
                     break;
                 case RESOURCE_TYPE:
-                    concept = new ResourceTypeImpl<>(vertexElement);
+                    concept = new AttributeTypeImpl<>(vertexElement);
                     break;
                 case RESOURCE:
                     concept = new AttributeImpl<>(vertexElement);

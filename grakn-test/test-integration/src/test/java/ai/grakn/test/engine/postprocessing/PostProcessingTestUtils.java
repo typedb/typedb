@@ -2,7 +2,7 @@ package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
@@ -24,27 +24,27 @@ public class PostProcessingTestUtils {
     
     @SuppressWarnings("unchecked")
     static <T> Attribute<T> createDuplicateResource(GraknGraph graknGraph, Attribute<T> attribute) {
-        ResourceType<T> resourceType = attribute.type();
+        AttributeType<T> attributeType = attribute.type();
         AbstractGraknGraph<?> graph = (AbstractGraknGraph<?>) graknGraph;
         Vertex originalResource = graph.getTinkerTraversal().V()
                 .has(Schema.VertexProperty.ID.name(), attribute.getId().getValue()).next();
         Vertex vertexResourceTypeShard = graph.getTinkerTraversal().V()
-                .has(Schema.VertexProperty.ID.name(), resourceType.getId().getValue()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
+                .has(Schema.VertexProperty.ID.name(), attributeType.getId().getValue()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
         Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
         resourceVertex.property(Schema.VertexProperty.INDEX.name(),originalResource.value(Schema.VertexProperty.INDEX.name()));
-        resourceVertex.property(resourceType.getDataType().getVertexProperty().name(), attribute.getValue());
+        resourceVertex.property(attributeType.getDataType().getVertexProperty().name(), attribute.getValue());
         resourceVertex.property(Schema.VertexProperty.ID.name(), resourceVertex.id().toString());
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceTypeShard);
         return (Attribute<T>)graknGraph.admin().buildConcept(resourceVertex);
     }
     
     @SuppressWarnings("unchecked")
-    static <T> Set<Vertex> createDuplicateResource(GraknGraph graknGraph, ResourceType<T> resourceType, Attribute<T> attribute) {
+    static <T> Set<Vertex> createDuplicateResource(GraknGraph graknGraph, AttributeType<T> attributeType, Attribute<T> attribute) {
         AbstractGraknGraph<?> graph = (AbstractGraknGraph<?>) graknGraph;
         Vertex originalResource = graph.getTinkerTraversal().V()
                 .has(Schema.VertexProperty.ID.name(), attribute.getId().getValue()).next();
         Vertex vertexResourceTypeShard = graph.getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), resourceType.getId().getValue()).
+                has(Schema.VertexProperty.ID.name(), attributeType.getId().getValue()).
                 in(Schema.EdgeLabel.SHARD.getLabel()).next();
 
         Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());

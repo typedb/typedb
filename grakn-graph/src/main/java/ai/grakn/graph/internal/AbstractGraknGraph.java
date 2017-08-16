@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
@@ -30,7 +31,6 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
@@ -521,25 +521,25 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public <V> ResourceType<V> putResourceType(String label, ResourceType.DataType<V> dataType) {
+    public <V> AttributeType<V> putResourceType(String label, AttributeType.DataType<V> dataType) {
         return putResourceType(Label.of(label), dataType);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <V> ResourceType<V> putResourceType(Label label, ResourceType.DataType<V> dataType) {
+    public <V> AttributeType<V> putResourceType(Label label, AttributeType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
-        ResourceType<V> resourceType = putOntologyElement(label, Schema.BaseType.RESOURCE_TYPE,
+        AttributeType<V> attributeType = putOntologyElement(label, Schema.BaseType.RESOURCE_TYPE,
                 v -> factory().buildResourceType(v, getMetaResourceType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
             throw GraphOperationException.metaTypeImmutable(label);
-        } else if (!dataType.equals(resourceType.getDataType())) {
-            throw GraphOperationException.immutableProperty(resourceType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+        } else if (!dataType.equals(attributeType.getDataType())) {
+            throw GraphOperationException.immutableProperty(attributeType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE);
         }
 
-        return resourceType;
+        return attributeType;
     }
 
     @Override
@@ -596,12 +596,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if (value == null) return Collections.emptySet();
 
         //Make sure you trying to retrieve supported data type
-        if (!ResourceType.DataType.SUPPORTED_TYPES.containsKey(value.getClass().getName())) {
+        if (!AttributeType.DataType.SUPPORTED_TYPES.containsKey(value.getClass().getName())) {
             throw GraphOperationException.unsupportedDataType(value);
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
-        ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName());
+        AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName());
 
         //noinspection unchecked
         getConcepts(dataType.getVertexProperty(), dataType.getPersistenceValue(value)).forEach(concept -> {
@@ -635,7 +635,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public <V> ResourceType<V> getResourceType(String label) {
+    public <V> AttributeType<V> getResourceType(String label) {
         return getOntologyConcept(Label.of(label), Schema.BaseType.RESOURCE_TYPE);
     }
 
@@ -665,7 +665,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public ResourceType getMetaResourceType() {
+    public AttributeType getMetaResourceType() {
         return getOntologyConcept(Schema.MetaSchema.RESOURCE.getId());
     }
 

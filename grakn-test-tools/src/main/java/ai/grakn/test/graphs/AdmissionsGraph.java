@@ -19,9 +19,9 @@
 package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.test.GraphContext;
 
 import java.util.function.Consumer;
@@ -33,22 +33,22 @@ import java.util.function.Consumer;
  */
 public class AdmissionsGraph extends TestGraph {
 
-    private static ResourceType<String> key;
+    private static AttributeType<String> key;
 
     private static EntityType applicant;
 
-    private static ResourceType<Long> TOEFL;
-    private static ResourceType<Double> GPR;
-    private static ResourceType<Long> GRE;
-    private static ResourceType<Long> vGRE;
-    private static ResourceType<String> specialHonours;
-    private static ResourceType<String> degreeOrigin;
-    private static ResourceType<String> transcript;
-    private static ResourceType<String> priorGraduateWork;
-    private static ResourceType<String> languageRequirement;
-    private static ResourceType<String> considerGPR;
-    private static ResourceType<String> admissionStatus;
-    private static ResourceType<String> decisionType;
+    private static AttributeType<Long> TOEFL;
+    private static AttributeType<Double> GPR;
+    private static AttributeType<Long> GRE;
+    private static AttributeType<Long> vGRE;
+    private static AttributeType<String> specialHonours;
+    private static AttributeType<String> degreeOrigin;
+    private static AttributeType<String> transcript;
+    private static AttributeType<String> priorGraduateWork;
+    private static AttributeType<String> languageRequirement;
+    private static AttributeType<String> considerGPR;
+    private static AttributeType<String> admissionStatus;
+    private static AttributeType<String> decisionType;
 
     public static Consumer<GraknGraph> get() {
         return new AdmissionsGraph().build();
@@ -56,20 +56,20 @@ public class AdmissionsGraph extends TestGraph {
 
     @Override
     protected void buildOntology(GraknGraph graph) {
-        key = graph.putResourceType("name", ResourceType.DataType.STRING);
+        key = graph.putResourceType("name", AttributeType.DataType.STRING);
 
-        TOEFL = graph.putResourceType("TOEFL", ResourceType.DataType.LONG);
-        GRE = graph.putResourceType("GRE", ResourceType.DataType.LONG);
-        vGRE = graph.putResourceType("vGRE", ResourceType.DataType.LONG);
-        GPR = graph.putResourceType("GPR", ResourceType.DataType.DOUBLE);
-        specialHonours = graph.putResourceType("specialHonours", ResourceType.DataType.STRING);
-        considerGPR = graph.putResourceType("considerGPR", ResourceType.DataType.STRING);
-        transcript = graph.putResourceType("transcript", ResourceType.DataType.STRING);
-        priorGraduateWork = graph.putResourceType("priorGraduateWork", ResourceType.DataType.STRING);
-        languageRequirement= graph.putResourceType("languageRequirement", ResourceType.DataType.STRING);
-        degreeOrigin = graph.putResourceType("degreeOrigin", ResourceType.DataType.STRING);
-        admissionStatus = graph.putResourceType("admissionStatus", ResourceType.DataType.STRING);
-        decisionType = graph.putResourceType("decisionType", ResourceType.DataType.STRING);
+        TOEFL = graph.putResourceType("TOEFL", AttributeType.DataType.LONG);
+        GRE = graph.putResourceType("GRE", AttributeType.DataType.LONG);
+        vGRE = graph.putResourceType("vGRE", AttributeType.DataType.LONG);
+        GPR = graph.putResourceType("GPR", AttributeType.DataType.DOUBLE);
+        specialHonours = graph.putResourceType("specialHonours", AttributeType.DataType.STRING);
+        considerGPR = graph.putResourceType("considerGPR", AttributeType.DataType.STRING);
+        transcript = graph.putResourceType("transcript", AttributeType.DataType.STRING);
+        priorGraduateWork = graph.putResourceType("priorGraduateWork", AttributeType.DataType.STRING);
+        languageRequirement= graph.putResourceType("languageRequirement", AttributeType.DataType.STRING);
+        degreeOrigin = graph.putResourceType("degreeOrigin", AttributeType.DataType.STRING);
+        admissionStatus = graph.putResourceType("admissionStatus", AttributeType.DataType.STRING);
+        decisionType = graph.putResourceType("decisionType", AttributeType.DataType.STRING);
 
         applicant = graph.putEntityType("applicant");
         applicant.resource(TOEFL);
