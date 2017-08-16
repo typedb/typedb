@@ -50,19 +50,19 @@ public class ExamplesTest {
     @Test
     public void testModern() throws IOException {
         runInsertQuery("src/examples/modern.gql");
-        assertTrue(graph.graql().match(var().has("name", "marko").isa("person")).ask().execute());
+        assertTrue(graph.graql().match(var().has("name", "marko").isa("person")).iterator().hasNext());
     }
 
     @Test
     public void testPokemon() throws IOException {
         runInsertQuery("src/examples/pokemon.gql");
-        assertTrue(graph.graql().match(var().rel(var().has("name", "Pikachu")).rel(var().has("name", "electric")).isa("has-type")).ask().execute());
+        assertTrue(graph.graql().match(var().rel(var().has("name", "Pikachu")).rel(var().has("name", "electric")).isa("has-type")).iterator().hasNext());
     }
 
     @Test
     public void afterLoadingGenealogyExample_MaryIsInTheGraph() throws IOException {
         runInsertQuery("src/examples/basic-genealogy.gql");
-        assertTrue(graph.graql().match(var().has("identifier", "Mary Guthrie")).ask().execute());
+        assertTrue(graph.graql().match(var().has("identifier", "Mary Guthrie")).iterator().hasNext());
     }
 
     private void runInsertQuery(String path) throws IOException {

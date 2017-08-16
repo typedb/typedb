@@ -160,7 +160,7 @@ $x id "4240" isa person;
 
 #### `GET /` *Deprecated*
 
-Execute **read-only** graql queries on a Grakn knowledge base. Read-only queries are defined as `match`, `compute`, `ask`, or `aggregate` queries that do not modify the knowledge base.
+Execute **read-only** graql queries on a Grakn knowledge base. Read-only queries are defined as `match`, `compute` or `aggregate` queries that do not modify the knowledge base.
 
 **Request Headers**
 

@@ -31,7 +31,7 @@ public class PhilosophersExampleIT {
 
     @Test
     public void testAlexanderHasShahOfPersiaTitle() {
-        assertTrue(qb.match(var().has("name", "Alexander").has("title", "Shah of Persia")).ask().execute());
+        assertTrue(qb.match(var().has("name", "Alexander").has("title", "Shah of Persia")).iterator().hasNext());
 
     }
 
