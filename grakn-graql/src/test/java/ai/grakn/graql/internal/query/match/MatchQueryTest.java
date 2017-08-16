@@ -26,7 +26,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -189,7 +189,7 @@ public class MatchQueryTest {
     public static final GraphContext weirdGraph = GraphContext.preLoad(graph -> {
         ResourceType<String> weirdLoopType = graph.putResourceType("name", ResourceType.DataType.STRING);
         weirdLoopType.resource(weirdLoopType);
-        Resource<String> weird = weirdLoopType.putResource("weird");
+        Attribute<String> weird = weirdLoopType.putResource("weird");
         weird.resource(weird);
     });
 
@@ -812,9 +812,9 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var().has("title", "Godfather").has("resource", x));
 
         Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
-        Set<Resource<?>> expected = godfather.resources().collect(toSet());
+        Set<Attribute<?>> expected = godfather.resources().collect(toSet());
 
-        Set<Resource<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
+        Set<Attribute<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
 
         assertEquals(expected, results);
     }

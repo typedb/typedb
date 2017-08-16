@@ -18,13 +18,13 @@
 
 package ai.grakn.graph.internal.concept;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -132,22 +132,22 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     /**
      *
-     * @return All the {@link Resource} that this Thing is linked with
+     * @return All the {@link Attribute} that this Thing is linked with
      */
-    public Stream<Resource<?>> resources(ResourceType... resourceTypes) {
+    public Stream<Attribute<?>> resources(ResourceType... resourceTypes) {
         Set<ConceptId> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
         return resources(getShortcutNeighbours(), resourceTypesIds);
     }
 
     /**
-     * Helper class which filters a {@link Stream} of {@link Resource} to those of a specific set of {@link ResourceType}.
+     * Helper class which filters a {@link Stream} of {@link Attribute} to those of a specific set of {@link ResourceType}.
      *
      * @param conceptStream The {@link Stream} to filter
      * @param resourceTypesIds The {@link ResourceType} {@link ConceptId}s to filter to.
      * @return the filtered stream
      */
-    private <X extends Concept> Stream<Resource<?>> resources(Stream<X> conceptStream, Set<ConceptId> resourceTypesIds){
-        Stream<Resource<?>> resourceStream = conceptStream.
+    private <X extends Concept> Stream<Attribute<?>> resources(Stream<X> conceptStream, Set<ConceptId> resourceTypesIds){
+        Stream<Attribute<?>> resourceStream = conceptStream.
                 filter(concept -> concept.isResource() && !this.equals(concept)).
                 map(Concept::asResource);
 
@@ -230,29 +230,29 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     @Override
-    public T resource(Resource resource){
+    public T resource(Attribute attribute){
         Schema.ImplicitType has = Schema.ImplicitType.HAS;
         Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_VALUE;
         Schema.ImplicitType hasOwner  = Schema.ImplicitType.HAS_OWNER;
 
-        //Is this resource a key to me?
-        if(type().keys().anyMatch(rt -> rt.equals(resource.type()))){
+        //Is this attribute a key to me?
+        if(type().keys().anyMatch(rt -> rt.equals(attribute.type()))){
             has = Schema.ImplicitType.KEY;
             hasValue = Schema.ImplicitType.KEY_VALUE;
             hasOwner  = Schema.ImplicitType.KEY_OWNER;
         }
 
 
-        Label label = resource.type().getLabel();
+        Label label = attribute.type().getLabel();
         RelationType hasResource = vertex().graph().getOntologyConcept(has.getLabel(label));
         Role hasResourceOwner = vertex().graph().getOntologyConcept(hasOwner.getLabel(label));
         Role hasResourceValue = vertex().graph().getOntologyConcept(hasValue.getLabel(label));
 
         if(hasResource == null || hasResourceOwner == null || hasResourceValue == null || type().plays().noneMatch(play -> play.equals(hasResourceOwner))){
-            throw GraphOperationException.hasNotAllowed(this, resource);
+            throw GraphOperationException.hasNotAllowed(this, attribute);
         }
 
-        EdgeElement resourceEdge = putEdge(ResourceImpl.from(resource), Schema.EdgeLabel.RESOURCE);
+        EdgeElement resourceEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.RESOURCE);
         vertex().graph().factory().buildRelation(resourceEdge, hasResource, hasResourceOwner, hasResourceValue);
 
         return getThis();

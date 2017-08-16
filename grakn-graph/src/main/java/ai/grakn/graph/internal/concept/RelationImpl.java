@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -94,13 +94,13 @@ public class RelationImpl implements Relation, ConceptVertex, ContainsTxCache {
     }
 
     @Override
-    public Relation resource(Resource resource) {
-        reify().resource(resource);
+    public Relation resource(Attribute attribute) {
+        reify().resource(attribute);
         return this;
     }
 
     @Override
-    public Stream<Resource<?>> resources(ResourceType[] resourceTypes) {
+    public Stream<Attribute<?>> resources(ResourceType[] resourceTypes) {
         return readFromReified((relationReified) -> relationReified.resources(resourceTypes));
     }
 

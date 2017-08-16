@@ -23,7 +23,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Label;
@@ -130,7 +130,7 @@ public class OWLMigrator {
 
     @Nullable
     public <T> Entity getEntity(T id, ResourceType<T> rtype){
-        Resource<T> iri = rtype.getResource(id);
+        Attribute<T> iri = rtype.getResource(id);
         Thing inst = iri != null? iri.ownerInstances().findFirst().orElse(null) : null;
         return inst != null? inst.asEntity() : null;
     }
@@ -147,10 +147,10 @@ public class OWLMigrator {
                 .relates(hasIriOwner).relates(hasIriValue);
 
         Entity entity = type.addEntity();
-        Resource resourceInstance = iriResource.putResource(id);
+        Attribute attributeInstance = iriResource.putResource(id);
         hasIriRelation.addRelation()
                 .addRolePlayer(hasIriOwner, entity)
-                .addRolePlayer(hasIriValue, resourceInstance);
+                .addRolePlayer(hasIriValue, attributeInstance);
         return entity;
     }
     

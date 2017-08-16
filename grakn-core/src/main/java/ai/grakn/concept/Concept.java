@@ -34,7 +34,7 @@ import javax.annotation.CheckReturnValue;
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
  *     ({@link EntityType}, {@link Role}, {@link RelationType}, {@link RuleType} or {@link ResourceType})
- *     or an {@link Thing} ({@link Entity}, {@link Relation} , {@link Resource}, {@link Rule}).
+ *     or an {@link Thing} ({@link Entity}, {@link Relation} , {@link Attribute}, {@link Rule}).
  * </p>
  *
  * @author fppt
@@ -151,13 +151,13 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Return as a {@link Resource}  if the {@link Concept} is a {@link Resource} {@link Thing}.
+     * Return as a {@link Attribute}  if the {@link Concept} is a {@link Attribute} {@link Thing}.
      *
-     * @return A {@link Resource} if the {@link Concept} is a {@link Resource}
+     * @return A {@link Attribute} if the {@link Concept} is a {@link Attribute}
      */
     @CheckReturnValue
-    default <D> Resource<D> asResource(){
-        throw GraphOperationException.invalidCasting(this, Resource.class);
+    default <D> Attribute<D> asResource(){
+        throw GraphOperationException.invalidCasting(this, Attribute.class);
     }
 
     /**
@@ -271,9 +271,9 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link Resource}.
+     * Determine if the {@link Concept} is a {@link Attribute}.
      *
-     * @return true if the {@link Concept} is a {@link Resource}
+     * @return true if the {@link Concept} is a {@link Attribute}
      */
     @CheckReturnValue
     default boolean isResource(){

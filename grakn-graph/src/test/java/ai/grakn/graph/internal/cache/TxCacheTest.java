@@ -25,7 +25,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
@@ -212,14 +212,14 @@ public class TxCacheTest extends GraphTestBase {
         TxCache cache = graknGraph.txCache();
 
         //Load some sample data
-        ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType("Attribute Type", ResourceType.DataType.STRING);
         Role role1 = graknGraph.putRole("role 1");
         Role role2 = graknGraph.putRole("role 2");
         EntityType entityType = graknGraph.putEntityType("My Type").plays(role1).plays(role2).resource(resourceType);
         RelationType relationType = graknGraph.putRelationType("My Relation Type").relates(role1).relates(role2);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
-        Resource<String> r1 = resourceType.putResource("test");
+        Attribute<String> r1 = resourceType.putResource("test");
 
         e1.resource(r1);
         relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
@@ -229,7 +229,7 @@ public class TxCacheTest extends GraphTestBase {
         assertThat(cache.getOntologyConceptCache().keySet(), not(empty()));
         assertThat(cache.getLabelCache().keySet(), not(empty()));
         assertThat(cache.getRelationIndexCache().keySet(), not(empty()));
-        assertThat(cache.getModifiedResources(), not(empty()));
+        assertThat(cache.getModifiedAttributes(), not(empty()));
         assertThat(cache.getShardingCount().keySet(), not(empty()));
         assertThat(cache.getModifiedCastings(), not(empty()));
 
@@ -247,7 +247,7 @@ public class TxCacheTest extends GraphTestBase {
         assertThat(cache.getModifiedRelationTypes(), empty());
         assertThat(cache.getModifiedRelations(), empty());
         assertThat(cache.getModifiedRules(), empty());
-        assertThat(cache.getModifiedResources(), empty());
+        assertThat(cache.getModifiedAttributes(), empty());
         assertThat(cache.getModifiedCastings(), empty());
     }
 

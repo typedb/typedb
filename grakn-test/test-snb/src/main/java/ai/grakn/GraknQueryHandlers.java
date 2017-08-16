@@ -21,7 +21,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
@@ -363,7 +363,7 @@ public class GraknQueryHandlers {
                     toInstant(ZoneOffset.UTC).toEpochMilli();
         }
         private static <T> List<T> getListResources(Entity entity, Label resourceType, GraknGraph graknGraph) {
-            Stream<Resource<?>> rawResources = entity.resources(graknGraph.getResourceType(resourceType.toString()));
+            Stream<Attribute<?>> rawResources = entity.resources(graknGraph.getResourceType(resourceType.toString()));
             return rawResources.map((resource) -> (T) resource.getValue()).collect(Collectors.<T>toList());
         }
     }

@@ -97,14 +97,14 @@ public final class ElementFactory {
         return getOrBuildConcept(element, conceptId, conceptBuilder);
     }
 
-    // ---------------------------------------- Building Resource Types  -----------------------------------------------
+    // ---------------------------------------- Building Attribute Types  -----------------------------------------------
     public <V> ResourceTypeImpl<V> buildResourceType(VertexElement vertex, ResourceType<V> type, ResourceType.DataType<V> dataType){
         return getOrBuildConcept(vertex, (v) -> new ResourceTypeImpl<>(v, type, dataType));
     }
 
     // ------------------------------------------ Building Resources
-    <V> ResourceImpl<V> buildResource(VertexElement vertex, ResourceType<V> type, Object persitedValue){
-        return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(v, type, persitedValue));
+    <V> AttributeImpl<V> buildResource(VertexElement vertex, ResourceType<V> type, Object persitedValue){
+        return getOrBuildConcept(vertex, (v) -> new AttributeImpl<>(v, type, persitedValue));
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
@@ -200,7 +200,7 @@ public final class ElementFactory {
                     concept = new ResourceTypeImpl<>(vertexElement);
                     break;
                 case RESOURCE:
-                    concept = new ResourceImpl<>(vertexElement);
+                    concept = new AttributeImpl<>(vertexElement);
                     break;
                 case RULE:
                     concept = new RuleImpl(vertexElement);

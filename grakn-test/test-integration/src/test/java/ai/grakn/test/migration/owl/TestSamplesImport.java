@@ -22,10 +22,9 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.migration.owl.OwlModel;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -142,7 +141,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Assert.assertNotNull(type);
             Optional<Entity> e = findById(type.instances().collect(toSet()), "eProduct5");
             assertTrue(e.isPresent());
-            e.get().resources().map(Resource::type).forEach(System.out::println);
+            e.get().resources().map(Attribute::type).forEach(System.out::println);
             assertResourceEntityRelationExists(graph, "Product_Available", "14", e.get());
         }
         catch (Throwable t) {

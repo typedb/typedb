@@ -66,9 +66,9 @@ public class OntologyConceptTest extends GraphTestBase {
 
     @Test
     public void whenSpecifyingTheResourceTypeOfAnEntityType_EnsureTheImplicitStructureIsCreated(){
-        Label resourceLabel = Label.of("Resource Type");
+        Label resourceLabel = Label.of("Attribute Type");
         EntityType entityType = graknGraph.putEntityType("Entity1");
-        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        ResourceType resourceType = graknGraph.putResourceType("Attribute Type", ResourceType.DataType.STRING);
 
         //Implicit Names
         Label hasResourceOwnerLabel = Schema.ImplicitType.HAS_OWNER.getLabel(resourceLabel);

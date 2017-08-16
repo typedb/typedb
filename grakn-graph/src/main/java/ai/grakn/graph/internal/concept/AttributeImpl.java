@@ -18,7 +18,7 @@
 
 package ai.grakn.graph.internal.concept;
 
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Thing;
 import ai.grakn.graph.internal.structure.VertexElement;
@@ -44,19 +44,19 @@ import java.util.stream.Stream;
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
-public class ResourceImpl<D> extends ThingImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
-    public ResourceImpl(VertexElement vertexElement) {
+public class AttributeImpl<D> extends ThingImpl<Attribute<D>, ResourceType<D>> implements Attribute<D> {
+    public AttributeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    ResourceImpl(VertexElement vertexElement, ResourceType<D> type, Object value) {
+    AttributeImpl(VertexElement vertexElement, ResourceType<D> type, Object value) {
         super(vertexElement, type);
         setValue(value);
     }
 
     /**
      *
-     * @return The data type of this {@link Resource}'s {@link ResourceType}.
+     * @return The data type of this {@link Attribute}'s {@link ResourceType}.
      */
     @Override
     public ResourceType.DataType<D> dataType() {
@@ -110,7 +110,7 @@ public class ResourceImpl<D> extends ThingImpl<Resource<D>, ResourceType<D>> imp
         return super.innerToString() + "- Value [" + getValue() + "] ";
     }
 
-    public static ResourceImpl from(Resource resource){
-        return (ResourceImpl) resource;
+    public static AttributeImpl from(Attribute attribute){
+        return (AttributeImpl) attribute;
     }
 }

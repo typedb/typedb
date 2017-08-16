@@ -18,11 +18,11 @@
 
 package ai.grakn.graph.internal.concept;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -257,8 +257,8 @@ public class EntityTypeTest extends GraphTestBase {
         EntityType entityType1 = graknGraph.putEntityType("Entity Type 1");
         EntityType entityType2 = graknGraph.putEntityType("Entity Type 2");
 
-        Label superLabel = Label.of("Super Resource Type");
-        Label label = Label.of("Resource Type");
+        Label superLabel = Label.of("Super Attribute Type");
+        Label label = Label.of("Attribute Type");
 
         ResourceType rtSuper = graknGraph.putResourceType(superLabel, ResourceType.DataType.STRING);
         ResourceType rt = graknGraph.putResourceType(label, ResourceType.DataType.STRING).sup(rtSuper);
@@ -355,8 +355,8 @@ public class EntityTypeTest extends GraphTestBase {
 
     @Test
     public void addResourceTypeAsKeyToOneEntityTypeAndAsResourceToAnotherEntityType(){
-        ResourceType<String> resourceType1 = graknGraph.putResourceType("Shared Resource 1", ResourceType.DataType.STRING);
-        ResourceType<String> resourceType2 = graknGraph.putResourceType("Shared Resource 2", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType1 = graknGraph.putResourceType("Shared Attribute 1", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType2 = graknGraph.putResourceType("Shared Attribute 2", ResourceType.DataType.STRING);
 
         EntityType entityType1 = graknGraph.putEntityType("EntityType 1");
         EntityType entityType2 = graknGraph.putEntityType("EntityType 2");
@@ -382,23 +382,23 @@ public class EntityTypeTest extends GraphTestBase {
         //Add resource which is a key for one entity and a resource for another
         Entity entity1 = entityType1.addEntity();
         Entity entity2 = entityType2.addEntity();
-        Resource<String> resource1 = resourceType1.putResource("Test 1");
-        Resource<String> resource2 = resourceType2.putResource("Test 2");
-        Resource<String> resource3 = resourceType2.putResource("Test 3");
+        Attribute<String> attribute1 = resourceType1.putResource("Test 1");
+        Attribute<String> attribute2 = resourceType2.putResource("Test 2");
+        Attribute<String> attribute3 = resourceType2.putResource("Test 3");
 
-        //Resource 1 is a key to one and a resource to another
-        entity1.resource(resource1);
-        entity2.resource(resource1);
+        //Attribute 1 is a key to one and a resource to another
+        entity1.resource(attribute1);
+        entity2.resource(attribute1);
 
-        entity1.resource(resource2);
-        entity2.resource(resource3);
+        entity1.resource(attribute2);
+        entity2.resource(attribute3);
 
         graknGraph.commit();
     }
 
     @Test
     public void whenAddingResourceTypeAsKeyAfterResource_Throw(){
-        ResourceType<String> resourceType = graknGraph.putResourceType("Shared Resource", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType("Shared Attribute", ResourceType.DataType.STRING);
         EntityType entityType = graknGraph.putEntityType("EntityType");
 
         entityType.resource(resourceType);
@@ -411,7 +411,7 @@ public class EntityTypeTest extends GraphTestBase {
 
     @Test
     public void whenAddingResourceTypeAsResourceAfterResource_Throw(){
-        ResourceType<String> resourceType = graknGraph.putResourceType("Shared Resource", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graknGraph.putResourceType("Shared Attribute", ResourceType.DataType.STRING);
         EntityType entityType = graknGraph.putEntityType("EntityType");
 
         entityType.key(resourceType);

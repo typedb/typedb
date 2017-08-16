@@ -19,11 +19,11 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
@@ -86,7 +86,7 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_T
  *     6. Relation Type Hierarchy Validation which ensures that {@link RelationType} with a hierarchical structure
  *        have a valid matching {@link Role} hierarchical structure.
  *     7. Required Resources validation which ensures that each {@link Thing} with required
- *        {@link Resource} has a valid {@link Relation} to that {@link Resource}.
+ *        {@link Attribute} has a valid {@link Relation} to that {@link Attribute}.
  *     8. Unique Relation Validation which ensures that no duplicate {@link Relation} are created.
  * </p>
  *
@@ -278,7 +278,7 @@ class ValidateGlobalRules {
     }
 
     /**
-     * Checks that a {@link Relation} which is bound to a {@link ai.grakn.concept.Resource} as a key actually is unique to that key.
+     * Checks that a {@link Relation} which is bound to a {@link Attribute} as a key actually is unique to that key.
      * The check for if the key is actually connected to the relation is done in {@link #validateInstancePlaysAllRequiredRoles}
      *
      * @param graph the {@link GraknGraph} used to check for uniqueness
@@ -289,7 +289,7 @@ class ValidateGlobalRules {
     private static Optional<String> validateKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified, Iterator<ResourceType> keys) {
         TreeMap<String, String> resources = new TreeMap<>();
         while(keys.hasNext()){
-            Optional<Resource<?>> foundResource = relationReified.resources(keys.next()).findAny();
+            Optional<Attribute<?>> foundResource = relationReified.resources(keys.next()).findAny();
             //Lack of resource key is handled by another method.
             //Handling the lack of a key here would result in duplicate error messages
             foundResource.ifPresent(resource -> resources.put(resource.type().getId().getValue(), resource.getId().getValue()));
@@ -301,7 +301,7 @@ class ValidateGlobalRules {
     }
 
     /**
-     * Checks if {@link Relation}s which are not bound to {@link ai.grakn.concept.Resource}s as keys are unique by their
+     * Checks if {@link Relation}s which are not bound to {@link Attribute}s as keys are unique by their
      * {@link Role}s and the {@link Thing}s which play those roles.
      *
      * @param graph the {@link GraknGraph} used to check for uniqueness

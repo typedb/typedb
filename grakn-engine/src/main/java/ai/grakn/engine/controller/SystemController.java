@@ -21,8 +21,8 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
@@ -216,7 +216,7 @@ public class SystemController {
             Json result = Json.array();
 
             graph.<EntityType>getOntologyConcept(SystemKeyspace.KEYSPACE_ENTITY).instances().forEach(keyspace -> {
-                Collection<Resource<?>> names = keyspace.resources(keyspaceName).collect(Collectors.toSet());
+                Collection<Attribute<?>> names = keyspace.resources(keyspaceName).collect(Collectors.toSet());
                 if (names.size() != 1) {
                     throw GraknServerException.internalError(ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " has no unique name."));
                 }

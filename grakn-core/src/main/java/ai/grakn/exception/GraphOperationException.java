@@ -19,10 +19,10 @@
 package ai.grakn.exception;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -83,14 +83,14 @@ public class GraphOperationException extends GraknException{
     }
 
     /**
-     * Thrown when a {@link Thing} is not allowed to have {@link Resource} of that {@link ResourceType}
+     * Thrown when a {@link Thing} is not allowed to have {@link Attribute} of that {@link ResourceType}
      */
-    public static GraphOperationException hasNotAllowed(Thing thing, Resource resource){
-        return new GraphOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), resource.type().getLabel()));
+    public static GraphOperationException hasNotAllowed(Thing thing, Attribute attribute){
+        return new GraphOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), attribute.type().getLabel()));
     }
 
     /**
-     * Thrown when attempting to set a regex on a {@link Resource} whose type {@link ResourceType} is not of the
+     * Thrown when attempting to set a regex on a {@link Attribute} whose type {@link ResourceType} is not of the
      * data type {@link ResourceType.DataType#STRING}
      */
     public static GraphOperationException cannotSetRegex(ResourceType resourceType){
@@ -204,8 +204,8 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when using incompatible versions of Grakn
      */
-    public static GraphOperationException versionMistmatch(Resource versionResource){
-        return new GraphOperationException(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, versionResource.getValue()));
+    public static GraphOperationException versionMistmatch(Attribute versionAttribute){
+        return new GraphOperationException(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, versionAttribute.getValue()));
     }
 
     /**

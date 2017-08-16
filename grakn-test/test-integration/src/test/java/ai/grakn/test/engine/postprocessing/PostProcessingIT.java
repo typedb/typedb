@@ -21,9 +21,9 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
@@ -67,7 +67,7 @@ public class PostProcessingIT {
         int transactionSize = 50;
         int numAttempts = 200;
 
-        //Resource Variables
+        //Attribute Variables
         int numResTypes = 100;
         int numResVar = 100;
 
@@ -146,9 +146,9 @@ public class PostProcessingIT {
         try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
             //Check the resource indices are working
             graph.admin().getMetaResourceType().instances().forEach(object -> {
-                Resource resource = (Resource) object;
-                String index = Schema.generateResourceIndex(resource.type().getLabel(), resource.getValue().toString());
-                assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.VertexProperty.INDEX, index));
+                Attribute attribute = (Attribute) object;
+                String index = Schema.generateResourceIndex(attribute.type().getLabel(), attribute.getValue().toString());
+                assertEquals(attribute, ((AbstractGraknGraph<?>) graph).getConcept(Schema.VertexProperty.INDEX, index));
             });
         }
     }
@@ -160,11 +160,11 @@ public class PostProcessingIT {
             return resourceTypes.anyMatch(resourceType -> {
                 if (!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
                     Set<Integer> foundValues = new HashSet<>();
-                    for (Resource<?> resource : resourceType.instances().collect(Collectors.toSet())) {
-                        if (foundValues.contains(resource.getValue())) {
+                    for (Attribute<?> attribute : resourceType.instances().collect(Collectors.toSet())) {
+                        if (foundValues.contains(attribute.getValue())) {
                             return true;
                         } else {
-                            foundValues.add((Integer) resource.getValue());
+                            foundValues.add((Integer) attribute.getValue());
                         }
                     }
                 }
@@ -174,8 +174,8 @@ public class PostProcessingIT {
     }
 
     private void forceDuplicateResources(GraknGraph graph, int resourceTypeNum, int resourceValueNum, int entityTypeNum, int entityNum){
-        Resource resource = graph.getResourceType("res" + resourceTypeNum).putResource(resourceValueNum);
+        Attribute attribute = graph.getResourceType("res" + resourceTypeNum).putResource(resourceValueNum);
         Entity entity = (Entity) graph.getEntityType("ent" + entityTypeNum).instances().toArray()[entityNum]; //Randomly pick an entity
-        entity.resource(resource);
+        entity.resource(attribute);
     }
 }

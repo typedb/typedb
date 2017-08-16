@@ -21,6 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
@@ -29,7 +30,6 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
@@ -41,6 +41,7 @@ import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.cache.GraphCache;
 import ai.grakn.graph.internal.cache.TxCache;
+import ai.grakn.graph.internal.concept.AttributeImpl;
 import ai.grakn.graph.internal.concept.ConceptImpl;
 import ai.grakn.graph.internal.concept.ConceptVertex;
 import ai.grakn.graph.internal.concept.ElementFactory;
@@ -48,7 +49,6 @@ import ai.grakn.graph.internal.concept.OntologyConceptImpl;
 import ai.grakn.graph.internal.concept.RelationEdge;
 import ai.grakn.graph.internal.concept.RelationImpl;
 import ai.grakn.graph.internal.concept.RelationReified;
-import ai.grakn.graph.internal.concept.ResourceImpl;
 import ai.grakn.graph.internal.concept.TypeImpl;
 import ai.grakn.graph.internal.structure.EdgeElement;
 import ai.grakn.graph.internal.structure.VertexElement;
@@ -592,7 +592,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public <V> Collection<Resource<V>> getResourcesByValue(V value) {
+    public <V> Collection<Attribute<V>> getResourcesByValue(V value) {
         if (value == null) return Collections.emptySet();
 
         //Make sure you trying to retrieve supported data type
@@ -600,18 +600,18 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             throw GraphOperationException.unsupportedDataType(value);
         }
 
-        HashSet<Resource<V>> resources = new HashSet<>();
+        HashSet<Attribute<V>> attributes = new HashSet<>();
         ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName());
 
         //noinspection unchecked
         getConcepts(dataType.getVertexProperty(), dataType.getPersistenceValue(value)).forEach(concept -> {
             if (concept != null && concept.isResource()) {
                 //noinspection unchecked
-                resources.add(concept.asResource());
+                attributes.add(concept.asResource());
             }
         });
 
-        return resources;
+        return attributes;
     }
 
     @Override
@@ -795,7 +795,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         validateGraph();
 
         boolean submissionNeeded = !txCache().getShardingCount().isEmpty() ||
-                !txCache().getModifiedResources().isEmpty();
+                !txCache().getModifiedAttributes().isEmpty();
         Json conceptLog = txCache().getFormattedLog();
 
         LOG.trace("Graph is valid. Committing graph . . . ");
@@ -876,7 +876,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public boolean duplicateResourcesExist(String index, Set<ConceptId> resourceVertexIds) {
         //This is done to ensure we merge into the indexed casting.
-        ResourceImpl<?> mainResource = getConcept(Schema.VertexProperty.INDEX, index);
+        AttributeImpl<?> mainResource = getConcept(Schema.VertexProperty.INDEX, index);
         return getDuplicates(mainResource, resourceVertexIds).size() > 0;
     }
 
@@ -887,19 +887,19 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds) {
         //This is done to ensure we merge into the indexed casting.
-        ResourceImpl<?> mainResource = this.getConcept(Schema.VertexProperty.INDEX, index);
-        Set<ResourceImpl> duplicates = getDuplicates(mainResource, resourceVertexIds);
+        AttributeImpl<?> mainResource = this.getConcept(Schema.VertexProperty.INDEX, index);
+        Set<AttributeImpl> duplicates = getDuplicates(mainResource, resourceVertexIds);
 
         if (duplicates.size() > 0) {
             //Remove any resources associated with this index that are not the main resource
-            for (Resource otherResource : duplicates) {
-                Stream<Relation> otherRelations = otherResource.relations();
+            for (Attribute otherAttribute : duplicates) {
+                Stream<Relation> otherRelations = otherAttribute.relations();
 
                 //Copy the actual relation
-                otherRelations.forEach(otherRelation -> copyRelation(mainResource, otherResource, otherRelation));
+                otherRelations.forEach(otherRelation -> copyRelation(mainResource, otherAttribute, otherRelation));
 
                 //Delete the node
-                ResourceImpl.from(otherResource).deleteNode();
+                AttributeImpl.from(otherAttribute).deleteNode();
             }
 
             //Restore the index
@@ -919,7 +919,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param other         The other instance which already posses the relation
      * @param otherRelation The other relation to potentially be absorbed
      */
-    private void copyRelation(Resource main, Resource other, Relation otherRelation) {
+    private void copyRelation(Attribute main, Attribute other, Relation otherRelation) {
         //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
         //This allows us to find relations far more quickly.
         Optional<RelationReified> reifiedRelation = ((RelationImpl) otherRelation).reified();
@@ -934,7 +934,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     /**
      * Copy a relation which has been reified - {@link RelationReified}
      */
-    private void copyRelation(Resource main, Resource other, Relation otherRelation, RelationReified reifiedRelation) {
+    private void copyRelation(Attribute main, Attribute other, Relation otherRelation, RelationReified reifiedRelation) {
         String newIndex = reifiedRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
         Relation foundRelation = txCache().getCachedRelation(newIndex);
         if (foundRelation == null) foundRelation = getConcept(Schema.VertexProperty.INDEX, newIndex);
@@ -959,7 +959,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     /**
      * Copy a relation which is an edge - {@link RelationEdge}
      */
-    private void copyRelation(Resource main, Resource other, Relation otherRelation, RelationEdge relationEdge) {
+    private void copyRelation(Attribute main, Attribute other, Relation otherRelation, RelationEdge relationEdge) {
         ConceptVertex newOwner;
         ConceptVertex newValue;
 

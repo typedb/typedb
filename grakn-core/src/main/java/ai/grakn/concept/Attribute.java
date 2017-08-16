@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Represent a literal {@link Resource} in the graph.
+ *     Represent a literal {@link Attribute} in the graph.
  * </p>
  *
  * <p>
@@ -39,10 +39,10 @@ import java.util.stream.Stream;
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
-public interface Resource<D> extends Thing {
+public interface Attribute<D> extends Thing {
     //------------------------------------- Accessors ----------------------------------
     /**
-     * Retrieves the value of the {@link Resource}.
+     * Retrieves the value of the {@link Attribute}.
      *
      * @return The value itself
      */
@@ -50,7 +50,7 @@ public interface Resource<D> extends Thing {
     D getValue();
 
     /**
-     * Retrieves the type of the {@link Resource}, that is, the {@link ResourceType} of which this resource is an Thing.
+     * Retrieves the type of the {@link Attribute}, that is, the {@link ResourceType} of which this resource is an Thing.
      *
      * @return The {@link ResourceType of which this resource is an Thing.
      */
@@ -58,45 +58,45 @@ public interface Resource<D> extends Thing {
     ResourceType<D> type();
 
     /**
-     * Retrieves the data type of this {@link Resource}'s {@link ResourceType}.
+     * Retrieves the data type of this {@link Attribute}'s {@link ResourceType}.
      *
-     * @return The data type of this {@link Resource}'s type.
+     * @return The data type of this {@link Attribute}'s type.
      */
     @CheckReturnValue
     ResourceType.DataType<D> dataType();
 
     /**
-     * Retrieves the set of all Instances that possess this {@link Resource}.
+     * Retrieves the set of all Instances that possess this {@link Attribute}.
      *
-     * @return The list of all Instances that possess this {@link Resource}.
+     * @return The list of all Instances that possess this {@link Attribute}.
      */
     @CheckReturnValue
     Stream<Thing> ownerInstances();
 
     /**
-     * If the {@link Resource} is unique, this method retrieves the Thing that possesses it.
+     * If the {@link Attribute} is unique, this method retrieves the Thing that possesses it.
      *
-     * @return The Thing which is connected to a unique {@link Resource}.
+     * @return The Thing which is connected to a unique {@link Attribute}.
      */
     @CheckReturnValue
     @Nullable
     Thing owner();
 
     /**
-     * Creates a relation from this instance to the provided {@link Resource}.
+     * Creates a relation from this instance to the provided {@link Attribute}.
      *
-     * @param resource The {@link Resource} to which a relationship is created
+     * @param attribute The {@link Attribute} to which a relationship is created
      * @return The instance itself
      */
     @Override
-    Resource resource(Resource resource);
+    Attribute resource(Attribute attribute);
 
     //------------------------------------- Other ---------------------------------
     @SuppressWarnings("unchecked")
     @Deprecated
     @CheckReturnValue
     @Override
-    default Resource asResource(){
+    default Attribute asResource(){
         return this;
     }
 

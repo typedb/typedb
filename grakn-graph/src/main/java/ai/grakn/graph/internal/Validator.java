@@ -86,10 +86,10 @@ class Validator {
         //Validate Rules
         graknGraph.txCache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
 
-        //Validate Resource Types
+        //Validate Attribute Types
         //Not Needed
-        //Validate Resource
-        graknGraph.txCache().getModifiedResources().forEach(this::validateThing);
+        //Validate Attribute
+        graknGraph.txCache().getModifiedAttributes().forEach(this::validateThing);
 
         return errorsFound.size() == 0;
     }

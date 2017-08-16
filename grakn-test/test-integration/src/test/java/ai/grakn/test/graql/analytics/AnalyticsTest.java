@@ -21,11 +21,11 @@ package ai.grakn.test.graql.analytics;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
@@ -79,8 +79,8 @@ public class AnalyticsTest {
             thingy.resource(degree);
 
             Entity thisThing = thingy.addEntity();
-            Resource thisResource = degree.putResource(1L);
-            thisThing.resource(thisResource);
+            Attribute thisAttribute = degree.putResource(1L);
+            thisThing.resource(thisAttribute);
             graph.commit();
         }
 

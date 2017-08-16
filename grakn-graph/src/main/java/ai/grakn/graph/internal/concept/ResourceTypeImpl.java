@@ -18,7 +18,7 @@
 
 package ai.grakn.graph.internal.concept;
 
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.structure.VertexElement;
@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
 
 /**
  * <p>
- *     An ontological element which models and categorises the various {@link Resource} in the graph.
+ *     An ontological element which models and categorises the various {@link Attribute} in the graph.
  * </p>
  *
  * <p>
@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
-public class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> implements ResourceType<D> {
+public class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Attribute<D>> implements ResourceType<D> {
     ResourceTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
@@ -104,13 +104,13 @@ public class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> 
 
     @SuppressWarnings("unchecked")
     @Override
-    public Resource<D> putResource(D value) {
+    public Attribute<D> putResource(D value) {
         Objects.requireNonNull(value);
 
-        BiFunction<VertexElement, ResourceType<D>, Resource<D>> instanceBuilder = (vertex, type) -> {
+        BiFunction<VertexElement, ResourceType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
             if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
             Object persistenceValue = castValue(value);
-            ResourceImpl<D> resource = vertex().graph().factory().buildResource(vertex, type, persistenceValue);
+            AttributeImpl<D> resource = vertex().graph().factory().buildResource(vertex, type, persistenceValue);
             resource.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateResourceIndex(getLabel(), value.toString()));
             return resource;
         };
@@ -159,7 +159,7 @@ public class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> 
     }
 
     @Override
-    public Resource<D> getResource(D value) {
+    public Attribute<D> getResource(D value) {
         String index = Schema.generateResourceIndex(getLabel(), value.toString());
         return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
     }

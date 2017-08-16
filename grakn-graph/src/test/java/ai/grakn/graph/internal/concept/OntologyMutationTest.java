@@ -23,7 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -251,7 +251,7 @@ public class OntologyMutationTest extends GraphTestBase {
         ResourceType<String> name = graknGraph.putResourceType("name", ResourceType.DataType.STRING);
         EntityType person = graknGraph.putEntityType("perspn").resource(name);
         EntityType animal = graknGraph.putEntityType("animal").sup(person);
-        Resource bob = name.putResource("Bob");
+        Attribute bob = name.putResource("Bob");
         person.addEntity().resource(bob);
         graknGraph.commit();
 
@@ -290,7 +290,7 @@ public class OntologyMutationTest extends GraphTestBase {
         RelationType has_name = graknGraph.putRelationType("has-name");
 
         //Create a Man and name him Bob
-        Resource<String> nameBob = name.putResource("Bob");
+        Attribute<String> nameBob = name.putResource("Bob");
         man.addEntity().resource(nameBob);
 
         //Get The Relation which says that our man is name bob

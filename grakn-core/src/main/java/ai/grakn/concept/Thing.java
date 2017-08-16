@@ -34,7 +34,7 @@ import java.util.stream.Stream;
  *
  * @see Entity
  * @see Relation
- * @see Resource
+ * @see Attribute
  * @see Rule
  *
  * @author fppt
@@ -72,22 +72,22 @@ public interface Thing extends Concept{
     Stream<Role> plays();
 
     /**
-     * Creates a relation from this instance to the provided {@link Resource}.
+     * Creates a relation from this instance to the provided {@link Attribute}.
      *
-     * @param resource The {@link Resource} to which a relationship is created
+     * @param attribute The {@link Attribute} to which a relationship is created
      * @return The instance itself
      */
-    Thing resource(Resource resource);
+    Thing resource(Attribute attribute);
 
     /**
-     * Retrieves a collection of {@link Resource} attached to this Instances
-     * @see Resource
+     * Retrieves a collection of {@link Attribute} attached to this Instances
+     * @see Attribute
      *
      * @param resourceTypes {@link ResourceType}s of the resources attached to this entity
      * @return A collection of resources attached to this Thing.
      */
     @CheckReturnValue
-    Stream<Resource<?>> resources(ResourceType ... resourceTypes);
+    Stream<Attribute<?>> resources(ResourceType ... resourceTypes);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

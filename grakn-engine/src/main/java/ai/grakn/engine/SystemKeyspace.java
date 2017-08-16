@@ -20,9 +20,9 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Thing;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
@@ -102,9 +102,9 @@ public class SystemKeyspace {
             if (keyspaceName == null) {
                 throw GraknBackendException.initializationException(keyspace);
             }
-            Resource<String> resource = keyspaceName.putResource(keyspace);
-            if (resource.owner() == null) {
-                graph.<EntityType>getOntologyConcept(KEYSPACE_ENTITY).addEntity().resource(resource);
+            Attribute<String> attribute = keyspaceName.putResource(keyspace);
+            if (attribute.owner() == null) {
+                graph.<EntityType>getOntologyConcept(KEYSPACE_ENTITY).addEntity().resource(attribute);
             }
             graph.admin().commitNoLogs();
         } catch (InvalidGraphException e) {
@@ -140,12 +140,12 @@ public class SystemKeyspace {
 
         try (GraknGraph graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getOntologyConcept(KEYSPACE_RESOURCE);
-            Resource<String> resource = keyspaceName.getResource(keyspace);
+            Attribute<String> attribute = keyspaceName.getResource(keyspace);
 
-            if(resource == null) return false;
-            Thing thing = resource.owner();
+            if(attribute == null) return false;
+            Thing thing = attribute.owner();
             if(thing != null) thing.delete();
-            resource.delete();
+            attribute.delete();
 
             openSpaces.remove(keyspace);
 
@@ -185,7 +185,7 @@ public class SystemKeyspace {
      * @throws ai.grakn.exception.GraphOperationException when the versions do not match
      */
     private void checkVersion(GraknGraph graph){
-        Resource existingVersion = graph.getResourceType(SYSTEM_VERSION).instances().iterator().next();
+        Attribute existingVersion = graph.getResourceType(SYSTEM_VERSION).instances().iterator().next();
         if(!GraknVersion.VERSION.equals(existingVersion.getValue())) {
             throw GraphOperationException.versionMistmatch(existingVersion);
         } else {

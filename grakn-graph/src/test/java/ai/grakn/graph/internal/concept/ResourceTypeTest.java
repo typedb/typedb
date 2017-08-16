@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.GraphTestBase;
@@ -44,7 +44,7 @@ public class ResourceTypeTest extends GraphTestBase {
 
     @Before
     public void buildGraph() {
-        resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        resourceType = graknGraph.putResourceType("Attribute Type", ResourceType.DataType.STRING);
     }
 
     @Test
@@ -96,8 +96,8 @@ public class ResourceTypeTest extends GraphTestBase {
         ResourceType<String> t1 = graknGraph.putResourceType("t1", ResourceType.DataType.STRING);
         ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING);
 
-        Resource c1 = t1.putResource("1");
-        Resource c2 = t2.putResource("2");
+        Attribute c1 = t1.putResource("1");
+        Attribute c2 = t2.putResource("2");
 
         assertEquals(c1, t1.getResource("1"));
         assertNull(t1.getResource("2"));
@@ -111,12 +111,12 @@ public class ResourceTypeTest extends GraphTestBase {
         ResourceType<String> t1 = graknGraph.putResourceType("t1", ResourceType.DataType.STRING).setRegex("[b]");
         ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING).setRegex("[abc]").sup(t1);
 
-        //Valid Resource
-        Resource<String> resource = t2.putResource("b");
+        //Valid Attribute
+        Attribute<String> attribute = t2.putResource("b");
 
-        //Invalid Resource
+        //Invalid Attribute
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(CoreMatchers.allOf(containsString("[b]"), containsString("b"), containsString(resource.type().getLabel().getValue())));
+        expectedException.expectMessage(CoreMatchers.allOf(containsString("[b]"), containsString("b"), containsString(attribute.type().getLabel().getValue())));
         t2.putResource("a");
     }
 
@@ -126,7 +126,7 @@ public class ResourceTypeTest extends GraphTestBase {
         ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING).setRegex("[abc]");
 
         //Future Invalid
-        Resource<String> resource = t2.putResource("a");
+        Attribute<String> attribute = t2.putResource("a");
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.regexFailure(t2, "a", "[b]").getMessage());
@@ -137,7 +137,7 @@ public class ResourceTypeTest extends GraphTestBase {
     public void whenSettingRegexOfSuperType_EnsureAllRegexesAreApplied(){
         ResourceType<String> t1 = graknGraph.putResourceType("t1", ResourceType.DataType.STRING);
         ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING).setRegex("[abc]").sup(t1);
-        Resource<String> resource = t2.putResource("a");
+        Attribute<String> attribute = t2.putResource("a");
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.regexFailure(t1, "a", "[b]").getMessage());
@@ -166,7 +166,7 @@ public class ResourceTypeTest extends GraphTestBase {
         try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "somethingmorerandom")) {
             try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
                 ResourceType aTime = graph.getResourceType("aTime");
-                LocalDateTime databaseTime = (LocalDateTime) ((Resource) aTime.instances().iterator().next()).getValue();
+                LocalDateTime databaseTime = (LocalDateTime) ((Attribute) aTime.instances().iterator().next()).getValue();
 
                 // localTime should not have changed as it should not be sensitive to timezone
                 assertEquals(rightNow, databaseTime);

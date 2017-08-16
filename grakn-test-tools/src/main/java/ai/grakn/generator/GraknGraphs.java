@@ -23,6 +23,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -30,7 +31,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
@@ -249,8 +249,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             () -> {
                 ResourceType resourceType = resourceType();
                 Object value = gen().make(ResourceValues.class).generate(random, status);
-                Resource resource = resourceType.putResource(value);
-                summaryAssign(resource, resourceType, "putResource", valueToString(value));
+                Attribute attribute = resourceType.putResource(value);
+                summaryAssign(attribute, resourceType, "putResource", valueToString(value));
             },
             // () -> resourceType().setRegex(gen(String.class)), // TODO: Enable this when doesn't throw a NPE
             () -> {
@@ -267,9 +267,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },*/
             () -> {
                 Thing thing = instance();
-                Resource resource = resource();
-                thing.resource(resource);
-                summary(thing, "resource", resource);
+                Attribute attribute = resource();
+                thing.resource(attribute);
+                summary(thing, "resource", attribute);
             },
             () -> {
                 Type type = type();
@@ -352,8 +352,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return chooseOrThrow(graph.admin().getMetaRelationType().instances());
     }
 
-    private Resource resource() {
-        return chooseOrThrow((Stream<Resource>) graph.admin().getMetaResourceType().instances());
+    private Attribute resource() {
+        return chooseOrThrow((Stream<Attribute>) graph.admin().getMetaResourceType().instances());
     }
 
     //TODO: re-enable when grakn-graph can create graql constructs

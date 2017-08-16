@@ -19,10 +19,10 @@
 package ai.grakn.test.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 
 import java.util.Set;
@@ -61,13 +61,13 @@ public abstract class TestGraph {
     }
 
     public static <T> void putResource(Thing thing, ResourceType<T> resourceType, T resource) {
-        Resource resourceInstance = resourceType.putResource(resource);
-        thing.resource(resourceInstance);
+        Attribute attributeInstance = resourceType.putResource(resource);
+        thing.resource(attributeInstance);
     }
 
     public static Thing getInstance(GraknGraph graph, String id){
         Set<Thing> things = graph.getResourcesByValue(id)
-                .stream().flatMap(Resource::ownerInstances).collect(toSet());
+                .stream().flatMap(Attribute::ownerInstances).collect(toSet());
         if (things.size() != 1) {
             throw new IllegalStateException("Multiple things with given resource value");
         }

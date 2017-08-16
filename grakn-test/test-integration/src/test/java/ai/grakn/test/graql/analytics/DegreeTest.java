@@ -21,13 +21,13 @@ package ai.grakn.test.graql.analytics;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
@@ -233,8 +233,8 @@ public class DegreeTest {
         // add data to the graph
         Entity coco = animal.addEntity();
         Entity dave = person.addEntity();
-        Resource coconut = name.putResource("coconut");
-        Resource stinky = altName.putResource("stinky");
+        Attribute coconut = name.putResource("coconut");
+        Attribute stinky = altName.putResource("stinky");
         Relation daveOwnsCoco = mansBestFriend.addRelation().addRolePlayer(owner, dave).addRolePlayer(pet, coco);
         Relation cocoName = hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, coconut);
         Relation cocoAltName = hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, stinky);
@@ -365,13 +365,13 @@ public class DegreeTest {
         // add data to the graph
         Entity coco = animal.addEntity();
         Entity dave = person.addEntity();
-        Resource coconut = name.putResource("coconut");
-        Resource stinky = altName.putResource("stinky");
+        Attribute coconut = name.putResource("coconut");
+        Attribute stinky = altName.putResource("stinky");
         Relation daveOwnsCoco = mansBestFriend.addRelation()
                 .addRolePlayer(owner, dave).addRolePlayer(pet, coco);
         hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, coconut);
         hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, stinky);
-        Resource sd = startDate.putResource("01/01/01");
+        Attribute sd = startDate.putResource("01/01/01");
         Relation ownsFrom = hasOwnershipResource.addRelation()
                 .addRolePlayer(ownershipResource, sd).addRolePlayer(ownership, daveOwnsCoco);
 

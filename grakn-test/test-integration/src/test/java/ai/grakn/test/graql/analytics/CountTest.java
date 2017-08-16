@@ -25,7 +25,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
@@ -153,7 +153,7 @@ public class CountTest {
             EntityType person = graph.putEntityType("person");
             Entity aPerson = person.addEntity();
             ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING);
-            Resource jason = name.putResource("jason");
+            Attribute jason = name.putResource("jason");
 
             Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
             person.plays(resourceOwner);

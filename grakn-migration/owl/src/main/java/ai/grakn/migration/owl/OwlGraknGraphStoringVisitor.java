@@ -22,7 +22,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraphOperationException;
@@ -347,18 +347,18 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         } else if (resourceType.getDataType() == ResourceType.DataType.DOUBLE) {
             value = Double.parseDouble(valueAsString);
         }
-        Resource resource = resourceType.putResource(value);
+        Attribute attribute = resourceType.putResource(value);
         RelationType propertyRelation = migrator.relation(axiom.getProperty().asOWLDataProperty());
-        Role entityRole = migrator.entityRole(entity.type(), resource.type());
-        Role resourceRole = migrator.resourceRole(resource.type());
+        Role entityRole = migrator.entityRole(entity.type(), attribute.type());
+        Role resourceRole = migrator.resourceRole(attribute.type());
         try {       
             return propertyRelation.addRelation()
                      .addRolePlayer(entityRole, entity)
-                     .addRolePlayer(resourceRole, resource);
+                     .addRolePlayer(resourceRole, attribute);
         }
         catch (GraphOperationException ex) {
             if (ex.getMessage().contains("The Relation with the provided role players already exists")) {
-                System.err.println("[WARN] Grakn does not support multiple values per data property/resource, ignoring axiom " + axiom);
+                System.err.println("[WARN] Grakn does not support multiple values per data property/attribute, ignoring axiom " + axiom);
             } else {
                 ex.printStackTrace(System.err);
             }
@@ -378,11 +378,11 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         @SuppressWarnings("unchecked")
         ResourceType<String> resourceType = (ResourceType<String>)visit(axiom.getProperty());
         Entity entity = migrator.entity((OWLNamedIndividual)axiom.getSubject());
-        Resource<String> resource = resourceType.putResource(value.get().getLiteral());
+        Attribute<String> attribute = resourceType.putResource(value.get().getLiteral());
         RelationType propertyRelation = migrator.relation(axiom.getProperty());
         return propertyRelation.addRelation()
-                 .addRolePlayer(migrator.entityRole(entity.type(), resource.type()), entity)
-                 .addRolePlayer(migrator.resourceRole(resource.type()), resource);
+                 .addRolePlayer(migrator.entityRole(entity.type(), attribute.type()), entity)
+                 .addRolePlayer(migrator.resourceRole(attribute.type()), attribute);
     }
 
     @Override

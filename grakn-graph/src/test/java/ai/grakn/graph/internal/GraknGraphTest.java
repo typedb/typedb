@@ -4,12 +4,12 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
@@ -66,8 +66,8 @@ public class GraknGraphTest extends GraphTestBase {
         ResourceType<String> t1 = graknGraph.putResourceType("Parent 1", ResourceType.DataType.STRING);
         ResourceType<String> t2 = graknGraph.putResourceType("Parent 2", ResourceType.DataType.STRING);
 
-        Resource<String> r1 = t1.putResource(targetValue);
-        Resource<String> r2 = t2.putResource(targetValue);
+        Attribute<String> r1 = t1.putResource(targetValue);
+        Attribute<String> r2 = t2.putResource(targetValue);
         t2.putResource("Dragon");
 
         assertThat(graknGraph.getResourcesByValue(targetValue), containsInAnyOrder(r1, r2));
@@ -78,7 +78,7 @@ public class GraknGraphTest extends GraphTestBase {
         String entityTypeLabel = "My Entity Type";
         String relationTypeLabel = "My Relation Type";
         String roleTypeLabel = "My Role Type";
-        String resourceTypeLabel = "My Resource Type";
+        String resourceTypeLabel = "My Attribute Type";
         String ruleTypeLabel = "My Rule Type";
 
         assertNull(graknGraph.getEntityType(entityTypeLabel));
@@ -243,7 +243,7 @@ public class GraknGraphTest extends GraphTestBase {
         String roleType2 = "My Role Type 2";
         String relationType1 = "My Relation Type 1";
         String relationType2 = "My Relation Type 2";
-        String resourceType = "My Resource Type";
+        String resourceType = "My Attribute Type";
 
         //Fail Some Mutations
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);

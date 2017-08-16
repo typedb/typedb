@@ -19,8 +19,8 @@
 
 package ai.grakn.generator;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -69,28 +69,28 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
         }
 
         if(withResource && !thing.resources().findAny().isPresent()){
-            //A new resource type is created every time a resource is lacking.
-            //Existing resource types and resources of those types are not used because we end up mutating the
-            // the ontology in strange ways. This approach is less complex but ensures everything has a resource
+            //A new attribute type is created every time a attribute is lacking.
+            //Existing attribute types and resources of those types are not used because we end up mutating the
+            // the ontology in strange ways. This approach is less complex but ensures everything has a attribute
             // without conflicting with the ontology
 
-            //Create a new resource type
+            //Create a new attribute type
             ResourceType.DataType<?> dataType = gen(ResourceType.DataType.class);
             Label label = genFromGraph(Labels.class).mustBeUnused().generate(random, status);
             ResourceType resourceType = graph().putResourceType(label, dataType);
 
-            //Create new resource
-            Resource resource = newResource(resourceType);
+            //Create new attribute
+            Attribute attribute = newResource(resourceType);
 
             //Link everything together
             type.resource(resourceType);
-            thing.resource(resource);
+            thing.resource(attribute);
         }
 
         return thing;
     }
 
-    protected Resource newResource(ResourceType type) {
+    protected Attribute newResource(ResourceType type) {
         ResourceType.DataType<?> dataType = type.getDataType();
         Object value = gen().make(ResourceValues.class).dataType(dataType).generate(random, status);
         return type.putResource(value);
@@ -106,7 +106,7 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
     protected abstract T newInstance(S type);
 
     /**
-     * Specify if the generated {@link Thing} should be connected to a {@link ai.grakn.concept.Resource}
+     * Specify if the generated {@link Thing} should be connected to a {@link Attribute}
      */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)

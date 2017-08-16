@@ -21,13 +21,13 @@ package ai.grakn.test.migration;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
@@ -78,7 +78,7 @@ public class MigratorTestUtils {
         ResourceType resourceType = graph.getResourceType(resourceName);
         assertNotNull(resourceType);
         assertEquals(resourceValue, owner.resources(resourceType)
-                .map(Resource::getValue)
+                .map(Attribute::getValue)
                 .findFirst().get());
     }
 
@@ -108,12 +108,12 @@ public class MigratorTestUtils {
         return things;
     }
 
-    public static Resource getResource(GraknGraph graph, Thing thing, Label label) {
+    public static Attribute getResource(GraknGraph graph, Thing thing, Label label) {
         assertEquals(getResources(graph, thing, label).count(), 1);
         return getResources(graph, thing, label).findAny().get();
     }
 
-    public static Stream<Resource> getResources(GraknGraph graph, Thing thing, Label label) {
+    public static Stream<Attribute> getResources(GraknGraph graph, Thing thing, Label label) {
         Role roleOwner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
         Role roleOther = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 

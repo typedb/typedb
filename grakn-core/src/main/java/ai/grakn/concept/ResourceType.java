@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     An ontological element which models and categorises the various {@link Resource} in the graph.
+ *     An ontological element which models and categorises the various {@link Attribute} in the graph.
  * </p>
  *
  * <p>
@@ -112,12 +112,12 @@ public interface ResourceType<D> extends Type {
     ResourceType<D> setRegex(String regex);
 
     /**
-     * Set the value for the {@link Resource}, unique to its type.
+     * Set the value for the {@link Attribute}, unique to its type.
      *
-     * @param value A value for the {@link Resource} which is unique to its type
-     * @return new or existing {@link Resource} of this type with the provided value.
+     * @param value A value for the {@link Attribute} which is unique to its type
+     * @return new or existing {@link Attribute} of this type with the provided value.
      */
-    Resource<D> putResource(D value);
+    Attribute<D> putResource(D value);
 
     /**
      * Classifies the type to a specific scope. This allows you to optionally categorise types.
@@ -166,15 +166,15 @@ public interface ResourceType<D> extends Type {
     ResourceType<D> sup();
 
     /**
-     * Get the {@link Resource} with the value provided, and its type, or return NULL
-     * @see Resource
+     * Get the {@link Attribute} with the value provided, and its type, or return NULL
+     * @see Attribute
      *
-     * @param value A value which a {@link Resource} in the graph may be holding
-     * @return The {@link Resource} with the provided value and type or null if no such {@link Resource} exists.
+     * @param value A value which a {@link Attribute} in the graph may be holding
+     * @return The {@link Attribute} with the provided value and type or null if no such {@link Attribute} exists.
      */
     @CheckReturnValue
     @Nullable
-    Resource<D> getResource(D value);
+    Attribute<D> getResource(D value);
 
     /**
      * Returns a collection of subtypes of this ResourceType.
@@ -185,17 +185,17 @@ public interface ResourceType<D> extends Type {
     Stream<ResourceType<D>> subs();
 
     /**
-     * Returns a collection of all {@link Resource} of this {@link ResourceType}.
+     * Returns a collection of all {@link Attribute} of this {@link ResourceType}.
      *
      * @return The resource instances of this {@link ResourceType}
      */
     @Override
-    Stream<Resource<D>> instances();
+    Stream<Attribute<D>> instances();
 
     /**
      * Get the data type to which instances of the {@link ResourceType} must conform.
      *
-     * @return The data type to which instances of this {@link Resource}  must conform.
+     * @return The data type to which instances of this {@link Attribute}  must conform.
      */
     @CheckReturnValue
     DataType<D> getDataType();

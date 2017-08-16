@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
@@ -154,7 +154,7 @@ public class SQLMigratorTest {
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
             GraknGraph graph = factory.open(GraknTxType.WRITE);
-            Resource<Long> count = graph.getResourcesByValue(9L).iterator().next();
+            Attribute<Long> count = graph.getResourcesByValue(9L).iterator().next();
             assertNotNull(count);
             assertEquals(count.type(), graph.getResourceType("count"));
         }

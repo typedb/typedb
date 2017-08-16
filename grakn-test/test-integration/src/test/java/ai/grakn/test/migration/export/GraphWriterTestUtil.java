@@ -18,12 +18,12 @@
 package ai.grakn.test.migration.export;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
@@ -70,7 +70,7 @@ public abstract class GraphWriterTestUtil {
      * Assert that there are the same number of entities in each graph with the same resources
      */
     public static void assertEntityCopied(Entity entity1, GraknGraph two){
-        Collection<Entity> entitiesFromGraph1 = entity1.resources().flatMap(Resource::ownerInstances).map(Concept::asEntity).collect(toSet());
+        Collection<Entity> entitiesFromGraph1 = entity1.resources().flatMap(Attribute::ownerInstances).map(Concept::asEntity).collect(toSet());
         Collection<Entity> entitiesFromGraph2 = getInstancesByResources(two, entity1).stream().map(Concept::asEntity).collect(toSet());
 
         assertEquals(entitiesFromGraph1.size(), entitiesFromGraph2.size());
@@ -82,7 +82,7 @@ public abstract class GraphWriterTestUtil {
     public static Collection<Thing> getInstancesByResources(GraknGraph graph, Thing thing){
         return thing.resources()
                 .map(r -> getResourceFromGraph(graph, r))
-                .flatMap(Resource::ownerInstances)
+                .flatMap(Attribute::ownerInstances)
                 .collect(toSet());
     }
 
@@ -94,8 +94,8 @@ public abstract class GraphWriterTestUtil {
                .iterator().next();
     }
 
-    public static <V> Resource<V> getResourceFromGraph(GraknGraph graph, Resource<V> resource){
-        return (Resource<V>) graph.getResourceType(resource.type().getLabel().getValue()).getResource(resource.getValue());
+    public static <V> Attribute<V> getResourceFromGraph(GraknGraph graph, Attribute<V> attribute){
+        return (Attribute<V>) graph.getResourceType(attribute.type().getLabel().getValue()).getResource(attribute.getValue());
     }
 
     public static void assertRelationCopied(Relation relation1, GraknGraph two){
@@ -117,11 +117,11 @@ public abstract class GraphWriterTestUtil {
         assertTrue("The copied relation [" + relation1 + "] was not found.", relationFound);
     }
 
-    public static void assertResourceCopied(Resource resource1, GraknGraph two){
-        assertEquals(true, two.getResourcesByValue(resource1.getValue()).stream()
+    public static void assertResourceCopied(Attribute attribute1, GraknGraph two){
+        assertEquals(true, two.getResourcesByValue(attribute1.getValue()).stream()
                 .map(Thing::type)
                 .map(Type::getLabel)
-                .anyMatch(t -> resource1.type().getLabel().equals(t)));
+                .anyMatch(t -> attribute1.type().getLabel().equals(t)));
     }
 
     public static void assertRuleCopied(Rule rule1, GraknGraph two){

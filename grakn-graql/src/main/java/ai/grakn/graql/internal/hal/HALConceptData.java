@@ -18,11 +18,11 @@
 
 package ai.grakn.graql.internal.hal;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relation;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
@@ -171,9 +171,9 @@ public class HALConceptData {
         halResource.withRepresentation("LHS", LHS);
     }
 
-    private void generateOwnerInstances(Representation halResource, Resource<?> conceptResource, int separationDegree) {
-        final Label roleType = conceptResource.type().getLabel();
-        Stream<Thing> ownersStream = conceptResource.ownerInstances().skip(offset);
+    private void generateOwnerInstances(Representation halResource, Attribute<?> conceptAttribute, int separationDegree) {
+        final Label roleType = conceptAttribute.type().getLabel();
+        Stream<Thing> ownersStream = conceptAttribute.ownerInstances().skip(offset);
         if (limit >= 0) ownersStream = ownersStream.limit(limit);
         ownersStream.forEach(instance -> {
             Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))

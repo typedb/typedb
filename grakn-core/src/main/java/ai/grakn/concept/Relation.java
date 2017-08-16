@@ -43,13 +43,13 @@ import java.util.stream.Stream;
 public interface Relation extends Thing {
     //------------------------------------- Modifiers ----------------------------------
     /**
-     * Creates a relation from this instance to the provided {@link Resource}.
+     * Creates a relation from this instance to the provided {@link Attribute}.
      *
-     * @param resource The {@link Resource} to which a relationship is created
+     * @param attribute The {@link Attribute} to which a relationship is created
      * @return The instance itself
      */
     @Override
-    Relation resource(Resource resource);
+    Relation resource(Attribute attribute);
 
     //------------------------------------- Accessors ----------------------------------
 

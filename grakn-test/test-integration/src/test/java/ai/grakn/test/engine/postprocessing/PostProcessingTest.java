@@ -21,7 +21,7 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
@@ -81,22 +81,22 @@ public class PostProcessingTest {
         GraknGraph graph = session.open(GraknTxType.WRITE);
         ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
 
-        Resource<String> resource = resourceType.putResource(value);
+        Attribute<String> attribute = resourceType.putResource(value);
         graph.admin().commitNoLogs();
         graph = session.open(GraknTxType.WRITE);
 
         assertEquals(1, resourceType.instances().count());
         //Check duplicates have been created
-        Set<Vertex> resource1 = createDuplicateResource(graph, resourceType, resource);
-        Set<Vertex> resource2 = createDuplicateResource(graph, resourceType, resource);
-        Set<Vertex> resource3 = createDuplicateResource(graph, resourceType, resource);
-        Set<Vertex> resource4 = createDuplicateResource(graph, resourceType, resource);
+        Set<Vertex> resource1 = createDuplicateResource(graph, resourceType, attribute);
+        Set<Vertex> resource2 = createDuplicateResource(graph, resourceType, attribute);
+        Set<Vertex> resource3 = createDuplicateResource(graph, resourceType, attribute);
+        Set<Vertex> resource4 = createDuplicateResource(graph, resourceType, attribute);
         assertEquals(5, resourceType.instances().count());
 
-        // Resource vertex index
+        // Attribute vertex index
         String resourceIndex = resource1.iterator().next().value(INDEX.name()).toString();
 
-        // Merge the resource sets
+        // Merge the attribute sets
         Set<Vertex> merged = Sets.newHashSet();
         merged.addAll(resource1);
         merged.addAll(resource2);

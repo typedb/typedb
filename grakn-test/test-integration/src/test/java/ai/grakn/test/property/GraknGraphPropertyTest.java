@@ -21,13 +21,13 @@ package ai.grakn.test.property;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
@@ -165,35 +165,35 @@ public class GraknGraphPropertyTest {
             @FromGraph @NonMeta @NonAbstract ResourceType resourceType, @From(ResourceValues.class) Object value) {
         assumeThat(value.getClass().getName(), is(resourceType.getDataType().getName()));
 
-        Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(value);
-        Resource resource = resourceType.putResource(value);
-        Collection<Resource<Object>> resourcesAfter = graph.getResourcesByValue(value);
+        Collection<Attribute<Object>> expectedAttributes = graph.getResourcesByValue(value);
+        Attribute attribute = resourceType.putResource(value);
+        Collection<Attribute<Object>> resourcesAfter = graph.getResourcesByValue(value);
 
-        expectedResources.add(resource);
+        expectedAttributes.add(attribute);
 
-        assertEquals(expectedResources, resourcesAfter);
+        assertEquals(expectedAttributes, resourcesAfter);
     }
 
     @Property
     public void whenCallingGetResourcesByValueAfterDeletingAResource_TheResultDoesNotIncludesTheResource(
-            @Open GraknGraph graph, @FromGraph Resource<Object> resource) {
-        Object resourceValue = resource.getValue();
+            @Open GraknGraph graph, @FromGraph Attribute<Object> attribute) {
+        Object resourceValue = attribute.getValue();
 
-        Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(resourceValue);
-        resource.delete();
-        Collection<Resource<Object>> resourcesAfter = graph.getResourcesByValue(resourceValue);
+        Collection<Attribute<Object>> expectedAttributes = graph.getResourcesByValue(resourceValue);
+        attribute.delete();
+        Collection<Attribute<Object>> resourcesAfter = graph.getResourcesByValue(resourceValue);
 
-        expectedResources.remove(resource);
+        expectedAttributes.remove(attribute);
 
-        assertEquals(expectedResources, resourcesAfter);
+        assertEquals(expectedAttributes, resourcesAfter);
     }
 
     @Property
     public void whenCallingGetResourcesByValue_TheResultIsAllResourcesWithTheGivenValue(
             @Open GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
-        Stream<Resource<?>> allResources = graph.admin().getMetaResourceType().instances();
+        Stream<Attribute<?>> allResources = graph.admin().getMetaResourceType().instances();
 
-        Set<Resource<?>> allResourcesOfValue =
+        Set<Attribute<?>> allResourcesOfValue =
                 allResources.filter(resource -> resourceValue.equals(resource.getValue())).collect(toSet());
 
         assertEquals(allResourcesOfValue, graph.getResourcesByValue(resourceValue));

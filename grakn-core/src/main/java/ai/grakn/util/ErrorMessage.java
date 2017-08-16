@@ -37,9 +37,9 @@ public enum ErrorMessage {
     TOO_MANY_CONCEPTS("Too many concepts found for key [%s] and value [%s]"),
     INVALID_DATATYPE("The value [%s] must be of datatype [%s]"),
     INVALID_OBJECT_TYPE("The concept [%s] is not of type [%s]"),
-    REGEX_INSTANCE_FAILURE("The regex [%s] of Resource Type [%s] cannot be applied because value [%s] " +
+    REGEX_INSTANCE_FAILURE("The regex [%s] of Attribute Type [%s] cannot be applied because value [%s] " +
             "does not conform to the regular expression"),
-    REGEX_NOT_STRING("The Resource Type [%s] is not of type String so it cannot support regular expressions"),
+    REGEX_NOT_STRING("The Attribute Type [%s] is not of type String so it cannot support regular expressions"),
     CLOSED_CLEAR("The session for graph has been closed due to deleting the graph"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The transaction was not %s. The graph was actually effected directly"),
     IMMUTABLE_VALUE("The value [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
@@ -54,7 +54,7 @@ public enum ErrorMessage {
     GRAPH_CLOSED_ON_ACTION("The transaction was %s and closed graph [%s]. Use the session to get a new transaction for the graph."),
     TRANSACTIONS_OPEN("Closed session on graph [%s] with [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
-    CANNOT_BE_KEY_AND_RESOURCE("The Type [%s] cannot have the Resource Type [%s] as a key and as a resource"),
+    CANNOT_BE_KEY_AND_RESOURCE("The Type [%s] cannot have the Attribute Type [%s] as a key and as a resource"),
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]"),
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
     IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),

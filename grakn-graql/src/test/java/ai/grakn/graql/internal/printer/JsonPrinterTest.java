@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.printer;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Printer;
@@ -109,11 +109,11 @@ public class JsonPrinterTest {
     @Test
     public void testJsonResource() {
         ResourceType<String> resourceType = movieContext.graph().getResourceType("title");
-        Resource<String> resource = resourceType.getResource("The Muppets");
+        Attribute<String> attribute = resourceType.getResource("The Muppets");
 
         assertJsonEquals(
-                Json.object("id", resource.getId().getValue(), "isa", "title", "value", "The Muppets"),
-                resource
+                Json.object("id", attribute.getId().getValue(), "isa", "title", "value", "The Muppets"),
+                attribute
         );
     }
 

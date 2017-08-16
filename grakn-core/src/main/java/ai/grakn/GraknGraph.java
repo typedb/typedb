@@ -18,13 +18,13 @@
 
 package ai.grakn;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
@@ -233,14 +233,14 @@ public interface GraknGraph extends AutoCloseable{
     /**
      * Get all Resources holding the value provided, if they exist.
      *
-     * @param value A value which a {@link Resource} in the graph may be holding.
+     * @param value A value which a {@link Attribute} in the graph may be holding.
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The {@link Resource}s holding the provided value or an empty collection if no such {@link Resource} exists.
+     * @return The {@link Attribute}s holding the provided value or an empty collection if no such {@link Attribute} exists.
      *
      * @throws GraphOperationException if the graph is closed
      */
     @CheckReturnValue
-    <V> Collection<Resource<V>> getResourcesByValue(V value);
+    <V> Collection<Attribute<V>> getResourcesByValue(V value);
 
     /**
      * Get the Entity Type with the label provided, if it exists.

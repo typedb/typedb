@@ -19,11 +19,11 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
@@ -57,7 +57,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  * <p>
  *     A {@link ai.grakn.graql.admin.VarProperty} is responsible for inserting itself into the graph. However,
- *     some properties can only operate in <i>combination</i>. For example, to create a {@link Resource} you need both
+ *     some properties can only operate in <i>combination</i>. For example, to create a {@link Attribute} you need both
  *     an {@link IsaProperty} and a {@link ValueProperty}.
  * </p>
  * <p>
@@ -302,7 +302,7 @@ public class ConceptBuilder {
         validateParam(concept, SUPER_CONCEPT, OntologyConcept.class, OntologyConcept::sup);
         validateParam(concept, LABEL, OntologyConcept.class, OntologyConcept::getLabel);
         validateParam(concept, ID, Concept.class, Concept::getId);
-        validateParam(concept, VALUE, Resource.class, Resource::getValue);
+        validateParam(concept, VALUE, Attribute.class, Attribute::getValue);
         validateParam(concept, DATA_TYPE, ResourceType.class, ResourceType::getDataType);
         validateParam(concept, WHEN, Rule.class, Rule::getWhen);
         validateParam(concept, THEN, Rule.class, Rule::getThen);

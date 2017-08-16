@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -37,7 +38,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Represents the {@code value} property on a {@link ai.grakn.concept.Resource}.
+ * Represents the {@code value} property on a {@link Attribute}.
  *
  * This property can be queried or inserted.
  *

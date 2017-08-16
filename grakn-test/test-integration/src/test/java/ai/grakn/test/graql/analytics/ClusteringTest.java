@@ -21,12 +21,12 @@ package ai.grakn.test.graql.analytics;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
@@ -138,9 +138,9 @@ public class ClusteringTest {
                     graph.putResourceType(aResourceTypeLabel, ResourceType.DataType.STRING);
             graph.getEntityType(thing).resource(resourceType);
             graph.getEntityType(anotherThing).resource(resourceType);
-            Resource aResource = resourceType.putResource("blah");
-            graph.getEntityType(thing).instances().forEach(instance -> instance.resource(aResource));
-            graph.getEntityType(anotherThing).instances().forEach(instance -> instance.resource(aResource));
+            Attribute aAttribute = resourceType.putResource("blah");
+            graph.getEntityType(thing).instances().forEach(instance -> instance.resource(aAttribute));
+            graph.getEntityType(anotherThing).instances().forEach(instance -> instance.resource(aAttribute));
             graph.commit();
         }
 
