@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  * <p>
  *     Acts as an {@link Thing} when relating to other instances except it has the added functionality of:
  *     1. It is unique to its {@link AttributeType} based on it's value.
- *     2. It has a {@link AttributeType.DataType} associated with it which constrains the allowed values.
+ *     2. It has an {@link AttributeType.DataType} associated with it which constrains the allowed values.
  * </p>
  *
  * @author fppt

@@ -42,7 +42,7 @@ import java.util.stream.Stream;
  *     types. It has two additional functions to be aware of:
  *     1. It has a {@link DataType} constraining the data types of the values it's instances may take.
  *     2. Any of it's instances are unique to the type.
- *     For example if you have a {@link AttributeType} modelling month throughout the year there can only be one January.
+ *     For example if you have an {@link AttributeType} modelling month throughout the year there can only be one January.
  * </p>
  *
  * @author fppt
@@ -169,7 +169,7 @@ public interface AttributeType<D> extends Type {
      * Get the {@link Attribute} with the value provided, and its type, or return NULL
      * @see Attribute
      *
-     * @param value A value which a {@link Attribute} in the graph may be holding
+     * @param value A value which an {@link Attribute} in the graph may be holding
      * @return The {@link Attribute} with the provided value and type or null if no such {@link Attribute} exists.
      */
     @CheckReturnValue
@@ -204,7 +204,7 @@ public interface AttributeType<D> extends Type {
      * Retrieve the regular expression to which instances of this {@link AttributeType} must conform, or {@code null} if no
      * regular expression is set.
      *
-     * By default, a {@link AttributeType} does not have a regular expression set.
+     * By default, an {@link AttributeType} does not have a regular expression set.
      *
      * @return The regular expression to which instances of this {@link AttributeType} must conform.
      */
