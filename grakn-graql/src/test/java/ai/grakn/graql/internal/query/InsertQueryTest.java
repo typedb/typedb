@@ -470,7 +470,7 @@ public class InsertQueryTest {
         qb.insert(
                 label("a-new-type").sub("entity").has(resourceType),
                 label(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
-                label("an-unconnected-resource-type").sub("resource").datatype(AttributeType.DataType.LONG)
+                label("an-unconnected-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
         ).execute();
 
         // Make sure a-new-type can have the given resource type, but not other resource types
