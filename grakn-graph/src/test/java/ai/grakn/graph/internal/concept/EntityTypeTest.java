@@ -72,7 +72,7 @@ public class EntityTypeTest extends GraphTestBase {
     public void whenCreatingEntityTypeUsingLabelTakenByAnotherType_Throw(){
         Role original = graknGraph.putRole("Role Type");
         expectedException.expect(PropertyNotUniqueException.class);
-        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original, Schema.VertexProperty.ONTOLOGY_LABEL, original.getLabel()).getMessage());
+        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original, Schema.VertexProperty.SCHEMA_LABEL, original.getLabel()).getMessage());
         graknGraph.putEntityType(original.getLabel());
     }
 

@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static ai.grakn.util.Schema.BaseType.RELATION_TYPE;
+import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
 import static ai.grakn.util.Schema.BaseType.RULE_TYPE;
 
 /**
@@ -178,7 +178,7 @@ public final class ElementFactory {
         if(!graknGraph.txCache().isConceptCached(conceptId)){
             Concept concept;
             switch (type) {
-                case RELATION:
+                case RELATIONSHIP:
                     concept = new RelationshipImpl(new RelationshipReified(vertexElement));
                     break;
                 case TYPE:
@@ -187,7 +187,7 @@ public final class ElementFactory {
                 case ROLE:
                     concept = new RoleImpl(vertexElement);
                     break;
-                case RELATION_TYPE:
+                case RELATIONSHIP_TYPE:
                     concept = new RelationshipTypeImpl(vertexElement);
                     break;
                 case ENTITY:
@@ -273,7 +273,7 @@ public final class ElementFactory {
             if(type.isPresent()){
                 String label = type.get().target().label();
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
-                if(label.equals(RELATION_TYPE.name())) return Schema.BaseType.RELATION;
+                if(label.equals(RELATIONSHIP_TYPE.name())) return Schema.BaseType.RELATIONSHIP;
                 if(label.equals(Schema.BaseType.RESOURCE_TYPE.name())) return Schema.BaseType.RESOURCE;
                 if(label.equals(RULE_TYPE.name())) return Schema.BaseType.RULE;
             }

@@ -261,7 +261,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if (isMetaOntologyNotInitialised()) {
             VertexElement type = addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
             VertexElement entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
-            VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATIONSHIP.getId(), Schema.MetaSchema.RELATIONSHIP.getLabel(), Schema.BaseType.RELATION_TYPE);
+            VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATIONSHIP.getId(), Schema.MetaSchema.RELATIONSHIP.getLabel(), Schema.BaseType.RELATIONSHIP_TYPE);
             VertexElement resourceType = addTypeVertex(Schema.MetaSchema.RESOURCE.getId(), Schema.MetaSchema.RESOURCE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
             VertexElement role = addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
             VertexElement ruleType = addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
@@ -402,7 +402,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
             if (!baseType.equals(concept.baseType())) {
-                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.ONTOLOGY_LABEL, label);
+                throw PropertyNotUniqueException.cannotCreateProperty(concept, Schema.VertexProperty.SCHEMA_LABEL, label);
             }
             vertex = concept.vertex();
         }
@@ -419,7 +419,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
         VertexElement vertexElement = addVertex(baseType);
-        vertexElement.property(Schema.VertexProperty.ONTOLOGY_LABEL, label.getValue());
+        vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
         vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
         return vertexElement;
     }
@@ -453,7 +453,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         T finalType = validateOntologyElement(schemaConcept, baseType, () -> {
             if (Schema.MetaSchema.isMetaLabel(label)) throw GraphOperationException.reservedLabel(label);
-            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.ONTOLOGY_LABEL, label);
+            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, label);
         });
 
         //Automatic shard creation - If this type does not have a shard create one
@@ -495,12 +495,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public RelationshipType putRelationshipType(Label label) {
-        return putOntologyElement(label, Schema.BaseType.RELATION_TYPE,
+        return putOntologyElement(label, Schema.BaseType.RELATIONSHIP_TYPE,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE));
     }
 
     public RelationshipType putRelationTypeImplicit(Label label) {
-        return putOntologyElement(label, Schema.BaseType.RELATION_TYPE,
+        return putOntologyElement(label, Schema.BaseType.RELATIONSHIP_TYPE,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE));
     }
 
@@ -616,7 +616,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
-        return getOntologyConcept(label, Schema.BaseType.ONTOLOGY_ELEMENT);
+        return getOntologyConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
     }
 
     @Override
@@ -631,7 +631,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public RelationshipType getRelationshipType(String label) {
-        return getOntologyConcept(Label.of(label), Schema.BaseType.RELATION_TYPE);
+        return getOntologyConcept(Label.of(label), Schema.BaseType.RELATIONSHIP_TYPE);
     }
 
     @Override

@@ -57,10 +57,10 @@ public class RelationshipEdge implements RelationshipStructure {
             edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
 
     private final Cache<Role> ownerRole = new Cache<>(Cacheable.concept(), () -> edge().graph().getOntologyConcept(LabelId.of(
-            edge().property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
+            edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID))));
 
     private final Cache<Role> valueRole = new Cache<>(Cacheable.concept(), () -> edge().graph().getOntologyConcept(LabelId.of(
-            edge().property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
+            edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID))));
 
     private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> edge().graph().factory().buildConcept(edge().source()));
     private final Cache<Thing> value = new Cache<>(Cacheable.concept(), () -> edge().graph().factory().buildConcept(edge().target()));
@@ -72,8 +72,8 @@ public class RelationshipEdge implements RelationshipStructure {
     RelationshipEdge(RelationshipType relationshipType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
         this(edgeElement);
 
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.getLabelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.getLabelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.getLabelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.getLabelId().getValue());
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationshipType, null, t -> t.getLabelId().getValue());
 
         this.relationType.set(relationshipType);
@@ -93,7 +93,7 @@ public class RelationshipEdge implements RelationshipStructure {
     @Override
     public RelationshipReified reify() {
         //Build the Relationship Vertex
-        VertexElement relationVertex = edge().graph().addVertex(Schema.BaseType.RELATION, getId());
+        VertexElement relationVertex = edge().graph().addVertex(Schema.BaseType.RELATIONSHIP, getId());
         RelationshipReified relationReified = edge().graph().factory().buildRelationReified(relationVertex, type());
 
         //Delete the old edge

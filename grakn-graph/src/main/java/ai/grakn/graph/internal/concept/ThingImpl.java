@@ -216,7 +216,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         if(!roleSet.isEmpty()){
             stream = stream.filter(edge -> {
-                Role roleOwner = vertex().graph().getOntologyConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID)));
+                Role roleOwner = vertex().graph().getOntologyConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID)));
                 return roleSet.contains(roleOwner);
             });
         }

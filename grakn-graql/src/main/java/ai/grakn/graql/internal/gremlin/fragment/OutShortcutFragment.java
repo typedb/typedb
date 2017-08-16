@@ -47,8 +47,8 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabels
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabels;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.traverseRoleFromShortcutEdge;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
-import static ai.grakn.util.Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID;
-import static ai.grakn.util.Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID;
+import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
+import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
 
@@ -84,8 +84,8 @@ class OutShortcutFragment extends AbstractFragment {
 
         return Fragments.union(traversal, ImmutableSet.of(
                 reifiedRelationTraversal(graph),
-                edgeRelationTraversal(graph, Direction.OUT, RELATION_ROLE_OWNER_LABEL_ID),
-                edgeRelationTraversal(graph, Direction.IN, RELATION_ROLE_VALUE_LABEL_ID)
+                edgeRelationTraversal(graph, Direction.OUT, RELATIONSHIP_ROLE_OWNER_LABEL_ID),
+                edgeRelationTraversal(graph, Direction.IN, RELATIONSHIP_ROLE_VALUE_LABEL_ID)
         ));
     }
 

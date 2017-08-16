@@ -58,7 +58,7 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  *           For example an {@link EntityType} or {@link RelationshipType} or {@link Role}
  */
 public abstract class SchemaConceptImpl<T extends SchemaConcept> extends ConceptImpl implements SchemaConcept {
-    private final Cache<Label> cachedLabel = new Cache<>(Cacheable.label(), () ->  Label.of(vertex().property(Schema.VertexProperty.ONTOLOGY_LABEL)));
+    private final Cache<Label> cachedLabel = new Cache<>(Cacheable.label(), () ->  Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
     private final Cache<LabelId> cachedLabelId = new Cache<>(Cacheable.labelId(), () -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
     private final Cache<T> cachedSuperType = new Cache<>(Cacheable.concept(), () -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
     private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(Cacheable.set(), () -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
@@ -82,7 +82,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     public T setLabel(Label label){
         try {
             vertex().graph().txCache().remove(this);
-            vertex().propertyUnique(Schema.VertexProperty.ONTOLOGY_LABEL, label.getValue());
+            vertex().propertyUnique(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
             cachedLabel.set(label);
             vertex().graph().txCache().cacheConcept(this);
             return getThis();

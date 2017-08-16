@@ -84,7 +84,7 @@ public class HALUtils {
         if (thing.isEntity()) {
             return Schema.BaseType.ENTITY;
         } else if (thing.isRelationship()) {
-            return Schema.BaseType.RELATION;
+            return Schema.BaseType.RELATIONSHIP;
         } else if (thing.isResource()) {
             return Schema.BaseType.RESOURCE;
         } else if (thing.isRule()) {
@@ -98,7 +98,7 @@ public class HALUtils {
         if (schemaConcept.isEntityType()) {
             return Schema.BaseType.ENTITY_TYPE;
         } else if (schemaConcept.isRelationshipType()) {
-            return Schema.BaseType.RELATION_TYPE;
+            return Schema.BaseType.RELATIONSHIP_TYPE;
         } else if (schemaConcept.isResourceType()) {
             return Schema.BaseType.RESOURCE_TYPE;
         } else if (schemaConcept.isRuleType()) {
