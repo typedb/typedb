@@ -43,7 +43,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertThat;
 
-public class OntologyMutationTest extends GraphTestBase {
+public class SchemaMutationTest extends GraphTestBase {
     private Role husband;
     private Role wife;
     private RelationshipType marriage;

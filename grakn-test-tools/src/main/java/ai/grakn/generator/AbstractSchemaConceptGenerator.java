@@ -45,11 +45,11 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Felix Chapman
  */
-public abstract class AbstractOntologyConceptGenerator<T extends SchemaConcept> extends FromGraphGenerator<T> {
+public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> extends FromGraphGenerator<T> {
 
     private Optional<Boolean> meta = Optional.empty();
 
-    AbstractOntologyConceptGenerator(Class<T> type) {
+    AbstractSchemaConceptGenerator(Class<T> type) {
         super(type);
     }
 
@@ -58,17 +58,17 @@ public abstract class AbstractOntologyConceptGenerator<T extends SchemaConcept> 
         Collection<T> ontologyConcepts;
 
         if (!includeNonMeta()) {
-            ontologyConcepts = Sets.newHashSet(otherMetaOntologyConcepts());
-            ontologyConcepts.add(metaOntologyConcept());
+            ontologyConcepts = Sets.newHashSet(otherMetaSchemaConcepts());
+            ontologyConcepts.add(metaSchemaConcept());
         } else {
-            ontologyConcepts = (Collection<T>) metaOntologyConcept().subs().collect(toSet());
+            ontologyConcepts = (Collection<T>) metaSchemaConcept().subs().collect(toSet());
         }
 
         ontologyConcepts = ontologyConcepts.stream().filter(this::filter).collect(toSet());
 
         if (!includeMeta()) {
-            ontologyConcepts.remove(metaOntologyConcept());
-            ontologyConcepts.removeAll(otherMetaOntologyConcepts());
+            ontologyConcepts.remove(metaSchemaConcept());
+            ontologyConcepts.removeAll(otherMetaSchemaConcepts());
         }
 
         if (ontologyConcepts.isEmpty() && includeNonMeta()) {
@@ -82,13 +82,13 @@ public abstract class AbstractOntologyConceptGenerator<T extends SchemaConcept> 
 
     protected abstract T newOntologyConcept(Label label);
 
-    protected abstract T metaOntologyConcept();
+    protected abstract T metaSchemaConcept();
 
-    protected Collection<T> otherMetaOntologyConcepts() {
+    protected Collection<T> otherMetaSchemaConcepts() {
         return ImmutableSet.of();
     }
 
-    protected boolean filter(T ontologyConcept) {
+    protected boolean filter(T schemaConcept) {
         return true;
     }
 
@@ -100,7 +100,7 @@ public abstract class AbstractOntologyConceptGenerator<T extends SchemaConcept> 
         return !meta.orElse(false);
     }
 
-    final AbstractOntologyConceptGenerator<T> excludeMeta() {
+    final AbstractSchemaConceptGenerator<T> excludeMeta() {
         meta = Optional.of(false);
         return this;
     }

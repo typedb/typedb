@@ -32,9 +32,9 @@ import java.util.function.BiFunction;
  *
  * @author Felix Chapman
  */
-public class PutOntologyConceptFunctions extends AbstractGenerator<BiFunction> {
+public class PutSchemaConceptFunctions extends AbstractGenerator<BiFunction> {
 
-    public PutOntologyConceptFunctions() {
+    public PutSchemaConceptFunctions() {
         super(BiFunction.class);
     }
 

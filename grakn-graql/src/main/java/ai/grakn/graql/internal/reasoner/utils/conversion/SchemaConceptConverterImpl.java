@@ -27,15 +27,15 @@ import com.google.common.collect.Multimap;
 
 /**
  * <p>
- * Basic {@link OntologyConceptConverter} implementation for conversion between compatible types.
+ * Basic {@link SchemaConceptConverter} implementation for conversion between compatible types.
  * </p>
  *
  * @author Kasper Piskorski
  */
-public class OntologyConceptConverterImpl implements OntologyConceptConverter<SchemaConcept> {
+public class SchemaConceptConverterImpl implements SchemaConceptConverter<SchemaConcept> {
 
     @Override
-    public Multimap<RelationshipType, Role> toRelationMultimap(SchemaConcept schemaConcept) {
+    public Multimap<RelationshipType, Role> toRelationshipMultimap(SchemaConcept schemaConcept) {
         Multimap<RelationshipType, Role> relationMap = HashMultimap.create();
         schemaConcept.subs().filter(Concept::isType)
                 .flatMap(t -> t.asType().plays())

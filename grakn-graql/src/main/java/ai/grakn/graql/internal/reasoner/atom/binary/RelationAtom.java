@@ -47,7 +47,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
-import ai.grakn.graql.internal.reasoner.utils.conversion.OntologyConceptConverterImpl;
+import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverterImpl;
 import ai.grakn.graql.internal.reasoner.utils.conversion.RoleTypeConverter;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
@@ -406,7 +406,7 @@ public class RelationAtom extends IsaAtom {
         //types deduced from substitution
         inferEntityTypes(sub).forEach(types::add);
 
-        Multimap<RelationshipType, Role> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new OntologyConceptConverterImpl());
+        Multimap<RelationshipType, Role> compatibleTypesFromTypes = getCompatibleRelationTypesWithRoles(types, new SchemaConceptConverterImpl());
 
         Multimap<RelationshipType, Role> compatibleTypes;
         //intersect relation types from roles and types

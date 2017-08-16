@@ -47,7 +47,7 @@ public class GraphWriter {
      * @return Graql insert query with ontology of given graph
      */
     public String dumpOntology(){
-        return join(types().map(OntologyConceptMapper::map));
+        return join(types().map(SchemaConceptMapper::map));
     }
 
     /**

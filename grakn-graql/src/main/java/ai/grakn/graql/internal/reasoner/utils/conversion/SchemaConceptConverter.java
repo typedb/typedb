@@ -24,19 +24,19 @@ import com.google.common.collect.Multimap;
 
 /**
  * <p>
- *      OntologyConceptConverter interface for conversion between compatible {@link SchemaConcept}.
+ *      {@link SchemaConceptConverter} interface for conversion between compatible {@link SchemaConcept}.
  * </p>
  * @param <T> type to convert from
  *
  * @author Kasper Piskorski
  */
-public interface OntologyConceptConverter<T extends SchemaConcept>{
+public interface SchemaConceptConverter<T extends SchemaConcept>{
     /**
      * convert a given type to a map of relation types in which it can play roles
      * and the corresponding role types including entity type hierarchy
-     * @param ontologyConcept to be converted
+     * @param schemaConcept to be converted
      * @return map of relation types in which it can play roles and the corresponding role types
      */
-    Multimap<RelationshipType, Role> toRelationMultimap(T ontologyConcept);
+    Multimap<RelationshipType, Role> toRelationshipMultimap(T schemaConcept);
 }
 

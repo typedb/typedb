@@ -33,7 +33,7 @@ import static ai.grakn.graql.Graql.var;
  * Map Grakn Core type to equivalent Graql representation
  * @author alexandraorth
  */
-public class OntologyConceptMapper {
+public class SchemaConceptMapper {
 
     /**
      * Map a Type to the Graql string representation

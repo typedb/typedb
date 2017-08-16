@@ -40,7 +40,7 @@ import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.utils.conversion.OntologyConceptConverter;
+import ai.grakn.graql.internal.reasoner.utils.conversion.SchemaConceptConverter;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
@@ -262,13 +262,13 @@ public class ReasonerUtils {
      * @param <T> type generic
      * @return map of compatible relation types and their corresponding role types
      */
-    public static <T extends SchemaConcept> Multimap<RelationshipType, Role> getCompatibleRelationTypesWithRoles(Set<T> types, OntologyConceptConverter<T> ontologyConceptConverter) {
+    public static <T extends SchemaConcept> Multimap<RelationshipType, Role> getCompatibleRelationTypesWithRoles(Set<T> types, SchemaConceptConverter<T> schemaConceptConverter) {
         Multimap<RelationshipType, Role> compatibleTypes = HashMultimap.create();
         if (types.isEmpty()) return compatibleTypes;
         Iterator<T> it = types.iterator();
-        compatibleTypes.putAll(ontologyConceptConverter.toRelationMultimap(it.next()));
+        compatibleTypes.putAll(schemaConceptConverter.toRelationshipMultimap(it.next()));
         while(it.hasNext() && compatibleTypes.size() > 1) {
-            compatibleTypes = multimapIntersection(compatibleTypes, ontologyConceptConverter.toRelationMultimap(it.next()));
+            compatibleTypes = multimapIntersection(compatibleTypes, schemaConceptConverter.toRelationshipMultimap(it.next()));
         }
         return compatibleTypes;
     }

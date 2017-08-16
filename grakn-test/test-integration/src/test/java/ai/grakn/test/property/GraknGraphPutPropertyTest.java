@@ -32,7 +32,7 @@ import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.Labels.Unused;
-import ai.grakn.generator.PutOntologyConceptFunctions;
+import ai.grakn.generator.PutSchemaConceptFunctions;
 import ai.grakn.generator.PutTypeFunctions;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -67,7 +67,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyConceptWithTheGivenLabel(
             @Open GraknGraph graph, @Unused Label label,
-            @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, SchemaConcept> putOntologyConcept
+            @From(PutSchemaConceptFunctions.class) BiFunction<GraknGraph, Label, SchemaConcept> putOntologyConcept
     ) {
         SchemaConcept type = putOntologyConcept.apply(graph, label);
         assertEquals(label, type.getLabel());
@@ -76,7 +76,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyConceptWithDefaultProperties(
             @Open GraknGraph graph, @Unused Label label,
-            @From(PutOntologyConceptFunctions.class) BiFunction<GraknGraph, Label, SchemaConcept> putOntologyConcept
+            @From(PutSchemaConceptFunctions.class) BiFunction<GraknGraph, Label, SchemaConcept> putOntologyConcept
     ) {
         SchemaConcept concept = putOntologyConcept.apply(graph, label);
 

@@ -20,7 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
+import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
 
 /**
  * This is a generator that just produces the top-level meta-type `thing`.

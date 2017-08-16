@@ -25,14 +25,14 @@ import com.google.common.collect.Multimap;
 
 /**
  * <p>
- * Implementation of {@link OntologyConceptConverter} allowing for conversion of role types to compatible types.
+ * Implementation of {@link SchemaConceptConverter} allowing for conversion of role types to compatible types.
  * </p>
  *
  * @author Kasper Piskorski
  */
-public class RoleTypeConverter implements OntologyConceptConverter<Role> {
+public class RoleTypeConverter implements SchemaConceptConverter<Role> {
     @Override
-    public Multimap<RelationshipType, Role> toRelationMultimap(Role role) {
+    public Multimap<RelationshipType, Role> toRelationshipMultimap(Role role) {
         Multimap<RelationshipType, Role> relationMap = HashMultimap.create();
         role.subs().forEach(roleType -> {
                     roleType.relationTypes()

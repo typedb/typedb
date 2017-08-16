@@ -39,7 +39,7 @@ public class RelationTypes extends AbstractTypeGenerator<RelationshipType> {
     }
 
     @Override
-    protected RelationshipType metaOntologyConcept() {
+    protected RelationshipType metaSchemaConcept() {
         return graph().admin().getMetaRelationType();
     }
 }
