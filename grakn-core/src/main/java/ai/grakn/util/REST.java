@@ -198,6 +198,13 @@ public class REST {
             public static final String RELATIONS_JSON_FIELD = "relations";
             public static final String RESOURCES_JSON_FIELD = "resources";
         }
+
+        /**
+         * Json fields used to describe tasks
+         */
+        public static class Task {
+            public static final String STACK_TRACE = "stackTrace";
+        }
     }
 
     /**

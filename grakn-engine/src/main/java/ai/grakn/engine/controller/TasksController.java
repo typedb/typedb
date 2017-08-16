@@ -64,6 +64,7 @@ import java.util.function.Function;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
@@ -430,7 +431,7 @@ public class TasksController {
                 .set("interval", state.schedule().interval().map(Duration::toMillis).orElse(null))
                 .set("recurring", state.schedule().isRecurring())
                 .set("exception", state.exception())
-                .set("stackTrace", state.stackTrace())
+                .set(STACK_TRACE, state.stackTrace())
                 .set("engineID", state.engineID() != null ? state.engineID().value() : null);
     }
 
