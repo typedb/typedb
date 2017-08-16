@@ -49,14 +49,14 @@ public class CastingTest extends GraphTestBase {
         role2 = graknGraph.putRole("role2");
         role3 = graknGraph.putRole("role3");
         entityType = graknGraph.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
-        relationshipType = graknGraph.putRelationType("Relationship Type").relates(role1).relates(role2).relates(role3);
+        relationshipType = graknGraph.putRelationshipType("Relationship Type").relates(role1).relates(role2).relates(role3);
     }
 
     @Test
     public void whenCreatingRelation_EnsureRolePlayerContainsInstanceRoleTypeRelationTypeAndRelation(){
         Entity e1 = entityType.addEntity();
 
-        RelationshipImpl relation = (RelationshipImpl) relationshipType.addRelation().
+        RelationshipImpl relation = (RelationshipImpl) relationshipType.addRelationship().
                 addRolePlayer(role1, e1);
 
         Set<Casting> castings = relation.reified().get().castingsRelation().collect(Collectors.toSet());
@@ -74,7 +74,7 @@ public class CastingTest extends GraphTestBase {
         Entity e1 = entityType.addEntity();
         Entity e3 = entityType.addEntity();
 
-        RelationshipImpl relation = (RelationshipImpl) relationshipType.addRelation().
+        RelationshipImpl relation = (RelationshipImpl) relationshipType.addRelationship().
                 addRolePlayer(role1, e1);
 
         Set<Thing> things = relation.reified().get().castingsRelation().map(Casting::getInstance).collect(Collectors.toSet());

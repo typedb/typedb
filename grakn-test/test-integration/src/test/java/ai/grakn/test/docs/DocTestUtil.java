@@ -74,7 +74,7 @@ public class DocTestUtil {
             ResourceType<Double> weight = graph.putResourceType("weight", ResourceType.DataType.DOUBLE);
             ResourceType<Double> height = graph.putResourceType("height", ResourceType.DataType.DOUBLE);
 
-            graph.putRelationType("has-type")
+            graph.putRelationshipType("has-type")
                     .relates(graph.putRole("type-of-pokemon")).relates(graph.putRole("pokemon-with-type"));
 
             pokemonType.resource(typeId).resource(description);

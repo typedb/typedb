@@ -67,9 +67,9 @@ public class NguyenGraph extends TestGraph {
         EntityType entity = graph.getEntityType("entity2");
         EntityType aEntity = graph.getEntityType("a-entity");
         EntityType bEntity = graph.getEntityType("b-entity");
-        RelationshipType r = graph.getRelationType("R");
-        RelationshipType p = graph.getRelationType("P");
-        RelationshipType q = graph.getRelationType("Q");
+        RelationshipType r = graph.getRelationshipType("R");
+        RelationshipType p = graph.getRelationshipType("P");
+        RelationshipType q = graph.getRelationshipType("Q");
 
         ConceptId cId = putEntity(graph, "c", entity, key).getId();
         ConceptId dId = putEntity(graph, "d", entity, key).getId();
@@ -85,29 +85,29 @@ public class NguyenGraph extends TestGraph {
         }
 
 
-        p.addRelation()
+        p.addRelationship()
                 .addRolePlayer(Pfrom, graph.getConcept(cId))
                 .addRolePlayer(Pto, graph.getConcept(dId));
 
-        r.addRelation()
+        r.addRelationship()
                 .addRolePlayer(Rfrom, graph.getConcept(dId))
                 .addRolePlayer(Rto, graph.getConcept(eId));
 
-        q.addRelation()
+        q.addRelationship()
                 .addRolePlayer(qfrom, graph.getConcept(eId))
                 .addRolePlayer(qto, graph.getConcept(aInstancesIds[0]));
 
         for(int i = 0 ; i <= n ;i++){
-            p.addRelation()
+            p.addRelationship()
                     .addRolePlayer(Pfrom, graph.getConcept(bInstancesIds[i]))
                     .addRolePlayer(Pto, graph.getConcept(cId));
-            p.addRelation()
+            p.addRelationship()
                     .addRolePlayer(Pfrom, graph.getConcept(cId))
                     .addRolePlayer(Pto, graph.getConcept(bInstancesIds[i]));
-            q.addRelation()
+            q.addRelationship()
                     .addRolePlayer(qfrom, graph.getConcept(aInstancesIds[i]))
                     .addRolePlayer(qto, graph.getConcept(bInstancesIds[i]));
-            q.addRelation()
+            q.addRelationship()
                     .addRolePlayer(qfrom, graph.getConcept(bInstancesIds[i]))
                     .addRolePlayer(qto, graph.getConcept(aInstancesIds[i+1]));
         }

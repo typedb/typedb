@@ -43,7 +43,7 @@ public class RoleTest extends GraphTestBase {
     @Before
     public void buildGraph(){
         role = graknGraph.putRole("My Role");
-        relationshipType = graknGraph.putRelationType("RelationshipType");
+        relationshipType = graknGraph.putRelationshipType("RelationshipType");
     }
 
     @Test
@@ -81,7 +81,7 @@ public class RoleTest extends GraphTestBase {
     @Test
     public void whenDeletingRoleTypeWithRelationTypes_Throw(){
         Role role2 = graknGraph.putRole("New Role Type");
-        graknGraph.putRelationType("Thing").relates(role2).relates(role);
+        graknGraph.putRelationshipType("Thing").relates(role2).relates(role);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.cannotBeDeleted(role2).getMessage());
@@ -93,13 +93,13 @@ public class RoleTest extends GraphTestBase {
     public void whenDeletingRoleTypeWithRolePlayers_Throw(){
         Role roleA = graknGraph.putRole("roleA");
         Role roleB = graknGraph.putRole("roleB");
-        RelationshipType relationshipType = graknGraph.putRelationType("relationTypes").relates(roleA).relates(roleB);
+        RelationshipType relationshipType = graknGraph.putRelationshipType("relationTypes").relates(roleA).relates(roleB);
         EntityType entityType = graknGraph.putEntityType("entityType").plays(roleA).plays(roleB);
 
         Entity a = entityType.addEntity();
         Entity b = entityType.addEntity();
 
-        relationshipType.addRelation().addRolePlayer(roleA, a).addRolePlayer(roleB, b);
+        relationshipType.addRelationship().addRolePlayer(roleA, a).addRolePlayer(roleB, b);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.cannotBeDeleted(roleA).getMessage());
@@ -112,7 +112,7 @@ public class RoleTest extends GraphTestBase {
         Role roleA = graknGraph.putRole("roleA");
         Role roleB = graknGraph.putRole("roleB");
         relationshipType.relates(roleA).relates(role);
-        RelationshipType relationshipType2 = graknGraph.putRelationType("relationshipType2").relates(roleB).relates(role);
+        RelationshipType relationshipType2 = graknGraph.putRelationshipType("relationshipType2").relates(roleB).relates(role);
         graknGraph.commit();
 
         assertThat(roleA.relationTypes().collect(toSet()), containsInAnyOrder(relationshipType));

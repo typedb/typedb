@@ -62,8 +62,8 @@ public class OntologyMutationTest extends GraphTestBase {
         driver = graknGraph.putRole("Driver");
         Role driven = graknGraph.putRole("Driven");
 
-        marriage = graknGraph.putRelationType("marriage").relates(husband).relates(wife);
-        graknGraph.putRelationType("car being driven by").relates(driven).relates(driver);
+        marriage = graknGraph.putRelationshipType("marriage").relates(husband).relates(wife);
+        graknGraph.putRelationshipType("car being driven by").relates(driven).relates(driver);
 
         person = graknGraph.putEntityType("Person").plays(husband).plays(wife);
         man = graknGraph.putEntityType("Man").sup(person);
@@ -72,7 +72,7 @@ public class OntologyMutationTest extends GraphTestBase {
 
         alice = woman.addEntity();
         bob = man.addEntity();
-        marriage.addRelation().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
+        marriage.addRelationship().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
         graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
     }
@@ -154,7 +154,7 @@ public class OntologyMutationTest extends GraphTestBase {
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
-        graknGraphBatch.putRelationType("This Will Fail");
+        graknGraphBatch.putRelationshipType("This Will Fail");
     }
 
     @Test
@@ -162,11 +162,11 @@ public class OntologyMutationTest extends GraphTestBase {
         String roleTypeId = "role-thing";
         String relationTypeId = "relationtype";
         graknGraph.putRole(roleTypeId);
-        graknGraph.putRelationType(relationTypeId);
+        graknGraph.putRelationshipType(relationTypeId);
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
         Role role = graknGraphBatch.getRole(roleTypeId);
-        RelationshipType relationshipType = graknGraphBatch.getRelationType(relationTypeId);
+        RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
@@ -232,12 +232,12 @@ public class OntologyMutationTest extends GraphTestBase {
         String roleTypeId = "role-thing";
         String relationTypeId = "relationtype";
         Role role = graknGraph.putRole(roleTypeId);
-        graknGraph.putRelationType(relationTypeId).relates(role);
+        graknGraph.putRelationshipType(relationTypeId).relates(role);
         graknGraph.commit();
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
         role = graknGraphBatch.getRole(roleTypeId);
-        RelationshipType relationshipType = graknGraphBatch.getRelationType(relationTypeId);
+        RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
@@ -264,7 +264,7 @@ public class OntologyMutationTest extends GraphTestBase {
     @Test
     public void whenDeletingRelationTypeAndLeavingRoleByItself_Thow(){
         Role role = graknGraph.putRole("my wonderful role");
-        RelationshipType relation = graknGraph.putRelationType("my wonderful relation").relates(role);
+        RelationshipType relation = graknGraph.putRelationshipType("my wonderful relation").relates(role);
         relation.relates(role);
         graknGraph.commit();
 
@@ -287,7 +287,7 @@ public class OntologyMutationTest extends GraphTestBase {
 
         //Create a man which is a person and is therefore allowed to have a name
         EntityType man = graknGraph.putEntityType("man").sup(person);
-        RelationshipType has_name = graknGraph.putRelationType("has-name");
+        RelationshipType has_name = graknGraph.putRelationshipType("has-name");
 
         //Create a Man and name him Bob
         Resource<String> nameBob = name.putResource("Bob");

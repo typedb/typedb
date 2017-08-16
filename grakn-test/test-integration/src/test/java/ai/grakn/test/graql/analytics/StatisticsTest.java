@@ -520,15 +520,15 @@ public class StatisticsTest {
             Role relation2 = graph.putRole("relation2");
             entityType1.plays(relation1).plays(relation2);
             entityType2.plays(relation1).plays(relation2);
-            RelationshipType related = graph.putRelationType("related").relates(relation1).relates(relation2);
+            RelationshipType related = graph.putRelationshipType("related").relates(relation1).relates(relation2);
 
-            related.addRelation()
+            related.addRelationship()
                     .addRolePlayer(relation1, entity1)
                     .addRolePlayer(relation2, entity2);
-            related.addRelation()
+            related.addRelationship()
                     .addRolePlayer(relation1, entity2)
                     .addRolePlayer(relation2, entity3);
-            related.addRelation()
+            related.addRelationship()
                     .addRolePlayer(relation1, entity2)
                     .addRolePlayer(relation2, entity4);
 
@@ -557,19 +557,19 @@ public class StatisticsTest {
             Role resourceValue6 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
             Role resourceValue7 = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType7)));
 
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)))
+            graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)))
                     .relates(resourceOwner1).relates(resourceValue1);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)))
+            graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)))
                     .relates(resourceOwner2).relates(resourceValue2);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType3)))
+            graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType3)))
                     .relates(resourceOwner3).relates(resourceValue3);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType4)))
+            graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType4)))
                     .relates(resourceOwner4).relates(resourceValue4);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)))
+            graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)))
                     .relates(resourceOwner5).relates(resourceValue5);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)))
+            graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)))
                     .relates(resourceOwner6).relates(resourceValue6);
-            graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType7)))
+            graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType7)))
                     .relates(resourceOwner7).relates(resourceValue7);
 
             entityType1.plays(resourceOwner1)
@@ -648,48 +648,48 @@ public class StatisticsTest {
             Role resourceValue6 = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of(resourceType6)));
 
             RelationshipType relationshipType1 = graph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType1)));
-            relationshipType1.addRelation()
+            relationshipType1.addRelationship()
                     .addRolePlayer(resourceOwner1, entity1)
                     .addRolePlayer(resourceValue1, graph.<Double>getResourceType(resourceType1).putResource(1.2));
-            relationshipType1.addRelation()
+            relationshipType1.addRelationship()
                     .addRolePlayer(resourceOwner1, entity1)
                     .addRolePlayer(resourceValue1, graph.<Double>getResourceType(resourceType1).putResource(1.5));
-            relationshipType1.addRelation()
+            relationshipType1.addRelationship()
                     .addRolePlayer(resourceOwner1, entity3)
                     .addRolePlayer(resourceValue1, graph.<Double>getResourceType(resourceType1).putResource(1.8));
 
             RelationshipType relationshipType2 = graph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType2)));
-            relationshipType2.addRelation()
+            relationshipType2.addRelationship()
                     .addRolePlayer(resourceOwner2, entity1)
                     .addRolePlayer(resourceValue2, graph.<Long>getResourceType(resourceType2).putResource(4L));
-            relationshipType2.addRelation()
+            relationshipType2.addRelationship()
                     .addRolePlayer(resourceOwner2, entity1)
                     .addRolePlayer(resourceValue2, graph.<Long>getResourceType(resourceType2).putResource(-1L));
-            relationshipType2.addRelation()
+            relationshipType2.addRelationship()
                     .addRolePlayer(resourceOwner2, entity4)
                     .addRolePlayer(resourceValue2, graph.<Long>getResourceType(resourceType2).putResource(0L));
 
             graph.<Long>getResourceType(resourceType3).putResource(100L);
 
             RelationshipType relationshipType5 = graph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType5)));
-            relationshipType5.addRelation()
+            relationshipType5.addRelationship()
                     .addRolePlayer(resourceOwner5, entity1)
                     .addRolePlayer(resourceValue5, graph.<Long>getResourceType(resourceType5).putResource(-7L));
-            relationshipType5.addRelation()
+            relationshipType5.addRelationship()
                     .addRolePlayer(resourceOwner5, entity2)
                     .addRolePlayer(resourceValue5, graph.<Long>getResourceType(resourceType5).putResource(-7L));
-            relationshipType5.addRelation()
+            relationshipType5.addRelationship()
                     .addRolePlayer(resourceOwner5, entity4)
                     .addRolePlayer(resourceValue5, graph.<Long>getResourceType(resourceType5).putResource(-7L));
 
             RelationshipType relationshipType6 = graph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(Label.of(resourceType6)));
-            relationshipType6.addRelation()
+            relationshipType6.addRelationship()
                     .addRolePlayer(resourceOwner6, entity1)
                     .addRolePlayer(resourceValue6, graph.<Double>getResourceType(resourceType6).putResource(7.5));
-            relationshipType6.addRelation()
+            relationshipType6.addRelationship()
                     .addRolePlayer(resourceOwner6, entity2)
                     .addRolePlayer(resourceValue6, graph.<Double>getResourceType(resourceType6).putResource(7.5));
-            relationshipType6.addRelation()
+            relationshipType6.addRelationship()
                     .addRolePlayer(resourceOwner6, entity4)
                     .addRolePlayer(resourceValue6, graph.<Double>getResourceType(resourceType6).putResource(7.5));
 

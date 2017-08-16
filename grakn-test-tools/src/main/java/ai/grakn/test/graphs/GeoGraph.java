@@ -62,7 +62,7 @@ public class GeoGraph extends TestGraph {
 
         geoEntity = graph.putRole("geo-entity");
         entityLocation = graph.putRole("entity-location");
-        isLocatedIn = graph.putRelationType("is-located-in")
+        isLocatedIn = graph.putRelationshipType("is-located-in")
                 .relates(geoEntity).relates(entityLocation);
 
         geographicalObject = graph.putEntityType("geoObject")
@@ -124,75 +124,75 @@ public class GeoGraph extends TestGraph {
 
     @Override
     public void buildRelations(GraknGraph graph) {
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Poland)
                 .addRolePlayer(entityLocation, Europe);
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Masovia)
                 .addRolePlayer(entityLocation, Poland);
 
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Silesia)
                 .addRolePlayer(entityLocation, Poland);
 
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Warsaw)
                 .addRolePlayer(entityLocation, Masovia);
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Wroclaw)
                 .addRolePlayer(entityLocation, Silesia);
 
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, PW)
                 .addRolePlayer(entityLocation, Warsaw);
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, UW)
                 .addRolePlayer(entityLocation, Warsaw);
 
 
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Imperial)
                 .addRolePlayer(entityLocation, London);
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, UCL)
                 .addRolePlayer(entityLocation, London);
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, London)
                 .addRolePlayer(entityLocation, GreaterLondon);
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, GreaterLondon)
                 .addRolePlayer(entityLocation, England);
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, England)
                .addRolePlayer(entityLocation, Europe);
 
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Munich)
                 .addRolePlayer(entityLocation, Bavaria);
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Bavaria)
                 .addRolePlayer(entityLocation, Germany);
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Germany)
                 .addRolePlayer(entityLocation, Europe);
 
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Milan)
                 .addRolePlayer(entityLocation, Lombardy);
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Lombardy)
                 .addRolePlayer(entityLocation, Italy);
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Italy)
                 .addRolePlayer(entityLocation, Europe);
 
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Paris)
                 .addRolePlayer(entityLocation, IleDeFrance);
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, IleDeFrance)
                 .addRolePlayer(entityLocation, France);
-        isLocatedIn.addRelation()
+        isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, France)
                 .addRolePlayer(entityLocation, Europe);
 

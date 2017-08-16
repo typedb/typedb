@@ -489,12 +489,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public RelationshipType putRelationType(String label) {
-        return putRelationType(Label.of(label));
+    public RelationshipType putRelationshipType(String label) {
+        return putRelationshipType(Label.of(label));
     }
 
     @Override
-    public RelationshipType putRelationType(Label label) {
+    public RelationshipType putRelationshipType(Label label) {
         return putOntologyElement(label, Schema.BaseType.RELATION_TYPE,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE));
     }
@@ -630,7 +630,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public RelationshipType getRelationType(String label) {
+    public RelationshipType getRelationshipType(String label) {
         return getOntologyConcept(Label.of(label), Schema.BaseType.RELATION_TYPE);
     }
 

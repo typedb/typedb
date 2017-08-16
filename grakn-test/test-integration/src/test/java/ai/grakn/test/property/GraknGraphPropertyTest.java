@@ -218,7 +218,7 @@ public class GraknGraphPropertyTest {
     public void whenCallingGetRelationType_TheResultIsTheSameAsGetOntologyConcept(
             @Open GraknGraph graph, @FromGraph RelationshipType type) {
         Label label = type.getLabel();
-        assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRelationType(label.getValue()));
+        assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRelationshipType(label.getValue()));
     }
 
     @Property

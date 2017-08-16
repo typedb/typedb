@@ -120,20 +120,20 @@ public class CWGraph extends TestGraph {
                 .resource(alignment);
 
         //Relations
-        owns = graph.putRelationType("owns")
+        owns = graph.putRelationshipType("owns")
                 .relates(owner)
                 .relates(ownedItem);
 
-        isEnemyOf = graph.putRelationType("is-enemy-of")
+        isEnemyOf = graph.putRelationshipType("is-enemy-of")
                 .relates(enemySource)
                 .relates(enemyTarget);
 
-        graph.putRelationType("transaction")
+        graph.putRelationshipType("transaction")
                 .relates(seller)
                 .relates(buyer)
                 .relates(transactionItem);
 
-        isPaidBy = graph.putRelationType("is-paid-by")
+        isPaidBy = graph.putRelationshipType("is-paid-by")
                 .relates(payee)
                 .relates(payer);
     }
@@ -152,17 +152,17 @@ public class CWGraph extends TestGraph {
     @Override
     protected void buildRelations(GraknGraph graph) {
         //Enemy(Nono, America)
-        isEnemyOf.addRelation()
+        isEnemyOf.addRelationship()
                 .addRolePlayer(enemySource, Nono)
                 .addRolePlayer(enemyTarget, America);
 
         //Owns(Nono, Missile)
-        owns.addRelation()
+        owns.addRelationship()
                 .addRolePlayer(owner, Nono)
                 .addRolePlayer(ownedItem, Tomahawk);
 
         //isPaidBy(West, Nono)
-        isPaidBy.addRelation()
+        isPaidBy.addRelationship()
                 .addRolePlayer(payee, colonelWest)
                 .addRolePlayer(payer, Nono);
     }

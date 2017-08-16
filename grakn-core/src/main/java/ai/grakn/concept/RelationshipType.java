@@ -30,8 +30,8 @@ import java.util.stream.Stream;
  * </p>
  *
  * <p>
- *     A relation type defines how {@link Type} may relate to one another.
- *     They are used to model and categorise n-ary relationships.
+ *     A {@link RelationshipType} defines how {@link Type} may relate to one another.
+ *     They are used to model and categorise n-ary {@link Relationship}s.
  * </p>
  *
  * @author fppt
@@ -54,7 +54,7 @@ public interface RelationshipType extends Type {
      *
      * @throws GraphOperationException if this is a meta type
      */
-    Relationship addRelation();
+    Relationship addRelationship();
 
     /**
      * Sets the supertype of the {@link RelationshipType} to be the {@link RelationshipType} specified.

@@ -77,7 +77,7 @@ public class SchemaConceptTest extends GraphTestBase {
 
         entityType.resource(resourceType);
 
-        RelationshipType relationshipType = graknGraph.getRelationType(hasResourceLabel.getValue());
+        RelationshipType relationshipType = graknGraph.getRelationshipType(hasResourceLabel.getValue());
         Assert.assertEquals(hasResourceLabel, relationshipType.getLabel());
 
         Set<Label> roleLabels = relationshipType.relates().map(SchemaConcept::getLabel).collect(toSet());

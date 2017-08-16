@@ -143,12 +143,12 @@ public class OWLMigrator {
         ResourceType<String> iriResource = owlIriResource();
         Role hasIriOwner = entityRole(type, iriResource);
         Role hasIriValue = resourceRole(iriResource);
-        RelationshipType hasIriRelation = graph.putRelationType(namer.resourceRelation(hasIriResourceId))
+        RelationshipType hasIriRelation = graph.putRelationshipType(namer.resourceRelation(hasIriResourceId))
                 .relates(hasIriOwner).relates(hasIriValue);
 
         Entity entity = type.addEntity();
         Resource resourceInstance = iriResource.putResource(id);
-        hasIriRelation.addRelation()
+        hasIriRelation.addRelationship()
                 .addRolePlayer(hasIriOwner, entity)
                 .addRolePlayer(hasIriValue, resourceInstance);
         return entity;
@@ -180,7 +180,7 @@ public class OWLMigrator {
     }   
 
     public RelationshipType relation(OWLObjectProperty property) {
-        RelationshipType relType = graph.putRelationType(namer.objectPropertyName(property.getIRI()));
+        RelationshipType relType = graph.putRelationshipType(namer.objectPropertyName(property.getIRI()));
         Role subjectRole = subjectRole(relType);
         Role objectRole = objectRole(relType);
         relType.relates(subjectRole);
@@ -192,7 +192,7 @@ public class OWLMigrator {
     }
 
     public RelationshipType relation(OWLDataProperty property) {
-        RelationshipType relType = graph.putRelationType(namer.resourceRelation(property.getIRI()));
+        RelationshipType relType = graph.putRelationshipType(namer.resourceRelation(property.getIRI()));
         ResourceType<?> resourceType = resourceType(property);
         relType.relates(entityRole(owlThingEntityType(), resourceType));
         relType.relates(resourceRole(resourceType));
@@ -200,7 +200,7 @@ public class OWLMigrator {
     }
 
     public RelationshipType relation(OWLAnnotationProperty property) {
-        RelationshipType relType = graph.putRelationType(namer.resourceRelation(property.getIRI()));
+        RelationshipType relType = graph.putRelationshipType(namer.resourceRelation(property.getIRI()));
         ResourceType<?> resourceType = graph.putResourceType(namer.fromIri(property.getIRI()), ResourceType.DataType.STRING);
         relType.relates(entityRole(owlThingEntityType(), resourceType));
         relType.relates(resourceRole(resourceType));

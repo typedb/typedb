@@ -44,7 +44,7 @@ public class PutOntologyConceptFunctions extends AbstractGenerator<BiFunction> {
                 GraknGraph::putEntityType,
                 (graph, label) -> graph.putResourceType(label, gen(ResourceType.DataType.class)),
                 GraknGraph::putRuleType,
-                GraknGraph::putRelationType,
+                GraknGraph::putRelationshipType,
                 GraknGraph::putRole
         ));
     }

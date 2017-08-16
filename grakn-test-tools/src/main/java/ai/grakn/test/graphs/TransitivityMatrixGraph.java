@@ -64,7 +64,7 @@ public class TransitivityMatrixGraph extends TestGraph {
         Role qto = graph.getRole("Q-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
-        RelationshipType q = graph.getRelationType("Q");
+        RelationshipType q = graph.getRelationshipType("Q");
         Thing aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
         ConceptId[][] aInstanceIds = new ConceptId[n][m];
         for(int i = 0 ; i < n ;i++) {
@@ -73,19 +73,19 @@ public class TransitivityMatrixGraph extends TestGraph {
             }
         }
         
-        q.addRelation()
+        q.addRelationship()
                 .addRolePlayer(qfrom, aInst)
                 .addRolePlayer(qto, graph.getConcept(aInstanceIds[0][0]));
 
         for(int i = 0 ; i < n ; i++) {
             for (int j = 0; j < m ; j++) {
                 if ( i < n - 1 ) {
-                    q.addRelation()
+                    q.addRelationship()
                             .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
                             .addRolePlayer(qto, graph.getConcept(aInstanceIds[i+1][j]));
                 }
                 if ( j < m - 1){
-                    q.addRelation()
+                    q.addRelationship()
                             .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
                             .addRolePlayer(qto, graph.getConcept(aInstanceIds[i][j+1]));
                 }

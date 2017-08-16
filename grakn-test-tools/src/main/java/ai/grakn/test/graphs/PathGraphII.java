@@ -65,7 +65,7 @@ public class PathGraphII extends TestGraph {
         Role arcFrom = graph.getRole("arc-from");
         Role arcTo = graph.getRole("arc-to");
 
-        RelationshipType arc = graph.getRelationType("arc");
+        RelationshipType arc = graph.getRelationshipType("arc");
         putEntity(graph, "a0", startVertex, key);
 
         for(int i = 0 ; i < n ;i++) {
@@ -74,19 +74,19 @@ public class PathGraphII extends TestGraph {
             }
         }
 
-        arc.addRelation()
+        arc.addRelationship()
                 .addRolePlayer(arcFrom, getInstance(graph, "a0"))
                 .addRolePlayer(arcTo, getInstance(graph, "a0,0"));
 
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
                 if (j < n - 1) {
-                    arc.addRelation()
+                    arc.addRelationship()
                             .addRolePlayer(arcFrom, getInstance(graph, "a" + i + "," + j))
                             .addRolePlayer(arcTo, getInstance(graph, "a" + i + "," + (j + 1)));
                 }
                 if (i < m - 1) {
-                    arc.addRelation()
+                    arc.addRelationship()
                             .addRolePlayer(arcFrom, getInstance(graph, "a" + i + "," + j))
                             .addRolePlayer(arcTo, getInstance(graph, "a" + (i + 1) + "," + j));
                 }

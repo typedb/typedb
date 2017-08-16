@@ -140,7 +140,7 @@ public class GraqlTest {
 
             Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
             Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
-            RelationshipType relationshipType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
+            RelationshipType relationshipType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
                     .relates(resourceOwner)
                     .relates(resourceValue);
 
@@ -149,13 +149,13 @@ public class GraqlTest {
             EntityType thingy = graph.putEntityType("thingy").plays(resourceOwner);
             Entity theResourceOwner = thingy.addEntity();
 
-            relationshipType.addRelation()
+            relationshipType.addRelationship()
                     .addRolePlayer(resourceOwner, theResourceOwner)
                     .addRolePlayer(resourceValue, resource.putResource(1L));
-            relationshipType.addRelation()
+            relationshipType.addRelationship()
                     .addRolePlayer(resourceOwner, theResourceOwner)
                     .addRolePlayer(resourceValue, resource.putResource(2L));
-            relationshipType.addRelation()
+            relationshipType.addRelationship()
                     .addRolePlayer(resourceOwner, theResourceOwner)
                     .addRolePlayer(resourceValue, resource.putResource(3L));
 
@@ -279,12 +279,12 @@ public class GraqlTest {
             Role role2 = graph.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationshipType relationshipType = graph.putRelationType(related).relates(role1).relates(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
-            relationId12 = relationshipType.addRelation()
+            relationId12 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity1)
                     .addRolePlayer(role2, entity2).getId().getValue();
-            relationId24 = relationshipType.addRelation()
+            relationId24 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity2)
                     .addRolePlayer(role2, entity4).getId().getValue();
 

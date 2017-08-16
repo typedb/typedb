@@ -201,7 +201,7 @@ public class ShortestPathTest {
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
             entityType.plays(role1).plays(role2);
-            RelationshipType relationshipType = graph.putRelationType(related).relates(role1).relates(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
             Entity start = entityType.addEntity();
             Entity end = entityType.addEntity();
@@ -219,14 +219,14 @@ public class ShortestPathTest {
 
                 Entity middle = entityType.addEntity();
                 ConceptId middleId = middle.getId();
-                ConceptId assertion1 = relationshipType.addRelation()
+                ConceptId assertion1 = relationshipType.addRelationship()
                         .addRolePlayer(role1, start)
                         .addRolePlayer(role2, middle).getId();
 
                 validPath.add(assertion1);
                 validPath.add(middleId);
 
-                ConceptId assertion2 = relationshipType.addRelation()
+                ConceptId assertion2 = relationshipType.addRelationship()
                         .addRolePlayer(role1, middle)
                         .addRolePlayer(role2, end).getId();
 
@@ -290,18 +290,18 @@ public class ShortestPathTest {
             Role role2 = graph.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationshipType relationshipType = graph.putRelationType(related).relates(role1).relates(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
-            relationId12 = relationshipType.addRelation()
+            relationId12 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity1)
                     .addRolePlayer(role2, entity2).getId();
-            relationId13 = relationshipType.addRelation()
+            relationId13 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity1)
                     .addRolePlayer(role2, entity3).getId();
-            relationId24 = relationshipType.addRelation()
+            relationId24 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity2)
                     .addRolePlayer(role2, entity4).getId();
-            relationId34 = relationshipType.addRelation()
+            relationId34 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity3)
                     .addRolePlayer(role2, entity4).getId();
 
@@ -324,22 +324,22 @@ public class ShortestPathTest {
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
             entityType.plays(role1).plays(role2);
-            RelationshipType relationshipType = graph.putRelationType(related).relates(role1).relates(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
             Role role3 = graph.putRole("role3");
             Role role4 = graph.putRole("role4");
             entityType.plays(role3).plays(role4);
             relationshipType.plays(role3).plays(role4);
-            RelationshipType relationshipType2 = graph.putRelationType(veryRelated).relates(role3).relates(role4);
+            RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated).relates(role3).relates(role4);
 
-            relationId12 = relationshipType.addRelation()
+            relationId12 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity1)
                     .addRolePlayer(role2, entity2).getId();
-            relationId13 = relationshipType.addRelation()
+            relationId13 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity1)
                     .addRolePlayer(role2, entity3).getId();
 
-            relationId1A12 = relationshipType2.addRelation()
+            relationId1A12 = relationshipType2.addRelationship()
                     .addRolePlayer(role3, entity1)
                     .addRolePlayer(role4, graph.getConcept(relationId12)).getId();
 

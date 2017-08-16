@@ -53,7 +53,7 @@ public abstract class AbstractPathGraph extends TestGraph {
         Role arcFrom = graph.getRole("arc-from");
         Role arcTo = graph.getRole("arc-to");
 
-        RelationshipType arc = graph.getRelationType("arc");
+        RelationshipType arc = graph.getRelationshipType("arc");
         putEntity(graph, "a0", startVertex, key);
 
         for(int i = 1 ; i <= n ;i++) {
@@ -67,7 +67,7 @@ public abstract class AbstractPathGraph extends TestGraph {
         }
 
         for (int j = 0; j < children; j++) {
-            arc.addRelation()
+            arc.addRelationship()
                     .addRolePlayer(arcFrom, getInstance(graph, "a0"))
                     .addRolePlayer(arcTo, getInstance(graph, "a1," + j));
         }
@@ -76,7 +76,7 @@ public abstract class AbstractPathGraph extends TestGraph {
             int m = IntMath.pow(children, i);
             for (int j = 0; j < m; j++) {
                 for (int c = 0; c < children; c++) {
-                    arc.addRelation()
+                    arc.addRelationship()
                             .addRolePlayer(arcFrom, getInstance(graph, "a" + i + "," + j))
                             .addRolePlayer(arcTo, getInstance(graph, "a" + (i + 1) + "," + (j * children + c)));
 

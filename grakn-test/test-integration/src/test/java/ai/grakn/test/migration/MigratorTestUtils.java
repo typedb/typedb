@@ -96,7 +96,7 @@ public class MigratorTestUtils {
     }
 
     public static Collection<Thing> getProperties(GraknGraph graph, Thing thing, String label) {
-        RelationshipType relation = graph.getRelationType(label);
+        RelationshipType relation = graph.getRelationshipType(label);
 
         Set<Thing> things = new HashSet<>();
 
@@ -160,7 +160,7 @@ public class MigratorTestUtils {
             Entity grass = typeid.getResource("12").ownerInstances().iterator().next().asEntity();
             Entity poison = typeid.getResource("4").ownerInstances().iterator().next().asEntity();
             Entity bulbasaur = pokedexno.getResource("1").ownerInstances().iterator().next().asEntity();
-            RelationshipType relation = graph.getRelationType("has-type");
+            RelationshipType relation = graph.getRelationshipType("has-type");
 
             assertNotNull(grass);
             assertNotNull(poison);

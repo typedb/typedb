@@ -108,8 +108,8 @@ public class ReasonerTest {
     public void testSubPropertyRuleCreation() {
         GraknGraph graph = testSnbGraph.graph();
         Map<Label, Label> roleMap = new HashMap<>();
-        RelationshipType parent = graph.getRelationType("sublocate");
-        RelationshipType child = graph.getRelationType("resides");
+        RelationshipType parent = graph.getRelationshipType("sublocate");
+        RelationshipType child = graph.getRelationshipType("resides");
 
         roleMap.put(graph.getRole("member-location").getLabel(), graph.getRole("subject-location").getLabel());
         roleMap.put(graph.getRole("container-location").getLabel(), graph.getRole("located-subject").getLabel());
@@ -129,7 +129,7 @@ public class ReasonerTest {
     public void testTransitiveRuleCreation() {
         GraknGraph graph = testSnbGraph.graph();
         Rule rule = ReasonerUtils.createTransitiveRule(
-                graph.getRelationType("sublocate"),
+                graph.getRelationshipType("sublocate"),
                 graph.getRole("member-location").getLabel(),
                 graph.getRole("container-location").getLabel(),
                 graph);
@@ -149,7 +149,7 @@ public class ReasonerTest {
     public void testReflexiveRuleCreation() {
         GraknGraph graph = testSnbGraph.graph();
         Rule rule = ReasonerUtils.createReflexiveRule(
-                graph.getRelationType("knows"),
+                graph.getRelationshipType("knows"),
                 graph.getRole("acquaintance1").getLabel(),
                 graph.getRole("acquaintance2").getLabel(),
                 graph);
@@ -166,8 +166,8 @@ public class ReasonerTest {
     @Test
     public void testPropertyChainRuleCreation() {
         GraknGraph graph = testSnbGraph.graph();
-        RelationshipType resides = graph.getRelationType("resides");
-        RelationshipType sublocate = graph.getRelationType("sublocate");
+        RelationshipType resides = graph.getRelationshipType("resides");
+        RelationshipType sublocate = graph.getRelationshipType("sublocate");
 
         LinkedHashMap<RelationshipType, Pair<Label, Label>> chain = new LinkedHashMap<>();
 

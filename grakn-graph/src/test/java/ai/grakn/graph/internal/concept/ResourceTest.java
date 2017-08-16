@@ -59,7 +59,7 @@ public class ResourceTest extends GraphTestBase {
     public void whenAttachingResourcesToInstances_EnsureInstancesAreReturnedAsOwners() throws Exception {
         EntityType randomThing = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
-        RelationshipType hasResource = graknGraph.putRelationType("Has Resource");
+        RelationshipType hasResource = graknGraph.putRelationshipType("Has Resource");
         Role resourceRole = graknGraph.putRole("Resource Role");
         Role actorRole = graknGraph.putRole("Actor");
         Thing pacino = randomThing.addEntity();
@@ -71,13 +71,13 @@ public class ResourceTest extends GraphTestBase {
 
         assertThat(birthDate.ownerInstances().collect(toSet()), empty());
 
-        hasResource.addRelation().
+        hasResource.addRelationship().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, pacino);
-        hasResource.addRelation().
+        hasResource.addRelationship().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, jennifer);
-        hasResource.addRelation().
+        hasResource.addRelationship().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, bob);
-        hasResource.addRelation().
+        hasResource.addRelationship().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, alice);
 
         assertThat(birthDate.ownerInstances().collect(toSet()), containsInAnyOrder(pacino, jennifer, bob, alice));

@@ -82,19 +82,19 @@ public class GraknGraphTest extends GraphTestBase {
         String ruleTypeLabel = "My Rule Type";
 
         assertNull(graknGraph.getEntityType(entityTypeLabel));
-        assertNull(graknGraph.getRelationType(relationTypeLabel));
+        assertNull(graknGraph.getRelationshipType(relationTypeLabel));
         assertNull(graknGraph.getRole(roleTypeLabel));
         assertNull(graknGraph.getResourceType(resourceTypeLabel));
         assertNull(graknGraph.getRuleType(ruleTypeLabel));
 
         EntityType entityType = graknGraph.putEntityType(entityTypeLabel);
-        RelationshipType relationshipType = graknGraph.putRelationType(relationTypeLabel);
+        RelationshipType relationshipType = graknGraph.putRelationshipType(relationTypeLabel);
         Role role = graknGraph.putRole(roleTypeLabel);
         ResourceType resourceType = graknGraph.putResourceType(resourceTypeLabel, ResourceType.DataType.STRING);
         RuleType ruleType = graknGraph.putRuleType(ruleTypeLabel);
 
         assertEquals(entityType, graknGraph.getEntityType(entityTypeLabel));
-        assertEquals(relationshipType, graknGraph.getRelationType(relationTypeLabel));
+        assertEquals(relationshipType, graknGraph.getRelationshipType(relationTypeLabel));
         assertEquals(role, graknGraph.getRole(roleTypeLabel));
         assertEquals(resourceType, graknGraph.getResourceType(resourceTypeLabel));
         assertEquals(ruleType, graknGraph.getRuleType(ruleTypeLabel));
@@ -103,7 +103,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenGettingSubTypesFromRootMeta_IncludeAllTypes(){
         EntityType sampleEntityType = graknGraph.putEntityType("Sample Entity Type");
-        RelationshipType sampleRelationshipType = graknGraph.putRelationType("Sample Relationship Type");
+        RelationshipType sampleRelationshipType = graknGraph.putRelationshipType("Sample Relationship Type");
 
         assertThat(graknGraph.admin().getMetaConcept().subs().collect(Collectors.toSet()), containsInAnyOrder(
                 graknGraph.admin().getMetaConcept(),
@@ -190,7 +190,7 @@ public class GraknGraphTest extends GraphTestBase {
         Role r1 = graknGraph.putRole("r1");
         Role r2 = graknGraph.putRole("r2");
         EntityType e1 = graknGraph.putEntityType("e1").plays(r1).plays(r2);
-        RelationshipType rel1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
+        RelationshipType rel1 = graknGraph.putRelationshipType("rel1").relates(r1).relates(r2);
 
         //Purge the above concepts into the main cache
         graknGraph.commit();
@@ -249,7 +249,7 @@ public class GraknGraphTest extends GraphTestBase {
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
         failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));
         failMutation(graknGraph, () -> graknGraph.putRole(roleType1));
-        failMutation(graknGraph, () -> graknGraph.putRelationType(relationType1));
+        failMutation(graknGraph, () -> graknGraph.putRelationshipType(relationType1));
 
         //Pass some mutations
         graknGraph.close();
@@ -258,8 +258,8 @@ public class GraknGraphTest extends GraphTestBase {
         entityT.addEntity();
         Role roleT1 = graknGraph.putRole(roleType1);
         Role roleT2 = graknGraph.putRole(roleType2);
-        RelationshipType relationT1 = graknGraph.putRelationType(relationType1).relates(roleT1);
-        RelationshipType relationT2 = graknGraph.putRelationType(relationType2).relates(roleT2);
+        RelationshipType relationT1 = graknGraph.putRelationshipType(relationType1).relates(roleT1);
+        RelationshipType relationT2 = graknGraph.putRelationshipType(relationType2).relates(roleT2);
         ResourceType<String> resourceT = graknGraph.putResourceType(resourceType, ResourceType.DataType.STRING);
         graknGraph.commit();
 

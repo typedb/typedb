@@ -35,6 +35,6 @@ public class Relations extends AbstractThingGenerator<Relationship, Relationship
 
     @Override
     protected Relationship newInstance(RelationshipType type) {
-        return type.addRelation();
+        return type.addRelationship();
     }
 }

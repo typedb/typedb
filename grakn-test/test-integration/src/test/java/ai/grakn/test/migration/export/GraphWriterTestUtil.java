@@ -103,7 +103,7 @@ public abstract class GraphWriterTestUtil {
             return;
         }
 
-        RelationshipType relationshipType = two.getRelationType(relationship1.type().getLabel().getValue());
+        RelationshipType relationshipType = two.getRelationshipType(relationship1.type().getLabel().getValue());
         Map<Role, Set<Thing>> rolemap = relationship1.allRolePlayers().entrySet().stream().collect(toMap(
                 e -> two.getRole(e.getKey().getLabel().getValue()),
                 e -> e.getValue().stream().

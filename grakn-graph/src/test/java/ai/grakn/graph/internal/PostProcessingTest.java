@@ -64,14 +64,14 @@ public class PostProcessingTest extends GraphTestBase{
     public void buildSampleGraph(){
         role1 = graknGraph.putRole("role 1");
         role2 = graknGraph.putRole("role 2");
-        relationshipType = graknGraph.putRelationType("rel type").relates(role1).relates(role2);
+        relationshipType = graknGraph.putRelationshipType("rel type").relates(role1).relates(role2);
         EntityType thing = graknGraph.putEntityType("thingy").plays(role1).plays(role2);
         instance1 = (ThingImpl) thing.addEntity();
         instance2 = (ThingImpl) thing.addEntity();
         thing.addEntity();
         thing.addEntity();
 
-        relationshipType.addRelation().addRolePlayer(role1, instance1).addRolePlayer(role2, instance2);
+        relationshipType.addRelationship().addRolePlayer(role1, instance1).addRolePlayer(role2, instance2);
     }
 
     @Test
@@ -99,7 +99,7 @@ public class PostProcessingTest extends GraphTestBase{
     public void whenMergingDuplicateResourcesWithRelations_EnsureSingleResourceRemainsAndNoDuplicateRelationsAreCreated(){
         Role roleEntity = graknGraph.putRole("Entity Role");
         Role roleResource = graknGraph.putRole("Resource Role");
-        RelationshipType relationshipType = graknGraph.putRelationType("Relationship Type").relates(roleEntity).relates(roleResource);
+        RelationshipType relationshipType = graknGraph.putRelationshipType("Relationship Type").relates(roleEntity).relates(roleResource);
         ResourceTypeImpl<String> resourceType = (ResourceTypeImpl<String>) graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).plays(roleResource);
         EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity).resource(resourceType);
         Entity e1 = entityType.addEntity();
@@ -166,7 +166,7 @@ public class PostProcessingTest extends GraphTestBase{
     }
 
     private void addReifiedRelation(Role roleEntity, Role roleResource, RelationshipType relationshipType, Entity entity, Resource<?> resource) {
-        Relationship relationship = relationshipType.addRelation().addRolePlayer(roleResource, resource).addRolePlayer(roleEntity, entity);
+        Relationship relationship = relationshipType.addRelationship().addRolePlayer(roleResource, resource).addRolePlayer(roleEntity, entity);
         String hash = RelationshipReified.generateNewHash(relationship.type(), relationship.allRolePlayers());
         RelationshipImpl.from(relationship).reify().setHash(hash);
     }
@@ -190,7 +190,7 @@ public class PostProcessingTest extends GraphTestBase{
         //Create Some Types;
         EntityTypeImpl t1 = (EntityTypeImpl) graknGraph.putEntityType("t1");
         ResourceTypeImpl t2 = (ResourceTypeImpl)  graknGraph.putResourceType("t2", ResourceType.DataType.STRING);
-        RelationshipTypeImpl t3 = (RelationshipTypeImpl) graknGraph.putRelationType("t3");
+        RelationshipTypeImpl t3 = (RelationshipTypeImpl) graknGraph.putRelationshipType("t3");
 
         //Lets Set Some Counts
         types.put(t1.getId(), 5L);
@@ -215,9 +215,9 @@ public class PostProcessingTest extends GraphTestBase{
     public void whenMergingDuplicateResourceEdges_EnsureNoDuplicatesRemain(){
         ResourceTypeImpl<String> resourceType = (ResourceTypeImpl <String>) graknGraph.putResourceType("My Sad Resource", ResourceType.DataType.STRING);
         EntityType entityType = graknGraph.putEntityType("My Happy EntityType").resource(resourceType);
-        RelationshipType relationshipType = graknGraph.putRelationType("My Miserable RelationshipType").resource(resourceType);
+        RelationshipType relationshipType = graknGraph.putRelationshipType("My Miserable RelationshipType").resource(resourceType);
         Entity entity = entityType.addEntity();
-        Relationship relationship = relationshipType.addRelation();
+        Relationship relationship = relationshipType.addRelationship();
 
         ResourceImpl<?> r1dup1 = createFakeResource(resourceType, "1");
         ResourceImpl<?> r1dup2 = createFakeResource(resourceType, "1");

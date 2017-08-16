@@ -160,9 +160,9 @@ public class CountTest {
             Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
             name.plays(resourceValue);
 
-            RelationshipType relationshipType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
+            RelationshipType relationshipType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
                     .relates(resourceOwner).relates(resourceValue);
-            relationshipType.addRelation()
+            relationshipType.addRelationship()
                     .addRolePlayer(resourceOwner, aPerson)
                     .addRolePlayer(resourceValue, jason);
             graph.commit();

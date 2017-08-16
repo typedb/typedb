@@ -333,7 +333,7 @@ public class ConceptBuilder {
         if (type.isEntityType()) {
             return type.asEntityType().addEntity();
         } else if (type.isRelationType()) {
-            return type.asRelationType().addRelation();
+            return type.asRelationType().addRelationship();
         } else if (type.isResourceType()) {
             return type.asResourceType().putResource(use(VALUE));
         } else if (type.isRuleType()) {
@@ -354,7 +354,7 @@ public class ConceptBuilder {
         if (superConcept.isEntityType()) {
             concept = executor.graph().putEntityType(label);
         } else if (superConcept.isRelationType()) {
-            concept = executor.graph().putRelationType(label);
+            concept = executor.graph().putRelationshipType(label);
         } else if (superConcept.isRole()) {
             concept = executor.graph().putRole(label);
         } else if (superConcept.isResourceType()) {

@@ -57,7 +57,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
     }
 
     @Override
-    public Relationship addRelation() {
+    public Relationship addRelationship() {
         return addInstance(Schema.BaseType.RELATION,
                 (vertex, type) -> vertex().graph().factory().buildRelation(vertex, type), true);
     }

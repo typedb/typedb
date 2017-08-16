@@ -49,7 +49,7 @@ public class ValidatorTest extends GraphTestBase{
     @Test
     public void whenCommittingGraphWhichFollowsValidationRules_Commit(){
         //Actual Concepts To Appear Linked In Graph
-        RelationshipType cast = graknGraph.putRelationType("Cast");
+        RelationshipType cast = graknGraph.putRelationshipType("Cast");
         Role feature = graknGraph.putRole("Feature");
         Role actor = graknGraph.putRole("Actor");
         EntityType movie = graknGraph.putEntityType("Movie");
@@ -60,16 +60,16 @@ public class ValidatorTest extends GraphTestBase{
         Role movieOfGenre = graknGraph.putRole("Movie of Genre");
         Role movieGenre = graknGraph.putRole("Movie Genre");
         Thing crime = genre.addEntity();
-        RelationshipType movieHasGenre = graknGraph.putRelationType("Movie Has Genre");
+        RelationshipType movieHasGenre = graknGraph.putRelationshipType("Movie Has Genre");
 
         //Construction
         cast.relates(feature);
         cast.relates(actor);
 
-        cast.addRelation().
+        cast.addRelationship().
                 addRolePlayer(feature, godfather).addRolePlayer(actor, pacino);
 
-        movieHasGenre.addRelation().
+        movieHasGenre.addRelationship().
                 addRolePlayer(movieOfGenre, godfather).addRolePlayer(movieGenre, crime);
 
         movieHasGenre.relates(movieOfGenre);
@@ -86,13 +86,13 @@ public class ValidatorTest extends GraphTestBase{
     @Test
     public void whenCommittingRelationWithoutSpecifyingOntology_ThrowOnCommit(){
         EntityType fakeType = graknGraph.putEntityType("Fake Concept");
-        RelationshipType relationshipType = graknGraph.putRelationType("kicks");
+        RelationshipType relationshipType = graknGraph.putRelationshipType("kicks");
         Role kicker = graknGraph.putRole("kicker");
         Role kickee = graknGraph.putRole("kickee");
         Thing kyle = fakeType.addEntity();
         Thing icke = fakeType.addEntity();
 
-        relationshipType.addRelation().addRolePlayer(kicker, kyle).addRolePlayer(kickee, icke);
+        relationshipType.addRelationship().addRolePlayer(kicker, kyle).addRolePlayer(kickee, icke);
 
         String error1 = ErrorMessage.VALIDATION_CASTING.getMessage(kyle.type().getLabel(), kyle.getId(), kicker.getLabel());
         String error2 = ErrorMessage.VALIDATION_CASTING.getMessage(icke.type().getLabel(), icke.getId(), kickee.getLabel());
@@ -115,7 +115,7 @@ public class ValidatorTest extends GraphTestBase{
 
     @Test
     public void whenCommittingNonAbstractRelationTypeNotLinkedToAnyRoleType_Throw(){
-        RelationshipType alone = graknGraph.putRelationType("alone");
+        RelationshipType alone = graknGraph.putRelationshipType("alone");
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(alone.getLabel())));
@@ -128,7 +128,7 @@ public class ValidatorTest extends GraphTestBase{
         // ontology
         EntityType person = graknGraph.putEntityType("person");
         EntityType movie = graknGraph.putEntityType("movie");
-        RelationshipType cast = graknGraph.putRelationType("cast");
+        RelationshipType cast = graknGraph.putRelationshipType("cast");
         Role feature = graknGraph.putRole("feature");
         Role actor = graknGraph.putRole("actor");
         cast.relates(feature).relates(actor);
@@ -142,7 +142,7 @@ public class ValidatorTest extends GraphTestBase{
         int n = 100;
         for (int i=0; i < n; i++) {
             Thing newPerson = person.addEntity();
-            cast.addRelation().
+            cast.addRelationship().
                     addRolePlayer(actor, newPerson).addRolePlayer(feature, godfather);
         }
 
@@ -173,7 +173,7 @@ public class ValidatorTest extends GraphTestBase{
     public void whenManuallyCreatingCorrectBinaryRelation_Commit() throws InvalidGraphException {
         Role characterBeingPlayed = graknGraph.putRole("Character being played");
         Role personPlayingCharacter = graknGraph.putRole("Person Playing Char");
-        RelationshipType playsChar = graknGraph.putRelationType("Plays Char").relates(characterBeingPlayed).relates(personPlayingCharacter);
+        RelationshipType playsChar = graknGraph.putRelationshipType("Plays Char").relates(characterBeingPlayed).relates(personPlayingCharacter);
 
         EntityType person = graknGraph.putEntityType("person").plays(characterBeingPlayed).plays(personPlayingCharacter);
         EntityType character = graknGraph.putEntityType("character").plays(characterBeingPlayed);
@@ -181,7 +181,7 @@ public class ValidatorTest extends GraphTestBase{
         Entity matt = person.addEntity();
         Entity walker = character.addEntity();
 
-        playsChar.addRelation().
+        playsChar.addRelationship().
                 addRolePlayer(personPlayingCharacter, matt).
                 addRolePlayer(characterBeingPlayed, walker);
 
@@ -203,7 +203,7 @@ public class ValidatorTest extends GraphTestBase{
         Role child = graknGraph.putRole("child");
 
         //Padding to make it valid
-        graknGraph.putRelationType("filler").relates(parent).relates(child).relates(father).relates(relative).relates(mother);
+        graknGraph.putRelationshipType("filler").relates(parent).relates(child).relates(father).relates(relative).relates(mother);
 
         graknGraph.commit();
     }
@@ -218,7 +218,7 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.putEntityType("person").plays(parent).plays(child);
 
         //Padding to make it valid
-        graknGraph.putRelationType("filler").relates(parent).relates(child);
+        graknGraph.putRelationshipType("filler").relates(parent).relates(child);
 
         graknGraph.commit();
     }
@@ -233,12 +233,12 @@ public class ValidatorTest extends GraphTestBase{
         EntityType man = graknGraph.putEntityType("man").sup(person);
         EntityType oneEyedMan = graknGraph.putEntityType("oneEyedMan").sup(man);
 
-        RelationshipType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(child);
+        RelationshipType parenthood = graknGraph.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = oneEyedMan.addEntity();
         Entity y = person.addEntity();
 
-        parenthood.addRelation().addRolePlayer(parent, x).addRolePlayer(child, y);
+        parenthood.addRelationship().addRolePlayer(parent, x).addRolePlayer(child, y);
 
         graknGraph.commit();
     }
@@ -250,12 +250,12 @@ public class ValidatorTest extends GraphTestBase{
         EntityType person = graknGraph.putEntityType("person").plays(parent).plays(child);
         EntityType company = graknGraph.putEntityType("company").plays(parent);
 
-        RelationshipType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(child);
+        RelationshipType parenthood = graknGraph.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = company.addEntity();
         Entity y = person.addEntity();
 
-        parenthood.addRelation().addRolePlayer(parent, x).addRolePlayer(child, y);
+        parenthood.addRelationship().addRolePlayer(parent, x).addRolePlayer(child, y);
 
         graknGraph.commit();
     }
@@ -267,12 +267,12 @@ public class ValidatorTest extends GraphTestBase{
         EntityType person = graknGraph.putEntityType("person").plays(parent).plays(child);
         EntityType man = graknGraph.putEntityType("man");
 
-        RelationshipType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(child);
+        RelationshipType parenthood = graknGraph.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = man.addEntity();
         Entity y = person.addEntity();
 
-        parenthood.addRelation().addRolePlayer(parent, x).addRolePlayer(child, y);
+        parenthood.addRelationship().addRolePlayer(parent, x).addRolePlayer(child, y);
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(
@@ -287,12 +287,12 @@ public class ValidatorTest extends GraphTestBase{
 
         EntityType person = graknGraph.putEntityType("person").plays(child);
 
-        RelationshipType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(child);
+        RelationshipType parenthood = graknGraph.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = person.addEntity();
         Entity y = person.addEntity();
 
-        parenthood.addRelation().addRolePlayer(parent, x).addRolePlayer(child, y);
+        parenthood.addRelationship().addRolePlayer(parent, x).addRolePlayer(child, y);
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(
@@ -308,11 +308,11 @@ public class ValidatorTest extends GraphTestBase{
         EntityType person = graknGraph.putEntityType("person").plays(child);
         graknGraph.putEntityType("man").plays(child);
 
-        RelationshipType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(child);
+        RelationshipType parenthood = graknGraph.putRelationshipType("parenthood").relates(parent).relates(child);
 
         Entity x = person.addEntity();
         Entity y = person.addEntity();
-        parenthood.addRelation().addRolePlayer(parent, x).addRolePlayer(child, y);
+        parenthood.addRelationship().addRolePlayer(parent, x).addRolePlayer(child, y);
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(
@@ -333,7 +333,7 @@ public class ValidatorTest extends GraphTestBase{
         Role mChild = graknGraph.putRole("mChild").sup(pChild);
 
         //This is to bypass a specific validation rule
-        graknGraph.putRelationType("filler").relates(relative);
+        graknGraph.putRelationshipType("filler").relates(relative);
 
         graknGraph.putEntityType("animal").
                 plays(relative).
@@ -344,9 +344,9 @@ public class ValidatorTest extends GraphTestBase{
                 plays(fChild).
                 plays(mChild);
 
-        RelationshipType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(pChild);
-        graknGraph.putRelationType("fatherhood").sup(parenthood).relates(father).relates(fChild);
-        graknGraph.putRelationType("motherhood").sup(parenthood).relates(mother).relates(mChild);
+        RelationshipType parenthood = graknGraph.putRelationshipType("parenthood").relates(parent).relates(pChild);
+        graknGraph.putRelationshipType("fatherhood").sup(parenthood).relates(father).relates(fChild);
+        graknGraph.putRelationshipType("motherhood").sup(parenthood).relates(mother).relates(mChild);
 
         graknGraph.commit();
     }
@@ -361,7 +361,7 @@ public class ValidatorTest extends GraphTestBase{
         Role fmChild = graknGraph.putRole("fChild").sup(pChild);
 
         //This is to bypass a specific validation rule
-        graknGraph.putRelationType("filler").relates(relative);
+        graknGraph.putRelationshipType("filler").relates(relative);
 
         graknGraph.putEntityType("animal").
                 plays(relative).
@@ -371,8 +371,8 @@ public class ValidatorTest extends GraphTestBase{
                 plays(pChild).
                 plays(fmChild);
 
-        RelationshipType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(pChild);
-        graknGraph.putRelationType("fathermotherhood").sup(parenthood).relates(father).relates(mother).relates(fmChild);
+        RelationshipType parenthood = graknGraph.putRelationshipType("parenthood").relates(parent).relates(pChild);
+        graknGraph.putRelationshipType("fathermotherhood").sup(parenthood).relates(father).relates(mother).relates(fmChild);
 
         graknGraph.commit();
     }
@@ -391,9 +391,9 @@ public class ValidatorTest extends GraphTestBase{
                 plays(pChild).
                 plays(fChild);
 
-        RelationshipType parentrelativehood = graknGraph.putRelationType("parentrelativehood").
+        RelationshipType parentrelativehood = graknGraph.putRelationshipType("parentrelativehood").
                 relates(relative).relates(parent).relates(pChild);
-        graknGraph.putRelationType("fatherhood").sup(parentrelativehood).
+        graknGraph.putRelationshipType("fatherhood").sup(parentrelativehood).
                 relates(father).relates(fChild);
 
         graknGraph.commit();
@@ -410,8 +410,8 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.putEntityType("animal").plays(parent).plays(father).plays(pChild).plays(fChild);
         graknGraph.putEntityType("context").plays(inContext);
 
-        RelationshipType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(pChild);
-        RelationshipType fatherhood = graknGraph.putRelationType("fatherhood").sup(parenthood).relates(father).relates(fChild).relates(inContext);
+        RelationshipType parenthood = graknGraph.putRelationshipType("parenthood").relates(parent).relates(pChild);
+        RelationshipType fatherhood = graknGraph.putRelationshipType("fatherhood").sup(parenthood).relates(father).relates(fChild).relates(inContext);
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(
@@ -431,8 +431,8 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.putEntityType("animal").plays(parent).plays(father).plays(pChild).plays(fChild);
         graknGraph.putEntityType("context").plays(inContext);
 
-        RelationshipType parenthood = graknGraph.putRelationType("parenthood").relates(parent).relates(pChild).relates(inContext);
-        RelationshipType fatherhood = graknGraph.putRelationType("fatherhood").sup(parenthood).relates(father).relates(fChild);
+        RelationshipType parenthood = graknGraph.putRelationshipType("parenthood").relates(parent).relates(pChild).relates(inContext);
+        RelationshipType fatherhood = graknGraph.putRelationshipType("fatherhood").sup(parenthood).relates(father).relates(fChild);
 
         expectedException.expect(InvalidGraphException.class);
         expectedException.expectMessage(
@@ -446,8 +446,8 @@ public class ValidatorTest extends GraphTestBase{
         Role insurer = graknGraph.putRole("insurer");
         Role monoline = graknGraph.putRole("monoline").sup(insurer);
         Role insured = graknGraph.putRole("insured");
-        RelationshipType insure = graknGraph.putRelationType("insure").relates(insurer).relates(insured);
-        graknGraph.putRelationType("monoline-insure").relates(monoline).relates(insured).sup(insure);
+        RelationshipType insure = graknGraph.putRelationshipType("insure").relates(insurer).relates(insured);
+        graknGraph.putRelationshipType("monoline-insure").relates(monoline).relates(insured).sup(insure);
         graknGraph.commit();
     }
 
@@ -455,11 +455,11 @@ public class ValidatorTest extends GraphTestBase{
     public void whenARoleInARelationIsNotPlayed_TheGraphIsValid() {
         Role role1 = graknGraph.putRole("role-1");
         Role role2 = graknGraph.putRole("role-2");
-        RelationshipType relationshipType = graknGraph.putRelationType("my-relation").relates(role1).relates(role2);
+        RelationshipType relationshipType = graknGraph.putRelationshipType("my-relation").relates(role1).relates(role2);
 
         Thing thing = graknGraph.putEntityType("my-entity").plays(role1).addEntity();
 
-        relationshipType.addRelation().addRolePlayer(role1, thing);
+        relationshipType.addRelationship().addRolePlayer(role1, thing);
 
         graknGraph.commit();
     }
@@ -468,13 +468,13 @@ public class ValidatorTest extends GraphTestBase{
     public void whenARoleInARelationIsPlayedTwice_TheGraphIsValid() {
         Role role1 = graknGraph.putRole("role-1");
         Role role2 = graknGraph.putRole("role-2");
-        RelationshipType relationshipType = graknGraph.putRelationType("my-relationship").relates(role1).relates(role2);
+        RelationshipType relationshipType = graknGraph.putRelationshipType("my-relationship").relates(role1).relates(role2);
 
         EntityType entityType = graknGraph.putEntityType("my-entity").plays(role1);
         Thing thing1 = entityType.addEntity();
         Thing thing2 = entityType.addEntity();
 
-        Relationship relationship = relationshipType.addRelation();
+        Relationship relationship = relationshipType.addRelationship();
         relationship.addRolePlayer(role1, thing1);
         relationship.addRolePlayer(role1, thing2);
 
@@ -487,11 +487,11 @@ public class ValidatorTest extends GraphTestBase{
     public void whenARoleInARelationIsPlayedAZillionTimes_TheGraphIsValid() {
         Role role1 = graknGraph.putRole("role-1");
         Role role2 = graknGraph.putRole("role-2");
-        RelationshipType relationshipType = graknGraph.putRelationType("my-relationship").relates(role1).relates(role2);
+        RelationshipType relationshipType = graknGraph.putRelationshipType("my-relationship").relates(role1).relates(role2);
 
         EntityType entityType = graknGraph.putEntityType("my-entity").plays(role1);
 
-        Relationship relationship = relationshipType.addRelation();
+        Relationship relationship = relationshipType.addRelationship();
 
         Set<Thing> things = new HashSet<>();
 
@@ -510,7 +510,7 @@ public class ValidatorTest extends GraphTestBase{
     @Test
     public void whenARelationTypeHasOnlyOneRole_TheGraphIsValid() {
         Role role = graknGraph.putRole("role-1");
-        graknGraph.putRelationType("my-relation").relates(role);
+        graknGraph.putRelationshipType("my-relation").relates(role);
 
         graknGraph.commit();
     }

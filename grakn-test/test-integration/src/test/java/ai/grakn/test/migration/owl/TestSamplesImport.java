@@ -221,11 +221,11 @@ public class TestSamplesImport extends TestOwlGraknBase {
             EntityType type = migrator.graph().getEntityType("tPerson");
             Assert.assertNotNull(type);
 
-            RelationshipType ancestor = migrator.graph().getRelationType("op-hasAncestor");
-            RelationshipType isSiblingOf = migrator.graph().getRelationType("op-isSiblingOf");
-            RelationshipType isAuntOf = migrator.graph().getRelationType("op-isAuntOf");
-            RelationshipType isUncleOf = migrator.graph().getRelationType("op-isUncleOf");
-            RelationshipType bloodRelation = migrator.graph().getRelationType("op-isBloodRelationOf");
+            RelationshipType ancestor = migrator.graph().getRelationshipType("op-hasAncestor");
+            RelationshipType isSiblingOf = migrator.graph().getRelationshipType("op-isSiblingOf");
+            RelationshipType isAuntOf = migrator.graph().getRelationshipType("op-isAuntOf");
+            RelationshipType isUncleOf = migrator.graph().getRelationshipType("op-isUncleOf");
+            RelationshipType bloodRelation = migrator.graph().getRelationshipType("op-isBloodRelationOf");
 
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(ancestor)));
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(isSiblingOf)));

@@ -152,7 +152,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationshipType}.
      */
-    RelationshipType putRelationType(String label);
+    RelationshipType putRelationshipType(String label);
 
     /**
      * Create a {@link RelationshipType} with super-type {@code relation}, or return a pre-existing {@link RelationshipType},
@@ -164,7 +164,7 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationshipType}.
      */
-    RelationshipType putRelationType(Label label);
+    RelationshipType putRelationshipType(Label label);
 
     /**
      * Create a {@link Role} with super-type {@code role}, or return a pre-existing {@link Role}, with the
@@ -264,7 +264,7 @@ public interface GraknGraph extends AutoCloseable{
      */
     @CheckReturnValue
     @Nullable
-    RelationshipType getRelationType(String label);
+    RelationshipType getRelationshipType(String label);
 
     /**
      * Get the Resource Type with the label provided, if it exists.

@@ -217,21 +217,21 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRelationType_CreateATypeWithSuperTypeRelation(
             @Open GraknGraph graph, @Unused Label label) {
-        RelationshipType relationshipType = graph.putRelationType(label);
+        RelationshipType relationshipType = graph.putRelationshipType(label);
         assertEquals(graph.admin().getMetaRelationType(), relationshipType.sup());
     }
 
     @Property
     public void whenCallingPutRelationType_CreateATypeThatOwnsNoRoles(
             @Open GraknGraph graph, @Unused Label label) {
-        RelationshipType relationshipType = graph.putRelationType(label);
+        RelationshipType relationshipType = graph.putRelationshipType(label);
         assertThat(relationshipType.relates().collect(toSet()), empty());
     }
 
     @Property
     public void whenCallingPutRelationTypeWithAnExistingRelationTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph RelationshipType relationshipType) {
-        RelationshipType newType = graph.putRelationType(relationshipType.getLabel());
+        RelationshipType newType = graph.putRelationshipType(relationshipType.getLabel());
         assertEquals(relationshipType, newType);
     }
 
@@ -246,7 +246,7 @@ public class GraknGraphPutPropertyTest {
         } else {
             exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.ONTOLOGY_LABEL, type.getLabel()).getMessage());
         }
-        graph.putRelationType(type.getLabel());
+        graph.putRelationshipType(type.getLabel());
     }
 
     @Property

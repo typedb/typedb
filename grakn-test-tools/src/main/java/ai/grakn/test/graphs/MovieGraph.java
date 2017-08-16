@@ -66,27 +66,27 @@ public class MovieGraph extends TestGraph {
     public void buildOntology(GraknGraph graph) {
         work = graph.putRole("work");
         author = graph.putRole("author");
-        authoredBy = graph.putRelationType("authored-by").relates(work).relates(author);
+        authoredBy = graph.putRelationshipType("authored-by").relates(work).relates(author);
 
         productionBeingDirected = graph.putRole("production-being-directed").sup(work);
         director = graph.putRole("director").sup(author);
-        directedBy = graph.putRelationType("directed-by").sup(authoredBy)
+        directedBy = graph.putRelationshipType("directed-by").sup(authoredBy)
                 .relates(productionBeingDirected).relates(director);
 
         productionWithCast = graph.putRole("production-with-cast");
         actor = graph.putRole("actor");
         characterBeingPlayed = graph.putRole("character-being-played");
-        hasCast = graph.putRelationType("has-cast")
+        hasCast = graph.putRelationshipType("has-cast")
                 .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
 
         genreOfProduction = graph.putRole("genre-of-production");
         productionWithGenre = graph.putRole("production-with-genre");
-        hasGenre = graph.putRelationType("has-genre")
+        hasGenre = graph.putRelationshipType("has-genre")
                 .relates(genreOfProduction).relates(productionWithGenre);
 
         clusterOfProduction = graph.putRole("cluster-of-production");
         productionWithCluster = graph.putRole("production-with-cluster");
-        hasCluster = graph.putRelationType("has-cluster")
+        hasCluster = graph.putRelationshipType("has-cluster")
                 .relates(clusterOfProduction).relates(productionWithCluster);
 
         title = graph.putResourceType("title", ResourceType.DataType.STRING);
@@ -243,7 +243,7 @@ public class MovieGraph extends TestGraph {
 
     @Override
     protected void buildRelations(GraknGraph graph) {
-        directedBy.addRelation()
+        directedBy.addRelationship()
                 .addRolePlayer(productionBeingDirected, chineseCoffee)
                 .addRolePlayer(director, alPacino);
 
@@ -304,20 +304,20 @@ public class MovieGraph extends TestGraph {
     }
 
     private static void hasCast(Thing movie, Thing person, Thing character) {
-        hasCast.addRelation()
+        hasCast.addRelationship()
                 .addRolePlayer(productionWithCast, movie)
                 .addRolePlayer(actor, person)
                 .addRolePlayer(characterBeingPlayed, character);
     }
 
     private static void hasGenre(Thing movie, Thing genre) {
-        hasGenre.addRelation()
+        hasGenre.addRelationship()
                 .addRolePlayer(productionWithGenre, movie)
                 .addRolePlayer(genreOfProduction, genre);
     }
 
     private static void hasCluster(Thing cluster, Thing... movies) {
-        Relationship relationship = hasCluster.addRelation().addRolePlayer(clusterOfProduction, cluster);
+        Relationship relationship = hasCluster.addRelationship().addRolePlayer(clusterOfProduction, cluster);
         for (Thing movie : movies) {
             relationship.addRolePlayer(productionWithCluster, movie);
         }

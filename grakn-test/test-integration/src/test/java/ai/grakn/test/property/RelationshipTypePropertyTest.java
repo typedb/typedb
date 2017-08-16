@@ -74,34 +74,34 @@ public class RelationshipTypePropertyTest {
     public void whenAddingARelationOfAMetaType_Throw(@Meta RelationshipType type) {
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
-        type.addRelation();
+        type.addRelationship();
     }
 
     @Property
     public void whenAddingARelation_TheDirectTypeOfTheRelationIsTheTypeItWasCreatedFrom(
             @NonMeta @NonAbstract RelationshipType type) {
-        Relationship relationship = type.addRelation();
+        Relationship relationship = type.addRelationship();
 
         assertEquals(type, relationship.type());
     }
 
     @Property
     public void whenAddingARelation_TheRelationIsInNoRelations(@NonMeta @NonAbstract RelationshipType type) {
-        Relationship relationship = type.addRelation();
+        Relationship relationship = type.addRelationship();
 
         assertThat(relationship.relations().collect(toSet()), empty());
     }
 
     @Property
     public void whenAddingARelation_TheRelationHasNoResources(@NonMeta @NonAbstract RelationshipType type) {
-        Relationship relationship = type.addRelation();
+        Relationship relationship = type.addRelationship();
 
         assertThat(relationship.resources().collect(toSet()), empty());
     }
 
     @Property
     public void whenAddingARelation_TheRelationHasNoRolePlayers(@NonMeta @NonAbstract RelationshipType type) {
-        Relationship relationship = type.addRelation();
+        Relationship relationship = type.addRelationship();
 
         assertThat(relationship.rolePlayers().collect(toSet()), empty());
     }
