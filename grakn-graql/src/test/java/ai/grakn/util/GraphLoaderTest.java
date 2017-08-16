@@ -17,7 +17,7 @@
  */
 package ai.grakn.util;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
 import ai.grakn.test.GraknTestSetup;
@@ -54,7 +54,7 @@ public class GraphLoaderTest {
     public void whenCreatingEmptyGraph_EnsureGraphIsEmpty(){
         GraphLoader loader = GraphLoader.empty();
 
-        try (GraknGraph graph = loader.graph()){
+        try (GraknTx graph = loader.graph()){
             assertThat(graph.admin().getMetaEntityType().instances().collect(toSet()), is(empty()));
             assertThat(graph.admin().getMetaRelationType().instances().collect(toSet()), is(empty()));
             assertThat(graph.admin().getMetaRuleType().instances().collect(toSet()), is(empty()));
@@ -65,11 +65,11 @@ public class GraphLoaderTest {
     public void whenCreatingGraphWithPreLoader_EnsureGraphContainsPreLoadedEntities(){
         Set<Label> labels = new HashSet<>(Arrays.asList(Label.of("1"), Label.of("2"), Label.of("3")));
 
-        Consumer<GraknGraph> preLoader = graph -> labels.forEach(graph::putEntityType);
+        Consumer<GraknTx> preLoader = graph -> labels.forEach(graph::putEntityType);
 
         GraphLoader loader = GraphLoader.preLoad(preLoader);
 
-        try (GraknGraph graph = loader.graph()){
+        try (GraknTx graph = loader.graph()){
             Set<Label> foundLabels = graph.admin().getMetaEntityType().subs().
                     map(Type::getLabel).collect(Collectors.toSet());
 
@@ -79,12 +79,12 @@ public class GraphLoaderTest {
 
     @Test
     public void whenBuildingGraph_EnsureBackendMatchesTheTestProfile(){
-        try(GraknGraph graph = GraphLoader.empty().graph()){
+        try(GraknTx graph = GraphLoader.empty().graph()){
             //String comparison is used here because we do not have the class available at compile time
             if(GraknTestSetup.usingTinker()){
-                assertEquals("ai.grakn.graph.internal.GraknTinkerGraph", graph.getClass().getName());
+                assertEquals("ai.grakn.graph.internal.GraknTxTinker", graph.getClass().getName());
             } else if (GraknTestSetup.usingJanus()) {
-                assertEquals("ai.grakn.graph.internal.GraknJanusGraph", graph.getClass().getName());
+                assertEquals("ai.grakn.graph.internal.GraknTxJanus", graph.getClass().getName());
             } else {
                 throw new RuntimeException("Test run with unsupported graph backend");
             }
@@ -116,7 +116,7 @@ public class GraphLoaderTest {
         GraphLoader loader = GraphLoader.preLoad(files);
 
         //Check the data is there
-        try (GraknGraph graph = loader.graph()){
+        try (GraknTx graph = loader.graph()){
             for (String typeName : typeNames) {
                 assertNotNull(graph.getEntityType(typeName));
             }

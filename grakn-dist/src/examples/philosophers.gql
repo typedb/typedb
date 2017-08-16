@@ -29,19 +29,19 @@ description sub resource datatype string;
 
 # Relation types
 
-practice sub relation
+practice sub relationship
     relates philosopher
     relates philosophy;
 philosopher sub role;
 philosophy sub role;
 
-education sub relation
+education sub relationship
     relates teacher
     relates student;
 teacher sub role;
 student sub role;
 
-knowledge sub relation
+knowledge sub relationship
     relates thinker
     relates thought
     plays thought;

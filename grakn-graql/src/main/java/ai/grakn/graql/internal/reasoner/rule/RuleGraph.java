@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.reasoner.rule;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
@@ -48,14 +48,14 @@ public class RuleGraph {
     /**
      * @return set of inference rule contained in the graph
      */
-    public static Stream<Rule> getRules(GraknGraph graph) {
+    public static Stream<Rule> getRules(GraknTx graph) {
         return graph.admin().getMetaRuleInference().instances();
     }
 
     /**
      * @return true if at least one inference rule is present in the graph
      */
-    public static boolean hasRules(GraknGraph graph) {
+    public static boolean hasRules(GraknTx graph) {
         Label inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getLabel();
         return graph.graql().infer(false).match(var("x").isa(Graql.label(inferenceRule))).ask().execute();
     }
@@ -64,9 +64,9 @@ public class RuleGraph {
      * @param type for which rules containing it in the head are sought
      * @return rules containing specified type in the head
      */
-    public static Stream<Rule> getRulesWithType(OntologyConcept type, GraknGraph graph){
+    public static Stream<Rule> getRulesWithType(SchemaConcept type, GraknTx graph){
         return type != null ?
-                type.subs().flatMap(OntologyConcept::getRulesOfConclusion) :
+                type.subs().flatMap(SchemaConcept::getRulesOfConclusion) :
                 getRules(graph);
     }
 
@@ -74,7 +74,7 @@ public class RuleGraph {
      * @param rules set of rules of interest forming a rule subgraph
      * @return true if the rule subgraph formed from provided rules contains loops with negative net flux (appears in more rule heads than bodies)
      */
-    public static boolean subGraphHasLoopsWithNegativeFlux(Set<InferenceRule> rules, GraknGraph graph){
+    public static boolean subGraphHasLoopsWithNegativeFlux(Set<InferenceRule> rules, GraknTx graph){
         return rules.stream()
                 .map(r -> graph.<Rule>getConcept(r.getRuleId()))
                 .flatMap(Rule::getConclusionTypes)
@@ -91,7 +91,7 @@ public class RuleGraph {
      * @param rules set of rules of interest forming a rule subgraph
      * @return true if the rule subgraph formed from provided rules contains any rule with head satisfying the body pattern
      */
-    public static boolean subGraphHasRulesWithHeadSatisfyingBody(Set<InferenceRule> rules, GraknGraph graph){
+    public static boolean subGraphHasRulesWithHeadSatisfyingBody(Set<InferenceRule> rules, GraknTx graph){
         return rules.stream()
                 .filter(InferenceRule::headSatisfiesBody)
                 .findFirst().isPresent();

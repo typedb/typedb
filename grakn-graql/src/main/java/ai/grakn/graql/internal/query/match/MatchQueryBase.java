@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.MatchQuery;
@@ -76,8 +76,8 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
 
     @Override
-    public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
-        GraknGraph graph = optionalGraph.orElseThrow(GraqlQueryException::noGraph);
+    public Stream<Answer> stream(Optional<GraknTx> optionalGraph) {
+        GraknTx graph = optionalGraph.orElseThrow(GraqlQueryException::noGraph);
 
         for (VarPatternAdmin var : pattern.getVars()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
@@ -102,17 +102,17 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Set<OntologyConcept> getOntologyConcepts(GraknGraph graph) {
+    public Set<SchemaConcept> getOntologyConcepts(GraknTx graph) {
         return pattern.getVars().stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
-                .map(graph::<OntologyConcept>getOntologyConcept)
+                .map(graph::<SchemaConcept>getSchemaConcept)
                 .filter(Objects::nonNull)
                 .collect(toSet());
     }
 
     @Override
-    public Set<OntologyConcept> getOntologyConcepts() {
+    public Set<SchemaConcept> getOntologyConcepts() {
         throw GraqlQueryException.noGraph();
     }
 
@@ -122,7 +122,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Optional<GraknGraph> getGraph() {
+    public Optional<GraknTx> getGraph() {
         return Optional.empty();
     }
 
@@ -145,7 +145,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
      * @param elements a map of vertices and edges where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private Map<Var, Concept> makeResults(GraknGraph graph, Map<String, Element> elements) {
+    private Map<Var, Concept> makeResults(GraknTx graph, Map<String, Element> elements) {
         return pattern.commonVarNames().stream().collect(Collectors.<Var, Var, Concept>toMap(
                 Function.identity(),
                 name -> buildConcept(graph.admin(), elements.get(name.getValue()))

@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -87,11 +87,11 @@ public class GraqlTraversalTest {
     private static final Fragment yTypeOfX = inIsa(null, y, x);
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
-    private static GraknGraph graph;
+    private static GraknTx graph;
 
     @BeforeClass
     public static void setUp() {
-        graph = mock(GraknGraph.class);
+        graph = mock(GraknTx.class);
 
         // We have to mock out the `subTypes` call because the shortcut edge optimisation checks it
 
@@ -102,16 +102,16 @@ public class GraqlTraversalTest {
         when(wife.subs()).thenAnswer(inv -> Stream.of(wife));
         when(wife.getLabel()).thenReturn(wifeLabel);
 
-        when(graph.getOntologyConcept(wifeLabel)).thenReturn(wife);
+        when(graph.getSchemaConcept(wifeLabel)).thenReturn(wife);
 
         Label marriageLabel = Label.of("marriage");
-        RelationType marriage = mock(RelationType.class);
-        when(marriage.isRelationType()).thenReturn(true);
-        when(marriage.asRelationType()).thenReturn(marriage);
+        RelationshipType marriage = mock(RelationshipType.class);
+        when(marriage.isRelationshipType()).thenReturn(true);
+        when(marriage.asRelationshipType()).thenReturn(marriage);
         when(marriage.subs()).thenAnswer(inv -> Stream.of(marriage));
         when(marriage.getLabel()).thenReturn(marriageLabel);
 
-        when(graph.getOntologyConcept(marriageLabel)).thenReturn(marriage);
+        when(graph.getSchemaConcept(marriageLabel)).thenReturn(marriage);
     }
 
     @Test

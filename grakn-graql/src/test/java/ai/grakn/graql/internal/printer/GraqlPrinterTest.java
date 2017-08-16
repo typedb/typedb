@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.printer;
 
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -69,11 +69,11 @@ public class GraqlPrinterTest {
 
         MatchQuery query = rule.graph().graql().match(var("r").isa("has-cluster"));
 
-        Relation relation = query.get("r").iterator().next().asRelation();
-        long numRolePlayers = relation.rolePlayers().count();
+        Relationship relationship = query.get("r").iterator().next().asRelationship();
+        long numRolePlayers = relationship.rolePlayers().count();
         long numCommas = numRolePlayers - 1;
 
-        String relationString = printer.graqlString(relation);
+        String relationString = printer.graqlString(relationship);
 
         assertEquals(
                 relationString + " should have " + numCommas + " commas separating role-players",
@@ -168,7 +168,7 @@ public class GraqlPrinterTest {
     public void testConcept() {
         Printer printer = Printers.graql(true);
 
-        OntologyConcept concept = rule.graph().admin().getMetaConcept();
+        SchemaConcept concept = rule.graph().admin().getMetaConcept();
 
         String conceptString = printer.graqlString(concept);
 

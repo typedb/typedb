@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -62,7 +62,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class InsertQueryExecutor {
 
-    private final GraknGraph graph;
+    private final GraknTx graph;
 
     // A mutable map associating each `Var` to the `Concept` in the graph it refers to.
     private final Map<Var, Concept> concepts = new HashMap<>();
@@ -79,7 +79,7 @@ public class InsertQueryExecutor {
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
     private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
 
-    private InsertQueryExecutor(GraknGraph graph, ImmutableSet<VarAndProperty> properties,
+    private InsertQueryExecutor(GraknTx graph, ImmutableSet<VarAndProperty> properties,
                                 Partition<Var> equivalentVars,
                                 ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies) {
         this.graph = graph;
@@ -91,7 +91,7 @@ public class InsertQueryExecutor {
     /**
      * Insert all the Vars
      */
-    static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknGraph graph) {
+    static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
         return create(patterns, graph).insertAll(new QueryAnswer());
     }
 
@@ -99,11 +99,11 @@ public class InsertQueryExecutor {
      * Insert all the Vars
      * @param results the result of a match query
      */
-    static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknGraph graph, Answer results) {
+    static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph, Answer results) {
         return create(patterns, graph).insertAll(results);
     }
 
-    private static InsertQueryExecutor create(Collection<VarPatternAdmin> patterns, GraknGraph graph) {
+    private static InsertQueryExecutor create(Collection<VarPatternAdmin> patterns, GraknTx graph) {
         ImmutableSet<VarAndProperty> properties =
                 patterns.stream().flatMap(VarAndProperty::fromPattern).collect(toImmutableSet());
 
@@ -396,7 +396,7 @@ public class InsertQueryExecutor {
         return Patterns.varPattern(var, propertiesOfVar.build());
     }
 
-    GraknGraph graph() {
+    GraknTx graph() {
         return graph;
     }
 

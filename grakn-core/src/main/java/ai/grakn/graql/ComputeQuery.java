@@ -18,7 +18,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 
 import javax.annotation.CheckReturnValue;
@@ -38,7 +38,7 @@ public interface ComputeQuery<T> extends Query<T> {
      * @return a ComputeQuery with the graph set
      */
     @Override
-    ComputeQuery<T> withGraph(GraknGraph graph);
+    ComputeQuery<T> withGraph(GraknTx graph);
 
     /**
      * @param subTypelabels an array of types to include in the subgraph

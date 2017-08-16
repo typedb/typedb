@@ -138,7 +138,7 @@ public interface ResourceType<D> extends Type {
     ResourceType<D> deleteScope(Thing scope);
 
     /**
-     * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
@@ -147,7 +147,7 @@ public interface ResourceType<D> extends Type {
     ResourceType<D> key(ResourceType resourceType);
 
     /**
-     * Creates a RelationType which allows this type and a resource type to be linked.
+     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked.
      *
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.

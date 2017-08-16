@@ -355,7 +355,7 @@ public class QueryParserTest {
     public void testInsertOntologyQuery() {
         InsertQuery expected = insert(
                 label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("evolution").sub(Schema.MetaSchema.RELATION.getLabel().getValue()),
+                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
                 label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("evolution").relates("evolves-from").relates("evolves-to"),
@@ -369,7 +369,7 @@ public class QueryParserTest {
 
         InsertQuery parsed = parse("insert " +
                 "'pokemon' sub entity;" +
-                "evolution sub relation;" +
+                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
                 "evolves-from sub role;" +
                 "label \"evolves-to\" sub role;" +
                 "evolution relates evolves-from, relates evolves-to;" +

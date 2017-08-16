@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
@@ -71,5 +71,5 @@ public interface StdQuery extends ComputeQuery<Optional<Double>> {
      * @return a StdQuery with the graph set
      */
     @Override
-    StdQuery withGraph(GraknGraph graph);
+    StdQuery withGraph(GraknTx graph);
 }

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.inference;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.test.graphs.DiagonalGraph;
 import ai.grakn.test.graphs.MatrixGraph;
@@ -392,7 +392,7 @@ public class RecursiveInferenceTest {
     public void testPathTree(){
         final int N = 3;
         graphContext.load(PathGraph.get(N, 3));
-        GraknGraph graph = graphContext.graph();
+        GraknTx graph = graphContext.graph();
         QueryBuilder qb = graph.graql().infer(false);
         QueryBuilder iqb = graph.graql().infer(true);
 
@@ -412,7 +412,7 @@ public class RecursiveInferenceTest {
         assertEquals(answers, answers2);
     }
 
-    private Concept getConcept(GraknGraph graph, String typeName, Object val){
+    private Concept getConcept(GraknTx graph, String typeName, Object val){
         return graph.graql().match(Graql.var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
     }
 

@@ -18,12 +18,12 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Label;
 import ai.grakn.test.GraphContext;
 
@@ -47,24 +47,24 @@ public class TransitivityMatrixGraph extends TestGraph {
         this.n = n;
     }
 
-    public static Consumer<GraknGraph> get(int n, int m) {
+    public static Consumer<GraknTx> get(int n, int m) {
         return new TransitivityMatrixGraph(n, m).build();
     }
 
     @Override
-    public Consumer<GraknGraph> build(){
-        return (GraknGraph graph) -> {
+    public Consumer<GraknTx> build(){
+        return (GraknTx graph) -> {
             GraphContext.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };
     }
 
-    private void buildExtensionalDB(GraknGraph graph, int n, int m) {
+    private void buildExtensionalDB(GraknTx graph, int n, int m) {
         Role qfrom = graph.getRole("Q-from");
         Role qto = graph.getRole("Q-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
-        RelationType q = graph.getRelationType("Q");
+        RelationshipType q = graph.getRelationshipType("Q");
         Thing aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
         ConceptId[][] aInstanceIds = new ConceptId[n][m];
         for(int i = 0 ; i < n ;i++) {
@@ -73,19 +73,19 @@ public class TransitivityMatrixGraph extends TestGraph {
             }
         }
         
-        q.addRelation()
+        q.addRelationship()
                 .addRolePlayer(qfrom, aInst)
                 .addRolePlayer(qto, graph.getConcept(aInstanceIds[0][0]));
 
         for(int i = 0 ; i < n ; i++) {
             for (int j = 0; j < m ; j++) {
                 if ( i < n - 1 ) {
-                    q.addRelation()
+                    q.addRelationship()
                             .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
                             .addRolePlayer(qto, graph.getConcept(aInstanceIds[i+1][j]));
                 }
                 if ( j < m - 1){
-                    q.addRelation()
+                    q.addRelationship()
                             .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
                             .addRolePlayer(qto, graph.getConcept(aInstanceIds[i][j+1]));
                 }

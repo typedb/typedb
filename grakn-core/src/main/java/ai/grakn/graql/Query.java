@@ -18,7 +18,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 
 import javax.annotation.CheckReturnValue;
 import java.util.stream.Stream;
@@ -37,7 +37,7 @@ public interface Query<T> {
      * @return a new query with the graph set
      */
     @CheckReturnValue
-    Query<T> withGraph(GraknGraph graph);
+    Query<T> withGraph(GraknTx graph);
 
     /**
      * Execute the query against the graph (potentially writing to the graph) and return a result

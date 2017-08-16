@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
@@ -78,13 +78,13 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
                 .map(StringConverter::typeLabelToString).collect(joining(", "));
     }
 
-    private void getResourceTypes(GraknGraph graph) {
+    private void getResourceTypes(GraknTx graph) {
         if (statisticsResourceLabels.isEmpty()) {
             throw GraqlQueryException.statisticsResourceTypesNotSpecified();
         }
 
         Set<Type> statisticsResourceTypes = statisticsResourceLabels.stream().map((label) -> {
-            Type type = graph.getOntologyConcept(label);
+            Type type = graph.getSchemaConcept(label);
             if (type == null) throw GraqlQueryException.labelNotFound(label);
             return type;
         }).collect(Collectors.toSet());

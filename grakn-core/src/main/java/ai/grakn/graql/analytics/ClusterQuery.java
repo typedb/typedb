@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
@@ -68,5 +68,5 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
      * @return a ClusterQuery with the graph set
      */
     @Override
-    ClusterQuery<T> withGraph(GraknGraph graph);
+    ClusterQuery<T> withGraph(GraknTx graph);
 }

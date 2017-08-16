@@ -18,7 +18,7 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.List;
@@ -29,7 +29,7 @@ import java.util.List;
  * </p>
  *
  * <p>
- *     This exception is thrown on {@link GraknGraph#commit()} when the graph does not comply with the grakn
+ *     This exception is thrown on {@link GraknTx#commit()} when the graph does not comply with the grakn
  *     validation rules. For a complete list of these rules please refer to the documentation
  * </p>
  *

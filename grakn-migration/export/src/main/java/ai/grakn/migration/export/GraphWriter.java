@@ -17,9 +17,9 @@
  */
 package ai.grakn.migration.export;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.util.Schema;
@@ -36,9 +36,9 @@ public class GraphWriter {
 
     private static final String EOL = ";\n";
 
-    private final GraknGraph graph;
+    private final GraknTx graph;
 
-    public GraphWriter(GraknGraph graph){
+    public GraphWriter(GraknTx graph){
         this.graph = graph;
     }
 
@@ -47,7 +47,7 @@ public class GraphWriter {
      * @return Graql insert query with ontology of given graph
      */
     public String dumpOntology(){
-        return join(types().map(OntologyConceptMapper::map));
+        return join(types().map(SchemaConceptMapper::map));
     }
 
     /**
@@ -79,7 +79,7 @@ public class GraphWriter {
      * Get all the types in a graph.
      * @return a stream of all types with non-reserved IDs
      */
-    private Stream<? extends OntologyConcept> types(){
+    private Stream<? extends SchemaConcept> types(){
         return Stream.concat(graph.admin().getMetaConcept().subs(), graph.admin().getMetaRole().subs()).
                 filter(t -> !Schema.MetaSchema.isMetaLabel(t.getLabel()));
     }

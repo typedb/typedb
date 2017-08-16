@@ -27,7 +27,7 @@ OPTIONS
  -c,--config <arg>      Configuration file.
  -h,--help              Print usage message.
  -i,--input <arg>       Input csv file.
- -k,--keyspace <arg>    Grakn graph. Required.
+ -k,--keyspace <arg>    Grakn knowledge base. Required.
  -l,--null <arg>        String that will be evaluated as null.
  -n,--no                Write to standard out.
  -q,--quote <arg>       Character used to encapsulate values containing
@@ -43,7 +43,7 @@ OPTIONS
 
 The steps to migrate the CSV to GRAKN.AI are:
 
-* define an ontology for the data to derive the full benefit of a knowledge graph
+* define a schema for the data to derive the full benefit of a knowledge base
 * create templated Graql to map the data to the ontology
 * invoke the Grakn migrator through the shell script or Java API. The CSV migrator will apply the template to each row of data in the CSV file, replacing the sections indicated in the template with provided data: the column header is the key and the content of each row at that column the value.
 
@@ -79,7 +79,7 @@ price sub resource datatype double;
 
 ```
 
-Make sure to load your ontology into the graph:
+Make sure to load your ontology into the knowledge base:
 
 ```bash
 ./<grakn-install-location>/bin/graql.sh -f ./ontology.gql -k grakn

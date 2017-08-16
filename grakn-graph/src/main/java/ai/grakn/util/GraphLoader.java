@@ -19,14 +19,14 @@
 package ai.grakn.util;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.factory.FactoryBuilder;
-import ai.grakn.factory.InternalFactory;
-import ai.grakn.graph.internal.GraknTinkerGraph;
+import ai.grakn.factory.TxFactory;
+import ai.grakn.graph.internal.GraknTxTinker;
 import ai.grakn.graql.Query;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.io.Files;
@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 
 /**
  * <p>
- *     Builds {@link ai.grakn.GraknGraph} bypassing engine.
+ *     Builds {@link GraknTx} bypassing engine.
  * </p>
  *
  * <p>
@@ -61,12 +61,12 @@ public class GraphLoader {
     private static final AtomicBoolean propertiesLoaded = new AtomicBoolean(false);
     private static Properties graphConfig;
 
-    private final InternalFactory<?> factory;
-    private @Nullable Consumer<GraknGraph> preLoad;
+    private final TxFactory<?> factory;
+    private @Nullable Consumer<GraknTx> preLoad;
     private boolean graphLoaded = false;
-    private GraknGraph graph;
+    private GraknTx graph;
 
-    protected GraphLoader(@Nullable Consumer<GraknGraph> preLoad){
+    protected GraphLoader(@Nullable Consumer<GraknTx> preLoad){
         factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
         this.preLoad = preLoad;
     }
@@ -75,7 +75,7 @@ public class GraphLoader {
         return new GraphLoader(null);
     }
 
-    public static GraphLoader preLoad(Consumer<GraknGraph> build){
+    public static GraphLoader preLoad(Consumer<GraknTx> build){
         return new GraphLoader(build);
     }
 
@@ -87,11 +87,11 @@ public class GraphLoader {
         });
     }
 
-    public GraknGraph graph(){
+    public GraknTx graph(){
         if(graph == null || graph.isClosed()){
             //Load the graph if we need to
             if(!graphLoaded) {
-                try(GraknGraph graph = factory.open(GraknTxType.WRITE)){
+                try(GraknTx graph = factory.open(GraknTxType.WRITE)){
                     load(graph);
                     graph.commit();
                     graphLoaded = true;
@@ -104,14 +104,14 @@ public class GraphLoader {
         return graph;
     }
 
-    public void load(Consumer<GraknGraph> preLoad){
+    public void load(Consumer<GraknTx> preLoad){
         this.preLoad = preLoad;
         graphLoaded = false;
         graph();
     }
 
     public void rollback() {
-        if (graph instanceof GraknTinkerGraph) {
+        if (graph instanceof GraknTxTinker) {
             graph.admin().delete();
             graphLoaded = false;
         } else if (!graph.isClosed()) {
@@ -123,7 +123,7 @@ public class GraphLoader {
     /**
      * Loads the graph using the specified Preloaders
      */
-    private void load(GraknGraph graph){
+    private void load(GraknTx graph){
         if(preLoad != null) preLoad.accept(graph);
     }
 
@@ -171,7 +171,7 @@ public class GraphLoader {
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
     }
 
-    public static void loadFromFile(GraknGraph graph, String file) {
+    public static void loadFromFile(GraknTx graph, String file) {
         try {
             File graql = new File(file);
 

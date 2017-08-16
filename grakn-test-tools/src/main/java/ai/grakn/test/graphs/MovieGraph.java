@@ -18,12 +18,12 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
@@ -45,7 +45,7 @@ public class MovieGraph extends TestGraph {
     private static ResourceType<Long> tmdbVoteCount, runtime;
     private static ResourceType<Double> tmdbVoteAverage;
     private static ResourceType<LocalDateTime> releaseDate;
-    private static RelationType hasCast, authoredBy, directedBy, hasGenre, hasCluster;
+    private static RelationshipType hasCast, authoredBy, directedBy, hasGenre, hasCluster;
     private static Role productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
     private static Role genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
     private static Role work, author;
@@ -59,35 +59,35 @@ public class MovieGraph extends TestGraph {
     private static Thing neilMcCauley, bradleyFine, nancyBArtingstall, winifred, sarah, harry;
     private static Thing cluster0, cluster1;
 
-    public static Consumer<GraknGraph> get(){
+    public static Consumer<GraknTx> get(){
         return new MovieGraph().build();
     }
 
     @Override
-    public void buildOntology(GraknGraph graph) {
+    public void buildOntology(GraknTx graph) {
         work = graph.putRole("work");
         author = graph.putRole("author");
-        authoredBy = graph.putRelationType("authored-by").relates(work).relates(author);
+        authoredBy = graph.putRelationshipType("authored-by").relates(work).relates(author);
 
         productionBeingDirected = graph.putRole("production-being-directed").sup(work);
         director = graph.putRole("director").sup(author);
-        directedBy = graph.putRelationType("directed-by").sup(authoredBy)
+        directedBy = graph.putRelationshipType("directed-by").sup(authoredBy)
                 .relates(productionBeingDirected).relates(director);
 
         productionWithCast = graph.putRole("production-with-cast");
         actor = graph.putRole("actor");
         characterBeingPlayed = graph.putRole("character-being-played");
-        hasCast = graph.putRelationType("has-cast")
+        hasCast = graph.putRelationshipType("has-cast")
                 .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
 
         genreOfProduction = graph.putRole("genre-of-production");
         productionWithGenre = graph.putRole("production-with-genre");
-        hasGenre = graph.putRelationType("has-genre")
+        hasGenre = graph.putRelationshipType("has-genre")
                 .relates(genreOfProduction).relates(productionWithGenre);
 
         clusterOfProduction = graph.putRole("cluster-of-production");
         productionWithCluster = graph.putRole("production-with-cluster");
-        hasCluster = graph.putRelationType("has-cluster")
+        hasCluster = graph.putRelationshipType("has-cluster")
                 .relates(clusterOfProduction).relates(productionWithCluster);
 
         title = graph.putResourceType("title", ResourceType.DataType.STRING);
@@ -143,7 +143,7 @@ public class MovieGraph extends TestGraph {
     }
 
     @Override
-    protected void buildInstances(GraknGraph graph) {
+    protected void buildInstances(GraknTx graph) {
         godfather = movie.addEntity();
         putResource(godfather, title, "Godfather");
         putResource(godfather, tmdbVoteCount, 1000L);
@@ -246,8 +246,8 @@ public class MovieGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRelations(GraknGraph graph) {
-        directedBy.addRelation()
+    protected void buildRelations(GraknTx graph) {
+        directedBy.addRelationship()
                 .addRolePlayer(productionBeingDirected, chineseCoffee)
                 .addRolePlayer(director, alPacino);
 
@@ -288,7 +288,7 @@ public class MovieGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRules(GraknGraph graph) {
+    protected void buildRules(GraknTx graph) {
         // These rules are totally made up for testing purposes and don't work!
         aRuleType = graph.putRuleType("a-rule-type");
         aRuleType.resource(name);
@@ -308,22 +308,22 @@ public class MovieGraph extends TestGraph {
     }
 
     private static void hasCast(Thing movie, Thing person, Thing character) {
-        hasCast.addRelation()
+        hasCast.addRelationship()
                 .addRolePlayer(productionWithCast, movie)
                 .addRolePlayer(actor, person)
                 .addRolePlayer(characterBeingPlayed, character);
     }
 
     private static void hasGenre(Thing movie, Thing genre) {
-        hasGenre.addRelation()
+        hasGenre.addRelationship()
                 .addRolePlayer(productionWithGenre, movie)
                 .addRolePlayer(genreOfProduction, genre);
     }
 
     private static void hasCluster(Thing cluster, Thing... movies) {
-        Relation relation = hasCluster.addRelation().addRolePlayer(clusterOfProduction, cluster);
+        Relationship relationship = hasCluster.addRelationship().addRolePlayer(clusterOfProduction, cluster);
         for (Thing movie : movies) {
-            relation.addRolePlayer(productionWithCluster, movie);
+            relationship.addRolePlayer(productionWithCluster, movie);
         }
     }
 }

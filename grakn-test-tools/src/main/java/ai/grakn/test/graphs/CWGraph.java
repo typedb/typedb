@@ -18,11 +18,11 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
@@ -45,9 +45,9 @@ public class CWGraph extends TestGraph {
     
     private static ResourceType<String> alignment, propulsion, nationality;
 
-    private static RelationType isEnemyOf;
-    private static RelationType isPaidBy;
-    private static RelationType owns;
+    private static RelationshipType isEnemyOf;
+    private static RelationshipType isPaidBy;
+    private static RelationshipType owns;
 
     private static Role enemySource, enemyTarget;
     private static Role owner, ownedItem;
@@ -56,12 +56,12 @@ public class CWGraph extends TestGraph {
 
     private static Thing colonelWest, Nono, America, Tomahawk;
 
-    public static Consumer<GraknGraph> get() {
+    public static Consumer<GraknTx> get() {
         return new CWGraph().build();
     }
 
     @Override
-    protected void buildOntology(GraknGraph graph) {
+    protected void buildOntology(GraknTx graph) {
         key = graph.putResourceType("name", ResourceType.DataType.STRING);
 
         //Resources
@@ -120,26 +120,26 @@ public class CWGraph extends TestGraph {
                 .resource(alignment);
 
         //Relations
-        owns = graph.putRelationType("owns")
+        owns = graph.putRelationshipType("owns")
                 .relates(owner)
                 .relates(ownedItem);
 
-        isEnemyOf = graph.putRelationType("is-enemy-of")
+        isEnemyOf = graph.putRelationshipType("is-enemy-of")
                 .relates(enemySource)
                 .relates(enemyTarget);
 
-        graph.putRelationType("transaction")
+        graph.putRelationshipType("transaction")
                 .relates(seller)
                 .relates(buyer)
                 .relates(transactionItem);
 
-        isPaidBy = graph.putRelationType("is-paid-by")
+        isPaidBy = graph.putRelationshipType("is-paid-by")
                 .relates(payee)
                 .relates(payer);
     }
 
     @Override
-    protected void buildInstances(GraknGraph graph) {
+    protected void buildInstances(GraknTx graph) {
         colonelWest =  putEntity(graph, "colonelWest", person, key.getLabel());
         Nono =  putEntity(graph, "Nono", country, key.getLabel());
         America =  putEntity(graph, "America", country, key.getLabel());
@@ -150,25 +150,25 @@ public class CWGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRelations(GraknGraph graph) {
+    protected void buildRelations(GraknTx graph) {
         //Enemy(Nono, America)
-        isEnemyOf.addRelation()
+        isEnemyOf.addRelationship()
                 .addRolePlayer(enemySource, Nono)
                 .addRolePlayer(enemyTarget, America);
 
         //Owns(Nono, Missile)
-        owns.addRelation()
+        owns.addRelationship()
                 .addRolePlayer(owner, Nono)
                 .addRolePlayer(ownedItem, Tomahawk);
 
         //isPaidBy(West, Nono)
-        isPaidBy.addRelation()
+        isPaidBy.addRelationship()
                 .addRolePlayer(payee, colonelWest)
                 .addRolePlayer(payer, Nono);
     }
 
     @Override
-    protected void buildRules(GraknGraph graph) {
+    protected void buildRules(GraknTx graph) {
         RuleType inferenceRule = graph.admin().getMetaRuleInference();
 
         //R1: "It is a crime for an American to sell weapons to hostile nations"

@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
@@ -47,9 +47,9 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabels
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabels;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.traverseRoleFromShortcutEdge;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
-import static ai.grakn.util.Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID;
-import static ai.grakn.util.Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID;
-import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
+import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
+import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
+import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
@@ -79,21 +79,21 @@ class InShortcutFragment extends AbstractFragment {
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
 
         return Fragments.union(Fragments.isVertex(traversal), ImmutableSet.of(
                 reifiedRelationTraversal(graph),
-                edgeRelationTraversal(graph, Direction.OUT, RELATION_ROLE_OWNER_LABEL_ID),
-                edgeRelationTraversal(graph, Direction.IN, RELATION_ROLE_VALUE_LABEL_ID)
+                edgeRelationTraversal(graph, Direction.OUT, RELATIONSHIP_ROLE_OWNER_LABEL_ID),
+                edgeRelationTraversal(graph, Direction.IN, RELATIONSHIP_ROLE_VALUE_LABEL_ID)
         ));
     }
 
-    private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(GraknGraph graph) {
+    private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(GraknTx graph) {
         GraphTraversal<Vertex, Edge> edgeTraversal = __.<Vertex>inE(SHORTCUT.getLabel()).as(edge.getValue());
 
         // Filter by any provided type labels
         applyTypeLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels, graph);
-        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, relationTypeLabels, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels, graph);
 
         traverseRoleFromShortcutEdge(edgeTraversal, role, ROLE_LABEL_ID);
 
@@ -101,7 +101,7 @@ class InShortcutFragment extends AbstractFragment {
     }
 
     private GraphTraversal<Vertex, Edge> edgeRelationTraversal(
-            GraknGraph graph, Direction direction, Schema.EdgeProperty roleProperty) {
+            GraknTx graph, Direction direction, Schema.EdgeProperty roleProperty) {
 
         GraphTraversal<Vertex, Edge> edgeTraversal = __.toE(direction, Schema.EdgeLabel.RESOURCE.getLabel());
 
@@ -111,7 +111,7 @@ class InShortcutFragment extends AbstractFragment {
 
         // Filter by any provided type labels
         applyTypeLabelsToTraversal(edgeTraversal, roleProperty, roleLabels, graph);
-        applyTypeLabelsToTraversal(edgeTraversal, RELATION_TYPE_LABEL_ID, relationTypeLabels, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels, graph);
 
         traverseRoleFromShortcutEdge(edgeTraversal, role, roleProperty);
 

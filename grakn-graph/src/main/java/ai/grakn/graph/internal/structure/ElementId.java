@@ -18,6 +18,8 @@
 
 package ai.grakn.graph.internal.structure;
 
+import ai.grakn.GraknTx;
+
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
@@ -27,7 +29,7 @@ import java.io.Serializable;
  * </p>
  *
  * <p>
- *     A class which represents an id of any {@link AbstractElement} in the {@link ai.grakn.GraknGraph}.
+ *     A class which represents an id of any {@link AbstractElement} in the {@link GraknTx}.
  *     Also contains a static method for producing {@link AbstractElement} IDs from Strings.
  * </p>
  *

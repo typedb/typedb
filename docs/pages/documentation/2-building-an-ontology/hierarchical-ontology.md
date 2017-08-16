@@ -2,7 +2,7 @@
 title: Define a Hierarchical Ontology
 keywords: overview
 last_updated: February 2017
-tags: [graql, java, graph-api]
+tags: [graql, java, java-api]
 summary: "How to build a hierarchical ontology"
 sidebar: documentation_sidebar
 permalink: /documentation/building-an-ontology/hierarchical-ontology.html
@@ -57,7 +57,7 @@ insert
 
 # Roles and Relations
 
-  marriage sub relation
+  marriage sub relationship
     relates spouse1
     relates spouse2
     has picture;
@@ -65,7 +65,7 @@ insert
   spouse1 sub role;
   spouse2 sub role;
 
-  parentship sub relation
+  parentship sub relationship
     relates parent
     relates child;
 
@@ -73,7 +73,7 @@ insert
   child sub role;
 ```
     
-This ontology represents a genealogy graph which models a family tree.
+This ontology represents a genealogy knowledge base which models a family tree.
 This is a very simplistic ontology with plenty of room for extension, so let's begin!
  
 ## Hierarchies of Entity Types
@@ -89,11 +89,11 @@ car sub vehicle;
 motorbikes sub vehicle;
 ```    
     
-In the above example we are saying that a `car` is a subtype (a specialised type) of a `vehicle`. This means that when adding data to our graph, when we know we have a `vehicle`, we can also differentiate between a `car` and a `motorbike`.
+In the above example we are saying that a `car` is a subtype (a specialised type) of a `vehicle`. This means that when adding data to our knowledge base, when we know we have a `vehicle`, we can also differentiate between a `car` and a `motorbike`.
     
 So how can we use this technique to improve our existing genealogy ontology?
   
-We could specialise the `person` entity into `man` and `woman` for example. However, for the sake of making things more interesting, we are going to introduce a new entity to the graph. A family is made up not only of people but of events, like births, weddings, funerals, and many others, which link those people together and better define their lives. 
+We could specialise the `person` entity into `man` and `woman` for example. However, for the sake of making things more interesting, we are going to introduce a new entity to the knowledge base. A family is made up not only of people but of events, like births, weddings, funerals, and many others, which link those people together and better define their lives. 
 
 We can model this as follows:
 
@@ -129,16 +129,16 @@ death sub event
   	    
 Notice that for the `event` entity type we added `is-abstract`, this is an optional additional restriction to ensure that we do not create any instances of `event`, but instead use the most granular definitions provided, i.e. `birth`, `death`, etc . . .  
 
-## Hierarchies of Relation Types and Role Types
+## Hierarchies of Relationship Types and Roles 
 
-Grakn also allows you to design hierarchies of relation types and role types, enabling the ontology to be deeper and more expressive. For example, if we have a relation type called `partnership` between two people we can expand on this by defining more detailed partnerships; `civil-partnership`, `marriage`, `unions`, etc.
+Grakn also allows you to design hierarchies of relationship types and role types, enabling the ontology to be deeper and more expressive. For example, if we have a relationship type called `partnership` between two people we can expand on this by defining more detailed partnerships; `civil-partnership`, `marriage`, `unions`, etc.
 
-Now lets take a look at expanding our genealogy ontology. When modelling a domain there are many ways of doing so. For this example we are going to redo the `marriage` relation type so that it can provide more meaning:
+Now lets take a look at expanding our genealogy ontology. When modelling a domain there are many ways of doing so. For this example we are going to redo the `marriage` relationship type so that it can provide more meaning:
 
 ```graql
 insert
 
-relatives sub relation
+relatives sub relationship
   is-abstract;
 
 marriage sub relatives
@@ -156,7 +156,7 @@ wife sub spouse;
 ```
     
 	    
-We have defined a new super type called `relatives` which enables us to link generic relatives together, and we have said that marriage is a type of relative relation. We have also expanded on the roles which make up a marriage, enabling us to be more expressive and detailed about the domain we are modelling.
+We have defined a new super type called `relatives` which enables us to link generic relatives together, and we have said that marriage is a type of relative relationship. We have also expanded on the roles which make up a marriage, enabling us to be more expressive and detailed about the domain we are modelling.
 From now on, we can be clear if a person is a `husband` or a `wife` or just a `spouse` in a marriage. Note that, when we query for people who play the role of a `spouse` we will get all the `husbands` and `wives` as well.
  
  
@@ -182,12 +182,12 @@ daughter sub child;
 ```
 
 Now we have provided more detail about being a parent. 
-We have also said that being a parent is a `relatives` relation. 
+We have also said that being a parent is a `relatives` relationship. 
 This is quite useful because when we ask for all relatives we will be getting relatives via birth and via marriage.
  
 ## Wrapping up 
 
-We could go into far more detail regarding our genealogy graph but I will leave that to you.
+We could go into far more detail regarding our genealogy knowledge base but I will leave that to you.
 For the moment here is our more complex ontology to get you started on making your own deeper ontologies. You can find the ontology, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph):
 
 ```graql
@@ -247,7 +247,7 @@ insert
     
 ## Relations
     
-  relatives sub relation
+  relatives sub relationship
     is-abstract;
     
   marriage sub relatives
@@ -285,7 +285,7 @@ insert
 
 We will continue to explore the development of an ontology in the next section on defining a [rule-driven ontology](./rule-driven-ontology.html).
 
-You can find the complete ontology for our genealogy graph project, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
+You can find the complete ontology for our genealogy knowledge base project, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
 
 ## Comments
 Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/22" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

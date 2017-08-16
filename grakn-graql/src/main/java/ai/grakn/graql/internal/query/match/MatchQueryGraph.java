@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
 
@@ -32,15 +32,15 @@ import java.util.stream.Stream;
  */
 class MatchQueryGraph extends MatchQueryModifier {
 
-    private final GraknGraph graph;
+    private final GraknTx graph;
 
-    MatchQueryGraph(GraknGraph graph, AbstractMatchQuery inner) {
+    MatchQueryGraph(GraknTx graph, AbstractMatchQuery inner) {
         super(inner);
         this.graph = graph;
     }
 
     @Override
-    public Stream<Answer> stream(Optional<GraknGraph> graph) {
+    public Stream<Answer> stream(Optional<GraknTx> graph) {
         if (graph.isPresent()) {
             throw GraqlQueryException.multipleGraphs();
         }
@@ -49,12 +49,12 @@ class MatchQueryGraph extends MatchQueryModifier {
     }
 
     @Override
-    public Optional<GraknGraph> getGraph() {
+    public Optional<GraknTx> getGraph() {
         return Optional.of(graph);
     }
 
     @Override
-    public Set<OntologyConcept> getOntologyConcepts() {
+    public Set<SchemaConcept> getOntologyConcepts() {
         return inner.getOntologyConcepts(graph);
     }
 

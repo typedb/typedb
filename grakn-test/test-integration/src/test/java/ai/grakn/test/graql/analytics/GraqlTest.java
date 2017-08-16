@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
@@ -26,7 +26,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
@@ -87,7 +87,7 @@ public class GraqlTest {
     @Test
     public void testGraqlCount() throws InvalidGraphException, InterruptedException, ExecutionException {
         addOntologyAndEntities();
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             assertEquals(6L,
                     ((Long) graph.graql().parse("compute count;").execute()).longValue());
             assertEquals(3L,
@@ -98,7 +98,7 @@ public class GraqlTest {
     @Test
     public void testDegrees() throws Exception {
         addOntologyAndEntities();
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             Map<Long, Set<String>> degrees = graph.graql().<DegreeQuery>parse("compute degrees;").execute();
 
             Map<String, Long> correctDegrees = new HashMap<>();
@@ -121,26 +121,26 @@ public class GraqlTest {
 
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithStatistics() {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum of thingy;").execute();
         }
     }
 
     @Test(expected = GraqlQueryException.class)
     public void testInvalidTypeWithDegree() {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute degrees of thingy;").execute();
         }
     }
 
     @Test
     public void testStatisticsMethods() throws InvalidGraphException {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             Label resourceTypeId = Label.of("my-resource");
 
             Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
             Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
-            RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
+            RelationshipType relationshipType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
                     .relates(resourceOwner)
                     .relates(resourceValue);
 
@@ -149,20 +149,20 @@ public class GraqlTest {
             EntityType thingy = graph.putEntityType("thingy").plays(resourceOwner);
             Entity theResourceOwner = thingy.addEntity();
 
-            relationType.addRelation()
+            relationshipType.addRelationship()
                     .addRolePlayer(resourceOwner, theResourceOwner)
                     .addRolePlayer(resourceValue, resource.putResource(1L));
-            relationType.addRelation()
+            relationshipType.addRelationship()
                     .addRolePlayer(resourceOwner, theResourceOwner)
                     .addRolePlayer(resourceValue, resource.putResource(2L));
-            relationType.addRelation()
+            relationshipType.addRelationship()
                     .addRolePlayer(resourceOwner, theResourceOwner)
                     .addRolePlayer(resourceValue, resource.putResource(3L));
 
             graph.commit();
         }
 
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             // use graql to compute various statistics
             Optional<? extends Number> result =
                     graph.graql().<SumQuery>parse("compute sum of my-resource;").execute();
@@ -181,7 +181,7 @@ public class GraqlTest {
 
     @Test
     public void testConnectedComponents() throws InvalidGraphException {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             Map<String, Long> sizeMap =
                     graph.graql().<ClusterQuery<Map<String, Long>>>parse("compute cluster;").execute();
             assertTrue(sizeMap.isEmpty());
@@ -195,7 +195,7 @@ public class GraqlTest {
     public void testPath() throws InvalidGraphException {
         addOntologyAndEntities();
 
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             PathQuery query =
                     graph.graql().parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
 
@@ -212,19 +212,19 @@ public class GraqlTest {
 
     @Test(expected = GraqlQueryException.class)
     public void testNonResourceTypeAsSubgraphForAnalytics() throws InvalidGraphException {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.putEntityType(thingy);
             graph.commit();
         }
 
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum of thingy;").execute();
         }
     }
 
     @Test(expected = GraqlSyntaxException.class)
     public void testErrorWhenNoSubgrapForAnalytics() throws InvalidGraphException {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum;").execute();
             graph.graql().parse("compute min;").execute();
             graph.graql().parse("compute max;").execute();
@@ -235,7 +235,7 @@ public class GraqlTest {
 
     @Test
     public void testAnalyticsDoesNotCommitByMistake() throws InvalidGraphException {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.putResourceType("number", ResourceType.DataType.LONG);
             graph.commit();
         }
@@ -246,14 +246,14 @@ public class GraqlTest {
                 "compute mean of number;"));
 
         analyticsCommands.forEach(command -> {
-            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
                 // insert a node but do not commit it
                 graph.graql().parse("insert thingy sub entity;").execute();
                 // use analytics
                 graph.graql().parse(command).execute();
             }
 
-            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
                 // see if the node was commited
                 assertNull(graph.getEntityType("thingy"));
             }
@@ -261,7 +261,7 @@ public class GraqlTest {
     }
 
     private void addOntologyAndEntities() throws InvalidGraphException {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -279,12 +279,12 @@ public class GraqlTest {
             Role role2 = graph.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
-            relationId12 = relationType.addRelation()
+            relationId12 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity1)
                     .addRolePlayer(role2, entity2).getId().getValue();
-            relationId24 = relationType.addRelation()
+            relationId24 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity2)
                     .addRolePlayer(role2, entity4).getId().getValue();
 

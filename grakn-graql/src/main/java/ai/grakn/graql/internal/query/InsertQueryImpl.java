@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.InsertQuery;
@@ -48,7 +48,7 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
 class InsertQueryImpl implements InsertQueryAdmin {
 
     private final Optional<MatchQueryAdmin> matchQuery;
-    private final Optional<GraknGraph> graph;
+    private final Optional<GraknTx> graph;
     private final ImmutableCollection<VarPatternAdmin> originalVars;
     private final ImmutableCollection<VarPatternAdmin> vars;
 
@@ -59,7 +59,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
      * @param matchQuery the match query to insert for each result
      * @param graph the graph to execute on
      */
-    InsertQueryImpl(ImmutableCollection<VarPatternAdmin> vars, Optional<MatchQueryAdmin> matchQuery, Optional<GraknGraph> graph) {
+    InsertQueryImpl(ImmutableCollection<VarPatternAdmin> vars, Optional<MatchQueryAdmin> matchQuery, Optional<GraknTx> graph) {
         // match query and graph should never both be present (should get graph from inner match query)
         assert(!matchQuery.isPresent() || !graph.isPresent());
 
@@ -81,7 +81,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public InsertQuery withGraph(GraknGraph graph) {
+    public InsertQuery withGraph(GraknTx graph) {
         return matchQuery.map(
                 m -> Queries.insert(vars, m.withGraph(graph).admin())
         ).orElseGet(
@@ -106,7 +106,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Stream<Answer> stream() {
-        GraknGraph theGraph = getGraph().orElseThrow(GraqlQueryException::noGraph);
+        GraknTx theGraph = getGraph().orElseThrow(GraqlQueryException::noGraph);
 
         return matchQuery.map(
                 query -> query.stream().map(answer -> InsertQueryExecutor.insertAll(vars, theGraph, answer))
@@ -126,14 +126,14 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Set<OntologyConcept> getOntologyConcepts() {
-        GraknGraph theGraph = getGraph().orElseThrow(GraqlQueryException::noGraph);
+    public Set<SchemaConcept> getOntologyConcepts() {
+        GraknTx theGraph = getGraph().orElseThrow(GraqlQueryException::noGraph);
 
-        Set<OntologyConcept> types = vars.stream()
+        Set<SchemaConcept> types = vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .map(VarPatternAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(theGraph::<Type>getOntologyConcept)
+                .map(theGraph::<Type>getSchemaConcept)
                 .collect(Collectors.toSet());
 
         matchQuery.ifPresent(mq -> types.addAll(mq.getOntologyConcepts()));
@@ -147,7 +147,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Optional<GraknGraph> getGraph() {
+    public Optional<GraknTx> getGraph() {
         return matchQuery.map(MatchQueryAdmin::getGraph).orElse(graph);
     }
 

@@ -18,7 +18,7 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import com.google.common.collect.Lists;
@@ -41,17 +41,17 @@ import static org.junit.Assume.assumeThat;
 public class PropertyUtil {
 
     @SuppressWarnings("unchecked")
-    public static <T extends OntologyConcept> Collection<T> directSubs(T ontologyElement) {
+    public static <T extends SchemaConcept> Collection<T> directSubs(T ontologyElement) {
         return ontologyElement.subs().filter(subType -> ontologyElement.equals(subType.sup())).map(o -> (T) o).collect(toList());
     }
 
-    public static Collection<OntologyConcept> indirectSupers(OntologyConcept ontologyConcept) {
-        Collection<OntologyConcept> supers = Lists.newArrayList();
+    public static Collection<SchemaConcept> indirectSupers(SchemaConcept schemaConcept) {
+        Collection<SchemaConcept> supers = Lists.newArrayList();
 
         do {
-            supers.add(ontologyConcept);
-            ontologyConcept = ontologyConcept.sup();
-        } while (ontologyConcept != null);
+            supers.add(schemaConcept);
+            schemaConcept = schemaConcept.sup();
+        } while (schemaConcept != null);
 
         return supers;
     }

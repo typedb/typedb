@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.VarProperty;
@@ -138,7 +138,7 @@ public final class ResolutionPlan {
      */
     public static LinkedList<ReasonerQueryImpl> getResolutionPlanFromTraversal(ReasonerQueryImpl query){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
-        GraknGraph graph = query.graph();
+        GraknTx graph = query.graph();
 
         Map<VarProperty, Atom> propertyMap = new HashMap<>();
         query.getAtoms(Atom.class)
@@ -181,7 +181,7 @@ public final class ResolutionPlan {
      */
     public static LinkedList<ReasonerQueryImpl> getResolutionPlan(ReasonerQueryImpl query){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
-        GraknGraph graph = query.graph();
+        GraknTx graph = query.graph();
 
         LinkedList<Atom> atoms = query.selectAtoms().stream()
                 .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))

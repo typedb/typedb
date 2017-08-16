@@ -18,7 +18,7 @@
 package ai.grakn.migration.export;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.migration.base.MigrationCLI;
 
@@ -46,7 +46,7 @@ public class Main {
             throw new IllegalArgumentException("Missing arguments -ontology and/or -data");
         }
 
-        try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.READ)) {
+        try(GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.READ)) {
             GraphWriter graphWriter = new GraphWriter(graph);
 
             if (options.exportOntology()) {

@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.ResourceType;
@@ -50,12 +50,12 @@ public class AdmissionsGraph extends TestGraph {
     private static ResourceType<String> admissionStatus;
     private static ResourceType<String> decisionType;
 
-    public static Consumer<GraknGraph> get() {
+    public static Consumer<GraknTx> get() {
         return new AdmissionsGraph().build();
     }
 
     @Override
-    protected void buildOntology(GraknGraph graph) {
+    protected void buildOntology(GraknTx graph) {
         key = graph.putResourceType("name", ResourceType.DataType.STRING);
 
         TOEFL = graph.putResourceType("TOEFL", ResourceType.DataType.LONG);
@@ -88,7 +88,7 @@ public class AdmissionsGraph extends TestGraph {
     }
 
     @Override
-    protected void buildInstances(GraknGraph graph) {
+    protected void buildInstances(GraknTx graph) {
         Thing Alice = putEntity(graph, "Alice", applicant, key.getLabel());
         Thing Bob = putEntity(graph, "Bob", applicant, key.getLabel());
         Thing Charlie = putEntity(graph, "Charlie", applicant, key.getLabel());
@@ -135,12 +135,12 @@ public class AdmissionsGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRelations(GraknGraph graph) {
+    protected void buildRelations(GraknTx graph) {
 
     }
 
     @Override
-    protected void buildRules(GraknGraph graph) {
+    protected void buildRules(GraknTx graph) {
         GraphContext.loadFromFile(graph, "admission-rules.gql");
     }
 }

@@ -24,15 +24,15 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
-import ai.grakn.graph.internal.concept.OntologyConceptImpl;
-import ai.grakn.graph.internal.concept.RelationReified;
+import ai.grakn.graph.internal.concept.SchemaConceptImpl;
+import ai.grakn.graph.internal.concept.RelationshipReified;
 import ai.grakn.graph.internal.concept.ThingImpl;
 import ai.grakn.graph.internal.structure.Casting;
 import ai.grakn.util.REST;
@@ -69,7 +69,7 @@ public class TxCache {
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
-    private final Map<Label, OntologyConcept> ontologyConceptCache = new HashMap<>();
+    private final Map<Label, SchemaConcept> ontologyConceptCache = new HashMap<>();
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
@@ -78,15 +78,15 @@ public class TxCache {
     private final Set<Role> modifiedRoles = new HashSet<>();
     private final Set<Casting> modifiedCastings = new HashSet<>();
 
-    private final Set<RelationType> modifiedRelationTypes = new HashSet<>();
-    private final Set<Relation> modifiedRelations = new HashSet<>();
+    private final Set<RelationshipType> modifiedRelationshipTypes = new HashSet<>();
+    private final Set<Relationship> modifiedRelationships = new HashSet<>();
 
     private final Set<Rule> modifiedRules = new HashSet<>();
 
     private final Set<Resource> modifiedResources = new HashSet<>();
 
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
-    private final Map<String, Relation> relationIndexCache = new HashMap<>();
+    private final Map<String, Relationship> relationIndexCache = new HashMap<>();
 
     //We Track the number of concept connections which have been made which may result in a new shard
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
@@ -128,11 +128,11 @@ public class TxCache {
      *
      */
     public void refreshOntologyCache(){
-        Map<Label, OntologyConcept> cachedOntologySnapshot = graphCache.getCachedTypes();
+        Map<Label, SchemaConcept> cachedOntologySnapshot = graphCache.getCachedTypes();
         Map<Label, LabelId> cachedLabelsSnapshot = graphCache.getCachedLabels();
 
         //Read central cache into txCache cloning only base concepts. Sets clones later
-        for (OntologyConcept type : cachedOntologySnapshot.values()) {
+        for (SchemaConcept type : cachedOntologySnapshot.values()) {
             cacheConcept(type);
         }
 
@@ -149,13 +149,13 @@ public class TxCache {
             modifiedEntities.add(concept.asEntity());
         } else if (concept.isRole()) {
             modifiedRoles.add(concept.asRole());
-        } else if (concept.isRelationType()) {
-            modifiedRelationTypes.add(concept.asRelationType());
-        } else if (concept.isRelation()){
-            Relation relation = concept.asRelation();
-            modifiedRelations.add(relation);
+        } else if (concept.isRelationshipType()) {
+            modifiedRelationshipTypes.add(concept.asRelationshipType());
+        } else if (concept.isRelationship()){
+            Relationship relationship = concept.asRelationship();
+            modifiedRelationships.add(relationship);
             //Caching of relations in memory so they can be retrieved without needing a commit
-            relationIndexCache.put(RelationReified.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
+            relationIndexCache.put(RelationshipReified.generateNewHash(relationship.type(), relationship.allRolePlayers()), relationship);
         } else if (concept.isRule()){
             modifiedRules.add(concept.asRule());
         } else if (concept.isResource()){
@@ -170,7 +170,7 @@ public class TxCache {
      *
      * @return All the relations which have been affected in the transaction
      */
-    public Map<String, Relation> getRelationIndexCache(){
+    public Map<String, Relationship> getRelationIndexCache(){
         return relationIndexCache;
     }
 
@@ -186,7 +186,7 @@ public class TxCache {
      *
      * @return All the types currently cached in the transaction. Used for
      */
-    Map<Label, OntologyConcept> getOntologyConceptCache(){
+    Map<Label, SchemaConcept> getOntologyConceptCache(){
         return ontologyConceptCache;
     }
 
@@ -214,14 +214,14 @@ public class TxCache {
     public void remove(Concept concept){
         modifiedEntities.remove(concept);
         modifiedRoles.remove(concept);
-        modifiedRelationTypes.remove(concept);
-        modifiedRelations.remove(concept);
+        modifiedRelationshipTypes.remove(concept);
+        modifiedRelationships.remove(concept);
         modifiedRules.remove(concept);
         modifiedResources.remove(concept);
 
         conceptCache.remove(concept.getId());
-        if (concept.isOntologyConcept()) {
-            Label label = ((OntologyConceptImpl) concept).getLabel();
+        if (concept.isSchemaConcept()) {
+            Label label = ((SchemaConceptImpl) concept).getLabel();
             ontologyConceptCache.remove(label);
             labelCache.remove(label);
         }
@@ -232,7 +232,7 @@ public class TxCache {
      *
      * @param index The current index of the relation
      */
-    public Relation getCachedRelation(String index){
+    public Relationship getCachedRelation(String index){
         return relationIndexCache.get(index);
     }
 
@@ -243,8 +243,8 @@ public class TxCache {
      */
     public void cacheConcept(Concept concept){
         conceptCache.put(concept.getId(), concept);
-        if(concept.isOntologyConcept()){
-            OntologyConceptImpl ontologyElement = (OntologyConceptImpl) concept;
+        if(concept.isSchemaConcept()){
+            SchemaConceptImpl ontologyElement = (SchemaConceptImpl) concept;
             ontologyConceptCache.put(ontologyElement.getLabel(), ontologyElement);
             labelCache.put(ontologyElement.getLabel(), ontologyElement.getLabelId());
         }
@@ -308,7 +308,7 @@ public class TxCache {
      * @param <X> The type of the type
      * @return The cached type
      */
-    public <X extends OntologyConcept> X getCachedOntologyElement(Label label){
+    public <X extends SchemaConcept> X getCachedOntologyElement(Label label){
         //noinspection unchecked
         return (X) ontologyConceptCache.get(label);
     }
@@ -367,11 +367,11 @@ public class TxCache {
         return modifiedRoles;
     }
 
-    public Set<RelationType> getModifiedRelationTypes() {
-        return modifiedRelationTypes;
+    public Set<RelationshipType> getModifiedRelationshipTypes() {
+        return modifiedRelationshipTypes;
     }
-    public Set<Relation> getModifiedRelations() {
-        return modifiedRelations;
+    public Set<Relationship> getModifiedRelationships() {
+        return modifiedRelationships;
     }
 
     public Set<Rule> getModifiedRules() {
@@ -397,8 +397,8 @@ public class TxCache {
         //Clear Collection Caches
         modifiedEntities.clear();
         modifiedRoles.clear();
-        modifiedRelationTypes.clear();
-        modifiedRelations.clear();
+        modifiedRelationshipTypes.clear();
+        modifiedRelationships.clear();
         modifiedRules.clear();
         modifiedResources.clear();
         modifiedCastings.clear();

@@ -18,12 +18,12 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
+import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
+import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
@@ -52,7 +52,7 @@ public class EntityTypePropertyTest {
 
     @Property
     public void whenANonMetaEntityTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
-            @Open GraknGraph graph, @FromGraph @NonMeta EntityType type) {
+            @Open GraknTx graph, @FromGraph @NonMeta EntityType type) {
         assumeThat(type.instances().collect(toSet()), empty());
         assumeThat(type.subs().collect(toSet()), contains(type));
         assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());
@@ -60,7 +60,7 @@ public class EntityTypePropertyTest {
 
         type.delete();
 
-        assertNull(graph.getOntologyConcept(type.getLabel()));
+        assertNull(graph.getSchemaConcept(type.getLabel()));
     }
 
     @Property

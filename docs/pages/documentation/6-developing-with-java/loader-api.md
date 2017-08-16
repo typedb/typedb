@@ -10,7 +10,7 @@ folder: documentation
 ---
 
 
-The Grakn loader is a Java client for loading large quantities of data into a Grakn graph using multithreaded batch loading. The loader client operates by sending requests to the Grakn REST Tasks endpoint and polling for the status of submitted tasks, so the user no longer needs to implement these REST transactions. The loader client additionally provides a number of useful features, including batching insert queries, blocking, and callback on batch execution status. Configuration options allow the user to finely-tune batch loading settings. 
+The Grakn loader is a Java client for loading large quantities of data into a Grakn knowledge base using multithreaded batch loading. The loader client operates by sending requests to the Grakn REST Tasks endpoint and polling for the status of submitted tasks, so the user no longer needs to implement these REST transactions. The loader client additionally provides a number of useful features, including batching insert queries, blocking, and callback on batch execution status. Configuration options allow the user to finely-tune batch loading settings. 
 
 It is possible for batches of insert queries to fail upon insertion. By default, the client will not log the status of the batch execution. The user can specify a callback function to operate on the result of the batch operation and print and accumulate status information.
 
@@ -45,7 +45,7 @@ The second constructor additionally allows the user to specify a callback functi
 loader = new BatchMutatorClient(keyspace, uri, callback);
 ```
 
-The loader client can be thought of as an empty bucket in which to dump insert queries that will be batch-loaded into the specified graph. Batching, blocking and callbacks are all executed based on how the user has configured the client, which simplifies usage. The following code will load 100 insert queries into the graph.
+The loader client can be thought of as an empty bucket in which to dump insert queries that will be batch-loaded into the specified knowledge base. Batching, blocking and callbacks are all executed based on how the user has configured the client, which simplifies usage. The following code will load 100 insert queries into the graph.
 
 ```java
 InsertQuery insert = insert(var().isa("person"));
