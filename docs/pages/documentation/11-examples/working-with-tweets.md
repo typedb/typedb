@@ -139,7 +139,7 @@ public class Main {
 }
 ```
 
-We then define a `GraknSession` object in `main()`. Enclosing it in a `try-with-resource` construct is a good practice, lest we forget closing the session by calling `session.close()`.
+We then define a `GraknSession` object in `main()`. Enclosing it in a `try-with-attribute` construct is a good practice, lest we forget closing the session by calling `session.close()`.
 
 ```java-test-ignore
 public static void main(String[] args) {

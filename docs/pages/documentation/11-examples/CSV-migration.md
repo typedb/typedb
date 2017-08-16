@@ -81,17 +81,17 @@ child sub role;
 
 # Resources
 
-identifier sub resource datatype string;
-name sub resource datatype string;
+identifier sub attribute datatype string;
+name sub attribute datatype string;
 firstname sub name datatype string;
 surname sub name datatype string;
 middlename sub name datatype string;
-picture sub resource datatype string;
-age sub resource datatype long;
-"date" sub resource datatype string;
+picture sub attribute datatype string;
+age sub attribute datatype long;
+"date" sub attribute datatype string;
 birth-date sub "date" datatype string;
 death-date sub "date" datatype string;
-gender sub resource datatype string;
+gender sub attribute datatype string;
 ``` 
 
 To load *ontology.gql* into Grakn, make sure the engine is running and choose a clean keyspace in which to work (here we use the default keyspace, so we are cleaning it before we get started). 
@@ -274,7 +274,7 @@ insert
 		};
 ```
 
-For each row in the CSV file, the template matches the two spouse cells to their corresponding `person` entities, and then inserts a `marriage` relation, placing the entities it has matched into the `spouse1` and `spouse2` roles. If there is data in the picture cell, a `picture` resource is also created for the `marriage` relation.
+For each row in the CSV file, the template matches the two spouse cells to their corresponding `person` entities, and then inserts a `marriage` relation, placing the entities it has matched into the `spouse1` and `spouse2` roles. If there is data in the picture cell, a `picture` attribute is also created for the `marriage` relation.
 
 Calling the Grakn migrator on the *weddings.csv* file using the above template (named `weddings-migrator.gql`) is performed as follows:
 

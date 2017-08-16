@@ -43,17 +43,17 @@ insert
 
 # Resources
 
-  identifier sub resource datatype string;
-  name sub resource datatype string;
+  identifier sub attribute datatype string;
+  name sub attribute datatype string;
   firstname sub name datatype string;
   surname sub name datatype string;
   middlename sub name datatype string;
-  picture sub resource datatype string;
-  age sub resource datatype long;
-  "date" sub resource datatype string;
+  picture sub attribute datatype string;
+  age sub attribute datatype long;
+  "date" sub attribute datatype string;
   birth-date sub "date" datatype string;
   death-date sub "date" datatype string;
-  gender sub resource datatype string;
+  gender sub attribute datatype string;
 
 # Roles and Relations
 
@@ -208,14 +208,14 @@ insert
     plays child
     plays sibling;
         
-    gender sub resource datatype string;
+    gender sub attribute datatype string;
     birth-date sub "date";
     death-date sub "date";
-    name sub resource datatype string;
+    name sub attribute datatype string;
     firstname sub name;
     middlename sub name;
     surname sub name;
-    identifier sub resource datatype string;
+    identifier sub attribute datatype string;
     
   event sub entity
     is-abstract

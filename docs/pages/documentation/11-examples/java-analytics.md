@@ -258,7 +258,7 @@ The `in` syntax has again been used here to restrict the algorithm to the graph 
 
 ## Persist the Degrees
 
-As we did when computing the clusters, we need to put the information back into the graph. This time we will attach a resource called `degree` to the cluster entity. The ontology mutation and persisting of the degrees is performed in a single method:
+As we did when computing the clusters, we need to put the information back into the graph. This time we will attach a attribute called `degree` to the cluster entity. The ontology mutation and persisting of the degrees is performed in a single method:
 
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
@@ -270,7 +270,7 @@ private static void persistDegrees(Map<Long, Set<String>> degrees) {
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
             // mutate the ontology
-            Var degree = Graql.var().label("degree").sub("resource").datatype(ResourceType.DataType.LONG);
+            Var degree = Graql.var().label("degree").sub("attribute").datatype(ResourceType.DataType.LONG);
             Var cluster = Graql.var().label("cluster").has("degree");
 
             // execute the query

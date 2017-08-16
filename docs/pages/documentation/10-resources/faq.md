@@ -127,7 +127,7 @@ It is possible for the system to record that `Brad Pitt` is an actor multiple ti
 
 {% include note.html content="This only happens when using a batch graph." %}
 
-When using a batch load, many safety checks are skipped in favour of speed. One such check is the possible existence of a resource before creating it. So if the following transactions are executed simultaneously while batch loading: 
+When using a batch load, many safety checks are skipped in favour of speed. One such check is the possible existence of a attribute before creating it. So if the following transactions are executed simultaneously while batch loading: 
 
 ```graql-test-ignore
 1. insert $a has unique-id '1'

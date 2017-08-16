@@ -56,21 +56,21 @@ person sub entity
   has death-date
   has gender;
 
-  identifier sub resource datatype string;
-  name sub resource datatype string;
+  identifier sub attribute datatype string;
+  name sub attribute datatype string;
   firstname sub name datatype string;
   surname sub name datatype string;
   middlename sub name datatype string;
-  picture sub resource datatype string;
-  age sub resource datatype long;
-  "date" sub resource datatype string;
+  picture sub attribute datatype string;
+  age sub attribute datatype long;
+  "date" sub attribute datatype string;
   birth-date sub "date" datatype string;
   death-date sub "date" datatype string;
-  gender sub resource datatype string;   
+  gender sub attribute datatype string;   
 ```	    
 
 ## Supported Resource Types
-The following resource types are supported: `string`, `boolean`, `long`, `double`, `date`.
+The following attribute types are supported: `string`, `boolean`, `long`, `double`, `date`.
 
 ## Identifying Relationships and Roles
 
@@ -145,17 +145,17 @@ insert
 
  # Resources
 
-  identifier sub resource datatype string;
-  name sub resource datatype string;
+  identifier sub attribute datatype string;
+  name sub attribute datatype string;
   firstname sub name datatype string;
   surname sub name datatype string;
   middlename sub name datatype string;
-  picture sub resource datatype string;
-  age sub resource datatype long;
-  "date" sub resource datatype string;
+  picture sub attribute datatype string;
+  age sub attribute datatype long;
+  "date" sub attribute datatype string;
   birth-date sub "date" datatype string;
   death-date sub "date" datatype string;
-  gender sub resource datatype string;
+  gender sub attribute datatype string;
 
  # Roles and Relations
 

@@ -52,12 +52,12 @@ to you. A summary of the statistics algorithms is given in the table below.
 | Algorithm | Description                                   |
 | ----------- | --------------------------------------------- |
 | [`count`](#count)     | Count the number of instances.                        |
-| [`max`](#maximum)    | Compute the maximum value of a resource. |
-| [`mean`](#mean)    | Compute the mean value of a resource.                           |
-| [`median`](#mean)    | Compute the median value of a resource.                           |
-| [`min`](#minimum)    | Compute the minimum value of a resource. |
-| [`std`](#standard-deviation)    | Compute the standard deviation of a resource. |
-| [`sum`](#sum)    | Compute the sum of a resource. |
+| [`max`](#maximum)    | Compute the maximum value of a attribute. |
+| [`mean`](#mean)    | Compute the mean value of a attribute.                           |
+| [`median`](#mean)    | Compute the median value of a attribute.                           |
+| [`min`](#minimum)    | Compute the minimum value of a attribute. |
+| [`std`](#standard-deviation)    | Compute the standard deviation of a attribute. |
+| [`sum`](#sum)    | Compute the sum of a attribute. |
 
 For further information see the individual sections below.
 
@@ -72,7 +72,7 @@ compute count in person;
 
 ### Mean
 
-Computes the mean value of a given resource. This algorithm requires the [subgraph](#subgraph) syntax to be used.
+Computes the mean value of a given attribute. This algorithm requires the [subgraph](#subgraph) syntax to be used.
 For example,
 
 ```
@@ -83,25 +83,25 @@ would compute the mean value of `age` across all instances of the type `person`.
 It is also possible to provide a set of resources.
 
 ```
-compute mean of resource-a, resource-b in person;
+compute mean of attribute-a, attribute-b in person;
 ```
 
 which would compute the mean of the union of the instances of the two resources.
 
 ### Median
 
-Computes the median value of a given resource. This algorithm requires the [subgraph](#subgraph) syntax to be used.
+Computes the median value of a given attribute. This algorithm requires the [subgraph](#subgraph) syntax to be used.
 For example,
 
 ```
 compute median of age in person;
 ```
 
-would compute the median of the value persisted in instances of the resource `age`. 
+would compute the median of the value persisted in instances of the attribute `age`. 
 
 ### Minimum
 
-Computes the minimum value of a given resource, similar to [mean](#mean).
+Computes the minimum value of a given attribute, similar to [mean](#mean).
 
 ```
 compute min of age in person;
@@ -109,7 +109,7 @@ compute min of age in person;
 
 ### Maximum
 
-Computes the maximum value of a given resource, similar to [mean](#mean).
+Computes the maximum value of a given attribute, similar to [mean](#mean).
 
 ```
 compute max of age in person;
@@ -117,7 +117,7 @@ compute max of age in person;
 
 ### Standard Deviation
 
-Computes the standard deviation of a given resource, similar to [mean](#mean).
+Computes the standard deviation of a given attribute, similar to [mean](#mean).
 
 
 ```
@@ -126,13 +126,13 @@ compute std of age in person;
 
 ### Sum
 
-Computes the sum of a given resource, similar to [mean](#mean).
+Computes the sum of a given attribute, similar to [mean](#mean).
 
 ```
 compute sum of age in person;
 ```
 
-{% include warning.html content="When an instance has two resources of the same type attached, or two resources specified as arguments to the algorithm, statistics will include this by assuming there were two instances each with a single resource." %}
+{% include warning.html content="When an instance has two resources of the same type attached, or two resources specified as arguments to the algorithm, statistics will include this by assuming there were two instances each with a single attribute." %}
 
 ## Available Graph Algorithms
 
@@ -159,7 +159,7 @@ For further information see the individual sections below.
 
 [Aggregate queries](./aggregate-queries.html) are computationally light and run single-threaded on a single machine, but are more flexible than the equivalent compute queries described above.
 
-For example, you can use an aggregate query to filter results by resource. The following  aggregate query, allows you to match the number of people of a particular name:
+For example, you can use an aggregate query to filter results by attribute. The following  aggregate query, allows you to match the number of people of a particular name:
 
 ```
 match $x has name 'Bob'; aggregate count;
