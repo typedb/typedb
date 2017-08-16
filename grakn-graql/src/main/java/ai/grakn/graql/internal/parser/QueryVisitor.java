@@ -24,7 +24,6 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
@@ -151,11 +150,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public MatchQuery visitMatchDistinct(GraqlParser.MatchDistinctContext ctx) {
         return visitMatchQuery(ctx.matchQuery()).distinct();
-    }
-
-    @Override
-    public AskQuery visitAskQuery(GraqlParser.AskQueryContext ctx) {
-        return visitMatchQuery(ctx.matchQuery()).ask();
     }
 
     @Override
