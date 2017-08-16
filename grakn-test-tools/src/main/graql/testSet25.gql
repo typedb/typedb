@@ -26,7 +26,7 @@ message-succession sub relation
     relates predecessor
     relates successor;
 
-creation-date sub resource datatype long;
+creation-date sub attribute datatype long;
 
 #Rules
 

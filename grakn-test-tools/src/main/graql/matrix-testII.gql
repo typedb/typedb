@@ -25,7 +25,7 @@ entity2 plays Q-from plays Q-to;
 "S" sub relation, relates S-from, relates S-to;
 
 
-"index" sub resource, datatype string;
+"index" sub attribute, datatype string;
 
 ####################################################
 ##################RULES#############################

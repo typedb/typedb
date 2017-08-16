@@ -18,7 +18,7 @@ Person plays parent, plays child;
 "Ancestor" sub relation, relates ancestor, relates descendant;
 Person plays ancestor, plays descendant;
 
-"name" sub resource, datatype string;
+"name" sub attribute, datatype string;
 
 ####################################################
 ##################DATA#############################

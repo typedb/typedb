@@ -44,13 +44,13 @@ person
     has email,
     has age;
 
-"name" sub resource, datatype string;
-"firstname" sub resource, datatype string;
-"lastname" sub resource, datatype string;
-"gender" sub resource, datatype string;
-"birthday" sub resource, datatype string;
-"email" sub resource, datatype string;
-"age" sub resource, datatype long;
+"name" sub attribute, datatype string;
+"firstname" sub attribute, datatype string;
+"lastname" sub attribute, datatype string;
+"gender" sub attribute, datatype string;
+"birthday" sub attribute, datatype string;
+"email" sub attribute, datatype string;
+"age" sub attribute, datatype long;
 
 person plays located-subject;
 
@@ -76,30 +76,30 @@ university plays enrolled-university;
 person plays employee;
 company plays employer;
 
-"class-year" sub resource, datatype string;
-"attends-resource-value" sub role;
-"attends-resource-owner" sub role;
-"attends-resource" sub relation, relates attends-resource-value, relates attends-resource-owner;
-attends plays attends-resource-owner;
-class-year plays attends-resource-value;
+"class-year" sub attribute, datatype string;
+"attends-attribute-value" sub role;
+"attends-attribute-owner" sub role;
+"attends-attribute" sub relation, relates attends-attribute-value, relates attends-attribute-owner;
+attends plays attends-attribute-owner;
+class-year plays attends-attribute-value;
 
-"employment-startdate" sub resource, datatype string;
-"employment-resource-value" sub role;
-"employment-resource-owner" sub role;
-"employment-resource" sub relation, relates employment-resource-value, relates employment-resource-owner;
-employment plays employment-resource-owner;
-employment-startdate plays employment-resource-value;
+"employment-startdate" sub attribute, datatype string;
+"employment-attribute-value" sub role;
+"employment-attribute-owner" sub role;
+"employment-attribute" sub relation, relates employment-attribute-value, relates employment-attribute-owner;
+employment plays employment-attribute-owner;
+employment-startdate plays employment-attribute-value;
 
 # message
 "message" sub entity2, is-abstract;
 
-"message-resource-owner" sub role;
-"message-resource-value" sub role;
-"message-resource" sub relation, relates message-resource-value, relates message-resource-owner;
-message plays message-resource-owner;
+"message-attribute-owner" sub role;
+"message-attribute-value" sub role;
+"message-attribute" sub relation, relates message-attribute-value, relates message-attribute-owner;
+message plays message-attribute-owner;
 
-"content" sub resource, datatype string, plays message-resource-value;
-"length" sub resource, datatype string, plays message-resource-value;
+"content" sub attribute, datatype string, plays message-attribute-value;
+"length" sub attribute, datatype string, plays message-attribute-value;
 
 "liked" sub role;
 "liker" sub role;
@@ -125,18 +125,18 @@ message plays reply-owner;
 
 "post" sub message;
 
-"post-resource-owner" sub role;
-"post-resource-value" sub role;
-"post-resource" sub relation, relates post-resource-owner, relates post-resource-value;
-post plays post-resource-owner;
+"post-attribute-owner" sub role;
+"post-attribute-value" sub role;
+"post-attribute" sub relation, relates post-attribute-owner, relates post-attribute-value;
+post plays post-attribute-owner;
 
-"image-file" sub resource, datatype string, plays post-resource-value;
+"image-file" sub attribute, datatype string, plays post-attribute-value;
 
 # forum
-"forum-resource-owner" sub role;
-"forum-resource-value" sub role;
-"forum-resource" sub relation, relates forum-resource-value, relates forum-resource-owner;
-forum plays forum-resource-owner;
+"forum-attribute-owner" sub role;
+"forum-attribute-value" sub role;
+"forum-attribute" sub relation, relates forum-attribute-value, relates forum-attribute-owner;
+forum plays forum-attribute-owner;
 
 "moderator" sub role;
 "moderated" sub role;

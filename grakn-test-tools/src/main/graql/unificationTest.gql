@@ -33,7 +33,7 @@ relation1 sub relation
 
 #Resources
 
-res1 sub resource datatype string;
+res1 sub attribute datatype string;
 
 #Instances
 

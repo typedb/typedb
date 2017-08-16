@@ -21,7 +21,7 @@ prior sub relation
 holds sub relation
     relates related-state;
 
-name sub resource datatype string;
+name sub attribute datatype string;
 
 isa inference-rule
     when {

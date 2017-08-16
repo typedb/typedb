@@ -56,11 +56,11 @@ located-in sub relation
   relates located;
 
 
-company-id sub resource datatype string;
-platform-id sub resource datatype string;
-title sub resource datatype string;
-uri sub resource datatype string;
-subject sub resource datatype string;
-name sub resource datatype string;
-distance-from-coast sub resource datatype long;
-risk sub resource datatype double;
+company-id sub attribute datatype string;
+platform-id sub attribute datatype string;
+title sub attribute datatype string;
+uri sub attribute datatype string;
+subject sub attribute datatype string;
+name sub attribute datatype string;
+distance-from-coast sub attribute datatype long;
+risk sub attribute datatype double;
