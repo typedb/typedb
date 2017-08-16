@@ -19,8 +19,8 @@
 package ai.grakn.graph.internal.structure;
 
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graph.internal.cache.Cache;
@@ -35,7 +35,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  *
  * <p>
  *    Wraps the shortcut {@link Edge} which contains the information unifying an {@link Thing},
- *    {@link Relation} and {@link Role}.
+ *    {@link Relationship} and {@link Role}.
  * </p>
  *
  * @author fppt
@@ -43,9 +43,9 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 public class Casting {
     private final EdgeElement edgeElement;
     private final Cache<Role> cachedRoleType = new Cache<>(Cacheable.concept(), () -> (Role) edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
-    private final Cache<RelationType> cachedRelationType = new Cache<>(Cacheable.concept(), () -> (RelationType) edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
+    private final Cache<RelationshipType> cachedRelationType = new Cache<>(Cacheable.concept(), () -> (RelationshipType) edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
     private final Cache<Thing> cachedInstance = new Cache<>(Cacheable.concept(), () -> edge().graph().factory().buildConcept(edge().target()));
-    private final Cache<Relation> cachedRelation = new Cache<>(Cacheable.concept(), () -> edge().graph().factory().buildConcept(edge().source()));
+    private final Cache<Relationship> cachedRelation = new Cache<>(Cacheable.concept(), () -> edge().graph().factory().buildConcept(edge().source()));
 
     public Casting(EdgeElement edgeElement){
         this.edgeElement = edgeElement;
@@ -67,7 +67,7 @@ public class Casting {
      *
      * @return The relation type the instance is taking part in
      */
-    public RelationType getRelationType(){
+    public RelationshipType getRelationType(){
         return cachedRelationType.get();
     }
 
@@ -75,7 +75,7 @@ public class Casting {
      *
      * @return The relation which is linking the role and the instance
      */
-    public Relation getRelation(){
+    public Relationship getRelation(){
         return cachedRelation.get();
     }
 

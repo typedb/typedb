@@ -101,9 +101,9 @@ Graql is single-threaded and doesn't support batch-loading. You may want to use 
 The batch load is faster for larger datasets because it ignores some consistency checks, on the assumption that you have pre-filtered your data. Checks ignored include:
 
 *  When looking up concepts any duplicates which are found are ignored and a random one is returned.
-*  When creating a relation it is possible for an entity to be doubly associated with a role. This is later cleaned up by engine.
+*  When creating a relationship it is possible for an entity to be doubly associated with a role. This is later cleaned up by engine.
 *  Concepts with duplicate ids can be inserted.
-*  Duplicate relations can also be inserted.
+*  Duplicate relationships can also be inserted.
 
 Ignoring these checks allows data to be processed much faster at the risk of breaking consistency.
 
@@ -113,7 +113,7 @@ The distributed and concurrent nature of the Grakn system means that, sometimes,
 
 **Role Player Optimisation**
 
-When allocating entities as role players to multiple relations for the first time it is possible to create duplicate associations. These associations do not affect the results of any queries or computations. For example, if in a new system we process simultaneously the following three statements in different transactions:    
+When allocating entities as role players to multiple relationships for the first time it is possible to create duplicate associations. These associations do not affect the results of any queries or computations. For example, if in a new system we process simultaneously the following three statements in different transactions:    
 
 ```graql-test-ignore
 1. insert $x has name 'Brad Pitt' isa person; $y has name 'Fury'; (actor: $x, movie: $y) isa acted-in;

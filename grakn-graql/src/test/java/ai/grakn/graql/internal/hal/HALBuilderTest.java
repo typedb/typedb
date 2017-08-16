@@ -26,6 +26,7 @@ import ai.grakn.graql.Query;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.AcademyGraph;
 import ai.grakn.test.graphs.GenealogyGraph;
+import ai.grakn.util.Schema;
 import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -71,7 +72,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenAskForRelationTypes_EnsureAllObjectsHaveImplicitField() {
-        Json response = getHALRepresentation(academyGraph.graph(), "match $x sub relation;");
+        Json response = getHALRepresentation(academyGraph.graph(), "match $x sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";");
         response.asJsonList().forEach(halObj -> {
             assertTrue(halObj.has("_implicit"));
             if(halObj.at("_name").asString().startsWith("has-")){

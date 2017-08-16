@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
 import com.codahale.metrics.MetricRegistry;
@@ -162,10 +162,10 @@ public class ConceptController {
         }
     }
 
-    private List<String> subLabels(OntologyConcept ontologyConcept) {
-        return ontologyConcept.subs().
+    private List<String> subLabels(SchemaConcept schemaConcept) {
+        return schemaConcept.subs().
                 filter(concept-> !concept.isImplicit()).
-                map(OntologyConcept::getLabel).
+                map(SchemaConcept::getLabel).
                 map(Label::getValue).collect(toList());
     }
 

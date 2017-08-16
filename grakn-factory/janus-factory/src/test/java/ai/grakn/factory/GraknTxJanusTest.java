@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraphOperationException;
@@ -154,13 +154,13 @@ public class GraknTxJanusTest extends JanusTestBase {
         Resource<String> resource = resourceType.putResource("A Resource Thing");
 
         EntityType entityType = graknTx.putEntityType("My entity").resource(resourceType);
-        Relation relation = Iterators.getOnlyElement(entityType.addEntity().resource(resource).relations().iterator());
+        Relationship relationship = Iterators.getOnlyElement(entityType.addEntity().resource(resource).relations().iterator());
 
         //Closing so the cache is not accessed when doing the lookup
         graknTx.commit();
         graknTx = janusGraphFactory.open(GraknTxType.WRITE);
 
-        assertEquals(relation, graknTx.getConcept(relation.getId()));
+        assertEquals(relationship, graknTx.getConcept(relationship.getId()));
     }
 
     @Test //This test is performed here because it depends on actual transaction behaviour which tinker does not exhibit

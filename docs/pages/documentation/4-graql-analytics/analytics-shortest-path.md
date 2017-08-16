@@ -28,14 +28,14 @@ compute path from "id1" to "id2";
 ```
 
 You can see below that the two people selected are married.
-The path query uses a scalable shortest path algorithm to determine the smallest number of relations required to get from once concept to the other.
+The path query uses a scalable shortest path algorithm to determine the smallest number of relationships required to get from once concept to the other.
 
 ![Shortest path between people](/images/analytics_path_marriage.png)
 
 ### Subgraph
 
 If you are looking for more specific connections you can of course use the [subgraph](./analytics-overview.html) functionality.
-In the following query only the blood relations (parent/child relations) are investigated and the resulting graph is shown below.
+In the following query only the blood relationships (parent/child relationships) are investigated and the resulting graph is shown below.
 We have excluded marriage in this subgraph and as a result the shortest path is longer than before - it turns out the Barbara Shafner and Jacob J. Niesz are cousins (their mothers, Mary Young and Catherine Young, are sisters, their father being Jacob Young).
 
 <!-- Ignoring because uses made-up IDs -->

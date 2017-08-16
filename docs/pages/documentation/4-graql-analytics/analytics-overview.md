@@ -58,7 +58,7 @@ To count just people:
 compute count in person;
 ```
 
-Consider the simple graph below that includes types and instances (some are entities and some are relations).
+Consider the simple graph below that includes types and instances (some are entities and some are relationships).
 Analytics will consider every instance in the graph, and therefore, will not consider the type nodes `person` and `marriage`, (coloured in pink).
 To compute the count on this graph without specifying any subgraph, we call the following, which would return the number 4:
 
@@ -93,7 +93,7 @@ compute degrees in person, marriage;
 ```
 
 In the example below this would be 1 for Jacob Young, 2 for Barbara Herchelroth, 1 for John Newman and 0 for the rest because we do not count the arrows indicating type, only arrows labelled with `spouse` roles.
-This graph also happens to include the parentship relation, but we have ignored this and only found out the number of marriages a person has taken part in for any size of graph.
+This graph also happens to include the parentship relationship, but we have ignored this and only found out the number of marriages a person has taken part in for any size of graph.
 
 ![A simple graph.](/images/analytics_degree_sub_Graph.png)
 

@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
@@ -56,7 +56,7 @@ import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
  * {@link HasResourceTypeProperty#required} field.
  *
  * This property is defined as an implicit ontological structure between a {@link Type} and a {@link ResourceType},
- * including one implicit {@link RelationType} and two implicit {@link Role}s. The labels of these types are derived
+ * including one implicit {@link RelationshipType} and two implicit {@link Role}s. The labels of these types are derived
  * from the label of the {@link ResourceType}.
  *
  * Like {@link HasResourceProperty}, if this is not a key and is used in a match query it will not use the implicit
@@ -86,7 +86,7 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
 
         VarPatternAdmin ownerRole = var().sub(role).admin();
         VarPatternAdmin valueRole = var().sub(role).admin();
-        VarPattern relationType = var().sub(Graql.label(Schema.MetaSchema.RELATION.getLabel()));
+        VarPattern relationType = var().sub(Graql.label(Schema.MetaSchema.RELATIONSHIP.getLabel()));
 
         // If a key, limit only to the implicit key type
         if(required){
@@ -163,8 +163,8 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
         Label label = this.resourceType().getTypeLabel().orElse(null);
 
         Var predicateVar = var().asUserDefined();
-        OntologyConcept ontologyConcept = parent.graph().getOntologyConcept(label);
-        IdPredicate predicate = new IdPredicate(predicateVar, ontologyConcept, parent);
+        SchemaConcept schemaConcept = parent.graph().getSchemaConcept(label);
+        IdPredicate predicate = new IdPredicate(predicateVar, schemaConcept, parent);
         //isa part
         VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();
         return new HasAtom(resVar, predicateVar, predicate, parent);

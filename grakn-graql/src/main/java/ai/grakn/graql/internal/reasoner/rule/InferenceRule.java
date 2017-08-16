@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -195,13 +195,13 @@ public class InferenceRule {
         Set<TypeAtom> allTypes = Sets.union(unifiedTypes, ruleTypes);
         allTypes.stream()
                 .filter(ta -> {
-                    OntologyConcept ontologyConcept = ta.getOntologyConcept();
-                    OntologyConcept subType = allTypes.stream()
+                    SchemaConcept schemaConcept = ta.getOntologyConcept();
+                    SchemaConcept subType = allTypes.stream()
                             .map(Atom::getOntologyConcept)
                             .filter(Objects::nonNull)
-                            .filter(t -> ReasonerUtils.getSupers(t).contains(ontologyConcept))
+                            .filter(t -> ReasonerUtils.getSupers(t).contains(schemaConcept))
                             .findFirst().orElse(null);
-                    return ontologyConcept == null || subType == null;
+                    return schemaConcept == null || subType == null;
                 }).forEach(t -> body.addAtomic(AtomicFactory.create(t, body)));
 
         return this;

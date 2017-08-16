@@ -19,8 +19,8 @@
 package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.graph.internal.cache.Cache;
 import ai.grakn.graph.internal.cache.Cacheable;
@@ -45,20 +45,20 @@ import java.util.stream.Stream;
  * @author fppt
  *
  */
-public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
+public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationship> implements RelationshipType {
     private final Cache<Set<Role>> cachedRelates = new Cache<>(Cacheable.set(), () -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RelationTypeImpl(VertexElement vertexElement) {
+    RelationshipTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    RelationTypeImpl(VertexElement vertexElement, RelationType type, Boolean isImplicit) {
+    RelationshipTypeImpl(VertexElement vertexElement, RelationshipType type, Boolean isImplicit) {
         super(vertexElement, type, isImplicit);
     }
 
     @Override
-    public Relation addRelation() {
-        return addInstance(Schema.BaseType.RELATION,
+    public Relationship addRelationship() {
+        return addInstance(Schema.BaseType.RELATIONSHIP,
                 (vertex, type) -> vertex().graph().factory().buildRelation(vertex, type), true);
     }
 
@@ -74,22 +74,13 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
         cachedRelates.clear();
     }
 
-    /**
-     *
-     * @return A list of the Role Types which make up this Relation Type.
-     */
     @Override
     public Stream<Role> relates() {
         return cachedRelates.get().stream();
     }
 
-    /**
-     *
-     * @param role A new role which is part of this relationship.
-     * @return The Relation Type itself.
-     */
     @Override
-    public RelationType relates(Role role) {
+    public RelationshipType relates(Role role) {
         checkOntologyMutationAllowed();
         putEdge(ConceptVertex.from(role), Schema.EdgeLabel.RELATES);
 
@@ -109,11 +100,11 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
     /**
      *
-     * @param role The role type to delete from this relationship.
-     * @return The Relation Type itself.
+     * @param role The {@link Role} to delete from this {@link RelationshipType}.
+     * @return The {@link Relationship} Type itself.
      */
     @Override
-    public RelationType deleteRelates(Role role) {
+    public RelationshipType deleteRelates(Role role) {
         checkOntologyMutationAllowed();
         deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) role);
 
@@ -125,7 +116,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
         //Add the Role Type itself
         vertex().graph().txCache().trackForValidation(roleTypeImpl);
 
-        //Add the Relation Type
+        //Add the Relationship Type
         vertex().graph().txCache().trackForValidation(roleTypeImpl);
 
         //Remove from internal cache
@@ -158,7 +149,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     @Override
     void trackRolePlayers(){
         instances().forEach(concept -> {
-            RelationImpl relation = RelationImpl.from(concept);
+            RelationshipImpl relation = RelationshipImpl.from(concept);
             if(relation.reified().isPresent()){
                 relation.reified().get().castingsRelation().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
             }
@@ -166,8 +157,8 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     }
 
     @Override
-    public Stream<Relation> instancesDirect(){
-        Stream<Relation> instances = super.instancesDirect();
+    public Stream<Relationship> instancesDirect(){
+        Stream<Relationship> instances = super.instancesDirect();
 
         //If the relation type is implicit then we need to get any relation edges it may have.
         if(isImplicit()) instances = Stream.concat(instances, relationEdges());
@@ -175,7 +166,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
         return instances;
     }
 
-    private Stream<Relation> relationEdges(){
+    private Stream<Relationship> relationEdges(){
         //Unfortunately this is a slow process
         return relates().
                 flatMap(role -> role.playedByTypes()).
@@ -186,9 +177,9 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
                             in(Schema.EdgeLabel.SHARD.getLabel()).
                             in(Schema.EdgeLabel.ISA.getLabel()).
                             outE(Schema.EdgeLabel.RESOURCE.getLabel()).
-                            has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), getLabelId().getValue()).
+                            has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), getLabelId().getValue()).
                             toStream().
-                            map(edge -> vertex().graph().factory().buildConcept(edge).asRelation());
+                            map(edge -> vertex().graph().factory().buildConcept(edge).asRelationship());
                 });
     }
 }

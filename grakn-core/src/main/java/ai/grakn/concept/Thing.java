@@ -29,11 +29,11 @@ import java.util.stream.Stream;
  * <p>
  *     Instances represent data in the graph.
  *     Every instance belongs to a {@link Type} which serves as a way of categorising them.
- *     Instances can relate to one another via {@link Relation}
+ *     Instances can relate to one another via {@link Relationship}
  * </p>
  *
  * @see Entity
- * @see Relation
+ * @see Relationship
  * @see Resource
  * @see Rule
  *
@@ -54,13 +54,13 @@ public interface Thing extends Concept{
      * Retrieves a Relations which the Thing takes part in, which may optionally be narrowed to a particular set
      * according to the Role you are interested in.
      * @see Role
-     * @see Relation
+     * @see Relationship
      *
      * @param roles An optional parameter which allows you to specify the role of the relations you wish to retrieve.
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
      */
     @CheckReturnValue
-    Stream<Relation> relations(Role... roles);
+    Stream<Relationship> relations(Role... roles);
 
     /**
      * Determine the Role Types that this Thing may play.

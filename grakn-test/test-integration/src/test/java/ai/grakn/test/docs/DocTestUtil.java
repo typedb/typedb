@@ -74,7 +74,7 @@ public class DocTestUtil {
             ResourceType<Double> weight = tx.putResourceType("weight", ResourceType.DataType.DOUBLE);
             ResourceType<Double> height = tx.putResourceType("height", ResourceType.DataType.DOUBLE);
 
-            tx.putRelationType("has-type")
+            tx.putRelationshipType("has-type")
                     .relates(tx.putRole("type-of-pokemon")).relates(tx.putRole("pokemon-with-type"));
 
             pokemonType.resource(typeId).resource(description);

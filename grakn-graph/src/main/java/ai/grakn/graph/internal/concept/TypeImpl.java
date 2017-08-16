@@ -20,7 +20,8 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
@@ -57,10 +58,10 @@ import java.util.stream.Stream;
  *
  * @author fppt
  *
- * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
- * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
+ * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationshipType}
+ * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link Relationship}
  */
-public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> implements Type{
+public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
     private final Cache<Boolean> cachedIsAbstract = new Cache<>(Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
@@ -244,19 +245,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
                 flatMap(Shard::<V>links);
     }
 
-    /**
-     *
-     * @return returns true if the type is set to be abstract.
-     */
     @Override
     public Boolean isAbstract() {
         return cachedIsAbstract.get();
     }
 
-    /**
-     *
-     * @return A list of the Instances which scope this Relation
-     */
     @Override
     public Stream<Thing> scopes() {
         return neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE);
@@ -273,10 +266,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
         return getThis();
     }
 
-    /**
-     * @param scope A concept which is currently scoping this concept.
-     * @return The Relation itself
-     */
     @Override
     public T deleteScope(Thing scope) {
         deleteEdge(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE, (Concept) scope);
@@ -316,14 +305,14 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
     }
 
     /**
-     * This is a temporary patch to prevent accidentally disconnecting implicit {@link RelationType}s from their
-     * {@link RelationEdge}s. This Disconnection happens because {@link RelationType#instances()} depends on the
-     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link Type} and the implicit {@link RelationType}.
+     * This is a temporary patch to prevent accidentally disconnecting implicit {@link RelationshipType}s from their
+     * {@link RelationshipEdge}s. This Disconnection happens because {@link RelationshipType#instances()} depends on the
+     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link Type} and the implicit {@link RelationshipType}.
      *
      * When changing the super you may accidentally cause this disconnection. So we prevent it here.
      *
      */
-    //TODO: Remove this when traversing to the instances of an implicit Relation Type is no longer done via plays edges
+    //TODO: Remove this when traversing to the instances of an implicit Relationship Type is no longer done via plays edges
     @Override
     boolean changingSuperAllowed(T oldSuperType, T newSuperType){
         boolean changingSuperAllowed = super.changingSuperAllowed(oldSuperType, newSuperType);
@@ -409,7 +398,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
         Label resourceLabel = resourceType.getLabel();
         Role ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(resourceLabel));
         Role valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(resourceLabel));
-        RelationType relationType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceLabel)).
+        RelationshipType relationshipType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceLabel)).
                 relates(ownerRole).
                 relates(valueRole);
 
@@ -419,13 +408,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
         if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
             Role ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
             Role valueRoleSuper = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-            RelationType relationTypeSuper = vertex().graph().putRelationTypeImplicit(has.getLabel(superLabel)).
+            RelationshipType relationshipTypeSuper = vertex().graph().putRelationTypeImplicit(has.getLabel(superLabel)).
                     relates(ownerRoleSuper).relates(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation
             ownerRole.sup(ownerRoleSuper);
             valueRole.sup(valueRoleSuper);
-            relationType.sup(relationTypeSuper);
+            relationshipType.sup(relationshipTypeSuper);
 
             //Make sure the supertype resource is linked with the role as well
             ((ResourceTypeImpl) resourceTypeSuper).plays(valueRoleSuper);

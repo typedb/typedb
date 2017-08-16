@@ -19,7 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 
@@ -111,5 +111,5 @@ public interface ReasonerQuery{
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    Map<Var, OntologyConcept> getVarOntologyConceptMap();
+    Map<Var, SchemaConcept> getVarOntologyConceptMap();
 }

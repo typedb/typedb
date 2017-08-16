@@ -40,7 +40,7 @@ If you didn’t model your data in an ontology, you would have to do it in your 
 GRAKN.AI’s ontology modelling approach differs from relational schema because:
 
 * It can model type hierarchies.
-* It can model hyper-relationships, such as relations in relations, N-ary relations, and virtual relations.
+* It can model hyper-relationships, such as relationships in relationships, N-ary relationships, and virtual relationships.
 * It can be updated easily even after you’ve added data.
 * It provides more granular access control at a single type level.
 * It is interpretable by a computer/reasoner, such that querying can infer relationships and can compress complex queries.

@@ -20,10 +20,10 @@ entity2 sub entity
 
 #Relations
 
-relation1 sub relation
+relation1 sub relationship
 	relates symmetricRole;
 
-relation2 sub relation
+relation2 sub relationship
 	relates role1
 	relates role2;
 

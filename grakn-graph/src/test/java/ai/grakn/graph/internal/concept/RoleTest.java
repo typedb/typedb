@@ -20,7 +20,7 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
@@ -38,19 +38,19 @@ import static org.junit.Assert.assertThat;
 
 public class RoleTest extends GraphTestBase {
     private Role role;
-    private RelationType relationType;
+    private RelationshipType relationshipType;
 
     @Before
     public void buildGraph(){
         role = graknGraph.putRole("My Role");
-        relationType = graknGraph.putRelationType("RelationType");
+        relationshipType = graknGraph.putRelationshipType("RelationshipType");
     }
 
     @Test
     public void whenGettingTheRelationTypesARoleIsInvolvedIn_ReturnTheRelationTypes() throws Exception {
         assertThat(role.relationTypes().collect(toSet()), empty());
-        relationType.relates(role);
-        assertThat(role.relationTypes().collect(toSet()), containsInAnyOrder(relationType));
+        relationshipType.relates(role);
+        assertThat(role.relationTypes().collect(toSet()), containsInAnyOrder(relationshipType));
     }
 
     @Test
@@ -81,7 +81,7 @@ public class RoleTest extends GraphTestBase {
     @Test
     public void whenDeletingRoleTypeWithRelationTypes_Throw(){
         Role role2 = graknGraph.putRole("New Role Type");
-        graknGraph.putRelationType("Thing").relates(role2).relates(role);
+        graknGraph.putRelationshipType("Thing").relates(role2).relates(role);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.cannotBeDeleted(role2).getMessage());
@@ -93,13 +93,13 @@ public class RoleTest extends GraphTestBase {
     public void whenDeletingRoleTypeWithRolePlayers_Throw(){
         Role roleA = graknGraph.putRole("roleA");
         Role roleB = graknGraph.putRole("roleB");
-        RelationType relationType = graknGraph.putRelationType("relationTypes").relates(roleA).relates(roleB);
+        RelationshipType relationshipType = graknGraph.putRelationshipType("relationTypes").relates(roleA).relates(roleB);
         EntityType entityType = graknGraph.putEntityType("entityType").plays(roleA).plays(roleB);
 
         Entity a = entityType.addEntity();
         Entity b = entityType.addEntity();
 
-        relationType.addRelation().addRolePlayer(roleA, a).addRolePlayer(roleB, b);
+        relationshipType.addRelationship().addRolePlayer(roleA, a).addRolePlayer(roleB, b);
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.cannotBeDeleted(roleA).getMessage());
@@ -111,12 +111,12 @@ public class RoleTest extends GraphTestBase {
     public void whenAddingRoleTypeToMultipleRelationTypes_EnsureItLinkedToBothRelationTypes() throws InvalidGraphException {
         Role roleA = graknGraph.putRole("roleA");
         Role roleB = graknGraph.putRole("roleB");
-        relationType.relates(roleA).relates(role);
-        RelationType relationType2 = graknGraph.putRelationType("relationType2").relates(roleB).relates(role);
+        relationshipType.relates(roleA).relates(role);
+        RelationshipType relationshipType2 = graknGraph.putRelationshipType("relationshipType2").relates(roleB).relates(role);
         graknGraph.commit();
 
-        assertThat(roleA.relationTypes().collect(toSet()), containsInAnyOrder(relationType));
-        assertThat(roleB.relationTypes().collect(toSet()), containsInAnyOrder(relationType2));
-        assertThat(role.relationTypes().collect(toSet()), containsInAnyOrder(relationType, relationType2));
+        assertThat(roleA.relationTypes().collect(toSet()), containsInAnyOrder(relationshipType));
+        assertThat(roleB.relationTypes().collect(toSet()), containsInAnyOrder(relationshipType2));
+        assertThat(role.relationTypes().collect(toSet()), containsInAnyOrder(relationshipType, relationshipType2));
     }
 }
