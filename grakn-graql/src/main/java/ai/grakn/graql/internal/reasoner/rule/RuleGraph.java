@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
@@ -65,9 +65,9 @@ public class RuleGraph {
      * @param type for which rules containing it in the head are sought
      * @return rules containing specified type in the head
      */
-    public static Stream<Rule> getRulesWithType(OntologyConcept type, GraknTx graph){
+    public static Stream<Rule> getRulesWithType(SchemaConcept type, GraknTx graph){
         return type != null ?
-                type.subs().flatMap(OntologyConcept::getRulesOfConclusion) :
+                type.subs().flatMap(SchemaConcept::getRulesOfConclusion) :
                 getRules(graph);
     }
 

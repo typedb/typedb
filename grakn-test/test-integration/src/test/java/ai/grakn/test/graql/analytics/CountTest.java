@@ -24,7 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -160,9 +160,9 @@ public class CountTest {
             Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
             name.plays(resourceValue);
 
-            RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
+            RelationshipType relationshipType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
                     .relates(resourceOwner).relates(resourceValue);
-            relationType.addRelation()
+            relationshipType.addRelationship()
                     .addRolePlayer(resourceOwner, aPerson)
                     .addRolePlayer(resourceValue, jason);
             graph.commit();

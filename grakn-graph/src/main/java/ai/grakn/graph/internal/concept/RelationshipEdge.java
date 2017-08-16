@@ -20,8 +20,8 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graph.internal.cache.Cache;
@@ -39,44 +39,44 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Encapsulates The {@link Relation} as a {@link EdgeElement}
+ *     Encapsulates The {@link Relationship} as a {@link EdgeElement}
  * </p>
  *
  * <p>
- *     This wraps up a {@link Relation} as a {@link EdgeElement}. It is used to represent any binary {@link Relation}.
- *     This also includes the ability to automatically reify a {@link RelationEdge} into a {@link RelationReified}.
+ *     This wraps up a {@link Relationship} as a {@link EdgeElement}. It is used to represent any binary {@link Relationship}.
+ *     This also includes the ability to automatically reify a {@link RelationshipEdge} into a {@link RelationshipReified}.
  * </p>
  *
  * @author fppt
  *
  */
-public class RelationEdge implements RelationStructure{
+public class RelationshipEdge implements RelationshipStructure {
     private final EdgeElement edgeElement;
 
-    private final Cache<RelationType> relationType = new Cache<>(Cacheable.concept(), () ->
-            edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
+    private final Cache<RelationshipType> relationType = new Cache<>(Cacheable.concept(), () ->
+            edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
 
     private final Cache<Role> ownerRole = new Cache<>(Cacheable.concept(), () -> edge().graph().getOntologyConcept(LabelId.of(
-            edge().property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
+            edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID))));
 
     private final Cache<Role> valueRole = new Cache<>(Cacheable.concept(), () -> edge().graph().getOntologyConcept(LabelId.of(
-            edge().property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
+            edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID))));
 
     private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> edge().graph().factory().buildConcept(edge().source()));
     private final Cache<Thing> value = new Cache<>(Cacheable.concept(), () -> edge().graph().factory().buildConcept(edge().target()));
 
-    RelationEdge(EdgeElement edgeElement) {
+    RelationshipEdge(EdgeElement edgeElement) {
         this.edgeElement = edgeElement;
     }
 
-    RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
+    RelationshipEdge(RelationshipType relationshipType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
         this(edgeElement);
 
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.getLabelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.getLabelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationType, null, t -> t.getLabelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.getLabelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.getLabelId().getValue());
+        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, relationshipType, null, t -> t.getLabelId().getValue());
 
-        this.relationType.set(relationType);
+        this.relationType.set(relationshipType);
         this.ownerRole.set(ownerRole);
         this.valueRole.set(valueRole);
     }
@@ -91,10 +91,10 @@ public class RelationEdge implements RelationStructure{
     }
 
     @Override
-    public RelationReified reify() {
-        //Build the Relation Vertex
-        VertexElement relationVertex = edge().graph().addVertex(Schema.BaseType.RELATION, getId());
-        RelationReified relationReified = edge().graph().factory().buildRelationReified(relationVertex, type());
+    public RelationshipReified reify() {
+        //Build the Relationship Vertex
+        VertexElement relationVertex = edge().graph().addVertex(Schema.BaseType.RELATIONSHIP, getId());
+        RelationshipReified relationReified = edge().graph().factory().buildRelationReified(relationVertex, type());
 
         //Delete the old edge
         delete();
@@ -108,7 +108,7 @@ public class RelationEdge implements RelationStructure{
     }
 
     @Override
-    public RelationType type() {
+    public RelationshipType type() {
         return relationType.get();
     }
 

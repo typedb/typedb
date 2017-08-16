@@ -27,7 +27,7 @@ import ai.grakn.concept.Role;
  *
  * @author Felix Chapman
  */
-public class Roles extends AbstractOntologyConceptGenerator<Role> {
+public class Roles extends AbstractSchemaConceptGenerator<Role> {
 
     public Roles() {
         super(Role.class);
@@ -39,7 +39,7 @@ public class Roles extends AbstractOntologyConceptGenerator<Role> {
     }
 
     @Override
-    protected Role metaOntologyConcept() {
+    protected Role metaSchemaConcept() {
         return graph().admin().getMetaRole();
     }
 }

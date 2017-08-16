@@ -20,6 +20,7 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relationship;
 import ai.grakn.graph.internal.structure.VertexElement;
 
 /**
@@ -30,7 +31,7 @@ import ai.grakn.graph.internal.structure.VertexElement;
  * <p>
  *     This represents an entity in the graph.
  *     Entities are objects which are defined by their {@link ai.grakn.concept.Resource} and their links to
- *     other entities via {@link ai.grakn.concept.Relation}
+ *     other entities via {@link Relationship}
  * </p>
  *
  * @author fppt

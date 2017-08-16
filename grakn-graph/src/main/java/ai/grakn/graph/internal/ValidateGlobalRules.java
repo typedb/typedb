@@ -20,9 +20,9 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -30,10 +30,10 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.graph.internal.concept.OntologyConceptImpl;
-import ai.grakn.graph.internal.concept.RelationImpl;
-import ai.grakn.graph.internal.concept.RelationReified;
-import ai.grakn.graph.internal.concept.RelationTypeImpl;
+import ai.grakn.graph.internal.concept.RelationshipImpl;
+import ai.grakn.graph.internal.concept.RelationshipTypeImpl;
+import ai.grakn.graph.internal.concept.SchemaConceptImpl;
+import ai.grakn.graph.internal.concept.RelationshipReified;
 import ai.grakn.graph.internal.concept.RuleImpl;
 import ai.grakn.graph.internal.concept.TypeImpl;
 import ai.grakn.graph.internal.structure.Casting;
@@ -77,17 +77,17 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_T
  *     1. Plays Validation which ensures that a {@link Thing} is allowed to play the {@link Role}
  *        it has been assigned to.
  *     2. Relates Validation which ensures that every {@link Role} which is not abstract is
- *        assigned to a {@link RelationType} via {@link RelationType#relates(Role)}.
- *     3. Minimum Role Validation which ensures that every {@link RelationType} has at least 2 {@link Role}
- *        assigned to it via {@link RelationType#relates(Role)}.
- *     4. Relation Structure Validation which ensures that each {@link ai.grakn.concept.Relation} has the
+ *        assigned to a {@link RelationshipType} via {@link RelationshipType#relates(Role)}.
+ *     3. Minimum Role Validation which ensures that every {@link RelationshipType} has at least 2 {@link Role}
+ *        assigned to it via {@link RelationshipType#relates(Role)}.
+ *     4. {@link Relationship} Structure Validation which ensures that each {@link Relationship} has the
  *        correct structure.
  *     5. Abstract Type Validation which ensures that each abstract {@link Type} has no {@link Thing}.
- *     6. Relation Type Hierarchy Validation which ensures that {@link RelationType} with a hierarchical structure
+ *     6. {@link RelationshipType} Hierarchy Validation which ensures that {@link RelationshipType} with a hierarchical structure
  *        have a valid matching {@link Role} hierarchical structure.
  *     7. Required Resources validation which ensures that each {@link Thing} with required
- *        {@link ai.grakn.concept.Resource} has a valid {@link ai.grakn.concept.Relation} to that Resource.
- *     8. Unique Relation Validation which ensures that no duplicate {@link ai.grakn.concept.Relation} are created.
+ *        {@link ai.grakn.concept.Resource} has a valid {@link Relationship} to that Resource.
+ *     8. Unique {@link Relationship} Validation which ensures that no duplicate {@link Relationship} are created.
  * </p>
  *
  * @author fppt
@@ -150,14 +150,14 @@ class ValidateGlobalRules {
 
     /**
      *
-     * @param relationType The RelationType to validate
+     * @param relationshipType The {@link RelationshipType} to validate
      * @return An error message if the relationTypes does not have at least 1 role
      */
-    static Optional<String> validateHasMinimumRoles(RelationType relationType) {
-        if(relationType.isAbstract() || relationType.relates().iterator().hasNext()){
+    static Optional<String> validateHasMinimumRoles(RelationshipType relationshipType) {
+        if(relationshipType.isAbstract() || relationshipType.relates().iterator().hasNext()){
             return Optional.empty();
         } else {
-            return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationType.getLabel()));
+            return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationshipType.getLabel()));
         }
     }
 
@@ -167,23 +167,23 @@ class ValidateGlobalRules {
      * @return An error message indicating if the relation has an incorrect structure. This includes checking if there an equal
      * number of castings and roles as well as looping the structure to make sure castings lead to the same relation type.
      */
-    static Optional<String> validateRelationshipStructure(RelationReified relation){
-        RelationType relationType = relation.type();
+    static Optional<String> validateRelationshipStructure(RelationshipReified relation){
+        RelationshipType relationshipType = relation.type();
         Collection<Casting> castings = relation.castingsRelation().collect(Collectors.toSet());
-        Collection<Role> roles = relationType.relates().collect(Collectors.toSet());
+        Collection<Role> roles = relationshipType.relates().collect(Collectors.toSet());
 
         Set<Role> rolesViaRolePlayers = castings.stream().map(Casting::getRoleType).collect(Collectors.toSet());
 
         if(rolesViaRolePlayers.size() > roles.size()) {
-            return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), rolesViaRolePlayers.size(), relationType.getLabel(), roles.size()));
+            return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), rolesViaRolePlayers.size(), relationshipType.getLabel(), roles.size()));
         }
 
         for(Casting casting : castings){
             boolean notFound = casting.getRoleType().relationTypes().
-                    noneMatch(innerRelationType -> innerRelationType.getLabel().equals(relationType.getLabel()));
+                    noneMatch(innerRelationType -> innerRelationType.getLabel().equals(relationshipType.getLabel()));
 
             if(notFound) {
-                return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRoleType().getLabel(), relationType.getLabel()));
+                return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRoleType().getLabel(), relationshipType.getLabel()));
             }
         }
 
@@ -192,11 +192,11 @@ class ValidateGlobalRules {
 
     /**
      *
-     * @param relationType the relation type to be validated
+     * @param relationshipType the relation type to be validated
      * @return Error messages if the role type sub structure does not match the relation type sub structure
      */
-    static Set<String> validateRelationTypesToRolesSchema(RelationType relationType){
-        RelationTypeImpl superRelationType = (RelationTypeImpl) relationType.sup();
+    static Set<String> validateRelationTypesToRolesSchema(RelationshipType relationshipType){
+        RelationshipTypeImpl superRelationType = (RelationshipTypeImpl) relationshipType.sup();
         if(Schema.MetaSchema.isMetaLabel(superRelationType.getLabel())){ //If super type is a meta type no validation needed
             return Collections.emptySet();
         }
@@ -204,8 +204,8 @@ class ValidateGlobalRules {
         Set<String> errorMessages = new HashSet<>();
 
         Collection<Role> superRelates = superRelationType.relates().collect(Collectors.toSet());
-        Collection<Role> relates = relationType.relates().collect(Collectors.toSet());
-        Set<Label> relatesLabels = relates.stream().map(OntologyConcept::getLabel).collect(Collectors.toSet());
+        Collection<Role> relates = relationshipType.relates().collect(Collectors.toSet());
+        Set<Label> relatesLabels = relates.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers
@@ -214,11 +214,11 @@ class ValidateGlobalRules {
             superRelationType.superSet().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.getLabel())));
 
             for (Role relate : relates) {
-                boolean validRoleTypeFound = OntologyConceptImpl.from(relate).superSet().
+                boolean validRoleTypeFound = SchemaConceptImpl.from(relate).superSet().
                         anyMatch(superRole -> allSuperRolesPlayed.contains(superRole.getLabel()));
 
                 if(!validRoleTypeFound){
-                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(relate.getLabel(), relationType.getLabel(), "super", "super", superRelationType.getLabel()));
+                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(relate.getLabel(), relationshipType.getLabel(), "super", "super", superRelationType.getLabel()));
                 }
             }
         }
@@ -228,7 +228,7 @@ class ValidateGlobalRules {
             boolean subRoleNotFoundInRelates = superRelate.subs().noneMatch(sub -> relatesLabels.contains(sub.getLabel()));
 
             if(subRoleNotFoundInRelates){
-                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.getLabel(), superRelationType.getLabel(), "sub", "sub", relationType.getLabel()));
+                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.getLabel(), superRelationType.getLabel(), "sub", "sub", relationshipType.getLabel()));
             }
         }
 
@@ -250,7 +250,7 @@ class ValidateGlobalRules {
                 if(playsEntry.getValue()){
                     Role role = playsEntry.getKey();
                     // Assert there is a relation for this type
-                    Stream<Relation> relations = thing.relations(role);
+                    Stream<Relationship> relations = thing.relations(role);
 
                     if(!CommonUtil.containsOnly(relations, 1)){
                         Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.getLabel());
@@ -264,11 +264,11 @@ class ValidateGlobalRules {
     }
 
     /**
-     * @param graph graph used to ensure the {@link Relation} is unique
-     * @param relationReified The {@link Relation} whose hash needs to be set.
-     * @return An error message if the {@link Relation} is not unique.
+     * @param graph graph used to ensure the {@link Relationship} is unique
+     * @param relationReified The {@link Relationship} whose hash needs to be set.
+     * @return An error message if the {@link Relationship} is not unique.
      */
-    static Optional<String> validateRelationIsUnique(GraknTxAbstract<?> graph, RelationReified relationReified){
+    static Optional<String> validateRelationIsUnique(GraknTxAbstract<?> graph, RelationshipReified relationReified){
         Iterator<ResourceType> keys = relationReified.type().keys().iterator();
         if(keys.hasNext()){
             return validateKeyControlledRelation(graph, relationReified, keys);
@@ -278,15 +278,15 @@ class ValidateGlobalRules {
     }
 
     /**
-     * Checks that a {@link Relation} which is bound to a {@link ai.grakn.concept.Resource} as a key actually is unique to that key.
+     * Checks that a {@link Relationship} which is bound to a {@link ai.grakn.concept.Resource} as a key actually is unique to that key.
      * The check for if the key is actually connected to the relation is done in {@link #validateInstancePlaysAllRequiredRoles}
      *
      * @param graph the {@link GraknTx} used to check for uniqueness
-     * @param relationReified the {@link Relation} to check
+     * @param relationReified the {@link Relationship} to check
      * @param keys the {@link ResourceType} indicating the key which the relation must be bound to and unique to
-     * @return An error message if the {@link Relation} is not unique.
+     * @return An error message if the {@link Relationship} is not unique.
      */
-    private static Optional<String> validateKeyControlledRelation(GraknTxAbstract<?> graph, RelationReified relationReified, Iterator<ResourceType> keys) {
+    private static Optional<String> validateKeyControlledRelation(GraknTxAbstract<?> graph, RelationshipReified relationReified, Iterator<ResourceType> keys) {
         TreeMap<String, String> resources = new TreeMap<>();
         while(keys.hasNext()){
             Optional<Resource<?>> foundResource = relationReified.resources(keys.next()).findAny();
@@ -295,35 +295,35 @@ class ValidateGlobalRules {
             foundResource.ifPresent(resource -> resources.put(resource.type().getId().getValue(), resource.getId().getValue()));
         }
 
-        String hash = RelationReified.generateNewHash(relationReified.type(), resources);
+        String hash = RelationshipReified.generateNewHash(relationReified.type(), resources);
 
         return setRelationUnique(graph, relationReified, hash);
     }
 
     /**
-     * Checks if {@link Relation}s which are not bound to {@link ai.grakn.concept.Resource}s as keys are unique by their
+     * Checks if {@link Relationship}s which are not bound to {@link ai.grakn.concept.Resource}s as keys are unique by their
      * {@link Role}s and the {@link Thing}s which play those roles.
      *
      * @param graph the {@link GraknTx} used to check for uniqueness
-     * @param relationReified the {@link Relation} to check
-     * @return An error message if the {@link Relation} is not unique.
+     * @param relationReified the {@link Relationship} to check
+     * @return An error message if the {@link Relationship} is not unique.
      */
-    private static Optional<String> validateNonKeyControlledRelation(GraknTxAbstract<?> graph, RelationReified relationReified){
-        String hash = RelationReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers());
+    private static Optional<String> validateNonKeyControlledRelation(GraknTxAbstract<?> graph, RelationshipReified relationReified){
+        String hash = RelationshipReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers());
         return setRelationUnique(graph, relationReified, hash);
     }
 
     /**
-     * Checks is a {@link Relation} is unique by searching the {@link GraknTx} for another {@link Relation} with the same
+     * Checks is a {@link Relationship} is unique by searching the {@link GraknTx} for another {@link Relationship} with the same
      * hash.
      *
      * @param graph the {@link GraknTx} used to check for uniqueness
-     * @param relationReified The candidate unique {@link Relation}
-     * @param hash The hash to use to find other potential {@link Relation}s
-     * @return An error message if the provided {@link Relation} is not unique and were unable to set the hash
+     * @param relationReified The candidate unique {@link Relationship}
+     * @param hash The hash to use to find other potential {@link Relationship}s
+     * @return An error message if the provided {@link Relationship} is not unique and were unable to set the hash
      */
-    private static Optional<String> setRelationUnique(GraknTxAbstract<?> graph, RelationReified relationReified, String hash){
-        RelationImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
+    private static Optional<String> setRelationUnique(GraknTxAbstract<?> graph, RelationshipReified relationReified, String hash){
+        RelationshipImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
 
         if(foundRelation == null){
             relationReified.setHash(hash);
@@ -421,17 +421,17 @@ class ValidateGlobalRules {
         pattern.admin().getVars().stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
-                    OntologyConcept ontologyConcept = graph.getOntologyConcept(typeLabel);
-                    if(ontologyConcept == null){
+                    SchemaConcept schemaConcept = graph.getSchemaConcept(typeLabel);
+                    if(schemaConcept == null){
                         errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
                     } else {
                         if(Schema.VertexProperty.RULE_WHEN.equals(side)){
-                            if (ontologyConcept.isType()){
-                                RuleImpl.from(rule).addHypothesis(ontologyConcept.asType());
+                            if (schemaConcept.isType()){
+                                RuleImpl.from(rule).addHypothesis(schemaConcept.asType());
                             }
                         } else if (Schema.VertexProperty.RULE_THEN.equals(side)){
-                            if (ontologyConcept.isType()) {
-                                RuleImpl.from(rule).addConclusion(ontologyConcept.asType());
+                            if (schemaConcept.isType()) {
+                                RuleImpl.from(rule).addConclusion(schemaConcept.asType());
                             }
                         } else {
                             throw GraphOperationException.invalidPropertyUse(rule, side);

@@ -187,7 +187,7 @@ public class EquivalentFragmentSets {
     }
 
     static boolean hasDirectSubTypes(GraknTx graph, Label label) {
-        Type type = graph.getOntologyConcept(label);
+        Type type = graph.getSchemaConcept(label);
         return type != null && !CommonUtil.containsOnly(type.subs(), 1);
     }
 

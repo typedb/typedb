@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
@@ -101,7 +101,7 @@ public class QueryAnswerStream {
         if (types.isEmpty()) return true;
         for (TypeAtom type : types){
             Var var = type.getVarName();
-            OntologyConcept t = type.getOntologyConcept();
+            SchemaConcept t = type.getOntologyConcept();
             if (t.subs().noneMatch(sub -> sub.equals(answer.get(var).asThing().type()))) {
                 return false;
             }

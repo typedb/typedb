@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.test.GraphContext;
 
@@ -63,8 +63,8 @@ public class DiagonalGraph extends TestGraph {
         Role relTo = graph.getRole("rel-to");
 
         EntityType entity1 = graph.getEntityType("entity1");
-        RelationType horizontal = graph.getRelationType("horizontal");
-        RelationType vertical = graph.getRelationType("vertical");
+        RelationshipType horizontal = graph.getRelationshipType("horizontal");
+        RelationshipType vertical = graph.getRelationshipType("vertical");
         ConceptId[][] instanceIds = new ConceptId[n][m];
         long inserts = 0;
         for(int i = 0 ; i < n ;i++) {
@@ -79,13 +79,13 @@ public class DiagonalGraph extends TestGraph {
         for(int i = 0 ; i < n ; i++) {
             for (int j = 0; j < m; j++) {
                 if ( i < n - 1 ) {
-                    vertical.addRelation()
+                    vertical.addRelationship()
                             .addRolePlayer(relFrom, graph.getConcept(instanceIds[i][j]))
                             .addRolePlayer(relTo, graph.getConcept(instanceIds[i+1][j]));
                     inserts++;
                 }
                 if ( j < m - 1){
-                    horizontal.addRelation()
+                    horizontal.addRelationship()
                             .addRolePlayer(relFrom, graph.getConcept(instanceIds[i][j]))
                             .addRolePlayer(relTo, graph.getConcept(instanceIds[i][j+1]));
                     inserts++;

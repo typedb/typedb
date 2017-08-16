@@ -21,7 +21,7 @@ package ai.grakn.test.graphs;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Label;
 import ai.grakn.test.GraphContext;
@@ -66,8 +66,8 @@ public class MatrixGraph extends TestGraph {
 
         EntityType aEntity = graph.getEntityType("a-entity");
         EntityType bEntity = graph.getEntityType("b-entity");
-        RelationType R1 = graph.getRelationType("R1");
-        RelationType R2 = graph.getRelationType("R2");
+        RelationshipType R1 = graph.getRelationshipType("R1");
+        RelationshipType R2 = graph.getRelationshipType("R2");
 
         ConceptId[] aInstancesIds = new ConceptId[m+1];
         ConceptId[][] bInstancesIds = new ConceptId[m][n+1];
@@ -84,20 +84,20 @@ public class MatrixGraph extends TestGraph {
         }
 
         for (int i = 0; i < m; i++) {
-            R1.addRelation()
+            R1.addRelationship()
                     .addRolePlayer(R1from, graph.getConcept(aInstancesIds[i]))
                     .addRolePlayer(R1to, graph.getConcept(aInstancesIds[i + 1]));
         }
 
         for(int j = 1 ; j <= n ;j++) {
-            R2.addRelation()
+            R2.addRelationship()
                     .addRolePlayer(R2from, graph.getConcept(aInstancesIds[0]))
                     .addRolePlayer(R2to, graph.getConcept(bInstancesIds[1][j]));
-            R2.addRelation()
+            R2.addRelationship()
                     .addRolePlayer(R2from, graph.getConcept(bInstancesIds[m-1][j]))
                     .addRolePlayer(R2to, graph.getConcept(aInstancesIds[m]));
             for (int i = 1; i < m - 1; i++) {
-                R2.addRelation()
+                R2.addRelationship()
                         .addRolePlayer(R2from, graph.getConcept(bInstancesIds[i][j]))
                         .addRolePlayer(R2to, graph.getConcept(bInstancesIds[i + 1][j]));
             }

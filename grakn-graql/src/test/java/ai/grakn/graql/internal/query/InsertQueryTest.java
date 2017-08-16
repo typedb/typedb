@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
@@ -210,7 +210,7 @@ public class InsertQueryTest {
     public void testInsertOntology() {
         qb.insert(
                 label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("evolution").sub(Schema.MetaSchema.RELATION.getLabel().getValue()),
+                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
                 label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("evolution").relates("evolves-from").relates("evolves-to"),
@@ -224,7 +224,7 @@ public class InsertQueryTest {
         ).execute();
 
         assertTrue(qb.match(label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).iterator().hasNext());
-        assertTrue(qb.match(label("evolution").sub(Schema.MetaSchema.RELATION.getLabel().getValue())).iterator().hasNext());
+        assertTrue(qb.match(label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue())).iterator().hasNext());
         assertTrue(qb.match(label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue())).iterator().hasNext());
         assertTrue(qb.match(label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue())).iterator().hasNext());
         assertTrue(qb.match(label("evolution").relates("evolves-from").relates("evolves-to")).iterator().hasNext());
@@ -288,7 +288,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertSubRoleType() {
         qb.insert(
-                label("marriage").sub(Schema.MetaSchema.RELATION.getLabel().getValue()).relates("spouse1").relates("spouse2"),
+                label("marriage").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()).relates("spouse1").relates("spouse2"),
                 label("spouse").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("spouse1").sub("spouse"),
                 label("spouse2").sub("spouse")
@@ -478,9 +478,9 @@ public class InsertQueryTest {
         VarPattern hasResourceValue = Graql.label(HAS_VALUE.getLabel(resourceType));
 
         // Make sure the expected ontology elements are created
-        assertTrue(qb.match(hasResource.sub("relation")).iterator().hasNext());
-        assertTrue(qb.match(hasResourceOwner.sub("role")).iterator().hasNext());
-        assertTrue(qb.match(hasResourceValue.sub("role")).iterator().hasNext());
+        assertTrue(qb.match(hasResource.sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue())).iterator().hasNext());
+        assertTrue(qb.match(hasResourceOwner.sub(Schema.MetaSchema.ROLE.getLabel().getValue())).iterator().hasNext());
+        assertTrue(qb.match(hasResourceValue.sub(Schema.MetaSchema.ROLE.getLabel().getValue())).iterator().hasNext());
         assertTrue(qb.match(hasResource.relates(hasResourceOwner)).iterator().hasNext());
         assertTrue(qb.match(hasResource.relates(hasResourceValue)).iterator().hasNext());
         assertTrue(qb.match(label("a-new-type").plays(hasResourceOwner)).iterator().hasNext());
@@ -507,9 +507,9 @@ public class InsertQueryTest {
         VarPattern keyValue = Graql.label(KEY_VALUE.getLabel(resourceType));
 
         // Make sure the expected ontology elements are created
-        assertTrue(qb.match(key.sub("relation")).iterator().hasNext());
-        assertTrue(qb.match(keyOwner.sub("role")).iterator().hasNext());
-        assertTrue(qb.match(keyValue.sub("role")).iterator().hasNext());
+        assertTrue(qb.match(key.sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue())).iterator().hasNext());
+        assertTrue(qb.match(keyOwner.sub(Schema.MetaSchema.ROLE.getLabel().getValue())).iterator().hasNext());
+        assertTrue(qb.match(keyValue.sub(Schema.MetaSchema.ROLE.getLabel().getValue())).iterator().hasNext());
         assertTrue(qb.match(key.relates(keyOwner)).iterator().hasNext());
         assertTrue(qb.match(key.relates(keyValue)).iterator().hasNext());
         assertTrue(qb.match(label("a-new-type").plays(keyOwner)).iterator().hasNext());
@@ -774,14 +774,14 @@ public class InsertQueryTest {
         Thing cluster = results.get(0).get("c").asThing();
         Thing godfather = results.get(0).get("g").asThing();
         Thing muppets = results.get(0).get("m").asThing();
-        Relation relation = results.get(0).get("r").asRelation();
+        Relationship relationship = results.get(0).get("r").asRelationship();
 
         Role clusterOfProduction = movieGraph.graph().getRole("cluster-of-production");
         Role productionWithCluster = movieGraph.graph().getRole("production-with-cluster");
 
-        assertEquals(relation.rolePlayers().collect(toSet()), ImmutableSet.of(cluster, godfather, muppets));
-        assertEquals(relation.rolePlayers(clusterOfProduction).collect(toSet()), ImmutableSet.of(cluster));
-        assertEquals(relation.rolePlayers(productionWithCluster).collect(toSet()), ImmutableSet.of(godfather, muppets));
+        assertEquals(relationship.rolePlayers().collect(toSet()), ImmutableSet.of(cluster, godfather, muppets));
+        assertEquals(relationship.rolePlayers(clusterOfProduction).collect(toSet()), ImmutableSet.of(cluster));
+        assertEquals(relationship.rolePlayers(productionWithCluster).collect(toSet()), ImmutableSet.of(godfather, muppets));
     }
 
     @Test(expected = Exception.class)

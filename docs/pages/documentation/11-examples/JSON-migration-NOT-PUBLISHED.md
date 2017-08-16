@@ -82,7 +82,7 @@ subjectName sub resource datatype string;
 
 # Relations and Roles
 
-publication sub relation
+publication sub relationship
 	relates publication-item
 	relates publication-author
 	relates publication-subject;
@@ -93,7 +93,7 @@ publication-subject sub role;
 
 ``` 
 
-Here, there are three entities, to reflect the book, author of the book and possible book subjects. There is one relation, `publication` which between all three entities.
+Here, there are three entities, to reflect the book, author of the book and possible book subjects. There is one relationship, `publication` which between all three entities.
 
 To load *ontology.gql* into Grakn, make sure the engine is running and choose a clean keyspace in which to work (here we use the default keyspace, so we are cleaning it before we get started). 
 
@@ -140,7 +140,7 @@ for(<books>) do {
 }
 ```
 
-Finally, a template to build the relations between the entities:
+Finally, a template to build the relationships between the entities:
 
 
 ```graql-template

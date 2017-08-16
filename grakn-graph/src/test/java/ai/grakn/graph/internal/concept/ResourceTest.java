@@ -20,8 +20,8 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -59,7 +59,7 @@ public class ResourceTest extends GraphTestBase {
     public void whenAttachingResourcesToInstances_EnsureInstancesAreReturnedAsOwners() throws Exception {
         EntityType randomThing = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
-        RelationType hasResource = graknGraph.putRelationType("Has Resource");
+        RelationshipType hasResource = graknGraph.putRelationshipType("Has Resource");
         Role resourceRole = graknGraph.putRole("Resource Role");
         Role actorRole = graknGraph.putRole("Actor");
         Thing pacino = randomThing.addEntity();
@@ -71,13 +71,13 @@ public class ResourceTest extends GraphTestBase {
 
         assertThat(birthDate.ownerInstances().collect(toSet()), empty());
 
-        hasResource.addRelation().
+        hasResource.addRelationship().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, pacino);
-        hasResource.addRelation().
+        hasResource.addRelationship().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, jennifer);
-        hasResource.addRelation().
+        hasResource.addRelationship().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, bob);
-        hasResource.addRelation().
+        hasResource.addRelationship().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, alice);
 
         assertThat(birthDate.ownerInstances().collect(toSet()), containsInAnyOrder(pacino, jennifer, bob, alice));
@@ -163,9 +163,9 @@ public class ResourceTest extends GraphTestBase {
 
         entity.resource(resource);
 
-        RelationStructure relationStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
-        assertThat(relationStructure, instanceOf(RelationEdge.class));
-        assertTrue("Edge Relation id not starting with [" + Schema.PREFIX_EDGE + "]",relationStructure.getId().getValue().startsWith(Schema.PREFIX_EDGE));
+        RelationshipStructure relationshipStructure = RelationshipImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
+        assertThat(relationshipStructure, instanceOf(RelationshipEdge.class));
+        assertTrue("Edge Relationship id not starting with [" + Schema.PREFIX_EDGE + "]", relationshipStructure.getId().getValue().startsWith(Schema.PREFIX_EDGE));
         assertEquals(entity, resource.owner());
         assertThat(entity.resources().collect(toSet()), containsInAnyOrder(resource));
     }
@@ -178,14 +178,14 @@ public class ResourceTest extends GraphTestBase {
         EntityType entityType = graknGraph.putEntityType("My entity type").resource(resourceType);
         Entity entity = entityType.addEntity();
         entity.resource(resource);
-        RelationImpl relation = RelationImpl.from(entity.relations().iterator().next());
+        RelationshipImpl relation = RelationshipImpl.from(entity.relations().iterator().next());
 
         //Check it's a relation edge.
-        RelationStructure relationStructureBefore = relation.structure();
-        assertThat(relationStructureBefore, instanceOf(RelationEdge.class));
+        RelationshipStructure relationshipStructureBefore = relation.structure();
+        assertThat(relationshipStructureBefore, instanceOf(RelationshipEdge.class));
 
         //Get the roles and role players via the relation edge:
-        Map<Role, Set<Thing>> allRolePlayerBefore = relationStructureBefore.allRolePlayers();
+        Map<Role, Set<Thing>> allRolePlayerBefore = relationshipStructureBefore.allRolePlayers();
 
         //Expand Ontology to allow new role
         Role newRole = graknGraph.putRole("My New Role");
@@ -197,21 +197,21 @@ public class ResourceTest extends GraphTestBase {
         relation.addRolePlayer(newRole, newEntity);
 
         //Check it's a relation reified now.
-        RelationStructure relationStructureAfter = relation.structure();
-        assertThat(relationStructureAfter, instanceOf(RelationReified.class));
+        RelationshipStructure relationshipStructureAfter = relation.structure();
+        assertThat(relationshipStructureAfter, instanceOf(RelationshipReified.class));
 
         //Check IDs are equal
-        assertEquals(relationStructureBefore.getId(), relation.getId());
-        assertEquals(relationStructureBefore.getId(), relationStructureAfter.getId());
+        assertEquals(relationshipStructureBefore.getId(), relation.getId());
+        assertEquals(relationshipStructureBefore.getId(), relationshipStructureAfter.getId());
 
         //Check Role Players have been transferred
-        allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationStructureAfter.rolePlayers(role).collect(toSet())));
+        allRolePlayerBefore.forEach((role, player) -> assertEquals(player, relationshipStructureAfter.rolePlayers(role).collect(toSet())));
 
         //Check Type Has Been Transferred
-        assertEquals(relationStructureBefore.type(), relationStructureAfter.type());
+        assertEquals(relationshipStructureBefore.type(), relationshipStructureAfter.type());
 
         //Check new role player has been added as well
-        assertEquals(newEntity, Iterables.getOnlyElement(relationStructureAfter.rolePlayers(newRole).collect(toSet())));
+        assertEquals(newEntity, Iterables.getOnlyElement(relationshipStructureAfter.rolePlayers(newRole).collect(toSet())));
     }
 
     @Test
@@ -245,8 +245,8 @@ public class ResourceTest extends GraphTestBase {
         e1.resource(resource);
         e2.resource(resource);
 
-        Relation rel1 = Iterables.getOnlyElement(e1.relations().collect(toSet()));
-        Relation rel2 = Iterables.getOnlyElement(e2.relations().collect(toSet()));
+        Relationship rel1 = Iterables.getOnlyElement(e1.relations().collect(toSet()));
+        Relationship rel2 = Iterables.getOnlyElement(e2.relations().collect(toSet()));
 
         assertThat(resource.relations().collect(toSet()), containsInAnyOrder(rel1, rel2));
     }

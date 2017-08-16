@@ -17,8 +17,8 @@
  */
 package ai.grakn.migration.export;
 
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
@@ -33,32 +33,32 @@ import static ai.grakn.graql.Graql.var;
  * Map Grakn Core type to equivalent Graql representation
  * @author alexandraorth
  */
-public class OntologyConceptMapper {
+public class SchemaConceptMapper {
 
     /**
      * Map a Type to the Graql string representation
-     * @param ontologyConcept type to be mapped
+     * @param schemaConcept type to be mapped
      * @return Graql var equivalent to the given type
      */
-    public static VarPattern map(OntologyConcept ontologyConcept) {
-        VarPattern mapped = formatBase(ontologyConcept);
-        if (ontologyConcept.isRelationType()) {
-            mapped = map(mapped, ontologyConcept.asRelationType());
-        } else if (ontologyConcept.isResourceType()) {
-            mapped = map(mapped, ontologyConcept.asResourceType());
+    public static VarPattern map(SchemaConcept schemaConcept) {
+        VarPattern mapped = formatBase(schemaConcept);
+        if (schemaConcept.isRelationshipType()) {
+            mapped = map(mapped, schemaConcept.asRelationshipType());
+        } else if (schemaConcept.isResourceType()) {
+            mapped = map(mapped, schemaConcept.asResourceType());
         }
 
         return mapped;
     }
 
     /**
-     * Map a {@link RelationType} to a {@link VarPattern} with all of the relates edges
+     * Map a {@link RelationshipType} to a {@link VarPattern} with all of the relates edges
      * @param var holder var with basic information
-     * @param relationType type to be mapped
-     * @return var with RelationType specific metadata
+     * @param relationshipType type to be mapped
+     * @return var with {@link RelationshipType} specific metadata
      */
-    private static VarPattern map(VarPattern var, RelationType relationType) {
-        return relates(var, relationType);
+    private static VarPattern map(VarPattern var, RelationshipType relationshipType) {
+        return relates(var, relationshipType);
     }
 
     /**
@@ -73,19 +73,19 @@ public class OntologyConceptMapper {
 
     /**
      * Create a var with the information underlying all Types
-     * @param ontologyConcept type to be mapped
+     * @param schemaConcept type to be mapped
      * @return {@link VarPattern} containing basic information about the given type
      */
-    private static VarPattern formatBase(OntologyConcept ontologyConcept) {
-        VarPattern var = var().label(ontologyConcept.getLabel());
+    private static VarPattern formatBase(SchemaConcept schemaConcept) {
+        VarPattern var = var().label(schemaConcept.getLabel());
 
-        OntologyConcept superType = ontologyConcept.sup();
-        if (ontologyConcept.sup() != null) {
+        SchemaConcept superType = schemaConcept.sup();
+        if (schemaConcept.sup() != null) {
             var = var.sub(Graql.label(superType.getLabel()));
         }
 
-        if(ontologyConcept.isType()) {
-            Type type = ontologyConcept.asType();
+        if(schemaConcept.isType()) {
+            Type type = schemaConcept.asType();
             var = plays(var, type);
             var = isAbstract(var, type);
         }
@@ -121,7 +121,7 @@ public class OntologyConceptMapper {
      * @param type type from which metadata extracted
      * @return var with appropriate relates edges
      */
-    private static VarPattern relates(VarPattern var, RelationType type){
+    private static VarPattern relates(VarPattern var, RelationshipType type){
         for(Role role:type.relates().collect(Collectors.toSet())){
             var = var.relates(Graql.label(role.getLabel()));
         }

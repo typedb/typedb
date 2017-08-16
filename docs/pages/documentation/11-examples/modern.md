@@ -79,10 +79,10 @@ insert knower sub role;
 insert known-about sub role;
 insert person plays knower;
 insert person plays known-about;
-insert knows sub relation, relates knower, relates known-about, has weight;
+insert knows sub relationship, relates knower, relates known-about, has weight;
 ```
 
-Note that the  `knows` relation also has an attribute, in the form of a resource called `weight` (though it's not clear from the TinkerPop example what this represents).
+Note that the  `knows` relationship also has an attribute, in the form of a resource called `weight` (though it's not clear from the TinkerPop example what this represents).
 
 We can set up a similar relationship between software and the people that created it:
 
@@ -93,7 +93,7 @@ insert programmed sub role;
 insert person plays programmer;
 insert software plays programmed;
 
-insert programming sub relation, relates programmer, relates programmed, has weight;
+insert programming sub relationship, relates programmer, relates programmed, has weight;
 ```
 
 And that's it. At this point, we have defined the schema of the knowledge base.
@@ -185,7 +185,7 @@ known-about sub role;
 person plays knower;
 person plays known-about;
 
-knows sub relation
+knows sub relationship
 	relates knower
 	relates known-about
 	has weight;
@@ -209,7 +209,7 @@ programmed sub role;
 person plays programmer;
 software plays programmed;
 
-programming sub relation
+programming sub relationship
 	relates programmer
 	relates programmed
 	has weight;

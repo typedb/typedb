@@ -22,9 +22,9 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
@@ -85,7 +85,7 @@ public final class Schema {
         ENTITY("entity", 2),
         ROLE("role", 3),
         RESOURCE("resource", 4),
-        RELATION("relation", 5),
+        RELATIONSHIP("relationship", 5),
         RULE("rule", 6),
         INFERENCE_RULE("inference-rule", 7),
         CONSTRAINT_RULE("constraint-rule", 8);
@@ -122,17 +122,17 @@ public final class Schema {
      * Base Types reflecting the possible objects in the concept
      */
     public enum BaseType {
-        //Ontology Elements
-        ONTOLOGY_ELEMENT(OntologyConcept.class),
+        //Schema Concepts
+        SCHEMA_CONCEPT(SchemaConcept.class),
         TYPE(Type.class),
         ROLE(Role.class),
-        RELATION_TYPE(RelationType.class),
+        RELATIONSHIP_TYPE(RelationshipType.class),
         RESOURCE_TYPE(ResourceType.class),
         ENTITY_TYPE(EntityType.class),
         RULE_TYPE(RuleType.class),
 
         //Instances
-        RELATION(Relation.class),
+        RELATIONSHIP(Relationship.class),
         ENTITY(Entity.class),
         RESOURCE(Resource.class),
         RULE(Rule.class),
@@ -157,7 +157,7 @@ public final class Schema {
      */
     public enum VertexProperty {
         //Unique Properties
-        ONTOLOGY_LABEL(String.class), INDEX(String.class), ID(String.class), LABEL_ID(Integer.class),
+        SCHEMA_LABEL(String.class), INDEX(String.class), ID(String.class), LABEL_ID(Integer.class),
 
         //Other Properties
         THING_TYPE_LABEL_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
@@ -186,10 +186,10 @@ public final class Schema {
      * A property enum defining the possible labels that can go on the edge label.
      */
     public enum EdgeProperty {
-        RELATION_ROLE_OWNER_LABEL_ID(Integer.class),
-        RELATION_ROLE_VALUE_LABEL_ID(Integer.class),
+        RELATIONSHIP_ROLE_OWNER_LABEL_ID(Integer.class),
+        RELATIONSHIP_ROLE_VALUE_LABEL_ID(Integer.class),
         ROLE_LABEL_ID(Integer.class),
-        RELATION_TYPE_LABEL_ID(Integer.class),
+        RELATIONSHIP_TYPE_LABEL_ID(Integer.class),
         REQUIRED(Boolean.class);
 
         private final Class dataType;

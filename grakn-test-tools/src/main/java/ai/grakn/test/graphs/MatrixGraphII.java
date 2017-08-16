@@ -24,7 +24,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.test.GraphContext;
 
 import java.util.function.Consumer;
@@ -64,7 +64,7 @@ public class MatrixGraphII extends TestGraph {
         Role Qto = graph.getRole("Q-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
-        RelationType Q = graph.getRelationType("Q");
+        RelationshipType Q = graph.getRelationshipType("Q");
         ConceptId[][] aInstancesIds = new ConceptId[n+1][m+1];
         Thing aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
         for(int i = 1 ; i <= n ;i++) {
@@ -73,19 +73,19 @@ public class MatrixGraphII extends TestGraph {
             }
         }
 
-        Q.addRelation()
+        Q.addRelationship()
                 .addRolePlayer(Qfrom, aInst)
                 .addRolePlayer(Qto, graph.getConcept(aInstancesIds[1][1]));
 
         for(int i = 1 ; i <= n ; i++) {
             for (int j = 1; j <= m; j++) {
                 if ( i < n ) {
-                    Q.addRelation()
+                    Q.addRelationship()
                             .addRolePlayer(Qfrom, graph.getConcept(aInstancesIds[i][j]))
                             .addRolePlayer(Qto, graph.getConcept(aInstancesIds[i+1][j]));
                 }
                 if ( j < m){
-                    Q.addRelation()
+                    Q.addRelationship()
                             .addRolePlayer(Qfrom, graph.getConcept(aInstancesIds[i][j]))
                             .addRolePlayer(Qto, graph.getConcept(aInstancesIds[i][j+1]));
                 }

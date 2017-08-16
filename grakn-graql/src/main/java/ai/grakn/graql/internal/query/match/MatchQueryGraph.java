@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
 
@@ -54,7 +54,7 @@ class MatchQueryGraph extends MatchQueryModifier {
     }
 
     @Override
-    public Set<OntologyConcept> getOntologyConcepts() {
+    public Set<SchemaConcept> getOntologyConcepts() {
         return inner.getOntologyConcepts(graph);
     }
 

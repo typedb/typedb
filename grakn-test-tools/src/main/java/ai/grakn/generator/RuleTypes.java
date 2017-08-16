@@ -42,12 +42,12 @@ public class RuleTypes extends AbstractTypeGenerator<RuleType> {
     }
 
     @Override
-    protected RuleType metaOntologyConcept() {
+    protected RuleType metaSchemaConcept() {
         return graph().admin().getMetaRuleType();
     }
 
     @Override
-    protected Collection<RuleType> otherMetaOntologyConcepts() {
+    protected Collection<RuleType> otherMetaSchemaConcepts() {
         return ImmutableSet.of(graph().admin().getMetaRuleInference(), graph().admin().getMetaRuleConstraint());
     }
 }
