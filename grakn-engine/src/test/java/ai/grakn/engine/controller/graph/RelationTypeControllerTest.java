@@ -2,7 +2,6 @@ package ai.grakn.engine.controller.graph;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.test.GraphContext;
@@ -21,13 +20,12 @@ import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RoleControllerTest {
+public class RelationTypeControllerTest {
     private static GraknGraph mockGraph;
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
 
@@ -38,7 +36,7 @@ public class RoleControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
 
-        new RoleController(mockFactory, spark, metricRegistry);
+        new RelationTypeController(mockFactory, spark, metricRegistry);
     });
 
     @Before
@@ -47,40 +45,41 @@ public class RoleControllerTest {
 
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
 
-        when(mockGraph.putRole(anyString())).thenAnswer(invocation ->
-            graphContext.graph().putRole((String) invocation.getArgument(0)));
-        when(mockGraph.getRole(anyString())).thenAnswer(invocation ->
-            graphContext.graph().getRole(invocation.getArgument(0)));
+        when(mockGraph.putRelationType(anyString())).thenAnswer(invocation ->
+            graphContext.graph().putRelationType((String) invocation.getArgument(0)));
+        when(mockGraph.getRelationType(anyString())).thenAnswer(invocation ->
+            graphContext.graph().getRelationType(invocation.getArgument(0)));
 
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
     }
 
 //    @Test
-    public void postRoleTypeShouldExecuteSuccessfully() {
-        Json body = Json.object("roleLabel", "newRole");
+    public void postRelationType() {
+        Json body = Json.object("relationTypeLabel", "newRelationType");
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
             .body(body.toString())
-            .post("/graph/role");
+            .post("/graph/relationType");
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("roleLabel"), equalTo("newRole"));
+        assertThat(responseBody.get("relationTypeLabel"), equalTo("newRelationType"));
+
     }
 
-//    @Test
-    public void getRoleFromMovieGraphShouldExecuteSuccessfully() {
+    @Test
+    public void getRelationTypeFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .get("/graph/role/production-with-cluster");
+            .get("/graph/relationType/has-genre");
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("roleLabel"), equalTo("production-with-cluster"));
+        assertThat(responseBody.get("relationTypeLabel"), equalTo("has-genre"));
     }
 }
