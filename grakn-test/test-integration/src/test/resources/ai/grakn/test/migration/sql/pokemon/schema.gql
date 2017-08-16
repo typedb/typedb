@@ -7,11 +7,11 @@ pokemon sub entity
     has height
     has weight;
 
-type-id sub resource datatype long;
-pokedex-no sub resource datatype long;
-description sub resource datatype string;
-height sub resource datatype long;
-weight sub resource datatype long;
+type-id sub attribute datatype long;
+pokedex-no sub attribute datatype long;
+description sub attribute datatype string;
+height sub attribute datatype long;
+weight sub attribute datatype long;
 
 pokemon-type sub entity
     has description
