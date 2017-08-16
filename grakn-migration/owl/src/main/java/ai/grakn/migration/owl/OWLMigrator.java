@@ -17,7 +17,7 @@
  */
 package ai.grakn.migration.owl;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -57,7 +57,7 @@ public class OWLMigrator {
     
     private Namer namer;
     private OWLOntology ontology;
-    private GraknGraph graph;
+    private GraknTx graph;
 
     private <T> T eval(Supplier<T> f) {
         return f.get();
@@ -85,12 +85,12 @@ public class OWLMigrator {
         return this.ontology;
     }
     
-    public OWLMigrator graph(GraknGraph graph) {
+    public OWLMigrator graph(GraknTx graph) {
         this.graph = graph;
         return this;
     }
     
-    public GraknGraph graph() {
+    public GraknTx graph() {
         return graph;
     }
     

@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
@@ -37,16 +37,16 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class TestGraph {
 
-    protected void buildOntology(GraknGraph graph){};
+    protected void buildOntology(GraknTx graph){};
 
-    protected void buildInstances(GraknGraph graph){};
+    protected void buildInstances(GraknTx graph){};
 
-    protected void buildRelations(GraknGraph graph){};
+    protected void buildRelations(GraknTx graph){};
 
-    protected void buildRules(GraknGraph graph){};
+    protected void buildRules(GraknTx graph){};
 
-    public Consumer<GraknGraph> build() {
-        return (GraknGraph graph) -> {
+    public Consumer<GraknTx> build() {
+        return (GraknTx graph) -> {
             buildOntology(graph);
             buildInstances(graph);
             buildRelations(graph);
@@ -54,7 +54,7 @@ public abstract class TestGraph {
         };
     }
 
-    public static Thing putEntity(GraknGraph graph, String id, EntityType type, Label key) {
+    public static Thing putEntity(GraknTx graph, String id, EntityType type, Label key) {
         Thing inst = type.addEntity();
         putResource(inst, graph.getOntologyConcept(key), id);
         return inst;
@@ -65,7 +65,7 @@ public abstract class TestGraph {
         thing.resource(attributeInstance);
     }
 
-    public static Thing getInstance(GraknGraph graph, String id){
+    public static Thing getInstance(GraknTx graph, String id){
         Set<Thing> things = graph.getResourcesByValue(id)
                 .stream().flatMap(Attribute::ownerInstances).collect(toSet());
         if (things.size() != 1) {

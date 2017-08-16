@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.session;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
@@ -72,7 +72,7 @@ class GraqlSession {
     private final Session session;
     private final boolean infer;
     private final boolean materialise;
-    private GraknGraph graph;
+    private GraknTx graph;
     private final GraknSession factory;
     private final String outputFormat;
     private Printer printer;
@@ -361,7 +361,7 @@ class GraqlSession {
      * @param graph the graph to find types in
      * @return all type IDs in the ontology
      */
-    private static Stream<Label> getTypes(GraknGraph graph) {
+    private static Stream<Label> getTypes(GraknTx graph) {
         return graph.admin().getMetaConcept().subs().map(OntologyConcept::getLabel);
     }
 

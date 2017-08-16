@@ -9,7 +9,7 @@ permalink: /documentation/graql/compute-queries.html
 folder: documentation
 ---
 
-A compute query executes a [Pregel algorithm](https://www.quora.com/What-are-the-main-concepts-behind-Googles-Pregel) to determine information about the graph in parallel.
+A compute query executes a [Pregel algorithm](https://www.quora.com/What-are-the-main-concepts-behind-Googles-Pregel) to determine information about the knowledge base in parallel.
 Called within the Graql shell, the general syntax is:
 
 ```

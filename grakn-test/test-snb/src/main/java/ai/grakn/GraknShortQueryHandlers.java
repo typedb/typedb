@@ -63,7 +63,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String query =
                         "match" +
@@ -115,7 +115,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String messageQuery = "match " +
                         "$person isa person has person-id " + operation.personId() + "; " +
@@ -185,7 +185,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String query = "match " +
                         "$person has person-id " + operation.personId() + "; " +
@@ -231,7 +231,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String query = "match " +
                         "$m has message-id " + operation.messageId() + "; " +
@@ -272,7 +272,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String query = "match " +
                         " $m has message-id " + operation.messageId() + ";" +
@@ -314,7 +314,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String query = "match " +
                         "$m has message-id " + operation.messageId() + "; " +
@@ -359,7 +359,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String query = "match $m isa message has message-id " + operation.messageId() + " ;" +
                         "(product: $m, creator: $author1) isa has-creator; " +
@@ -394,7 +394,7 @@ public class GraknShortQueryHandlers {
 
         }
 
-        private boolean checkIfFriends(String author1, String author2, GraknGraph graph) {
+        private boolean checkIfFriends(String author1, String author2, GraknTx graph) {
             String query = "match $x id '" + author1 + "'; $y id '" + author2 + "';" +
                     "(friend: $x, friend:  $y) isa knows; ask;";
             return graph.graql().<AskQuery>parse(query).execute();

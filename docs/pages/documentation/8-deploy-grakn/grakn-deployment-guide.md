@@ -31,7 +31,7 @@ You can run all these components separately depending on the redundancy levels y
 
 ### Minimum Requirements
 
-Grakn can run on default Java settings (heap of 768MB, 1GB machine) if the graph is small enough. Recommended production settings are at least 4GB machine with 3GB heap.
+Grakn can run on default Java settings (heap of 768MB, 1GB machine) if the knowledge base is small enough. Recommended production settings are at least 4GB machine with 3GB heap.
 
 Cassandra will need at least 1GB of memory by itself if run on same machine.
 

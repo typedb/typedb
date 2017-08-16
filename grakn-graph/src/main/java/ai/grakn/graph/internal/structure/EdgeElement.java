@@ -18,7 +18,7 @@
 
 package ai.grakn.graph.internal.structure;
 
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
  */
 public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 
-    public EdgeElement(AbstractGraknGraph graknGraph, Edge e){
+    public EdgeElement(GraknTxAbstract graknGraph, Edge e){
         super(graknGraph, e, Schema.PREFIX_EDGE);
     }
 

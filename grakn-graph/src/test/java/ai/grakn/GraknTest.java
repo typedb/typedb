@@ -18,8 +18,8 @@
 
 package ai.grakn;
 
-import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.graph.internal.GraknTinkerGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
+import ai.grakn.graph.internal.GraknTxTinker;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.Test;
 
@@ -33,15 +33,15 @@ public class GraknTest {
 
     @Test
     public void testInMemory(){
-        assertThat(Grakn.session(Grakn.IN_MEMORY, "test").open(GraknTxType.WRITE), instanceOf(GraknTinkerGraph.class));
+        assertThat(Grakn.session(Grakn.IN_MEMORY, "test").open(GraknTxType.WRITE), instanceOf(GraknTxTinker.class));
     }
 
     @Test
     public void testInMemorySingleton(){
-        GraknGraph test1 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTxType.WRITE);
+        GraknTx test1 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTxType.WRITE);
         test1.close();
-        GraknGraph test11 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTxType.WRITE);
-        GraknGraph test2 = Grakn.session(Grakn.IN_MEMORY, "test2").open(GraknTxType.WRITE);
+        GraknTx test11 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTxType.WRITE);
+        GraknTx test2 = Grakn.session(Grakn.IN_MEMORY, "test2").open(GraknTxType.WRITE);
 
         assertEquals(test1, test11);
         assertNotEquals(test1, test2);
@@ -49,7 +49,7 @@ public class GraknTest {
 
     @Test
     public void testInMemoryClear(){
-        GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
+        GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
         graph.admin().delete();
         graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
         graph.putEntityType("A thing");
@@ -64,10 +64,10 @@ public class GraknTest {
     @Test
     public void testSingletonBetweenBatchAndNormalInMemory(){
         String keyspace = "test1";
-        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        GraknTxAbstract graph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
         Graph tinkerGraph = graph.getTinkerPopGraph();
         graph.close();
-        AbstractGraknGraph batchGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
+        GraknTxAbstract batchGraph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
 
         assertNotEquals(graph, batchGraph);
         assertEquals(tinkerGraph, batchGraph.getTinkerPopGraph());

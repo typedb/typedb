@@ -19,7 +19,7 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.function.BiFunction;
 
 /**
- * Generator that produces {@link GraknGraph} methods that put an ontology concept in the graph, given {@link Label}.
+ * Generator that produces {@link GraknTx} methods that put an ontology concept in the graph, given {@link Label}.
  *
  * @author Felix Chapman
  */
@@ -39,13 +39,13 @@ public class PutOntologyConceptFunctions extends AbstractGenerator<BiFunction> {
     }
 
     @Override
-    protected BiFunction<GraknGraph, Label, OntologyConcept> generate() {
+    protected BiFunction<GraknTx, Label, OntologyConcept> generate() {
         return random.choose(ImmutableList.of(
-                GraknGraph::putEntityType,
+                GraknTx::putEntityType,
                 (graph, label) -> graph.putResourceType(label, gen(AttributeType.DataType.class)),
-                GraknGraph::putRuleType,
-                GraknGraph::putRelationType,
-                GraknGraph::putRole
+                GraknTx::putRuleType,
+                GraknTx::putRelationType,
+                GraknTx::putRole
         ));
     }
 }

@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.loader;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.postprocessing.GraphMutators;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
@@ -73,7 +73,7 @@ public class MutatorTask extends BackgroundTask {
      * @param inserts graql queries to insert into the graph
      * @return true if the data was inserted, false otherwise
      */
-    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts) {
+    private boolean insertQueriesInOneTransaction(GraknTx graph, Collection<Query> inserts) {
         try(Context context = metricRegistry().timer(name(MutatorTask.class, "execution")).time()) {
             if (inserts.isEmpty()) {
                 metricRegistry().meter(name(MutatorTask.class, "empty")).mark();

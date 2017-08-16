@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
@@ -62,32 +62,32 @@ public class CountTest {
         String nameAnotherThing = "another";
 
         // assert the graph is empty
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Assert.assertEquals(0L, Graql.compute().count().withGraph(graph).execute().longValue());
             Assert.assertEquals(0L, graph.graql().compute().count().execute().longValue());
         }
 
         // add 2 instances
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType thingy = graph.putEntityType(nameThing);
             thingy.addEntity();
             thingy.addEntity();
             graph.commit();
         }
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Assert.assertEquals(2L,
                     Graql.compute().withGraph(graph).count().in(nameThing).execute().longValue());
         }
 
         // create 1 more, rdd is refreshed
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType anotherThing = graph.putEntityType(nameAnotherThing);
             anotherThing.addEntity();
             graph.commit();
         }
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             // assert computer returns the correct count of instances
             Assert.assertEquals(2L,
                     Graql.compute().withGraph(graph).count().in(nameThing).execute().longValue());
@@ -120,7 +120,7 @@ public class CountTest {
 
     @Test
     public void testDegreeWithHasResourceEdges() {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType person = graph.putEntityType("person");
             AttributeType<String> name = graph.putResourceType("name", AttributeType.DataType.STRING);
             person.resource(name);
@@ -130,7 +130,7 @@ public class CountTest {
         }
 
         long count;
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             count = graph.graql().compute().count().execute();
             assertEquals(count, 3L);
 
@@ -147,7 +147,7 @@ public class CountTest {
 
     @Test
     public void testDegreeWithHasResourceVertices() {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
 
             // manually construct the relation type and instance
             EntityType person = graph.putEntityType("person");
@@ -169,7 +169,7 @@ public class CountTest {
         }
 
         long count;
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             count = graph.graql().compute().count().execute();
             assertEquals(count, 3L);
 
@@ -185,7 +185,7 @@ public class CountTest {
     }
 
     private Long executeCount(GraknSession factory) {
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             return graph.graql().compute().count().execute();
         }
     }

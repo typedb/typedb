@@ -17,7 +17,7 @@
  */
 package ai.grakn.test.migration.export;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
@@ -42,11 +42,11 @@ import static org.junit.Assert.assertTrue;
 
 public abstract class GraphWriterTestUtil {
 
-    public static void insert(GraknGraph graph, String query) {
+    public static void insert(GraknTx graph, String query) {
         graph.graql().parse("insert " + query).execute();
     }
 
-    public static void assertDataEqual(GraknGraph one, GraknGraph two){
+    public static void assertDataEqual(GraknTx one, GraknTx two){
         one.admin().getMetaConcept().subs().
                 filter(Concept::isType).
                 map(Concept::asType).
@@ -54,7 +54,7 @@ public abstract class GraphWriterTestUtil {
                 forEach(i -> assertInstanceCopied(i, two));
     }
 
-    public static void assertInstanceCopied(Thing thing, GraknGraph two){
+    public static void assertInstanceCopied(Thing thing, GraknTx two){
         if(thing.isEntity()){
             assertEntityCopied(thing.asEntity(), two);
         } else if(thing.isRelation()){
@@ -69,7 +69,7 @@ public abstract class GraphWriterTestUtil {
     /**
      * Assert that there are the same number of entities in each graph with the same resources
      */
-    public static void assertEntityCopied(Entity entity1, GraknGraph two){
+    public static void assertEntityCopied(Entity entity1, GraknTx two){
         Collection<Entity> entitiesFromGraph1 = entity1.resources().flatMap(Attribute::ownerInstances).map(Concept::asEntity).collect(toSet());
         Collection<Entity> entitiesFromGraph2 = getInstancesByResources(two, entity1).stream().map(Concept::asEntity).collect(toSet());
 
@@ -79,7 +79,7 @@ public abstract class GraphWriterTestUtil {
     /**
      * Get all instances with the same resources
      */
-    public static Collection<Thing> getInstancesByResources(GraknGraph graph, Thing thing){
+    public static Collection<Thing> getInstancesByResources(GraknTx graph, Thing thing){
         return thing.resources()
                 .map(r -> getResourceFromGraph(graph, r))
                 .flatMap(Attribute::ownerInstances)
@@ -89,16 +89,16 @@ public abstract class GraphWriterTestUtil {
     /**
      * Get an entity that is uniquely defined by its resources
      */
-    public static Thing getInstanceUniqueByResourcesFromGraph(GraknGraph graph, Thing thing){
+    public static Thing getInstanceUniqueByResourcesFromGraph(GraknTx graph, Thing thing){
         return getInstancesByResources(graph, thing)
                .iterator().next();
     }
 
-    public static <V> Attribute<V> getResourceFromGraph(GraknGraph graph, Attribute<V> attribute){
+    public static <V> Attribute<V> getResourceFromGraph(GraknTx graph, Attribute<V> attribute){
         return (Attribute<V>) graph.getResourceType(attribute.type().getLabel().getValue()).getResource(attribute.getValue());
     }
 
-    public static void assertRelationCopied(Relation relation1, GraknGraph two){
+    public static void assertRelationCopied(Relation relation1, GraknTx two){
         if(relation1.rolePlayers().anyMatch(Concept::isAttribute)){
             return;
         }
@@ -117,21 +117,21 @@ public abstract class GraphWriterTestUtil {
         assertTrue("The copied relation [" + relation1 + "] was not found.", relationFound);
     }
 
-    public static void assertResourceCopied(Attribute attribute1, GraknGraph two){
+    public static void assertResourceCopied(Attribute attribute1, GraknTx two){
         assertEquals(true, two.getResourcesByValue(attribute1.getValue()).stream()
                 .map(Thing::type)
                 .map(Type::getLabel)
                 .anyMatch(t -> attribute1.type().getLabel().equals(t)));
     }
 
-    public static void assertRuleCopied(Rule rule1, GraknGraph two){
+    public static void assertRuleCopied(Rule rule1, GraknTx two){
         Rule rule2 = getInstanceUniqueByResourcesFromGraph(two, rule1).asRule();
 
         assertEquals(Graql.and(rule1.getWhen()), rule2.getWhen());
         assertEquals(Graql.and(rule1.getThen()), rule2.getThen());
     }
 
-    public static void assertOntologiesEqual(GraknGraph one, GraknGraph two){
+    public static void assertOntologiesEqual(GraknTx one, GraknTx two){
         boolean ontologyCorrect = one.admin().getMetaConcept().subs().filter(Concept::isType)
                 .allMatch(t -> typesEqual(t.asType(), two.getOntologyConcept(t.asType().getLabel())));
         assertEquals(true, ontologyCorrect);

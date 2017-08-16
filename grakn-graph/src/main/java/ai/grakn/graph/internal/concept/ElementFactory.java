@@ -26,7 +26,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
 import ai.grakn.graph.internal.structure.AbstractElement;
 import ai.grakn.graph.internal.structure.Casting;
 import ai.grakn.graph.internal.structure.EdgeElement;
@@ -65,9 +65,9 @@ import static ai.grakn.util.Schema.BaseType.RULE_TYPE;
  */
 public final class ElementFactory {
     private final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
-    private final AbstractGraknGraph graknGraph;
+    private final GraknTxAbstract graknGraph;
 
-    public ElementFactory(AbstractGraknGraph graknGraph){
+    public ElementFactory(GraknTxAbstract graknGraph){
         this.graknGraph = graknGraph;
     }
 

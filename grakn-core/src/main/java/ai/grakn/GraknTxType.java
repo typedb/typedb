@@ -24,7 +24,7 @@ package ai.grakn;
  * </p>
  *
  * <p>
- *     This class is used to describe how a transaction on {@link GraknGraph} should behave.
+ *     This class is used to describe how a transaction on {@link GraknTx} should behave.
  *     When producing a graph using a {@link GraknSession} one of the following enums must be provided:
  *         READ - A read only transaction. If you attempt to mutate the graph with such a transaction an exception will be thrown.
  *         WRITE - A transaction which allows you to mutate the graph.

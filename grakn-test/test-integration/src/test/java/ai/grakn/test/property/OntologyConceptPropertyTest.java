@@ -18,7 +18,7 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.exception.GraphOperationException;
@@ -89,7 +89,7 @@ public class OntologyConceptPropertyTest {
 
     @Property
     public void whenCallingGetLabel_TheResultCanBeUsedToRetrieveTheSameConcept(
-            @Open GraknGraph graph, @FromGraph OntologyConcept concept) {
+            @Open GraknTx graph, @FromGraph OntologyConcept concept) {
         Label label = concept.getLabel();
         assertEquals(concept, graph.getOntologyConcept(label));
     }

@@ -10,13 +10,13 @@ folder: documentation
 comment_issue_id: 17
 ---
 
-In Grakn, a graph is made of two layers: the ontology layer and the data layer. 
+In Grakn, a knowledge base is made of two layers: the ontology layer and the data layer. 
 
 ## Ontology
 
-In Grakn, the [ontology](https://en.wikipedia.org/wiki/Ontology_(information_science)) is the formal specification of all the relevant concepts and their meaningful associations in a given domain. It allows objects and relationships to be categorised into distinct types, and for generic properties of those types to be expressed. Specifying the ontology enables [automated reasoning](https://en.wikipedia.org/wiki/Inference_engine) over the represented knowledge, such as the extraction of implicit information from explicit data ([inference](./grakn-knowledge-model.html#rule-and-sub-type-inference)) or discovery of inconsistencies in the data ([validation](./grakn-knowledge-model.html#data-validation)).  For this reason, the ontology must be clearly defined before loading data into the graph. 
+In Grakn, the [ontology](https://en.wikipedia.org/wiki/Ontology_(information_science)) is the formal specification of all the relevant concepts and their meaningful associations in a given domain. It allows objects and relationships to be categorised into distinct types, and for generic properties of those types to be expressed. Specifying the ontology enables [automated reasoning](https://en.wikipedia.org/wiki/Inference_engine) over the represented knowledge, such as the extraction of implicit information from explicit data ([inference](./grakn-knowledge-model.html#rule-and-sub-type-inference)) or discovery of inconsistencies in the data ([validation](./grakn-knowledge-model.html#data-validation)).  For this reason, the ontology must be clearly defined before loading data into the knowledge base. 
 
-[Grakn uses its our own declarative ontology language, Graql](https://blog.grakn.ai/knowledge-graph-representation-grakn-ai-or-owl-506065bd3f24#.d6mtn9ic2), and Grakn ontologies use four types of concepts for modeling domain knowledge. The categorization of concept types is enforced in the Grakn knowledge model by declaring every concept type as a subtype (i.e. an extension) of exactly one of the four corresponding, built-in concept types:
+[Grakn uses its own declarative ontology language, Graql](https://blog.grakn.ai/knowledge-graph-representation-grakn-ai-or-owl-506065bd3f24#.d6mtn9ic2), and Grakn ontologies use four types of concepts for modeling domain knowledge. The categorization of concept types is enforced in the Grakn knowledge model by declaring every concept type as a subtype (i.e. an extension) of exactly one of the four corresponding, built-in concept types:
 
 **`entity`**: Objects or things in the domain. For example, `person`, `man`, `woman`.    
 
@@ -28,7 +28,7 @@ In Grakn, the [ontology](https://en.wikipedia.org/wiki/Ontology_(information_sci
 
 - Datatype - Indicates the datatype of the resource. For example if the resource type is age the datatype would be long.
 - Regex - Optional. Can be used to constrain string data types to specific regex patterns.
-- Unique - A boolean which indicates if the resource should be unique across the graph.   
+- Unique - A boolean which indicates if the resource should be unique across the knowledge base.   
 
 <br /> <img src="/images/knowledge-model1.png" style="width: 600px;"/> <br />
 
@@ -223,7 +223,7 @@ insert
 
 To ensure data is correctly structured (i.e. consistent) with respect to the ontology, all data instances are validated against the ontology constraints. All the explicitly represented ontology constraints, together with the inherited ones, form complete schema templates for particular concept types, which guide the validation. 
 
-We will consider the structural validation rules that are enforced in a Grakn graph. The following consistency checks are executed upon `commit` depending on what is being committed:
+We will consider the structural validation rules that are enforced in a Grakn knowledge base. The following consistency checks are executed upon `commit` depending on what is being committed:
 
 #### Plays Role Validation 
 
@@ -336,10 +336,10 @@ Inference is a process of extracting implicit information from explicit data. Gr
 1. type inference, based on the semantics of the `sub` hierarchies included in the ontology
 2. rule-based inference involving user-defined IF-THEN rules.
 
-Both mechanisms can be employed when querying the knowledge graph with Graql, thus supporting retrieval of both explicit and implicit information at query time.      
+Both mechanisms can be employed when querying the knowledge base with Graql, thus supporting retrieval of both explicit and implicit information at query time.      
 
 ### Type Inference
-The type inference is based on a simple graph traversal along the `sub` edges. Every instance of a given concept type is automatically classified as an (indirect) instance of all (possibly indirect) supertypes of that type. For example, whenever `customer sub human` is in the ontology, every instance of `customer` will be retrieved on the query `match $x isa human`.
+The type inference is based on a simple traversal along the `sub` links. Every instance of a given concept type is automatically classified as an (indirect) instance of all (possibly indirect) supertypes of that type. For example, whenever `customer sub human` is in the ontology, every instance of `customer` will be retrieved on the query `match $x isa human`.
 
 Similarly for roles, every instance playing a given role is inferred to also play all its (possibly indirect) super-roles. <!--For example, whenever `inst` plays the role of wife in a relation of the type `marriage`, the system will infer that `inst` plays also the role of `partner1` in that relation, given the ontology from Figure 2.-->
 

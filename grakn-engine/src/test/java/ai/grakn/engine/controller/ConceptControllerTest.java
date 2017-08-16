@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.engine.GraknEngineStatus;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.when;
 
 public class ConceptControllerTest {
 
-    private static GraknGraph mockGraph;
+    private static GraknTx mockGraph;
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
 
     @ClassRule
@@ -67,7 +67,7 @@ public class ConceptControllerTest {
 
     @Before
     public void setupMock(){
-        mockGraph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
         when(mockGraph.getConcept(any())).thenAnswer(invocation ->

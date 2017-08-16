@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
@@ -37,7 +37,7 @@ import java.util.Set;
 
 class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MaxQuery {
 
-    MaxQueryImpl(Optional<GraknGraph> graph) {
+    MaxQueryImpl(Optional<GraknTx> graph) {
         this.graph = graph;
     }
 
@@ -87,7 +87,7 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MaxQuery withGraph(GraknGraph graph) {
+    public MaxQuery withGraph(GraknTx graph) {
         return (MaxQuery) super.withGraph(graph);
     }
 

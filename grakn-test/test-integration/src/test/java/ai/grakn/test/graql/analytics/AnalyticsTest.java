@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
@@ -72,7 +72,7 @@ public class AnalyticsTest {
     @Ignore // No longer applicable
     @Test
     public void testInferredResourceRelation() throws InvalidGraphException {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             Label resourceLabel = Label.of("degree");
             AttributeType<Long> degree = graph.putResourceType(resourceLabel, AttributeType.DataType.LONG);
             EntityType thingy = graph.putEntityType("thingy");
@@ -84,7 +84,7 @@ public class AnalyticsTest {
             graph.commit();
         }
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees;
             degrees = graph.graql().compute().degree().of("thingy").in("thingy", "degree").execute();
             assertEquals(1, degrees.size());
@@ -98,7 +98,7 @@ public class AnalyticsTest {
 
     @Test
     public void testNullResourceDoesntBreakAnalytics() throws InvalidGraphException {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             // make slightly odd graph
             Label resourceTypeId = Label.of("degree");
             EntityType thingy = graph.putEntityType("thingy");
@@ -118,7 +118,7 @@ public class AnalyticsTest {
         }
 
         // the null role-player caused analytics to fail at some stage
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().degree().execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -140,7 +140,7 @@ public class AnalyticsTest {
         queryList.add("compute path from \"" + entityId1 + "\" to \"" + entityId4 + "\";");
 
         Set<?> result = queryList.parallelStream().map(query -> {
-            try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            try (GraknTx graph = factory.open(GraknTxType.READ)) {
                 return graph.graql().parse(query).execute();
             }
         }).collect(Collectors.toSet());
@@ -148,7 +148,7 @@ public class AnalyticsTest {
     }
 
     private void addOntologyAndEntities() throws InvalidGraphException {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 

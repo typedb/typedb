@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
@@ -39,7 +39,7 @@ import static java.util.stream.Collectors.toSet;
 
 class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
 
-    CountQueryImpl(Optional<GraknGraph> graph) {
+    CountQueryImpl(Optional<GraknTx> graph) {
         this.graph = graph;
     }
 
@@ -110,7 +110,7 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
     }
 
     @Override
-    public CountQuery withGraph(GraknGraph graph) {
+    public CountQuery withGraph(GraknTx graph) {
         return (CountQuery) super.withGraph(graph);
     }
 

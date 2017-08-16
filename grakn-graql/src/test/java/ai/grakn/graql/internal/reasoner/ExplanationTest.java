@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.test.graphs.GenealogyGraph;
 import ai.grakn.test.graphs.GeoGraph;
@@ -68,7 +68,7 @@ public class ExplanationTest {
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(GraknTestSetup.usingTinker());
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoGraph.graph();
         iqb = graph.graql().infer(true).materialise(false);
         polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
         uw = getConcept(graph, "name", "University-of-Warsaw");
@@ -214,7 +214,7 @@ public class ExplanationTest {
 
     @Test
     public void testExplainingQueryContainingContradiction2(){
-        GraknGraph expGraph = explanationGraph.graph();
+        GraknTx expGraph = explanationGraph.graph();
         QueryBuilder eiqb = expGraph.graql().infer(true);
 
         Concept a1 = getConcept(expGraph, "name", "a1");
@@ -231,7 +231,7 @@ public class ExplanationTest {
 
     @Test
     public void testExplainingConjunctions(){
-        GraknGraph expGraph = explanationGraph.graph();
+        GraknTx expGraph = explanationGraph.graph();
         QueryBuilder eiqb = expGraph.graql().infer(true);
 
         String queryString = "match " +
@@ -244,7 +244,7 @@ public class ExplanationTest {
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
     }
 
-    private static Concept getConcept(GraknGraph graph, String typeLabel, Object val){
+    private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
         return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).execute().iterator().next().get("x");
     }
 

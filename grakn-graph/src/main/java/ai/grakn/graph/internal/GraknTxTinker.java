@@ -38,10 +38,10 @@ import java.util.Properties;
  *
  * @author fppt
  */
-public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
+public class GraknTxTinker extends GraknTxAbstract<TinkerGraph> {
     private final TinkerGraph rootGraph;
 
-    public GraknTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, Properties properties){
+    public GraknTxTinker(TinkerGraph tinkerGraph, String name, String engineUrl, Properties properties){
         super(tinkerGraph, name, engineUrl, properties);
         rootGraph = tinkerGraph;
     }

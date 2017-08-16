@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.AttributeType;
@@ -37,7 +37,7 @@ import java.util.Set;
 
 class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements MeanQuery {
 
-    MeanQueryImpl(Optional<GraknGraph> graph) {
+    MeanQueryImpl(Optional<GraknTx> graph) {
         this.graph = graph;
     }
 
@@ -90,7 +90,7 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
     }
 
     @Override
-    public MeanQuery withGraph(GraknGraph graph) {
+    public MeanQuery withGraph(GraknTx graph) {
         return (MeanQuery) super.withGraph(graph);
     }
 

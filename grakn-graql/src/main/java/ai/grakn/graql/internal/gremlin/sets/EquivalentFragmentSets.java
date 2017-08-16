@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -160,7 +160,7 @@ public class EquivalentFragmentSets {
      * This involves substituting various {@link EquivalentFragmentSet} with other {@link EquivalentFragmentSet}.
      */
     public static void optimiseFragmentSets(
-            Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+            Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
 
         // TODO: Create a real interface for these when there are more of them
         ImmutableList<Supplier<Boolean>> optimisations = ImmutableList.of(
@@ -186,7 +186,7 @@ public class EquivalentFragmentSets {
         return fragmentSets.stream().filter(clazz::isInstance).map(clazz::cast);
     }
 
-    static boolean hasDirectSubTypes(GraknGraph graph, Label label) {
+    static boolean hasDirectSubTypes(GraknTx graph, Label label) {
         Type type = graph.getOntologyConcept(label);
         return type != null && !CommonUtil.containsOnly(type.subs(), 1);
     }

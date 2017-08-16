@@ -1,7 +1,7 @@
 package ai.grakn.test.migration.xml;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
@@ -42,7 +42,7 @@ public class XMLMigratorTest {
 
     @After
     public void clearGraph(){
-        try(GraknGraph graph = session.open(GraknTxType.WRITE)){
+        try(GraknTx graph = session.open(GraknTxType.WRITE)){
             AttributeType<String> nameType = graph.getResourceType("name");
             nameType.instances().forEach(Concept::delete);
 
@@ -86,7 +86,7 @@ public class XMLMigratorTest {
     }
 
     private static void assertThingHasName(String name){
-        try(GraknGraph graph = session.open(GraknTxType.READ)){
+        try(GraknTx graph = session.open(GraknTxType.READ)){
 
             EntityType thingType = graph.getEntityType("thingy");
             AttributeType nameType = graph.getResourceType("name");

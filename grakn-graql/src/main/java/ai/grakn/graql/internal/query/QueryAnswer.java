@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -99,11 +100,17 @@ public class QueryAnswer implements Answer {
 
     @Override
     public Concept get(String var) {
-        return map.get(Graql.var(var));
+        return get(Graql.var(var));
     }
 
     @Override
-    public Concept get(Var var){ return map.get(var);}
+    public Concept get(Var var) {
+        Concept concept = map.get(var);
+
+        if (concept == null) throw GraqlQueryException.varNotInQuery(var);
+
+        return concept;
+    }
 
     @Override
     public Concept put(Var var, Concept con){ return map.put(var, con);}

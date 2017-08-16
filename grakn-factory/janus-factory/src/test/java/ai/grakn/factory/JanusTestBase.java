@@ -34,7 +34,7 @@ import java.util.UUID;
 public abstract class JanusTestBase {
     private final static String CONFIG_LOCATION = "../../conf/main/grakn.properties";
     private final static String TEST_SHARED = "shared";
-    static JanusInternalFactory janusGraphFactory;
+    static TxFactoryJanus janusGraphFactory;
     final static Properties TEST_PROPERTIES = new Properties();
 
     @Rule
@@ -50,10 +50,10 @@ public abstract class JanusTestBase {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(CONFIG_LOCATION), e);
         }
 
-        janusGraphFactory = new JanusInternalFactory(TEST_SHARED, Grakn.IN_MEMORY, TEST_PROPERTIES);
+        janusGraphFactory = new TxFactoryJanus(TEST_SHARED, Grakn.IN_MEMORY, TEST_PROPERTIES);
     }
 
-    JanusInternalFactory newFactory(){
-        return new JanusInternalFactory(UUID.randomUUID().toString().replace("-", ""), Grakn.IN_MEMORY, TEST_PROPERTIES);
+    TxFactoryJanus newFactory(){
+        return new TxFactoryJanus(UUID.randomUUID().toString().replace("-", ""), Grakn.IN_MEMORY, TEST_PROPERTIES);
     }
 }

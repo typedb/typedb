@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.AttributeType;
@@ -37,7 +37,7 @@ import java.util.Set;
 
 class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MinQuery {
 
-    MinQueryImpl(Optional<GraknGraph> graph) {
+    MinQueryImpl(Optional<GraknTx> graph) {
         this.graph = graph;
     }
 
@@ -87,7 +87,7 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MinQuery withGraph(GraknGraph graph) {
+    public MinQuery withGraph(GraknTx graph) {
         return (MinQuery) super.withGraph(graph);
     }
 

@@ -18,7 +18,7 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.graph.internal.GraknTinkerGraph;
+import ai.grakn.graph.internal.GraknTxTinker;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
@@ -32,14 +32,14 @@ import java.util.Properties;
  *
  * <p>
  *     This produces an in memory grakn graph on top of {@link TinkerGraph}.
- *     The base construction process defined by {@link AbstractInternalFactory} ensures the graph factories are singletons.
+ *     The base construction process defined by {@link TxFactoryAbstract} ensures the graph factories are singletons.
  * </p>
  *
  * @author fppt
  */
-public class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, TinkerGraph> {
+public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGraph> {
 
-    TinkerInternalFactory(String keyspace, String engineUrl, Properties properties){
+    TxFactoryTinker(String keyspace, String engineUrl, Properties properties){
         super(keyspace, engineUrl, properties);
     }
 
@@ -48,8 +48,8 @@ public class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGr
     }
 
     @Override
-    GraknTinkerGraph buildGraknGraphFromTinker(TinkerGraph graph) {
-        return new GraknTinkerGraph(graph, super.keyspace, super.engineUrl, properties);
+    GraknTxTinker buildGraknGraphFromTinker(TinkerGraph graph) {
+        return new GraknTxTinker(graph, super.keyspace, super.engineUrl, properties);
     }
 
     @Override

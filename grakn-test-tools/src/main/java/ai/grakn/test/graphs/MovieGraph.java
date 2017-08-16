@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
@@ -58,12 +58,12 @@ public class MovieGraph extends TestGraph {
     private static Thing neilMcCauley, bradleyFine, nancyBArtingstall, winifred, sarah, harry;
     private static Thing cluster0, cluster1;
 
-    public static Consumer<GraknGraph> get(){
+    public static Consumer<GraknTx> get(){
         return new MovieGraph().build();
     }
 
     @Override
-    public void buildOntology(GraknGraph graph) {
+    public void buildOntology(GraknTx graph) {
         work = graph.putRole("work");
         author = graph.putRole("author");
         authoredBy = graph.putRelationType("authored-by").relates(work).relates(author);
@@ -139,7 +139,7 @@ public class MovieGraph extends TestGraph {
     }
 
     @Override
-    protected void buildInstances(GraknGraph graph) {
+    protected void buildInstances(GraknTx graph) {
         godfather = movie.addEntity();
         putResource(godfather, title, "Godfather");
         putResource(godfather, tmdbVoteCount, 1000L);
@@ -242,7 +242,7 @@ public class MovieGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRelations(GraknGraph graph) {
+    protected void buildRelations(GraknTx graph) {
         directedBy.addRelation()
                 .addRolePlayer(productionBeingDirected, chineseCoffee)
                 .addRolePlayer(director, alPacino);
@@ -284,7 +284,7 @@ public class MovieGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRules(GraknGraph graph) {
+    protected void buildRules(GraknTx graph) {
         // These rules are totally made up for testing purposes and don't work!
         aRuleType = graph.putRuleType("a-rule-type");
         aRuleType.resource(name);

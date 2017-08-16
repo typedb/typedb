@@ -36,7 +36,7 @@ Please let the [Grakn Community](https://grakn.ai/community.html) know if you ha
 | Partitioning methods	| Sharding | 
 | Replication methods	| Multi-master | 
 | MapReduce	| Yes | 
-| Consistency concepts	| Eventual Consistency (and Immediate Consistency for in-memory graph). | 
+| Consistency concepts	| Eventual Consistency (and Immediate Consistency for in-memory knowledge base). | 
 | Foreign keys	| Yes |  
 | Transaction concepts	| Row-level AC*ID | 
 | Concurrency	 | Yes | 

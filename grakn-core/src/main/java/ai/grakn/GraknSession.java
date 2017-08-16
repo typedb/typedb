@@ -46,10 +46,10 @@ public interface GraknSession extends AutoCloseable {
      *
      * @param transactionType The type of transaction to open see {@link GraknTxType} for more details
      * @return A new Grakn graph transaction
-     * @see GraknGraph
+     * @see GraknTx
      */
     @CheckReturnValue
-    GraknGraph open(GraknTxType transactionType);
+    GraknTx open(GraknTxType transactionType);
 
     /**
      * Get a new or existing GraknComputer.

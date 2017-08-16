@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
@@ -78,7 +78,7 @@ public class PostProcessingTest {
         String sample = "Sample";
 
         //Create Graph With Duplicate Resources
-        GraknGraph graph = session.open(GraknTxType.WRITE);
+        GraknTx graph = session.open(GraknTxType.WRITE);
         AttributeType<String> attributeType = graph.putResourceType(sample, AttributeType.DataType.STRING);
 
         Attribute<String> attribute = attributeType.putResource(value);

@@ -29,7 +29,7 @@ OPTIONS
                        will be ignored.
  -h,--help             Print usage message.
  -i,--input <arg>      Input XML data file or directory.
- -k,--keyspace <arg>   Grakn graph. Required.
+ -k,--keyspace <arg>   Grakn knowledge base. Required.
  -n,--no               Write to standard out.
  -r,--retry <arg>      Retry sending tasks if engine is not available
  -s,--schema <arg>     The XML Schema file name, usually .xsd extension
@@ -43,7 +43,7 @@ OPTIONS
 
 The steps to migrate XML data to GRAKN.AI are:
 
-* define an ontology for the data to derive the full benefit of a knowledge graph
+* define a schema for the data to derive the full benefit of a knowledge base
 * create templated Graql to map the XML data to the ontology
 * invoke the Grakn migrator through the shell script or Java API. The XML migrator will apply the template to each instance of the specified element `-element`, replacing the sections indicated in the template with provided data: the XML tags are the key to be used in the brackets `<>` and the content of each tag are the value of that key.
 
@@ -244,7 +244,7 @@ price sub resource datatype double;
 availability sub resource datatype long;
 ```
 
-We want to insert one `plant` entity in the graph per `PLANT` tag in the XML data. This means that me must specify main element of the XML migration to be "PLANT". In the migration script you would do so by adding the parameter: `-element PLANT`. 
+We want to insert one `plant` entity in the knowledge base per `PLANT` tag in the XML data. This means that me must specify main element of the XML migration to be "PLANT". In the migration script you would do so by adding the parameter: `-element PLANT`. 
 
 The XML template will be applied to each of the specified elements:
 
@@ -263,7 +263,7 @@ This template contains a single insert query. As it will be applied to each elem
 
 The tirangle brackets are used to specify nested elements: in the XML `<BOTANICAL>` is a direct child of `<PLANT>` and so can be used whenever the template traversal is in the `PLANT` scope. 
 
-Before running any migration you need to ensure that the ontology has been loaded to the graph: 
+Before running any migration you need to ensure that the ontology has been loaded to the knowledge base: 
 
 ```
 ./<grakn-install-location>/bin/graql.sh -f plants-ontology.gql -k plants
@@ -275,7 +275,7 @@ At this point you can run the XML migration script on the resources we have desc
 ./<grakn-install-location>/bin/migration.sh xml -i plants.xml -t plants-template.gql -e PLANT -k plants 
 ```
 
-Adding the `-n` tag to the migration script will print the resolved graql statements to system out. This is a useful tactic to get used to the Graql langauge and know exactly what is being inserted into your graph:
+Adding the `-n` tag to the migration script will print the resolved graql statements to system out. This is a useful tactic to get used to the Graql langauge and know exactly what is being inserted into your knowledge base:
 
 ```graql
 insert $plant0 isa plant has common "Bloodroot" has botanical "Sanguinaria canadensis" has zone "4" has light "Mostly Shady" has availability 31599;

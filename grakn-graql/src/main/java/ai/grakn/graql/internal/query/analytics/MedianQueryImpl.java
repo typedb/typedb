@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.LabelId;
@@ -32,7 +32,7 @@ import java.util.Set;
 
 class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MedianQuery {
 
-    MedianQueryImpl(Optional<GraknGraph> graph) {
+    MedianQueryImpl(Optional<GraknTx> graph) {
         this.graph = graph;
     }
 
@@ -81,7 +81,7 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
     }
 
     @Override
-    public MedianQuery withGraph(GraknGraph graph) {
+    public MedianQuery withGraph(GraknTx graph) {
         return (MedianQuery) super.withGraph(graph);
     }
 

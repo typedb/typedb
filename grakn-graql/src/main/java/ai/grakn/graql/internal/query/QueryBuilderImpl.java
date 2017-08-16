@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.ComputeQueryBuilder;
 import ai.grakn.graql.InsertQuery;
@@ -52,7 +52,7 @@ import java.util.stream.Stream;
 /**
  * A starting point for creating queries.
  * <p>
- * A {@code QueryBuiler} is constructed with a {@code GraknGraph}. All operations are performed using this
+ * A {@code QueryBuiler} is constructed with a {@code GraknTx}. All operations are performed using this
  * graph. The user must explicitly commit or rollback changes after executing queries.
  * <p>
  * {@code QueryBuilderImpl} also provides static methods for creating {@code Vars}.
@@ -61,7 +61,7 @@ import java.util.stream.Stream;
  */
 public class QueryBuilderImpl implements QueryBuilder {
 
-    private final Optional<GraknGraph> graph;
+    private final Optional<GraknTx> graph;
     private final QueryParser queryParser;
     private final TemplateParser templateParser;
     private boolean infer = false;
@@ -73,7 +73,7 @@ public class QueryBuilderImpl implements QueryBuilder {
         templateParser = TemplateParser.create();
     }
 
-    public QueryBuilderImpl(GraknGraph graph) {
+    public QueryBuilderImpl(GraknTx graph) {
         this.graph = Optional.of(graph);
         queryParser = QueryParser.create(this);
         templateParser = TemplateParser.create();

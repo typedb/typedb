@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
@@ -56,12 +56,12 @@ public class CWGraph extends TestGraph {
 
     private static Thing colonelWest, Nono, America, Tomahawk;
 
-    public static Consumer<GraknGraph> get() {
+    public static Consumer<GraknTx> get() {
         return new CWGraph().build();
     }
 
     @Override
-    protected void buildOntology(GraknGraph graph) {
+    protected void buildOntology(GraknTx graph) {
         key = graph.putResourceType("name", AttributeType.DataType.STRING);
 
         //Resources
@@ -139,7 +139,7 @@ public class CWGraph extends TestGraph {
     }
 
     @Override
-    protected void buildInstances(GraknGraph graph) {
+    protected void buildInstances(GraknTx graph) {
         colonelWest =  putEntity(graph, "colonelWest", person, key.getLabel());
         Nono =  putEntity(graph, "Nono", country, key.getLabel());
         America =  putEntity(graph, "America", country, key.getLabel());
@@ -150,7 +150,7 @@ public class CWGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRelations(GraknGraph graph) {
+    protected void buildRelations(GraknTx graph) {
         //Enemy(Nono, America)
         isEnemyOf.addRelation()
                 .addRolePlayer(enemySource, Nono)
@@ -168,7 +168,7 @@ public class CWGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRules(GraknGraph graph) {
+    protected void buildRules(GraknTx graph) {
         RuleType inferenceRule = graph.admin().getMetaRuleInference();
 
         //R1: "It is a crime for an American to sell weapons to hostile nations"

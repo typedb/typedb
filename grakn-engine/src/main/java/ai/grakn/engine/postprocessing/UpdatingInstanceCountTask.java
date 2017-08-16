@@ -26,7 +26,7 @@ import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
 import ai.grakn.util.REST;
 import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer.Context;
@@ -55,7 +55,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
 
     @Override
     public boolean start() {
-        final long shardingThreshold = engineConfiguration().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
+        final long shardingThreshold = engineConfiguration().getPropertyAsLong(GraknTxAbstract.SHARDING_THRESHOLD);
         final int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
         try (Context context = metricRegistry()
                 .timer(name(UpdatingInstanceCountTask.class, "execution")).time()) {
