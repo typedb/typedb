@@ -84,7 +84,7 @@ public final class Schema {
         THING("thing", 1),
         ENTITY("entity", 2),
         ROLE("role", 3),
-        RESOURCE("resource", 4),
+        ATTRIBUTE("attribute", 4),
         RELATION("relation", 5),
         RULE("rule", 6),
         INFERENCE_RULE("inference-rule", 7),

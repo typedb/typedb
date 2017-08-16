@@ -143,7 +143,7 @@ public class MigrationCLI {
             builder.append("Graph data contains:\n");
             builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.ENTITY.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" entities\n");
             builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.RELATION.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" relations\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.RESOURCE.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" resources\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.ATTRIBUTE.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" resources\n");
             builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.RULE.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" rules\n\n");
 
             System.out.println(builder);

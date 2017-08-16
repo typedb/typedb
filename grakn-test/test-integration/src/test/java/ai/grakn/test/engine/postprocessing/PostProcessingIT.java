@@ -158,7 +158,7 @@ public class PostProcessingIT {
         try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
             Stream<AttributeType<?>> resourceTypes = graph.admin().getMetaResourceType().subs();
             return resourceTypes.anyMatch(resourceType -> {
-                if (!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
+                if (!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(resourceType.getLabel())) {
                     Set<Integer> foundValues = new HashSet<>();
                     for (Attribute<?> attribute : resourceType.instances().collect(Collectors.toSet())) {
                         if (foundValues.contains(attribute.getValue())) {

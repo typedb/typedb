@@ -402,7 +402,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
         checkOntologyMutationAllowed();
 
         //Check if resource type is the meta
-        if(Schema.MetaSchema.RESOURCE.getLabel().equals(attributeType.getLabel())){
+        if(Schema.MetaSchema.ATTRIBUTE.getLabel().equals(attributeType.getLabel())){
             throw GraphOperationException.metaTypeImmutable(attributeType.getLabel());
         }
 
@@ -416,7 +416,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
         //Linking with ako structure if present
         AttributeType attributeTypeSuper = attributeType.sup();
         Label superLabel = attributeTypeSuper.getLabel();
-        if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
+        if(!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
             Role ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
             Role valueRoleSuper = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
             RelationType relationTypeSuper = vertex().graph().putRelationTypeImplicit(has.getLabel(superLabel)).

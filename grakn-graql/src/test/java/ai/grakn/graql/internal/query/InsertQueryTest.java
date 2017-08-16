@@ -264,7 +264,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertDatatype() {
         qb.insert(
-                label("my-type").sub(Schema.MetaSchema.RESOURCE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
+                label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
         ).execute();
 
         MatchQuery query = qb.match(var("x").label("my-type"));
@@ -276,7 +276,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertSubResourceType() {
         qb.insert(
-                label("my-type").sub(Schema.MetaSchema.RESOURCE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
+                label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
                 label("sub-type").sub("my-type")
         ).execute();
 
@@ -629,7 +629,7 @@ public class InsertQueryTest {
         exception.expectMessage(
                 allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
         );
-        qb.insert(label("my-resource").sub(Schema.MetaSchema.RESOURCE.getLabel().getValue())).execute();
+        qb.insert(label("my-resource").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue())).execute();
     }
 
     @Test

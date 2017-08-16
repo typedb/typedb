@@ -39,7 +39,7 @@ import java.util.Map;
 
 import static ai.grakn.engine.util.ExceptionWrapper.rethrow;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
+import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
 
 /**
  * A DAO for managing users in the Grakn system keyspace. System the 'system.gql' ontology
@@ -131,7 +131,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
             Var resource = var("property");
 
-            MatchQuery query = graph.graql().match(lookup.has(RESOURCE.getLabel(), resource));
+            MatchQuery query = graph.graql().match(lookup.has(ATTRIBUTE.getLabel(), resource));
             List<Answer> L = query.execute();
             if (L.isEmpty()) {
                 return Json.nil();
