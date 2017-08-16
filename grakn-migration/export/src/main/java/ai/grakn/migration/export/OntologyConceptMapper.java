@@ -65,7 +65,7 @@ public class OntologyConceptMapper {
      * Map a {@link ResourceType} to a {@link VarPattern} with the datatype
      * @param var holder var with basic information
      * @param resourceType type to be mapped
-     * @return var with ResourceType specific metadata
+     * @return var with {@link ResourceType} specific metadata
      */
     private static VarPattern map(VarPattern var, ResourceType resourceType) {
         return datatype(var, resourceType);

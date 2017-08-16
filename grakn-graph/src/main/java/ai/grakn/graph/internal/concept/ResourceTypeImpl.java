@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
  *     types. It has two additional functions to be aware of:
  *     1. It has a {@link ai.grakn.concept.ResourceType.DataType} constraining the data types of the values it's instances may take.
  *     2. Any of it's instances are unique to the type.
- *     For example if you have a ResourceType modelling month throughout the year there can only be one January.
+ *     For example if you have a {@link ResourceType} modelling month throughout the year there can only be one January.
  * </p>
  *
  * @author fppt

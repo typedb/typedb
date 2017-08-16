@@ -42,7 +42,7 @@ import java.util.stream.Stream;
  *     types. It has two additional functions to be aware of:
  *     1. It has a {@link DataType} constraining the data types of the values it's instances may take.
  *     2. Any of it's instances are unique to the type.
- *     For example if you have a ResourceType modelling month throughout the year there can only be one January.
+ *     For example if you have a {@link ResourceType} modelling month throughout the year there can only be one January.
  * </p>
  *
  * @author fppt
@@ -60,11 +60,11 @@ public interface ResourceType<D> extends Type {
     ResourceType setLabel(Label label);
 
     /**
-     * Sets the ResourceType to be abstract - which prevents it from having any instances.
+     * Sets the {@link ResourceType} to be abstract - which prevents it from having any instances.
      *
-     * @param isAbstract  Specifies if the ResourceType is to be abstract (true) or not (false).
+     * @param isAbstract  Specifies if the {@link ResourceType} is to be abstract (true) or not (false).
      *
-     * @return The ResourceType itself.
+     * @return The {@link ResourceType} itself.
      */
     @Override
     ResourceType<D> setAbstract(Boolean isAbstract);
@@ -80,34 +80,34 @@ public interface ResourceType<D> extends Type {
     /**
      * Adds another subtype to this type
      *
-     * @param type The sub type of this resource type
-     * @return The ResourceType itself
+     * @param type The sub type of this {@link ResourceType}
+     * @return The {@link ResourceType} itself
      */
     ResourceType<D> sub(ResourceType<D> type);
 
     /**
-     * Sets the Role which instances of this ResourceType may play.
+     * Sets the Role which instances of this {@link ResourceType} may play.
      *
-     * @param role The Role Type which the instances of this ResourceType are allowed to play.
-     * @return The ResourceType itself.
+     * @param role The Role Type which the instances of this {@link ResourceType} are allowed to play.
+     * @return The {@link ResourceType} itself.
      */
     @Override
     ResourceType<D> plays(Role role);
 
     /**
-     * Removes the Role to prevent instances of this ResourceType from playing it.
+     * Removes the Role to prevent instances of this {@link ResourceType} from playing it.
      *
-     * @param role The Role Type which the instances of this ResourceType should no longer be allowed to play.
-     * @return The ResourceType itself.
+     * @param role The Role Type which the instances of this {@link ResourceType} should no longer be allowed to play.
+     * @return The {@link ResourceType} itself.
      */
     @Override
     ResourceType<D> deletePlays(Role role);
 
     /**
-     * Set the regular expression that instances of the ResourceType must conform to.
+     * Set the regular expression that instances of the {@link ResourceType} must conform to.
      *
-     * @param regex The regular expression that instances of this ResourceType must conform to.
-     * @return The ResourceType itself.
+     * @param regex The regular expression that instances of this {@link ResourceType} must conform to.
+     * @return The {@link ResourceType} itself.
      */
     ResourceType<D> setRegex(String regex);
 
@@ -157,9 +157,9 @@ public interface ResourceType<D> extends Type {
 
     //------------------------------------- Accessors ---------------------------------
     /**
-     * Returns the supertype of this ResourceType.
+     * Returns the supertype of this {@link ResourceType}.
      *
-     * @return The supertype of this ResourceType,
+     * @return The supertype of this {@link ResourceType},
      */
     @Override
     @Nonnull
@@ -177,9 +177,9 @@ public interface ResourceType<D> extends Type {
     Attribute<D> getResource(D value);
 
     /**
-     * Returns a collection of subtypes of this ResourceType.
+     * Returns a collection of subtypes of this {@link ResourceType}.
      *
-     * @return The subtypes of this ResourceType
+     * @return The subtypes of this {@link ResourceType}
      */
     @Override
     Stream<ResourceType<D>> subs();
@@ -201,12 +201,12 @@ public interface ResourceType<D> extends Type {
     DataType<D> getDataType();
 
     /**
-     * Retrieve the regular expression to which instances of this ResourceType must conform, or {@code null} if no
+     * Retrieve the regular expression to which instances of this {@link ResourceType} must conform, or {@code null} if no
      * regular expression is set.
      *
      * By default, a {@link ResourceType} does not have a regular expression set.
      *
-     * @return The regular expression to which instances of this ResourceType must conform.
+     * @return The regular expression to which instances of this {@link ResourceType} must conform.
      */
     @CheckReturnValue
     @Nullable
