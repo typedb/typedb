@@ -18,7 +18,7 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
 import ai.grakn.concept.Relation;
@@ -268,7 +268,7 @@ class ValidateGlobalRules {
      * @param relationReified The {@link Relation} whose hash needs to be set.
      * @return An error message if the {@link Relation} is not unique.
      */
-    static Optional<String> validateRelationIsUnique(AbstractGraknGraph<?> graph, RelationReified relationReified){
+    static Optional<String> validateRelationIsUnique(GraknTxAbstract<?> graph, RelationReified relationReified){
         Iterator<ResourceType> keys = relationReified.type().keys().iterator();
         if(keys.hasNext()){
             return validateKeyControlledRelation(graph, relationReified, keys);
@@ -281,12 +281,12 @@ class ValidateGlobalRules {
      * Checks that a {@link Relation} which is bound to a {@link ai.grakn.concept.Resource} as a key actually is unique to that key.
      * The check for if the key is actually connected to the relation is done in {@link #validateInstancePlaysAllRequiredRoles}
      *
-     * @param graph the {@link GraknGraph} used to check for uniqueness
+     * @param graph the {@link GraknTx} used to check for uniqueness
      * @param relationReified the {@link Relation} to check
      * @param keys the {@link ResourceType} indicating the key which the relation must be bound to and unique to
      * @return An error message if the {@link Relation} is not unique.
      */
-    private static Optional<String> validateKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified, Iterator<ResourceType> keys) {
+    private static Optional<String> validateKeyControlledRelation(GraknTxAbstract<?> graph, RelationReified relationReified, Iterator<ResourceType> keys) {
         TreeMap<String, String> resources = new TreeMap<>();
         while(keys.hasNext()){
             Optional<Resource<?>> foundResource = relationReified.resources(keys.next()).findAny();
@@ -304,25 +304,25 @@ class ValidateGlobalRules {
      * Checks if {@link Relation}s which are not bound to {@link ai.grakn.concept.Resource}s as keys are unique by their
      * {@link Role}s and the {@link Thing}s which play those roles.
      *
-     * @param graph the {@link GraknGraph} used to check for uniqueness
+     * @param graph the {@link GraknTx} used to check for uniqueness
      * @param relationReified the {@link Relation} to check
      * @return An error message if the {@link Relation} is not unique.
      */
-    private static Optional<String> validateNonKeyControlledRelation(AbstractGraknGraph<?> graph, RelationReified relationReified){
+    private static Optional<String> validateNonKeyControlledRelation(GraknTxAbstract<?> graph, RelationReified relationReified){
         String hash = RelationReified.generateNewHash(relationReified.type(), relationReified.allRolePlayers());
         return setRelationUnique(graph, relationReified, hash);
     }
 
     /**
-     * Checks is a {@link Relation} is unique by searching the {@link GraknGraph} for another {@link Relation} with the same
+     * Checks is a {@link Relation} is unique by searching the {@link GraknTx} for another {@link Relation} with the same
      * hash.
      *
-     * @param graph the {@link GraknGraph} used to check for uniqueness
+     * @param graph the {@link GraknTx} used to check for uniqueness
      * @param relationReified The candidate unique {@link Relation}
      * @param hash The hash to use to find other potential {@link Relation}s
      * @return An error message if the provided {@link Relation} is not unique and were unable to set the hash
      */
-    private static Optional<String> setRelationUnique(AbstractGraknGraph<?> graph, RelationReified relationReified, String hash){
+    private static Optional<String> setRelationUnique(GraknTxAbstract<?> graph, RelationReified relationReified, String hash){
         RelationImpl foundRelation = graph.getConcept(Schema.VertexProperty.INDEX, hash);
 
         if(foundRelation == null){
@@ -339,7 +339,7 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated
      * @return Error messages if the rule is not a valid Horn clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
-    static Set<String> validateRuleIsValidHornClause(GraknGraph graph, Rule rule){
+    static Set<String> validateRuleIsValidHornClause(GraknTx graph, Rule rule){
         Set<String> errors = new HashSet<>();
         if (rule.getWhen().admin().isDisjunction()){
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
@@ -354,7 +354,7 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated ontologically
      * @return Error messages if the rule has ontological inconsistencies
      */
-    static Set<String> validateRuleOntologically(GraknGraph graph, Rule rule) {
+    static Set<String> validateRuleOntologically(GraknTx graph, Rule rule) {
         Set<String> errors = new HashSet<>();
 
         //both body and head refer to the same graph and have to be valid with respect to the ontology that governs it
@@ -375,7 +375,7 @@ class ValidateGlobalRules {
      * @param head head of the rule of interest
      * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain  illegal atomics and is ontologically valid
      */
-    private static Set<String> checkRuleHeadInvalid(GraknGraph graph, Rule rule, Pattern head) {
+    private static Set<String> checkRuleHeadInvalid(GraknTx graph, Rule rule, Pattern head) {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<VarPatternAdmin>> patterns = head.admin().getDisjunctiveNormalForm().getPatterns();
         if (patterns.size() != 1){
@@ -400,7 +400,7 @@ class ValidateGlobalRules {
      * @param rule The rule to be validated
      * @return Error messages if the when or then of a rule refers to a non existent type
      */
-    static Set<String> validateRuleOntologyElementsExist(GraknGraph graph, Rule rule){
+    static Set<String> validateRuleOntologyElementsExist(GraknTx graph, Rule rule){
         Set<String> errors = new HashSet<>();
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_WHEN, rule.getWhen()));
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_THEN, rule.getThen()));
@@ -415,7 +415,7 @@ class ValidateGlobalRules {
      * @param pattern The pattern from which we will extract the types in the pattern
      * @return A list of errors if the pattern refers to any non-existent types in the graph
      */
-    private static Set<String> checkRuleSideInvalid(GraknGraph graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
+    private static Set<String> checkRuleSideInvalid(GraknTx graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
         pattern.admin().varPatterns().stream()

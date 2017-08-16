@@ -2,7 +2,7 @@
 title: Define a Rule-Driven Ontology
 keywords: schema
 last_updated: December, 2016
-tags: [java, graph-api]
+tags: [java, java-api]
 summary: "Demonstrates how to create a rule-driven ontology for Grakn."
 sidebar: documentation_sidebar
 permalink: /documentation/building-an-ontology/rule-driven-ontology.html

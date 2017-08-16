@@ -19,13 +19,12 @@
 package ai.grakn.test.migration.owl;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.migration.owl.Main;
 import ai.grakn.migration.owl.OwlModel;
 import org.junit.After;
@@ -89,7 +88,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     private void runAndAssertDataCorrect(String... args){
         run(args);
 
-        try(GraknGraph graph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)) {
+        try(GraknTx graph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)) {
             EntityType top = graph.getEntityType("tThing");
             EntityType type = graph.getEntityType("tAuthor");
             assertNotNull(type);

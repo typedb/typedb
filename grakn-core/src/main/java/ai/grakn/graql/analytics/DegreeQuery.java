@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
@@ -66,5 +66,5 @@ public interface DegreeQuery extends ComputeQuery<Map<Long, Set<String>>> {
      * @return a DegreeQuery with the graph set
      */
     @Override
-    DegreeQuery withGraph(GraknGraph graph);
+    DegreeQuery withGraph(GraknTx graph);
 }

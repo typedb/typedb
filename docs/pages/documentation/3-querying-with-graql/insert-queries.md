@@ -9,9 +9,9 @@ permalink: /documentation/graql/insert-queries.html
 folder: documentation
 ---
 
-The page documents use of the Graql `insert` query, which will insert a specified [variable pattern](#variable-patterns) into the graph. To follow along, or experiment further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
+The page documents use of the Graql `insert` query, which will insert a specified [variable pattern](#variable-patterns) into the knowledge base. To follow along, or experiment further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
-{% include note.html content="If you are working in the Graql shell, don't forget to `commit` to store an insertion in the graph." %}
+{% include note.html content="If you are working in the Graql shell, don't forget to `commit` to store an insertion in the knowledge base." %}
 
 
 ## `match-insert`

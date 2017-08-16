@@ -17,7 +17,7 @@
  */
 package ai.grakn.test.migration.owl;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
@@ -56,7 +56,7 @@ public class TestOwlGraknBase {
     protected OWLMigrator migrator;
 
     protected GraknSession factory;
-    protected GraknGraph graph;
+    protected GraknTx graph;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

@@ -11,17 +11,17 @@ folder: documentation
 
 {% include warning.html content="Please note that this page is in progress and subject to revision." %}
 
-In this section we focus on using the Graph API in a multi-threaded environment, and show how to create multiple transactions, which can affect the graph concurrently.
+In this section we focus on using the Java API in a multi-threaded environment, and show how to create multiple transactions, which can affect the graph concurrently.
 
 ## Creating Concurrent Transactions
 
 Transactions in GRAKN.AI are thread bound, which means that for a specific keyspace and thread, only one transaction can be open at any time.
-The following would result in an exception because the first transaction `graph1` was never closed:
+The following would result in an exception because the first transaction `tx1` was never closed:
 
 <!-- Ignored because this is designed to crash! -->
 ```java-test-ignore
-graph1 = Grakn.session(uri, "MyGraph").open(GraknTxType.WRITE);
-graph2 = Grakn.session(uri, "MyGraph").open(GraknTxType.WRITE);
+tx1 = Grakn.session(uri, "MyKnowledgeBase").open(GraknTxType.WRITE);
+tx2 = Grakn.session(uri, "MyKnowledgeBase").open(GraknTxType.WRITE);
 ```
 
 If you require multiple transactions open at the same time then you must do this on different threads. This is best illustrated with an example. Let's say that you wish to create 100 entities of a specific type concurrently.  The following will achieve that:
@@ -33,16 +33,16 @@ Set<Future> futures = new HashSet<>();
 ExecutorService pool = Executors.newFixedThreadPool(10);
 
 //Create sample ontology
-GraknGraph graph = session.open(GraknTxType.WRITE);
-EntityType entityType = graph.putEntityType("Some Entity Type");
+GraknTx tx = session.open(GraknTxType.WRITE);
+EntityType entityType = tx.putEntityType("Some Entity Type");
 graph.commit();
 
 //Load the data concurrently
 for(int i = 0; i < 100; i ++){
     futures.add(pool.submit(() -> {
-        GraknGraph innerGraph = session.open(GraknTxType.WRITE);
+        GraknTx innerTx = session.open(GraknTxType.WRITE);
         entityType.addEntity();
-        innerGraph.commit();
+        innerTx.commit();
     }));
 }
 
@@ -60,11 +60,11 @@ As you can see each thread opened its own transaction to work with. We were able
 
 ### Locking Exceptions
 
-When mutating the graph concurrently and attempting to load the same data simultaneously, it is possible to encounter a `GraknLockingException`.  When this exception is thrown on `commit()` it means that two or more transactions are attempting to mutate the same thing. If this occurs it is recommended that you retry the transaction.
+When mutating the knowledge base concurrently and attempting to load the same data simultaneously, it is possible to encounter a `GraknLockingException`.  When this exception is thrown on `commit()` it means that two or more transactions are attempting to mutate the same thing. If this occurs it is recommended that you retry the transaction.
 
 ### Validation Exceptions
 
-Validation exceptions may also occur when mutating the graph concurrently. For example, two transactions may be trying to create the exact same relationship and one of them may fail. When this occurs it is recommended retrying the transaction. If the same exception occurs again then it is likely that the transaction contains a validation error that would have still occurred even in a single threaded environment.
+Validation exceptions may also occur when mutating the knowledge base concurrently. For example, two transactions may be trying to create the exact same relationship and one of them may fail. When this occurs it is recommended retrying the transaction. If the same exception occurs again then it is likely that the transaction contains a validation error that would have still occurred even in a single threaded environment.
 
 ## Comments
 Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/23" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

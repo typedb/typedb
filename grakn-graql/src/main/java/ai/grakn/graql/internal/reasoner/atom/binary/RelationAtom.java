@@ -17,7 +17,7 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -324,7 +324,7 @@ public class RelationAtom extends IsaAtom {
     private Set<Role> getExplicitRoleTypes() {
         Set<Role> roles = new HashSet<>();
         ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-        GraknGraph graph = parent.graph();
+        GraknTx graph = parent.graph();
 
         Set<VarPatternAdmin> roleVars = getRelationPlayers().stream()
                 .map(RelationPlayer::getRole)
@@ -519,7 +519,7 @@ public class RelationAtom extends IsaAtom {
     private RelationAtom inferRoleTypes(){
         if (getExplicitRoleTypes().size() == getRelationPlayers().size() || getOntologyConcept() == null) return this;
 
-        GraknGraph graph = getParentQuery().graph();
+        GraknTx graph = getParentQuery().graph();
         Role metaRole = graph.admin().getMetaRole();
         RelationType relType = (RelationType) getOntologyConcept();
         Map<Var, OntologyConcept> varOntologyConceptMap = getParentQuery().getVarOntologyConceptMap();
@@ -604,7 +604,7 @@ public class RelationAtom extends IsaAtom {
         Multimap<Role, Var> roleMap = ArrayListMultimap.create();
         if (getParentQuery() == null || getOntologyConcept() == null){ return roleMap;}
 
-        GraknGraph graph = getParentQuery().graph();
+        GraknTx graph = getParentQuery().graph();
         getRelationPlayers().forEach(c -> {
             Var varName = c.getRolePlayer().var();
             VarPatternAdmin role = c.getRole().orElse(null);

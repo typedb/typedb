@@ -18,7 +18,7 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.exception.GraphOperationException;
@@ -52,7 +52,7 @@ public class EntityTypePropertyTest {
 
     @Property
     public void whenANonMetaEntityTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
-            @Open GraknGraph graph, @FromGraph @NonMeta EntityType type) {
+            @Open GraknTx graph, @FromGraph @NonMeta EntityType type) {
         assumeThat(type.instances().collect(toSet()), empty());
         assumeThat(type.subs().collect(toSet()), contains(type));
         assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());

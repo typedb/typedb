@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
@@ -46,8 +46,8 @@ class MatchQueryInfer extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
-        GraknGraph graph = optionalOr(optionalGraph, inner.getGraph()).orElseThrow(GraqlQueryException::noGraph);
+    public Stream<Answer> stream(Optional<GraknTx> optionalGraph) {
+        GraknTx graph = optionalOr(optionalGraph, inner.getGraph()).orElseThrow(GraqlQueryException::noGraph);
 
         if (!RuleGraph.hasRules(graph)) return inner.stream(optionalGraph);
 

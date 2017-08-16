@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
@@ -56,7 +56,7 @@ class AskQueryImpl implements AskQueryAdmin {
     }
 
     @Override
-    public AskQuery withGraph(GraknGraph graph) {
+    public AskQuery withGraph(GraknTx graph) {
         return new AskQueryImpl(matchQuery.withGraph(graph));
     }
 

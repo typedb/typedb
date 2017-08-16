@@ -12,7 +12,7 @@ comment_issue_id: 17
 
 ## Summary
 
-This example takes a simple genealogy dataset and briefly reviews its ontology, then illustrates how to query, extend and visualise the graph, before demonstrating reasoning and analytics with Graql.  
+This example takes a simple genealogy dataset and briefly reviews its ontology, then illustrates how to query, extend and visualise the knowledge base, before demonstrating reasoning and analytics with Graql.  
 
 ## Introduction 
 
@@ -20,14 +20,14 @@ If you have not yet set up GRAKN.AI, please see the [Setup guide](../get-started
  
 ## The Graql Shell
 
-The first few steps mirror those in the [Setup Guide](./setup-guide.html), and you can skip to [The Ontology](#the-ontology) if you have already run through that example. Start Grakn and load the example graph:
+The first few steps mirror those in the [Setup Guide](./setup-guide.html), and you can skip to [The Ontology](#the-ontology) if you have already run through that example. Start Grakn and load the example knowledge base:
 
 ```bash
 ./bin/grakn.sh start
 ./bin/graql.sh -f ./examples/basic-genealogy.gql
 ```
 
-{% include note.html content="Above, we are invoking the Graql shell and passing the -f flag to indicate the file to load into a graph. This starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete.
+{% include note.html content="Above, we are invoking the Graql shell and passing the -f flag to indicate the file to load into a knowledge base. This starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete.
 If you are interested, please see our documentation about other [flags supported by the Graql shell](https://grakn.ai/pages/documentation/graql/graql-shell.html)." %}
 
 Then start the Graql shell in its interactive (REPL) mode:
@@ -115,7 +115,7 @@ There are a number of things we can say about ontology shown above:
 
 ### The Data
 
-The data is rather cumbersome, so we will not reproduce it all here. It is part of our [genealogy-graph](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph) project, and you can find out much more about the Niesz family in our [CSV migration](../examples/CSV-migration.html) and [Graql reasoning](../examples/graql-reasoning.html) example documentation. Here is a snippet of some of the data that you added to the graph when you loaded the *basic-genealogy.gql* file:
+The data is rather cumbersome, so we will not reproduce it all here. It is part of our [genealogy-knowledge-base](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph) project, and you can find out much more about the Niesz family in our [CSV migration](../examples/CSV-migration.html) and [Graql reasoning](../examples/graql-reasoning.html) example documentation. Here is a snippet of some of the data that you added to the graph when you loaded the *basic-genealogy.gql* file:
 
 ```
 $57472 isa person has firstname "Mary" has identifier "Mary Guthrie" has surname "Guthrie" has gender "female";
@@ -131,13 +131,13 @@ $40972456 (spouse2: $40964120, spouse1: $8248) isa marriage;
 $81940536 (spouse2: $233568, spouse1: $41361488) has picture "http:\/\/1.bp.blogspot.com\/-Ty9Ox8v7LUw\/VKoGzIlsMII\/AAAAAAAAAZw\/UtkUvrujvBQ\/s1600\/johnandmary.jpg" isa marriage;
 ```
 
-Don't worry about the numbers such as `$57472`. These are variables in Graql, and happen to have randomly assigned numbers to make them unique. Each statement is adding either a `person`, a `parentship` or a `marriage` to the graph.  We will show how to add more data to the graph shortly in the [Extending The Graph](#extending-the-graph) section. First, however, it is time to query the graph in the Graql shell. 
+Don't worry about the numbers such as `$57472`. These are variables in Graql, and happen to have randomly assigned numbers to make them unique. Each statement is adding either a `person`, a `parentship` or a `marriage` to the knowledge base.  We will show how to add more data to the graph shortly in the [Extending The Graph](#extending-the-graph) section. First, however, it is time to query the graph in the Graql shell. 
 
-## Querying the Graph
+## Querying the Knowledge Base
 
 Having started Grakn engine and the Graql shell in its interactive mode, we are ready to make a number queries. First, we will make a couple of `match` queries.
 
-Find all the people in the graph, and list their `identifier` resources (a string that represents their full name):
+Find all the people in the knowledge base, and list their `identifier` resources (a string that represents their full name):
 
 ```graql
 match $p isa person, has identifier $i;
@@ -163,9 +163,9 @@ Find all the people who are named 'Elizabeth':
 match $x isa person, has identifier $y; $y val contains "Elizabeth";
 ```
 
-Querying the graph is more fully described in the [Graql documentation](../graql/graql-overview.html).
+Querying the knowledge base is more fully described in the [Graql documentation](../graql/graql-overview.html).
 
-## Extending the Graph
+## Extending the Knowledge Base
 
 Besides making `match` queries, it is also possible to `insert` items [(see further documentation)](../graql/insert-queries.html) and `delete` items [(see further documentation)](../graql/delete-queries.html) through the Graql shell. To illustrate inserting a fictional person:
 
@@ -174,7 +174,7 @@ insert $g isa person has firstname "Titus" has identifier "Titus Groan" has surn
 commit
 ```
 
-{% include note.html content="<b>Don't forget to `commit`!</b> <br /> Nothing you have entered into the Graql shell has yet been committed to the graph, nor has it been validated. To save any changes you make to a graph, you need to type `commit` in the shell. It is a good habit to get into regularly committing what you have entered." %}
+{% include note.html content="<b>Don't forget to `commit`!</b> <br /> Nothing you have entered into the Graql shell has yet been committed to the knowledge base, nor has it been validated. To save any changes you make to a graph, you need to type `commit` in the shell. It is a good habit to get into regularly committing what you have entered." %}
 
 To find your inserted `person`:
 
@@ -189,7 +189,7 @@ match $x isa person has identifier "Titus Groan"; delete $x;
 commit
 ```
 
-Alternatively, we can use `match...insert` syntax, to insert additional data associated with something already in the graph. Adding some fictional information (middle name, birth date, death date and age at death) for one of our family, Mary Guthrie:
+Alternatively, we can use `match...insert` syntax, to insert additional data associated with something already in the knowledge base. Adding some fictional information (middle name, birth date, death date and age at death) for one of our family, Mary Guthrie:
 
 ```graql
 match $p has identifier "Mary Guthrie"; insert $p has middlename "Mathilda"; $p has birth-date "1902-01-01"; $p has death-date "1952-01-01"; $p has age 50;
@@ -198,7 +198,7 @@ commit
 
 ## Using the Grakn Visualiser
 
-You can open the [Grakn visualiser](../grakn-dashboard/visualiser.html) by navigating to [localhost:4567](http://localhost:4567) in your web browser. The visualiser allows you to make queries or simply browse the knowledge ontology within the graph. The screenshot below shows a basic query (`match $x isa person; offset 0; limit 100;`) typed into the form at the top of the main pane, and visualised by pressing ">":
+You can open the [Grakn visualiser](../grakn-dashboard/visualiser.html) by navigating to [localhost:4567](http://localhost:4567) in your web browser. The visualiser allows you to make queries or simply browse the knowledge ontology within the knowledge base. The screenshot below shows a basic query (`match $x isa person; offset 0; limit 100;`) typed into the form at the top of the main pane, and visualised by pressing ">":
 
 ![Person query](/images/match-$x-isa-person.png)
 
@@ -337,7 +337,7 @@ A full list of statistics that can be explored is documented in the [Compute Que
 
 ### Shortest Path
 
-It is also possible to find the shortest path between two nodes in the graph. The documentation for the Grakn visualiser describes how to use the [query builder tool](../grakn-dashboard/visualiser.html#analytics-queries---shortest-path), and includes a video.
+It is also possible to find the shortest path between two nodes in the knowledge base. The documentation for the Grakn visualiser describes how to use the [query builder tool](../grakn-dashboard/visualiser.html#analytics-queries---shortest-path), and includes a video.
 
 In brief, let's select two people from the genealogy dataset:
 
@@ -372,7 +372,7 @@ The above limits the path to blood relations (parent/child relations) thus exclu
 
 ## Data Migration
 
-In this example we loaded data from *basic-genealogy.gql* directly into a graph. However, data isn't often conveniently stored in .gql files and, indeed, the data that we used was originally in CSV format. Our [CSV migration example](../examples/CSV-migration.html) explains in detail the steps we took to migrate the CSV data into Grakn. 
+In this example we loaded data from *basic-genealogy.gql* directly into a knowledge base. However, data isn't often conveniently stored in .gql files and, indeed, the data that we used was originally in CSV format. Our [CSV migration example](../examples/CSV-migration.html) explains in detail the steps we took to migrate the CSV data into Grakn. 
 
 Migrating data in formats such as CSV, SQL, OWL and JSON into Grakn is a key use case. More information about each of these can be found in the [migration documentation](../migration/migration-overview.html).
 

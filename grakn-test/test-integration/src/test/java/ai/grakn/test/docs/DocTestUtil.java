@@ -20,7 +20,7 @@
 package ai.grakn.test.docs;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTxType;
@@ -47,43 +47,43 @@ public class DocTestUtil {
         String keyspace = UUID.randomUUID().toString().replaceAll("-", "");
         GraknSession session = Grakn.session(uri, keyspace);
 
-        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
-            GenealogyGraph.get().accept(graph);
+        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
+            GenealogyGraph.get().accept(tx);
 
             // TODO: Remove custom genealogy ontology when not used
-            ResourceType<Long> age = graph.putResourceType("age", ResourceType.DataType.LONG);
-            graph.getEntityType("person").resource(age);
-            graph.putResourceType("nickname", ResourceType.DataType.STRING);
+            ResourceType<Long> age = tx.putResourceType("age", ResourceType.DataType.LONG);
+            tx.getEntityType("person").resource(age);
+            tx.putResourceType("nickname", ResourceType.DataType.STRING);
 
             // TODO: Remove plant ontology when not used
-            EntityType plant = graph.putEntityType("plant");
-            ResourceType<String> common = graph.putResourceType("common", ResourceType.DataType.STRING);
-            ResourceType<String> botanical = graph.putResourceType("botanical", ResourceType.DataType.STRING);
-            ResourceType<String> zone = graph.putResourceType("zone", ResourceType.DataType.STRING);
-            ResourceType<String> light = graph.putResourceType("light", ResourceType.DataType.STRING);
-            ResourceType<Long> availability = graph.putResourceType("availability", ResourceType.DataType.LONG);
+            EntityType plant = tx.putEntityType("plant");
+            ResourceType<String> common = tx.putResourceType("common", ResourceType.DataType.STRING);
+            ResourceType<String> botanical = tx.putResourceType("botanical", ResourceType.DataType.STRING);
+            ResourceType<String> zone = tx.putResourceType("zone", ResourceType.DataType.STRING);
+            ResourceType<String> light = tx.putResourceType("light", ResourceType.DataType.STRING);
+            ResourceType<Long> availability = tx.putResourceType("availability", ResourceType.DataType.LONG);
             plant.resource(common).resource(botanical).resource(zone).resource(light).resource(availability);
 
             // TODO: Remove pokemon ontology when not used
-            EntityType pokemon = graph.putEntityType("pokemon");
-            EntityType pokemonType = graph.putEntityType("pokemon-type");
+            EntityType pokemon = tx.putEntityType("pokemon");
+            EntityType pokemonType = tx.putEntityType("pokemon-type");
 
-            ResourceType<String> typeId = graph.putResourceType("type-id", ResourceType.DataType.STRING);
-            ResourceType<String> description = graph.putResourceType("description", ResourceType.DataType.STRING);
-            ResourceType<Long> pokedexNo = graph.putResourceType("pokedex-no", ResourceType.DataType.LONG);
-            ResourceType<Double> weight = graph.putResourceType("weight", ResourceType.DataType.DOUBLE);
-            ResourceType<Double> height = graph.putResourceType("height", ResourceType.DataType.DOUBLE);
+            ResourceType<String> typeId = tx.putResourceType("type-id", ResourceType.DataType.STRING);
+            ResourceType<String> description = tx.putResourceType("description", ResourceType.DataType.STRING);
+            ResourceType<Long> pokedexNo = tx.putResourceType("pokedex-no", ResourceType.DataType.LONG);
+            ResourceType<Double> weight = tx.putResourceType("weight", ResourceType.DataType.DOUBLE);
+            ResourceType<Double> height = tx.putResourceType("height", ResourceType.DataType.DOUBLE);
 
-            graph.putRelationType("has-type")
-                    .relates(graph.putRole("type-of-pokemon")).relates(graph.putRole("pokemon-with-type"));
+            tx.putRelationType("has-type")
+                    .relates(tx.putRole("type-of-pokemon")).relates(tx.putRole("pokemon-with-type"));
 
             pokemonType.resource(typeId).resource(description);
             pokemon.resource(weight).resource(height).resource(pokedexNo).resource(description);
 
             // TODO: Remove these random types when not used
-            graph.putEntityType("cluster");
+            tx.putEntityType("cluster");
 
-            graph.commit();
+            tx.commit();
         }
 
         return session;

@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal.concept;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Resource;
@@ -153,7 +153,7 @@ public class ResourceTypeTest extends GraphTestBase {
         LocalDateTime rightNow = LocalDateTime.now();
         // now add the timezone to the graph
         try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "somethingmorerandom")) {
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
                 ResourceType<LocalDateTime> aTime = graph.putResourceType("aTime", ResourceType.DataType.DATE);
                 aTime.putResource(rightNow);
                 graph.commit();
@@ -164,7 +164,7 @@ public class ResourceTypeTest extends GraphTestBase {
         TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
         // the colleague extracts the LocalTime which should be the same
         try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "somethingmorerandom")) {
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
                 ResourceType aTime = graph.getResourceType("aTime");
                 LocalDateTime databaseTime = (LocalDateTime) ((Resource) aTime.instances().iterator().next()).getValue();
 

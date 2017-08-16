@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
 
 public class GraqlControllerInsertTest {
 
-    private static GraknGraph mockGraph;
+    private static GraknTx mockGraph;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
 
@@ -78,7 +78,7 @@ public class GraqlControllerInsertTest {
         when(mockQueryBuilder.parse(any()))
                 .thenAnswer(invocation -> graphContext.graph().graql().parse(invocation.getArgument(0)));
 
-        mockGraph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
         when(mockGraph.graql()).thenReturn(mockQueryBuilder);

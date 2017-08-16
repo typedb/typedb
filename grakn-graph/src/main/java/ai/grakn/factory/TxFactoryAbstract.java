@@ -18,10 +18,10 @@
 
 package ai.grakn.factory;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;
@@ -38,16 +38,16 @@ import static javax.annotation.meta.When.NEVER;
  * <p>
  *     Defines the abstract construction of Grakn graphs on top of Tinkerpop Graphs.
  *     For this factory to function a vendor specific implementation of a graph extending
- *     {@link AbstractGraknGraph} must be provided. This must be provided with a matching TinkerPop {@link Graph}
+ *     {@link GraknTxAbstract} must be provided. This must be provided with a matching TinkerPop {@link Graph}
  *     which is wrapped within the Grakn Graph
  * </p>
  *
  * @author fppt
  *
- * @param <M> A Graph Graph extending {@link AbstractGraknGraph} and wrapping a Tinkerpop Graph
+ * @param <M> A Graph Graph extending {@link GraknTxAbstract} and wrapping a Tinkerpop Graph
  * @param <G> A vendor implementation of a Tinkerpop {@link Graph}
  */
-abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extends Graph> implements InternalFactory<G> {
+abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> implements TxFactory<G> {
 
     protected final String keyspace;
     protected final String engineUrl;
@@ -59,7 +59,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     G graph = null;
     private G batchLoadingGraph = null;
 
-    AbstractInternalFactory(String keyspace, String engineUrl, Properties properties){
+    TxFactoryAbstract(String keyspace, String engineUrl, Properties properties){
         Objects.requireNonNull(keyspace);
 
         this.keyspace = keyspace.toLowerCase();
@@ -84,7 +84,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         }
     }
 
-    private void checkOtherGraphOpen(GraknGraph otherGraph){
+    private void checkOtherGraphOpen(GraknTx otherGraph){
         if(otherGraph != null && !otherGraph.isClosed()) throw GraphOperationException.transactionOpen(otherGraph);
     }
 
