@@ -68,7 +68,7 @@ public class PostProcessingTaskTest {
         when(mockConfiguration.json()).thenReturn(Json.object(
                 KEYSPACE, "testing",
                 REST.Request.COMMIT_LOG_FIXING, Json.object(
-                        Schema.BaseType.RESOURCE.name(), Json.object(mockResourceIndex, mockResourceSet)
+                        Schema.BaseType.ATTRIBUTE.name(), Json.object(mockResourceIndex, mockResourceSet)
                 )));
 
         //Initialise system keyspace

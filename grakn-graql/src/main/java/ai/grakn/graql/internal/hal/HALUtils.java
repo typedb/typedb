@@ -86,7 +86,7 @@ public class HALUtils {
         } else if (thing.isRelation()) {
             return Schema.BaseType.RELATION;
         } else if (thing.isAttribute()) {
-            return Schema.BaseType.RESOURCE;
+            return Schema.BaseType.ATTRIBUTE;
         } else if (thing.isRule()) {
             return Schema.BaseType.RULE;
         } else {
@@ -100,7 +100,7 @@ public class HALUtils {
         } else if (ontologyConcept.isRelationType()) {
             return Schema.BaseType.RELATION_TYPE;
         } else if (ontologyConcept.isAttributeType()) {
-            return Schema.BaseType.RESOURCE_TYPE;
+            return Schema.BaseType.ATTRIBUTE_TYPE;
         } else if (ontologyConcept.isRuleType()) {
             return Schema.BaseType.RULE_TYPE;
         } else if (ontologyConcept.isRole()) {

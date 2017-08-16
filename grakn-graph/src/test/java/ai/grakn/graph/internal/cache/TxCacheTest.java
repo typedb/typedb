@@ -163,7 +163,7 @@ public class TxCacheTest extends GraphTestBase {
     @Test
     public void whenNoOp_EnsureLogWellFormed() {
         Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
-                "\":{\"" + Schema.BaseType.RESOURCE.name() + "\":{}},\"" +
+                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() + "\":{}},\"" +
                 REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
         assertEquals("Unexpected graph logs", expected, graknGraph.txCache().getFormattedLog());
     }
@@ -174,7 +174,7 @@ public class TxCacheTest extends GraphTestBase {
         entityType.addEntity();
         entityType.addEntity();
         Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
-                "\":{\"" + Schema.BaseType.RESOURCE.name() +
+                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() +
                 "\":{}},\"" + REST.Request.COMMIT_LOG_COUNTING  +
                 "\":[{\"" + REST.Request.COMMIT_LOG_CONCEPT_ID +
                 "\":\"" + entityType.getId() + "\",\"" + REST.Request.COMMIT_LOG_SHARDING_COUNT + "\":2}]}");

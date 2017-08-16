@@ -111,11 +111,11 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
             if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
             Object persistenceValue = castValue(value);
             AttributeImpl<D> resource = vertex().graph().factory().buildResource(vertex, type, persistenceValue);
-            resource.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateResourceIndex(getLabel(), value.toString()));
+            resource.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateAttributeIndex(getLabel(), value.toString()));
             return resource;
         };
 
-        return putInstance(Schema.BaseType.RESOURCE,
+        return putInstance(Schema.BaseType.ATTRIBUTE,
                 () -> getResource(value), instanceBuilder);
     }
 
@@ -160,7 +160,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
     @Override
     public Attribute<D> getResource(D value) {
-        String index = Schema.generateResourceIndex(getLabel(), value.toString());
+        String index = Schema.generateAttributeIndex(getLabel(), value.toString());
         return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
     }
 

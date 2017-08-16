@@ -147,7 +147,7 @@ public class PostProcessingIT {
             //Check the resource indices are working
             graph.admin().getMetaResourceType().instances().forEach(object -> {
                 Attribute attribute = (Attribute) object;
-                String index = Schema.generateResourceIndex(attribute.type().getLabel(), attribute.getValue().toString());
+                String index = Schema.generateAttributeIndex(attribute.type().getLabel(), attribute.getValue().toString());
                 assertEquals(attribute, ((AbstractGraknGraph<?>) graph).getConcept(Schema.VertexProperty.INDEX, index));
             });
         }

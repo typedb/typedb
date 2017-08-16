@@ -262,7 +262,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             VertexElement type = addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
             VertexElement entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
             VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
-            VertexElement resourceType = addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
+            VertexElement resourceType = addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
             VertexElement role = addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
             VertexElement ruleType = addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
             VertexElement inferenceRuleType = addTypeVertex(Schema.MetaSchema.INFERENCE_RULE.getId(), Schema.MetaSchema.INFERENCE_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
@@ -529,7 +529,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public <V> AttributeType<V> putResourceType(Label label, AttributeType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
-        AttributeType<V> attributeType = putOntologyElement(label, Schema.BaseType.RESOURCE_TYPE,
+        AttributeType<V> attributeType = putOntologyElement(label, Schema.BaseType.ATTRIBUTE_TYPE,
                 v -> factory().buildResourceType(v, getMetaResourceType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
@@ -636,7 +636,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <V> AttributeType<V> getResourceType(String label) {
-        return getOntologyConcept(Label.of(label), Schema.BaseType.RESOURCE_TYPE);
+        return getOntologyConcept(Label.of(label), Schema.BaseType.ATTRIBUTE_TYPE);
     }
 
     @Override

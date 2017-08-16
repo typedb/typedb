@@ -332,7 +332,7 @@ public class TxCache {
     public Json getFormattedLog(){
         //Concepts In Need of Inspection
         Json conceptsForInspection = Json.object();
-        conceptsForInspection.set(Schema.BaseType.RESOURCE.name(), loadConceptsForFixing(getModifiedAttributes()));
+        conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), loadConceptsForFixing(getModifiedAttributes()));
 
         //Types with instance changes
         Json typesWithInstanceChanges = Json.array();

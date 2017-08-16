@@ -116,7 +116,7 @@ public class PostProcessingTest {
                 Json.object(
                         KEYSPACE, graph.getKeyspace(),
                         REST.Request.COMMIT_LOG_FIXING, Json.object(
-                                Schema.BaseType.RESOURCE.name(), Json.object(resourceIndex, resourceConcepts)
+                                Schema.BaseType.ATTRIBUTE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );
         task.initialize(null, configuration, (x, y) -> {}, engine.config(), null, engine.server().factory(),

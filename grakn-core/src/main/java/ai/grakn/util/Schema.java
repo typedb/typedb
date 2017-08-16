@@ -127,14 +127,14 @@ public final class Schema {
         TYPE(Type.class),
         ROLE(Role.class),
         RELATION_TYPE(RelationType.class),
-        RESOURCE_TYPE(AttributeType.class),
+        ATTRIBUTE_TYPE(AttributeType.class),
         ENTITY_TYPE(EntityType.class),
         RULE_TYPE(RuleType.class),
 
         //Instances
         RELATION(Relation.class),
         ENTITY(Entity.class),
-        RESOURCE(Attribute.class),
+        ATTRIBUTE(Attribute.class),
         RULE(Rule.class),
 
         //Internal
@@ -302,7 +302,7 @@ public final class Schema {
      * @return A unique id for the resource
      */
     @CheckReturnValue
-    public static String generateResourceIndex(Label label, String value){
-        return Schema.BaseType.RESOURCE.name() + "-" + label + "-" + value;
+    public static String generateAttributeIndex(Label label, String value){
+        return Schema.BaseType.ATTRIBUTE.name() + "-" + label + "-" + value;
     }
 }

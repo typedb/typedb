@@ -173,8 +173,8 @@ public class PostProcessingTest extends GraphTestBase{
 
 
     private AttributeImpl<String> createFakeResource(AttributeTypeImpl<String> type, String value){
-        String index = Schema.generateResourceIndex(type.getLabel(), value);
-        Vertex resourceVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
+        String index = Schema.generateAttributeIndex(type.getLabel(), value);
+        Vertex resourceVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.ATTRIBUTE.name());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), type.currentShard().vertex().element());
         resourceVertex.property(Schema.VertexProperty.INDEX.name(), index);

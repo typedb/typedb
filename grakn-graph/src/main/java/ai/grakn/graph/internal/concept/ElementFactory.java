@@ -196,10 +196,10 @@ public final class ElementFactory {
                 case ENTITY_TYPE:
                     concept = new EntityTypeImpl(vertexElement);
                     break;
-                case RESOURCE_TYPE:
+                case ATTRIBUTE_TYPE:
                     concept = new AttributeTypeImpl<>(vertexElement);
                     break;
-                case RESOURCE:
+                case ATTRIBUTE:
                     concept = new AttributeImpl<>(vertexElement);
                     break;
                 case RULE:
@@ -274,7 +274,7 @@ public final class ElementFactory {
                 String label = type.get().target().label();
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
                 if(label.equals(RELATION_TYPE.name())) return Schema.BaseType.RELATION;
-                if(label.equals(Schema.BaseType.RESOURCE_TYPE.name())) return Schema.BaseType.RESOURCE;
+                if(label.equals(Schema.BaseType.ATTRIBUTE_TYPE.name())) return Schema.BaseType.ATTRIBUTE;
                 if(label.equals(RULE_TYPE.name())) return Schema.BaseType.RULE;
             }
         }

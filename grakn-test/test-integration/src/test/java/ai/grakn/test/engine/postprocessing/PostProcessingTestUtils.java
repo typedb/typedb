@@ -30,7 +30,7 @@ public class PostProcessingTestUtils {
                 .has(Schema.VertexProperty.ID.name(), attribute.getId().getValue()).next();
         Vertex vertexResourceTypeShard = graph.getTinkerTraversal().V()
                 .has(Schema.VertexProperty.ID.name(), attributeType.getId().getValue()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
-        Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
+        Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.ATTRIBUTE.name());
         resourceVertex.property(Schema.VertexProperty.INDEX.name(),originalResource.value(Schema.VertexProperty.INDEX.name()));
         resourceVertex.property(attributeType.getDataType().getVertexProperty().name(), attribute.getValue());
         resourceVertex.property(Schema.VertexProperty.ID.name(), resourceVertex.id().toString());
@@ -47,7 +47,7 @@ public class PostProcessingTestUtils {
                 has(Schema.VertexProperty.ID.name(), attributeType.getId().getValue()).
                 in(Schema.EdgeLabel.SHARD.getLabel()).next();
 
-        Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
+        Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.ATTRIBUTE.name());
         resourceVertex.property(Schema.VertexProperty.INDEX.name(),originalResource.value(Schema.VertexProperty.INDEX.name()));
         resourceVertex.property(Schema.VertexProperty.VALUE_STRING.name(), originalResource.value(Schema.VertexProperty.VALUE_STRING.name()));
         resourceVertex.property(Schema.VertexProperty.ID.name(), Schema.PREFIX_VERTEX + resourceVertex.id());
