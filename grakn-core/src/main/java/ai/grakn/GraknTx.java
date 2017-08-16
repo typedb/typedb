@@ -230,7 +230,7 @@ public interface GraknTx extends AutoCloseable{
     /**
      * Get all {@link Attribute} holding the value provided, if they exist.
      *
-     * @param value A value which a {@link Attribute} in the graph may be holding.
+     * @param value A value which an {@link Attribute} in the graph may be holding.
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @return The {@link Attribute}s holding the provided value or an empty collection if no such {@link Attribute} exists.
      *
