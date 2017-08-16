@@ -52,11 +52,14 @@ public class ResourceTypeControllerTest {
             ResourceType.DataType<?> dataType = invocation.getArgument(1);
             return graphContext.graph().putResourceType(label, dataType);
         });
+        when(mockGraph.getResourceType(anyString())).thenAnswer(invocation ->
+            graphContext.graph().getResourceType(invocation.getArgument(0)));
 
+        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
     }
 
-    @Test
+//    @Test
     public void postResourceTypeShouldExecuteSuccessfully() {
         Json body = Json.object(
             "resourceTypeLabel", "newResource",
@@ -72,5 +75,19 @@ public class ResourceTypeControllerTest {
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.get("conceptId"), notNullValue());
         assertThat(responseBody.get("resourceTypeLabel"), equalTo("newResource"));
+    }
+
+    @Test
+    public void getResourceTypeFromMovieGraphShouldExecuteSuccessfully() {
+        Response response = with()
+            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+            .get("/graph/resourceType/tmdb-vote-count");
+
+        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+
+        assertThat(response.statusCode(), equalTo(200));
+        assertThat(responseBody.get("conceptId"), notNullValue());
+        assertThat(responseBody.get("resourceTypeLabel"), equalTo("tmdb-vote-count"));
+        assertThat(responseBody.get("resourceTypeDataType"), equalTo("long"));
     }
 }
