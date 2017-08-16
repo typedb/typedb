@@ -63,8 +63,8 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
     public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Concept concept) {
         return sb -> {
             // Display values for resources and ids for everything else
-            if (concept.isResource()) {
-                sb.append(colorKeyword("val ")).append(StringUtil.valueToString(concept.asResource().getValue()));
+            if (concept.isAttribute()) {
+                sb.append(colorKeyword("val ")).append(StringUtil.valueToString(concept.asAttribute().getValue()));
             } else if (concept.isOntologyConcept()) {
                 OntologyConcept ontoConcept = concept.asOntologyConcept();
                 sb.append(colorKeyword("label ")).append(colorType(ontoConcept));

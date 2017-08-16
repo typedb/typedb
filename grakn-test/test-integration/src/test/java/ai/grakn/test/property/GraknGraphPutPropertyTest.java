@@ -158,7 +158,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutResourceTypeWithAnExistingNonResourceTypeLabel_Throw(
             @Open GraknGraph graph, @FromGraph Type type, AttributeType.DataType<?> dataType) {
-        assumeFalse(type.isResourceType());
+        assumeFalse(type.isAttributeType());
 
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){

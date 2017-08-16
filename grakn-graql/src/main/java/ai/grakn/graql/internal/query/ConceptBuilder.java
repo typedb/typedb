@@ -334,8 +334,8 @@ public class ConceptBuilder {
             return type.asEntityType().addEntity();
         } else if (type.isRelationType()) {
             return type.asRelationType().addRelation();
-        } else if (type.isResourceType()) {
-            return type.asResourceType().putResource(use(VALUE));
+        } else if (type.isAttributeType()) {
+            return type.asAttributeType().putResource(use(VALUE));
         } else if (type.isRuleType()) {
             return type.asRuleType().putRule(use(WHEN), use(THEN));
         } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
@@ -357,8 +357,8 @@ public class ConceptBuilder {
             concept = executor.graph().putRelationType(label);
         } else if (superConcept.isRole()) {
             concept = executor.graph().putRole(label);
-        } else if (superConcept.isResourceType()) {
-            AttributeType attributeType = superConcept.asResourceType();
+        } else if (superConcept.isAttributeType()) {
+            AttributeType attributeType = superConcept.asAttributeType();
             AttributeType.DataType<?> dataType = useOrDefault(DATA_TYPE, attributeType.getDataType());
             concept = executor.graph().putResourceType(label, dataType);
         } else if (superConcept.isRuleType()) {
@@ -384,8 +384,8 @@ public class ConceptBuilder {
             subConcept.asRelationType().sup(superConcept.asRelationType());
         } else if (superConcept.isRole()) {
             subConcept.asRole().sup(superConcept.asRole());
-        } else if (superConcept.isResourceType()) {
-            subConcept.asResourceType().sup(superConcept.asResourceType());
+        } else if (superConcept.isAttributeType()) {
+            subConcept.asAttributeType().sup(superConcept.asAttributeType());
         } else if (superConcept.isRuleType()) {
             subConcept.asRuleType().sup(superConcept.asRuleType());
         } else {

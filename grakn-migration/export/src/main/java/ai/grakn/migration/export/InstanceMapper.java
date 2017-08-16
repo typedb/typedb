@@ -50,8 +50,8 @@ public class InstanceMapper {
     public static VarPattern map(Thing thing){
         if(thing.isEntity()){
             return map(thing.asEntity());
-        } else if(thing.isResource()){
-            return map(thing.asResource());
+        } else if(thing.isAttribute()){
+            return map(thing.asAttribute());
         } else if(thing.isRelation()){
             return map(thing.asRelation());
         } else if(thing.isRule()){

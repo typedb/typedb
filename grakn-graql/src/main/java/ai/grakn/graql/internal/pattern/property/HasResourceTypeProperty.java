@@ -142,7 +142,7 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         Type entityTypeConcept = executor.get(var).asType();
-        AttributeType attributeTypeConcept = executor.get(resourceType().getVarName()).asResourceType();
+        AttributeType attributeTypeConcept = executor.get(resourceType().getVarName()).asAttributeType();
 
         if (required()) {
             entityTypeConcept.key(attributeTypeConcept);

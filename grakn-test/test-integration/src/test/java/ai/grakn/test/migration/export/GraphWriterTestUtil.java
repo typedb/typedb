@@ -61,8 +61,8 @@ public abstract class GraphWriterTestUtil {
             assertRelationCopied(thing.asRelation(), two);
         } else if(thing.isRule()){
             assertRuleCopied(thing.asRule(), two);
-        } else if(thing.isResource()){
-            assertResourceCopied(thing.asResource(), two);
+        } else if(thing.isAttribute()){
+            assertResourceCopied(thing.asAttribute(), two);
         }
     }
 
@@ -99,7 +99,7 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertRelationCopied(Relation relation1, GraknGraph two){
-        if(relation1.rolePlayers().anyMatch(Concept::isResource)){
+        if(relation1.rolePlayers().anyMatch(Concept::isAttribute)){
             return;
         }
 
@@ -141,6 +141,6 @@ public abstract class GraphWriterTestUtil {
         return one.getLabel().equals(two.getLabel())
                 && one.isAbstract().equals(two.isAbstract())
                 && (one.sup() == null || one.sup().getLabel().equals(two.sup().getLabel()))
-                && (!one.isResourceType() || Objects.equals(one.asResourceType().getDataType(), two.asResourceType().getDataType()));
+                && (!one.isAttributeType() || Objects.equals(one.asAttributeType().getDataType(), two.asAttributeType().getDataType()));
     }
 }

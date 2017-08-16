@@ -217,14 +217,14 @@ public interface AttributeType<D> extends Type {
     @Deprecated
     @CheckReturnValue
     @Override
-    default AttributeType asResourceType(){
+    default AttributeType asAttributeType(){
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isResourceType(){
+    default boolean isAttributeType(){
         return true;
     }
 

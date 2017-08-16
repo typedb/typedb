@@ -139,8 +139,8 @@ public class HALConceptData {
             //Only when double clicking on a specific relation we want to fetch also the other relations the current one plays a role into.
             embedRelationsPlays(halResource, concept.asRelation());
         }
-        if (concept.isResource()) {
-            generateOwnerInstances(halResource, concept.asResource(), separationDegree);
+        if (concept.isAttribute()) {
+            generateOwnerInstances(halResource, concept.asAttribute(), separationDegree);
         }
 
         if (concept.isType()) {
@@ -251,7 +251,7 @@ public class HALConceptData {
             for (Thing thing : entry.getValue()) {
                 //Some role players can be null
                 if (thing != null) {
-                    if (thing.isResource()) {
+                    if (thing.isAttribute()) {
                         isResource = true;
                     } else if (thing.getId().equals(concept.getId())) {
                         rolePlayedByCurrentConcept = entry.getKey().getLabel();

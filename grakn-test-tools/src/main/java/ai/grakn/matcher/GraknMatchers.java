@@ -133,7 +133,7 @@ public class GraknMatchers {
 
             @Override
             public Object transform(MatchableConcept item) {
-                return item.get().asResource().getValue();
+                return item.get().asAttribute().getValue();
             }
         };
     }

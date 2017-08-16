@@ -148,8 +148,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     private <X extends Concept> Stream<Attribute<?>> resources(Stream<X> conceptStream, Set<ConceptId> resourceTypesIds){
         Stream<Attribute<?>> resourceStream = conceptStream.
-                filter(concept -> concept.isResource() && !this.equals(concept)).
-                map(Concept::asResource);
+                filter(concept -> concept.isAttribute() && !this.equals(concept)).
+                map(Concept::asAttribute);
 
         if(!resourceTypesIds.isEmpty()){
             resourceStream = resourceStream.filter(resource -> resourceTypesIds.contains(resource.type().getId()));

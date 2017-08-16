@@ -128,7 +128,7 @@ public abstract class GraknTestEngineSetup {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .execute()
                     .forEach(x -> x.values().forEach(y -> {
-                        keyspaceNames.add(y.asResource().getValue().toString());
+                        keyspaceNames.add(y.asAttribute().getValue().toString());
                     }));
         }
 

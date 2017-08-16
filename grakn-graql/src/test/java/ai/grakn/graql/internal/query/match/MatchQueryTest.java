@@ -276,7 +276,7 @@ public class MatchQueryTest {
         query.forEach(result -> {
             Concept cx = result.get(x);
             Concept cy = result.get(y);
-            assertEquals(cx.asResource().getValue(), cy.asResource().getValue());
+            assertEquals(cx.asAttribute().getValue(), cy.asAttribute().getValue());
         });
     }
 
@@ -290,7 +290,7 @@ public class MatchQueryTest {
         query.forEach(result -> {
             Concept x = result.get("x");
             Concept y = result.get("y");
-            assertEquals(x.asResource().getValue(), y.asResource().getValue());
+            assertEquals(x.asAttribute().getValue(), y.asAttribute().getValue());
         });
     }
 
@@ -762,8 +762,8 @@ public class MatchQueryTest {
         assertThat(results, hasSize(greaterThan(10)));
 
         results.forEach(result -> {
-            Comparable x = (Comparable) result.get("x").asResource().getValue();
-            Comparable y = (Comparable) result.get("y").asResource().getValue();
+            Comparable x = (Comparable) result.get("x").asAttribute().getValue();
+            Comparable y = (Comparable) result.get("y").asAttribute().getValue();
             assertThat(x, greaterThan(y));
         });
     }
@@ -801,8 +801,8 @@ public class MatchQueryTest {
         assertThat(results, hasSize(greaterThan(5)));
 
         results.forEach(result -> {
-            Comparable x = (Comparable) result.get("x").asResource().getValue();
-            Comparable y = (Comparable) result.get("y").asResource().getValue();
+            Comparable x = (Comparable) result.get("x").asAttribute().getValue();
+            Comparable y = (Comparable) result.get("y").asAttribute().getValue();
             assertThat(x, lessThanOrEqualTo(y));
         });
     }
@@ -814,7 +814,7 @@ public class MatchQueryTest {
         Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
         Set<Attribute<?>> expected = godfather.resources().collect(toSet());
 
-        Set<Attribute<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
+        Set<Attribute<?>> results = query.get("x").map(Concept::asAttribute).collect(toSet());
 
         assertEquals(expected, results);
     }

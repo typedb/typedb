@@ -104,7 +104,7 @@ public class GraknQueryHandlers {
      * @return the resource value
      */
     private static <T> T resource(Answer result, Var resource) {
-        return result.get(resource).<T>asResource().getValue();
+        return result.get(resource).<T>asAttribute().getValue();
     }
 
     /**
@@ -115,7 +115,7 @@ public class GraknQueryHandlers {
      * @return the time as an epoch milli
      */
     private static long timeResource(Answer result, Var resource) {
-        return result.get(resource).<LocalDateTime>asResource().getValue().toInstant(ZoneOffset.UTC).toEpochMilli();
+        return result.get(resource).<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli();
     }
 
     /**

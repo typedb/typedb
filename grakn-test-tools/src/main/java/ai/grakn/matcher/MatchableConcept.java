@@ -57,8 +57,8 @@ public class MatchableConcept {
 
     @Override
     public String toString() {
-        if (concept.isResource()) {
-            return "hasValue(" + valueToString(concept.asResource().getValue()) + ")";
+        if (concept.isAttribute()) {
+            return "hasValue(" + valueToString(concept.asAttribute().getValue()) + ")";
         } else if (concept.isThing()) {
             Thing thing = concept.asThing();
             Stream<Attribute<?>> resources = thing.resources();

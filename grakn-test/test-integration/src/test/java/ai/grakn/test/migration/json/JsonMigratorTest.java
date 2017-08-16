@@ -112,7 +112,7 @@ public class JsonMigratorTest {
             Attribute street = getResource(graph, streetAddress, Label.of("street"));
             assertEquals("2nd Street", street.getValue());
 
-            Attribute city = getResource(graph, address, Label.of("city")).asResource();
+            Attribute city = getResource(graph, address, Label.of("city")).asAttribute();
             assertEquals("New York", city.getValue());
 
             Collection<Thing> phoneNumbers = getProperties(graph, person, "has-phone");

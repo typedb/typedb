@@ -605,9 +605,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //noinspection unchecked
         getConcepts(dataType.getVertexProperty(), dataType.getPersistenceValue(value)).forEach(concept -> {
-            if (concept != null && concept.isResource()) {
+            if (concept != null && concept.isAttribute()) {
                 //noinspection unchecked
-                attributes.add(concept.asResource());
+                attributes.add(concept.asAttribute());
             }
         });
 

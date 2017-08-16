@@ -96,14 +96,14 @@ public interface Attribute<D> extends Thing {
     @Deprecated
     @CheckReturnValue
     @Override
-    default Attribute asResource(){
+    default Attribute asAttribute(){
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isResource(){
+    default boolean isAttribute(){
         return true;
     }
 }

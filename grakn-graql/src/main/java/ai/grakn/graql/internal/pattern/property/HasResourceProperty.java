@@ -122,14 +122,14 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     @Override
     void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
         OntologyConcept ontologyConcept = graph.getOntologyConcept(type());
-        if(ontologyConcept == null || !ontologyConcept.isResourceType()) {
+        if(ontologyConcept == null || !ontologyConcept.isAttributeType()) {
             throw GraqlQueryException.mustBeResourceType(type());
         }
     }
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Attribute attributeConcept = executor.get(resource().getVarName()).asResource();
+        Attribute attributeConcept = executor.get(resource().getVarName()).asAttribute();
         Thing thing = executor.get(var).asThing();
         thing.resource(attributeConcept);
     }
@@ -153,7 +153,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     }
 
     private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relation relation, Role resourceRole) {
-        Object value = relation.rolePlayers(resourceRole).iterator().next().asResource().getValue();
+        Object value = relation.rolePlayers(resourceRole).iterator().next().asAttribute().getValue();
 
         return optPredicate
                 .flatMap(ValuePredicateAdmin::getPredicate)

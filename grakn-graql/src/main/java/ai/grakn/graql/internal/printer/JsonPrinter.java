@@ -52,8 +52,8 @@ class JsonPrinter implements Printer<Json> {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
 
-        if (concept.isResource()) {
-            json.set("value", concept.asResource().getValue());
+        if (concept.isAttribute()) {
+            json.set("value", concept.asAttribute().getValue());
         }
 
         if (concept.isRule()) {

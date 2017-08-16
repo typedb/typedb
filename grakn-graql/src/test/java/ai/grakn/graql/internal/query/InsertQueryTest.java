@@ -268,7 +268,7 @@ public class InsertQueryTest {
         ).execute();
 
         MatchQuery query = qb.match(var("x").label("my-type"));
-        AttributeType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
+        AttributeType.DataType datatype = query.iterator().next().get("x").asAttributeType().getDataType();
 
         Assert.assertEquals(AttributeType.DataType.LONG, datatype);
     }
@@ -281,7 +281,7 @@ public class InsertQueryTest {
         ).execute();
 
         MatchQuery query = qb.match(var("x").label("sub-type"));
-        AttributeType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
+        AttributeType.DataType datatype = query.iterator().next().get("x").asAttributeType().getDataType();
 
         Assert.assertEquals(AttributeType.DataType.STRING, datatype);
     }
@@ -583,7 +583,7 @@ public class InsertQueryTest {
         qb.insert(label("greeting").sub("resource").datatype(AttributeType.DataType.STRING).regex("hello|good day")).execute();
 
         MatchQuery match = qb.match(var("x").label("greeting"));
-        assertEquals("hello|good day", match.get("x").findFirst().get().asResourceType().getRegex());
+        assertEquals("hello|good day", match.get("x").findFirst().get().asAttributeType().getRegex());
     }
 
     @Test

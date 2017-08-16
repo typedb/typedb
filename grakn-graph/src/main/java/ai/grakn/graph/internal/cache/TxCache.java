@@ -158,8 +158,8 @@ public class TxCache {
             relationIndexCache.put(RelationReified.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
         } else if (concept.isRule()){
             modifiedRules.add(concept.asRule());
-        } else if (concept.isResource()){
-            modifiedAttributes.add(concept.asResource());
+        } else if (concept.isAttribute()){
+            modifiedAttributes.add(concept.asAttribute());
         }
     }
     public void trackForValidation(Casting casting) {

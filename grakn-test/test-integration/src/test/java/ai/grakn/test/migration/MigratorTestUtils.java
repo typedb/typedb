@@ -118,7 +118,7 @@ public class MigratorTestUtils {
         Role roleOther = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 
         Stream<Relation> relations = thing.relations(roleOwner);
-        return relations.flatMap(r -> r.rolePlayers(roleOther)).map(Concept::asResource);
+        return relations.flatMap(r -> r.rolePlayers(roleOther)).map(Concept::asAttribute);
     }
 
     /**

@@ -23,7 +23,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
@@ -699,7 +698,7 @@ public class ReasonerTest {
         MatchQuery query = snbGraph.graph().graql().infer(true).parse(queryString);
 
         List<Answer> answers = query.execute();
-        assertEquals(answers.iterator().next().get("a").asResource().getValue().toString(), "19");
+        assertEquals(answers.iterator().next().get("a").asAttribute().getValue().toString(), "19");
     }
 
     @Test
@@ -714,8 +713,8 @@ public class ReasonerTest {
 
         assertEquals(fullAnswers.size(), answers2.size() + offset);
         assertEquals(answers.size(), answers2.size() + offset);
-        assertEquals(answers.iterator().next().get("a").asResource().getValue().toString(), "19");
-        assertEquals(answers2.iterator().next().get("a").asResource().getValue().toString(), "23");
+        assertEquals(answers.iterator().next().get("a").asAttribute().getValue().toString(), "19");
+        assertEquals(answers2.iterator().next().get("a").asAttribute().getValue().toString(), "23");
     }
 
     //obsolete, should be handled by type inference

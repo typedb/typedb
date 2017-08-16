@@ -117,7 +117,7 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link RelationType} if the {@link Concept} is a {@link RelationType}
      */
     @CheckReturnValue
-    default <D> AttributeType<D> asResourceType(){
+    default <D> AttributeType<D> asAttributeType(){
         throw GraphOperationException.invalidCasting(this, AttributeType.class);
     }
 
@@ -156,7 +156,7 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link Attribute} if the {@link Concept} is a {@link Attribute}
      */
     @CheckReturnValue
-    default <D> Attribute<D> asResource(){
+    default <D> Attribute<D> asAttribute(){
         throw GraphOperationException.invalidCasting(this, Attribute.class);
     }
 
@@ -236,7 +236,7 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the{@link Concept} concept is a {@link AttributeType}
      */
     @CheckReturnValue
-    default boolean isResourceType(){
+    default boolean isAttributeType(){
         return false;
     }
 
@@ -276,7 +276,7 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the {@link Concept} is a {@link Attribute}
      */
     @CheckReturnValue
-    default boolean isResource(){
+    default boolean isAttribute(){
         return false;
     }
 
