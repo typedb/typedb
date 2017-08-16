@@ -189,7 +189,7 @@ public final class Schema {
         RELATIONSHIP_ROLE_OWNER_LABEL_ID(Integer.class),
         RELATIONSHIP_ROLE_VALUE_LABEL_ID(Integer.class),
         ROLE_LABEL_ID(Integer.class),
-        RELATION_TYPE_LABEL_ID(Integer.class),
+        RELATIONSHIP_TYPE_LABEL_ID(Integer.class),
         REQUIRED(Boolean.class);
 
         private final Class dataType;

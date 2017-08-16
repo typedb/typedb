@@ -162,7 +162,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         return vertex().graph().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().getLabelId().getValue()).
+                has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), type().getLabelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).
                 toStream().map(edge -> vertex().graph().factory().buildCasting(edge));
     }

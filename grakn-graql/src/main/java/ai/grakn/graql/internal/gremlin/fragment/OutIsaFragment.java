@@ -36,7 +36,7 @@ import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
 import static ai.grakn.util.Schema.EdgeLabel.SHARD;
-import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
+import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 
 class OutIsaFragment extends AbstractFragment {
 
@@ -57,7 +57,7 @@ class OutIsaFragment extends AbstractFragment {
     }
 
     private GraphTraversal<Element, Vertex> edgeTraversal() {
-        return Fragments.traverseOntologyConceptFromEdge(Fragments.isEdge(__.identity()), RELATION_TYPE_LABEL_ID);
+        return Fragments.traverseOntologyConceptFromEdge(Fragments.isEdge(__.identity()), RELATIONSHIP_TYPE_LABEL_ID);
     }
 
     @Override
