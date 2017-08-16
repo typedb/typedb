@@ -87,14 +87,14 @@ Using the Graph API:
 ```java
 Role spouse1 = graph.putRole("spouse1");
 Role spouse2 = graph.putRole("spouse2");
-RelationType marriage = graph.putRelationType("marriage")
+RelationshipType marriage = graph.putRelationType("marriage")
                             .relates(spouse1)
                             .relates(spouse2);
 marriage.resource(picture);
                            
 Role parent = graph.putRole("parent");
 Role child = graph.putRole("child");
-RelationType parentship = graph.putRelationType("parentship")
+RelationshipType parentship = graph.putRelationType("parentship")
                             .relates(parent)
                             .relates(child);
 ```
@@ -195,7 +195,7 @@ Entity john = person.addEntity();
 Entity mary = person.addEntity();
 
 //Create the actual relationships
-Relation theMarriage = marriage.addRelation().addRolePlayer(spouse1, john).addRolePlayer(spouse2, mary);
+Relationship theMarriage = marriage.addRelation().addRolePlayer(spouse1, john).addRolePlayer(spouse2, mary);
 ```
 
 Add a picture, first using Graql:
@@ -245,7 +245,7 @@ It is worth remembering that adding a type hierarchy allows you to create a more
 All rule instances are of type inference-rule which can be retrieved by:
 
 ```java
-RuleType inferenceRule = graknTx.getMetaRuleInference();
+RuleType inferenceRule = graknGraph.getMetaRuleInference();
 ```
 
 Rule instances can be added to the graph both through the Graph API as well as through Graql. We will consider an example:

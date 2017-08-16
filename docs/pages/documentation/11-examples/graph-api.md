@@ -145,7 +145,7 @@ The code goes on to create another `person` entity, named `maryYoung`, and then 
 ```java
 Entity maryYoung = person.addEntity();
 
-Relation theMarriage = marriage.addRelation().addRolePlayer(spouse1, johnNiesz).addRolePlayer(spouse2, maryYoung);
+Relationship theMarriage = marriage.addRelation().addRolePlayer(spouse1, johnNiesz).addRolePlayer(spouse2, maryYoung);
 Resource marriageDate = date.putResource(LocalDateTime.of(1880, 8, 12, 0, 0, 0).toString());
 theMarriage.resource(marriageDate);
 ```

@@ -129,7 +129,7 @@ death sub event
   	    
 Notice that for the `event` entity type we added `is-abstract`, this is an optional additional restriction to ensure that we do not create any instances of `event`, but instead use the most granular definitions provided, i.e. `birth`, `death`, etc . . .  
 
-## Hierarchies of Relation Types and Role Types
+## Hierarchies of Relationship Types and Roles 
 
 Grakn also allows you to design hierarchies of relationship types and role types, enabling the ontology to be deeper and more expressive. For example, if we have a relationship type called `partnership` between two people we can expand on this by defining more detailed partnerships; `civil-partnership`, `marriage`, `unions`, etc.
 
