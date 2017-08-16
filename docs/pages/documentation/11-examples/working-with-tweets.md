@@ -210,7 +210,7 @@ Role postsType = graknGraph.putRole("posts");
 Role postedByType = graknGraph.putRole("posted_by");
 
 // relationships
-RelationshipType userTweetRelationType = graknGraph.putRelationType("user-tweet-relationship").relates(postsType).relates(postedByType);
+RelationshipType userTweetRelationType = graknGraph.putRelationshipType("user-tweet-relationship").relates(postsType).relates(postedByType);
 ```
 
 And finally, assign resources and roles appropriately.
@@ -412,7 +412,7 @@ public static Relationship insertUserTweetRelation(GraknGraph graknGraph, Entity
   RoleType postsType = graknGraph.getRoleType("posts");
   RoleType postedByType = graknGraph.getRoleType("posted_by");
 
-  Relationship userTweetRelation = userTweetRelationType.addRelation()
+  Relationship userTweetRelation = userTweetRelationType.addRelationship()
       .addRolePlayer(postsType, user)
       .addRolePlayer(postedByType, tweet);
 

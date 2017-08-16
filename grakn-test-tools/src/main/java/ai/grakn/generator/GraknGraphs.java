@@ -179,7 +179,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 Label label = typeLabel();
                 RelationshipType superType = relationType();
                 RelationshipType relationshipType = graph.putRelationshipType(label).sup(superType);
-                summaryAssign(relationshipType, "graph", "putRelationType", label);
+                summaryAssign(relationshipType, "graph", "putRelationshipType", label);
                 summary(relationshipType, "superType", superType);
             },
             () -> {
@@ -232,7 +232,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             () -> {
                 RelationshipType relationshipType = relationType();
                 Relationship relationship = relationshipType.addRelationship();
-                summaryAssign(relationship, relationshipType, "addRelation");
+                summaryAssign(relationship, relationshipType, "addRelationship");
             },
             () -> {
                 RelationshipType relationshipType = relationType();

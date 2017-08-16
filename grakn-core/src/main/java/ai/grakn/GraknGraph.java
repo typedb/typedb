@@ -55,9 +55,6 @@ import java.util.Collection;
 public interface GraknGraph extends AutoCloseable{
 
     //------------------------------------- Concept Construction ----------------------------------
-    // TODO: For all 'put' methods state the expected behaviour when there is a type with the same label but a different
-    // kind or params (e.g. putRelationType("person"), putResourceType("name", BOOLEAN))
-
     /**
      * Create a new {@link EntityType} with super-type {@code entity}, or return a pre-existing {@link EntityType},
      * with the specified label.

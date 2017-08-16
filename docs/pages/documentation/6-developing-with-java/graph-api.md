@@ -87,14 +87,14 @@ Using the Graph API:
 ```java
 Role spouse1 = graph.putRole("spouse1");
 Role spouse2 = graph.putRole("spouse2");
-RelationshipType marriage = graph.putRelationType("marriage")
+RelationshipType marriage = graph.putRelationshipType("marriage")
                             .relates(spouse1)
                             .relates(spouse2);
 marriage.resource(picture);
                            
 Role parent = graph.putRole("parent");
 Role child = graph.putRole("child");
-RelationshipType parentship = graph.putRelationType("parentship")
+RelationshipType parentship = graph.putRelationshipType("parentship")
                             .relates(parent)
                             .relates(child);
 ```
@@ -195,7 +195,7 @@ Entity john = person.addEntity();
 Entity mary = person.addEntity();
 
 //Create the actual relationships
-Relationship theMarriage = marriage.addRelation().addRolePlayer(spouse1, john).addRolePlayer(spouse2, mary);
+Relationship theMarriage = marriage.addRelationship().addRolePlayer(spouse1, john).addRolePlayer(spouse2, mary);
 ```
 
 Add a picture, first using Graql:
