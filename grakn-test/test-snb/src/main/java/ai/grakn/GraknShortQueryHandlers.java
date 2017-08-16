@@ -17,7 +17,7 @@
  */
 package ai.grakn;
 
-import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.Answer;
 import com.ldbc.driver.DbException;
@@ -396,8 +396,8 @@ public class GraknShortQueryHandlers {
 
         private boolean checkIfFriends(String author1, String author2, GraknTx graph) {
             String query = "match $x id '" + author1 + "'; $y id '" + author2 + "';" +
-                    "(friend: $x, friend:  $y) isa knows; ask;";
-            return graph.graql().<AskQuery>parse(query).execute();
+                    "(friend: $x, friend:  $y) isa knows; aggregate ask;";
+            return graph.graql().<AggregateQuery<Boolean>>parse(query).execute();
         }
 
         private String conceptId(Answer result, String name) {

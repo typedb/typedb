@@ -27,6 +27,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.Schema;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
@@ -57,7 +58,7 @@ public class RuleGraph {
      */
     public static boolean hasRules(GraknTx graph) {
         Label inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getLabel();
-        return graph.graql().infer(false).match(var("x").isa(Graql.label(inferenceRule))).ask().execute();
+        return graph.graql().infer(false).match(var("x").isa(Graql.label(inferenceRule))).iterator().hasNext();
     }
 
     /**

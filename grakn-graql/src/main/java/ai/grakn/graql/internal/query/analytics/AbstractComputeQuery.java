@@ -162,7 +162,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         List<Pattern> checkSubtypes = subLabels.stream()
                 .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
-        return this.graph.get().graql().infer(false).match(or(checkSubtypes)).ask().execute();
+        return this.graph.get().graql().infer(false).match(or(checkSubtypes)).iterator().hasNext();
     }
 
     boolean verticesExistInSubgraph(ConceptId... ids) {
