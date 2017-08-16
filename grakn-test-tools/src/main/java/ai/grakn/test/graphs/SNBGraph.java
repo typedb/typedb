@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.test.GraphContext;
 
 import java.util.function.Consumer;
@@ -31,23 +31,23 @@ import java.util.function.Consumer;
  */
 public class SNBGraph extends TestGraph {
 
-    public static Consumer<GraknGraph> get() {
+    public static Consumer<GraknTx> get() {
         return new SNBGraph().build();
     }
 
     @Override
-    protected void buildOntology(GraknGraph graph) {
+    protected void buildOntology(GraknTx graph) {
         GraphContext.loadFromFile(graph, "ldbc-snb-ontology.gql");
         GraphContext.loadFromFile(graph, "ldbc-snb-product-ontology.gql");
     }
 
     @Override
-    protected void buildRules(GraknGraph graph) {
+    protected void buildRules(GraknTx graph) {
         GraphContext.loadFromFile(graph, "ldbc-snb-rules.gql");
     }
 
     @Override
-    protected void buildInstances(GraknGraph graph) {
+    protected void buildInstances(GraknTx graph) {
         GraphContext.loadFromFile(graph, "ldbc-snb-data.gql");
     }
 }

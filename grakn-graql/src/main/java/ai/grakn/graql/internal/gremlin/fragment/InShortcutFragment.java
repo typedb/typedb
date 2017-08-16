@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
@@ -79,7 +79,7 @@ class InShortcutFragment extends AbstractFragment {
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
 
         return Fragments.union(Fragments.isVertex(traversal), ImmutableSet.of(
                 reifiedRelationTraversal(graph),
@@ -88,7 +88,7 @@ class InShortcutFragment extends AbstractFragment {
         ));
     }
 
-    private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(GraknGraph graph) {
+    private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(GraknTx graph) {
         GraphTraversal<Vertex, Edge> edgeTraversal = __.<Vertex>inE(SHORTCUT.getLabel()).as(edge.getValue());
 
         // Filter by any provided type labels
@@ -101,7 +101,7 @@ class InShortcutFragment extends AbstractFragment {
     }
 
     private GraphTraversal<Vertex, Edge> edgeRelationTraversal(
-            GraknGraph graph, Direction direction, Schema.EdgeProperty roleProperty) {
+            GraknTx graph, Direction direction, Schema.EdgeProperty roleProperty) {
 
         GraphTraversal<Vertex, Edge> edgeTraversal = __.toE(direction, Schema.EdgeLabel.RESOURCE.getLabel());
 

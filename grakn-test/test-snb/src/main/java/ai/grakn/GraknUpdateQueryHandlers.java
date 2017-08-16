@@ -51,7 +51,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 StringBuilder query = new StringBuilder("match ");
                 StringBuilder interests = new StringBuilder();
@@ -122,7 +122,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 String query = "match " +
                         "$x has person-id " + operation.personId() + "; " +
@@ -148,7 +148,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 String query = "match " +
                         "$x has person-id " + operation.personId() + "; " +
@@ -175,7 +175,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 StringBuilder query = new StringBuilder("match ");
                 StringBuilder tags = new StringBuilder();
@@ -215,7 +215,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 String query = "match $forum has forum-id " + operation.forumId() + "; " +
                         " $person has person-id " + operation.personId() + "; " +
@@ -240,7 +240,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 StringBuilder query = new StringBuilder("match ");
                 StringBuilder tags = new StringBuilder();
@@ -296,7 +296,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 StringBuilder query = new StringBuilder("match ");
                 StringBuilder tags = new StringBuilder();
@@ -350,7 +350,7 @@ public class GraknUpdateQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter reporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                 String query = "match $x has person-id " + operation.person1Id() +
                         "; $y has person-id " + operation.person2Id() + ";" +

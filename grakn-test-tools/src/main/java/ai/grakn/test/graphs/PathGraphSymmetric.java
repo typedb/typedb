@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 
 import java.util.function.Consumer;
 
@@ -34,7 +34,7 @@ public class PathGraphSymmetric extends AbstractPathGraph {
         super(gqlFile, n, m);
     }
 
-    public static Consumer<GraknGraph> get(int n, int m) {
+    public static Consumer<GraknTx> get(int n, int m) {
         return new PathGraphSymmetric(n, m).build();
     }
 }

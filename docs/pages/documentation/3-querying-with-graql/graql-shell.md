@@ -24,11 +24,11 @@ You can optionally pass arguments when starting the Graql shell, as follows:
 
 | Long Option   | Option   | Description                                      | Note |
 | ------------- | -------- | ------------------------------------------------ | |
-| `--batch <arg>`     | `-b`     | A path to a file containg a query to batch load. | The REPL does not open. <br/> The resulting graph is automatically committed. |
-| `--execute <arg>`     | `-e`     | A query to execute.                              | The REPL does not open. <br/> The resulting graph is automatically committed. |
-| `--file <arg>`      | `-f`     | A path to a file containg a query to execute.    | The REPL does not open. <br/> The resulting graph is automatically committed. |
+| `--batch <arg>`     | `-b`     | A path to a file containg a query to batch load. | The REPL does not open. <br/> The resulting knowledge base is automatically committed. |
+| `--execute <arg>`     | `-e`     | A query to execute.                              | The REPL does not open. <br/> The resulting knowledge base is automatically committed. |
+| `--file <arg>`      | `-f`     | A path to a file containg a query to execute.    | The REPL does not open. <br/> The resulting knowledge base is automatically committed. |
 | `--help`      | `-h`     | Print usage message.                             | |
-| `--keyspace <arg>`  | `-k`     | The keyspace of the graph.                 | |
+| `--keyspace <arg>`  | `-k`     | The keyspace of the knowledge base.                 | |
 | `--materialise` | `-m`   | Materialise inferred results.                    | Materialisation is not enabled by default at present, although as Grakn develops, we expect that to change.|
 | `--infer`     | `-n`     | Perform inference on results.                    | Reasoning is not enabled by default at present, although as Grakn develops, we expect that to change.|
 | `--output <arg>`  | `-o` | Output format for results                        | | 
@@ -40,14 +40,14 @@ You can optionally pass arguments when starting the Graql shell, as follows:
 
 {% include tip.html content="You can see this list in the terminal by typing `graql.sh -h`" %}
 
-For example, to load some data from a file into a graph:
+For example, to load some data from a file into a knowledge base:
 
 ```bash
 bin/graql.sh -f ./examples/mammal-dataset.gql
 ```
 
 
-To load data into a different graph, or keyspace, you can specify the graph name:
+To load data into a different knowledge base, or keyspace, you can specify the graph name:
 
 ```bash
 ./graql.sh -k <graphname> -f ./examples/reptile-dataset.gql
@@ -59,14 +59,14 @@ The following queries are supported by the shell. Examples and additional detail
 
 | Query | Description                                   |
 | ----------- | --------------------------------------------- |
-| [`match`](./match-queries.html)     | Match a pattern in the graph. Defaults to return the first 100 results. |
-| [`ask`](./ask-queries.html)       | Query for a specific pattern in the graph. Returns `true` or `false`. |
-| [`insert`](./insert-queries.html)    | Inserts the specified concept into the graph. |
-| [`delete`](./delete-queries.html)    | Deletes from the graph with no output. |
-| [`compute`](./compute-queries.html)   | Computes analytics about the graph. Returns either a value or a map from concept to value. |
+| [`match`](./match-queries.html)     | Match a pattern in the knowledge base. Defaults to return the first 100 results. |
+| [`ask`](./ask-queries.html)       | Query for a specific pattern in the knowledge base. Returns `true` or `false`. |
+| [`insert`](./insert-queries.html)    | Inserts the specified concept into the knowledge base. |
+| [`delete`](./delete-queries.html)    | Deletes from the knowledge base with no output. |
+| [`compute`](./compute-queries.html)   | Computes analytics about the knowledge base. Returns either a value or a map from concept to value. |
 
    
-The interactive shell commits to the graph only when the user types `commit`.
+The interactive shell commits to the knowledge base only when the user types `commit`.
 
 ## Special Commands
 
@@ -75,7 +75,7 @@ While working in the shell, the following special commands can be used:
 | Query        | Description                                            |
 | -----------  | ------------------------------------------------------ |
 | `clear`      | Clears the console window. |
-| `commit`     | Commits and validates the graph. If validation fails, the graph will not commit. |
+| `commit`     | Commits and validates the knowledge base. If validation fails, the graph will not commit. |
 | `edit`       | Opens the user's default text editor, specified by the `$EDITOR` environment variable. By default this is set to `vim`. When the editor exits, any query it contains is executed in the Graql shell. This is useful for executing a large chunk of Graql without typing it all in the terminal (e.g. to cut and paste from an example). |
 | `exit`       | Exits the REPL |
 | `license`    | Prints the license. |

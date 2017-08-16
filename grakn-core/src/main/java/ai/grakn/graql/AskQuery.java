@@ -19,7 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.graql.admin.AskQueryAdmin;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 
 import javax.annotation.CheckReturnValue;
 
@@ -37,7 +37,7 @@ public interface AskQuery extends Query<Boolean> {
      * @return a new AskQuery with the graph set
      */
     @Override
-    AskQuery withGraph(GraknGraph graph);
+    AskQuery withGraph(GraknTx graph);
 
     /**
      * @return admin instance for inspecting and manipulating this query

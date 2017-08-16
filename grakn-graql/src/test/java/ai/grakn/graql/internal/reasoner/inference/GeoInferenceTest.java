@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.inference;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.test.graphs.GeoGraph;
@@ -152,7 +152,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testSpecificTransitiveQuery() {
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoGraph.graph();
         QueryBuilder iqb = graph.graql().infer(true);
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$y has name 'Poland';";
@@ -176,7 +176,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testSpecificTransitiveQueryWithIds() {
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoGraph.graph();
         QueryBuilder iqb = graph.graql().infer(true);
         Concept poland = getConcept(graph, "name", "Poland");
         Concept europe = getConcept(graph, "name", "Europe");
@@ -202,7 +202,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testSpecificTransitiveQuery_NoRoles() {
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoGraph.graph();
         QueryBuilder iqb = graph.graql().infer(true);
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
@@ -223,7 +223,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testSpecificTransitiveQueryWithIds_NoRoles() {
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoGraph.graph();
         QueryBuilder iqb = graph.graql().infer(true);
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
@@ -306,7 +306,7 @@ public class GeoInferenceTest {
         assertTrue(answers3.containsAll(answers2));
     }
 
-    private Concept getConcept(GraknGraph graph, String typeName, Object val){
+    private Concept getConcept(GraknTx graph, String typeName, Object val){
         return graph.graql().match(Graql.var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
     }
 

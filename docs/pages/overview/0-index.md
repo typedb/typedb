@@ -46,7 +46,7 @@ Graql is Grakn's [declarative](https://en.wikipedia.org/wiki/Declarative_program
 
 When using legacy systems, database queries have to define the data patterns they are looking for explicitly. Graql, on the other hand, will translate a query pattern into all its logical equivalents and evaluate them against the database. This includes but is not limited to the inference of types, relationships, context, and pattern combination. In other words, Graql allows you to derive implicit information that is hidden in your dataset, as well as reduce the complexity of expressing intelligent questions. In effect, Graql helps finding new knowledge easy with concise and intuitive statements.
 
-Graql is also capable of performing distributed analytics as part of the language, which allows you to perform analytics over large out of the box. These types of analytics are usually not possible without developing custom distributed graph algorithms that are unique to every use case.
+Graql is also capable of performing distributed analytics as part of the language, which allows you to perform analytics over large out of the box. These types of analytics are usually not possible without developing custom distributed algorithms that are unique to every use case.
 
 One may consider Graql as an OLKP (OnLine Knowledge Processing) language, which combines both OLTP (OnLine Transaction Processing) and OLAP (OnLine Analytical Processing).
 

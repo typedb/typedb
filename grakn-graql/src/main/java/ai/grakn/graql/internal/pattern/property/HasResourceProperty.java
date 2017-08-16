@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.OntologyConcept;
@@ -120,7 +120,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     }
 
     @Override
-    void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
+    void checkValidProperty(GraknTx graph, VarPatternAdmin var) {
         OntologyConcept ontologyConcept = graph.getOntologyConcept(type());
         if(ontologyConcept == null || !ontologyConcept.isResourceType()) {
             throw GraqlQueryException.mustBeResourceType(type());
@@ -140,7 +140,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     }
 
     @Override
-    public void delete(GraknGraph graph, Concept concept) {
+    public void delete(GraknTx graph, Concept concept) {
         Optional<ValuePredicateAdmin> predicate =
                 resource().getProperties(ValueProperty.class).map(ValueProperty::predicate).findAny();
 

@@ -18,7 +18,7 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
@@ -45,19 +45,19 @@ public class TransitivityChainGraph extends TestGraph {
         this.n = n;
     }
 
-    public static Consumer<GraknGraph> get(int n) {
+    public static Consumer<GraknTx> get(int n) {
         return new TransitivityChainGraph(n).build();
     }
 
     @Override
-    public Consumer<GraknGraph> build(){
-        return (GraknGraph graph) -> {
+    public Consumer<GraknTx> build(){
+        return (GraknTx graph) -> {
             GraphContext.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n);
         };
     }
 
-    private void buildExtensionalDB(GraknGraph graph, int n) {
+    private void buildExtensionalDB(GraknTx graph, int n) {
         Role qfrom = graph.getRole("Q-from");
         Role qto = graph.getRole("Q-to");
 

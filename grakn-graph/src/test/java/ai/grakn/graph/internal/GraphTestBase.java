@@ -30,8 +30,8 @@ import java.util.UUID;
 
 public class GraphTestBase {
     protected GraknSession graknSession;
-    protected AbstractGraknGraph<?> graknGraph;
-    private AbstractGraknGraph<?> graknGraphBatch;
+    protected GraknTxAbstract<?> graknGraph;
+    private GraknTxAbstract<?> graknGraphBatch;
     private String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
 
     @Rule
@@ -41,7 +41,7 @@ public class GraphTestBase {
     @Before
     public void setUpGraph() {
         graknSession = Grakn.session(Grakn.IN_MEMORY, keyspace);
-        graknGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
     }
 
     @After
@@ -51,9 +51,9 @@ public class GraphTestBase {
         graknSession.close();
     }
 
-    protected AbstractGraknGraph<?> switchToBatchGraph(){
+    protected GraknTxAbstract<?> switchToBatchGraph(){
         graknGraph.close();
-        graknGraphBatch = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
+        graknGraphBatch = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
         return graknGraphBatch;
     }
 }

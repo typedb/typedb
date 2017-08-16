@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.pattern;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -46,7 +46,7 @@ import static org.junit.Assert.assertTrue;
 
 public class PatternTest {
 
-    private GraknGraph graph = rule.graph();
+    private GraknTx graph = rule.graph();
 
     @ClassRule
     public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());

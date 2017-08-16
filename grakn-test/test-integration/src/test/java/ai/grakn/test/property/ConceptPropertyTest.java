@@ -18,7 +18,7 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.OntologyConcept;
@@ -83,7 +83,7 @@ public class ConceptPropertyTest {
     @Ignore // TODO: Either fix this, remove test or add exceptions to this rule
     @Property
     public void whenCallingAnyMethodsOnAConceptFromAClosedGraph_Throw(
-            @Open GraknGraph graph, @FromGraph Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
+            @Open GraknTx graph, @FromGraph Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
         graph.close();
 
         Object[] params = mockParamsOf(method);
@@ -97,7 +97,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenCallingToStringOnADeletedConcept_TheStringContainsTheId(
-            @Open GraknGraph graph, @FromGraph @NonMeta Concept concept) {
+            @Open GraknTx graph, @FromGraph @NonMeta Concept concept) {
         assumeDeletable(graph, concept);
         concept.delete();
         assertThat(concept.toString(), containsString(concept.getId().getValue()));
@@ -111,14 +111,14 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenCallingGetId_TheResultCanBeUsedToRetrieveTheSameConcept(
-            @Open GraknGraph graph, @FromGraph Concept concept) {
+            @Open GraknTx graph, @FromGraph Concept concept) {
         ConceptId id = concept.getId();
         assertEquals(concept, graph.getConcept(id));
     }
 
     @Property
     public void whenCallingDelete_TheConceptIsNoLongerInTheGraph(
-            @Open GraknGraph graph, @NonMeta @FromGraph Concept concept) {
+            @Open GraknTx graph, @NonMeta @FromGraph Concept concept) {
         assumeDeletable(graph, concept);
 
         assertThat(allConceptsFrom(graph), hasItem(concept));
@@ -251,7 +251,7 @@ public class ConceptPropertyTest {
         concept.asRule();
     }
 
-    private static void assumeDeletable(GraknGraph graph, Concept concept) {
+    private static void assumeDeletable(GraknTx graph, Concept concept) {
         // Confirm this concept is allowed to be deleted
         // TODO: A better way to handle these assumptions?
         if (concept.isOntologyConcept()) {

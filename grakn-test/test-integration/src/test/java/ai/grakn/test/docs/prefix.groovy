@@ -54,16 +54,15 @@ uri = JavaDocsTest.engine.uri()
 host = "localhost"
 port = JavaDocsTest.engine.port()
 
-graknGraph = DocTestUtil.getTestGraph(uri).open(GraknTxType.WRITE)
-graph = graknGraph
+tx = DocTestUtil.getTestGraph(uri).open(GraknTxType.WRITE)
 
-_otherGraph = DocTestUtil.getTestGraph(uri).open(GraknTxType.WRITE)
-keyspace = _otherGraph.getKeyspace()
-_otherGraph.close()
+_otherTx = DocTestUtil.getTestGraph(uri).open(GraknTxType.WRITE)
+keyspace = _otherTx.getKeyspace()
+_otherTx.close()
 
 callback = {x -> x}
 
-qb = graknGraph.graql()
+qb = tx.graql()
 
 def body() {
 $putTheBodyHere
@@ -72,7 +71,7 @@ $putTheBodyHere
 try {
     body()
 } finally {
-    graph.close()
+    tx.close()
 }
 
 

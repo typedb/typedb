@@ -35,15 +35,15 @@ import ai.grakn.graql.QueryBuilder;
 import static ai.grakn.graql.Graql.*;
 ```
 
-A `QueryBuilder` is constructed from a `GraknGraph`:
+A `QueryBuilder` is constructed from a `GraknTx`:
 
 ```java-test-ignore
-GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
-QueryBuilder qb = graph.graql();
+GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
+QueryBuilder qb = tx.graql();
 ```
 
-The user can also choose to not provide a graph with `Graql.withoutGraph()`.
-This can be useful if you need to provide the graph later (using `withGraph`),
+The user can also choose to not provide a knowledge base with `Graql.withoutTx()`.
+This can be useful if you need to provide the knowledge base later (using `withTx`),
 or you only want to construct queries without executing them.
 
 The `QueryBuilder` class provides methods for building `match` and `insert`
@@ -136,15 +136,15 @@ Reasoning can be configured using `QueryBuilder` objects in the following way:
 ### Switching reasoning on
 
 ```java
-//graph is a GraknGraph instance
-qb = graph.graql().infer(true);
+//tx is a GraknTx instance
+qb = tx.graql().infer(true);
 ```
 
 ### Switching materialisation on
 
 ```java
-//graph is a GraknGraph instance
-qb = graph.graql().infer(true).materialise(true);
+//tx is a GraknTx instance
+qb = tx.graql().infer(true).materialise(true);
 ```
 
 Once the `QueryBuilder` has been defined, the constructed queries will obey the specified reasoning variants.
@@ -154,7 +154,7 @@ The table below summarises the available reasoning configuration options togethe
 | Option       | Description | Default
 | -------------------- |:--|:--|
 | `QueryBuilder::infer(boolean)` | controls whether reasoning should be turned on | False=Off |
-| `QueryBuilder::materialise(boolean)`       | controls whether inferred knowledge should be persisted to graph | False=Off |
+| `QueryBuilder::materialise(boolean)`       | controls whether inferred knowledge should be persisted to knowledge base | False=Off |
 
 
 ## Comments

@@ -17,7 +17,7 @@
  */
 package ai.grakn.test;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
@@ -124,7 +124,7 @@ public abstract class GraknTestEngineSetup {
     private static void clearGraphs(GraknEngineServer server) {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
-        try(GraknGraph systemGraph = server.factory().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try(GraknTx systemGraph = server.factory().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .execute()
                     .forEach(x -> x.values().forEach(y -> {
@@ -133,7 +133,7 @@ public abstract class GraknTestEngineSetup {
         }
 
         keyspaceNames.forEach(name -> {
-            GraknGraph graph = server.factory().getGraph(name, GraknTxType.WRITE);
+            GraknTx graph = server.factory().getGraph(name, GraknTxType.WRITE);
             graph.admin().delete();
         });
         server.factory().refreshConnections();

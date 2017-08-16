@@ -19,7 +19,7 @@
 package ai.grakn.engine.factory;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.SystemKeyspace;
@@ -33,7 +33,7 @@ import java.util.Properties;
  * </p>
  *
  * <p>
- *     This internal factory is used to produce {@link GraknGraph}s.
+ *     This internal factory is used to produce {@link GraknTx}s.
  *
  *     It is also worth noting that both this class and {@link Grakn#session(String, String)} us the same
  *     {@link FactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
@@ -66,7 +66,7 @@ public class EngineGraknGraphFactory {
         FactoryBuilder.refresh();
     }
 
-    public GraknGraph getGraph(String keyspace, GraknTxType type){
+    public GraknTx getGraph(String keyspace, GraknTxType type){
         if(!keyspace.equals(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
             systemKeyspace.ensureKeyspaceInitialised(keyspace);
         }

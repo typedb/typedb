@@ -1,32 +1,32 @@
 ---
-title: Graph API
+title: Java API
 keywords: java
 last_updated: March 2017
 tags: [java]
-summary: "The Graph API."
+summary: "The Java API."
 sidebar: documentation_sidebar
 permalink: /documentation/developing-with-java/graph-api.html
 folder: documentation
 ---
 
-The Java Graph API is the low level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). The API provides Java object constructs for ontological elements (entity types, relation types, etc.) and data instances (entities, relations, etc.), allowing you to build a graph programmatically. 
+The Java API is the low level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). The API provides Java object constructs for ontological elements (entity types, relation types, etc.) and data instances (entities, relations, etc.), allowing you to build a graph programmatically. 
 
 To get set up to use this API, please read through our [Setup Guide](../get-started/setup-guide.html) and guide to [starting Java development with GRAKN.AI](./java-setup.html).
 
-## Graph API vs Graql
+## Java API vs Graql
 
-On this page we will focus primarily on the methods provided by the `GraknGraph` interface which is used by all graph mutation operations executed by Graql statements. If you are primarily interested in mutating the graph, as well as doing simple concept lookups the `GraknGraph` interface will be sufficient. 
+On this page we will focus primarily on the methods provided by the `GraknTx` interface which is used by all knowledge base mutation operations executed by Graql statements. If you are primarily interested in mutating the graph, as well as doing simple concept lookups the `GraknTx` interface will be sufficient. 
 
-It is also possible to interact with the graph using a Java API to form Graql queries via `GraknGraph.graql()`, which is discussed separately [here](./java-graql.html), and is best suited for advanced querying.
+It is also possible to interact with the knowledge base using a Java API to form Graql queries via `GraknTx.graql()`, which is discussed separately [here](./java-graql.html), and is best suited for advanced querying.
 
-## Building an Ontology with the Graph API
+## Building a Schema with the Java API
 
 In the [Basic Ontology documentation](../building-an-ontology/basic-ontology.html) we introduced a simple ontology built using Graql.
-Let's see how we can build the same ontology exclusively via the graph API.
-First we need a graph. For this example we will just use an [in-memory graph](./java-setup.html#initialising-a-graph):
+Let's see how we can build the same schema exclusively via the java API.
+First we need a knowledge base. For this example we will just use an [in-memory knowledge base](./java-setup.html#initialising-a-graph):
 
 ```java
-GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
+GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "MyKnowlegdeBase").open(GraknTxType.WRITE);
 ```
 
 We need to define our constructs before we can use them. We will begin by defining our resource types since they are used everywhere. In Graql, they were defined as follows:
@@ -47,18 +47,18 @@ death-date sub "date" datatype string;
 gender sub resource datatype string;
 ```
 
-These same resource types can be built with the Graph API as follows:
+These same resource types can be built with the Java API as follows:
 
 ```java
-ResourceType identifier = graph.putResourceType("identifier", ResourceType.DataType.STRING);
-ResourceType firstname = graph.putResourceType("firstname", ResourceType.DataType.STRING);
-ResourceType surname = graph.putResourceType("surname", ResourceType.DataType.STRING);
-ResourceType middlename = graph.putResourceType("middlename", ResourceType.DataType.STRING);
-ResourceType picture = graph.putResourceType("picture", ResourceType.DataType.STRING);
-ResourceType age = graph.putResourceType("age", ResourceType.DataType.LONG);
-ResourceType birthDate = graph.putResourceType("birth-date", ResourceType.DataType.STRING);
-ResourceType deathDate = graph.putResourceType("death-date", ResourceType.DataType.STRING);
-ResourceType gender = graph.putResourceType("gender", ResourceType.DataType.STRING);
+ResourceType identifier = tx.putResourceType("identifier", ResourceType.DataType.STRING);
+ResourceType firstname = tx.putResourceType("firstname", ResourceType.DataType.STRING);
+ResourceType surname = tx.putResourceType("surname", ResourceType.DataType.STRING);
+ResourceType middlename = tx.putResourceType("middlename", ResourceType.DataType.STRING);
+ResourceType picture = tx.putResourceType("picture", ResourceType.DataType.STRING);
+ResourceType age = tx.putResourceType("age", ResourceType.DataType.LONG);
+ResourceType birthDate = tx.putResourceType("birth-date", ResourceType.DataType.STRING);
+ResourceType deathDate = tx.putResourceType("death-date", ResourceType.DataType.STRING);
+ResourceType gender = tx.putResourceType("gender", ResourceType.DataType.STRING);
 ```
 
 Now the role and relation types. In Graql:
@@ -82,19 +82,19 @@ parent sub role;
 child sub role;
 ```
 
-Using the Graph API: 
+Using the Java API: 
 
 ```java
-Role spouse1 = graph.putRole("spouse1");
-Role spouse2 = graph.putRole("spouse2");
-RelationType marriage = graph.putRelationType("marriage")
+Role spouse1 = tx.putRole("spouse1");
+Role spouse2 = tx.putRole("spouse2");
+RelationType marriage = tx.putRelationType("marriage")
                             .relates(spouse1)
                             .relates(spouse2);
 marriage.resource(picture);
                            
-Role parent = graph.putRole("parent");
-Role child = graph.putRole("child");
-RelationType parentship = graph.putRelationType("parentship")
+Role parent = tx.putRole("parent");
+Role child = tx.putRole("child");
+RelationType parentship = tx.putRelationType("parentship")
                             .relates(parent)
                             .relates(child);
 ```
@@ -120,10 +120,10 @@ person sub entity
   plays spouse2;
 ```
 
-Using the Graph API:
+Using the Java API:
 
 ```java
-EntityType person = graph.putEntityType("person")
+EntityType person = tx.putEntityType("person")
                         .plays(parent)
                         .plays(child)
                         .plays(spouse1)
@@ -140,33 +140,33 @@ person.resource(deathDate);
 person.resource(gender);
 ```
 
-Now to commit the ontology using the Graph API:
+Now to commit the schema using the Java API:
 
 ```java
-graph.commit();
+tx.commit();
 ```
 
 If you do not wish to commit the ontology you can revert your changes with:
 
 ```java
-graph.abort();
+tx.abort();
 ```
 
-{% include note.html content="When using the in-memory graph, mutations to the graph are performed directly." %}
+{% include note.html content="When using the in-memory knowledge base, mutations to the knowledge base are performed directly." %}
 
 
 ## Loading Data
 
-Now that we have created the ontology, we can load in some data using the Graph API. We can compare how a Graql statement maps to the Graph API. First, the Graql:
+Now that we have created the schema, we can load in some data using the Java API. We can compare how a Graql statement maps to the Java API. First, the Graql:
 
 ```graql
 insert $x isa person has firstname "John";
 ```
     
-Now the equivalent Graph API:    
+Now the equivalent Java API:    
 
 ```java
-graph = Grakn.session(Grakn.IN_MEMORY, "MyGraph").open(GraknTxType.WRITE);
+tx = Grakn.session(Grakn.IN_MEMORY, "MyKnowlegdeBase").open(GraknTxType.WRITE);
 
 Resource johnName = firstname.putResource("John"); //Create the resource
 person.addEntity().resource(johnName); //Link it to an entity
@@ -183,7 +183,7 @@ insert
     $z (spouse1: $x, spouse2: $y) isa marriage;
 ```
 
-With the Graph API this would be:
+With the Java API this would be:
 
 ```java
 //Create the resources
@@ -209,7 +209,7 @@ insert
     $z has picture "www.LocationOfMyPicture.com";
 ```
 
-Now the equivalent using the Graph API:
+Now the equivalent using the Java API:
 
 ```java
 Resource weddingPicture = picture.putResource("www.LocationOfMyPicture.com");
@@ -221,7 +221,7 @@ theMarriage.resource(weddingPicture);
 
 In the [Hierarchical Ontology documentation](../building-an-ontology/hierarchical-ontology.html), we discussed how it is possible to create more expressive ontologies by creating a type hierarchy.
 
-How can we create a hierarchy using the graph API? Well, this graql statement:
+How can we create a hierarchy using the Java API? Well, this graql statement:
 
 ```graql
 insert 
@@ -229,11 +229,11 @@ insert
     wedding sub event;
 ```
 
-becomes the following with the Graph API:
+becomes the following with the Java API:
 
 ```java 
-EntityType event = graph.putEntityType("event");
-EntityType wedding = graph.putEntityType("wedding").sup(event);
+EntityType event = tx.putEntityType("event");
+EntityType wedding = tx.putEntityType("wedding").sup(event);
 ```
 
 From there, all operations remain the same. 
@@ -245,10 +245,10 @@ It is worth remembering that adding a type hierarchy allows you to create a more
 All rule instances are of type inference-rule which can be retrieved by:
 
 ```java
-RuleType inferenceRule = graknGraph.getMetaRuleInference();
+RuleType inferenceRule = tx.getMetaRuleInference();
 ```
 
-Rule instances can be added to the graph both through the Graph API as well as through Graql. We will consider an example:
+Rule instances can be added to the knowledge base both through the Java API as well as through Graql. We will consider an example:
 
 ```graql
 insert
@@ -284,14 +284,14 @@ Pattern rule2when = and(
 Pattern rule2then = var().rel("ancestor", "p").rel("descendant", "d").isa("Ancestor");
 ```
 
-If we have a specific `GraknGraph graph` already defined, we can use the Graql pattern parser:
+If we have a specific `GraknTx tx` already defined, we can use the Graql pattern parser:
 
 ```java
-rule1when = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;"));
-rule1then = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $c) isa Ancestor;"));
+rule1when = and(tx.graql().parsePatterns("(parent: $p, child: $c) isa Parent;"));
+rule1then = and(tx.graql().parsePatterns("(ancestor: $p, descendant: $c) isa Ancestor;"));
 
-rule2when = and(graph.graql().parsePatterns("(parent: $p, child: $c) isa Parent;(ancestor: $c, descendant: $d) isa Ancestor;"));
-rule2then = and(graph.graql().parsePatterns("(ancestor: $p, descendant: $d) isa Ancestor;"));
+rule2when = and(tx.graql().parsePatterns("(parent: $p, child: $c) isa Parent;(ancestor: $c, descendant: $d) isa Ancestor;"));
+rule2then = and(tx.graql().parsePatterns("(ancestor: $p, descendant: $d) isa Ancestor;"));
 ```
 
 We conclude the rule creation with defining the rules from their constituent patterns:

@@ -18,7 +18,7 @@
 
 package ai.grakn.test.migration;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
@@ -63,7 +63,7 @@ public class MigratorTestUtils {
     }
 
     public static void load(GraknSession factory, File ontology) {
-        try(GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try(GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.graql()
                     .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();
@@ -74,7 +74,7 @@ public class MigratorTestUtils {
         }
     }
 
-    public static void assertResourceEntityRelationExists(GraknGraph graph, String resourceName, Object resourceValue, Entity owner){
+    public static void assertResourceEntityRelationExists(GraknTx graph, String resourceName, Object resourceValue, Entity owner){
         ResourceType resourceType = graph.getResourceType(resourceName);
         assertNotNull(resourceType);
         assertEquals(resourceValue, owner.resources(resourceType)
@@ -82,7 +82,7 @@ public class MigratorTestUtils {
                 .findFirst().get());
     }
 
-    public static void assertRelationBetweenInstancesExists(GraknGraph graph, Thing thing1, Thing thing2, Label relation){
+    public static void assertRelationBetweenInstancesExists(GraknTx graph, Thing thing1, Thing thing2, Label relation){
         RelationType relationType = graph.getOntologyConcept(relation);
 
         Role role1 = thing1.plays().filter(r -> r.relationTypes().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
@@ -90,12 +90,12 @@ public class MigratorTestUtils {
     }
 
 
-    public static Thing getProperty(GraknGraph graph, Thing thing, String label) {
+    public static Thing getProperty(GraknTx graph, Thing thing, String label) {
         assertEquals(getProperties(graph, thing, label).size(), 1);
         return getProperties(graph, thing, label).iterator().next();
     }
 
-    public static Collection<Thing> getProperties(GraknGraph graph, Thing thing, String label) {
+    public static Collection<Thing> getProperties(GraknTx graph, Thing thing, String label) {
         RelationType relation = graph.getRelationType(label);
 
         Set<Thing> things = new HashSet<>();
@@ -108,12 +108,12 @@ public class MigratorTestUtils {
         return things;
     }
 
-    public static Resource getResource(GraknGraph graph, Thing thing, Label label) {
+    public static Resource getResource(GraknTx graph, Thing thing, Label label) {
         assertEquals(getResources(graph, thing, label).count(), 1);
         return getResources(graph, thing, label).findAny().get();
     }
 
-    public static Stream<Resource> getResources(GraknGraph graph, Thing thing, Label label) {
+    public static Stream<Resource> getResources(GraknTx graph, Thing thing, Label label) {
         Role roleOwner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
         Role roleOther = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 
@@ -125,7 +125,7 @@ public class MigratorTestUtils {
      * Check that the pet graph has been loaded correctly
      */
     public static void assertPetGraphCorrect(GraknSession session){
-        try(GraknGraph graph = session.open(GraknTxType.READ)) {
+        try(GraknTx graph = session.open(GraknTxType.READ)) {
             Collection<Entity> pets = graph.getEntityType("pet").instances().collect(Collectors.toSet());
             assertEquals(9, pets.size());
 
@@ -150,7 +150,7 @@ public class MigratorTestUtils {
      * Check that the pokemon graph has been loaded correctly
      */
     public static void assertPokemonGraphCorrect(GraknSession session){
-        try(GraknGraph graph = session.open(GraknTxType.READ)){
+        try(GraknTx graph = session.open(GraknTxType.READ)){
             Collection<Entity> pokemon = graph.getEntityType("pokemon").instances().collect(Collectors.toSet());
             assertEquals(9, pokemon.size());
 

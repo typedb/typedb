@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.internal.pattern.Patterns;
 import com.google.common.collect.Sets;
 import org.junit.Test;
@@ -36,7 +36,7 @@ public class MatchQueryGraphTest {
 
     @Test
     public void matchQueriesContainingTheSameGraphAndMatchQueryBaseAreEqual() {
-        GraknGraph graph = mock(GraknGraph.class);
+        GraknTx graph = mock(GraknTx.class);
 
         MatchQueryGraph query1 = new MatchQueryGraph(graph, query);
         MatchQueryGraph query2 = new MatchQueryGraph(graph, query);
@@ -47,8 +47,8 @@ public class MatchQueryGraphTest {
 
     @Test
     public void matchQueriesContainingDifferentGraphsAreNotEqual() {
-        GraknGraph graph1 = mock(GraknGraph.class);
-        GraknGraph graph2 = mock(GraknGraph.class);
+        GraknTx graph1 = mock(GraknTx.class);
+        GraknTx graph2 = mock(GraknTx.class);
 
         MatchQueryGraph query1 = new MatchQueryGraph(graph1, query);
         MatchQueryGraph query2 = new MatchQueryGraph(graph2, query);

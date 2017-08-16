@@ -19,7 +19,7 @@
 package ai.grakn.engine.controller;
 
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
@@ -88,7 +88,7 @@ import static org.apache.http.HttpHeaders.CACHE_CONTROL;
  *
  * <p>
  *     When calling {@link ai.grakn.Grakn#session(String, String)} and using the non memory location this controller
- *     is accessed. The controller provides the necessary config needed in order to build a {@link ai.grakn.GraknGraph}.
+ *     is accessed. The controller provides the necessary config needed in order to build a {@link GraknTx}.
  *
  *     This controller also allows the retrieval of all keyspaces opened so far.
  * </p>
@@ -210,7 +210,7 @@ public class SystemController {
     @Path("/keyspaces")
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) {
-        try (GraknGraph graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
 
             ResourceType<String> keyspaceName = graph.getOntologyConcept(SystemKeyspace.KEYSPACE_RESOURCE);
             Json result = Json.array();

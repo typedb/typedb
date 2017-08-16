@@ -2,7 +2,7 @@
 title: Define a Hierarchical Ontology
 keywords: overview
 last_updated: February 2017
-tags: [graql, java, graph-api]
+tags: [graql, java, java-api]
 summary: "How to build a hierarchical ontology"
 sidebar: documentation_sidebar
 permalink: /documentation/building-an-ontology/hierarchical-ontology.html
@@ -73,7 +73,7 @@ insert
   child sub role;
 ```
     
-This ontology represents a genealogy graph which models a family tree.
+This ontology represents a genealogy knowledge base which models a family tree.
 This is a very simplistic ontology with plenty of room for extension, so let's begin!
  
 ## Hierarchies of Entity Types
@@ -89,11 +89,11 @@ car sub vehicle;
 motorbikes sub vehicle;
 ```    
     
-In the above example we are saying that a `car` is a subtype (a specialised type) of a `vehicle`. This means that when adding data to our graph, when we know we have a `vehicle`, we can also differentiate between a `car` and a `motorbike`.
+In the above example we are saying that a `car` is a subtype (a specialised type) of a `vehicle`. This means that when adding data to our knowledge base, when we know we have a `vehicle`, we can also differentiate between a `car` and a `motorbike`.
     
 So how can we use this technique to improve our existing genealogy ontology?
   
-We could specialise the `person` entity into `man` and `woman` for example. However, for the sake of making things more interesting, we are going to introduce a new entity to the graph. A family is made up not only of people but of events, like births, weddings, funerals, and many others, which link those people together and better define their lives. 
+We could specialise the `person` entity into `man` and `woman` for example. However, for the sake of making things more interesting, we are going to introduce a new entity to the knowledge base. A family is made up not only of people but of events, like births, weddings, funerals, and many others, which link those people together and better define their lives. 
 
 We can model this as follows:
 
@@ -187,7 +187,7 @@ This is quite useful because when we ask for all relatives we will be getting re
  
 ## Wrapping up 
 
-We could go into far more detail regarding our genealogy graph but I will leave that to you.
+We could go into far more detail regarding our genealogy knowledge base but I will leave that to you.
 For the moment here is our more complex ontology to get you started on making your own deeper ontologies. You can find the ontology, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph):
 
 ```graql
@@ -285,7 +285,7 @@ insert
 
 We will continue to explore the development of an ontology in the next section on defining a [rule-driven ontology](./rule-driven-ontology.html).
 
-You can find the complete ontology for our genealogy graph project, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
+You can find the complete ontology for our genealogy knowledge base project, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
 
 ## Comments
 Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/22" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

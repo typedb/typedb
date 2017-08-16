@@ -21,7 +21,7 @@ This example takes a very simple example from [TinkerPop3 Documentation](http://
 
 The image above is used from the documentation provided for TinkerPop3, and licensed by the [Apache Software Foundation](http://www.apache.org). 
 
-We have chosen this example as it may already be familiar, and is simple enough to demonstrate some of the fundamentals of Graql. We walk through the entities ("things") and relationships between them and show how to represent them using Graql to define a schema. We then use Graql to add the data to the graph.  The main purpose of this example, however, is to use it for practice at making sample queries on the graph. 
+We have chosen this example as it may already be familiar, and is simple enough to demonstrate some of the fundamentals of Graql. We walk through the entities ("things") and relationships between them and show how to represent them using Graql to define a schema. We then use Graql to add the data to the knowledge base.  The main purpose of this example, however, is to use it for practice at making sample queries on the graph. 
 
 ### Starting Graql
 
@@ -96,7 +96,7 @@ insert software plays programmed;
 insert programming sub relation, relates programmer, relates programmed, has weight;
 ```
 
-And that's it. At this point, we have defined the schema of the graph.
+And that's it. At this point, we have defined the schema of the knowledge base.
 
 ## Adding the Data
 Now we have a schema, we can move on to adding in the data, which is pretty much just a typing exercise:
@@ -126,9 +126,9 @@ match $josh has name "josh"; $ripple has name "ripple"; insert (programmer: $jos
 
 This example is designed to get you up close and personal with Graql queries. It will run through a few basic examples, then ask you a set of "Test Yourself" questions. 
 
-OK, so if you've followed the above, you should now have a schema and some data in a graph. How do you go about using the graph to answer your queries? That's where the `match` statement comes in. 
+OK, so if you've followed the above, you should now have a schema and some data in a knowledge base. How do you go about using the graph to answer your queries? That's where the `match` statement comes in. 
 
-As with any query language, you use a variable to receive the results of the match query, which you must prefix with a `$`. So, to make the query "List every person in the graph", you would use the following in Graql:
+As with any query language, you use a variable to receive the results of the match query, which you must prefix with a `$`. So, to make the query "List every person in the knowledge base", you would use the following in Graql:
 
 ```graql
 >>> match $x isa person, has name $n; select $n;
@@ -153,7 +153,7 @@ $x id "peter" has age "35";
 ```
 
 ## Complete Example
-Here is the complete example - the code to define the schema and insert the data into a graph. You can load this directly into Graql, if you don't want to type it out for yourself. Cut and paste the Graql below and start Graql:
+Here is the complete example - the code to define the schema and insert the data into a knowledge base. You can load this directly into Graql, if you don't want to type it out for yourself. Cut and paste the Graql below and start Graql:
 
 ```bash
 bin/graql.sh
