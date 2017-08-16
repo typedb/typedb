@@ -51,7 +51,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * <p>
- *     Endpoints for Graph API
+ *     Endpoint tests for Graph API
  * </p>
  *
  * @author Ganeshwara Herawan Hananda
@@ -86,7 +86,7 @@ public class EntityTypeControllerTest {
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
     }
 
-//    @Test
+    @Test
     public void postEntityTypeShouldExecuteSuccessfully() {
         Json body = Json.object("entityTypeLabel", "newEntityType");
 
@@ -102,7 +102,7 @@ public class EntityTypeControllerTest {
         assertThat(responseBody.get("entityTypeLabel"), equalTo("newEntityType"));
     }
 
-//    @Test
+    @Test
     public void getEntityTypeFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
@@ -114,25 +114,24 @@ public class EntityTypeControllerTest {
         assertThat(responseBody.get("entityTypeLabel"), equalTo("production"));
     }
 
-//    @Test
-    public void assignResourceToEntityTypeShouldExecuteSuccessfully() {
-        // TODO
-        Json body = Json.object(
-            "entityTypeLabel", "production",
-            "resourceTypeLabel", "title"
-            );
+//    @Test // TODO
+//    public void assignResourceToEntityTypeShouldExecuteSuccessfully() {
+//        Json body = Json.object(
+//            "entityTypeLabel", "production",
+//            "resourceTypeLabel", "title"
+//            );
+//
+//        Response response = with()
+//            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+//            .post("/graph/entityType/production/resource/title");
+//
+//        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+//        System.out.println("/// + " + response.body().asString());
+//
+//    }
 
-        Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .post("/graph/entityType/production/resource/title");
-
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
-        System.out.println("/// + " + response.body().asString());
-
-    }
-
-//    @Test
-    public void assignRoleToEntityTypeShouldExecuteSuccessfully() {
-        // TODO
-    }
+//    @Test // TODO
+//    public void assignRoleToEntityTypeShouldExecuteSuccessfully() {
+//
+//    }
 }
