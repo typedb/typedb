@@ -151,9 +151,9 @@ public class HALUtils {
     private static void updateRoleTypesFromAnswer(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Answer answer, MatchQuery matchQuery) {
         Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
         if (atom.isRelation()) {
-            Optional<VarPatternAdmin> var = atom.getPattern().getVars().stream().filter(x -> x.hasProperty(RelationProperty.class)).findFirst();
-            VarPatternAdmin varAdmin = atom.getPattern().asVar();
-            if (var.isPresent() && !var.get().getVarName().isUserDefinedName() && bothRolePlayersAreSelected(atom, matchQuery)) {
+            Optional<VarPatternAdmin> var = atom.getPattern().varPatterns().stream().filter(x -> x.hasProperty(RelationProperty.class)).findFirst();
+            VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
+            if (var.isPresent() && !var.get().var().isUserDefinedName() && bothRolePlayersAreSelected(atom, matchQuery)) {
                 roleTypes.put(varAdmin, pairVarNamesRelationType(atom));
             }
         }
@@ -168,7 +168,7 @@ public class HALUtils {
     }
 
     private static boolean bothRolePlayersAreSelectedNoReasoner(VarPatternAdmin var, MatchQuery matchQuery) {
-        Set<Var> rolePlayersInVar =  var.getProperty(RelationProperty.class).get().relationPlayers().stream().map(x->x.getRolePlayer().getVarName()).collect(Collectors.toSet());
+        Set<Var> rolePlayersInVar =  var.getProperty(RelationProperty.class).get().relationPlayers().stream().map(x->x.getRolePlayer().var()).collect(Collectors.toSet());
         Set<Var> selectedVars = matchQuery.admin().getSelectedNames();
         //If all the role players contained in the current relation are also selected in the user query
         return Sets.intersection(rolePlayersInVar, selectedVars).equals(rolePlayersInVar);
@@ -176,12 +176,12 @@ public class HALUtils {
 
     private static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQueryNoReasoner(MatchQuery matchQuery) {
         final Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
-        matchQuery.admin().getPattern().getVars().forEach(var -> {
-            if (var.getProperty(RelationProperty.class).isPresent() && !var.getVarName().isUserDefinedName() && bothRolePlayersAreSelectedNoReasoner(var,matchQuery)) {
+        matchQuery.admin().getPattern().varPatterns().forEach(var -> {
+            if (var.getProperty(RelationProperty.class).isPresent() && !var.var().isUserDefinedName() && bothRolePlayersAreSelectedNoReasoner(var,matchQuery)) {
                 Map<Var, String> tempMap = new HashMap<>();
                 var.getProperty(RelationProperty.class).get()
                         .relationPlayers().forEach(x -> {
-                            tempMap.put(x.getRolePlayer().getVarName(),
+                            tempMap.put(x.getRolePlayer().var(),
                                     (x.getRole().isPresent()) ? x.getRole().get().getPrintableName() : HAS_EMPTY_ROLE_EDGE);
                         }
                 );
@@ -217,14 +217,14 @@ public class HALUtils {
         if (firstExplanation.isRuleExplanation() || firstExplanation.isLookupExplanation()) {
             Atom atom = ((ReasonerAtomicQuery) firstAnswer.getExplanation().getQuery()).getAtom();
             if (atom.isRelation()) {
-                VarPatternAdmin varAdmin = atom.getPattern().asVar();
+                VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
                 inferredRelations.put(varAdmin, firstAnswer.getExplanation().isRuleExplanation());
             }
         } else {
             firstAnswer.getExplanation().getAnswers().forEach(answer -> {
                 Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
                 if (atom.isRelation()) {
-                    VarPatternAdmin varAdmin = atom.getPattern().asVar();
+                    VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
                     inferredRelations.put(varAdmin, answer.getExplanation().isRuleExplanation());
                 }
             });

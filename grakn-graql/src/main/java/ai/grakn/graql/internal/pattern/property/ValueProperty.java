@@ -95,12 +95,12 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
         return CommonUtil.optionalToStream(predicate().getInnerVar());
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new ValuePredicate(var.getVarName(), this.predicate(), parent);
+        return new ValuePredicate(var.var(), this.predicate(), parent);
     }
 }

@@ -183,7 +183,7 @@ public class QueryParser {
             }
 
             private InsertQuery joinMatchInsert(MatchQuery match, InsertQuery insert) {
-                return match.insert(insert.admin().getVars());
+                return match.insert(insert.admin().varPatterns());
             }
         };
 

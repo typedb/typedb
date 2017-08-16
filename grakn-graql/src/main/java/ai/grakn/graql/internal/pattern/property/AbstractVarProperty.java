@@ -32,7 +32,7 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     public final void checkValid(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException {
         checkValidProperty(graph, var);
 
-        getInnerVars().map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
+        innerVarPatterns().map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
             if (graph.getSchemaConcept(label) == null) {
                 throw GraqlQueryException.labelNotFound(label);
             }
@@ -54,8 +54,8 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     }
 
     @Override
-    public Stream<VarPatternAdmin> getImplicitInnerVars() {
-        return getInnerVars();
+    public Stream<VarPatternAdmin> implicitInnerVarPatterns() {
+        return innerVarPatterns();
     }
 
     @Override

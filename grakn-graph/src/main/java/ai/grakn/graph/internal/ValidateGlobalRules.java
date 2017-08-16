@@ -418,8 +418,8 @@ class ValidateGlobalRules {
     private static Set<String> checkRuleSideInvalid(GraknTx graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
-        pattern.admin().getVars().stream()
-                .flatMap(v -> v.getInnerVars().stream())
+        pattern.admin().varPatterns().stream()
+                .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
                     SchemaConcept schemaConcept = graph.getSchemaConcept(typeLabel);
                     if(schemaConcept == null){

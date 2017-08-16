@@ -43,7 +43,7 @@ public abstract class Predicate<T> extends AtomicBase {
 
     Predicate(Predicate pred) {
         super(pred);
-        this.predicate = extractPredicate(pred.getPattern().asVar());
+        this.predicate = extractPredicate(pred.getPattern().asVarPattern());
     }
 
     @Override

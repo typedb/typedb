@@ -416,7 +416,7 @@ public class InsertQueryExecutor {
         }
 
         static Stream<VarAndProperty> fromPattern(VarPatternAdmin pattern) {
-            return pattern.getProperties().map(prop -> VarAndProperty.of(pattern.getVarName(), prop));
+            return pattern.getProperties().map(prop -> VarAndProperty.of(pattern.var(), prop));
         }
 
         void insert(InsertQueryExecutor executor) {

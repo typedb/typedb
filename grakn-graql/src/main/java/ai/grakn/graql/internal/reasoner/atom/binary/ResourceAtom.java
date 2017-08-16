@@ -148,9 +148,9 @@ public class ResourceAtom extends Binary{
     public PatternAdmin getCombinedPattern() {
         Set<VarPatternAdmin> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
-                .map(PatternAdmin::asVar)
+                .map(PatternAdmin::asVarPattern)
                 .collect(Collectors.toSet());
-        vars.add(super.getPattern().asVar());
+        vars.add(super.getPattern().asVarPattern());
         return Patterns.conjunction(vars);
     }
 
@@ -257,7 +257,7 @@ public class ResourceAtom extends Binary{
                     VarPatternAdmin inner = vp.getInnerVar().orElse(null);
                     //variable mapped inside the query
                     if (subbedVars.contains(getVarName())
-                        || subbedVars.contains(inner.getVarName())
+                        || subbedVars.contains(inner.var())
                             && !isSuperNode()) {
                         vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
                     } //variable equality

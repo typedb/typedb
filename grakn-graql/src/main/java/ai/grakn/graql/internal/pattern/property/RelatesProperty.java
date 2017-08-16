@@ -74,7 +74,7 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(relates(this, start, role().getVarName()));
+        return ImmutableSet.of(relates(this, start, role().var()));
     }
 
     @Override
@@ -83,19 +83,19 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.of(role());
     }
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Role role = executor.get(this.role().getVarName()).asRole();
+        Role role = executor.get(this.role().var()).asRole();
         executor.get(var).asRelationshipType().relates(role);
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, this.role().getVarName());
+        return ImmutableSet.of(var, this.role().var());
     }
 
     @Override
@@ -106,9 +106,9 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName().asUserDefined();
+        Var varName = var.var().asUserDefined();
         VarPatternAdmin roleVar = this.role();
-        Var roleVariable = roleVar.getVarName().asUserDefined();
+        Var roleVariable = roleVar.var().asUserDefined();
         IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent);
 
         VarPatternAdmin hrVar = varName.relates(roleVariable).admin();

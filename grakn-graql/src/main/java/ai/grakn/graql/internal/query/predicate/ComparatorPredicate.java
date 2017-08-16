@@ -145,7 +145,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
         var.ifPresent(theVar -> {
             // Compare to another variable
             String thisVar = UUID.randomUUID().toString();
-            Var otherVar = theVar.getVarName();
+            Var otherVar = theVar.var();
             String otherValue = UUID.randomUUID().toString();
 
             Traversal[] traversals = Stream.of(VALUE_PROPERTIES)
