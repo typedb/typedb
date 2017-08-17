@@ -72,7 +72,7 @@ public class SchemaConceptPropertyTest {
     }
 
     @Property
-    public void whenDeletingAnSchemaConceptWithDirectSubs_Throw(@NonMeta SchemaConcept schemaConcept) {
+    public void whenDeletingASchemaConceptWithDirectSubs_Throw(@NonMeta SchemaConcept schemaConcept) {
         SchemaConcept superConcept = schemaConcept.sup();
         assumeFalse(isMetaLabel(superConcept.getLabel()));
 
@@ -95,7 +95,7 @@ public class SchemaConceptPropertyTest {
     }
 
     @Property
-    public void whenAnSchemaElementHasADirectSuper_ItIsADirectSubOfThatSuper(SchemaConcept schemaConcept) {
+    public void whenASchemaElementHasADirectSuper_ItIsADirectSubOfThatSuper(SchemaConcept schemaConcept) {
         SchemaConcept superConcept = schemaConcept.sup();
         assumeTrue(superConcept != null);
 
@@ -108,14 +108,14 @@ public class SchemaConceptPropertyTest {
     }
 
     @Property
-    public void whenAnSchemaConceptHasAnIndirectSuper_ItIsAnIndirectSubOfThatSuper(
+    public void whenASchemaConceptHasAnIndirectSuper_ItIsAnIndirectSubOfThatSuper(
             SchemaConcept subConcept, long seed) {
         SchemaConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(subConcept), seed);
         assertThat(superConcept.subs().collect(toSet()), hasItem(subConcept));
     }
 
     @Property
-    public void whenAnSchemaConceptHasAnIndirectSub_ItIsAnIndirectSuperOfThatSub(
+    public void whenASchemaConceptHasAnIndirectSub_ItIsAnIndirectSuperOfThatSub(
             SchemaConcept superConcept, long seed) {
         SchemaConcept subConcept = PropertyUtil.choose(superConcept.subs(), seed);
         assertThat(PropertyUtil.indirectSupers(subConcept), hasItem(superConcept));
@@ -207,7 +207,7 @@ public class SchemaConceptPropertyTest {
 
     @Ignore // TODO: Find a way to generate linked rules
     @Property
-    public void whenDeletingAnSchemaConceptWithHypothesisRules_Throw(SchemaConcept concept) {
+    public void whenDeletingASchemaConceptWithHypothesisRules_Throw(SchemaConcept concept) {
         assumeThat(concept.getRulesOfHypothesis().collect(toSet()), not(empty()));
 
         exception.expect(GraphOperationException.class);
@@ -217,7 +217,7 @@ public class SchemaConceptPropertyTest {
 
     @Ignore // TODO: Find a way to generate linked rules
     @Property
-    public void whenDeletingAnSchemaConceptWithConclusionRules_Throw(SchemaConcept concept) {
+    public void whenDeletingASchemaConceptWithConclusionRules_Throw(SchemaConcept concept) {
         assumeThat(concept.getRulesOfConclusion().collect(toSet()), not(empty()));
 
         exception.expect(GraphOperationException.class);

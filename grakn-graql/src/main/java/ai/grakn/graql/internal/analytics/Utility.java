@@ -18,7 +18,9 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -40,7 +42,7 @@ import java.util.Set;
 public class Utility {
     /**
      * The Grakn type property on a given Tinkerpop vertex.
-     * If the vertex is a schema element, return invalid type.
+     * If the vertex is a {@link SchemaConcept}, return invalid {@link Label}.
      *
      * @param vertex the Tinkerpop vertex
      * @return the type

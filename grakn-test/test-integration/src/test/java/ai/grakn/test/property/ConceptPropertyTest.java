@@ -164,7 +164,7 @@ public class ConceptPropertyTest {
     }
 
     @Property
-    public void whenConceptIsNotAnSchemaConcept_TheConceptCannotBeConvertedToAnOntologyConcept(Concept concept) {
+    public void whenConceptIsNotAnSchemaConcept_TheConceptCannotBeConvertedToAnSchemaConcept(Concept concept) {
         assumeFalse(concept.isSchemaConcept());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
