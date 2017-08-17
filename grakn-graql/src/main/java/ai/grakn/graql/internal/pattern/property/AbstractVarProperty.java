@@ -21,7 +21,9 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.util.CommonUtil;
 
 import java.util.stream.Stream;
@@ -41,6 +43,16 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
 
     void checkValidProperty(GraknTx graph, VarPatternAdmin var) {
 
+    }
+
+    @Override
+    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        throw new RuntimeException();
+    }
+
+    @Override
+    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        throw new RuntimeException();
     }
 
     @Override

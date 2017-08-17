@@ -60,7 +60,7 @@ abstract class DefineQueryImpl implements DefineQuery {
         ImmutableList<VarPatternAdmin> allPatterns =
                 varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream()).collect(toImmutableList());
         
-        return InsertQueryExecutor.insertAll(allPatterns, tx);
+        return InsertQueryExecutor.defineAll(allPatterns, tx);
     }
 
     @Override
