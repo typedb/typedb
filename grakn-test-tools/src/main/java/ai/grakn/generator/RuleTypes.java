@@ -37,7 +37,7 @@ public class RuleTypes extends AbstractTypeGenerator<RuleType> {
     }
 
     @Override
-    protected RuleType newOntologyConcept(Label label) {
+    protected RuleType newSchemaConcept(Label label) {
         return graph().putRuleType(label);
     }
 

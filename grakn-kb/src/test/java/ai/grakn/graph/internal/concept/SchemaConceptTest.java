@@ -45,7 +45,7 @@ import static org.junit.Assert.assertTrue;
 public class SchemaConceptTest extends GraphTestBase {
 
     @Test
-    public void whenChangingOntologyConceptLabel_EnsureLabelIsChangedAndOldLabelIsDead(){
+    public void whenChangingSchemaConceptLabel_EnsureLabelIsChangedAndOldLabelIsDead(){
         Label originalLabel = Label.of("my original label");
         Label newLabel = Label.of("my new label");
         EntityType entityType = graknGraph.putEntityType(originalLabel.getValue());
@@ -98,7 +98,7 @@ public class SchemaConceptTest extends GraphTestBase {
     }
 
     @Test
-    public void whenChangingTheLabelOfOntologyConceptAndThatLabelIsTakenByAnotherConcept_Throw(){
+    public void whenChangingTheLabelOfSchemaConceptAndThatLabelIsTakenByAnotherConcept_Throw(){
         Label label = Label.of("mylabel");
 
         EntityType e1 = graknGraph.putEntityType("Entity1");

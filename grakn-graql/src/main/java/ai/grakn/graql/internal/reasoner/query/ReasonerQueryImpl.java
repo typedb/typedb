@@ -262,7 +262,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return map of variable name - type pairs
      */
     @Override
-    public Map<Var, SchemaConcept> getVarOntologyConceptMap() {
+    public Map<Var, SchemaConcept> getVarSchemaConceptMap() {
         Map<Var, SchemaConcept> typeMap = new HashMap<>();
         getAtoms(TypeAtom.class)
                 .filter(at -> Objects.nonNull(at.getSchemaConcept()))

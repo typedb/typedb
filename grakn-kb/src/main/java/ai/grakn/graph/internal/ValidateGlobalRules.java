@@ -400,7 +400,7 @@ class ValidateGlobalRules {
      * @param rule The rule to be validated
      * @return Error messages if the when or then of a rule refers to a non existent type
      */
-    static Set<String> validateRuleOntologyElementsExist(GraknTx graph, Rule rule){
+    static Set<String> validateRuleSchemaConceptExist(GraknTx graph, Rule rule){
         Set<String> errors = new HashSet<>();
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_WHEN, rule.getWhen()));
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_THEN, rule.getThen()));

@@ -257,8 +257,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @SuppressWarnings("unchecked")
     private boolean initialiseMetaConcepts() {
-        boolean ontologyInitialised = false;
-        if (isMetaOntologyNotInitialised()) {
+        boolean schemaInitialised = false;
+        if (isMetaSchemaNotInitialised()) {
             VertexElement type = addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
             VertexElement entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
             VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATIONSHIP.getId(), Schema.MetaSchema.RELATIONSHIP.getLabel(), Schema.BaseType.RELATIONSHIP_TYPE);
@@ -285,7 +285,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             createMetaShard(inferenceRuleType);
             createMetaShard(constraintRuleType);
 
-            ontologyInitialised = true;
+            schemaInitialised = true;
         }
 
         //Copy entire schema to the graph cache. This may be a bad idea as it will slow down graph initialisation
@@ -294,7 +294,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         //Role has to be copied separately due to not being connected to meta schema
         copyToCache(getMetaRole());
 
-        return ontologyInitialised;
+        return schemaInitialised;
     }
 
     private void createMetaShard(VertexElement metaNode) {
@@ -316,7 +316,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         });
     }
 
-    private boolean isMetaOntologyNotInitialised() {
+    private boolean isMetaSchemaNotInitialised() {
         return getMetaConcept() == null;
     }
 
@@ -443,15 +443,15 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public EntityType putEntityType(Label label) {
-        return putOntologyElement(label, Schema.BaseType.ENTITY_TYPE,
+        return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE,
                 v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <T extends SchemaConcept> T putOntologyElement(Label label, Schema.BaseType baseType, Function<VertexElement, T> factory) {
+    private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, Function<VertexElement, T> factory) {
         checkSchemaMutationAllowed();
         SchemaConcept schemaConcept = buildSchemaConcept(label, () -> factory.apply(putVertex(label, baseType)));
 
-        T finalType = validateOntologyElement(schemaConcept, baseType, () -> {
+        T finalType = validateSchemaConcept(schemaConcept, baseType, () -> {
             if (Schema.MetaSchema.isMetaLabel(label)) throw GraphOperationException.reservedLabel(label);
             throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, label);
         });
@@ -464,7 +464,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return finalType;
     }
 
-    private <T extends Concept> T validateOntologyElement(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler) {
+    private <T extends Concept> T validateSchemaConcept(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler) {
         if (concept != null && baseType.getClassType().isInstance(concept)) {
             //noinspection unchecked
             return (T) concept;
@@ -495,12 +495,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public RelationshipType putRelationshipType(Label label) {
-        return putOntologyElement(label, Schema.BaseType.RELATIONSHIP_TYPE,
+        return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE));
     }
 
     public RelationshipType putRelationTypeImplicit(Label label) {
-        return putOntologyElement(label, Schema.BaseType.RELATIONSHIP_TYPE,
+        return putSchemaConcept(label, Schema.BaseType.RELATIONSHIP_TYPE,
                 v -> factory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE));
     }
 
@@ -511,12 +511,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public Role putRole(Label label) {
-        return putOntologyElement(label, Schema.BaseType.ROLE,
+        return putSchemaConcept(label, Schema.BaseType.ROLE,
                 v -> factory().buildRole(v, getMetaRole(), Boolean.FALSE));
     }
 
     public Role putRoleTypeImplicit(Label label) {
-        return putOntologyElement(label, Schema.BaseType.ROLE,
+        return putSchemaConcept(label, Schema.BaseType.ROLE,
                 v -> factory().buildRole(v, getMetaRole(), Boolean.TRUE));
     }
 
@@ -529,7 +529,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
-        AttributeType<V> attributeType = putOntologyElement(label, Schema.BaseType.ATTRIBUTE_TYPE,
+        AttributeType<V> attributeType = putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE,
                 v -> factory().buildResourceType(v, getMetaResourceType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
@@ -549,7 +549,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public RuleType putRuleType(Label label) {
-        return putOntologyElement(label, Schema.BaseType.RULE_TYPE,
+        return putSchemaConcept(label, Schema.BaseType.RULE_TYPE,
                 v -> factory().buildRuleType(v, getMetaRuleType()));
     }
 
@@ -582,7 +582,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
         SchemaConcept schemaConcept = buildSchemaConcept(label, () -> getSchemaConcept(convertToId(label)));
-        return validateOntologyElement(schemaConcept, baseType, () -> null);
+        return validateSchemaConcept(schemaConcept, baseType, () -> null);
     }
 
     @Nullable

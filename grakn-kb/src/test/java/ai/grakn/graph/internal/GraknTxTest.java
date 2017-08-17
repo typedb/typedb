@@ -356,7 +356,7 @@ public class GraknTxTest extends GraphTestBase {
     }
 
     @Test
-    public void whenCreatingAValidOntologyInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
+    public void whenCreatingAValidSchemaInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
         GraknSession session = Grakn.session(Grakn.IN_MEMORY, "hi");
 
         ExecutorService executor = Executors.newCachedThreadPool();

@@ -214,7 +214,7 @@ public class ResourceAtom extends Binary{
             return errors;
         }
 
-        SchemaConcept ownerType = getParentQuery().getVarOntologyConceptMap().get(getVarName());
+        SchemaConcept ownerType = getParentQuery().getVarSchemaConceptMap().get(getVarName());
 
         if (ownerType != null
                 && ownerType.isType()

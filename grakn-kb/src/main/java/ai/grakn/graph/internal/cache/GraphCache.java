@@ -99,8 +99,8 @@ public class GraphCache {
         cachedTypes.putAll(txCache.getSchemaConceptCache());
 
         //Flush All The Internal Transaction Caches
-        txCache.getSchemaConceptCache().values().forEach(ontologyConcept
-                -> SchemaConceptImpl.from(ontologyConcept).txCacheFlush());
+        txCache.getSchemaConceptCache().values().forEach(schemaConcept
+                -> SchemaConceptImpl.from(schemaConcept).txCacheFlush());
     }
 
     /**

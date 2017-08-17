@@ -649,7 +649,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void whenInsertingAnOntologyConceptWithoutALabel_Throw() {
+    public void whenInsertingAnSchemaConceptWithoutALabel_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("entity"), containsString("label")));
         qb.insert(var().sub("entity")).execute();

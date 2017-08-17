@@ -175,7 +175,7 @@ The structure can be summarized by the following graph:
 
 ![Schema](/images/working-with-tweets-schema.jpg)
 
-With that set, let's define a new method `initTweetOntology` inside `GraknTweetOntologyHelper` class and define our schema creation there.
+With that set, let's define a new method `initTweetSchema` inside `GraknTweetSchemaHelper` class and define our schema creation there.
 
 ```java-test-ignore
 public class GraknTweetOntologyHelper {

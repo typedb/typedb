@@ -82,10 +82,10 @@ public class SystemKeyspace {
         this(factory, true);
     }
 
-    public SystemKeyspace(EngineGraknGraphFactory factory, boolean loadSystemOntology){
+    public SystemKeyspace(EngineGraknGraphFactory factory, boolean loadSystemSchema){
         this.factory = factory;
         this.openSpaces = new ConcurrentHashMap<>();
-        if (loadSystemOntology) {
+        if (loadSystemSchema) {
             loadSystemSchema();
         }
     }

@@ -61,7 +61,7 @@ function onClickSubmit(query:string) {
   }
 }
 
-function onLoadOntology(type:string) {
+function onLoadSchema(type:string) {
   const querySub = `match $x sub ${type};`;
   EngineClient.graqlHAL(querySub).then(resp => onGraphResponse(resp, false, false), (err) => {
     EventHub.$emit('error-message', err.message);
@@ -165,7 +165,7 @@ function linkResourceOwners(instances) {
 function initialise(graphElement:Object) {
   EventHub.$on('clear-page', () => clearGraph());
   EventHub.$on('click-submit', query => onClickSubmit(query));
-  EventHub.$on('load-schema', type => onLoadOntology(type));
+  EventHub.$on('load-schema', type => onLoadSchema(type));
   CanvasEvents.registerCanvasEvents();
   // Render visualiser only after having registered all the events handlers.
   visualiser.render(graphElement);

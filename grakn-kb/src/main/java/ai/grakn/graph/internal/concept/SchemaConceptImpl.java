@@ -129,7 +129,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     /**
      *
-     * @return The super of this Ontology Element
+     * @return The super of this {@link SchemaConcept}
      */
     public T sup() {
         return cachedSuperType.get();

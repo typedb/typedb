@@ -128,11 +128,11 @@ public class TxCache {
      *
      */
     public void refreshSchemaCache(){
-        Map<Label, SchemaConcept> cachedOntologySnapshot = graphCache.getCachedTypes();
+        Map<Label, SchemaConcept> cachedSchemaSnapshot = graphCache.getCachedTypes();
         Map<Label, LabelId> cachedLabelsSnapshot = graphCache.getCachedLabels();
 
         //Read central cache into txCache cloning only base concepts. Sets clones later
-        for (SchemaConcept type : cachedOntologySnapshot.values()) {
+        for (SchemaConcept type : cachedSchemaSnapshot.values()) {
             cacheConcept(type);
         }
 
@@ -244,9 +244,9 @@ public class TxCache {
     public void cacheConcept(Concept concept){
         conceptCache.put(concept.getId(), concept);
         if(concept.isSchemaConcept()){
-            SchemaConceptImpl ontologyElement = (SchemaConceptImpl) concept;
-            schemaConceptCache.put(ontologyElement.getLabel(), ontologyElement);
-            labelCache.put(ontologyElement.getLabel(), ontologyElement.getLabelId());
+            SchemaConceptImpl schemaConcept = (SchemaConceptImpl) concept;
+            schemaConceptCache.put(schemaConcept.getLabel(), schemaConcept);
+            labelCache.put(schemaConcept.getLabel(), schemaConcept.getLabelId());
         }
     }
 

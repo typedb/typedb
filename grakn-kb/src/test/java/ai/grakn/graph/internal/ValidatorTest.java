@@ -84,7 +84,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void whenCommittingRelationWithoutSpecifyingOntology_ThrowOnCommit(){
+    public void whenCommittingRelationWithoutSpecifyingSchema_ThrowOnCommit(){
         EntityType fakeType = graknGraph.putEntityType("Fake Concept");
         RelationshipType relationshipType = graknGraph.putRelationshipType("kicks");
         Role kicker = graknGraph.putRole("kicker");

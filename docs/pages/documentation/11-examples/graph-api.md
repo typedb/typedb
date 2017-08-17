@@ -59,7 +59,7 @@ GraknTx tx = session.open(GraknTxType.WRITE)
 ```
 
 
-Building the schema is covered in `writeOntology()`. First, the method adds the attribute types using putAttributeType():
+Building the schema is covered in `writeSchema()`. First, the method adds the attribute types using putAttributeType():
 
 ```java
 identifier = tx.putAttributeType("identifier", AttributeType.DataType.STRING);
