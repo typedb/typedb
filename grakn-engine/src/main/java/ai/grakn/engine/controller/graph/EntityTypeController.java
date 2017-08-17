@@ -24,7 +24,6 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.exception.GraknServerException;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
@@ -34,9 +33,6 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
-import javax.ws.rs.Path;
-
-import java.util.Map;
 import java.util.Optional;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
@@ -61,29 +57,12 @@ public class EntityTypeController {
         this.factory = factory;
 
         spark.get("/graph/entityType/:entityTypeLabel", this::getEntityType);
-        spark.post("/graph/entityType", this::postEntityType); // TODO:
-        spark.delete("/graph/entityType/:entityTypeLabel", this::deleteEntityType);
-        spark.post("/graph/entityType/:entityTypeLabel/resource/:resourceTypeLabel", this::assignResourceToEntityType);
-        spark.post("/graph/entityType/:entityTypeId/resource/:resourceTypeId", this::deleteResourceToEntitiyTypeAssignment); // TODO
-        spark.post("/graph/entityType/:entityTypeId/plays/:roleTypeId", this::assignRoleToEntityType);
-    }
-
-    private Json postEntityType(Request request, Response response) {
-        LOG.info("postEntityType - request received");
-        Json requestBody = Json.read(mandatoryBody(request));
-        String entityTypeLabel = (String) requestBody.asMap().get("entityTypeLabel");
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("postEntityType - attempting to add entityType " + entityTypeLabel + " in keyspace " + keyspace);
-        try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
-            EntityType entityType = graph.putEntityType(entityTypeLabel);
-            graph.commit();
-            response.status(HttpStatus.SC_OK);
-            String jsonConceptId = entityType.getId().getValue();
-            String jsonEntityTypeLabel = entityType.getLabel().getValue();
-            Json responseBody = Json.object("conceptId", jsonConceptId, "entityTypeLabel", jsonEntityTypeLabel);
-            LOG.info("postEntityType - entityType added - " + jsonConceptId + ", " + jsonEntityTypeLabel + ". request processed.");
-            return responseBody;
-        }
+        spark.post("/graph/entityType", this::postEntityType);
+        spark.delete("/graph/entityType/:entityTypeLabel", this::deleteEntityType); // TODO:
+        spark.put("/graph/entityType/:entityTypeLabel/resource/:resourceTypeLabel", this::assignResourceTypeToEntityType);
+        spark.delete("/graph/entityType/:entityTypeId/resource/:resourceTypeId", this::deleteResourceTypeToEntitiyTypeAssignment); // TODO
+        spark.put("/graph/entityType/:entityTypeId/plays/:roleTypeId", this::assignRoleToEntityType);
+        spark.delete("/graph/entityType/:entityTypeId/plays/:roleTypeId", this::deleteRoleToEntitiyTypeAssignment);
     }
 
     private Json getEntityType(Request request, Response response) {
@@ -108,16 +87,34 @@ public class EntityTypeController {
         }
     }
 
+    private Json postEntityType(Request request, Response response) {
+        LOG.info("postEntityType - request received");
+        Json requestBody = Json.read(mandatoryBody(request));
+        String entityTypeLabel = (String) requestBody.asMap().get("entityTypeLabel");
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        LOG.info("postEntityType - attempting to add entityType " + entityTypeLabel + " in keyspace " + keyspace);
+        try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
+            EntityType entityType = graph.putEntityType(entityTypeLabel);
+            graph.commit();
+            response.status(HttpStatus.SC_OK);
+            String jsonConceptId = entityType.getId().getValue();
+            String jsonEntityTypeLabel = entityType.getLabel().getValue();
+            Json responseBody = Json.object("conceptId", jsonConceptId, "entityTypeLabel", jsonEntityTypeLabel);
+            LOG.info("postEntityType - entityType added - " + jsonConceptId + ", " + jsonEntityTypeLabel + ". request processed.");
+            return responseBody;
+        }
+    }
+
     private String deleteEntityType(Request request, Response response) {
         throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId");
     }
 
-    private Json assignResourceToEntityType(Request request, Response response) {
-        LOG.info("assignResourceToEntityType - request received.");
+    private Json assignResourceTypeToEntityType(Request request, Response response) {
+        LOG.info("assignResourceTypeToEntityType - request received.");
         String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
         String resourceTypeLabel = mandatoryPathParameter(request, "resourceTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("assignResourceToEntityType - attempting to assign resourceType " + resourceTypeLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
+        LOG.info("assignResourceTypeToEntityType - attempting to assign resourceType " + resourceTypeLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
         try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
             Optional<EntityType> entityTypeOptional = Optional.ofNullable(graph.getEntityType(entityTypeLabel));
             Optional<ResourceType> resourceTypeOptional = Optional.ofNullable(graph.getResourceType(resourceTypeLabel));
@@ -131,27 +128,27 @@ public class EntityTypeController {
                     "conceptId", entityType1.getId().getValue(),
                     "entityTypeLabel", entityType1.getLabel().getValue()
                 );
-                LOG.info("assignResourceToEntityType - resourceType " + resourceTypeLabel  + " assigned to entityType " + entityTypeLabel + ". request processed.");
+                LOG.info("assignResourceTypeToEntityType - resourceType " + resourceTypeLabel  + " assigned to entityType " + entityTypeLabel + ". request processed.");
                 response.status(HttpStatus.SC_OK);
                 return responseBody;
             } else {
-                LOG.info("assignResourceToEntityType - either entityType or resourceType not found. request processed.");
+                LOG.info("assignResourceTypeToEntityType - either entityType or resourceType not found. request processed.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
                 return Json.nil();
             }
         }
     }
 
-    private Json deleteResourceToEntitiyTypeAssignment(Request request, Response response) {
+    private Json deleteResourceTypeToEntitiyTypeAssignment(Request request, Response response) {
         throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId/resource/:resourceTypeId");
     }
 
     private Json assignRoleToEntityType(Request request, Response response) {
-        LOG.info("assignResourceToEntityType - request received.");
+        LOG.info("assignResourceTypeToEntityType - request received.");
         String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
         String roleLabel = mandatoryPathParameter(request, "roleLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("assignResourceToEntityType - attempting to assign roleLabel " + roleLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
+        LOG.info("assignResourceTypeToEntityType - attempting to assign roleLabel " + roleLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
         try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
             Optional<EntityType> entityTypeOptional = Optional.ofNullable(graph.getEntityType(entityTypeLabel));
             Optional<Role> roleOptional = Optional.ofNullable(graph.getRole(roleLabel));
@@ -169,10 +166,14 @@ public class EntityTypeController {
                 response.status(HttpStatus.SC_OK);
                 return responseBody;
             } else {
-                LOG.info("assignResourceToEntityType - either entityType or role not found. request processed.");
+                LOG.info("assignResourceTypeToEntityType - either entityType or role not found. request processed.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
                 return Json.nil();
             }
         }
+    }
+
+    private Json deleteRoleToEntitiyTypeAssignment(Request request, Response response) {
+        throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId/resource/:resourceTypeId");
     }
 }

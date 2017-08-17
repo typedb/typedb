@@ -87,6 +87,18 @@ public class EntityTypeControllerTest {
     }
 
     @Test
+    public void getEntityTypeFromMovieGraphShouldExecuteSuccessfully() {
+        Response response = with()
+            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+            .get("/graph/entityType/production");
+
+        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+
+        assertThat(response.statusCode(), equalTo(200));
+        assertThat(responseBody.get("entityTypeLabel"), equalTo("production"));
+    }
+
+    @Test
     public void postEntityTypeShouldExecuteSuccessfully() {
         Json body = Json.object("entityTypeLabel", "newEntityType");
 
@@ -102,36 +114,43 @@ public class EntityTypeControllerTest {
         assertThat(responseBody.get("entityTypeLabel"), equalTo("newEntityType"));
     }
 
-    @Test
-    public void getEntityTypeFromMovieGraphShouldExecuteSuccessfully() {
-        Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .get("/graph/entityType/production");
-
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
-
-        assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("entityTypeLabel"), equalTo("production"));
-    }
+//    @Test // TODO
+//    public void deleteEntityTypeShouldExecuteSuccessfully() {
+//
+//    }
 
 //    @Test // TODO
 //    public void assignResourceToEntityTypeShouldExecuteSuccessfully() {
 //        Json body = Json.object(
 //            "entityTypeLabel", "production",
-//            "resourceTypeLabel", "title"
+//            "resourceTypeLabel", "runtime"
 //            );
+//
+////        will fail with:
+////          java.lang.NullPointerException: Null value
+////            at ai.grakn.concept.AutoValue_Label.<init>(AutoValue_Label.java:14)
 //
 //        Response response = with()
 //            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-//            .post("/graph/entityType/production/resource/title");
+//            .put("/graph/entityType/production/resource/runtime");
 //
-//        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+////        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 //        System.out.println("/// + " + response.body().asString());
 //
 //    }
 
 //    @Test // TODO
+//    public void deleteResourceTypeToEntitiyTypeAssignmentShouldExecuteSuccessfully() {
+//
+//    }
+
+//    @Test // TODO
 //    public void assignRoleToEntityTypeShouldExecuteSuccessfully() {
+//
+//    }
+
+//    @Test // TODO
+//    public void deleteRoleToEntityTypeAssignmentShouldExecuteSuccessfully() {
 //
 //    }
 }
