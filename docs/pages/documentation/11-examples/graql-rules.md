@@ -21,7 +21,7 @@ The full genealogy-knowledge-base project can be found on Grakn's [sample-datase
 In this example, we will explore how to use Grakn to make inferences and find information from the data that is not explicit in the dataset. You can find documentation about writing rules in Graql [here](https://grakn.ai/pages/documentation/graql/graql-rules.html).
 
 
-## Ontology and Data
+## Schema and Data
 
 On GRAKN.AI, the first step when working with a dataset is to define its schema in Graql. The schema is a way to describe the entities and their relationships, so the underlying knowledge base can store them as nodes and edges. You can find out more in our guide to the Grakn Knowledge Model. The schema allows Grakn to perform:
 

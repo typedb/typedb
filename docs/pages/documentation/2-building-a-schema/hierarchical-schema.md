@@ -1,5 +1,5 @@
 ---
-title: Define a Hierarchical Ontology
+title: Define a Hierarchical Schema
 keywords: overview
 last_updated: February 2017
 tags: [graql, java, java-api]
@@ -14,12 +14,12 @@ comment_issue_id: 22
 
 ## Introduction
 
-In this section we are going to expand the schema we defined in the [Basic Ontology documentation](./basic-schema.html), which we recommend you read before starting here. You may also find it helpful to refer to the [Knowledge Model](../the-fundamentals/grakn-knowledge-model.html) documentation.
+In this section we are going to expand the schema we defined in the [Basic Schema documentation](./basic-schema.html), which we recommend you read before starting here. You may also find it helpful to refer to the [Knowledge Model](../the-fundamentals/grakn-knowledge-model.html) documentation.
 We are going to introduce the idea of making ontologies deeper and more meaningful by defining a hierarchy of types.
 
 When we left off, our schema looked as follows:
 
-![Ontology](/images/basic-ontology1.png)
+![Schema](/images/basic-schema1.png)
 
 ```graql
 insert

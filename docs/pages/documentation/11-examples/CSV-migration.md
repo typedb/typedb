@@ -32,7 +32,7 @@ Let's take a look at the *raw-data* directory in the example project, which cont
 |[*births.csv*](https://github.com/graknlabs/sample-projects/blob/master/example-csv-migration-genealogy/raw-data/births.csv)| This CSV lists the person IDs of a child and each of its parents|
 |[*weddings.csv*](https://github.com/graknlabs/sample-projects/blob/master/example-csv-migration-genealogy/raw-data/weddings.csv)| This CSV comprises a row for each marriage, identifying each by a wedding ID (wid). The rows contain the person IDs of each spouse and the date of their wedding, where it is known.|
 
-### Ontology
+### Schema
 
 The schema is a way to describe the entities and their relationships, so the underlying knowledge base can store them according to the Grakn model. You can find out more in our guide to the Grakn Knowledge Model. The schema allows Grakn to perform:
 

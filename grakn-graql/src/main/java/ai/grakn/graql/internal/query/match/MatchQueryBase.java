@@ -102,7 +102,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Set<SchemaConcept> getOntologyConcepts(GraknTx graph) {
+    public Set<SchemaConcept> getSchemaConcepts(GraknTx graph) {
         return pattern.varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
@@ -112,7 +112,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Set<SchemaConcept> getOntologyConcepts() {
+    public Set<SchemaConcept> getSchemaConcepts() {
         throw GraqlQueryException.noGraph();
     }
 

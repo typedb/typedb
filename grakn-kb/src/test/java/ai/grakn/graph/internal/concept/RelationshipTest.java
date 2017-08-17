@@ -99,7 +99,7 @@ public class RelationshipTest extends GraphTestBase {
 
     @Test
     public void checkShortcutEdgesAreCreatedBetweenAllRolePlayers(){
-        //Create the Ontology
+        //Create the Schema
         Role role1 = graknGraph.putRole("Role 1");
         Role role2 = graknGraph.putRole("Role 2");
         Role role3 = graknGraph.putRole("Role 3");

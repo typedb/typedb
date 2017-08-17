@@ -45,7 +45,7 @@ public interface InsertQueryAdmin extends InsertQuery {
      * @return all concept types referred to explicitly in the query
      */
     @CheckReturnValue
-    Set<SchemaConcept> getOntologyConcepts();
+    Set<SchemaConcept> getSchemaConcepts();
 
     /**
      * @return the variables to insert in the insert query

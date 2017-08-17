@@ -207,7 +207,7 @@ public class HALUtils {
         // Overrides the varNames that have roles in the previous map
         reasonerRel.getRoleVarMap().entries().stream().filter(entry -> !Schema.MetaSchema.isMetaLabel(entry.getKey().getLabel())).forEach(entry -> varNamesToRole.put(entry.getValue(), entry.getKey().getLabel().getValue()));
 
-        String relationType = (reasonerRel.getOntologyConcept() != null) ? reasonerRel.getOntologyConcept().getLabel().getValue() : "";
+        String relationType = (reasonerRel.getSchemaConcept() != null) ? reasonerRel.getSchemaConcept().getLabel().getValue() : "";
         return new Pair<>(varNamesToRole, relationType);
     }
 

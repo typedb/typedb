@@ -206,7 +206,7 @@ public class GraknTxTest extends GraphTestBase {
         assertThat(e1.plays().collect(Collectors.toSet()), containsInAnyOrder(r1, r2));
 
         ExecutorService pool = Executors.newSingleThreadExecutor();
-        //Mutate Ontology in a separate thread
+        //Mutate Schema in a separate thread
         pool.submit(() -> {
             GraknTx innerGraph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
             EntityType entityType = innerGraph.getEntityType("e1");

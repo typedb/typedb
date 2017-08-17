@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal.concept;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
@@ -42,7 +43,7 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
 
 /**
  * <p>
- *     Ontology or Schema Specific Element
+ *     Schema Specific {@link Concept}
  * </p>
  *
  * <p>
@@ -162,7 +163,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     /**
-     * Deletes the concept as an Ontology Element
+     * Deletes the concept as a {@link SchemaConcept}
      */
     @Override
     public void delete(){
@@ -212,7 +213,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     /**
      *
-     * @param root The current Ontology Element
+     * @param root The current {@link SchemaConcept}
      * @return All the sub children of the root. Effectively calls  the cache {@link SchemaConceptImpl#cachedDirectSubTypes} recursively
      */
     @SuppressWarnings("unchecked")
@@ -222,7 +223,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     /**
-     * Checks if we are mutating a {@link SchemaConcept} in a valid way. Ontology mutations are valid if:
+     * Checks if we are mutating a {@link SchemaConcept} in a valid way. {@link SchemaConcept} mutations are valid if:
      * 1. The {@link SchemaConcept} is not a meta-type
      * 2. The graph is not batch loading
      */

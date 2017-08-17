@@ -54,8 +54,8 @@ import java.util.Set;
  *     <ol>
  *         <li>Validation Concepts - Concepts which need to undergo validation.</li>
  *         <li>Built Concepts -  Prevents rebuilding when the same vertex is encountered</li>
- *         <li>The Ontology - Optimises validation checks by preventing db read. </li>
- *         <li>Type Labels - Allows mapping type labels to type Ids</li>
+ *         <li>The Schema - Optimises validation checks by preventing db read. </li>
+ *         <li> {@link Label} - Allows mapping type labels to type Ids</li>
  *         <li>Transaction meta Data - Allows transactions to function in different ways</li>
  *     <ol/>
  * </p>
@@ -308,7 +308,7 @@ public class TxCache {
      * @param <X> The type of the type
      * @return The cached type
      */
-    public <X extends SchemaConcept> X getCachedOntologyElement(Label label){
+    public <X extends SchemaConcept> X getCachedSchemaConcept(Label label){
         //noinspection unchecked
         return (X) schemaConceptCache.get(label);
     }

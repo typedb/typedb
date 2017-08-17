@@ -195,9 +195,9 @@ public class SystemKeyspace {
     }
 
     /**
-     * Loads the system ontology inside the provided grakn graph.
+     * Loads the system schema inside the provided grakn graph.
      *
-     * @param graph The graph to contain the system ontology
+     * @param graph The graph to contain the system schema
      */
     private void loadSystemSchema(GraknTx graph){
         //Keyspace data

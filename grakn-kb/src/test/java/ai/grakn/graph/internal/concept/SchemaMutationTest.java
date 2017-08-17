@@ -247,7 +247,7 @@ public class SchemaMutationTest extends GraphTestBase {
 
     @Test
     public void whenAddingResourceToSubTypeOfEntityType_EnsureNoValidationErrorsOccur(){
-        //Create initial Ontology
+        //Create initial Schema
         AttributeType<String> name = graknGraph.putAttributeType("name", AttributeType.DataType.STRING);
         EntityType person = graknGraph.putEntityType("perspn").attribute(name);
         EntityType animal = graknGraph.putEntityType("animal").sup(person);

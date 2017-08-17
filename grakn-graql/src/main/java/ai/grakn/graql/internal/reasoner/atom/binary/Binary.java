@@ -79,7 +79,7 @@ public abstract class Binary extends Atom {
 
     @Nullable
     @Override
-    public SchemaConcept getOntologyConcept(){
+    public SchemaConcept getSchemaConcept(){
         if (type == null && typeId != null) {
             type = getParentQuery().graph().getConcept(typeId).asType();
         }

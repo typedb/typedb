@@ -20,17 +20,18 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 
 /**
  * <p>
- *     Ontology element used to represent categories.
+ *     {@link SchemaConcept} used to represent categories.
  * </p>
  *
  * <p>
- *     An ontological element which represents categories instances can fall within.
- *     Any instance of a Entity Type is called an {@link Entity}.
+ *     An {@link SchemaConcept} which represents categories instances can fall within.
+ *     Any instance of a {@link EntityType} is called an {@link Entity}.
  * </p>
  *
  * @author fppt

@@ -125,7 +125,7 @@ public class ValidatorTest extends GraphTestBase{
 
     @Test
     public void whenDeletingRelations_EnsureGraphRemainsValid() throws InvalidGraphException {
-        // ontology
+        // schema
         EntityType person = graknGraph.putEntityType("person");
         EntityType movie = graknGraph.putEntityType("movie");
         RelationshipType cast = graknGraph.putRelationshipType("cast");

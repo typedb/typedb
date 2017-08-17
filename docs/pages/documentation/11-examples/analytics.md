@@ -24,7 +24,7 @@ For a detailed overview of calculating statistics using Graql, we recommend that
 
 This example takes a dataset that will be familiar to students of R - [mtcars (Motor Trend Car Road Tests) data](https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/mtcars.html).  The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 other aspects of automobile design and performance for 32 automobiles (1973–74 models). We have created a csv file of the data and added two columns to indicate the car maker's name and region that the car was made in (Europe, Japan or North America). The readme file in the repository gives further information for anyone who wishes to migrate the mtcars data directly into a graph, but for the purposes of this example we provide a [single data file that you can load](#data-migration) to populate a graph.
 
-## Ontology
+## Schema
 
 We have provided the following schema to represent the data, although many other variations are possible:
 

@@ -187,7 +187,7 @@ public class AttributeTest extends GraphTestBase {
         //Get the roles and role players via the relation edge:
         Map<Role, Set<Thing>> allRolePlayerBefore = relationshipStructureBefore.allRolePlayers();
 
-        //Expand Ontology to allow new role
+        //Expand Schema to allow new role
         Role newRole = graknGraph.putRole("My New Role");
         entityType.plays(newRole);
         relation.type().relates(newRole);

@@ -1,5 +1,5 @@
 ---
-title: Define a Rule-Driven Ontology
+title: Define a Rule-Driven Schema
 keywords: schema
 last_updated: December, 2016
 tags: [java, java-api]

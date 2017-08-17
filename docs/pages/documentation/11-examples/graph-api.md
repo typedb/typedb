@@ -47,9 +47,9 @@ cd [your Grakn install directory]
 
 The Java API, `GraknTx`, is a low-level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). It provides Java object constructs for the Grakn ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build up a knowledge base programmatically. It is also possible to perform simple concept lookups using the java API, which I’ll illustrate presently. First, let’s look at building up the knowledge base.
 
-### Building the Ontology
+### Building the Schema
 
-We will look at the same schema as is covered in the [Basic Ontology documentation](../building-a-schema/basic-schema.html) using Graql, which you may already be familiar with. If you’re not, the schema is fully specified in Graql [here](../building-a-schema/basic-schema.html#the-complete-schema). 
+We will look at the same schema as is covered in the [Basic Schema documentation](../building-a-schema/basic-schema.html) using Graql, which you may already be familiar with. If you’re not, the schema is fully specified in Graql [here](../building-a-schema/basic-schema.html#the-complete-schema). 
 
 First we need a [knowledge base](../developing-with-java/java-setup.html#initialising-a-transaction-on-the-graph):
 

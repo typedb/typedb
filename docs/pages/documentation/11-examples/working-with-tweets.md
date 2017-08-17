@@ -163,7 +163,7 @@ public class GraknTweetOntologyHelper {
 
 We have decided to omit exception handling to keep the tutorial simple. In production code however, it will be very important and must not be forgotten.
 
-## Defining The Ontology
+## Defining The Schema
 
 Let's define the schema. As we are mainly interested in both the **tweet** and **who posted the tweet**, let us capture these concepts by defining two **entity types**: `user` and `tweet`.
 
@@ -173,7 +173,7 @@ Next we will define two **roles** - `posts` and `posted_by` to express that a `u
 
 The structure can be summarized by the following graph:
 
-![Ontology](/images/working-with-tweets-schema.jpg)
+![Schema](/images/working-with-tweets-schema.jpg)
 
 With that set, let's define a new method `initTweetOntology` inside `GraknTweetOntologyHelper` class and define our schema creation there.
 

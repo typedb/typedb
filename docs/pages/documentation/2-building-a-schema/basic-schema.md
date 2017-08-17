@@ -1,5 +1,5 @@
 ---
-title: Define a Basic Ontology
+title: Define a Basic Schema
 keywords: schema
 last_updated: December, 2016
 tags: [java-api, java, advanced-grakn]
@@ -119,7 +119,7 @@ person sub entity
 
 We have now completed our basic genealogy schema.
 
-## The Complete Ontology
+## The Complete Schema
 
 The final schema will now look something like this:
 
@@ -176,7 +176,7 @@ insert
 
 ```
 
-![Ontology](/images/basic-ontology1.png)
+![Schema](/images/basic-schema1.png)
 
 ## Summary
 

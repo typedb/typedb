@@ -50,7 +50,7 @@ The JSON data for the book catalogue is as follows:
 
 The `id` value can be considered to be unique and identify each book. However, other values cannot be assumed to be unique. In the snippet shown above, note that the author `Carol Ann Duffy` and subject `Children's Fiction` are both duplicated. It is possible that a book title may also be duplicated, although this is not shown.
 
-### Ontology
+### Schema
 
 The schema for the book catalogue is as follows:
 

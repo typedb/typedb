@@ -108,7 +108,7 @@ public class RelationAtom extends IsaAtom {
     @Override
     public String toString(){
         String relationString = (isUserDefinedName()? getVarName() + " ": "") +
-                (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") +
+                (getSchemaConcept() != null? getSchemaConcept().getLabel() : "") +
                 getRelationPlayers().toString();
         return relationString + getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
     }
@@ -201,7 +201,7 @@ public class RelationAtom extends IsaAtom {
 
     @Override
     public boolean isType() {
-        return getOntologyConcept() != null;
+        return getSchemaConcept() != null;
     }
 
     @Override
@@ -219,7 +219,7 @@ public class RelationAtom extends IsaAtom {
     @Override
     public Set<String> validateOntologically() {
         Set<String> errors = new HashSet<>();
-        SchemaConcept type = getOntologyConcept();
+        SchemaConcept type = getSchemaConcept();
         if (type != null && !type.isRelationshipType()){
             errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE.getMessage(type.getLabel()));
             return errors;
@@ -306,7 +306,7 @@ public class RelationAtom extends IsaAtom {
         if (!(ruleAtom.isRelation())) return false;
 
         RelationAtom headAtom = (RelationAtom) ruleAtom;
-        RelationAtom atomWithType = this.addType(headAtom.getOntologyConcept()).inferRoleTypes();
+        RelationAtom atomWithType = this.addType(headAtom.getSchemaConcept()).inferRoleTypes();
         return atomWithType.isRuleApplicableViaAtom(headAtom);
     }
 
@@ -389,7 +389,7 @@ public class RelationAtom extends IsaAtom {
      * @return list of relation types this atom can have ordered by the number of compatible role types
      */
     public List<RelationshipType> inferPossibleRelationTypes(Answer sub) {
-        if (getPredicate() != null) return Collections.singletonList(getOntologyConcept().asRelationshipType());
+        if (getPredicate() != null) return Collections.singletonList(getSchemaConcept().asRelationshipType());
 
         //look at available role types
         Multimap<RelationshipType, Role> compatibleTypesFromRoles = getCompatibleRelationTypesWithRoles(getExplicitRoleTypes(), new RoleTypeConverter());
@@ -491,7 +491,7 @@ public class RelationAtom extends IsaAtom {
         Set<Var> mappedVars = getSpecificRolePlayers();
         return getTypeConstraints()
                 .filter(t -> mappedVars.contains(t.getVarName()))
-                .filter(t -> Objects.nonNull(t.getOntologyConcept()))
+                .filter(t -> Objects.nonNull(t.getSchemaConcept()))
                 .collect(toSet());
     }
 
@@ -500,7 +500,7 @@ public class RelationAtom extends IsaAtom {
         if (!headAtom.isRelation()) return Collections.singleton(new UnifierImpl());
 
         //if this atom is a match all atom, add type from rule head and find unmapped roles
-        RelationAtom relAtom = getPredicateVariable().getValue().isEmpty() ? this.addType(headAtom.getOntologyConcept()) : this;
+        RelationAtom relAtom = getPredicateVariable().getValue().isEmpty() ? this.addType(headAtom.getSchemaConcept()) : this;
         List<Var> permuteVars = new ArrayList<>(relAtom.getNonSpecificRolePlayers());
         if (permuteVars.isEmpty()) return Collections.singleton(new UnifierImpl());
 
@@ -517,11 +517,11 @@ public class RelationAtom extends IsaAtom {
      * @return either this if nothing/no roles can be inferred or fresh relation with inferred role types
      */
     private RelationAtom inferRoleTypes(){
-        if (getExplicitRoleTypes().size() == getRelationPlayers().size() || getOntologyConcept() == null) return this;
+        if (getExplicitRoleTypes().size() == getRelationPlayers().size() || getSchemaConcept() == null) return this;
 
         GraknTx graph = getParentQuery().graph();
         Role metaRole = graph.admin().getMetaRole();
-        RelationshipType relType = (RelationshipType) getOntologyConcept();
+        RelationshipType relType = (RelationshipType) getSchemaConcept();
         Map<Var, SchemaConcept> varOntologyConceptMap = getParentQuery().getVarOntologyConceptMap();
 
         List<RelationPlayer> allocatedRelationPlayers = new ArrayList<>();
@@ -561,7 +561,7 @@ public class RelationAtom extends IsaAtom {
                     if (schemaConcept != null && !Schema.MetaSchema.isMetaLabel(schemaConcept.getLabel()) && schemaConcept.isType()) {
                         mappings.put(casting, ReasonerUtils.getCompatibleRoleTypes(schemaConcept.asType(), possibleRoles.stream()));
                     } else {
-                        mappings.put(casting, ReasonerUtils.getOntologyConcepts(possibleRoles));
+                        mappings.put(casting, ReasonerUtils.getSchemaConcepts(possibleRoles));
                     }
                 });
 
@@ -602,7 +602,7 @@ public class RelationAtom extends IsaAtom {
      */
     private Multimap<Role, Var> computeRoleVarMap() {
         Multimap<Role, Var> roleMap = ArrayListMultimap.create();
-        if (getParentQuery() == null || getOntologyConcept() == null){ return roleMap;}
+        if (getParentQuery() == null || getSchemaConcept() == null){ return roleMap;}
 
         GraknTx graph = getParentQuery().graph();
         getRelationPlayers().forEach(c -> {
@@ -684,7 +684,7 @@ public class RelationAtom extends IsaAtom {
                             Set<Role> typeRoles = isMetaType? childRoles : parent.asType().plays().collect(toSet());
 
                             //incompatible type
-                            if (Sets.intersection(getOntologyConcept().asRelationshipType().relates().collect(toSet()), typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
+                            if (Sets.intersection(getSchemaConcept().asRelationshipType().relates().collect(toSet()), typeRoles).isEmpty()) compatibleChildRoles = new HashSet<>();
                             else {
                                 compatibleChildRoles = compatibleChildRoles.stream()
                                         .filter(rc -> Schema.MetaSchema.isMetaLabel(rc.getLabel()) || typeRoles.contains(rc))

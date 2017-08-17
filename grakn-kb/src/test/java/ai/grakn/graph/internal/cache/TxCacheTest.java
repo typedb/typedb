@@ -312,6 +312,6 @@ public class TxCacheTest extends GraphTestBase {
     @SuppressWarnings("unchecked")
     private <T extends SchemaConcept> void assertTxBoundConceptMatches(T type, Function<T, Object> resultSupplier, Matcher expectedMatch){
         assertThat(resultSupplier.apply(type), expectedMatch);
-        assertThat(resultSupplier.apply(graknGraph.txCache().getCachedOntologyElement(type.getLabel())), expectedMatch);
+        assertThat(resultSupplier.apply(graknGraph.txCache().getCachedSchemaConcept(type.getLabel())), expectedMatch);
     }
 }

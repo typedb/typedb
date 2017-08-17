@@ -54,7 +54,7 @@ public class EntityTest extends GraphTestBase {
 
     @Test
     public void whenDeletingInstanceInRelationShip_TheInstanceAndCastingsAreDeletedAndTheRelationRemains() throws GraphOperationException{
-        //Ontology
+        //Schema
         EntityType type = graknGraph.putEntityType("Concept Type");
         RelationshipType relationshipType = graknGraph.putRelationshipType("relationTypes");
         Role role1 = graknGraph.putRole("role1");

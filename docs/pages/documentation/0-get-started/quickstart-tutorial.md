@@ -44,7 +44,7 @@ match $x isa person, has identifier $n;
 
 You should see a printout of a number of lines of text, each of which includes a name, such as "William Sanford Titus" or "Elizabeth Niesz".
 
-### The Ontology
+### The Schema
 
 You can find out much more about the Grakn schema in our documentation about the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html), which states that
 

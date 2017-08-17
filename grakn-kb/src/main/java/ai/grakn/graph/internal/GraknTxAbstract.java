@@ -482,7 +482,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      */
     private SchemaConcept buildSchemaConcept(Label label, Supplier<SchemaConcept> dbBuilder) {
         if (txCache().isTypeCached(label)) {
-            return txCache().getCachedOntologyElement(label);
+            return txCache().getCachedSchemaConcept(label);
         } else {
             return dbBuilder.get();
         }

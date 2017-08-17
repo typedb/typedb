@@ -12,7 +12,7 @@ comment_issue_id: 17
 
 In Grakn, a knowledge base is made of two layers: the schema layer and the data layer. 
 
-## Ontology
+## Schema
 
 In Grakn, the [schema](https://en.wikipedia.org/wiki/Database_schema) is the formal specification of all the relevant concepts and their meaningful associations in a given domain. It allows objects and relationships to be categorised into distinct types, and for generic properties of those types to be expressed. Specifying the schema enables [automated reasoning](https://en.wikipedia.org/wiki/Inference_engine) over the represented knowledge, such as the extraction of implicit information from explicit data ([inference](./grakn-knowledge-model.html#rule-and-sub-type-inference)) or discovery of inconsistencies in the data ([validation](./grakn-knowledge-model.html#data-validation)).  For this reason, the schema must be clearly defined before loading data into the knowledge base. 
 
@@ -32,7 +32,7 @@ In Grakn, the [schema](https://en.wikipedia.org/wiki/Database_schema) is the for
 
 <br /> <img src="/images/knowledge-model1.png" style="width: 600px;"/> <br />
 
-### Building an Ontology
+### Building an Schema
 
 In this section, we build up a simple schema to illustrate the concept types in the Grakn knowledge model. 
 

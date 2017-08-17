@@ -87,8 +87,8 @@ public class GraphCache {
     }
 
     /**
-     * Reads the types and their labels currently in the transaction cache into the graph cache.
-     * This usually happens when a commit occurs and allows us to track Ontology mutations without having to read
+     * Reads the {@link SchemaConcept} and their {@link Label} currently in the transaction cache into the graph cache.
+     * This usually happens when a commit occurs and allows us to track schema mutations without having to read
      * the graph.
      *
      * @param txCache The transaction cache
@@ -113,9 +113,9 @@ public class GraphCache {
     }
 
     /**
-     * A copy of the cached ontology. This is used when creating a new transaction.
+     * A copy of the cached schema. This is used when creating a new transaction.
      *
-     * @return an immutable copy of the cached ontology.
+     * @return an immutable copy of the cached schema.
      */
     public Map<Label, SchemaConcept> getCachedTypes(){
         return ImmutableMap.copyOf(cachedTypes.asMap());
