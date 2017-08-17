@@ -476,7 +476,7 @@ export default class Visualiser {
         highlight: {
           background: colourString,
         } });
-      // If it's an ontology node
+      // If it's an schema node
       this.nodes.get().forEach((v) => {
         if (v.baseType === baseType) {
           this.updateNode({

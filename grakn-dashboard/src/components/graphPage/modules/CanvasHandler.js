@@ -165,7 +165,7 @@ function linkResourceOwners(instances) {
 function initialise(graphElement:Object) {
   EventHub.$on('clear-page', () => clearGraph());
   EventHub.$on('click-submit', query => onClickSubmit(query));
-  EventHub.$on('load-ontology', type => onLoadOntology(type));
+  EventHub.$on('load-schema', type => onLoadOntology(type));
   CanvasEvents.registerCanvasEvents();
   // Render visualiser only after having registered all the events handlers.
   visualiser.render(graphElement);

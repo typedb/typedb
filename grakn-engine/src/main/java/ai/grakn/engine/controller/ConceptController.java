@@ -62,7 +62,7 @@ import static ai.grakn.util.REST.Response.Json.RELATIONS_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.RESOURCES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.ROLES_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Concept.CONCEPT;
-import static ai.grakn.util.REST.WebPath.Concept.ONTOLOGY;
+import static ai.grakn.util.REST.WebPath.Concept.SCHEMA;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.stream.Collectors.toList;
 
@@ -88,7 +88,7 @@ public class ConceptController {
         this.ontologyGetTimer = metricRegistry.timer(name(ConceptController.class, "ontology"));
 
         spark.get(CONCEPT + ID_PARAMETER,  this::conceptByIdentifier);
-        spark.get(ONTOLOGY,  this::ontology);
+        spark.get(SCHEMA,  this::ontology);
 
     }
 

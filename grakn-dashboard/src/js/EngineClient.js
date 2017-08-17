@@ -139,11 +139,11 @@ export default {
     });
   },
             /**
-             * Get meta ontology type instances.
+             * Get meta schema type instances.
              */
   getMetaTypes() {
     return this.request({
-      url: `/graph/ontology?keyspace=${User.getCurrentKeySpace()}`,
+      url: `/graph/schema?keyspace=${User.getCurrentKeySpace()}`,
       accepts: 'application/json',
     });
   },
