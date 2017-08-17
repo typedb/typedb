@@ -22,10 +22,10 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.migration.json.JsonMigrator;
@@ -131,7 +131,7 @@ public class JsonMigratorMainTest {
             Entity address = getProperty(graph, person, "has-address").asEntity();
             Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
 
-            Resource number = getResource(graph, streetAddress, Label.of("number"));
+            Attribute number = getResource(graph, streetAddress, Label.of("number"));
             assertEquals(21L, number.getValue());
 
             Collection<Thing> phoneNumbers = getProperties(graph, person, "has-phone");

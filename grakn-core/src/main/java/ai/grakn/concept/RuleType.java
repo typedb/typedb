@@ -78,20 +78,20 @@ public interface RuleType extends Type {
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    RuleType key(ResourceType resourceType);
+    RuleType key(AttributeType attributeType);
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked.
      *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    RuleType resource(ResourceType resourceType);
+    RuleType attribute(AttributeType attributeType);
 
     //---- Inherited Methods
     /**

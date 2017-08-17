@@ -21,8 +21,8 @@ package ai.grakn.client;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -223,11 +223,11 @@ public class BatchMutatorClientTest {
         // load ontology
         try(GraknTx graph = session.open(GraknTxType.WRITE)){
             EntityType nameTag = graph.putEntityType("name_tag");
-            ResourceType<String> nameTagString = graph.putResourceType("name_tag_string", ResourceType.DataType.STRING);
-            ResourceType<String> nameTagId = graph.putResourceType("name_tag_id", ResourceType.DataType.STRING);
+            AttributeType<String> nameTagString = graph.putAttributeType("name_tag_string", AttributeType.DataType.STRING);
+            AttributeType<String> nameTagId = graph.putAttributeType("name_tag_id", AttributeType.DataType.STRING);
 
-            nameTag.resource(nameTagString);
-            nameTag.resource(nameTagId);
+            nameTag.attribute(nameTagString);
+            nameTag.attribute(nameTagId);
             graph.admin().commitNoLogs();
 
             return spy(new BatchMutatorClient(graph.getKeyspace(), engine.uri()));

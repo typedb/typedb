@@ -27,8 +27,8 @@ relation3 sub relationship
     relates role1
     relates role2;
 
-res1 sub resource datatype string;
-res2 sub resource datatype string;
+res1 sub attribute datatype string;
+res2 sub attribute datatype string;
 
 #Rules
 

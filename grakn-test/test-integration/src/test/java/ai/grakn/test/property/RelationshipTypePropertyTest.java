@@ -96,7 +96,7 @@ public class RelationshipTypePropertyTest {
     public void whenAddingARelation_TheRelationHasNoResources(@NonMeta @NonAbstract RelationshipType type) {
         Relationship relationship = type.addRelationship();
 
-        assertThat(relationship.resources().collect(toSet()), empty());
+        assertThat(relationship.attributes().collect(toSet()), empty());
     }
 
     @Property

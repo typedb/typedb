@@ -75,10 +75,10 @@ subject sub entity
 
 # Resources
 
-bookId sub resource datatype string;
-title sub resource datatype string;
-authorName sub resource datatype string;
-subjectName sub resource datatype string;
+bookId sub attribute datatype string;
+title sub attribute datatype string;
+authorName sub attribute datatype string;
+subjectName sub attribute datatype string;
 
 # Relations and Roles
 

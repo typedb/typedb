@@ -19,7 +19,7 @@ diagonal sub relationship
 
 rel-from sub role;
 rel-to sub role;
-name sub resource datatype string;
+name sub attribute datatype string;
 
 isa inference-rule
 when {

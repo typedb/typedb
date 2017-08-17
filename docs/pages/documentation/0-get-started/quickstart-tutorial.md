@@ -73,19 +73,19 @@ person sub entity
   has death-date
   has gender;
 
-# Resources
+# Attributes
 
-identifier sub resource datatype string;
-name sub resource datatype string;
+identifier sub attribute datatype string;
+name sub attribute datatype string;
 firstname sub name datatype string;
 surname sub name datatype string;
 middlename sub name datatype string;
-picture sub resource datatype string;
-age sub resource datatype long;
-"date" sub resource datatype string;
+picture sub attribute datatype string;
+age sub attribute datatype long;
+"date" sub attribute datatype string;
 birth-date sub "date" datatype string;
 death-date sub "date" datatype string;
-gender sub resource datatype string;
+gender sub attribute datatype string;
 
 # Roles and Relations
 
@@ -108,10 +108,10 @@ child sub role;
 There are a number of things we can say about ontology shown above:
 
 * there is one entity, `person`, which represents a person in the family whose genealogy data we are studying. 
-* the `person` entity has a number of resources to describe aspects of them, such as their name, age, dates of birth and death, gender and a URL to a picture of them (if one exists). Those resources are all expressed as strings, except for the age, which is of datatype long.
+* the `person` entity has a number of attributes to describe aspects of them, such as their name, age, dates of birth and death, gender and a URL to a picture of them (if one exists). Those attributes are all expressed as strings, except for the age, which is of datatype long.
 * there are two relationships that a `person` can participate in: `marriage` and `parentship`
 * the person can play different roles in those relationships, as a spouse (`spouse1` or `spouse2` - we aren't assigning them by gender to be husband or wife) and as a `parent` or `child` (again, we are not assigning a gender such as mother or father).   
-* the `marriage` relationship has a resource, which is a URL to a wedding picture, if one exists. 
+* the `marriage` relationship has an attribute, which is a URL to a wedding picture, if one exists. 
 
 ### The Data
 
@@ -137,7 +137,7 @@ Don't worry about the numbers such as `$57472`. These are variables in Graql, an
 
 Having started Grakn engine and the Graql shell in its interactive mode, we are ready to make a number queries. First, we will make a couple of `match` queries.
 
-Find all the people in the knowledge base, and list their `identifier` resources (a string that represents their full name):
+Find all the people in the knowledge base, and list their `identifier` attributes (a string that represents their full name):
 
 ```graql
 match $p isa person, has identifier $i;
@@ -209,7 +209,7 @@ You can zoom the display in and out, and move the nodes around for better visibi
 
 We will move on to discuss the use of GRAKN.AI to infer new information about a dataset. In the ontology, so far, we have dealt only with a person, not a man or woman, and the parentship relationships were simply between parent and child roles. We did not directly add information about the nature of the parent and child in each relationship - they could be father and son, father and daughter, mother and son or mother and daughter.
 
-However, the `person` entity does have a gender resource, and we can use Grakn to infer more information about each relationship by using that property. The ontology accommodates the more specific roles of mother, father, daughter and son:
+However, the `person` entity does have a gender attribute, and we can use Grakn to infer more information about each relationship by using that property. The ontology accommodates the more specific roles of mother, father, daughter and son:
 
 ```graql
 insert

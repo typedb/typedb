@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.parser;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -97,7 +97,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithDatatypeToString() {
-        assertSameResults(qb.match(var("x").datatype(ResourceType.DataType.LONG)));
+        assertSameResults(qb.match(var("x").datatype(AttributeType.DataType.LONG)));
     }
 
     @Test

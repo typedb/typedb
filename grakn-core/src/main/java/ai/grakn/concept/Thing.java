@@ -34,7 +34,7 @@ import java.util.stream.Stream;
  *
  * @see Entity
  * @see Relationship
- * @see Resource
+ * @see Attribute
  * @see Rule
  *
  * @author fppt
@@ -72,30 +72,30 @@ public interface Thing extends Concept{
     Stream<Role> plays();
 
     /**
-     * Creates a relation from this instance to the provided resource.
+     * Creates a relation from this instance to the provided {@link Attribute}.
      *
-     * @param resource The resource to which a relationship is created
+     * @param attribute The {@link Attribute} to which a relationship is created
      * @return The instance itself
      */
-    Thing resource(Resource resource);
+    Thing attribute(Attribute attribute);
 
     /**
-     * Creates a relationship from this instance to the provided resource.
+     * Creates a relationship from this instance to the provided attribute.
      *
-     * @param resource The resource to which a relationship is created
-     * @return The relationship connecting the thing and the resource
+     * @param attribute The attribute to which a relationship is created
+     * @return The relationship connecting the thing and the attribute
      */
-    Relationship resourceRelationship(Resource resource);
+    Relationship attributeRelationship(Attribute attribute);
 
     /**
-     * Retrieves a collection of Resources attached to this Instances
-     * @see Resource
+     * Retrieves a collection of {@link Attribute} attached to this Instances
+     * @see Attribute
      *
-     * @param resourceTypes Resource Types of the resources attached to this entity
-     * @return A collection of resources attached to this Thing.
+     * @param attributeTypes {@link AttributeType}s of the {@link Attribute}s attached to this entity
+     * @return A collection of {@link AttributeType}s attached to this Thing.
      */
     @CheckReturnValue
-    Stream<Resource<?>> resources(ResourceType ... resourceTypes);
+    Stream<Attribute<?>> attributes(AttributeType... attributeTypes);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

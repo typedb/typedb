@@ -183,7 +183,7 @@ public class MatchQueryModifierTest {
     }
 
     private <T extends Comparable<T>> void assertResultsOrderedByValue(MatchQuery query, Var var, boolean asc) {
-        Stream<T> values = query.stream().map(result -> result.get(var).<T>asResource().getValue());
+        Stream<T> values = query.stream().map(result -> result.get(var).<T>asAttribute().getValue());
         assertResultsOrdered(values, asc);
     }
 

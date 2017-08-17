@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -37,7 +37,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Represents the {@code datatype} property on a {@link ResourceType}.
+ * Represents the {@code datatype} property on a {@link AttributeType}.
  *
  * This property can be queried or inserted.
  *
@@ -51,11 +51,11 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
 
     public static final String NAME = "datatype";
 
-    public static DataTypeProperty of(ResourceType.DataType<?> datatype) {
+    public static DataTypeProperty of(AttributeType.DataType<?> datatype) {
         return new AutoValue_DataTypeProperty(datatype);
     }
 
-    public abstract ResourceType.DataType<?> dataType();
+    public abstract AttributeType.DataType<?> dataType();
 
     @Override
     public String getName() {

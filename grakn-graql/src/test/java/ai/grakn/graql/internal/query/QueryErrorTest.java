@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
@@ -32,6 +32,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -152,7 +153,7 @@ public class QueryErrorTest {
         QueryBuilder emptyQb = empty.graph().graql();
         emptyQb.insert(
                 label("person").sub("entity"),
-                label("name").sub("resource").datatype(ResourceType.DataType.STRING)
+                label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
 
         exception.expect(GraphOperationException.class);

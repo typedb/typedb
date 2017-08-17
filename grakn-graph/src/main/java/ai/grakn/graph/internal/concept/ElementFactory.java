@@ -18,11 +18,11 @@
 
 package ai.grakn.graph.internal.concept;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraphOperationException;
@@ -97,14 +97,14 @@ public final class ElementFactory {
         return getOrBuildConcept(element, conceptId, conceptBuilder);
     }
 
-    // ---------------------------------------- Building Resource Types  -----------------------------------------------
-    public <V> ResourceTypeImpl<V> buildResourceType(VertexElement vertex, ResourceType<V> type, ResourceType.DataType<V> dataType){
-        return getOrBuildConcept(vertex, (v) -> new ResourceTypeImpl<>(v, type, dataType));
+    // ---------------------------------------- Building Attribute Types  -----------------------------------------------
+    public <V> AttributeTypeImpl<V> buildResourceType(VertexElement vertex, AttributeType<V> type, AttributeType.DataType<V> dataType){
+        return getOrBuildConcept(vertex, (v) -> new AttributeTypeImpl<>(v, type, dataType));
     }
 
     // ------------------------------------------ Building Resources
-    <V> ResourceImpl<V> buildResource(VertexElement vertex, ResourceType<V> type, Object persitedValue){
-        return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(v, type, persitedValue));
+    <V> AttributeImpl<V> buildResource(VertexElement vertex, AttributeType<V> type, Object persitedValue){
+        return getOrBuildConcept(vertex, (v) -> new AttributeImpl<>(v, type, persitedValue));
     }
 
     // ---------------------------------------- Building Relationship Types  -----------------------------------------------
@@ -196,11 +196,11 @@ public final class ElementFactory {
                 case ENTITY_TYPE:
                     concept = new EntityTypeImpl(vertexElement);
                     break;
-                case RESOURCE_TYPE:
-                    concept = new ResourceTypeImpl<>(vertexElement);
+                case ATTRIBUTE_TYPE:
+                    concept = new AttributeTypeImpl<>(vertexElement);
                     break;
-                case RESOURCE:
-                    concept = new ResourceImpl<>(vertexElement);
+                case ATTRIBUTE:
+                    concept = new AttributeImpl<>(vertexElement);
                     break;
                 case RULE:
                     concept = new RuleImpl(vertexElement);
@@ -274,7 +274,7 @@ public final class ElementFactory {
                 String label = type.get().target().label();
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
                 if(label.equals(RELATIONSHIP_TYPE.name())) return Schema.BaseType.RELATIONSHIP;
-                if(label.equals(Schema.BaseType.RESOURCE_TYPE.name())) return Schema.BaseType.RESOURCE;
+                if(label.equals(Schema.BaseType.ATTRIBUTE_TYPE.name())) return Schema.BaseType.ATTRIBUTE;
                 if(label.equals(RULE_TYPE.name())) return Schema.BaseType.RULE;
             }
         }

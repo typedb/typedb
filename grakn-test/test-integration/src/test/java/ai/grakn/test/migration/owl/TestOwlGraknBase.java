@@ -23,8 +23,8 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.migration.owl.OWLMigrator;
 import ai.grakn.migration.owl.OwlModel;
 import ai.grakn.test.EngineContext;
@@ -85,10 +85,10 @@ public class TestOwlGraknBase {
         }
     }
 
-    ResourceType<String> owlIriResource(){ return graph.getResourceType(OwlModel.IRI.owlname());}
+    AttributeType<String> owlIriResource(){ return graph.getAttributeType(OwlModel.IRI.owlname());}
 
-    <T> Entity getEntity(T id, ResourceType<T> rtype){
-        Resource<T> iri = rtype.getResource(id);
+    <T> Entity getEntity(T id, AttributeType<T> rtype){
+        Attribute<T> iri = rtype.getAttribute(id);
         Thing inst = iri != null? iri.ownerInstances().findFirst().orElse(null) : null;
         return inst != null? inst.asEntity() : null;
     }

@@ -27,7 +27,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
@@ -144,20 +144,20 @@ public class GraqlTest {
                     .relates(resourceOwner)
                     .relates(resourceValue);
 
-            ResourceType<Long> resource = graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG)
+            AttributeType<Long> resource = graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG)
                     .plays(resourceValue);
             EntityType thingy = graph.putEntityType("thingy").plays(resourceOwner);
             Entity theResourceOwner = thingy.addEntity();
 
             relationshipType.addRelationship()
                     .addRolePlayer(resourceOwner, theResourceOwner)
-                    .addRolePlayer(resourceValue, resource.putResource(1L));
+                    .addRolePlayer(resourceValue, resource.putAttribute(1L));
             relationshipType.addRelationship()
                     .addRolePlayer(resourceOwner, theResourceOwner)
-                    .addRolePlayer(resourceValue, resource.putResource(2L));
+                    .addRolePlayer(resourceValue, resource.putAttribute(2L));
             relationshipType.addRelationship()
                     .addRolePlayer(resourceOwner, theResourceOwner)
-                    .addRolePlayer(resourceValue, resource.putResource(3L));
+                    .addRolePlayer(resourceValue, resource.putAttribute(3L));
 
             graph.commit();
         }
@@ -236,7 +236,7 @@ public class GraqlTest {
     @Test
     public void testAnalyticsDoesNotCommitByMistake() throws InvalidGraphException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
-            graph.putResourceType("number", ResourceType.DataType.LONG);
+            graph.putAttributeType("number", AttributeType.DataType.LONG);
             graph.commit();
         }
 

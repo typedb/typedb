@@ -85,8 +85,8 @@ public class HALUtils {
             return Schema.BaseType.ENTITY;
         } else if (thing.isRelationship()) {
             return Schema.BaseType.RELATIONSHIP;
-        } else if (thing.isResource()) {
-            return Schema.BaseType.RESOURCE;
+        } else if (thing.isAttribute()) {
+            return Schema.BaseType.ATTRIBUTE;
         } else if (thing.isRule()) {
             return Schema.BaseType.RULE;
         } else {
@@ -99,8 +99,8 @@ public class HALUtils {
             return Schema.BaseType.ENTITY_TYPE;
         } else if (schemaConcept.isRelationshipType()) {
             return Schema.BaseType.RELATIONSHIP_TYPE;
-        } else if (schemaConcept.isResourceType()) {
-            return Schema.BaseType.RESOURCE_TYPE;
+        } else if (schemaConcept.isAttributeType()) {
+            return Schema.BaseType.ATTRIBUTE_TYPE;
         } else if (schemaConcept.isRuleType()) {
             return Schema.BaseType.RULE_TYPE;
         } else if (schemaConcept.isRole()) {
@@ -124,8 +124,8 @@ public class HALUtils {
             resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asSchemaConcept()).name());
         }
 
-        if (concept.isResource()) {
-            resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
+        if (concept.isAttribute()) {
+            resource.withProperty(VALUE_PROPERTY, concept.asAttribute().getValue());
         }
         if (concept.isType()) {
             resource.withProperty(NAME_PROPERTY, concept.asType().getLabel().getValue());

@@ -162,7 +162,7 @@ public class LockTestIT {
     }
     @Theory
     public void whenGettingLockWithManyIllegalCharactersInPath_LockIsAcquired(Locks locks){
-        String lockName = "/RESOURCE-url-http://dbpedia.org/resource/Jorhat_College";
+        String lockName = "/ATTRIBUTE-url-http://dbpedia.org/resource/Jorhat_College";
 
         Lock lock = getLock(locks, lockName);
 

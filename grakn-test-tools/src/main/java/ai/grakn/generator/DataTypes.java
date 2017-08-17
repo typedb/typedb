@@ -19,7 +19,7 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
@@ -29,14 +29,14 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
  *
  * @author Felix Chapman
  */
-public class DataTypes extends Generator<ResourceType.DataType> {
+public class DataTypes extends Generator<AttributeType.DataType> {
 
     public DataTypes() {
-        super(ResourceType.DataType.class);
+        super(AttributeType.DataType.class);
     }
 
     @Override
-    public ResourceType.DataType generate(SourceOfRandomness random, GenerationStatus status) {
-        return random.choose(ResourceType.DataType.SUPPORTED_TYPES.values());
+    public AttributeType.DataType generate(SourceOfRandomness random, GenerationStatus status) {
+        return random.choose(AttributeType.DataType.SUPPORTED_TYPES.values());
     }
 }

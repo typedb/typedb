@@ -38,7 +38,7 @@ import static ai.grakn.util.Schema.MetaSchema.THING;
 import static ai.grakn.util.Schema.MetaSchema.CONSTRAINT_RULE;
 import static ai.grakn.util.Schema.MetaSchema.ENTITY;
 import static ai.grakn.util.Schema.MetaSchema.INFERENCE_RULE;
-import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
+import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -54,7 +54,7 @@ public class GraknMatchers {
 
     public static final Matcher<MatchableConcept> concept = type(THING.getLabel());
     public static final Matcher<MatchableConcept> entity = type(ENTITY.getLabel());
-    public static final Matcher<MatchableConcept> resource = type(RESOURCE.getLabel());
+    public static final Matcher<MatchableConcept> resource = type(ATTRIBUTE.getLabel());
     public static final Matcher<MatchableConcept> rule = type(RULE.getLabel());
     public static final Matcher<MatchableConcept> inferenceRule = type(INFERENCE_RULE.getLabel());
     public static final Matcher<MatchableConcept> constraintRule = type(CONSTRAINT_RULE.getLabel());
@@ -133,7 +133,7 @@ public class GraknMatchers {
 
             @Override
             public Object transform(MatchableConcept item) {
-                return item.get().asResource().getValue();
+                return item.get().asAttribute().getValue();
             }
         };
     }
@@ -265,7 +265,7 @@ public class GraknMatchers {
 
             @Override
             Iterable<? super MatchableConcept> transform(MatchableConcept item) {
-                return item.get().asThing().resources()
+                return item.get().asThing().attributes()
                         .filter(resource -> MatchableConcept.NAME_TYPES.contains(resource.type().getLabel()))
                         .map(MatchableConcept::of)
                         .collect(toSet());

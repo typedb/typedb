@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -55,9 +55,9 @@ import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
  * This property can be queried or inserted. Whether this is a key is indicated by the
  * {@link HasResourceTypeProperty#required} field.
  *
- * This property is defined as an implicit ontological structure between a {@link Type} and a {@link ResourceType},
+ * This property is defined as an implicit ontological structure between a {@link Type} and a {@link AttributeType},
  * including one implicit {@link RelationshipType} and two implicit {@link Role}s. The labels of these types are derived
- * from the label of the {@link ResourceType}.
+ * from the label of the {@link AttributeType}.
  *
  * Like {@link HasResourceProperty}, if this is not a key and is used in a match query it will not use the implicit
  * structure - instead, it will match if there is any kind of relation type connecting the two types.
@@ -142,12 +142,12 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         Type entityTypeConcept = executor.get(var).asType();
-        ResourceType resourceTypeConcept = executor.get(resourceType().var()).asResourceType();
+        AttributeType attributeTypeConcept = executor.get(resourceType().var()).asAttributeType();
 
         if (required()) {
-            entityTypeConcept.key(resourceTypeConcept);
+            entityTypeConcept.key(attributeTypeConcept);
         } else {
-            entityTypeConcept.resource(resourceTypeConcept);
+            entityTypeConcept.attribute(attributeTypeConcept);
         }
     }
 

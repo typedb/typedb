@@ -33,7 +33,7 @@ match $x has pokedex-no < 20;
 match $x isa pokemon;{ $x has name "Mew";} or {($x, $y); $y isa pokemon-type, has name "water"; };
 
 match $x sub concept; # List all concepts
-match $x sub resource; # List all resources
+match $x sub attribute; # List all resources
 match $x sub entity; # List all entities
 match $x sub role; # List all roles
 match $x sub relationship; # List all relationships

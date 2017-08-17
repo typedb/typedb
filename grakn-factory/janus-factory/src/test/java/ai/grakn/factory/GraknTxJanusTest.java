@@ -21,10 +21,10 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.GraknTxAbstract;
 import ai.grakn.graph.internal.GraknTxJanus;
@@ -142,19 +142,19 @@ public class GraknTxJanusTest extends JanusTestBase {
     @Test
     public void whenCreatingDateResource_EnsureDateCanBeRetrieved(){
         GraknTxJanus graph = new TxFactoryJanus("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
-        ResourceType<LocalDateTime> dateType = graph.putResourceType("date", ResourceType.DataType.DATE);
+        AttributeType<LocalDateTime> dateType = graph.putAttributeType("date", AttributeType.DataType.DATE);
         LocalDateTime now = LocalDateTime.now();
-        Resource<LocalDateTime> date = dateType.putResource(now);
+        Attribute<LocalDateTime> date = dateType.putAttribute(now);
         assertEquals(now, date.getValue());
     }
 
     @Test
     public void whenLookingUpRelationEdgeViaConceptId_EnsureTheRelationEdgeIsReturned(){
-        ResourceType<String> resourceType = graknTx.putResourceType("Looky a resource type", ResourceType.DataType.STRING);
-        Resource<String> resource = resourceType.putResource("A Resource Thing");
+        AttributeType<String> attributeType = graknTx.putAttributeType("Looky a attribute type", AttributeType.DataType.STRING);
+        Attribute<String> attribute = attributeType.putAttribute("A Attribute Thing");
 
-        EntityType entityType = graknTx.putEntityType("My entity").resource(resourceType);
-        Relationship relationship = Iterators.getOnlyElement(entityType.addEntity().resource(resource).relations().iterator());
+        EntityType entityType = graknTx.putEntityType("My entity").attribute(attributeType);
+        Relationship relationship = Iterators.getOnlyElement(entityType.addEntity().attribute(attribute).relations().iterator());
 
         //Closing so the cache is not accessed when doing the lookup
         graknTx.commit();

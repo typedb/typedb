@@ -32,7 +32,7 @@ inferredRelation sub relationship
 
 #Resources
 
-"name" sub resource, datatype string;
+"name" sub attribute, datatype string;
 
 $a1 isa entity1, has name "a1";
 $a2 isa entity1, has name "a2";

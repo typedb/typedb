@@ -19,11 +19,11 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
@@ -61,8 +61,8 @@ import static java.util.stream.Collectors.joining;
  *
  * This property can be queried, inserted or deleted.
  *
- * The property is defined as a relationship between an {@link Thing} and a {@link Resource}, where the
- * {@link Resource} is of a particular type.
+ * The property is defined as a relationship between an {@link Thing} and a {@link Attribute}, where the
+ * {@link Attribute} is of a particular type.
  *
  * When matching, shortcut edges are used to speed up the traversal. The type of the relationship does not matter.
  *
@@ -128,16 +128,16 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     @Override
     void checkValidProperty(GraknTx graph, VarPatternAdmin var) {
         SchemaConcept ontologyConcept = graph.getSchemaConcept(type());
-        if(ontologyConcept == null || !ontologyConcept.isResourceType()) {
+        if(ontologyConcept == null || !ontologyConcept.isAttributeType()) {
             throw GraqlQueryException.mustBeResourceType(type());
         }
     }
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Resource resourceConcept = executor.get(resource().var()).asResource();
+        Attribute attributeConcept = executor.get(resource().var()).asAttribute();
         Thing thing = executor.get(var).asThing();
-        ConceptId relationId = thing.resourceRelationship(resourceConcept).getId();
+        ConceptId relationId = thing.attributeRelationship(attributeConcept).getId();
         executor.builder(relation().var()).id(relationId);
     }
 
@@ -165,7 +165,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     }
 
     private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relationship relationship, Role resourceRole) {
-        Object value = relationship.rolePlayers(resourceRole).iterator().next().asResource().getValue();
+        Object value = relationship.rolePlayers(resourceRole).iterator().next().asAttribute().getValue();
 
         return optPredicate
                 .flatMap(ValuePredicateAdmin::getPredicate)

@@ -37,7 +37,7 @@ import java.util.stream.Stream;
  * @see EntityType
  * @see Role
  * @see RelationshipType
- * @see ResourceType
+ * @see AttributeType
  * @see RuleType
  *
  * @author fppt
@@ -72,24 +72,24 @@ public interface Type extends SchemaConcept {
     Type plays(Role role) throws GraphOperationException;
 
     /**
-     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType} to be linked in a strictly one-to-one mapping.
      *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
      * @return The Type itself.
      *
      * @throws GraphOperationException if this is a meta-type
      */
-    Type key(ResourceType resourceType) throws GraphOperationException;
+    Type key(AttributeType attributeType) throws GraphOperationException;
 
     /**
-     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked.
+     * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType}  to be linked.
      *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The {@link AttributeType}  which instances of this type should be allowed to play.
      * @return The Type itself.
      *
      * @throws GraphOperationException if this is a meta-type
      */
-     Type resource(ResourceType resourceType) throws GraphOperationException;
+     Type attribute(AttributeType attributeType) throws GraphOperationException;
 
     /**
      * Classifies the type to a specific scope. This allows you to optionally categorise types.
@@ -117,17 +117,17 @@ public interface Type extends SchemaConcept {
 
     /**
      *
-     * @return The resource types which this type is linked with.
+     * @return The {@link AttributeType}s which this {@link Type} is linked with.
      */
     @CheckReturnValue
-    Stream<ResourceType> resources();
+    Stream<AttributeType> attributes();
 
     /**
      *
-     * @return The resource types which this type is linked with as a key.
+     * @return The {@link AttributeType}s which this {@link Type} is linked with as a key.
      */
     @CheckReturnValue
-    Stream<ResourceType> keys();
+    Stream<AttributeType> keys();
 
     /**
      *

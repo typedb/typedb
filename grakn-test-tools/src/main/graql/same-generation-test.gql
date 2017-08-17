@@ -22,7 +22,7 @@ person plays sibA, plays sibB;
 "SameGen" sub relationship, relates SG-role-A, relates SG-role-B;
 person plays SG-role-A, plays SG-role-B;
 
-"name" sub resource, datatype string;
+"name" sub attribute, datatype string;
 
 ####################################################
 ##################DATA#############################

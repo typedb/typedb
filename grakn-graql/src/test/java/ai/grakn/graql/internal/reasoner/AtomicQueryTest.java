@@ -104,7 +104,7 @@ public class AtomicQueryTest {
     }
 
     private Concept getConceptByResourceValue(GraknTx graph, String id){
-        Set<Concept> instances = graph.getResourcesByValue(id)
+        Set<Concept> instances = graph.getAttributesByValue(id)
                 .stream().flatMap(res -> res.ownerInstances()).collect(Collectors.toSet());
         if (instances.size() != 1)
             throw new IllegalStateException("Something wrong, multiple instances with given res value");

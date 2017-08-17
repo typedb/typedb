@@ -235,13 +235,13 @@ plant sub entity
     has price
     has availability;
 
-name sub resource datatype string;
+name sub attribute datatype string;
 common sub name;
 botanical sub name;
-zone sub resource datatype string;
-light sub resource datatype string;
-price sub resource datatype double;
-availability sub resource datatype long;
+zone sub attribute datatype string;
+light sub attribute datatype string;
+price sub attribute datatype double;
+availability sub attribute datatype long;
 ```
 
 We want to insert one `plant` entity in the knowledge base per `PLANT` tag in the XML data. This means that me must specify main element of the XML migration to be "PLANT". In the migration script you would do so by adding the parameter: `-element PLANT`. 

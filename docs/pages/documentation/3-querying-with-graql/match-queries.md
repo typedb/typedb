@@ -84,7 +84,7 @@ qb.match(var("x").val(contains("Bar")))
 
 <!-- TODO: Describe new reified syntax -->
 
-Match things that have the resource specified. If a [predicate](#predicates) is provided, the resource must also match that predicate.
+Match things that have the attribute specified. If a [predicate](#predicates) is provided, the attribute must also match that predicate.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell4" data-toggle="tab">Graql</a></li>
@@ -202,7 +202,7 @@ Match types that are a subclass of the given type.
 <div role="tabpanel" class="tab-pane active" id="shell7">
 <pre>
 match $x sub thing; # List all types
-match $x sub resource; # List all resource types
+match $x sub attribute; # List all attribute types
 match $x sub entity; # List all entity types
 match $x sub role; # List all role types
 match $x sub relationship; # List all relationship types
@@ -259,7 +259,7 @@ qb.match(var("x").plays("child"));
 </div> <!-- tab-content -->
 
 ### has
-Match types that can have the given resource.
+Match types that can have the given attribute.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell10" data-toggle="tab">Graql</a></li>
@@ -339,7 +339,7 @@ qb.match(var("x").has("age", gt(70)));
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
-If a concept doesn't have a value, all predicates are considered false. The query below matches everything where the predicate `>10` is true. So, it will find all concepts with value greater than 10. However, if a concept does not have a value at all, the predicate is considered false, so it won’t appear in the results.
+If a concept doesn't have a value, all predicates are considered false. The query below matches everything where the predicate `>10` is true. So, it will find all concepts with value greater than 10. However, if a concept does not have a value at all, the predicate is considered false, so it won???t appear in the results.
 
 ```graql
 match $x val >10;
@@ -401,7 +401,7 @@ There are a number of modifiers that can be applied to a query:
 * `distinct` - Removes any duplicate results.
 * `limit` - Limits the number of results returned from the query.
 * `offset` - Offsets the results returned from the query by the given number of results.
-* `order` - Orders the results by the given variable's degree. If a type is provided, order by the resource of that type on that concept. Order is ascending by default.
+* `order` - Orders the results by the given variable's degree. If a type is provided, order by the attribute of that type on that concept. Order is ascending by default.
 * `select` - Indicates which variables to include in the results.
 
 

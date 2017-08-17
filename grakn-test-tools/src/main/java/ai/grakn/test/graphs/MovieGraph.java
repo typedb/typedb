@@ -19,12 +19,12 @@
 package ai.grakn.test.graphs;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
@@ -41,10 +41,10 @@ import java.util.function.Consumer;
 public class MovieGraph extends TestGraph {
 
     private static EntityType production, movie, person, genre, character, cluster, language;
-    private static ResourceType<String> title, gender, realName, name, provenance;
-    private static ResourceType<Long> tmdbVoteCount, runtime;
-    private static ResourceType<Double> tmdbVoteAverage;
-    private static ResourceType<LocalDateTime> releaseDate;
+    private static AttributeType<String> title, gender, realName, name, provenance;
+    private static AttributeType<Long> tmdbVoteCount, runtime;
+    private static AttributeType<Double> tmdbVoteAverage;
+    private static AttributeType<LocalDateTime> releaseDate;
     private static RelationshipType hasCast, authoredBy, directedBy, hasGenre, hasCluster;
     private static Role productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
     private static Role genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
@@ -90,27 +90,27 @@ public class MovieGraph extends TestGraph {
         hasCluster = graph.putRelationshipType("has-cluster")
                 .relates(clusterOfProduction).relates(productionWithCluster);
 
-        title = graph.putResourceType("title", ResourceType.DataType.STRING);
-        title.resource(title);
+        title = graph.putAttributeType("title", AttributeType.DataType.STRING);
+        title.attribute(title);
 
-        tmdbVoteCount = graph.putResourceType("tmdb-vote-count", ResourceType.DataType.LONG);
-        tmdbVoteAverage = graph.putResourceType("tmdb-vote-average", ResourceType.DataType.DOUBLE);
-        releaseDate = graph.putResourceType("release-date", ResourceType.DataType.DATE);
-        runtime = graph.putResourceType("runtime", ResourceType.DataType.LONG);
-        gender = graph.putResourceType("gender", ResourceType.DataType.STRING).setRegex("(fe)?male");
-        realName = graph.putResourceType("real-name", ResourceType.DataType.STRING);
-        name = graph.putResourceType("name", ResourceType.DataType.STRING);
-        provenance = graph.putResourceType("provenance", ResourceType.DataType.STRING);
+        tmdbVoteCount = graph.putAttributeType("tmdb-vote-count", AttributeType.DataType.LONG);
+        tmdbVoteAverage = graph.putAttributeType("tmdb-vote-average", AttributeType.DataType.DOUBLE);
+        releaseDate = graph.putAttributeType("release-date", AttributeType.DataType.DATE);
+        runtime = graph.putAttributeType("runtime", AttributeType.DataType.LONG);
+        gender = graph.putAttributeType("gender", AttributeType.DataType.STRING).setRegex("(fe)?male");
+        realName = graph.putAttributeType("real-name", AttributeType.DataType.STRING);
+        name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+        provenance = graph.putAttributeType("provenance", AttributeType.DataType.STRING);
 
         production = graph.putEntityType("production")
                 .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast)
                 .plays(productionWithGenre);
 
-        production.resource(title);
-        production.resource(tmdbVoteCount);
-        production.resource(tmdbVoteAverage);
-        production.resource(releaseDate);
-        production.resource(runtime);
+        production.attribute(title);
+        production.attribute(tmdbVoteCount);
+        production.attribute(tmdbVoteAverage);
+        production.attribute(releaseDate);
+        production.attribute(runtime);
 
         movie = graph.putEntityType("movie").sup(production);
 
@@ -119,9 +119,9 @@ public class MovieGraph extends TestGraph {
         person = graph.putEntityType("person")
                 .plays(director).plays(actor).plays(characterBeingPlayed);
 
-        person.resource(gender);
-        person.resource(name);
-        person.resource(realName);
+        person.attribute(gender);
+        person.attribute(name);
+        person.attribute(realName);
 
         genre = graph.putEntityType("genre").plays(genreOfProduction);
         genre.key(name);
@@ -129,17 +129,17 @@ public class MovieGraph extends TestGraph {
         character = graph.putEntityType("character")
                 .plays(characterBeingPlayed);
 
-        character.resource(name);
+        character.attribute(name);
 
         graph.putEntityType("award");
         language = graph.putEntityType("language");
 
-        language.resource(name);
+        language.attribute(name);
 
         cluster = graph.putEntityType("cluster").plays(clusterOfProduction);
-        cluster.resource(name);
+        cluster.attribute(name);
 
-        graph.getType(Schema.ImplicitType.HAS.getLabel("title")).resource(provenance);
+        graph.getType(Schema.ImplicitType.HAS.getLabel("title")).attribute(provenance);
     }
 
     @Override
@@ -291,7 +291,7 @@ public class MovieGraph extends TestGraph {
     protected void buildRules(GraknTx graph) {
         // These rules are totally made up for testing purposes and don't work!
         aRuleType = graph.putRuleType("a-rule-type");
-        aRuleType.resource(name);
+        aRuleType.attribute(name);
 
         Pattern when = graph.graql().parsePattern("$x plays actor");
         Pattern then = graph.graql().parsePattern("$x isa person");

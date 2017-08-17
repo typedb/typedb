@@ -19,10 +19,10 @@
 package ai.grakn.test.graphs;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
@@ -36,7 +36,7 @@ import java.util.function.Consumer;
  */
 public class GeoGraph extends TestGraph {
 
-    private static ResourceType<String> key;
+    private static AttributeType<String> key;
 
     private static EntityType university, city, region, country, continent, geographicalObject;
     private static RelationshipType isLocatedIn;
@@ -58,7 +58,7 @@ public class GeoGraph extends TestGraph {
 
     @Override
     public void buildOntology(GraknTx graph) {
-        key = graph.putResourceType("name", ResourceType.DataType.STRING);
+        key = graph.putAttributeType("name", AttributeType.DataType.STRING);
 
         geoEntity = graph.putRole("geo-entity");
         entityLocation = graph.putRole("entity-location");
@@ -68,7 +68,7 @@ public class GeoGraph extends TestGraph {
         geographicalObject = graph.putEntityType("geoObject")
                 .plays(geoEntity)
                 .plays(entityLocation);
-        geographicalObject.resource(key);
+        geographicalObject.attribute(key);
 
         continent = graph.putEntityType("continent")
                 .sup(geographicalObject)
@@ -87,7 +87,7 @@ public class GeoGraph extends TestGraph {
                 .plays(entityLocation);
         university = graph.putEntityType("university")
                         .plays(geoEntity);
-        university.resource(key);
+        university.attribute(key);
     }
 
     @Override

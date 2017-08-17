@@ -25,8 +25,8 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
@@ -122,10 +122,10 @@ public class CountTest {
     public void testDegreeWithHasResourceEdges() {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType person = graph.putEntityType("person");
-            ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING);
-            person.resource(name);
+            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+            person.attribute(name);
             Entity aPerson = person.addEntity();
-            aPerson.resource(name.putResource("jason"));
+            aPerson.attribute(name.putAttribute("jason"));
             graph.commit();
         }
 
@@ -152,8 +152,8 @@ public class CountTest {
             // manually construct the relation type and instance
             EntityType person = graph.putEntityType("person");
             Entity aPerson = person.addEntity();
-            ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING);
-            Resource jason = name.putResource("jason");
+            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+            Attribute jason = name.putAttribute("jason");
 
             Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
             person.plays(resourceOwner);

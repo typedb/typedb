@@ -21,10 +21,10 @@ fact sub entity
     has name
     has description;
 
-name sub resource datatype string;
-title sub resource datatype string;
-epithet sub resource datatype string;
-description sub resource datatype string;
+name sub attribute datatype string;
+title sub attribute datatype string;
+epithet sub attribute datatype string;
+description sub attribute datatype string;
 
 
 # Relation types
