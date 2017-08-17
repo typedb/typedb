@@ -110,7 +110,7 @@ public class DefineQueryTest {
 
     @Test
     public void testDefineIsAbstract() {
-        qb.insert(
+        qb.define(
                 label("concrete-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
                 label("abstract-type").isAbstract().sub(Schema.MetaSchema.ENTITY.getLabel().getValue())
         ).execute();
@@ -121,7 +121,7 @@ public class DefineQueryTest {
 
     @Test
     public void testDefineDataType() {
-        qb.insert(
+        qb.define(
                 label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
         ).execute();
 
@@ -133,7 +133,7 @@ public class DefineQueryTest {
 
     @Test
     public void testDefineSubResourceType() {
-        qb.insert(
+        qb.define(
                 label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
                 label("sub-type").sub("my-type")
         ).execute();
@@ -146,7 +146,7 @@ public class DefineQueryTest {
 
     @Test
     public void testDefineSubRole() {
-        qb.insert(
+        qb.define(
                 label("marriage").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()).relates("spouse1").relates("spouse2"),
                 label("spouse").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("spouse1").sub("spouse"),
@@ -158,7 +158,7 @@ public class DefineQueryTest {
 
     @Test
     public void testReferenceByVariableNameAndTypeLabel() {
-        qb.insert(
+        qb.define(
                 var("abc").sub("entity"),
                 var("abc").label("123"),
                 label("123").plays("actor"),
