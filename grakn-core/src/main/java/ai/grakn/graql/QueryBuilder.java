@@ -62,6 +62,9 @@ public interface QueryBuilder {
     @CheckReturnValue
     InsertQuery insert(Collection<? extends VarPattern> vars);
 
+    @CheckReturnValue
+    DefineQuery define(VarPattern... patterns);
+
     /**
      * @return a compute query builder for building analytics query
      */

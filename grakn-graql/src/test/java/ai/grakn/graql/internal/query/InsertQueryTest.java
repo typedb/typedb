@@ -22,15 +22,14 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
@@ -45,7 +44,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -60,23 +58,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import static ai.grakn.concept.AttributeType.DataType.BOOLEAN;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static ai.grakn.util.GraqlTestUtil.assertNotExists;
-import static ai.grakn.util.Schema.ImplicitType.HAS;
-import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
-import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
-import static ai.grakn.util.Schema.ImplicitType.KEY;
-import static ai.grakn.util.Schema.ImplicitType.KEY_OWNER;
-import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
-import static ai.grakn.util.Schema.MetaSchema.ENTITY;
-import static ai.grakn.util.Schema.MetaSchema.RELATIONSHIP;
-import static ai.grakn.util.Schema.MetaSchema.ROLE;
-import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -124,11 +111,6 @@ public class InsertQueryTest {
     @Test
     public void testInsertIsa() {
         assertInsert(var("x").has("title", "Titanic").isa("movie"));
-    }
-
-    @Test
-    public void testInsertSub() {
-        assertInsert(var("x").label("cool-movie").sub("movie"));
     }
 
     @Test
@@ -209,111 +191,6 @@ public class InsertQueryTest {
         qb.match(var("x").isa("language")).delete("x").execute();
         assertNotExists(qb, language1);
         assertNotExists(qb, language2);
-    }
-
-    @Test
-    public void testInsertOntology() {
-        qb.insert(
-                label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
-                label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolution").relates("evolves-from").relates("evolves-to"),
-                label("pokemon").plays("evolves-from").plays("evolves-to").has("name"),
-
-                var("x").has("name", "Pichu").isa("pokemon"),
-                var("y").has("name", "Pikachu").isa("pokemon"),
-                var("z").has("name", "Raichu").isa("pokemon"),
-                var().rel("evolves-from", "x").rel("evolves-to", "y").isa("evolution"),
-                var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
-        ).execute();
-
-        assertExists(qb, label("pokemon").sub(ENTITY.getLabel().getValue()));
-        assertExists(qb, label("evolution").sub(RELATIONSHIP.getLabel().getValue()));
-        assertExists(qb, label("evolves-from").sub(ROLE.getLabel().getValue()));
-        assertExists(qb, label("evolves-to").sub(ROLE.getLabel().getValue()));
-        assertExists(qb, label("evolution").relates("evolves-from").relates("evolves-to"));
-        assertExists(qb, label("pokemon").plays("evolves-from").plays("evolves-to"));
-
-        assertExists(qb,
-                var("x").has("name", "Pichu").isa("pokemon"),
-                var("y").has("name", "Pikachu").isa("pokemon"),
-                var("z").has("name", "Raichu").isa("pokemon")
-        );
-
-        assertExists(qb,
-                var("x").has("name", "Pichu").isa("pokemon"),
-                var("y").has("name", "Pikachu").isa("pokemon"),
-                var().rel("evolves-from", "x").rel("evolves-to", "y").isa("evolution")
-        );
-
-        assertExists(qb,
-                var("y").has("name", "Pikachu").isa("pokemon"),
-                var("z").has("name", "Raichu").isa("pokemon"),
-                var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
-        );
-    }
-
-    @Test
-    public void testInsertIsAbstract() {
-        qb.insert(
-                label("concrete-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("abstract-type").isAbstract().sub(Schema.MetaSchema.ENTITY.getLabel().getValue())
-        ).execute();
-
-        assertNotExists(qb, label("concrete-type").isAbstract());
-        assertExists(qb, label("abstract-type").isAbstract());
-    }
-
-    @Test
-    public void testInsertDatatype() {
-        qb.insert(
-                label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
-        ).execute();
-
-        MatchQuery query = qb.match(var("x").label("my-type"));
-        AttributeType.DataType datatype = query.iterator().next().get("x").asAttributeType().getDataType();
-
-        Assert.assertEquals(AttributeType.DataType.LONG, datatype);
-    }
-
-    @Test
-    public void testInsertSubResourceType() {
-        qb.insert(
-                label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
-                label("sub-type").sub("my-type")
-        ).execute();
-
-        MatchQuery query = qb.match(var("x").label("sub-type"));
-        AttributeType.DataType datatype = query.iterator().next().get("x").asAttributeType().getDataType();
-
-        Assert.assertEquals(AttributeType.DataType.STRING, datatype);
-    }
-
-    @Test
-    public void testInsertSubRoleType() {
-        qb.insert(
-                label("marriage").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()).relates("spouse1").relates("spouse2"),
-                label("spouse").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("spouse1").sub("spouse"),
-                label("spouse2").sub("spouse")
-        ).execute();
-
-        assertExists(qb, label("spouse1"));
-    }
-
-    @Test
-    public void testReferenceByVariableNameAndTypeLabel() {
-        qb.insert(
-                var("abc").sub("entity"),
-                var("abc").label("123"),
-                label("123").plays("actor"),
-                var("abc").plays("director")
-        ).execute();
-
-        assertExists(qb, label("123").sub("entity"));
-        assertExists(qb, label("123").plays("actor"));
-        assertExists(qb, label("123").plays("director"));
     }
 
     @Test
@@ -402,33 +279,6 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testInsertReferenceByName() {
-        String roleTypeLabel = HAS_OWNER.getLabel("title").getValue();
-        qb.insert(
-                label("new-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("new-type").plays(roleTypeLabel),
-                var("x").isa("new-type")
-        ).execute();
-
-        MatchQuery typeQuery = qb.match(var("n").label("new-type"));
-
-        assertEquals(1, typeQuery.stream().count());
-
-        // We checked count ahead of time
-        //noinspection OptionalGetWithoutIsPresent
-        EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
-
-        assertTrue(newType.plays().anyMatch(role -> role.equals(movieGraph.graph().getRole(roleTypeLabel))));
-
-        assertExists(qb, var().isa("new-type"));
-    }
-
-    @Test
-    public void testInsertRuleType() {
-        assertInsert(var("x").label("my-inference-rule").sub(RULE.getLabel().getValue()));
-    }
-
-    @Test
     public void testInsertRule() {
         String ruleTypeId = "a-rule-type";
         Pattern when = qb.parsePattern("$x isa entity");
@@ -441,11 +291,6 @@ public class InsertQueryTest {
                 anyMatch(rule -> when.equals(rule.getWhen()) && then.equals(rule.getThen()));
 
         assertTrue("Unable to find rule with when [" + when + "] and then [" + then + "]", found);
-    }
-
-    @Test
-    public void testInsertRuleSub() {
-        assertInsert(var("x").label("an-sub-rule-type").sub("a-rule-type"));
     }
 
     @Test
@@ -463,83 +308,28 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testHas() {
-        String resourceType = "a-new-resource-type";
-
-        qb.insert(
-                label("a-new-type").sub("entity").has(resourceType),
-                label(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
-                label("an-unconnected-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
-        ).execute();
-
-        // Make sure a-new-type can have the given resource type, but not other resource types
-        assertExists(qb, label("a-new-type").sub("entity").has(resourceType));
-        assertNotExists(qb, label("a-new-type").has("title"));
-        assertNotExists(qb, label("movie").has(resourceType));
-        assertNotExists(qb, label("a-new-type").has("an-unconnected-resource-type"));
-
-        VarPattern hasResource = Graql.label(HAS.getLabel(resourceType));
-        VarPattern hasResourceOwner = Graql.label(HAS_OWNER.getLabel(resourceType));
-        VarPattern hasResourceValue = Graql.label(HAS_VALUE.getLabel(resourceType));
-
-        // Make sure the expected ontology elements are created
-        assertExists(qb, hasResource.sub(RELATIONSHIP.getLabel().getValue()));
-        assertExists(qb, hasResourceOwner.sub(ROLE.getLabel().getValue()));
-        assertExists(qb, hasResourceValue.sub(ROLE.getLabel().getValue()));
-        assertExists(qb, hasResource.relates(hasResourceOwner));
-        assertExists(qb, hasResource.relates(hasResourceValue));
-        assertExists(qb, label("a-new-type").plays(hasResourceOwner));
-        assertExists(qb, label(resourceType).plays(hasResourceValue));
-    }
-
-    @Test
-    public void testKey() {
-        String resourceType = "a-new-resource-type";
-
-        qb.insert(
-                label("a-new-type").sub("entity").key(resourceType),
-                label(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
-        ).execute();
-
-        // Make sure a-new-type can have the given resource type as a key or otherwise
-        assertExists(qb, label("a-new-type").sub("entity").key(resourceType));
-        assertExists(qb, label("a-new-type").sub("entity").has(resourceType));
-        assertNotExists(qb, label("a-new-type").sub("entity").key("title"));
-        assertNotExists(qb, label("movie").sub("entity").key(resourceType));
-
-        VarPattern key = Graql.label(KEY.getLabel(resourceType));
-        VarPattern keyOwner = Graql.label(KEY_OWNER.getLabel(resourceType));
-        VarPattern keyValue = Graql.label(KEY_VALUE.getLabel(resourceType));
-
-        // Make sure the expected ontology elements are created
-        assertExists(qb, key.sub(RELATIONSHIP.getLabel().getValue()));
-        assertExists(qb, keyOwner.sub(ROLE.getLabel().getValue()));
-        assertExists(qb, keyValue.sub(ROLE.getLabel().getValue()));
-        assertExists(qb, key.relates(keyOwner));
-        assertExists(qb, key.relates(keyValue));
-        assertExists(qb, label("a-new-type").plays(keyOwner));
-        assertExists(qb, label(resourceType).plays(keyValue));
-    }
-
-    @Test
     public void testKeyCorrectUsage() throws InvalidGraphException {
         // This should only run on tinker because it commits
         assumeTrue(GraknTestSetup.usingTinker());
 
-        qb.insert(
+        qb.define(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
-                var().isa("a-new-type").has("a-new-resource-type", "hello")
+                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
+
+        qb.insert(var().isa("a-new-type").has("a-new-resource-type", "hello")).execute();
     }
 
     @Test
     public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidGraphException {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
-        qb.insert(
+        qb.define(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
+                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
+        ).execute();
+
+        qb.insert(
                 var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
         ).execute();
 
@@ -552,9 +342,12 @@ public class InsertQueryTest {
     public void testKeyUniqueValue() throws InvalidGraphException {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
-        qb.insert(
+        qb.define(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub("resource").datatype(AttributeType.DataType.STRING),
+                label("a-new-resource-type").sub("resource").datatype(AttributeType.DataType.STRING)
+        ).execute();
+
+        qb.insert(
                 var("x").isa("a-new-type").has("a-new-resource-type", "hello"),
                 var("y").isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
@@ -567,47 +360,29 @@ public class InsertQueryTest {
     public void testKeyRequiredOwner() throws InvalidGraphException {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
-        qb.insert(
+        qb.define(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
-                var().isa("a-new-type")
+                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
+
+        qb.insert(var().isa("a-new-type")).execute();
 
         exception.expect(InvalidGraphException.class);
         movieGraph.graph().commit();
     }
 
     @Test
-    public void testResourceTypeRegex() {
-        qb.insert(label("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING).regex("hello|good day")).execute();
-
-        MatchQuery match = qb.match(var("x").label("greeting"));
-        assertEquals("hello|good day", match.get("x").findFirst().get().asAttributeType().getRegex());
-    }
-
-    @Test
     public void whenExecutingAnInsertQuery_ResultContainsAllInsertedVars() {
         Var x = var("x");
         Var type = var("type");
-        Var type2 = var("type2");
 
         // Note that two variables refer to the same type. They should both be in the result
-        InsertQuery query = qb.insert(x.isa(type), type.label("my-type").sub("entity"), type2.label("my-type"));
+        InsertQuery query = qb.insert(x.isa(type), type.label("movie"));
 
         Answer result = Iterables.getOnlyElement(query);
-        assertThat(result.keySet(), containsInAnyOrder(x, type, type2));
+        assertThat(result.keySet(), containsInAnyOrder(x, type));
         assertEquals(result.get(type), result.get(x).asEntity().type());
-        assertEquals(result.get(type), result.get(type2));
-    }
-
-    @Test
-    public void whenChangingTheSuperOfAnExistingConcept_ApplyTheChange() {
-        EntityType newType = movieGraph.graph().putEntityType("a-new-type");
-        EntityType movie = movieGraph.graph().getEntityType("movie");
-
-        qb.match(var("x").label("a-new-type")).insert(var("x").sub("movie")).execute();
-        
-        assertEquals(movie, newType.sup());
+        assertEquals(result.get(type).asType().getLabel(), Label.of("movie"));
     }
 
     @Test
@@ -623,35 +398,12 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testErrorResourceTypeWithoutDataType() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(
-                allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
-        );
-        qb.insert(label("my-resource").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue())).execute();
-    }
-
-    @Test
     public void testErrorWhenAddingInstanceOfConcept() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(
                 allOf(containsString("meta-type"), containsString("my-thing"), containsString(Schema.MetaSchema.THING.getLabel().getValue()))
         );
         qb.insert(var("my-thing").isa(Schema.MetaSchema.THING.getLabel().getValue())).execute();
-    }
-
-    @Test
-    public void testErrorRecursiveType() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("thingy"), containsString("itself")));
-        qb.insert(label("thingy").sub("thingy")).execute();
-    }
-
-    @Test
-    public void whenInsertingAnOntologyConceptWithoutALabel_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("entity"), containsString("label")));
-        qb.insert(var().sub("entity")).execute();
     }
 
     @Test
@@ -849,28 +601,6 @@ public class InsertQueryTest {
         exception.expectMessage(GraqlQueryException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
 
         movieGraph.graph().graql().insert(var("x").id(aMovie.getId()).isa("person")).execute();
-    }
-
-    @Test
-    public void whenSpecifyingExistingTypeWithIncorrectDataType_Throw() {
-        AttributeType name = movieGraph.graph().getAttributeType("name");
-
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(
-                GraqlQueryException.insertPropertyOnExistingConcept("datatype", BOOLEAN, name).getMessage()
-        );
-
-        movieGraph.graph().graql().insert(label("name").datatype(BOOLEAN)).execute();
-    }
-
-    @Test
-    public void whenSpecifyingDataTypeOnAnEntityType_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(
-                allOf(containsString("unexpected property"), containsString("datatype"), containsString("my-type"))
-        );
-
-        movieGraph.graph().graql().insert(label("my-type").sub("entity").datatype(BOOLEAN)).execute();
     }
 
     private void assertInsert(VarPattern... vars) {
