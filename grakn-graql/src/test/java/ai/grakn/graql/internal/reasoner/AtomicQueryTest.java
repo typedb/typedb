@@ -49,9 +49,10 @@ import org.junit.rules.ExpectedException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.GraqlTestUtil.assertExists;
+import static ai.grakn.util.GraqlTestUtil.assertNotExists;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -85,7 +86,7 @@ public class AtomicQueryTest {
         GraknTx graph = geoGraph.graph();
         QueryBuilder qb = graph.graql().infer(false);
         String explicitQuery = "match (geo-entity: $x, entity-location: $y) isa is-located-in;$x has name 'Warsaw';$y has name 'Poland';";
-        assertTrue(!qb.<MatchQuery>parse(explicitQuery).ask().execute());
+        assertTrue(!qb.<MatchQuery>parse(explicitQuery).iterator().hasNext());
 
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
@@ -98,9 +99,9 @@ public class AtomicQueryTest {
         );
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
 
-        assertFalse(qb.<MatchQuery>parse(explicitQuery).ask().execute());
+        assertNotExists(qb.parse(explicitQuery));
         answers.stream().forEach(atomicQuery::materialise);
-        assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
+        assertExists(qb.parse(explicitQuery));
     }
 
     private Concept getConceptByResourceValue(GraknTx graph, String id){

@@ -14,34 +14,36 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.graql;
+package ai.grakn.graql.internal.query.aggregate;
 
-import ai.grakn.graql.admin.AskQueryAdmin;
-import ai.grakn.GraknTx;
-
-import javax.annotation.CheckReturnValue;
+import java.util.stream.Stream;
 
 /**
- * A query that will return whether a match query can be found in the graph.
- * <p>
- * An {@code AskQuery} is created from a {@code MatchQuery}, which describes what patterns it should find.
+ * Aggregate that checks if there are any results
  *
  * @author Felix Chapman
  */
-public interface AskQuery extends Query<Boolean> {
+public class AskAggregate extends AbstractAggregate<Object,Boolean> {
 
-    /**
-     * @param graph the graph to execute the query on
-     * @return a new AskQuery with the graph set
-     */
+    private static final AskAggregate INSTANCE = new AskAggregate();
+
+    private AskAggregate() { }
+
+    // This class has no parameters and is immutable, so a singleton is good practice
+    public static AskAggregate get() {
+        return INSTANCE;
+    }
+
     @Override
-    AskQuery withGraph(GraknTx graph);
+    public Boolean apply(Stream<?> stream) {
+        return stream.findAny().isPresent();
+    }
 
-    /**
-     * @return admin instance for inspecting and manipulating this query
-     */
-    @CheckReturnValue
-    AskQueryAdmin admin();
+    @Override
+    public String toString() {
+        return "ask";
+    }
 }

@@ -47,7 +47,7 @@ This can be useful if you need to provide the knowledge base later (using `withT
 or you only want to construct queries without executing them.
 
 The `QueryBuilder` class provides methods for building `match` and `insert`
-queries. Additionally, it is possible to build `ask`, `match..insert` and `delete` queries from `match`
+queries. Additionally, it is possible to build `aggregate`, `match..insert` and `delete` queries from `match`
 queries.
 
 ## Match Queries
@@ -78,10 +78,10 @@ for requesting a single variable:
 query.get("x").forEach(x -> System.out.println(x.asResource().getValue()));
 ```
 
-## Ask Queries
+## Aggregate Queries
 
 ```java
-if (qb.match(var().isa("person").has("firstname", "Bob")).ask().execute()) {
+if (qb.match(var().isa("person").has("firstname", "Bob")).aggregate(ask()).execute()) {
   System.out.println("There is someone called Bob!");
 }
 ```
@@ -120,7 +120,7 @@ for (Concept x : qb.<MatchQuery>parse("match $x isa person;").get("x")) {
     System.out.println(x);
 }
 
-if (qb.<AskQuery>parse("match has name 'Bob' isa person; ask;").execute()) {
+if (qb.<AggregateQuery<Boolean>>parse("match has name 'Bob' isa person; aggregate ask;").execute()) {
   System.out.println("There is someone called Bob!");
 }
 

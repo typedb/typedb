@@ -50,9 +50,6 @@ entries:
       - title: Match Queries
         output: web
         url: /documentation/graql/match-queries.html
-      - title: Ask Queries
-        output: web
-        url: /documentation/graql/ask-queries.html
       - title: Delete Queries
         output: web
         url: /documentation/graql/delete-queries.html

@@ -131,7 +131,7 @@ public class GraqlShellIT {
 
     @Test
     public void testExecuteOption() throws Exception {
-        String result = testShell("", "-e", "match $x isa entity; ask;");
+        String result = testShell("", "-e", "match $x isa entity; aggregate ask;");
 
         // When using '-e', only results should be printed, no prompt or query
         assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
@@ -154,7 +154,7 @@ public class GraqlShellIT {
         testShell("insert im-in-the-default-keyspace sub entity;\ncommit\n");
 
         assertShellMatches(ImmutableList.of("-k", "grakn"),
-                "match im-in-the-default-keyspace sub entity; ask;",
+                "match im-in-the-default-keyspace sub entity; aggregate ask;",
                 containsString("True")
         );
     }
@@ -164,10 +164,10 @@ public class GraqlShellIT {
         testShell("insert foo-foo sub entity;\ncommit\n", "-k", "foo");
         testShell("insert bar-bar sub entity;\ncommit\n", "-k", "bar");
 
-        String fooFooinFoo = testShell("match foo-foo sub entity; ask;\n", "-k", "foo");
-        String fooFooInBar = testShell("match foo-foo sub entity; ask;\n", "-k", "bar");
-        String barBarInFoo = testShell("match bar-bar sub entity; ask;\n", "-k", "foo");
-        String barBarInBar = testShell("match bar-bar sub entity; ask;\n", "-k", "bar");
+        String fooFooinFoo = testShell("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
+        String fooFooInBar = testShell("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
+        String barBarInFoo = testShell("match bar-bar sub entity; aggregate ask;\n", "-k", "foo");
+        String barBarInBar = testShell("match bar-bar sub entity; aggregate ask;\n", "-k", "bar");
         assertThat(fooFooinFoo, containsString("True"));
         assertThat(fooFooInBar, containsString("False"));
         assertThat(barBarInFoo, containsString("False"));
@@ -186,7 +186,7 @@ public class GraqlShellIT {
         assertShellMatches(
                 "load src/test/graql/shell test(weird name).gql",
                 anything(),
-                "match movie sub entity; ask;",
+                "match movie sub entity; aggregate ask;",
                 containsString("True")
         );
     }
@@ -196,7 +196,7 @@ public class GraqlShellIT {
         assertShellMatches(
                 "load src/test/graql/shell\\ test\\(weird\\ name\\).gql",
                 anything(),
-                "match movie sub entity; ask;",
+                "match movie sub entity; aggregate ask;",
                 containsString("True")
         );
     }
@@ -213,7 +213,7 @@ public class GraqlShellIT {
     @Test
     public void testAskQuery() throws Exception {
         assertShellMatches(
-                "match $x isa " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()+ "; ask;",
+                "match $x isa " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()+ "; aggregate ask;",
                 containsString("False")
         );
     }
@@ -223,11 +223,11 @@ public class GraqlShellIT {
         assertShellMatches(
                 "insert entity2 sub entity;",
                 anything(),
-                "match $x isa entity2; ask;",
+                "match $x isa entity2; aggregate ask;",
                 containsString("False"),
                 "insert $x isa entity2;",
                 anything(),
-                "match $x isa entity2; ask;",
+                "match $x isa entity2; aggregate ask;",
                 containsString("True")
         );
     }
@@ -557,7 +557,7 @@ public class GraqlShellIT {
         testShell("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
 
         assertShellMatches(ImmutableList.of("-k", "batch"),
-                "match $x isa movie; ask;",
+                "match $x isa movie; aggregate ask;",
                 containsString("True")
         );
     }
@@ -580,7 +580,7 @@ public class GraqlShellIT {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         String out = testShell(
                 "match $x sub concet; aggregate count;\n" +
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; ask;\n",
+                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate ask;\n",
                 err);
 
         assertThat(err.toString(), not(containsString("error")));
