@@ -43,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * </p>
  * 
  * <p>
- * Used to populate the system ontology the first time the system keyspace
+ * Used to populate the system schema the first time the system keyspace
  * is created.
  * </p>
  * 
@@ -157,7 +157,7 @@ public class SystemKeyspace {
     }
 
     /**
-     * Load the system ontology into a newly created system keyspace. Because the ontology
+     * Load the system schema into a newly created system keyspace. Because the schema
      * only consists of types, the inserts are idempotent and it is safe to load it
      * multiple times.
      */

@@ -48,7 +48,7 @@ public class QueryTest {
     public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogyOntology = GraphContext.preLoad("genealogy/schema.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext genealogySchema = GraphContext.preLoad("genealogy/schema.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -158,7 +158,7 @@ public class QueryTest {
     //Bug #11150 Relations with resources as single VarPatternAdmin
     @Test //tests whether directly and indirectly reified relations are equivalent
     public void testAlphaEquivalence_reifiedRelation(){
-        GraknTx graph = genealogyOntology.graph();
+        GraknTx graph = genealogySchema.graph();
         String patternString = "{$rel (happening: $b, protagonist: $p) isa event-protagonist has event-role 'parent';}";
         String patternString2 = "{$rel (happening: $c, protagonist: $r) isa event-protagonist; $rel has event-role 'parent';}";
 

@@ -132,7 +132,7 @@ public class GraknEngineServer implements AutoCloseable {
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
         synchronized (this){
-            lockAndInitializeSystemOntology();
+            lockAndInitializeSystemSchema();
             startHTTP();
         }
         graknEngineStatus.setReady(true);
@@ -148,16 +148,16 @@ public class GraknEngineServer implements AutoCloseable {
         }
     }
 
-    private void lockAndInitializeSystemOntology() {
+    private void lockAndInitializeSystemSchema() {
         try {
             Lock lock = lockProvider.getLock(LOAD_SYSTEM_SCHEMA_LOCK_NAME);
             if (lock.tryLock(60, TimeUnit.SECONDS)) {
                 loadAndUnlock(lock);
             } else {
-                LOG.info("{} found system ontology lock already acquired by other engine", this.engineId);
+                LOG.info("{} found system schema lock already acquired by other engine", this.engineId);
             }
         } catch (InterruptedException e) {
-            LOG.warn("{} was interrupted while initializing system ontology", this.engineId);
+            LOG.warn("{} was interrupted while initializing system schema", this.engineId);
         }
     }
 
