@@ -30,43 +30,43 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static java.util.stream.Collectors.joining;
-import static org.junit.Assert.assertTrue;
 
 public class ExamplesTest {
-    private GraknTx graph;
+    private GraknTx tx;
 
     @Before
     public void setUp() {
-        graph = Grakn.session("in-memory", "my-pokemon-graph").open(GraknTxType.WRITE);
+        tx = Grakn.session("in-memory", "my-pokemon-graph").open(GraknTxType.WRITE);
     }
 
     @After
     public void closeGraph(){
-        graph.commit();
-        graph.close();
+        tx.commit();
+        tx.close();
     }
 
     @Test
-    public void testModern() throws IOException {
+    public void afterLoadingModernExample_MarkoIsInTheGraph() throws IOException {
         runInsertQuery("src/examples/modern.gql");
-        assertTrue(graph.graql().match(var().has("name", "marko").isa("person")).ask().execute());
+        assertExists(tx, var().has("name", "marko").isa("person"));
     }
 
     @Test
-    public void testPokemon() throws IOException {
+    public void afterLoadingPokemonExample_PikachuIsInTheGraph() throws IOException {
         runInsertQuery("src/examples/pokemon.gql");
-        assertTrue(graph.graql().match(var().rel(var().has("name", "Pikachu")).rel(var().has("name", "electric")).isa("has-type")).ask().execute());
+        assertExists(tx, var().rel(var().has("name", "Pikachu")).rel(var().has("name", "electric")).isa("has-type"));
     }
 
     @Test
     public void afterLoadingGenealogyExample_MaryIsInTheGraph() throws IOException {
         runInsertQuery("src/examples/basic-genealogy.gql");
-        assertTrue(graph.graql().match(var().has("identifier", "Mary Guthrie")).ask().execute());
+        assertExists(tx, var().has("identifier", "Mary Guthrie"));
     }
 
     private void runInsertQuery(String path) throws IOException {
         String query = Files.readAllLines(Paths.get(path)).stream().collect(joining("\n"));
-        graph.graql().parse(query).execute();
+        tx.graql().parse(query).execute();
     }
 }

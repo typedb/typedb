@@ -145,17 +145,17 @@ public class GraqlControllerTest {
 
     @Test
     public void whenRunningAskQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; ask;", jsonPrinter, APPLICATION_JSON_GRAQL);
+        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", jsonPrinter, APPLICATION_JSON_GRAQL);
     }
 
     @Test
     public void whenRunningAskQuery_GraqlResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; ask;", graqlPrinter, APPLICATION_TEXT);
+        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", graqlPrinter, APPLICATION_TEXT);
     }
 
     @Test
     public void whenRunningAskQuery_HalResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie; ask;", halPrinter, APPLICATION_HAL);
+        assertResponseSameAsJavaGraql("match $x isa movie; aggregate ask;", halPrinter, APPLICATION_HAL);
     }
 
     @Test
@@ -173,8 +173,8 @@ public class GraqlControllerTest {
     }
     
     @Test
-    public void testBadAccept() {
-        sendQuery("match $x isa movie; ask;", "application/msword", true, false, -1).then().statusCode(406);        
+    public void whenAcceptHeaderIsInvalid_Return406Code() {
+        sendQuery("match $x isa movie; aggregate ask;", "application/msword", true, false, -1).then().statusCode(406);
     }
 
     private void assertResponseSameAsJavaGraql(String queryString, Printer<?> printer, String acceptType) {

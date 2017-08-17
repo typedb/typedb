@@ -223,6 +223,14 @@ public class Graql {
     // AGGREGATES
 
     /**
+     * Create an aggregate that will check if there are any results
+     */
+    @CheckReturnValue
+    public static Aggregate<Object, Boolean> ask() {
+        return Aggregates.ask();
+    }
+
+    /**
      * Create an aggregate that will count the results of a query.
      */
     @CheckReturnValue

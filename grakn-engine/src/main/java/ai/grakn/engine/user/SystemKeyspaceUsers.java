@@ -22,9 +22,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.graql.AskQuery;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
@@ -108,8 +107,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
         }
         try (GraknTx graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
             VarPattern lookup = var().isa(USER_ENTITY).has(USER_NAME, username);
-            AskQuery query = graph.graql().match(lookup).ask();
-            return query.execute();
+            return graph.graql().match(lookup).iterator().hasNext();
         }
         catch (Throwable t) {
             LOG.error("While getting all users.", t);

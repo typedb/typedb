@@ -13,9 +13,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class PhilosophersExampleIT {
 
@@ -31,7 +31,7 @@ public class PhilosophersExampleIT {
 
     @Test
     public void testAlexanderHasShahOfPersiaTitle() {
-        assertTrue(qb.match(var().has("name", "Alexander").has("title", "Shah of Persia")).ask().execute());
+        assertExists(qb, var().has("name", "Alexander").has("title", "Shah of Persia"));
 
     }
 

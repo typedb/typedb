@@ -24,7 +24,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -58,6 +57,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.eq;
@@ -325,16 +325,16 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testPositiveAskQuery() {
-        AskQuery expected = match(var("x").isa("movie").has("title", "Godfather")).ask();
-        AskQuery parsed = parse("match $x isa movie has title 'Godfather'; ask;");
+    public void whenComparingPositiveAskQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
+        AggregateQuery<Boolean> expected = match(var("x").isa("movie").has("title", "Godfather")).aggregate(ask());
+        AggregateQuery<Boolean> parsed = parse("match $x isa movie has title 'Godfather'; aggregate ask;");
         assertEquals(expected, parsed);
     }
 
     @Test
-    public void testNegativeAskQuery() {
-        AskQuery expected = match(var("x").isa("movie").has("title", "Dogfather")).ask();
-        AskQuery parsed = parse("match $x isa movie has title 'Dogfather'; ask;");
+    public void whenComparingNegativeAskQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
+        AggregateQuery<Boolean> expected = match(var("x").isa("movie").has("title", "Dogfather")).aggregate(ask());
+        AggregateQuery<Boolean> parsed = parse("match $x isa movie has title 'Dogfather'; aggregate ask;");
         assertEquals(expected, parsed);
     }
 
@@ -440,10 +440,10 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testComments() {
-        AskQuery expected = match(var("x").isa("movie")).ask();
-        AskQuery parsed = parse(
-                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; ask;"
+    public void whenParsingQueryWithComments_TheyAreIgnored() {
+        AggregateQuery<Boolean> expected = match(var("x").isa("movie")).aggregate(ask());
+        AggregateQuery<Boolean> parsed = parse(
+                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; aggregate ask;"
         );
         assertEquals(expected, parsed);
     }

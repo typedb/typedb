@@ -63,12 +63,6 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
     Stream<Concept> get(String name);
 
     /**
-     * @return an ask query that will return true if any matches are found
-     */
-    @CheckReturnValue
-    AskQuery ask();
-
-    /**
      * @param vars an array of variables to insert for each result of this match query
      * @return an insert query that will insert the given variables for each result of this match query
      */
