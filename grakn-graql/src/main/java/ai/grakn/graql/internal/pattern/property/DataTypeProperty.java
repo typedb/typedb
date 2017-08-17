@@ -73,7 +73,7 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         executor.builder(var).dataType(dataType());
     }
 

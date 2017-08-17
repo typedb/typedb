@@ -71,7 +71,7 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         executor.get(var).asAttributeType().setRegex(regex());
     }
 
