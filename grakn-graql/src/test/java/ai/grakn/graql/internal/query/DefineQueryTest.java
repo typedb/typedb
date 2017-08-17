@@ -33,7 +33,6 @@ import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Iterables;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -279,7 +278,7 @@ public class DefineQueryTest {
         // Note that two variables refer to the same type. They should both be in the result
         DefineQuery query = qb.define(type.label("my-type").sub("entity"), type2.label("my-type"));
 
-        Answer result = Iterables.getOnlyElement(query);
+        Answer result = query.execute();
         assertThat(result.keySet(), containsInAnyOrder(type, type2));
         assertEquals(result.get(type), result.get(type2));
     }

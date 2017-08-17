@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
@@ -46,7 +45,7 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
 /**
  * A query that will insert a collection of variables into a graph
  */
-class InsertQueryImpl implements InsertQueryAdmin, DefineQuery {
+class InsertQueryImpl implements InsertQueryAdmin {
 
     private final Optional<MatchQueryAdmin> matchQuery;
     private final Optional<GraknTx> graph;

@@ -21,10 +21,8 @@ package ai.grakn.graql;
 
 import ai.grakn.graql.admin.Answer;
 
-import java.util.List;
-
 /**
  * @author Felix Chapman
  */
-public interface DefineQuery extends Query<List<Answer>>, Streamable<Answer> {
+public interface DefineQuery extends Query<Answer> {
 }
