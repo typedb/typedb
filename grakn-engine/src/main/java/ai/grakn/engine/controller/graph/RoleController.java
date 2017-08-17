@@ -58,25 +58,6 @@ public class RoleController {
         spark.post("/graph/role", this::postRole);
     }
 
-    private Json postRole(Request request, Response response) {
-        LOG.info("postRole - request received.");
-        Map<String, Object> requestBody = Json.read(mandatoryBody(request)).asMap();
-        String roleLabel = (String) requestBody.get("roleLabel");
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("postRole - attempting to add a new role " + roleLabel + " on keyspace " + keyspace);
-        try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
-            Role role = graph.putRole(roleLabel);
-            graph.commit();
-            String jsonConceptId = role.getId().getValue();
-            String jsonRoleLabel = role.getLabel().getValue();
-            LOG.info("postRole - role " + jsonRoleLabel + " with id " + jsonConceptId + " added. request processed.");
-            response.status(HttpStatus.SC_OK);
-            Json responseBody = Json.object("conceptId", jsonConceptId, "roleLabel", jsonRoleLabel);
-
-            return responseBody;
-        }
-    }
-
     private Json getRole(Request request, Response response) {
         LOG.info("getRole - request received.");
         String roleLabel = mandatoryPathParameter(request, "roleLabel");
@@ -96,6 +77,25 @@ public class RoleController {
                 LOG.info("getRole - role NOT found. request processed.");
                 return Json.nil();
             }
+        }
+    }
+
+    private Json postRole(Request request, Response response) {
+        LOG.info("postRole - request received.");
+        Map<String, Object> requestBody = Json.read(mandatoryBody(request)).asMap();
+        String roleLabel = (String) requestBody.get("roleLabel");
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        LOG.info("postRole - attempting to add a new role " + roleLabel + " on keyspace " + keyspace);
+        try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
+            Role role = graph.putRole(roleLabel);
+            graph.commit();
+            String jsonConceptId = role.getId().getValue();
+            String jsonRoleLabel = role.getLabel().getValue();
+            LOG.info("postRole - role " + jsonRoleLabel + " with id " + jsonConceptId + " added. request processed.");
+            response.status(HttpStatus.SC_OK);
+            Json responseBody = Json.object("conceptId", jsonConceptId, "roleLabel", jsonRoleLabel);
+
+            return responseBody;
         }
     }
 }
