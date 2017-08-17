@@ -24,11 +24,11 @@ In Grakn, the [ontology](https://en.wikipedia.org/wiki/Ontology_(information_sci
 
 **`role`**: Roles involved in specific relationships. For example, `wife`, `husband`.     
 
-**`resource`**: Attributes associated with domain instances. For example, `name`. Resources consist of primitive types and values. They are very much like “data properties” in OWL, and have the following properties:
+**`attribute`**: Attributes associated with domain instances. For example, `name`. Resources consist of primitive types and values. They are very much like “data properties” in OWL, and have the following properties:
 
-- Datatype - Indicates the datatype of the resource. For example if the resource type is age the datatype would be long.
+- Datatype - Indicates the datatype of the attribute. For example if the attribute type is age the datatype would be long.
 - Regex - Optional. Can be used to constrain string data types to specific regex patterns.
-- Unique - A boolean which indicates if the resource should be unique across the knowledge base.   
+- Unique - A boolean which indicates if the attribute should be unique across the knowledge base.   
 
 <br /> <img src="/images/knowledge-model1.png" style="width: 600px;"/> <br />
 
@@ -36,7 +36,7 @@ In Grakn, the [ontology](https://en.wikipedia.org/wiki/Ontology_(information_sci
 
 In this section, we build up a simple ontology to illustrate the concept types in the Grakn knowledge model. 
 
-We define two entities, `person` and `company`, each of which have a `name` resource.
+We define two entities, `person` and `company`, each of which have a `name` attribute.
 
 ```graql
 insert
@@ -46,7 +46,7 @@ insert
   company sub entity,
   has name;
   
-  name sub resource, datatype string;
+  name sub attribute, datatype string;
   
 ```
 
@@ -70,9 +70,9 @@ insert
   startup sub company,
   has funding;
   
-  name sub resource, datatype string;
-  rating sub resource, datatype double;
-  funding sub resource, datatype long;
+  name sub attribute, datatype string;
+  rating sub attribute, datatype double;
+  funding sub attribute, datatype long;
 ```
 
 <br /> <img src="/images/knowledge-model3.png" style="width: 400px;"/> <br />
@@ -97,9 +97,9 @@ insert
   startup sub company,
   has funding;
   
-  name sub resource, datatype string;
-  rating sub resource, datatype double;
-  funding sub resource, datatype long;
+  name sub attribute, datatype string;
+  rating sub attribute, datatype double;
+  funding sub attribute, datatype long;
   
   employment sub relationship,
     relates employee, relates employer;
@@ -117,7 +117,7 @@ In the simple example above, we have illustrated the four constructs that relate
 
 * For example, `customer sub person`, `startup sub company`.    
 
-**`has`**: expresses that a concept type can be associated with a given resource type. 
+**`has`**: expresses that a concept type can be associated with a given attribute type. 
 
 * For example, `person has name`.    
 
@@ -131,7 +131,7 @@ In the simple example above, we have illustrated the four constructs that relate
 
 ### Relations
 
-Relationships are inherently non-directional and are defined in terms of roles of entities in the relationship. Relations can have multiple attributes. Here we give the employment relationship a date resource.
+Relationships are inherently non-directional and are defined in terms of roles of entities in the relationship. Relations can have multiple attributes. Here we give the employment relationship a date attribute.
 
 ```graql
 insert
@@ -143,8 +143,8 @@ insert
   has name,
   plays employer;  
   
-  name sub resource, datatype string;
-  "date" sub resource, datatype string;
+  name sub attribute, datatype string;
+  "date" sub attribute, datatype string;
   
   employment sub relationship,
     relates employee, relates employer,
@@ -178,7 +178,7 @@ insert
 
 As in object-oriented programming, the inheritance mechanism in Grakn enables subtypes to automatically take on some of the properties of their supertypes. This simplifies the construction of ontologies and helps keep them succinct. 
 
-<br />The Grakn knowledge model imposes inheritance of all `has` and `plays` constraints on entity, relationship and resource types. As a result, the entity type `customer` inherits `has name` and `plays employee` from the `person` supertype, as shown in the diagram below. 
+<br />The Grakn knowledge model imposes inheritance of all `has` and `plays` constraints on entity, relationship and attribute types. As a result, the entity type `customer` inherits `has name` and `plays employee` from the `person` supertype, as shown in the diagram below. 
 
 Likewise, the `startup` entity type inherits `relates name` and `plays employer` from the `company` supertype.
 
@@ -203,7 +203,7 @@ The data is expressed by instantiating specific types of entities, relationships
 
 **Entities**: instances of entity types, for example, `insert $x isa person` creates an instance of the entity type `person`,
 
-**Resources**: instances of resource types being associated with particular instances, for example, `insert $x isa person, has name "Elisabeth Niesz"` creates an instance of a `person` with the resource type `name` given the value "Elizabeth Niesz". The unique identifiers for all instances are defined internally within the Grakn system.
+**Resources**: instances of attribute types being associated with particular instances, for example, `insert $x isa person, has name "Elisabeth Niesz"` creates an instance of a `person` with the attribute type `name` given the value "Elizabeth Niesz". The unique identifiers for all instances are defined internally within the Grakn system.
 
 **Relations**: instances of relationship types, for example, `insert (employee:$x, employer:$y) isa employment` creates an instance of the relationship type `employment` between `$x`, playing the role of `employee`, and `$y`, playing the role of `employer`.
 
@@ -264,7 +264,7 @@ This will be our first attempt:
 insert
   human is-abstract sub entity;
   human has name;
-  name sub resource datatype string;
+  name sub attribute datatype string;
   
   man is-abstract sub human;
   woman sub human;
@@ -308,7 +308,7 @@ Let's fix these issues and try again:
 insert
   human is-abstract sub entity;
   human has name;
-  name sub resource datatype string;
+  name sub attribute datatype string;
   
   man sub human; # Fix (3)
   woman sub human;

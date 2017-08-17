@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal.cache;
 
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -27,7 +28,6 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
@@ -83,7 +83,7 @@ public class TxCache {
 
     private final Set<Rule> modifiedRules = new HashSet<>();
 
-    private final Set<Resource> modifiedResources = new HashSet<>();
+    private final Set<Attribute> modifiedAttributes = new HashSet<>();
 
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
     private final Map<String, Relationship> relationIndexCache = new HashMap<>();
@@ -158,8 +158,8 @@ public class TxCache {
             relationIndexCache.put(RelationshipReified.generateNewHash(relationship.type(), relationship.allRolePlayers()), relationship);
         } else if (concept.isRule()){
             modifiedRules.add(concept.asRule());
-        } else if (concept.isResource()){
-            modifiedResources.add(concept.asResource());
+        } else if (concept.isAttribute()){
+            modifiedAttributes.add(concept.asAttribute());
         }
     }
     public void trackForValidation(Casting casting) {
@@ -217,7 +217,7 @@ public class TxCache {
         modifiedRelationshipTypes.remove(concept);
         modifiedRelationships.remove(concept);
         modifiedRules.remove(concept);
-        modifiedResources.remove(concept);
+        modifiedAttributes.remove(concept);
 
         conceptCache.remove(concept.getId());
         if (concept.isSchemaConcept()) {
@@ -332,7 +332,7 @@ public class TxCache {
     public Json getFormattedLog(){
         //Concepts In Need of Inspection
         Json conceptsForInspection = Json.object();
-        conceptsForInspection.set(Schema.BaseType.RESOURCE.name(), loadConceptsForFixing(getModifiedResources()));
+        conceptsForInspection.set(Schema.BaseType.ATTRIBUTE.name(), loadConceptsForFixing(getModifiedAttributes()));
 
         //Types with instance changes
         Json typesWithInstanceChanges = Json.array();
@@ -378,8 +378,8 @@ public class TxCache {
         return modifiedRules;
     }
 
-    public Set<Resource> getModifiedResources() {
-        return modifiedResources;
+    public Set<Attribute> getModifiedAttributes() {
+        return modifiedAttributes;
     }
 
     public Set<Casting> getModifiedCastings() {
@@ -400,7 +400,7 @@ public class TxCache {
         modifiedRelationshipTypes.clear();
         modifiedRelationships.clear();
         modifiedRules.clear();
-        modifiedResources.clear();
+        modifiedAttributes.clear();
         modifiedCastings.clear();
         relationIndexCache.clear();
         shardingCount.clear();

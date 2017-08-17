@@ -160,7 +160,7 @@ public class AtomicTest {
         GraknTx graph = unificationTestSet.graph();
         String patternString = "{$x has res1;}";
         String patternString2 = "{$y has res1;}";
-        String patternString3 = "{$x has resource;}";
+        String patternString3 = "{$x has " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + ";}";
 
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);

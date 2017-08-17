@@ -18,7 +18,7 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.generator.AbstractThingGenerator.WithResource;
@@ -45,7 +45,7 @@ public class ThingPropertyTest {
 
     @Property
     public void whenGettingTheResourceOfAThing_TheResourcesOwnerIsTheThing(@WithResource Thing thing, long seed) {
-        Resource<?> resource = PropertyUtil.choose(thing.resources(), seed);
-        assertTrue("[" + thing + "] is connected to resource [" + resource + "] but is not in it's owner set", resource.ownerInstances().collect(toSet()).contains(thing));
+        Attribute<?> attribute = PropertyUtil.choose(thing.attributes(), seed);
+        assertTrue("[" + thing + "] is connected to attribute [" + attribute + "] but is not in it's owner set", attribute.ownerInstances().collect(toSet()).contains(thing));
     }
 }

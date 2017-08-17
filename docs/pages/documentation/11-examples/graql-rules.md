@@ -141,13 +141,13 @@ then
 
 The four rules can be broken down as follows:
 
-* when: In the `parentship` relationship between child `$c` and parent `$p`, do they both have a `gender` resource that is `male`?
+* when: In the `parentship` relationship between child `$c` and parent `$p`, do they both have a `gender` attribute that is `male`?
 	* then: The `parentship` relationship is between `father` and `son`
-* when: In the `parentship` relationship between child `$c` and parent `$p`, does `$c` have a `gender` resource that is `female` and `$p` have a `gender` resource that is `male`?
+* when: In the `parentship` relationship between child `$c` and parent `$p`, does `$c` have a `gender` attribute that is `female` and `$p` have a `gender` attribute that is `male`?
 	* then: The `parentship` relationship is between `father` and `daughter`
-* when: In the `parentship` relationship between child `$c` and parent `$p`, does `$c` have a `gender` resource that is `male` and `$p` have a `gender` resource that is `female`?
+* when: In the `parentship` relationship between child `$c` and parent `$p`, does `$c` have a `gender` attribute that is `male` and `$p` have a `gender` attribute that is `female`?
 	* then: The `parentship` relationship is between `mother` and `son`
-* when: In the `parentship` relationship between child `$c` and parent `$p`, do both have a `gender` resource that is `female`?
+* when: In the `parentship` relationship between child `$c` and parent `$p`, do both have a `gender` attribute that is `female`?
 	* then: The `parentship` relationship is between `mother` and `daughter`
 
 We can use the rule to easily discover the sons who have the same name as their fathers:

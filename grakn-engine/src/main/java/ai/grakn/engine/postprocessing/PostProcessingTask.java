@@ -27,18 +27,20 @@ import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer.Context;
 import com.google.common.base.Preconditions;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * <p>
@@ -57,7 +59,7 @@ public class PostProcessingTask extends BackgroundTask {
     private static final String LOCK_KEY = "/post-processing-lock";
 
     /**
-     * Apply CASTING and RESOURCE post processing jobs the concept ids in the provided configuration
+     * Apply {@link ai.grakn.concept.Attribute} post processing jobs the concept ids in the provided configuration
      *
      * @return True if successful.
      */
@@ -65,7 +67,7 @@ public class PostProcessingTask extends BackgroundTask {
     public boolean start() {
         try (Context context = metricRegistry()
                 .timer(name(PostProcessingTask.class, "execution")).time()) {
-            Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.RESOURCE, configuration());
+            Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.ATTRIBUTE, configuration());
 
             allToPostProcess.forEach((conceptIndex, conceptIds) -> {
                 Context contextSingle = metricRegistry()
@@ -82,7 +84,7 @@ public class PostProcessingTask extends BackgroundTask {
                 }
             });
 
-            LOG.debug(JOB_FINISHED, Schema.BaseType.RESOURCE.name(), allToPostProcess);
+            LOG.debug(JOB_FINISHED, Schema.BaseType.ATTRIBUTE.name(), allToPostProcess);
 
             return true;
         }

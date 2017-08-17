@@ -25,13 +25,13 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Represent a literal resource in the graph.
+ *     Represent a literal {@link Attribute} in the graph.
  * </p>
  *
  * <p>
  *     Acts as an {@link Thing} when relating to other instances except it has the added functionality of:
- *     1. It is unique to its {@link ResourceType} based on it's value.
- *     2. It has a {@link ai.grakn.concept.ResourceType.DataType} associated with it which constrains the allowed values.
+ *     1. It is unique to its {@link AttributeType} based on it's value.
+ *     2. It has an {@link AttributeType.DataType} associated with it which constrains the allowed values.
  * </p>
  *
  * @author fppt
@@ -39,71 +39,71 @@ import java.util.stream.Stream;
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
-public interface Resource<D> extends Thing {
+public interface Attribute<D> extends Thing {
     //------------------------------------- Accessors ----------------------------------
     /**
-     * Retrieves the value of the Resource.
+     * Retrieves the value of the {@link Attribute}.
      *
-     * @return The Resource itself
+     * @return The value itself
      */
     @CheckReturnValue
     D getValue();
 
     /**
-     * Retrieves the type of the Resource, that is, the ResourceType of which this resource is an Thing.
+     * Retrieves the type of the {@link Attribute}, that is, the {@link AttributeType} of which this resource is an Thing.
      *
-     * @return The ResourceType of which this resource is an Thing.
+     * @return The {@link AttributeType of which this resource is an Thing.
      */
     @Override
-    ResourceType<D> type();
+    AttributeType<D> type();
 
     /**
-     * Retrieves the data type of this Resource's ResourceType.
+     * Retrieves the data type of this {@link Attribute}'s {@link AttributeType}.
      *
-     * @return The data type of this Resource's type.
+     * @return The data type of this {@link Attribute}'s type.
      */
     @CheckReturnValue
-    ResourceType.DataType<D> dataType();
+    AttributeType.DataType<D> dataType();
 
     /**
-     * Retrieves the set of all Instances that possess this Resource.
+     * Retrieves the set of all Instances that possess this {@link Attribute}.
      *
-     * @return The list of all Instances that possess this Resource.
+     * @return The list of all Instances that possess this {@link Attribute}.
      */
     @CheckReturnValue
     Stream<Thing> ownerInstances();
 
     /**
-     * If the Resource is unique, this method retrieves the Thing that possesses it.
+     * If the {@link Attribute} is unique, this method retrieves the Thing that possesses it.
      *
-     * @return The Thing which is connected to a unique Resource.
+     * @return The Thing which is connected to a unique {@link Attribute}.
      */
     @CheckReturnValue
     @Nullable
     Thing owner();
 
     /**
-     * Creates a relation from this instance to the provided resource.
+     * Creates a relation from this instance to the provided {@link Attribute}.
      *
-     * @param resource The resource to which a relationship is created
+     * @param attribute The {@link Attribute} to which a relationship is created
      * @return The instance itself
      */
     @Override
-    Resource resource(Resource resource);
+    Attribute attribute(Attribute attribute);
 
     //------------------------------------- Other ---------------------------------
     @SuppressWarnings("unchecked")
     @Deprecated
     @CheckReturnValue
     @Override
-    default Resource asResource(){
+    default Attribute asAttribute(){
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isResource(){
+    default boolean isAttribute(){
         return true;
     }
 }

@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     An ontological element which models and categorises the various {@link Resource} in the graph.
+ *     An ontological element which models and categorises the various {@link Attribute} in the graph.
  * </p>
  *
  * <p>
@@ -42,7 +42,7 @@ import java.util.stream.Stream;
  *     types. It has two additional functions to be aware of:
  *     1. It has a {@link DataType} constraining the data types of the values it's instances may take.
  *     2. Any of it's instances are unique to the type.
- *     For example if you have a ResourceType modelling month throughout the year there can only be one January.
+ *     For example if you have an {@link AttributeType} modelling month throughout the year there can only be one January.
  * </p>
  *
  * @author fppt
@@ -50,74 +50,74 @@ import java.util.stream.Stream;
  * @param <D> The data type of this resource type.
  *           Supported Types include: {@link String}, {@link Long}, {@link Double}, and {@link Boolean}
  */
-public interface ResourceType<D> extends Type {
+public interface AttributeType<D> extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    ResourceType setLabel(Label label);
+    AttributeType setLabel(Label label);
 
     /**
-     * Sets the ResourceType to be abstract - which prevents it from having any instances.
+     * Sets the {@link AttributeType} to be abstract - which prevents it from having any instances.
      *
-     * @param isAbstract  Specifies if the ResourceType is to be abstract (true) or not (false).
+     * @param isAbstract  Specifies if the {@link AttributeType} is to be abstract (true) or not (false).
      *
-     * @return The ResourceType itself.
+     * @return The {@link AttributeType} itself.
      */
     @Override
-    ResourceType<D> setAbstract(Boolean isAbstract);
+    AttributeType<D> setAbstract(Boolean isAbstract);
 
     /**
-     * Sets the supertype of the ResourceType to be the ResourceType specified.
+     * Sets the supertype of the {@link AttributeType} to be the AttributeType specified.
      *
-     * @param type The super type of this ResourceType.
-     * @return The ResourceType itself.
+     * @param type The super type of this {@link AttributeType}.
+     * @return The {@link AttributeType} itself.
      */
-    ResourceType<D> sup(ResourceType<D> type);
+    AttributeType<D> sup(AttributeType<D> type);
 
     /**
      * Adds another subtype to this type
      *
-     * @param type The sub type of this resource type
-     * @return The ResourceType itself
+     * @param type The sub type of this {@link AttributeType}
+     * @return The {@link AttributeType} itself
      */
-    ResourceType<D> sub(ResourceType<D> type);
+    AttributeType<D> sub(AttributeType<D> type);
 
     /**
-     * Sets the Role which instances of this ResourceType may play.
+     * Sets the Role which instances of this {@link AttributeType} may play.
      *
-     * @param role The Role Type which the instances of this ResourceType are allowed to play.
-     * @return The ResourceType itself.
+     * @param role The Role Type which the instances of this {@link AttributeType} are allowed to play.
+     * @return The {@link AttributeType} itself.
      */
     @Override
-    ResourceType<D> plays(Role role);
+    AttributeType<D> plays(Role role);
 
     /**
-     * Removes the Role to prevent instances of this ResourceType from playing it.
+     * Removes the Role to prevent instances of this {@link AttributeType} from playing it.
      *
-     * @param role The Role Type which the instances of this ResourceType should no longer be allowed to play.
-     * @return The ResourceType itself.
+     * @param role The Role Type which the instances of this {@link AttributeType} should no longer be allowed to play.
+     * @return The {@link AttributeType} itself.
      */
     @Override
-    ResourceType<D> deletePlays(Role role);
+    AttributeType<D> deletePlays(Role role);
 
     /**
-     * Set the regular expression that instances of the ResourceType must conform to.
+     * Set the regular expression that instances of the {@link AttributeType} must conform to.
      *
-     * @param regex The regular expression that instances of this ResourceType must conform to.
-     * @return The ResourceType itself.
+     * @param regex The regular expression that instances of this {@link AttributeType} must conform to.
+     * @return The {@link AttributeType} itself.
      */
-    ResourceType<D> setRegex(String regex);
+    AttributeType<D> setRegex(String regex);
 
     /**
-     * Set the value for the Resource, unique to its type.
+     * Set the value for the {@link Attribute}, unique to its type.
      *
-     * @param value A value for the Resource which is unique to its type
-     * @return new or existing Resource of this type with the provided value.
+     * @param value A value for the {@link Attribute} which is unique to its type
+     * @return new or existing {@link Attribute} of this type with the provided value.
      */
-    Resource<D> putResource(D value);
+    Attribute<D> putAttribute(D value);
 
     /**
      * Classifies the type to a specific scope. This allows you to optionally categorise types.
@@ -126,7 +126,7 @@ public interface ResourceType<D> extends Type {
      * @return The Type itself.
      */
     @Override
-    ResourceType<D> scope(Thing scope);
+    AttributeType<D> scope(Thing scope);
 
     /**
      * Delete the scope specified.
@@ -135,78 +135,78 @@ public interface ResourceType<D> extends Type {
      * @return The Type itself
      */
     @Override
-    ResourceType<D> deleteScope(Thing scope);
+    AttributeType<D> deleteScope(Thing scope);
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    ResourceType<D> key(ResourceType resourceType);
+    AttributeType<D> key(AttributeType attributeType);
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked.
      *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    ResourceType<D> resource(ResourceType resourceType);
+    AttributeType<D> attribute(AttributeType attributeType);
 
     //------------------------------------- Accessors ---------------------------------
     /**
-     * Returns the supertype of this ResourceType.
+     * Returns the supertype of this {@link AttributeType}.
      *
-     * @return The supertype of this ResourceType,
+     * @return The supertype of this {@link AttributeType},
      */
     @Override
     @Nonnull
-    ResourceType<D> sup();
+    AttributeType<D> sup();
 
     /**
-     * Get the Resource with the value provided, and its type, or return NULL
-     * @see Resource
+     * Get the {@link Attribute} with the value provided, and its type, or return NULL
+     * @see Attribute
      *
-     * @param value A value which a Resource in the graph may be holding
-     * @return The Resource with the provided value and type or null if no such Resource exists.
+     * @param value A value which an {@link Attribute} in the graph may be holding
+     * @return The {@link Attribute} with the provided value and type or null if no such {@link Attribute} exists.
      */
     @CheckReturnValue
     @Nullable
-    Resource<D> getResource(D value);
+    Attribute<D> getAttribute(D value);
 
     /**
-     * Returns a collection of subtypes of this ResourceType.
+     * Returns a collection of subtypes of this {@link AttributeType}.
      *
-     * @return The subtypes of this ResourceType
+     * @return The subtypes of this {@link AttributeType}
      */
     @Override
-    Stream<ResourceType<D>> subs();
+    Stream<AttributeType<D>> subs();
 
     /**
-     * Returns a collection of all Resource Instances of this ResourceType.
+     * Returns a collection of all {@link Attribute} of this {@link AttributeType}.
      *
-     * @return The resource instances of this ResourceType
+     * @return The resource instances of this {@link AttributeType}
      */
     @Override
-    Stream<Resource<D>> instances();
+    Stream<Attribute<D>> instances();
 
     /**
-     * Get the data type to which instances of the ResourceType must conform.
+     * Get the data type to which instances of the {@link AttributeType} must conform.
      *
-     * @return The data type to which instances of this resource must conform.
+     * @return The data type to which instances of this {@link Attribute}  must conform.
      */
     @CheckReturnValue
     DataType<D> getDataType();
 
     /**
-     * Retrieve the regular expression to which instances of this ResourceType must conform, or {@code null} if no
+     * Retrieve the regular expression to which instances of this {@link AttributeType} must conform, or {@code null} if no
      * regular expression is set.
      *
-     * By default, a {@link ResourceType} does not have a regular expression set.
+     * By default, an {@link AttributeType} does not have a regular expression set.
      *
-     * @return The regular expression to which instances of this ResourceType must conform.
+     * @return The regular expression to which instances of this {@link AttributeType} must conform.
      */
     @CheckReturnValue
     @Nullable
@@ -217,14 +217,14 @@ public interface ResourceType<D> extends Type {
     @Deprecated
     @CheckReturnValue
     @Override
-    default ResourceType asResourceType(){
+    default AttributeType asAttributeType(){
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isResourceType(){
+    default boolean isAttributeType(){
         return true;
     }
 

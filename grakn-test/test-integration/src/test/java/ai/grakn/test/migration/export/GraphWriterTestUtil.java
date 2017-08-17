@@ -18,12 +18,12 @@
 package ai.grakn.test.migration.export;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
@@ -61,8 +61,8 @@ public abstract class GraphWriterTestUtil {
             assertRelationCopied(thing.asRelationship(), two);
         } else if(thing.isRule()){
             assertRuleCopied(thing.asRule(), two);
-        } else if(thing.isResource()){
-            assertResourceCopied(thing.asResource(), two);
+        } else if(thing.isAttribute()){
+            assertResourceCopied(thing.asAttribute(), two);
         }
     }
 
@@ -70,7 +70,7 @@ public abstract class GraphWriterTestUtil {
      * Assert that there are the same number of entities in each graph with the same resources
      */
     public static void assertEntityCopied(Entity entity1, GraknTx two){
-        Collection<Entity> entitiesFromGraph1 = entity1.resources().flatMap(Resource::ownerInstances).map(Concept::asEntity).collect(toSet());
+        Collection<Entity> entitiesFromGraph1 = entity1.attributes().flatMap(Attribute::ownerInstances).map(Concept::asEntity).collect(toSet());
         Collection<Entity> entitiesFromGraph2 = getInstancesByResources(two, entity1).stream().map(Concept::asEntity).collect(toSet());
 
         assertEquals(entitiesFromGraph1.size(), entitiesFromGraph2.size());
@@ -80,9 +80,9 @@ public abstract class GraphWriterTestUtil {
      * Get all instances with the same resources
      */
     public static Collection<Thing> getInstancesByResources(GraknTx graph, Thing thing){
-        return thing.resources()
+        return thing.attributes()
                 .map(r -> getResourceFromGraph(graph, r))
-                .flatMap(Resource::ownerInstances)
+                .flatMap(Attribute::ownerInstances)
                 .collect(toSet());
     }
 
@@ -94,12 +94,12 @@ public abstract class GraphWriterTestUtil {
                .iterator().next();
     }
 
-    public static <V> Resource<V> getResourceFromGraph(GraknTx graph, Resource<V> resource){
-        return (Resource<V>) graph.getResourceType(resource.type().getLabel().getValue()).getResource(resource.getValue());
+    public static <V> Attribute<V> getResourceFromGraph(GraknTx graph, Attribute<V> attribute){
+        return (Attribute<V>) graph.getAttributeType(attribute.type().getLabel().getValue()).getAttribute(attribute.getValue());
     }
 
     public static void assertRelationCopied(Relationship relationship1, GraknTx two){
-        if(relationship1.rolePlayers().anyMatch(Concept::isResource)){
+        if(relationship1.rolePlayers().anyMatch(Concept::isAttribute)){
             return;
         }
 
@@ -117,11 +117,11 @@ public abstract class GraphWriterTestUtil {
         assertTrue("The copied relation [" + relationship1 + "] was not found.", relationFound);
     }
 
-    public static void assertResourceCopied(Resource resource1, GraknTx two){
-        assertEquals(true, two.getResourcesByValue(resource1.getValue()).stream()
+    public static void assertResourceCopied(Attribute attribute1, GraknTx two){
+        assertEquals(true, two.getAttributesByValue(attribute1.getValue()).stream()
                 .map(Thing::type)
                 .map(Type::getLabel)
-                .anyMatch(t -> resource1.type().getLabel().equals(t)));
+                .anyMatch(t -> attribute1.type().getLabel().equals(t)));
     }
 
     public static void assertRuleCopied(Rule rule1, GraknTx two){
@@ -141,6 +141,6 @@ public abstract class GraphWriterTestUtil {
         return one.getLabel().equals(two.getLabel())
                 && one.isAbstract().equals(two.isAbstract())
                 && (one.sup() == null || one.sup().getLabel().equals(two.sup().getLabel()))
-                && (!one.isResourceType() || Objects.equals(one.asResourceType().getDataType(), two.asResourceType().getDataType()));
+                && (!one.isAttributeType() || Objects.equals(one.asAttributeType().getDataType(), two.asAttributeType().getDataType()));
     }
 }

@@ -20,8 +20,8 @@
 package ai.grakn.generator;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import com.google.common.collect.ImmutableList;
 
@@ -42,7 +42,7 @@ public class PutTypeFunctions extends AbstractGenerator<BiFunction> {
     protected BiFunction<GraknTx, Label, Type> generate() {
         return random.choose(ImmutableList.of(
                 GraknTx::putEntityType,
-                (graph, label) -> graph.putResourceType(label, gen(ResourceType.DataType.class)),
+                (graph, label) -> graph.putAttributeType(label, gen(AttributeType.DataType.class)),
                 GraknTx::putRuleType,
                 GraknTx::putRelationshipType
         ));

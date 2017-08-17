@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
@@ -716,7 +716,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         }
     }
 
-    private ResourceType.DataType getDatatype(TerminalNode datatype) {
+    private AttributeType.DataType getDatatype(TerminalNode datatype) {
         return QueryParser.DATA_TYPES.get(datatype.getText());
     }
 }

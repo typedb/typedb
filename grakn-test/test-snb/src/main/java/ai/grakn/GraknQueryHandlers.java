@@ -21,7 +21,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
@@ -104,7 +104,7 @@ public class GraknQueryHandlers {
      * @return the resource value
      */
     private static <T> T resource(Answer result, Var resource) {
-        return result.get(resource).<T>asResource().getValue();
+        return result.get(resource).<T>asAttribute().getValue();
     }
 
     /**
@@ -115,7 +115,7 @@ public class GraknQueryHandlers {
      * @return the time as an epoch milli
      */
     private static long timeResource(Answer result, Var resource) {
-        return result.get(resource).<LocalDateTime>asResource().getValue().toInstant(ZoneOffset.UTC).toEpochMilli();
+        return result.get(resource).<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli();
     }
 
     /**
@@ -355,7 +355,7 @@ public class GraknQueryHandlers {
             }).collect(Collectors.toList());
         }
         private static <T> T getSingleResource(Entity entity, Label resourceType, GraknTx graknTx) {
-            return (T) entity.resources(graknTx.getResourceType(resourceType.toString())).
+            return (T) entity.attributes(graknTx.getAttributeType(resourceType.toString())).
                     iterator().next().getValue();
         }
         private static long getSingleDateResource(Entity entity, Label resourceType, GraknTx graknTx) {
@@ -363,7 +363,7 @@ public class GraknQueryHandlers {
                     toInstant(ZoneOffset.UTC).toEpochMilli();
         }
         private static <T> List<T> getListResources(Entity entity, Label resourceType, GraknTx graknTx) {
-            Stream<Resource<?>> rawResources = entity.resources(graknTx.getResourceType(resourceType.toString()));
+            Stream<Attribute<?>> rawResources = entity.attributes(graknTx.getAttributeType(resourceType.toString()));
             return rawResources.map((resource) -> (T) resource.getValue()).collect(Collectors.<T>toList());
         }
     }

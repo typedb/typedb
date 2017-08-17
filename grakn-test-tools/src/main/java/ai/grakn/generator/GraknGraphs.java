@@ -23,6 +23,8 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -30,8 +32,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
@@ -162,11 +162,11 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
             },
             () -> {
                 Label label = typeLabel();
-                ResourceType.DataType dataType = gen(ResourceType.DataType.class);
-                ResourceType superType = resourceType();
-                ResourceType resourceType = graph.putResourceType(label, dataType).sup(superType);
-                summaryAssign(resourceType, "graph", "putResourceType", label, dataType);
-                summary(resourceType, "superType", superType);
+                AttributeType.DataType dataType = gen(AttributeType.DataType.class);
+                AttributeType superType = resourceType();
+                AttributeType attributeType = graph.putAttributeType(label, dataType).sup(superType);
+                summaryAssign(attributeType, "graph", "putResourceType", label, dataType);
+                summary(attributeType, "superType", superType);
             },
             () -> {
                 Label label = typeLabel();
@@ -190,15 +190,15 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
             },
             () -> {
                 Type type = type();
-                ResourceType resourceType = resourceType();
-                type.resource(resourceType);
-                summary(type, "resource", resourceType);
+                AttributeType attributeType = resourceType();
+                type.attribute(attributeType);
+                summary(type, "resource", attributeType);
             },
             () -> {
                 Type type = type();
-                ResourceType resourceType = resourceType();
-                type.key(resourceType);
-                summary(type, "key", resourceType);
+                AttributeType attributeType = resourceType();
+                type.key(attributeType);
+                summary(type, "key", attributeType);
             },
             () -> {
                 Type type = type();
@@ -241,16 +241,16 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
                 summary(relationshipType, "relates", role);
             },
             () -> {
-                ResourceType resourceType1 = resourceType();
-                ResourceType resourceType2 = resourceType();
-                resourceType1.sup(resourceType2);
-                summary(resourceType1, "superType", resourceType2);
+                AttributeType attributeType1 = resourceType();
+                AttributeType attributeType2 = resourceType();
+                attributeType1.sup(attributeType2);
+                summary(attributeType1, "superType", attributeType2);
             },
             () -> {
-                ResourceType resourceType = resourceType();
+                AttributeType attributeType = resourceType();
                 Object value = gen().make(ResourceValues.class).generate(random, status);
-                Resource resource = resourceType.putResource(value);
-                summaryAssign(resource, resourceType, "putResource", valueToString(value));
+                Attribute attribute = attributeType.putAttribute(value);
+                summaryAssign(attribute, attributeType, "putResource", valueToString(value));
             },
             // () -> resourceType().setRegex(gen(String.class)), // TODO: Enable this when doesn't throw a NPE
             () -> {
@@ -267,9 +267,9 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
             },*/
             () -> {
                 Thing thing = instance();
-                Resource resource = resource();
-                thing.resource(resource);
-                summary(thing, "resource", resource);
+                Attribute attribute = resource();
+                thing.attribute(attribute);
+                summary(thing, "resource", attribute);
             },
             () -> {
                 Type type = type();
@@ -332,8 +332,8 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
         return random.choose(graph.admin().getMetaRole().subs().collect(toSet()));
     }
 
-    private ResourceType resourceType() {
-        return random.choose((Collection<ResourceType>) graph.admin().getMetaResourceType().subs().collect(toSet()));
+    private AttributeType resourceType() {
+        return random.choose((Collection<AttributeType>) graph.admin().getMetaResourceType().subs().collect(toSet()));
     }
 
     private RelationshipType relationType() {
@@ -352,8 +352,8 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
         return chooseOrThrow(graph.admin().getMetaRelationType().instances());
     }
 
-    private Resource resource() {
-        return chooseOrThrow((Stream<Resource>) graph.admin().getMetaResourceType().instances());
+    private Attribute resource() {
+        return chooseOrThrow((Stream<Attribute>) graph.admin().getMetaResourceType().instances());
     }
 
     //TODO: re-enable when grakn-graph can create graql constructs

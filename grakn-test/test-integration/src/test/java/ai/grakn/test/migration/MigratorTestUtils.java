@@ -21,14 +21,14 @@ package ai.grakn.test.migration;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.util.Schema;
@@ -75,10 +75,10 @@ public class MigratorTestUtils {
     }
 
     public static void assertResourceEntityRelationExists(GraknTx graph, String resourceName, Object resourceValue, Entity owner){
-        ResourceType resourceType = graph.getResourceType(resourceName);
-        assertNotNull(resourceType);
-        assertEquals(resourceValue, owner.resources(resourceType)
-                .map(Resource::getValue)
+        AttributeType attributeType = graph.getAttributeType(resourceName);
+        assertNotNull(attributeType);
+        assertEquals(resourceValue, owner.attributes(attributeType)
+                .map(Attribute::getValue)
                 .findFirst().get());
     }
 
@@ -108,17 +108,17 @@ public class MigratorTestUtils {
         return things;
     }
 
-    public static Resource getResource(GraknTx graph, Thing thing, Label label) {
+    public static Attribute getResource(GraknTx graph, Thing thing, Label label) {
         assertEquals(getResources(graph, thing, label).count(), 1);
         return getResources(graph, thing, label).findAny().get();
     }
 
-    public static Stream<Resource> getResources(GraknTx graph, Thing thing, Label label) {
+    public static Stream<Attribute> getResources(GraknTx graph, Thing thing, Label label) {
         Role roleOwner = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
         Role roleOther = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 
         Stream<Relationship> relations = thing.relations(roleOwner);
-        return relations.flatMap(r -> r.rolePlayers(roleOther)).map(Concept::asResource);
+        return relations.flatMap(r -> r.rolePlayers(roleOther)).map(Concept::asAttribute);
     }
 
     /**
@@ -135,14 +135,14 @@ public class MigratorTestUtils {
             Collection<Entity> hamsters = graph.getEntityType("hamster").instances().collect(Collectors.toSet());
             assertEquals(1, hamsters.size());
 
-            ResourceType<String> name = graph.getResourceType("name");
-            ResourceType<String> death = graph.getResourceType("death");
+            AttributeType<String> name = graph.getAttributeType("name");
+            AttributeType<String> death = graph.getAttributeType("death");
 
-            Entity puffball = name.getResource("Puffball").ownerInstances().iterator().next().asEntity();
-            assertEquals(0, puffball.resources(death).count());
+            Entity puffball = name.getAttribute("Puffball").ownerInstances().iterator().next().asEntity();
+            assertEquals(0, puffball.attributes(death).count());
 
-            Entity bowser = name.getResource("Bowser").ownerInstances().iterator().next().asEntity();
-            assertEquals(1, bowser.resources(death).count());
+            Entity bowser = name.getAttribute("Bowser").ownerInstances().iterator().next().asEntity();
+            assertEquals(1, bowser.attributes(death).count());
         }
     }
 
@@ -154,12 +154,12 @@ public class MigratorTestUtils {
             Collection<Entity> pokemon = graph.getEntityType("pokemon").instances().collect(Collectors.toSet());
             assertEquals(9, pokemon.size());
 
-            ResourceType<String> typeid = graph.getResourceType("type-id");
-            ResourceType<String> pokedexno = graph.getResourceType("pokedex-no");
+            AttributeType<String> typeid = graph.getAttributeType("type-id");
+            AttributeType<String> pokedexno = graph.getAttributeType("pokedex-no");
 
-            Entity grass = typeid.getResource("12").ownerInstances().iterator().next().asEntity();
-            Entity poison = typeid.getResource("4").ownerInstances().iterator().next().asEntity();
-            Entity bulbasaur = pokedexno.getResource("1").ownerInstances().iterator().next().asEntity();
+            Entity grass = typeid.getAttribute("12").ownerInstances().iterator().next().asEntity();
+            Entity poison = typeid.getAttribute("4").ownerInstances().iterator().next().asEntity();
+            Entity bulbasaur = pokedexno.getAttribute("1").ownerInstances().iterator().next().asEntity();
             RelationshipType relation = graph.getRelationshipType("has-type");
 
             assertNotNull(grass);

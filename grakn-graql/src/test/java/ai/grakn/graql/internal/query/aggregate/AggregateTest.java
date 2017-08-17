@@ -102,7 +102,7 @@ public class AggregateTest {
 
         Map<Concept, Long> groupCount = groupCountQuery.execute();
 
-        Thing godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = rule.graph().getAttributeType("title").getAttribute("Godfather").owner();
 
         assertEquals(new Long(9), groupCount.get(godfather));
     }

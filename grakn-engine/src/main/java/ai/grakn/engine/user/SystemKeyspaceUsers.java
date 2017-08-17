@@ -39,7 +39,7 @@ import java.util.Map;
 
 import static ai.grakn.engine.util.ExceptionWrapper.rethrow;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.MetaSchema.RESOURCE;
+import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
 
 /**
  * A DAO for managing users in the Grakn system keyspace. System the 'system.gql' ontology
@@ -131,7 +131,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
             Var resource = var("property");
 
-            MatchQuery query = graph.graql().match(lookup.has(RESOURCE.getLabel(), resource));
+            MatchQuery query = graph.graql().match(lookup.has(ATTRIBUTE.getLabel(), resource));
             List<Answer> L = query.execute();
             if (L.isEmpty()) {
                 return Json.nil();
@@ -139,7 +139,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             Json user = Json.object();
             L.forEach(property -> {
                 Label label = property.get(resource).asThing().type().getLabel();
-                Object value = property.get(resource).asResource().getValue();
+                Object value = property.get(resource).asAttribute().getValue();
                 user.set(label.getValue(), value);
             });
             return user;
@@ -175,9 +175,9 @@ public class SystemKeyspaceUsers extends UsersHandler {
                 Concept saltConcept = results.get(0).get("salt");
                 Concept passwordConcept = results.get(0).get("stored-password");
 
-                if(saltConcept != null && passwordConcept != null && saltConcept.isResource() && passwordConcept.isResource()){
-                    byte[] salt = Password.getBytes(saltConcept.asResource().getValue().toString());
-                    byte[] expectedPassword = Password.getBytes(passwordConcept.asResource().getValue().toString());
+                if(saltConcept != null && passwordConcept != null && saltConcept.isAttribute() && passwordConcept.isAttribute()){
+                    byte[] salt = Password.getBytes(saltConcept.asAttribute().getValue().toString());
+                    byte[] expectedPassword = Password.getBytes(passwordConcept.asAttribute().getValue().toString());
                     return Password.isExpectedPassword(passwordClient.toCharArray(), salt, expectedPassword);
                 }
             }
@@ -200,7 +200,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             List<Answer> L = query.execute();
             Json all = Json.array();
             L.forEach(concepts -> {
-                String username = concepts.get("username").asResource().getValue().toString();
+                String username = concepts.get("username").asAttribute().getValue().toString();
                 all.add(getUser(username));
             });
             return all;
@@ -226,7 +226,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             boolean exists = !results.isEmpty();
             results.forEach(map -> {
                 map.forEach( (k,v) -> {
-                    v.asThing().resources().forEach(Concept::delete);
+                    v.asThing().attributes().forEach(Concept::delete);
                     v.delete();
                 });
             });

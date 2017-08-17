@@ -21,12 +21,12 @@ package ai.grakn.test.graql.analytics;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.test.EngineContext;
@@ -74,13 +74,13 @@ public class AnalyticsTest {
     public void testInferredResourceRelation() throws InvalidGraphException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             Label resourceLabel = Label.of("degree");
-            ResourceType<Long> degree = graph.putResourceType(resourceLabel, ResourceType.DataType.LONG);
+            AttributeType<Long> degree = graph.putAttributeType(resourceLabel, AttributeType.DataType.LONG);
             EntityType thingy = graph.putEntityType("thingy");
-            thingy.resource(degree);
+            thingy.attribute(degree);
 
             Entity thisThing = thingy.addEntity();
-            Resource thisResource = degree.putResource(1L);
-            thisThing.resource(thisResource);
+            Attribute thisAttribute = degree.putAttribute(1L);
+            thisThing.attribute(thisAttribute);
             graph.commit();
         }
 
@@ -103,7 +103,7 @@ public class AnalyticsTest {
             Label resourceTypeId = Label.of("degree");
             EntityType thingy = graph.putEntityType("thingy");
 
-            graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
+            graph.putAttributeType(resourceTypeId, AttributeType.DataType.LONG);
             Role degreeOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
             Role degreeValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
             RelationshipType relationshipType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))

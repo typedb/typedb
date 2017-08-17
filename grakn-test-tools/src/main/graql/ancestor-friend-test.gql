@@ -23,7 +23,7 @@ Person plays parent, plays child;
 "Ancestor-friend" sub relationship, relates person, relates ancestor-friend;
 Person plays person, plays ancestor-friend;
 
-"name" sub resource, datatype string;
+"name" sub attribute, datatype string;
 
 ####################################################
 ##################DATA#############################

@@ -8,9 +8,9 @@ product sub recommendable
     has gender;
 
 # product resources
-min-age sub resource, datatype long;
-max-age sub resource, datatype long;
-gender sub resource, datatype string;
+min-age sub attribute, datatype long;
+max-age sub attribute, datatype long;
+gender sub attribute, datatype string;
 
 product-made sub role;
 product-origin sub role;

@@ -8,43 +8,43 @@ insert
 "context-preference-id" sub role;
 "context-preference" sub relationship, relates context-preference-owner, relates context-preference-id;
 
-"preferred-context" sub resource, datatype string;
+"preferred-context" sub attribute, datatype string;
 
 "body-preference-owner" sub role;
 "body-preference-id" sub role;
 "body-preference" sub relationship, relates body-preference-owner, relates body-preference-id;
 
-"preferred-body" sub resource, datatype string;
+"preferred-body" sub attribute, datatype string;
 
 "dryness-preference-owner" sub role;
 "dryness-preference-id" sub role;
 "dryness-preference" sub relationship, relates dryness-preference-owner, relates dryness-preference-id;
 
-"preferred-dryness" sub resource, datatype string;
+"preferred-dryness" sub attribute, datatype string;
 
 "entree-preference-owner" sub role;
 "entree-preference-id" sub role;
 "entree-preference" sub relationship, relates entree-preference-owner, relates entree-preference-id;
 
-"preferred-entree" sub resource, datatype string;
+"preferred-entree" sub attribute, datatype string;
 
 "colour-preference-owner" sub role;
 "colour-preference-id" sub role;
 "colour-preference" sub relationship, relates colour-preference-owner, relates colour-preference-id;
 
-"preferred-colour" sub resource, datatype string;
+"preferred-colour" sub attribute, datatype string;
 
 "sparklingness-preference-owner" sub role;
 "sparklingness-preference-id" sub role;
 "sparkingness-preference" sub relationship, relates sparklingness-preference-owner, relates sparklingness-preference-id;
 
-"preferred-sparklingness" sub resource, datatype string;
+"preferred-sparklingness" sub attribute, datatype string;
 
 "recommended-wine" sub role;
 "recommendation-owner" sub role;
 "wine-recommendation" sub relationship, relates recommended-wine, relates recommendation-owner;
 
-"recommended-generic-wine-type" sub resource, datatype string;
+"recommended-generic-wine-type" sub attribute, datatype string;
 
 "person" sub entity
     has name;
@@ -57,7 +57,7 @@ person has preferred-colour;
 person has preferred-sparklingness;
 person has recommended-generic-wine-type;
 
-"name" sub resource, datatype string;
+"name" sub attribute, datatype string;
 
 "wine" sub entity
     has name;

@@ -59,18 +59,18 @@ GraknTx tx = session.open(GraknTxType.WRITE)
 ```
 
 
-Building the ontology is covered in `writeOntology()`. First, the method adds the resource types using putResourceType():
+Building the ontology is covered in `writeOntology()`. First, the method adds the attribute types using putAttributeType():
 
 ```java
-identifier = tx.putResourceType("identifier", ResourceType.DataType.STRING);
-name = tx.putResourceType("name", ResourceType.DataType.STRING);
-firstname = tx.putResourceType("firstname", ResourceType.DataType.STRING).sup(name);
-surname = tx.putResourceType("surname", ResourceType.DataType.STRING).sup(name);
-middlename = tx.putResourceType("middlename", ResourceType.DataType.STRING).sup(name);
-date = tx.putResourceType("date", ResourceType.DataType.STRING);
-birthDate = tx.putResourceType("birth-date", ResourceType.DataType.STRING).sup(date);
-deathDate = tx.putResourceType("death-date", ResourceType.DataType.STRING).sup(date);
-gender = tx.putResourceType("gender", ResourceType.DataType.STRING);
+identifier = tx.putAttributeType("identifier", AttributeType.DataType.STRING);
+name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+firstname = tx.putAttributeType("firstname", AttributeType.DataType.STRING).sup(name);
+surname = tx.putAttributeType("surname", AttributeType.DataType.STRING).sup(name);
+middlename = tx.putAttributeType("middlename", AttributeType.DataType.STRING).sup(name);
+date = tx.putAttributeType("date", AttributeType.DataType.STRING);
+birthDate = tx.putAttributeType("birth-date", AttributeType.DataType.STRING).sup(date);
+deathDate = tx.putAttributeType("death-date", AttributeType.DataType.STRING).sup(date);
+gender = tx.putAttributeType("gender", AttributeType.DataType.STRING);
 ```
 
 Then it adds roles using `putRole()`:
@@ -83,28 +83,28 @@ parent = tx.putRole("parent");
 child = tx.putRole("child");
 ```
 
-Then to add the relationship types, `putRelationshipType()`, which is followed by `relates()` to set the roles associated with the relationship and resource() to state that it has a date resource:
+Then to add the relationship types, `putRelationshipType()`, which is followed by `relates()` to set the roles associated with the relationship and attribute() to state that it has a date attribute:
 
 ```java
 marriage = tx.putRelationshipType("marriage");
 marriage.relates(spouse).relates(spouse1).relates(spouse2);
-marriage.resource(date);
+marriage.attribute(date);
 parentship = tx.putRelationshipType("parentship");
 parentship.relates(parent).relates(child);
 ```
 
-Finally, entity types are added using `putEntityType()`, `plays()` and `resource()`:
+Finally, entity types are added using `putEntityType()`, `plays()` and `attribute()`:
 
 ```java
 person = tx.putEntityType("person");
 person.plays(spouse1).plays(spouse2).plays(parent).plays(child);
-person.resource(gender);
-person.resource(birthDate);
-person.resource(deathDate);
-person.resource(identifier);
-person.resource(firstname);
-person.resource(middlename);
-person.resource(surname);
+person.attribute(gender);
+person.attribute(birthDate);
+person.attribute(deathDate);
+person.attribute(identifier);
+person.attribute(firstname);
+person.attribute(middlename);
+person.attribute(surname);
 ```
 
 Now to commit the ontology:
@@ -122,16 +122,16 @@ The example project does this in `writeSampleRelation_Marriage()`. First it crea
 // After committing we need to open a new transaction
 tx = session.open(GraknTxType.WRITE)
 
-// Define the resources
-Resource<String> firstNameJohn = firstname.putResource("John");
-Resource<String> surnameNiesz = surname.putResource("Niesz");
-Resource<String> male = gender.putResource("male");
+// Define the attributes
+Attribute<String> firstNameJohn = firstname.putAttribute("John");
+Attribute<String> surnameNiesz = surname.putAttribute("Niesz");
+Attribute<String> male = gender.putAttribute("male");
 //Now we can create the actual husband entity
 Entity johnNiesz = person.addEntity();
-//Add the resources
-johnNiesz.resource(firstNameJohn);
-johnNiesz.resource(surnameNiesz);
-johnNiesz.resource(male);
+//Add the attributes
+johnNiesz.attribute(firstNameJohn);
+johnNiesz.attribute(surnameNiesz);
+johnNiesz.attribute(male);
 ```
 
 We can compare how a Graql statement maps to the Java API. This is the equivalent in Graql:
@@ -146,8 +146,8 @@ The code goes on to create another `person` entity, named `maryYoung`, and then 
 Entity maryYoung = person.addEntity();
 
 Relationship theMarriage = marriage.addRelationship().addRolePlayer(spouse1, johnNiesz).addRolePlayer(spouse2, maryYoung);
-Resource marriageDate = date.putResource(LocalDateTime.of(1880, 8, 12, 0, 0, 0).toString());
-theMarriage.resource(marriageDate);
+Attribute marriageDate = date.putAttribute(LocalDateTime.of(1880, 8, 12, 0, 0, 0).toString());
+theMarriage.attribute(marriageDate);
 ```
 
 ## Querying the Knowledge Base Using GraknTx

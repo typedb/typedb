@@ -33,8 +33,8 @@ import javax.annotation.CheckReturnValue;
  *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
- *     ({@link EntityType}, {@link Role}, {@link RelationshipType}, {@link RuleType} or {@link ResourceType})
- *     or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Resource}, {@link Rule}).
+ *     ({@link EntityType}, {@link Role}, {@link RelationshipType}, {@link RuleType} or {@link AttributeType})
+ *     or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Attribute}, {@link Rule}).
  * </p>
  *
  * @author fppt
@@ -117,8 +117,8 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
-    default <D> ResourceType<D> asResourceType(){
-        throw GraphOperationException.invalidCasting(this, ResourceType.class);
+    default <D> AttributeType<D> asAttributeType(){
+        throw GraphOperationException.invalidCasting(this, AttributeType.class);
     }
 
     /**
@@ -151,13 +151,13 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Return as a {@link Resource}  if the {@link Concept} is a {@link Resource} {@link Thing}.
+     * Return as a {@link Attribute}  if the {@link Concept} is a {@link Attribute} {@link Thing}.
      *
-     * @return A {@link Resource} if the {@link Concept} is a {@link Resource}
+     * @return A {@link Attribute} if the {@link Concept} is a {@link Attribute}
      */
     @CheckReturnValue
-    default <D> Resource<D> asResource(){
-        throw GraphOperationException.invalidCasting(this, Resource.class);
+    default <D> Attribute<D> asAttribute(){
+        throw GraphOperationException.invalidCasting(this, Attribute.class);
     }
 
     /**
@@ -231,12 +231,12 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link ResourceType}.
+     * Determine if the {@link Concept} is a {@link AttributeType}.
      *
-     * @return true if the{@link Concept} concept is a {@link ResourceType}
+     * @return true if the{@link Concept} concept is a {@link AttributeType}
      */
     @CheckReturnValue
-    default boolean isResourceType(){
+    default boolean isAttributeType(){
         return false;
     }
 
@@ -271,12 +271,12 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link Resource}.
+     * Determine if the {@link Concept} is a {@link Attribute}.
      *
-     * @return true if the {@link Concept} is a {@link Resource}
+     * @return true if the {@link Concept} is a {@link Attribute}
      */
     @CheckReturnValue
-    default boolean isResource(){
+    default boolean isAttribute(){
         return false;
     }
 

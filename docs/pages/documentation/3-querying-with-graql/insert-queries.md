@@ -118,7 +118,7 @@ qb.insert(var().val("Ash").isa("surname")).execute();
 
 ### has
 
-Add a resource of the given type to the concept.
+Add an attribute of the given type to the concept.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell5" data-toggle="tab">Graql</a></li>
@@ -251,9 +251,9 @@ qb.insert(label("person").plays("sibling2")).execute();
 
 ### has
 
-Allow the concept type to have the given resource.
+Allow the concept type to have the given attribute.
 
-This is done by creating a specific relationship relating the concept and resource.
+This is done by creating a specific relationship relating the concept and attribute.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell11" data-toggle="tab">Graql</a></li>

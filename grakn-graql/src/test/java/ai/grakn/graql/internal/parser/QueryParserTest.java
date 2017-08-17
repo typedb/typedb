@@ -19,8 +19,8 @@
 
 package ai.grakn.graql.internal.parser;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.AggregateQuery;
@@ -408,7 +408,7 @@ public class QueryParserTest {
 
     @Test
     public void testMatchDataTypeQuery() {
-        MatchQuery expected = match(var("x").datatype(ResourceType.DataType.DOUBLE));
+        MatchQuery expected = match(var("x").datatype(AttributeType.DataType.DOUBLE));
         MatchQuery parsed = parse("match $x datatype double;");
 
         assertEquals(expected, parsed);
@@ -416,7 +416,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingDateKeyword_ParseAsTheCorrectDataType() {
-        MatchQuery expected = match(var("x").datatype(ResourceType.DataType.DATE));
+        MatchQuery expected = match(var("x").datatype(AttributeType.DataType.DATE));
         MatchQuery parsed = parse("match $x datatype date;");
 
         assertEquals(expected, parsed);
@@ -424,7 +424,7 @@ public class QueryParserTest {
 
     @Test
     public void testInsertDataTypeQuery() {
-        InsertQuery expected = insert(label("my-type").sub("resource").datatype(ResourceType.DataType.LONG));
+        InsertQuery expected = insert(label("my-type").sub("resource").datatype(AttributeType.DataType.LONG));
         InsertQuery parsed = parse("insert my-type sub resource, datatype long;");
         assertEquals(expected, parsed);
     }
@@ -658,7 +658,7 @@ public class QueryParserTest {
         //noinspection OptionalGetWithoutIsPresent
         DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
 
-        Assert.assertEquals(ResourceType.DataType.BOOLEAN, property.dataType());
+        Assert.assertEquals(AttributeType.DataType.BOOLEAN, property.dataType());
     }
 
     @Test

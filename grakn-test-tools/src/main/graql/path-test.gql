@@ -22,7 +22,7 @@ start-vertex plays arc-from;
 vertex plays path-from, plays path-to;
 start-vertex plays path-from;
 
-"index" sub resource, datatype string;
+"index" sub attribute, datatype string;
 
 ####################################################
 ##################RULES#############################

@@ -18,12 +18,12 @@
 
 package ai.grakn.graph.internal.concept;
 
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
@@ -47,26 +47,26 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class ResourceTest extends GraphTestBase {
+public class AttributeTest extends GraphTestBase {
     @Test
     public void whenCreatingResource_EnsureTheResourcesDataTypeIsTheSameAsItsType() throws Exception {
-        ResourceType<String> resourceType = graknGraph.putResourceType("resourceType", ResourceType.DataType.STRING);
-        Resource resource = resourceType.putResource("resource");
-        assertEquals(ResourceType.DataType.STRING, resource.dataType());
+        AttributeType<String> attributeType = graknGraph.putAttributeType("attributeType", AttributeType.DataType.STRING);
+        Attribute attribute = attributeType.putAttribute("resource");
+        assertEquals(AttributeType.DataType.STRING, attribute.dataType());
     }
 
     @Test
     public void whenAttachingResourcesToInstances_EnsureInstancesAreReturnedAsOwners() throws Exception {
         EntityType randomThing = graknGraph.putEntityType("A Thing");
-        ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
-        RelationshipType hasResource = graknGraph.putRelationshipType("Has Resource");
-        Role resourceRole = graknGraph.putRole("Resource Role");
+        AttributeType<String> attributeType = graknGraph.putAttributeType("A Attribute Thing", AttributeType.DataType.STRING);
+        RelationshipType hasResource = graknGraph.putRelationshipType("Has Attribute");
+        Role resourceRole = graknGraph.putRole("Attribute Role");
         Role actorRole = graknGraph.putRole("Actor");
         Thing pacino = randomThing.addEntity();
         Thing jennifer = randomThing.addEntity();
         Thing bob = randomThing.addEntity();
         Thing alice = randomThing.addEntity();
-        Resource<String> birthDate = resourceType.putResource("10/10/10");
+        Attribute<String> birthDate = attributeType.putAttribute("10/10/10");
         hasResource.relates(resourceRole).relates(actorRole);
 
         assertThat(birthDate.ownerInstances().collect(toSet()), empty());
@@ -87,30 +87,30 @@ public class ResourceTest extends GraphTestBase {
     @SuppressWarnings("unchecked")
     @Test
     public void whenCreatingResources_EnsureDataTypesAreEnforced(){
-        ResourceType<String> strings = graknGraph.putResourceType("String Type", ResourceType.DataType.STRING);
-        ResourceType<Long> longs = graknGraph.putResourceType("Long Type", ResourceType.DataType.LONG);
-        ResourceType<Double> doubles = graknGraph.putResourceType("Double Type", ResourceType.DataType.DOUBLE);
-        ResourceType<Boolean> booleans = graknGraph.putResourceType("Boolean Type", ResourceType.DataType.BOOLEAN);
+        AttributeType<String> strings = graknGraph.putAttributeType("String Type", AttributeType.DataType.STRING);
+        AttributeType<Long> longs = graknGraph.putAttributeType("Long Type", AttributeType.DataType.LONG);
+        AttributeType<Double> doubles = graknGraph.putAttributeType("Double Type", AttributeType.DataType.DOUBLE);
+        AttributeType<Boolean> booleans = graknGraph.putAttributeType("Boolean Type", AttributeType.DataType.BOOLEAN);
 
-        Resource<String> resource1 = strings.putResource("1");
-        Resource<Long> resource2 = longs.putResource(1L);
-        Resource<Double> resource3 = doubles.putResource(1.0);
-        Resource<Boolean> resource4 = booleans.putResource(true);
+        Attribute<String> attribute1 = strings.putAttribute("1");
+        Attribute<Long> attribute2 = longs.putAttribute(1L);
+        Attribute<Double> attribute3 = doubles.putAttribute(1.0);
+        Attribute<Boolean> attribute4 = booleans.putAttribute(true);
 
-        assertEquals("1", graknGraph.<Resource>getConcept(resource1.getId()).getValue());
-        assertEquals(1L, graknGraph.<Resource>getConcept(resource2.getId()).getValue());
-        assertEquals(1.0, graknGraph.<Resource>getConcept(resource3.getId()).getValue());
-        assertEquals(true, graknGraph.<Resource>getConcept(resource4.getId()).getValue());
+        assertEquals("1", graknGraph.<Attribute>getConcept(attribute1.getId()).getValue());
+        assertEquals(1L, graknGraph.<Attribute>getConcept(attribute2.getId()).getValue());
+        assertEquals(1.0, graknGraph.<Attribute>getConcept(attribute3.getId()).getValue());
+        assertEquals(true, graknGraph.<Attribute>getConcept(attribute4.getId()).getValue());
 
-        assertThat(graknGraph.<Resource>getConcept(resource1.getId()).getValue(), instanceOf(String.class));
-        assertThat(graknGraph.<Resource>getConcept(resource2.getId()).getValue(), instanceOf(Long.class));
-        assertThat(graknGraph.<Resource>getConcept(resource3.getId()).getValue(), instanceOf(Double.class));
-        assertThat(graknGraph.<Resource>getConcept(resource4.getId()).getValue(), instanceOf(Boolean.class));
+        assertThat(graknGraph.<Attribute>getConcept(attribute1.getId()).getValue(), instanceOf(String.class));
+        assertThat(graknGraph.<Attribute>getConcept(attribute2.getId()).getValue(), instanceOf(Long.class));
+        assertThat(graknGraph.<Attribute>getConcept(attribute3.getId()).getValue(), instanceOf(Double.class));
+        assertThat(graknGraph.<Attribute>getConcept(attribute4.getId()).getValue(), instanceOf(Boolean.class));
 
-        assertThat(graknGraph.getResourcesByValue("1"), containsInAnyOrder(resource1));
-        assertThat(graknGraph.getResourcesByValue(1L), containsInAnyOrder(resource2));
-        assertThat(graknGraph.getResourcesByValue(1.0), containsInAnyOrder(resource3));
-        assertThat(graknGraph.getResourcesByValue(true), containsInAnyOrder(resource4));
+        assertThat(graknGraph.getAttributesByValue("1"), containsInAnyOrder(attribute1));
+        assertThat(graknGraph.getAttributesByValue(1L), containsInAnyOrder(attribute2));
+        assertThat(graknGraph.getAttributesByValue(1.0), containsInAnyOrder(attribute3));
+        assertThat(graknGraph.getAttributesByValue(true), containsInAnyOrder(attribute4));
     }
 
     // this is deliberately an incorrect type for the test
@@ -118,26 +118,26 @@ public class ResourceTest extends GraphTestBase {
     @Test
     public void whenCreatingResourceWithAnInvalidDataType_Throw(){
         String invalidThing = "Invalid Thing";
-        ResourceType longResourceType = graknGraph.putResourceType("long", ResourceType.DataType.LONG);
+        AttributeType longAttributeType = graknGraph.putAttributeType("long", AttributeType.DataType.LONG);
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.invalidResourceValue(invalidThing, ResourceType.DataType.LONG).getMessage());
-        longResourceType.putResource(invalidThing);
+        expectedException.expectMessage(GraphOperationException.invalidResourceValue(invalidThing, AttributeType.DataType.LONG).getMessage());
+        longAttributeType.putAttribute(invalidThing);
     }
 
     // this is deliberately an incorrect type for the test
     @SuppressWarnings("unchecked")
     @Test
     public void whenCreatingResourceWithAnInvalidDataType_DoNotCreateTheResource(){
-        ResourceType longResourceType = graknGraph.putResourceType("long", ResourceType.DataType.LONG);
+        AttributeType longAttributeType = graknGraph.putAttributeType("long", AttributeType.DataType.LONG);
 
         try {
-            longResourceType.putResource("Invalid Thing");
+            longAttributeType.putAttribute("Invalid Thing");
             fail("Expected to throw");
         } catch (GraphOperationException e) {
             // expected failure
         }
 
-        Collection<Resource> instances = (Collection<Resource>) longResourceType.instances().collect(toSet());
+        Collection<Attribute> instances = (Collection<Attribute>) longAttributeType.instances().collect(toSet());
 
         assertThat(instances, empty());
     }
@@ -145,39 +145,39 @@ public class ResourceTest extends GraphTestBase {
     @Test
     public void whenSavingDateIntoResource_DateIsReturnedInSameFormat(){
         LocalDateTime date = LocalDateTime.now();
-        ResourceType<LocalDateTime> resourceType = graknGraph.putResourceType("My Birthday", ResourceType.DataType.DATE);
-        Resource<LocalDateTime> myBirthday = resourceType.putResource(date);
+        AttributeType<LocalDateTime> attributeType = graknGraph.putAttributeType("My Birthday", AttributeType.DataType.DATE);
+        Attribute<LocalDateTime> myBirthday = attributeType.putAttribute(date);
 
         assertEquals(date, myBirthday.getValue());
-        assertEquals(myBirthday, resourceType.getResource(date));
-        assertThat(graknGraph.getResourcesByValue(date), containsInAnyOrder(myBirthday));
+        assertEquals(myBirthday, attributeType.getAttribute(date));
+        assertThat(graknGraph.getAttributesByValue(date), containsInAnyOrder(myBirthday));
     }
 
     @Test
     public void whenLinkingResourcesToThings_EnsureTheRelationIsAnEdge(){
-        ResourceType<String> resourceType = graknGraph.putResourceType("My resource type", ResourceType.DataType.STRING);
-        Resource<String> resource = resourceType.putResource("A String");
+        AttributeType<String> attributeType = graknGraph.putAttributeType("My attribute type", AttributeType.DataType.STRING);
+        Attribute<String> attribute = attributeType.putAttribute("A String");
 
-        EntityType entityType = graknGraph.putEntityType("My entity type").resource(resourceType);
+        EntityType entityType = graknGraph.putEntityType("My entity type").attribute(attributeType);
         Entity entity = entityType.addEntity();
 
-        entity.resource(resource);
+        entity.attribute(attribute);
 
         RelationshipStructure relationshipStructure = RelationshipImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
         assertThat(relationshipStructure, instanceOf(RelationshipEdge.class));
         assertTrue("Edge Relationship id not starting with [" + Schema.PREFIX_EDGE + "]", relationshipStructure.getId().getValue().startsWith(Schema.PREFIX_EDGE));
-        assertEquals(entity, resource.owner());
-        assertThat(entity.resources().collect(toSet()), containsInAnyOrder(resource));
+        assertEquals(entity, attribute.owner());
+        assertThat(entity.attributes().collect(toSet()), containsInAnyOrder(attribute));
     }
 
     @Test
     public void whenAddingRolePlayerToRelationEdge_RelationAutomaticallyReifies(){
-        //Create boring resource which creates a relation edge
-        ResourceType<String> resourceType = graknGraph.putResourceType("My resource type", ResourceType.DataType.STRING);
-        Resource<String> resource = resourceType.putResource("A String");
-        EntityType entityType = graknGraph.putEntityType("My entity type").resource(resourceType);
+        //Create boring attribute which creates a relation edge
+        AttributeType<String> attributeType = graknGraph.putAttributeType("My attribute type", AttributeType.DataType.STRING);
+        Attribute<String> attribute = attributeType.putAttribute("A String");
+        EntityType entityType = graknGraph.putEntityType("My entity type").attribute(attributeType);
         Entity entity = entityType.addEntity();
-        entity.resource(resource);
+        entity.attribute(attribute);
         RelationshipImpl relation = RelationshipImpl.from(entity.relations().iterator().next());
 
         //Check it's a relation edge.
@@ -216,15 +216,15 @@ public class ResourceTest extends GraphTestBase {
 
     @Test
     public void whenInsertingAThingWithTwoKeys_Throw(){
-        ResourceType<String> resourceType = graknGraph.putResourceType("Key Thingy", ResourceType.DataType.STRING);
-        EntityType entityType = graknGraph.putEntityType("Entity Type Thingy").key(resourceType);
+        AttributeType<String> attributeType = graknGraph.putAttributeType("Key Thingy", AttributeType.DataType.STRING);
+        EntityType entityType = graknGraph.putEntityType("Entity Type Thingy").key(attributeType);
         Entity entity = entityType.addEntity();
 
-        Resource<String> key1 = resourceType.putResource("key 1");
-        Resource<String> key2 = resourceType.putResource("key 2");
+        Attribute<String> key1 = attributeType.putAttribute("key 1");
+        Attribute<String> key2 = attributeType.putAttribute("key 2");
 
-        entity.resource(key1);
-        entity.resource(key2);
+        entity.attribute(key1);
+        entity.attribute(key2);
 
         expectedException.expect(InvalidGraphException.class);
 
@@ -233,22 +233,22 @@ public class ResourceTest extends GraphTestBase {
 
     @Test
     public void whenGettingTheRelationsOfResources_EnsureIncomingResourceEdgesAreTakingIntoAccount(){
-        ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type Thingy", ResourceType.DataType.STRING);
-        Resource<String> resource = resourceType.putResource("Thingy");
+        AttributeType<String> attributeType = graknGraph.putAttributeType("Attribute Type Thingy", AttributeType.DataType.STRING);
+        Attribute<String> attribute = attributeType.putAttribute("Thingy");
 
-        EntityType entityType = graknGraph.putEntityType("Entity Type Thingy").key(resourceType);
+        EntityType entityType = graknGraph.putEntityType("Entity Type Thingy").key(attributeType);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
 
-        assertThat(resource.relations().collect(toSet()), empty());
+        assertThat(attribute.relations().collect(toSet()), empty());
 
-        e1.resource(resource);
-        e2.resource(resource);
+        e1.attribute(attribute);
+        e2.attribute(attribute);
 
         Relationship rel1 = Iterables.getOnlyElement(e1.relations().collect(toSet()));
         Relationship rel2 = Iterables.getOnlyElement(e2.relations().collect(toSet()));
 
-        assertThat(resource.relations().collect(toSet()), containsInAnyOrder(rel1, rel2));
+        assertThat(attribute.relations().collect(toSet()), containsInAnyOrder(rel1, rel2));
     }
 
 }

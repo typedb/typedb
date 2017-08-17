@@ -137,7 +137,7 @@ That means atomic queries contain at most one statement that can potentially app
 | `val` | `$x val contains "Bar";`  | ✓ | indirect only  |
 | `has` | `$x has age < 20;` | ✓ | ✓ |
 | `relationship` | `(parent: $x, child: $y) isa parentship;` | ✓ | ✓ |
-| resource comparison | `$x val > $y;`  | ✓ | x |
+| attribute comparison | `$x val > $y;`  | ✓ | x |
 | `!=` | `$x != $y;` | ✓ | x |
 | `has-scope` | `($x, $y) has-scope $z;$x has-scope $y;`  | ✓ | x |
 
@@ -150,8 +150,8 @@ That means atomic queries contain at most one statement that can potentially app
 | `has`        | `$x has firstname;` | ✓ | x |  
 | `relates`   | `marriage relates $x;` | ✓ | x |
 | `is-abstract` | `$x is-abstract;` | ✓ | x |
-| `datatype` | `$x isa resource, datatype string;` | ✓| x |
-| `regex` | `$x isa resource, regex /hello/;` | ✓ | x |
+| `datatype` | `$x isa attribute, datatype string;` | ✓| x |
+| `regex` | `$x isa attribute, regex /hello/;` | ✓ | x |
 
 ## Configuration options
 Graql offers certain degrees of freedom in deciding how and if reasoning should be performed. Namely it offers two options:

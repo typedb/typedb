@@ -18,9 +18,10 @@
 
 package ai.grakn.graph.internal.concept;
 
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
@@ -120,10 +121,10 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
     }
 
     /**
-     * Creates a hash for a relation based on it's {@link RelationshipType} and the {@link Resource} which serves as it's key
+     * Creates a hash for a relation based on it's {@link RelationshipType} and the {@link Attribute} which serves as it's key
      *
      * @param relationshipType the {@link RelationshipType} of the {@link Relationship}
-     * @param resourceMap a sorted map of {@link ai.grakn.concept.ResourceType} Ids to {@link Resource} Ids
+     * @param resourceMap a sorted map of {@link AttributeType} Ids to {@link Attribute} Ids
      * @return A unique hash identifying this {@link Relationship}
      */
     public static String generateNewHash(RelationshipType relationshipType, TreeMap<String, String> resourceMap){

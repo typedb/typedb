@@ -20,13 +20,13 @@ package ai.grakn.graph.internal.cache;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
@@ -69,7 +69,7 @@ public class TxCacheTest extends GraphTestBase {
         RelationshipType t2 = graknGraph.putRelationshipType("2");
         Role t3 = graknGraph.putRole("3");
         RuleType t4 = graknGraph.putRuleType("4");
-        ResourceType t5 = graknGraph.putResourceType("5", ResourceType.DataType.STRING);
+        AttributeType t5 = graknGraph.putAttributeType("5", AttributeType.DataType.STRING);
 
         // verify the concepts that we expected are returned in the set
         assertThat(graknGraph.txCache().getModifiedRoles(), containsInAnyOrder(t3));
@@ -163,7 +163,7 @@ public class TxCacheTest extends GraphTestBase {
     @Test
     public void whenNoOp_EnsureLogWellFormed() {
         Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
-                "\":{\"" + Schema.BaseType.RESOURCE.name() + "\":{}},\"" +
+                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() + "\":{}},\"" +
                 REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
         assertEquals("Unexpected graph logs", expected, graknGraph.txCache().getFormattedLog());
     }
@@ -174,7 +174,7 @@ public class TxCacheTest extends GraphTestBase {
         entityType.addEntity();
         entityType.addEntity();
         Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
-                "\":{\"" + Schema.BaseType.RESOURCE.name() +
+                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() +
                 "\":{}},\"" + REST.Request.COMMIT_LOG_COUNTING  +
                 "\":[{\"" + REST.Request.COMMIT_LOG_CONCEPT_ID +
                 "\":\"" + entityType.getId() + "\",\"" + REST.Request.COMMIT_LOG_SHARDING_COUNT + "\":2}]}");
@@ -212,16 +212,16 @@ public class TxCacheTest extends GraphTestBase {
         TxCache cache = graknGraph.txCache();
 
         //Load some sample data
-        ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        AttributeType<String> attributeType = graknGraph.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
         Role role1 = graknGraph.putRole("role 1");
         Role role2 = graknGraph.putRole("role 2");
-        EntityType entityType = graknGraph.putEntityType("My Type").plays(role1).plays(role2).resource(resourceType);
+        EntityType entityType = graknGraph.putEntityType("My Type").plays(role1).plays(role2).attribute(attributeType);
         RelationshipType relationshipType = graknGraph.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
-        Resource<String> r1 = resourceType.putResource("test");
+        Attribute<String> r1 = attributeType.putAttribute("test");
 
-        e1.resource(r1);
+        e1.attribute(r1);
         relationshipType.addRelationship().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
 
         //Check the caches are not empty
@@ -229,7 +229,7 @@ public class TxCacheTest extends GraphTestBase {
         assertThat(cache.getOntologyConceptCache().keySet(), not(empty()));
         assertThat(cache.getLabelCache().keySet(), not(empty()));
         assertThat(cache.getRelationIndexCache().keySet(), not(empty()));
-        assertThat(cache.getModifiedResources(), not(empty()));
+        assertThat(cache.getModifiedAttributes(), not(empty()));
         assertThat(cache.getShardingCount().keySet(), not(empty()));
         assertThat(cache.getModifiedCastings(), not(empty()));
 
@@ -247,7 +247,7 @@ public class TxCacheTest extends GraphTestBase {
         assertThat(cache.getModifiedRelationshipTypes(), empty());
         assertThat(cache.getModifiedRelationships(), empty());
         assertThat(cache.getModifiedRules(), empty());
-        assertThat(cache.getModifiedResources(), empty());
+        assertThat(cache.getModifiedAttributes(), empty());
         assertThat(cache.getModifiedCastings(), empty());
     }
 

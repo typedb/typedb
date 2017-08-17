@@ -17,7 +17,7 @@ vertex plays link-endA, plays link-endB;
 "reachable" sub relationship, relates reach-endA, relates reach-endB;
 vertex plays reach-endA, plays reach-endB;
 
-"index" sub resource, datatype string;
+"index" sub attribute, datatype string;
 
 ####################################################
 ##################DATA#############################

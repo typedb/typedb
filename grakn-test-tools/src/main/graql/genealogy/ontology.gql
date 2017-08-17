@@ -6,10 +6,10 @@ document sub entity
 	has document-location
 	has document-type
 	has notes;
-document-location sub resource datatype string;
-document-type sub resource datatype string;
+document-location sub attribute datatype string;
+document-type sub attribute datatype string;
 
-notes sub resource datatype string;
+notes sub attribute datatype string;
 
 conclusion-evidence sub relationship
 	relates evidence
@@ -29,8 +29,8 @@ event sub entity
 	has identifier
 	has notes;
 
-# This is needed otherwise reasoner complains about the missing resource if it has not been persisted
-degree sub resource datatype long;
+# This is needed otherwise reasoner complains about the missing attribute if it has not been persisted
+degree sub attribute datatype long;
 # The following links events to people, specifying the role of the person in the event
 
 event-protagonist sub relationship
@@ -39,7 +39,7 @@ event-protagonist sub relationship
 	has event-role;
 happening sub role;
 protagonist sub role;
-event-role sub resource datatype string;
+event-role sub attribute datatype string;
 
 wedding sub event;
 funeral sub event
@@ -59,10 +59,10 @@ parent-identifier sub identifier;
 death sub event
 	has death-date;
 
-"date" sub resource datatype string;
+"date" sub attribute datatype string;
 
 #confidence level: low-mid-high
-confidence sub resource datatype string;
+confidence sub attribute datatype string;
 
 ### Genealogy tree: this is inferred from the events
 
@@ -85,14 +85,14 @@ person sub entity
 	has middlename
 	has surname;
 
-gender sub resource datatype string;
+gender sub attribute datatype string;
 birth-date sub "date";
 death-date sub "date";
-name sub resource datatype string;
+name sub attribute datatype string;
 firstname sub name;
 middlename sub name;
 surname sub name;
-identifier sub resource datatype string;
+identifier sub attribute datatype string;
 
 relatives sub relationship
 	is-abstract;

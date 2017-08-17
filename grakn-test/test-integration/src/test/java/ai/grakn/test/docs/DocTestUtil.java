@@ -24,8 +24,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.test.graphs.GenealogyGraph;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
@@ -51,34 +51,34 @@ public class DocTestUtil {
             GenealogyGraph.get().accept(tx);
 
             // TODO: Remove custom genealogy ontology when not used
-            ResourceType<Long> age = tx.putResourceType("age", ResourceType.DataType.LONG);
-            tx.getEntityType("person").resource(age);
-            tx.putResourceType("nickname", ResourceType.DataType.STRING);
+            AttributeType<Long> age = tx.putAttributeType("age", AttributeType.DataType.LONG);
+            tx.getEntityType("person").attribute(age);
+            tx.putAttributeType("nickname", AttributeType.DataType.STRING);
 
             // TODO: Remove plant ontology when not used
             EntityType plant = tx.putEntityType("plant");
-            ResourceType<String> common = tx.putResourceType("common", ResourceType.DataType.STRING);
-            ResourceType<String> botanical = tx.putResourceType("botanical", ResourceType.DataType.STRING);
-            ResourceType<String> zone = tx.putResourceType("zone", ResourceType.DataType.STRING);
-            ResourceType<String> light = tx.putResourceType("light", ResourceType.DataType.STRING);
-            ResourceType<Long> availability = tx.putResourceType("availability", ResourceType.DataType.LONG);
-            plant.resource(common).resource(botanical).resource(zone).resource(light).resource(availability);
+            AttributeType<String> common = tx.putAttributeType("common", AttributeType.DataType.STRING);
+            AttributeType<String> botanical = tx.putAttributeType("botanical", AttributeType.DataType.STRING);
+            AttributeType<String> zone = tx.putAttributeType("zone", AttributeType.DataType.STRING);
+            AttributeType<String> light = tx.putAttributeType("light", AttributeType.DataType.STRING);
+            AttributeType<Long> availability = tx.putAttributeType("availability", AttributeType.DataType.LONG);
+            plant.attribute(common).attribute(botanical).attribute(zone).attribute(light).attribute(availability);
 
             // TODO: Remove pokemon ontology when not used
             EntityType pokemon = tx.putEntityType("pokemon");
             EntityType pokemonType = tx.putEntityType("pokemon-type");
 
-            ResourceType<String> typeId = tx.putResourceType("type-id", ResourceType.DataType.STRING);
-            ResourceType<String> description = tx.putResourceType("description", ResourceType.DataType.STRING);
-            ResourceType<Long> pokedexNo = tx.putResourceType("pokedex-no", ResourceType.DataType.LONG);
-            ResourceType<Double> weight = tx.putResourceType("weight", ResourceType.DataType.DOUBLE);
-            ResourceType<Double> height = tx.putResourceType("height", ResourceType.DataType.DOUBLE);
+            AttributeType<String> typeId = tx.putAttributeType("type-id", AttributeType.DataType.STRING);
+            AttributeType<String> description = tx.putAttributeType("description", AttributeType.DataType.STRING);
+            AttributeType<Long> pokedexNo = tx.putAttributeType("pokedex-no", AttributeType.DataType.LONG);
+            AttributeType<Double> weight = tx.putAttributeType("weight", AttributeType.DataType.DOUBLE);
+            AttributeType<Double> height = tx.putAttributeType("height", AttributeType.DataType.DOUBLE);
 
             tx.putRelationshipType("has-type")
                     .relates(tx.putRole("type-of-pokemon")).relates(tx.putRole("pokemon-with-type"));
 
-            pokemonType.resource(typeId).resource(description);
-            pokemon.resource(weight).resource(height).resource(pokedexNo).resource(description);
+            pokemonType.attribute(typeId).attribute(description);
+            pokemon.attribute(weight).attribute(height).attribute(pokedexNo).attribute(description);
 
             // TODO: Remove these random types when not used
             tx.putEntityType("cluster");
