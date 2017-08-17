@@ -142,6 +142,7 @@ import static ai.grakn.util.ErrorMessage.MATCH_INVALID;
 import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
 import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
 import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
+import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
@@ -946,13 +947,13 @@ public class MatchQueryTest {
     @Test
     public void whenQueryingForSuperRelationType_ReturnResults() {
         MatchQuery query = qb.match(var().isa(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()).rel(x).rel(y));
-        assertTrue("Query had no results", query.iterator().hasNext());
+        assertExists(query);
     }
 
     @Test
     public void whenQueryingForSuperRoleType_ReturnResults() {
         MatchQuery query = qb.match(var().rel("role", x).rel(y));
-        assertTrue("Query had no results", query.iterator().hasNext());
+        assertExists(query);
     }
 
     @Test

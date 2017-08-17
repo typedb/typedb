@@ -325,14 +325,14 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testPositiveAskQuery() {
+    public void whenComparingPositiveAskQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
         AggregateQuery<Boolean> expected = match(var("x").isa("movie").has("title", "Godfather")).aggregate(ask());
         AggregateQuery<Boolean> parsed = parse("match $x isa movie has title 'Godfather'; aggregate ask;");
         assertEquals(expected, parsed);
     }
 
     @Test
-    public void testNegativeAskQuery() {
+    public void whenComparingNegativeAskQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
         AggregateQuery<Boolean> expected = match(var("x").isa("movie").has("title", "Dogfather")).aggregate(ask());
         AggregateQuery<Boolean> parsed = parse("match $x isa movie has title 'Dogfather'; aggregate ask;");
         assertEquals(expected, parsed);
@@ -440,7 +440,7 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testComments() {
+    public void whenParsingQueryWithComments_TheyAreIgnored() {
         AggregateQuery<Boolean> expected = match(var("x").isa("movie")).aggregate(ask());
         AggregateQuery<Boolean> parsed = parse(
                 "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; aggregate ask;"

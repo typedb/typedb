@@ -173,7 +173,7 @@ public class GraqlControllerTest {
     }
     
     @Test
-    public void testBadAccept() {
+    public void whenAcceptHeaderIsInvalid_Return406Code() {
         sendQuery("match $x isa movie; aggregate ask;", "application/msword", true, false, -1).then().statusCode(406);
     }
 

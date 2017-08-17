@@ -49,9 +49,10 @@ import org.junit.rules.ExpectedException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.util.GraqlTestUtil.assertExists;
+import static ai.grakn.util.GraqlTestUtil.assertNotExists;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -98,9 +99,9 @@ public class AtomicQueryTest {
         );
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
 
-        assertFalse(qb.<MatchQuery>parse(explicitQuery).iterator().hasNext());
+        assertNotExists(qb.parse(explicitQuery));
         answers.stream().forEach(atomicQuery::materialise);
-        assertTrue(qb.<MatchQuery>parse(explicitQuery).iterator().hasNext());
+        assertExists(qb.parse(explicitQuery));
     }
 
     private Concept getConceptByResourceValue(GraknTx graph, String id){

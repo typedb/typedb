@@ -40,6 +40,7 @@ import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -294,7 +295,7 @@ public class PatternTest {
 
     @Test
     public void testNegation() {
-        assertTrue(graph.graql().match(var().isa("movie").has("title", "Godfather")).iterator().hasNext());
+        assertExists(graph.graql(), var().isa("movie").has("title", "Godfather"));
         Set<Concept> result1 = graph.graql().match(
                 var("x").isa("movie").has("title", var("y")),
                 var("y").val(neq("Godfather"))).select("x").execute()

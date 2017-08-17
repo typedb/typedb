@@ -49,12 +49,12 @@ public class AskQueryTest {
     }
 
     @Test
-    public void testPositiveQuery() {
+    public void whenExecutingAskWithPatternThatShouldMatch_ReturnTrue() {
         assertTrue(qb.match(var().isa("movie").has("tmdb-vote-count", 1000)).aggregate(ask()).execute());
     }
 
     @Test
-    public void testNegativeQuery() {
+    public void whenExecutingAskWithPatternThatShouldntMatch_ReturnFalse() {
         assertFalse(qb.match(var("y").isa("award")).aggregate(ask()).execute());
     }
 
@@ -68,7 +68,7 @@ public class AskQueryTest {
     }
 
     @Test
-    public void testAskNoVariables() {
+    public void whenExecutingPositiveAskWithoutAnyVariables_ReturnTrue() {
         assertTrue(qb.match(label("person").plays("actor")).aggregate(ask()).execute());
     }
 }
