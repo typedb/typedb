@@ -227,7 +227,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * 2. The graph is not batch loading
      */
     void checkSchemaMutationAllowed(){
-        vertex().graph().checkOntologyMutationAllowed();
+        vertex().graph().checkSchemaMutationAllowed();
         if(Schema.MetaSchema.isMetaLabel(getLabel())){
             throw GraphOperationException.metaTypeImmutable(getLabel());
         }

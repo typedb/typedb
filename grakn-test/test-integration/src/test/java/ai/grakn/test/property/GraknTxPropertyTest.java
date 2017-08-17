@@ -60,7 +60,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
-import static ai.grakn.generator.GraknGraphs.allOntologyElementsFrom;
+import static ai.grakn.generator.GraknGraphs.allSchemaElementsFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static java.util.stream.Collectors.toSet;
@@ -140,7 +140,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingGetOntologyConceptWithANonExistingTypeLabel_ItReturnsNull(
             @Open GraknTx graph, Label label) {
-        Set<Label> allTypes = allOntologyElementsFrom(graph).stream().map(SchemaConcept::getLabel).collect(toSet());
+        Set<Label> allTypes = allSchemaElementsFrom(graph).stream().map(SchemaConcept::getLabel).collect(toSet());
         assumeThat(allTypes, not(hasItem(label)));
 
         assertNull(graph.getSchemaConcept(label));

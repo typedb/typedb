@@ -54,12 +54,12 @@ public class RelationshipEdge implements RelationshipStructure {
     private final EdgeElement edgeElement;
 
     private final Cache<RelationshipType> relationType = new Cache<>(Cacheable.concept(), () ->
-            edge().graph().getOntologyConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
+            edge().graph().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
 
-    private final Cache<Role> ownerRole = new Cache<>(Cacheable.concept(), () -> edge().graph().getOntologyConcept(LabelId.of(
+    private final Cache<Role> ownerRole = new Cache<>(Cacheable.concept(), () -> edge().graph().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID))));
 
-    private final Cache<Role> valueRole = new Cache<>(Cacheable.concept(), () -> edge().graph().getOntologyConcept(LabelId.of(
+    private final Cache<Role> valueRole = new Cache<>(Cacheable.concept(), () -> edge().graph().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID))));
 
     private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> edge().graph().factory().buildConcept(edge().source()));

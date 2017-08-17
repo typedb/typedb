@@ -85,7 +85,7 @@ public class StatisticsTest {
 
     @Test
     public void testStatisticsExceptions() throws Exception {
-        addOntologyAndEntities();
+        addSchemaAndEntities();
         addResourceRelations();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
@@ -156,7 +156,7 @@ public class StatisticsTest {
         Optional<Number> result;
 
         // resource-type has no instance
-        addOntologyAndEntities();
+        addSchemaAndEntities();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             result = Graql.compute().min().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
@@ -248,7 +248,7 @@ public class StatisticsTest {
         Optional<Number> result;
 
         // resource-type has no instance
-        addOntologyAndEntities();
+        addSchemaAndEntities();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             result = Graql.compute().sum().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
@@ -305,7 +305,7 @@ public class StatisticsTest {
         Optional<Double> result;
 
         // resource-type has no instance
-        addOntologyAndEntities();
+        addSchemaAndEntities();
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             result = Graql.compute().mean().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
             assertFalse(result.isPresent());
@@ -361,7 +361,7 @@ public class StatisticsTest {
         Optional<Double> result;
 
         // resource-type has no instance
-        addOntologyAndEntities();
+        addSchemaAndEntities();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             result = Graql.compute().std().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
@@ -432,7 +432,7 @@ public class StatisticsTest {
         Optional<Number> result;
 
         // resource-type has no instance
-        addOntologyAndEntities();
+        addSchemaAndEntities();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             result = Graql.compute().median().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
@@ -502,7 +502,7 @@ public class StatisticsTest {
         numberList.forEach(value -> assertEquals(1.5D, value.doubleValue(), delta));
     }
 
-    private void addOntologyAndEntities() throws InvalidGraphException {
+    private void addSchemaAndEntities() throws InvalidGraphException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);

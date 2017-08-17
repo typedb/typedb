@@ -370,7 +370,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return concepts;
     }
 
-    public void checkOntologyMutationAllowed() {
+    public void checkSchemaMutationAllowed() {
         checkMutationAllowed();
         if (isBatchGraph()) throw GraphOperationException.schemaMutation();
     }
@@ -397,7 +397,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     private VertexElement putVertex(Label label, Schema.BaseType baseType) {
         VertexElement vertex;
-        ConceptImpl concept = getOntologyConcept(convertToId(label));
+        ConceptImpl concept = getSchemaConcept(convertToId(label));
         if (concept == null) {
             vertex = addTypeVertex(getNextId(), label, baseType);
         } else {
@@ -448,8 +448,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     private <T extends SchemaConcept> T putOntologyElement(Label label, Schema.BaseType baseType, Function<VertexElement, T> factory) {
-        checkOntologyMutationAllowed();
-        SchemaConcept schemaConcept = buildOntologyElement(label, () -> factory.apply(putVertex(label, baseType)));
+        checkSchemaMutationAllowed();
+        SchemaConcept schemaConcept = buildSchemaConcept(label, () -> factory.apply(putVertex(label, baseType)));
 
         T finalType = validateOntologyElement(schemaConcept, baseType, () -> {
             if (Schema.MetaSchema.isMetaLabel(label)) throw GraphOperationException.reservedLabel(label);
@@ -474,13 +474,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     /**
-     * A helper method which either retrieves the type from the cache or builds it using a provided supplier
+     * A helper method which either retrieves the {@link SchemaConcept} from the cache or builds it using a provided supplier
      *
-     * @param label     The label of the type to retrieve or build
-     * @param dbBuilder A method which builds the type via a DB read or write
-     * @return The type which was either cached or built via a DB read or write
+     * @param label     The {@link Label} of the {@link SchemaConcept} to retrieve or build
+     * @param dbBuilder A method which builds the {@link SchemaConcept} via a DB read or write
+     * @return The {@link SchemaConcept} which was either cached or built via a DB read or write
      */
-    private SchemaConcept buildOntologyElement(Label label, Supplier<SchemaConcept> dbBuilder) {
+    private SchemaConcept buildSchemaConcept(Label label, Supplier<SchemaConcept> dbBuilder) {
         if (txCache().isTypeCached(label)) {
             return txCache().getCachedOntologyElement(label);
         } else {
@@ -578,15 +578,15 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return null;
     }
 
-    private <T extends SchemaConcept> T getOntologyConcept(Label label, Schema.BaseType baseType) {
+    private <T extends SchemaConcept> T getSchemaConcept(Label label, Schema.BaseType baseType) {
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
-        SchemaConcept schemaConcept = buildOntologyElement(label, () -> getOntologyConcept(convertToId(label)));
+        SchemaConcept schemaConcept = buildSchemaConcept(label, () -> getSchemaConcept(convertToId(label)));
         return validateOntologyElement(schemaConcept, baseType, () -> null);
     }
 
     @Nullable
-    public <T extends SchemaConcept> T getOntologyConcept(LabelId id) {
+    public <T extends SchemaConcept> T getSchemaConcept(LabelId id) {
         if (!id.isValid()) return null;
         return getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
     }
@@ -616,77 +616,77 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
-        return getOntologyConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
+        return getSchemaConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
     }
 
     @Override
     public <T extends Type> T getType(Label label) {
-        return getOntologyConcept(label, Schema.BaseType.TYPE);
+        return getSchemaConcept(label, Schema.BaseType.TYPE);
     }
 
     @Override
     public EntityType getEntityType(String label) {
-        return getOntologyConcept(Label.of(label), Schema.BaseType.ENTITY_TYPE);
+        return getSchemaConcept(Label.of(label), Schema.BaseType.ENTITY_TYPE);
     }
 
     @Override
     public RelationshipType getRelationshipType(String label) {
-        return getOntologyConcept(Label.of(label), Schema.BaseType.RELATIONSHIP_TYPE);
+        return getSchemaConcept(Label.of(label), Schema.BaseType.RELATIONSHIP_TYPE);
     }
 
     @Override
     public <V> AttributeType<V> getAttributeType(String label) {
-        return getOntologyConcept(Label.of(label), Schema.BaseType.ATTRIBUTE_TYPE);
+        return getSchemaConcept(Label.of(label), Schema.BaseType.ATTRIBUTE_TYPE);
     }
 
     @Override
     public Role getRole(String label) {
-        return getOntologyConcept(Label.of(label), Schema.BaseType.ROLE);
+        return getSchemaConcept(Label.of(label), Schema.BaseType.ROLE);
     }
 
     @Override
     public RuleType getRuleType(String label) {
-        return getOntologyConcept(Label.of(label), Schema.BaseType.RULE_TYPE);
+        return getSchemaConcept(Label.of(label), Schema.BaseType.RULE_TYPE);
     }
 
     @Override
     public SchemaConcept getMetaConcept() {
-        return getOntologyConcept(Schema.MetaSchema.THING.getId());
+        return getSchemaConcept(Schema.MetaSchema.THING.getId());
     }
 
     @Override
     public RelationshipType getMetaRelationType() {
-        return getOntologyConcept(Schema.MetaSchema.RELATIONSHIP.getId());
+        return getSchemaConcept(Schema.MetaSchema.RELATIONSHIP.getId());
     }
 
     @Override
     public Role getMetaRole() {
-        return getOntologyConcept(Schema.MetaSchema.ROLE.getId());
+        return getSchemaConcept(Schema.MetaSchema.ROLE.getId());
     }
 
     @Override
     public AttributeType getMetaResourceType() {
-        return getOntologyConcept(Schema.MetaSchema.ATTRIBUTE.getId());
+        return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getId());
     }
 
     @Override
     public EntityType getMetaEntityType() {
-        return getOntologyConcept(Schema.MetaSchema.ENTITY.getId());
+        return getSchemaConcept(Schema.MetaSchema.ENTITY.getId());
     }
 
     @Override
     public RuleType getMetaRuleType() {
-        return getOntologyConcept(Schema.MetaSchema.RULE.getId());
+        return getSchemaConcept(Schema.MetaSchema.RULE.getId());
     }
 
     @Override
     public RuleType getMetaRuleInference() {
-        return getOntologyConcept(Schema.MetaSchema.INFERENCE_RULE.getId());
+        return getSchemaConcept(Schema.MetaSchema.INFERENCE_RULE.getId());
     }
 
     @Override
     public RuleType getMetaRuleConstraint() {
-        return getOntologyConcept(Schema.MetaSchema.CONSTRAINT_RULE.getId());
+        return getSchemaConcept(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
     public void putShortcutEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {

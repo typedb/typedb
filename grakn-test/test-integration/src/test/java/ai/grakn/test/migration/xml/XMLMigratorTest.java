@@ -35,7 +35,7 @@ public class XMLMigratorTest {
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @BeforeClass
-    public static void loadOntology(){
+    public static void loadSchema(){
         keyspace = GraphLoader.randomKeyspace();
         session = Grakn.session(engine.uri(), keyspace);
     }

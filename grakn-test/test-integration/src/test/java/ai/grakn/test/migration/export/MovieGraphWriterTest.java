@@ -46,7 +46,7 @@ public class MovieGraphWriterTest {
     }
 
     @Test
-    public void testWritingMovieGraphOntology() {
+    public void testWritingMovieGraphSchema() {
         String schema = writer.dumpSchema();
         insert(copy.graph(), schema);
 

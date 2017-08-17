@@ -208,7 +208,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testInsertOntology() {
+    public void testInsertSchema() {
         qb.insert(
                 label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
                 label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),

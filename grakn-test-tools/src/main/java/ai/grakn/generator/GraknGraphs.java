@@ -371,12 +371,12 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
     }
 
     public static List<Concept> allConceptsFrom(GraknTx graph) {
-        List<Concept> concepts = Lists.newArrayList(GraknGraphs.allOntologyElementsFrom(graph));
+        List<Concept> concepts = Lists.newArrayList(GraknGraphs.allSchemaElementsFrom(graph));
         concepts.addAll(allInstancesFrom(graph).collect(toSet()));
         return concepts;
     }
 
-    public static Collection<? extends SchemaConcept> allOntologyElementsFrom(GraknTx graph) {
+    public static Collection<? extends SchemaConcept> allSchemaElementsFrom(GraknTx graph) {
         Set<SchemaConcept> allSchemaConcepts = new HashSet<>();
         allSchemaConcepts.addAll(graph.admin().getMetaConcept().subs().collect(toSet()));
         allSchemaConcepts.addAll(graph.admin().getMetaRole().subs().collect(toSet()));

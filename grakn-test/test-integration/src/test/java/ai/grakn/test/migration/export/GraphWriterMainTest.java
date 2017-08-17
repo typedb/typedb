@@ -58,7 +58,7 @@ public class GraphWriterMainTest {
     }
 
     @Test
-    public void exportCalledWithOntologyFlag_DataPrintedToSystemOut(){
+    public void exportCalledWithSchemaFlag_DataPrintedToSystemOut(){
         run("export", "-u", engine.uri(), "-schema", "-keyspace", keyspace);
 
         assertThat(sysOut.getLog(), containsString("sub entity"));

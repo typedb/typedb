@@ -51,7 +51,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
 
     @Ignore //TODO: Failing due to tighter temporary restrictions
     @Test
-    public void testShoppingOntology()  {       
+    public void testShoppingSchema()  {
         // Load
         try {
             OWLOntology O = loadOntologyFromResource("owl", "Shopping.owl");
@@ -79,7 +79,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
 
     @Ignore //TODO: Fix this test. Not sure why it is not working remotely
     @Test
-    public void testShakespeareOntology()   {       
+    public void testShakespeareSchema()   {
         // Load
         try {
             OWLOntology O = loadOntologyFromResource("owl", "shakespeare.owl");
@@ -123,7 +123,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
     }
     
     @Test
-    public void testProductOntology()   {
+    public void testProductSchema()   {
         // Load
         try {
             OWLOntology O = loadOntologyFromResource("owl", "Product.owl");
@@ -205,7 +205,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
 
     @Ignore //TODO: Fix this test. Not sure why it is not working remotely
     @Test
-    public void testFamilyOntology()   {
+    public void testFamilySchema()   {
         // Load
         try {
             OWLOntology O = loadOntologyFromResource("owl", "family.owl");
