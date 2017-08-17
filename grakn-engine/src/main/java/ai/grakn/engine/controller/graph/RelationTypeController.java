@@ -21,10 +21,10 @@ package ai.grakn.engine.controller.graph;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -69,12 +69,12 @@ public class RelationTypeController {
             if (relationType.isPresent()) {
                 String jsonConceptId = relationType.get().getId().getValue();
                 String jsonRelationTypeLabel = relationType.get().getLabel().getValue();
-                response.status(200);
+                response.status(HttpStatus.SC_OK);
                 Json responseBody = Json.object("conceptId", jsonConceptId, "relationTypeLabel", jsonRelationTypeLabel);
                 LOG.info("getRelationType - relationType found - " + jsonConceptId + ", " + jsonRelationTypeLabel + ". request processed.");
                 return responseBody;
             } else {
-                response.status(400);
+                response.status(HttpStatus.SC_BAD_REQUEST);
                 LOG.info("getRelationType - relationType NOT found. request processed.");
                 return Json.nil();
             }
@@ -93,7 +93,7 @@ public class RelationTypeController {
             String jsonConceptId = relationType.getId().getValue();
             String jsonRelationTypeLabel = relationType.getLabel().getValue();
             LOG.info("postRelationType - relationType " + jsonRelationTypeLabel + " with id " + jsonConceptId + " added. request processed.");
-            response.status(200);
+            response.status(HttpStatus.SC_OK);
             Json responseBody = Json.object("conceptId", jsonConceptId, "relationTypeLabel", jsonRelationTypeLabel);
 
             return responseBody;

@@ -25,6 +25,7 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -74,7 +75,7 @@ public class ResourceTypeController {
             String jsonResourceTypeDataType = resourceType.getDataType().getName();
             LOG.info("postResourceType - resource type " + jsonResourceTypeLabel +
                 " of type " + jsonResourceTypeDataType + " with id " + jsonConceptId + " added successfully. request processed.");
-            response.status(200);
+            response.status(HttpStatus.SC_OK);
             Json responseBody = Json.object(
                 "conceptId", jsonConceptId,
                 "resourceTypeLabel", jsonResourceTypeLabel,
@@ -95,7 +96,7 @@ public class ResourceTypeController {
                 String jsonConceptId = resourceType.get().getId().getValue();
                 String jsonResourceTypeLabel = resourceType.get().getLabel().getValue();
                 String jsonResourceTypeDataType = toString(resourceType.get().getDataType());
-                response.status(200);
+                response.status(HttpStatus.SC_OK);
                 Json responseBody = Json.object(
                     "conceptId", jsonConceptId,
                     "resourceTypeLabel", jsonResourceTypeLabel,
@@ -105,7 +106,7 @@ public class ResourceTypeController {
                     jsonResourceTypeLabel + ", " + jsonResourceTypeDataType + ". request processed.");
                 return responseBody;
             } else {
-                response.status(400);
+                response.status(HttpStatus.SC_BAD_REQUEST);
                 LOG.info("getResourceType - resourceType NOT found. request processed.");
                 return Json.nil();
             }

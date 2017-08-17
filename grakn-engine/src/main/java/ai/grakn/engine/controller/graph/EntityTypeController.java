@@ -27,6 +27,7 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.exception.GraknServerException;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -76,7 +77,7 @@ public class EntityTypeController {
         try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(entityTypeLabel);
             graph.commit();
-            response.status(200);
+            response.status(HttpStatus.SC_OK);
             String jsonConceptId = entityType.getId().getValue();
             String jsonEntityTypeLabel = entityType.getLabel().getValue();
             Json responseBody = Json.object("conceptId", jsonConceptId, "entityTypeLabel", jsonEntityTypeLabel);
@@ -95,12 +96,12 @@ public class EntityTypeController {
             if (entityType.isPresent()) {
                 String jsonConceptId = entityType.get().getId().getValue();
                 String jsonEntityTypeLabel = entityType.get().getLabel().getValue();
-                response.status(200);
+                response.status(HttpStatus.SC_OK);
                 Json responseBody = Json.object("conceptId", jsonConceptId, "entityTypeLabel", jsonEntityTypeLabel);
                 LOG.info("getEntityType - entityType found - " + jsonConceptId + ", " + jsonEntityTypeLabel + ". request processed.");
                 return responseBody;
             } else {
-                response.status(400);
+                response.status(HttpStatus.SC_BAD_REQUEST);
                 LOG.info("getEntityType - entityType NOT found. request processed.");
                 return Json.nil();
             }
@@ -131,11 +132,11 @@ public class EntityTypeController {
                     "entityTypeLabel", entityType1.getLabel().getValue()
                 );
                 LOG.info("assignResourceToEntityType - resourceType " + resourceTypeLabel  + " assigned to entityType " + entityTypeLabel + ". request processed.");
-                response.status(200);
+                response.status(HttpStatus.SC_OK);
                 return responseBody;
             } else {
                 LOG.info("assignResourceToEntityType - either entityType or resourceType not found. request processed.");
-                response.status(400);
+                response.status(HttpStatus.SC_BAD_REQUEST);
                 return Json.nil();
             }
         }
@@ -165,11 +166,11 @@ public class EntityTypeController {
                     "entityTypeLabel", entityType1.getLabel().getValue(),
                     "roleLabel", role.getLabel()
                 );
-                response.status(200);
+                response.status(HttpStatus.SC_OK);
                 return responseBody;
             } else {
                 LOG.info("assignResourceToEntityType - either entityType or role not found. request processed.");
-                response.status(400);
+                response.status(HttpStatus.SC_BAD_REQUEST);
                 return Json.nil();
             }
         }

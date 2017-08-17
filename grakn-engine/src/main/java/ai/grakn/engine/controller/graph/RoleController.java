@@ -24,6 +24,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -69,7 +70,7 @@ public class RoleController {
             String jsonConceptId = role.getId().getValue();
             String jsonRoleLabel = role.getLabel().getValue();
             LOG.info("postRole - role " + jsonRoleLabel + " with id " + jsonConceptId + " added. request processed.");
-            response.status(200);
+            response.status(HttpStatus.SC_OK);
             Json responseBody = Json.object("conceptId", jsonConceptId, "roleLabel", jsonRoleLabel);
 
             return responseBody;
@@ -86,12 +87,12 @@ public class RoleController {
             if (role.isPresent()) {
                 String jsonConceptId = role.get().getId().getValue();
                 String jsonRoleLabel = role.get().getLabel().getValue();
-                response.status(200);
+                response.status(HttpStatus.SC_OK);
                 Json responseBody = Json.object("conceptId", jsonConceptId, "roleLabel", jsonRoleLabel);
                 LOG.info("getRole - role found - " + jsonConceptId + ", " + jsonRoleLabel + ". request processed.");
                 return responseBody;
             } else {
-                response.status(400);
+                response.status(HttpStatus.SC_BAD_REQUEST);
                 LOG.info("getRole - role NOT found. request processed.");
                 return Json.nil();
             }
