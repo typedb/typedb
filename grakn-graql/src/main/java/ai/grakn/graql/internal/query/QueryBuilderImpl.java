@@ -134,7 +134,7 @@ public class QueryBuilderImpl implements QueryBuilder {
 
     @Override
     public DefineQuery define(VarPattern... patterns) {
-        return null;
+        return (DefineQuery) insert(patterns);
     }
 
     /**
