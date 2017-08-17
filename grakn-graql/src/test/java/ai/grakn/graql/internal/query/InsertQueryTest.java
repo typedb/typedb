@@ -64,6 +64,7 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static ai.grakn.util.GraqlTestUtil.assertNotExists;
+import static ai.grakn.util.Schema.MetaSchema.ENTITY;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -601,6 +602,18 @@ public class InsertQueryTest {
         exception.expectMessage(GraqlQueryException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
 
         movieGraph.graph().graql().insert(var("x").id(aMovie.getId()).isa("person")).execute();
+    }
+
+    @Test
+    public void whenInsertingASchemaConcept_Throw() {
+        exception.expect(Exception.class);
+        qb.insert(label("new-type").sub(label(ENTITY.getLabel()))).execute();
+    }
+
+    @Test
+    public void whenModifyingASchemaConceptInAnInsertQuery_Throw() {
+        exception.expect(Exception.class);
+        qb.insert(label("movie").plays("actor")).execute();
     }
 
     private void assertInsert(VarPattern... vars) {

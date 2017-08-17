@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DefineQuery;
@@ -350,6 +351,19 @@ public class DefineQueryTest {
         );
 
         movieGraph.graph().graql().define(label("my-type").sub("entity").datatype(BOOLEAN)).execute();
+    }
+
+    @Test
+    public void whenDefiningAThing_Throw() {
+        exception.expect(Exception.class);
+        qb.define(var("x").isa("movie")).execute();
+    }
+
+    @Test
+    public void whenModifyingAThingInADefineQuery_Throw() {
+        exception.expect(Exception.class);
+        ConceptId id = movieGraph.graph().getEntityType("movie").instances().iterator().next().getId();
+        qb.define(var().id(id).has("title", "Bob")).execute();
     }
 
     private void assertDefine(VarPattern... vars) {
