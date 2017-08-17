@@ -15,7 +15,7 @@ Graql uses machine reasoning to perform inference over data types, relationship 
 
 The rule-based reasoning allows automated capture and evolution of patterns within the knowledge base. Graql reasoning is performed at query time and is guaranteed to be complete.
 
-Thanks to the reasoning facility, common patterns in the knowledge base can be defined and associated with existing ontology elements.
+Thanks to the reasoning facility, common patterns in the knowledge base can be defined and associated with existing schema elements.
 The association happens by means of rules. This not only allows you to compress and simplify typical queries, but offers the ability to derive new non-trivial information by combining defined patterns.
 
 Provided reasoning is turned on, once a given query is executed, Graql will not only query the knowledge base for exact matches but will also inspect the defined rules to check whether additional information can be found (inferred) by combining the patterns defined in the rules. The completeness property of Graql reasoning guarantees that, for a given content of the graph and the defined rule set, the query result shall contain all possible answers derived by combining database lookups and rule applications.
@@ -104,7 +104,7 @@ then {
 };
 ```
 
-When adding rules such as those defined above with Graql, we simply use an `insert` statement, and load the rules, saved as a *.gql* file, into the knowledge base in a standard manner, much as for an ontology.
+When adding rules such as those defined above with Graql, we simply use an `insert` statement, and load the rules, saved as a *.gql* file, into the knowledge base in a standard manner, much as for an schema.
 
 Defining the above rules in terms of predicates and assuming left-to-right directionality of the roles, we can summarise them in the implication form as:
 

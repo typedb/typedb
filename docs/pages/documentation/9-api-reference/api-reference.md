@@ -432,7 +432,7 @@ Server: Jetty(9.3.6.v20151106)
 }
 ```
 
-#### `GET /ontology`
+#### `GET /schema`
 
 Returns all schema concepts in the specified knowledge base in a JSON object. 
 
@@ -463,7 +463,7 @@ Returns all schema concepts in the specified knowledge base in a JSON object.
 **Request:**
 
 ```
-curl -X GET "http://localhost:4567/graph/ontology?keyspace=grakn"
+curl -X GET "http://localhost:4567/graph/schema?keyspace=grakn"
 ```
 
 **Response:**

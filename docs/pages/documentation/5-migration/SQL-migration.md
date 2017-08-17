@@ -45,7 +45,7 @@ Grakn relies on the JDBC API to connect to any RDBMS that uses the SQL language.
 The steps to migrate the CSV to GRAKN.AI are:
 
 * define a schema for the data to derive the full benefit of a knowledge base
-* create templated Graql to map the data to the ontology by instructing the migrator on how the results of a SQL query can be mapped to your ontology. The SQL migrator will apply the template to each row of data in the table, replacing the indicated sections in the template with provided data. In this migrator, the column header is the key, while the content of each row at that column is the value.
+* create templated Graql to map the data to the schema by instructing the migrator on how the results of a SQL query can be mapped to your schema. The SQL migrator will apply the template to each row of data in the table, replacing the indicated sections in the template with provided data. In this migrator, the column header is the key, while the content of each row at that column is the value.
 * invoke the Grakn migrator through the shell script or Java API. 
 
 {% include note.html content="SQL Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [templating documentation](../graql/graql-templating.html) to find out more." %}
@@ -78,7 +78,7 @@ CREATE TABLE event
 ALTER TABLE event ADD FOREIGN KEY ( name ) REFERENCES pet ( name );
 ```
 
-We can define an ontology that corresponds to the SQL tables as follows:
+We can define an schema that corresponds to the SQL tables as follows:
 
 ```graql-test-ignore
 
@@ -110,7 +110,7 @@ event sub entity,
   has description;
 ```
 
-The ontology is not complete at this point, as we have not included any relationship between pets and their events. In SQL, a `foreign key` is a column that references another column, as seen in the SQL schema line `ALTER TABLE event ADD FOREIGN KEY ( name ) REFERENCES pet ( name );`.
+The schema is not complete at this point, as we have not included any relationship between pets and their events. In SQL, a `foreign key` is a column that references another column, as seen in the SQL schema line `ALTER TABLE event ADD FOREIGN KEY ( name ) REFERENCES pet ( name );`.
 
 For Grakn, we can use the following:
 
@@ -127,10 +127,10 @@ pet plays pet-in-event;
 event plays event-occurred;
 ```
 
-To load the ontology into Grakn, we create a single file that contains both sections shown above, named *ontology.gql*. From the Grakn installation folder, invoke the Graql shell, passing the -f flag to indicate the ontology file to load into a knowledge base. This call starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete:
+To load the schema into Grakn, we create a single file that contains both sections shown above, named *schema.gql*. From the Grakn installation folder, invoke the Graql shell, passing the -f flag to indicate the schema file to load into a knowledge base. This call starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete:
 
 ```
-./bin/graql.sh -f ./ontology.gql
+./bin/graql.sh -f ./schema.gql
 ```
 
 ### SQL Data Migration
@@ -185,7 +185,7 @@ In order to migrate the pets table from the SQL database, we prepare a SQL query
 SELECT * FROM pet; 
 ```
 
-We also prepare a Graql template, *pet-template.gql* which creates instances for data according to the defined ontology. The template will create an entity of the appropriate pet subtype (`cat`, `dog`, `snake`, `hamster` or `bird`) for each row returned by the query. It will attach name, owner and sex resources to each of these entities, and if the birth and death dates are present in the data, attaches those too.
+We also prepare a Graql template, *pet-template.gql* which creates instances for data according to the defined schema. The template will create an entity of the appropriate pet subtype (`cat`, `dog`, `snake`, `hamster` or `bird`) for each row returned by the query. It will attach name, owner and sex resources to each of these entities, and if the birth and death dates are present in the data, attaches those too.
 
 ```
 insert

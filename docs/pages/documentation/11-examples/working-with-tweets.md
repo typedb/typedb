@@ -13,7 +13,7 @@ comment_issue_id: 27
 # Working With Tweets
 In this tutorial we will look at how to stream public tweets into Grakn's knowledge base. The tutorial aims to demonstrate key concepts such as receiving, inserting and querying data. Upon the completion of this tutorial, you will have learnt about these concepts:
 
-- Defining a simple Grakn.ai ontology using the Java API
+- Defining a simple Grakn.ai schema using the Java API
 - Streaming public tweets into the application with the [Twitter4J](http://twitter4j.org/ "Twitter4J") library
 - Inserting tweets into the knowledge base using Grakn's Java API
 - Performing simple queries using Graql, the Grakn's query language
@@ -165,7 +165,7 @@ We have decided to omit exception handling to keep the tutorial simple. In produ
 
 ## Defining The Ontology
 
-Let's define the ontology. As we are mainly interested in both the **tweet** and **who posted the tweet**, let us capture these concepts by defining two **entity types**: `user` and `tweet`.
+Let's define the schema. As we are mainly interested in both the **tweet** and **who posted the tweet**, let us capture these concepts by defining two **entity types**: `user` and `tweet`.
 
 The `user` entity will hold the user's actual username in a **attribute** called `screen_name`, while the `tweet` entity will contain the user's tweet in another attribute called `text`. We will also define an attribute `identifier` for the id.
 
@@ -173,9 +173,9 @@ Next we will define two **roles** - `posts` and `posted_by` to express that a `u
 
 The structure can be summarized by the following graph:
 
-![Ontology](/images/working-with-tweets-ontology.jpg)
+![Ontology](/images/working-with-tweets-schema.jpg)
 
-With that set, let's define a new method `initTweetOntology` inside `GraknTweetOntologyHelper` class and define our ontology creation there.
+With that set, let's define a new method `initTweetOntology` inside `GraknTweetOntologyHelper` class and define our schema creation there.
 
 ```java-test-ignore
 public class GraknTweetOntologyHelper {
@@ -224,19 +224,19 @@ userType.plays(postsType);
 tweetType.plays(postedByType);
 ```
 
-Now invoke the method in `main` so the ontology is created at the start of the application.
+Now invoke the method in `main` so the schema is created at the start of the application.
 
 ```java-test-ignore
 public static void main(String[] args) {
   try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
-    withGraknTx(session, tx -> initTweetOntology(tx)); // initialize ontology
+    withGraknTx(session, tx -> initTweetOntology(tx)); // initialize schema
   }
 }
 ```
 
 ## Streaming Data From Twitter
 
-Now that we're done with ontology creation, let's develop the code for listening to the public tweet stream.
+Now that we're done with schema creation, let's develop the code for listening to the public tweet stream.
 
 Define a new method `listenToTwitterStreamAsync ` and put it in a class named `AsyncTweetStreamProcessorHelper `.  In addition to accepting Twitter credential settings, we will also need to supply a callback `onTweetReceived`, will be invoked whenever the application receives a new tweet. Further down, we will use this callback for storing, querying and displaying tweets as they come.
 
@@ -322,7 +322,7 @@ Let's wrap up this section by adding the call to `listenToTwitterStreamAsync` in
 ```java-test-ignore
 public static void main(String[] args) {
   try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
-    withGraknTx(session, tx -> initTweetOntology(tx)); // initialize ontology
+    withGraknTx(session, tx -> initTweetOntology(tx)); // initialize schema
 
     listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
       // TODO: do something upon receiving a new tweet
@@ -333,7 +333,7 @@ public static void main(String[] args) {
 
 ## Inserting Tweets Into The Knowledge Base
 
-At this point our little program already has a clearly defined ontology, and is able to listen to incoming tweets. However, we have yet to decide what exactly we're going to do with them. In this section we will have a look at how to:
+At this point our little program already has a clearly defined schema, and is able to listen to incoming tweets. However, we have yet to decide what exactly we're going to do with them. In this section we will have a look at how to:
 
 1. Insert an incoming tweet into the knowledge base
 2. Insert a user who posted the tweet, only once — we don't want to insert the same user twice
@@ -437,7 +437,7 @@ We're done with tweet insertion functionality! Next step: querying the stored da
 ```java-test-ignore
 public static void main(String[] args) {
   try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
-    withGraknTx(session, tx -> initTweetOntology(tx)); // initialize ontology
+    withGraknTx(session, tx -> initTweetOntology(tx)); // initialize schema
 
     listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
       withGraknTx(session, tx -> insertUserTweet(tx, screenName, tweet)); // insert tweet
@@ -544,7 +544,7 @@ public class Main {
 
   public static void main(String[] args) {
     try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
-      withGraknTx(session, tx -> initTweetOntology(tx)); // initialize ontology
+      withGraknTx(session, tx -> initTweetOntology(tx)); // initialize schema
 
       listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
         withGraknTx(session, tx -> {
@@ -584,4 +584,4 @@ Watch the terminal as the application runs. You should see the following text pr
 ------
 ```
 
-Finally, we have shown you many useful concepts — from creating an ontology, storing data, crafting a Graql query, as well as displaying the result of the query. These are fundamental concepts that you will likely use in almost every area.
+Finally, we have shown you many useful concepts — from creating an schema, storing data, crafting a Graql query, as well as displaying the result of the query. These are fundamental concepts that you will likely use in almost every area.

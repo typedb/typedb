@@ -32,7 +32,7 @@ Please note: `-no` and `-retry` are not supported by OWL at the moment.
 When you have read the following, you may find our extended example of [OWL migration](../examples/OWL-migration.html) useful.
 
 ## Example OWL migration
-Consider the following OWL ontology:
+Consider the following OWL schema:
 
 ```xml
 <rdf:RDF xmlns="http://www.co-ode.org/roberts/family-tree.owl#"
@@ -70,13 +70,13 @@ Consider the following OWL ontology:
 <\rdf:RDF>
 ```
 
-The ontology defines a single class (type) `Person` as well as two instances of the class - individuals `Witold` and `Stefan`. The ontology defines properties `hasAncestor` and its inverse `isAncestorOf` as well as `hasParent` and `isParentOf` properties. The `hasAncestor` property is defined as transitive and additionally defines a property chain which corresponds to the rule:
+The schema defines a single class (type) `Person` as well as two instances of the class - individuals `Witold` and `Stefan`. The schema defines properties `hasAncestor` and its inverse `isAncestorOf` as well as `hasParent` and `isParentOf` properties. The `hasAncestor` property is defined as transitive and additionally defines a property chain which corresponds to the rule:
 
 ```
 hasAncestor(X, Y) :- hasParent(X, Z), hasAncestor(Z, Y);
 ```
 
-Upon migration, the OWL ontology will be mapped to Grakn. The resulting Graql statement, if printed out, looks as follows:
+Upon migration, the OWL schema will be mapped to Grakn. The resulting Graql statement, if printed out, looks as follows:
 
 ```graql
 insert

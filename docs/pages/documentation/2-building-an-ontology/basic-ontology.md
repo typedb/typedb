@@ -3,9 +3,9 @@ title: Define a Basic Ontology
 keywords: schema
 last_updated: December, 2016
 tags: [java-api, java, advanced-grakn]
-summary: "Demonstrates how to create a basic ontology"
+summary: "Demonstrates how to create a basic schema"
 sidebar: documentation_sidebar
-permalink: /documentation/building-an-ontology/basic-ontology.html
+permalink: /documentation/building-an-schema/basic-schema.html
 folder: documentation
 comment_issue_id: 22
 ---
@@ -16,9 +16,9 @@ comment_issue_id: 22
 
 {% include links.html %}
 
-In this section we are going to run through the construction of a basic ontology. We recommend that you refer to the [Knowledge Model](../the-fundamentals/grakn-knowledge-model.html) documentation before reading this page. The process we will follow is a general guideline as to how you may start designing an ontology.
+In this section we are going to run through the construction of a basic schema. We recommend that you refer to the [Knowledge Model](../the-fundamentals/grakn-knowledge-model.html) documentation before reading this page. The process we will follow is a general guideline as to how you may start designing an schema.
 
-The ontology we will be building will be used for a genealogy knowledge base used for mapping out a family tree. You can find the complete ontology, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
+The schema we will be building will be used for a genealogy knowledge base used for mapping out a family tree. You can find the complete schema, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
 
 
 ## Identifying Entity Types
@@ -117,11 +117,11 @@ person sub entity
   plays spouse2;
 ```    
 
-We have now completed our basic genealogy ontology.
+We have now completed our basic genealogy schema.
 
 ## The Complete Ontology
 
-The final ontology will now look something like this:
+The final schema will now look something like this:
 
 ```graql
 insert
@@ -180,13 +180,13 @@ insert
 
 ## Summary
 
-In this tutorial we described our entity type `person` across separate steps. This was done to demonstrate the typical thought process when creating an ontology. It is typically good practice to group entity type definitions together as above.
+In this tutorial we described our entity type `person` across separate steps. This was done to demonstrate the typical thought process when creating an schema. It is typically good practice to group entity type definitions together as above.
 
-{% include note.html content="It is worth noting that the ontology does not need to be completely finalised before loading data. The schema of a Grakn knowledge base can be expanded even after loading data." %}
+{% include note.html content="It is worth noting that the schema does not need to be completely finalised before loading data. The schema of a Grakn knowledge base can be expanded even after loading data." %}
 
 ## Where Next?
 
-We will continue to explore the development of an ontology in the next section on defining a [hierarchical ontology](./hierarchical-ontology.html).
+We will continue to explore the development of an schema in the next section on defining a [hierarchical schema](./hierarchical-schema.html).
 
 
 ## Comments

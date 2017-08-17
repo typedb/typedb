@@ -16,25 +16,25 @@ This is an example of how to use the reasoning facilities of Graql to infer info
 
 As the blog post explained, the original data was a [document](http://www.lenzenresearch.com/titusnarrlineage.pdf) from [Lenzen Research](http://www.lenzenresearch.com/) that described the family history of Catherine Niesz Titus for three generations of her maternal lineage. Our team gathered together a set of CSV files containing basic information about the family, such as names, dates of birth, death and marriage, who was a parent of who, and who married who.
 
-The full genealogy-knowledge-base project can be found on Grakn's [sample-datasets](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph) repository on Github. However, we will use a simpler ontology for this example, which is found in *basic-genealogy.gql*, located within the */examples* folder of the Grakn installation. The file can also be found [on Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
+The full genealogy-knowledge-base project can be found on Grakn's [sample-datasets](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph) repository on Github. However, we will use a simpler schema for this example, which is found in *basic-genealogy.gql*, located within the */examples* folder of the Grakn installation. The file can also be found [on Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
 In this example, we will explore how to use Grakn to make inferences and find information from the data that is not explicit in the dataset. You can find documentation about writing rules in Graql [here](https://grakn.ai/pages/documentation/graql/graql-rules.html).
 
 
 ## Ontology and Data
 
-On GRAKN.AI, the first step when working with a dataset is to define its ontology in Graql. The ontology is a way to describe the entities and their relationships, so the underlying knowledge base can store them as nodes and edges. You can find out more in our guide to the Grakn Knowledge Model. The ontology allows Grakn to perform:
+On GRAKN.AI, the first step when working with a dataset is to define its schema in Graql. The schema is a way to describe the entities and their relationships, so the underlying knowledge base can store them as nodes and edges. You can find out more in our guide to the Grakn Knowledge Model. The schema allows Grakn to perform:
 
 * logical reasoning over the represented knowledge, such as the extraction of implicit information from explicit data (inference)
 * discovery of inconsistencies in the data (validation).
 
 The complete schema for the genealogy-knowledge-base demo is in [basic-genealogy.gql](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
-The ontology contains a `person` entity, and a number of possible family relationships between `person` entities, such as parent/child, siblings, grandparent/grandchild, which we will discuss shortly. The data for this example is discussed more fully in our [example on CSV migration](./CSV-migration.html), which discusses how the original data is laid out in CSV files and migrated into GRAKN.AI. However, for this example, you do not need any familiarity with CSV migration or the origin of the data we are using.
+The schema contains a `person` entity, and a number of possible family relationships between `person` entities, such as parent/child, siblings, grandparent/grandchild, which we will discuss shortly. The data for this example is discussed more fully in our [example on CSV migration](./CSV-migration.html), which discusses how the original data is laid out in CSV files and migrated into GRAKN.AI. However, for this example, you do not need any familiarity with CSV migration or the origin of the data we are using.
 
 ## Loading the Example
 
-The *basic-genealogy.gql* file contains the ontology, data and rules needed for this example. To load it into a knowledge base, make sure the engine is running and choose a clean keyspace in which to work (in the example below we use the default keyspace, so we are cleaning it before we get started):
+The *basic-genealogy.gql* file contains the schema, data and rules needed for this example. To load it into a knowledge base, make sure the engine is running and choose a clean keyspace in which to work (in the example below we use the default keyspace, so we are cleaning it before we get started):
 
 ```bash
 <relative-path-to-Grakn>/bin/grakn.sh clean

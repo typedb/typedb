@@ -26,7 +26,7 @@ This example takes a dataset that will be familiar to students of R - [mtcars (M
 
 ## Ontology
 
-We have provided the following ontology to represent the data, although many other variations are possible:
+We have provided the following schema to represent the data, although many other variations are possible:
 
 ```graql
 insert
@@ -85,12 +85,12 @@ maker sub role;
 made sub role;
 ``` 
 
-To load *ontology.gql* into Grakn, make sure the engine is running and choose a clean keyspace in which to work (here we use the default keyspace, so we are cleaning it before we get started). 
+To load *schema.gql* into Grakn, make sure the engine is running and choose a clean keyspace in which to work (here we use the default keyspace, so we are cleaning it before we get started). 
 
 ```bash
 <relative-path-to-Grakn>/bin/grakn.sh clean
 <relative-path-to-Grakn>/bin/grakn.sh start
-<relative-path-to-Grakn>/bin/graql.sh -f ./ontology.gql
+<relative-path-to-Grakn>/bin/graql.sh -f ./schema.gql
 ```		
 
 ## Data Migration

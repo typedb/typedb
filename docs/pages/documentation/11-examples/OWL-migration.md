@@ -13,7 +13,7 @@ comment_issue_id: 27
 For a comprehensive guide to migration, please see both our [Migration Tutorial](../migration/migration-overview.html) and our additional documentation specific to [OWL Migration](../migration/OWL-migration.html).
 
 ## Introduction
-This example addresses the topic of OWL interoperability through a migration of a family tree OWL ontology. The code for this example can be found in our [github repository](https://github.com/graknlabs/sample-projects/tree/master/example-owl-migration).
+This example addresses the topic of OWL interoperability through a migration of a family tree OWL schema. The code for this example can be found in our [github repository](https://github.com/graknlabs/sample-projects/tree/master/example-owl-migration).
 
 The sole prerequisite of this example is having the Grakn environment installed and the Engine running. If you need help starting Grakn Engine, please see the [setup guide](../get-started/setup-guide.html).
 

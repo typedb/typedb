@@ -3,9 +3,9 @@ title: Define a Hierarchical Ontology
 keywords: overview
 last_updated: February 2017
 tags: [graql, java, java-api]
-summary: "How to build a hierarchical ontology"
+summary: "How to build a hierarchical schema"
 sidebar: documentation_sidebar
-permalink: /documentation/building-an-ontology/hierarchical-ontology.html
+permalink: /documentation/building-an-schema/hierarchical-schema.html
 folder: documentation
 comment_issue_id: 22
 ---
@@ -14,10 +14,10 @@ comment_issue_id: 22
 
 ## Introduction
 
-In this section we are going to expand the ontology we defined in the [Basic Ontology documentation](./basic-ontology.html), which we recommend you read before starting here. You may also find it helpful to refer to the [Knowledge Model](../the-fundamentals/grakn-knowledge-model.html) documentation.
+In this section we are going to expand the schema we defined in the [Basic Ontology documentation](./basic-schema.html), which we recommend you read before starting here. You may also find it helpful to refer to the [Knowledge Model](../the-fundamentals/grakn-knowledge-model.html) documentation.
 We are going to introduce the idea of making ontologies deeper and more meaningful by defining a hierarchy of types.
 
-When we left off, our ontology looked as follows:
+When we left off, our schema looked as follows:
 
 ![Ontology](/images/basic-ontology1.png)
 
@@ -73,12 +73,12 @@ insert
   child sub role;
 ```
     
-This ontology represents a genealogy knowledge base which models a family tree.
-This is a very simplistic ontology with plenty of room for extension, so let's begin!
+This schema represents a genealogy knowledge base which models a family tree.
+This is a very simplistic schema with plenty of room for extension, so let's begin!
  
 ## Hierarchies of Entity Types
 
-It is possible to define entity types more granularly. Think of sub-categories that enable additional details to be embedded in the ontology. 
+It is possible to define entity types more granularly. Think of sub-categories that enable additional details to be embedded in the schema. 
 For example, if we have a entity type called `vehicle`, we can break that down further by differentiating between `cars` and `motorbikes`. This can be done as follows:
 
 ```graql
@@ -91,7 +91,7 @@ motorbikes sub vehicle;
     
 In the above example we are saying that a `car` is a subtype (a specialised type) of a `vehicle`. This means that when adding data to our knowledge base, when we know we have a `vehicle`, we can also differentiate between a `car` and a `motorbike`.
     
-So how can we use this technique to improve our existing genealogy ontology?
+So how can we use this technique to improve our existing genealogy schema?
   
 We could specialise the `person` entity into `man` and `woman` for example. However, for the sake of making things more interesting, we are going to introduce a new entity to the knowledge base. A family is made up not only of people but of events, like births, weddings, funerals, and many others, which link those people together and better define their lives. 
 
@@ -131,9 +131,9 @@ Notice that for the `event` entity type we added `is-abstract`, this is an optio
 
 ## Hierarchies of Relationship Types and Roles 
 
-Grakn also allows you to design hierarchies of relationship types and role types, enabling the ontology to be deeper and more expressive. For example, if we have a relationship type called `partnership` between two people we can expand on this by defining more detailed partnerships; `civil-partnership`, `marriage`, `unions`, etc.
+Grakn also allows you to design hierarchies of relationship types and role types, enabling the schema to be deeper and more expressive. For example, if we have a relationship type called `partnership` between two people we can expand on this by defining more detailed partnerships; `civil-partnership`, `marriage`, `unions`, etc.
 
-Now lets take a look at expanding our genealogy ontology. When modelling a domain there are many ways of doing so. For this example we are going to redo the `marriage` relationship type so that it can provide more meaning:
+Now lets take a look at expanding our genealogy schema. When modelling a domain there are many ways of doing so. For this example we are going to redo the `marriage` relationship type so that it can provide more meaning:
 
 ```graql
 insert
@@ -188,7 +188,7 @@ This is quite useful because when we ask for all relatives we will be getting re
 ## Wrapping up 
 
 We could go into far more detail regarding our genealogy knowledge base but I will leave that to you.
-For the moment here is our more complex ontology to get you started on making your own deeper ontologies. You can find the ontology, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph):
+For the moment here is our more complex schema to get you started on making your own deeper ontologies. You can find the schema, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph):
 
 ```graql
 insert
@@ -283,9 +283,9 @@ insert
 
 ## Where Next?
 
-We will continue to explore the development of an ontology in the next section on defining a [rule-driven ontology](./rule-driven-ontology.html).
+We will continue to explore the development of an schema in the next section on defining a [rule-driven schema](./rule-driven-schema.html).
 
-You can find the complete ontology for our genealogy knowledge base project, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
+You can find the complete schema for our genealogy knowledge base project, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
 
 ## Comments
 Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/22" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
