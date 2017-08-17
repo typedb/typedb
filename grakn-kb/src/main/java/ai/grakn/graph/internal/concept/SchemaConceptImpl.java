@@ -188,7 +188,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     boolean deletionAllowed(){
-        checkOntologyMutationAllowed();
+        checkSchemaMutationAllowed();
         return !neighbours(Direction.IN, Schema.EdgeLabel.SUB).findAny().isPresent();
     }
 
@@ -222,11 +222,11 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     /**
-     * Checks if we are mutating an ontology element in a valid way. Ontology mutations are valid if:
-     * 1. The Ontology Element is not a meta-type
+     * Checks if we are mutating a {@link SchemaConcept} in a valid way. Ontology mutations are valid if:
+     * 1. The {@link SchemaConcept} is not a meta-type
      * 2. The graph is not batch loading
      */
-    void checkOntologyMutationAllowed(){
+    void checkSchemaMutationAllowed(){
         vertex().graph().checkOntologyMutationAllowed();
         if(Schema.MetaSchema.isMetaLabel(getLabel())){
             throw GraphOperationException.metaTypeImmutable(getLabel());
@@ -243,10 +243,10 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     /**
-     * Adds another sub to this ontology concept
+     * Adds another sub to this {@link SchemaConcept}
      *
-     * @param concept The sub concept of this ontology concept
-     * @return The ontology concept itself
+     * @param concept The sub concept of this {@link SchemaConcept}
+     * @return The {@link SchemaConcept} itself
      */
     public T sub(T concept){
         //noinspection unchecked
@@ -301,7 +301,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * @return true if we can set the new super
      */
     boolean changingSuperAllowed(T oldSuperType, T newSuperType){
-        checkOntologyMutationAllowed();
+        checkSchemaMutationAllowed();
         return oldSuperType == null || !oldSuperType.equals(newSuperType);
     }
 

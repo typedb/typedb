@@ -62,10 +62,10 @@ public class MigratorTestUtils {
         return new File(MigratorTestUtils.class.getResource(component + "/" + fileName).getPath());
     }
 
-    public static void load(GraknSession factory, File ontology) {
+    public static void load(GraknSession factory, File schema) {
         try(GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.graql()
-                    .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
+                    .parse(Files.readLines(schema, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();
 
             graph.commit();

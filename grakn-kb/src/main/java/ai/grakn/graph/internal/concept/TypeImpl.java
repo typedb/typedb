@@ -197,7 +197,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         String prefix = implicitIdentifiers[0] + "-";
         String suffix = "-" + implicitIdentifiers[1];
 
-        //A traversal is not used in this so that ontology caching can be taken advantage of.
+        //A traversal is not used in this so that caching can be taken advantage of.
         return plays().map(role -> role.getLabel().getValue()).
                 filter(roleLabel -> roleLabel.startsWith(prefix) && roleLabel.endsWith(suffix)).
                 map(roleLabel -> {
@@ -278,7 +278,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     public T plays(Role role, boolean required) {
-        checkOntologyMutationAllowed();
+        checkSchemaMutationAllowed();
 
         //Update the internal cache of role types played
         cachedDirectPlays.ifPresent(map -> map.put(role, required));
@@ -345,7 +345,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      */
     @Override
     public T deletePlays(Role role) {
-        checkOntologyMutationAllowed();
+        checkSchemaMutationAllowed();
         deleteEdge(Direction.OUT, Schema.EdgeLabel.PLAYS, (Concept) role);
         cachedDirectPlays.ifPresent(set -> set.remove(role));
         ((RoleImpl) role).deleteCachedDirectPlaysByType(this);
@@ -372,7 +372,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     public T property(Schema.VertexProperty key, Object value){
-        if(!Schema.VertexProperty.CURRENT_LABEL_ID.equals(key)) checkOntologyMutationAllowed();
+        if(!Schema.VertexProperty.CURRENT_LABEL_ID.equals(key)) checkSchemaMutationAllowed();
         vertex().property(key, value);
         return getThis();
     }
@@ -388,7 +388,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      */
     private T has(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
         //Check if this is a met type
-        checkOntologyMutationAllowed();
+        checkSchemaMutationAllowed();
 
         //Check if attribute type is the meta
         if(Schema.MetaSchema.ATTRIBUTE.getLabel().equals(attributeType.getLabel())){

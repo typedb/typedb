@@ -50,12 +50,12 @@ public class DocTestUtil {
         try (GraknTx tx = session.open(GraknTxType.WRITE)) {
             GenealogyGraph.get().accept(tx);
 
-            // TODO: Remove custom genealogy ontology when not used
+            // TODO: Remove custom genealogy schema when not used
             AttributeType<Long> age = tx.putAttributeType("age", AttributeType.DataType.LONG);
             tx.getEntityType("person").attribute(age);
             tx.putAttributeType("nickname", AttributeType.DataType.STRING);
 
-            // TODO: Remove plant ontology when not used
+            // TODO: Remove plant schema when not used
             EntityType plant = tx.putEntityType("plant");
             AttributeType<String> common = tx.putAttributeType("common", AttributeType.DataType.STRING);
             AttributeType<String> botanical = tx.putAttributeType("botanical", AttributeType.DataType.STRING);
@@ -64,7 +64,7 @@ public class DocTestUtil {
             AttributeType<Long> availability = tx.putAttributeType("availability", AttributeType.DataType.LONG);
             plant.attribute(common).attribute(botanical).attribute(zone).attribute(light).attribute(availability);
 
-            // TODO: Remove pokemon ontology when not used
+            // TODO: Remove pokemon schema when not used
             EntityType pokemon = tx.putEntityType("pokemon");
             EntityType pokemonType = tx.putEntityType("pokemon-type");
 

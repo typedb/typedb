@@ -115,19 +115,19 @@ public class TxCache {
 
     /**
      *
-     * @return true if ths ontology labels have been cached. The graph cannot operate if this is false.
+     * @return true if ths schema labels have been cached. The graph cannot operate if this is false.
      */
-    public boolean ontologyNotCached(){
+    public boolean schemaNotCached(){
         return labelCache.isEmpty();
     }
 
     /**
-     * Refreshes the transaction ontology cache by reading the central ontology cache is read into this transaction cache.
+     * Refreshes the transaction schema cache by reading the central schema cache is read into this transaction cache.
      * This method performs this operation whilst making a deep clone of the cached concepts to ensure transactions
-     * do not accidentally break the central ontology cache.
+     * do not accidentally break the central schema cache.
      *
      */
-    public void refreshOntologyCache(){
+    public void refreshSchemaCache(){
         Map<Label, SchemaConcept> cachedOntologySnapshot = graphCache.getCachedTypes();
         Map<Label, LabelId> cachedLabelsSnapshot = graphCache.getCachedLabels();
 

@@ -30,7 +30,7 @@ import java.util.function.Consumer;
  */
 public class AcademyGraph extends TestGraph {
 
-    final private static String ontologyFile = "academy/ontology.gql";
+    final private static String ontologyFile = "academy/schema.gql";
     final private static String dataFile = "academy/data.gql";
     final private static String rulesFile = "academy/rules.gql";
 

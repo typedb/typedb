@@ -106,7 +106,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     //TODO: Is this the correct place for these config paths
     //----------------------------- Config Paths
     public static final String SHARDING_THRESHOLD = "graph.sharding-threshold";
-    public static final String NORMAL_CACHE_TIMEOUT_MS = "graph.ontology-cache-timeout-ms";
+    public static final String NORMAL_CACHE_TIMEOUT_MS = "graph.schema-cache-timeout-ms";
 
     //----------------------------- Graph Shared Variable
     private final String keyspace;
@@ -216,8 +216,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             localConceptLog.set(txCache = new TxCache(getGraphCache()));
         }
 
-        if (txCache.isTxOpen() && txCache.ontologyNotCached()) {
-            txCache.refreshOntologyCache();
+        if (txCache.isTxOpen() && txCache.schemaNotCached()) {
+            txCache.refreshSchemaCache();
         }
 
         return txCache;
@@ -288,10 +288,10 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             ontologyInitialised = true;
         }
 
-        //Copy entire ontology to the graph cache. This may be a bad idea as it will slow down graph initialisation
+        //Copy entire schema to the graph cache. This may be a bad idea as it will slow down graph initialisation
         copyToCache(getMetaConcept());
 
-        //Role has to be copied separately due to not being connected to meta ontology
+        //Role has to be copied separately due to not being connected to meta schema
         copyToCache(getMetaRole());
 
         return ontologyInitialised;

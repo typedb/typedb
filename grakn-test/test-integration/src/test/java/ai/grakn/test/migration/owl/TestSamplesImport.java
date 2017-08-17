@@ -42,8 +42,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Load and verify the ontology from the test sample resources. 
- * 
+ * Load and verify the schema from the test sample resources.
+ *
  * @author borislav
  *
  */

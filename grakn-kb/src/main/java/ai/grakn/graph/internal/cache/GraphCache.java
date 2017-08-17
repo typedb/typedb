@@ -40,9 +40,9 @@ import java.util.concurrent.TimeUnit;
  * <p>
  *     Caches Graph or Session specific data which is shared across transactions:
  *     <ol>
- *         <li>Ontology Cache - All the types which make up the ontology. This cache expires</li>
+ *         <li>Schema Cache - All the types which make up the schema. This cache expires</li>
  *         <li>
- *             Label Cache - All the labels which make up the ontology. This can never expire and is needed in order
+ *             Label Cache - All the labels which make up the schema. This can never expire and is needed in order
  *             to perform fast lookups. Essentially it is used for mapping labels to ids.
  *         </li>
  *     <ol/>

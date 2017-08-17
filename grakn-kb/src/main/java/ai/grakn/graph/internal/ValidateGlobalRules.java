@@ -357,7 +357,7 @@ class ValidateGlobalRules {
     static Set<String> validateRuleOntologically(GraknTx graph, Rule rule) {
         Set<String> errors = new HashSet<>();
 
-        //both body and head refer to the same graph and have to be valid with respect to the ontology that governs it
+        //both body and head refer to the same graph and have to be valid with respect to the schema that governs it
         //as a result the rule can be ontologically validated by combining them into a conjunction
         //this additionally allows to cross check body-head references
         ReasonerQuery combined = rule

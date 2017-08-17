@@ -30,7 +30,7 @@ import java.util.function.Consumer;
  */
 public class GenealogyGraph extends TestGraph {
 
-    final private static String ontologyFile = "genealogy/ontology.gql";
+    final private static String ontologyFile = "genealogy/schema.gql";
     final private static String dataFile = "genealogy/data.gql";
     final private static String rulesFile = "genealogy/rules.gql";
 

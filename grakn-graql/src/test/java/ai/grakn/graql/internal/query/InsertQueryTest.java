@@ -483,7 +483,7 @@ public class InsertQueryTest {
         VarPattern hasResourceOwner = Graql.label(HAS_OWNER.getLabel(resourceType));
         VarPattern hasResourceValue = Graql.label(HAS_VALUE.getLabel(resourceType));
 
-        // Make sure the expected ontology elements are created
+        // Make sure the expected schema elements are created
         assertTrue(qb.match(hasResource.sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue())).ask().execute());
         assertTrue(qb.match(hasResourceOwner.sub(Schema.MetaSchema.ROLE.getLabel().getValue())).ask().execute());
         assertTrue(qb.match(hasResourceValue.sub(Schema.MetaSchema.ROLE.getLabel().getValue())).ask().execute());
@@ -512,7 +512,7 @@ public class InsertQueryTest {
         VarPattern keyOwner = Graql.label(KEY_OWNER.getLabel(resourceType));
         VarPattern keyValue = Graql.label(KEY_VALUE.getLabel(resourceType));
 
-        // Make sure the expected ontology elements are created
+        // Make sure the expected schema elements are created
         assertTrue(qb.match(key.sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue())).ask().execute());
         assertTrue(qb.match(keyOwner.sub(Schema.MetaSchema.ROLE.getLabel().getValue())).ask().execute());
         assertTrue(qb.match(keyValue.sub(Schema.MetaSchema.ROLE.getLabel().getValue())).ask().execute());

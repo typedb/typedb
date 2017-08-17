@@ -37,8 +37,8 @@ public class SNBGraph extends TestGraph {
 
     @Override
     protected void buildOntology(GraknTx graph) {
-        GraphContext.loadFromFile(graph, "ldbc-snb-ontology.gql");
-        GraphContext.loadFromFile(graph, "ldbc-snb-product-ontology.gql");
+        GraphContext.loadFromFile(graph, "ldbc-snb-schema.gql");
+        GraphContext.loadFromFile(graph, "ldbc-snb-product-schema.gql");
     }
 
     @Override

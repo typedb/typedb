@@ -243,7 +243,7 @@ public class Fragments {
         Var labelId = Graql.var();
         traversal.values(edgeProperty.name()).as(labelId.getValue());
 
-        // Look up ontology concept using ID
+        // Look up schema concept using ID
         return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
     }
 

@@ -59,7 +59,7 @@ public class GraphWriterMainTest {
 
     @Test
     public void exportCalledWithOntologyFlag_DataPrintedToSystemOut(){
-        run("export", "-u", engine.uri(), "-ontology", "-keyspace", keyspace);
+        run("export", "-u", engine.uri(), "-schema", "-keyspace", keyspace);
 
         assertThat(sysOut.getLog(), containsString("sub entity"));
     }
@@ -73,7 +73,7 @@ public class GraphWriterMainTest {
     
     @Test
     public void exportCalledWithNoArgs_HelpMessagePrintedToSystemOut(){
-        run("export", "ontology");
+        run("export", "schema");
 
         assertThat(sysOut.getLog(), containsString("usage: migration.sh"));
     }

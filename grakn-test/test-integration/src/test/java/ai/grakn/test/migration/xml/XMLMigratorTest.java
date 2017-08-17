@@ -100,8 +100,8 @@ public class XMLMigratorTest {
     }
 
     private static void migrateXMLWithElement(String element, String template){
-        // load the ontology
-        MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "ontology.gql"));
+        // load the schema
+        MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "schema.gql"));
 
         // load the data
         Migrator migrator = Migrator.to(engine.uri(), keyspace);

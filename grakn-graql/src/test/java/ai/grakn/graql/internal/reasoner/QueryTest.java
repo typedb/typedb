@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.test.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.Conjunction;
@@ -28,9 +27,9 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.test.GraphContext;
-
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.GraphContext;
+import ai.grakn.test.graphs.GeoGraph;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -41,8 +40,6 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class QueryTest {
@@ -51,7 +48,7 @@ public class QueryTest {
     public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogyOntology = GraphContext.preLoad("genealogy/ontology.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final GraphContext genealogyOntology = GraphContext.preLoad("genealogy/schema.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void setUpClass() throws Exception {

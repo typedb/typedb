@@ -40,7 +40,7 @@ import java.util.Set;
 public class Utility {
     /**
      * The Grakn type property on a given Tinkerpop vertex.
-     * If the vertex is an ontology element, return invalid type.
+     * If the vertex is an schema element, return invalid type.
      *
      * @param vertex the Tinkerpop vertex
      * @return the type

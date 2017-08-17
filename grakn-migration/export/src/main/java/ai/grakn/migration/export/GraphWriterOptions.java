@@ -29,14 +29,14 @@ public class GraphWriterOptions extends MigrationOptions {
     public GraphWriterOptions(String[] args) {
         super();
 
-        options.addOption("ontology", false, "export ontology");
+        options.addOption("schema", false, "export schema");
         options.addOption("data", false, "export data");
 
         parse(args);
     }
 
     public boolean exportOntology(){
-        return command.hasOption("ontology");
+        return command.hasOption("schema");
     }
 
     public boolean exportData(){

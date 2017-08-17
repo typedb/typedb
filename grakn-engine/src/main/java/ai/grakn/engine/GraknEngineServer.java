@@ -17,7 +17,6 @@
  */
 package ai.grakn.engine;
 
-import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
@@ -45,7 +44,6 @@ import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.google.common.base.Stopwatch;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
@@ -69,9 +67,11 @@ import java.util.concurrent.locks.Lock;
 
 import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
 import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
+import static com.codahale.metrics.MetricRegistry.name;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -81,7 +81,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  */
 public class GraknEngineServer implements AutoCloseable {
 
-    private static final String LOAD_SYSTEM_ONTOLOGY_LOCK_NAME = "load-system-ontology";
+    private static final String LOAD_SYSTEM_SCHEMA_LOCK_NAME = "load-system-schema";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
             REST.WebPath.NEW_SESSION_URI,
@@ -150,7 +150,7 @@ public class GraknEngineServer implements AutoCloseable {
 
     private void lockAndInitializeSystemOntology() {
         try {
-            Lock lock = lockProvider.getLock(LOAD_SYSTEM_ONTOLOGY_LOCK_NAME);
+            Lock lock = lockProvider.getLock(LOAD_SYSTEM_SCHEMA_LOCK_NAME);
             if (lock.tryLock(60, TimeUnit.SECONDS)) {
                 loadAndUnlock(lock);
             } else {
@@ -163,8 +163,8 @@ public class GraknEngineServer implements AutoCloseable {
 
     private void loadAndUnlock(Lock lock) {
         try {
-            LOG.info("{} is checking the system ontology", this.engineId);
-            factory.systemKeyspace().loadSystemOntology();
+            LOG.info("{} is checking the system schema", this.engineId);
+            factory.systemKeyspace().loadSystemSchema();
         } finally {
             lock.unlock();
         }

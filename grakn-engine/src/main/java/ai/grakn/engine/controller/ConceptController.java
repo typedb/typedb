@@ -85,10 +85,10 @@ public class ConceptController {
             MetricRegistry metricRegistry){
         this.factory = factory;
         this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-identifier"));
-        this.ontologyGetTimer = metricRegistry.timer(name(ConceptController.class, "ontology"));
+        this.ontologyGetTimer = metricRegistry.timer(name(ConceptController.class, "schema"));
 
         spark.get(CONCEPT + ID_PARAMETER,  this::conceptByIdentifier);
-        spark.get(SCHEMA,  this::ontology);
+        spark.get(SCHEMA,  this::schema);
 
     }
 
@@ -120,13 +120,13 @@ public class ConceptController {
     }
 
     @GET
-    @Path("/ontology")
+    @Path("/schema")
     @ApiOperation(
-            value = "Produces a Json object containing meta-ontology types instances.",
-            notes = "The built Json object will contain ontology nodes divided in roles, entities, relations and resources.",
+            value = "Produces a Json object containing meta-schema types instances.",
+            notes = "The built Json object will contain schema nodes divided in roles, entities, relations and resources.",
             response = Json.class)
     @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
-    private String ontology(Request request, Response response) {
+    private String schema(Request request, Response response) {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         validateRequest(request, APPLICATION_ALL, APPLICATION_JSON);
         try(GraknTx graph = factory.getGraph(keyspace, READ); Context context = ontologyGetTimer.time()){
