@@ -8,13 +8,13 @@ permalink: /overview/ideology.html
 folder: overview
 ---
 
-*The following article is taken from a [blog post](https://blog.grakn.ai/the-grakn-ai-schema-simplicity-and-maintainability-ab78340f5ff6) published in April 2017.    
+*The following article is taken from a [blog post](https://blog.grakn.ai/the-grakn-ai-ontology-simplicity-and-maintainability-ab78340f5ff6) published in April 2017.    
 If you have any questions about it, please do reach out to us via [Slack](https://grakn.ai/slack.html), [Twitter](https://twitter.com/graknlabs) or our [discussion forums](https://discuss.grakn.ai/).*
 
 
 Technology is invented for solving difficult problems in this world. The shape or form in which it is delivered is almost irrelevant, and should not get in the way of its potential purpose. Ontology systems are an example; it is a technology that humans invented to solve difficult problems in the field of information science. At GRAKN.AI, we provide a schema language for you to model your knowledge base.
 
-However, the current schema languages and tools (RDF/OWL) have never made it practical for engineers to implement, and so they have mainly stayed in the research space for a long time. At GRAKN.AI, our core mission is to make knowledge bases and ontologies easy to use for engineers to use for the first time. We want engineers to be able to develop their knowledge bases rapidly and update their data model frequently. This way, their data platform can continue to evolve as the business grows, and immediately reap the real benefit of a knowledge base: to enable machines to reason and infer hidden knowledge that is too complex for human cognition to uncover.
+However, the current schema languages and tools (RDF/OWL) have never made it practical for engineers to implement, and so they have mainly stayed in the research space for a long time. At GRAKN.AI, our core mission is to make knowledge bases easy for engineers to use for the first time. We want engineers to be able to develop their knowledge bases rapidly and update their data model frequently. This way, their data platform can continue to evolve as the business grows, and immediately reap the real benefit of a knowledge base: to enable machines to reason and infer hidden knowledge that is too complex for human cognition to uncover.
 
 As you can imagine, we are often asked how GRAKN.AI contrasts with traditional schema languages and tools in the RDF/OWL world. We have previously touched upon [why we implemented our own knowledge representation model](https://blog.grakn.ai/knowledge-graph-representation-grakn-ai-or-owl-506065bd3f24). We believe that RDF & OWL are for semantic web (not databases) and logicians (not software engineers). And GRAKN.AI, as you may expect, is for databases and software engineers.
 
@@ -45,7 +45,7 @@ For example, your data model may need to accommodate new entity, attribute and r
 As noted above, having a modelling principle based on OOP makes GRAKN.AI more developer-oriented and it can be easily adopted by any engineer. On the other hand, there is a substantial discrepancy between OWL and conventional OOP modelling principles; OWL requires a deep expertise in formal logic systems. Modelling in RDF/OWL often requires a PhD to simplify the schema as they come up with notions of schema patterns.
 
 ### Fully integrated environment
-GRAKN.AI is a fully integrated knowledge-base environment, which has storage, querying, validation, reasoning, IDE (in progress), visualisation and discovery (in progress) all in one system where the user does not need to care about integrations. RDF/OWL platforms require complex layers of loosely coupled components from many different systems, such as schema editors (e.g. Protege), storage (RDF triple stores), query engines (e.g. SPARQL), reasoners (e.g. Pellet, other OWL reasoners).
+GRAKN.AI is a fully integrated knowledge-base environment, which has storage, querying, validation, reasoning, IDE (in progress), visualisation and discovery (in progress) all in one system where the user does not need to care about integrations. RDF/OWL platforms require complex layers of loosely coupled components from many different systems, such as ontology editors (e.g. Protege), storage (RDF triple stores), query engines (e.g. SPARQL), reasoners (e.g. Pellet, other OWL reasoners).
 
 ### Automated validation and reasoning
 Given a schema, GRAKN.AI automatically takes care of validating input data in real-time, and reasoning/inference is a native behaviour of the Graql language. You immediately reap the validation and reasoning benefits of the schema. It is not as straightforward in the RDF/OWL world; validation does not happen in real-time and reasoners are not naturally integrated. Validation is thus a slow, off-line computation and reasoning requires integration of separate reasoner-tools with your SPARQL query language, which is not always seamless, often very buggy, and does not scale.
@@ -60,7 +60,7 @@ There is a debate in the programming world about the virtues of strongly-typed a
 
 ## Summary
 
-In this article, we have presented the reasons why we believe GRAKN.AI is simple to use and easy to maintain when compared to traditional schema languages and tools in the RDF/OWL world, which include:
+In this article, we have presented the reasons why we believe GRAKN.AI is simple to use and easy to maintain when compared to traditional ontology languages and tools in the RDF/OWL world, which include:
 
 * simple and intuitive schema and query language
 * smaller set of higher level modelling constructs

@@ -19,7 +19,7 @@ GRAKN.AI  working with complex data easymakes by providing:
 
 > Grakn allows you to model the real world.
 
-Grakn is a hyper-relational database, that provides an [Enhanced-Entity-Relational (EER)](https://en.wikipedia.org/wiki/Enhanced_entity–relationship_model) schema to model extremely complex datasets. Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained within it. The schema/schema modelling constructs include but are not limited to data type hierarchy, relationship type hierarchy, bi-directional relationships, multi-type relationships, N-ary relationships, relationships in relationships, conditional relationships, virtual relationships, dynamic relationships, and so on.
+Grakn is a hyper-relational database, that provides an [Enhanced-Entity-Relational (EER)](https://en.wikipedia.org/wiki/Enhanced_entity–relationship_model) schema to model extremely complex datasets. Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained within it. The schema modelling constructs include but are not limited to data type hierarchy, relationship type hierarchy, bi-directional relationships, multi-type relationships, N-ary relationships, relationships in relationships, conditional relationships, virtual relationships, dynamic relationships, and so on.
 
 ## Logical integrity of information
 
@@ -31,7 +31,7 @@ Grakn’s schema functions as a data schema constraint that guarantees the logic
 
 > Grakn allows your database model to constantly evolve.
 
-Grakn’s schema/schema is flexible. You can add new data and relationship types, update type names, delete unused types, all while storing and retrieving data to and from the database. This allows your database model to constantly even when you have lots of data, building a lasting advantage as your business “learns”. In Grakn’s Enterprise solution, you can have a machine learning system to automatically adapt and grow your Grakn schema.
+Grakn’s schema is flexible. You can add new data and relationship types, update type names, delete unused types, all while storing and retrieving data to and from the database. This allows your database model to constantly even when you have lots of data, building a lasting advantage as your business “learns”. In Grakn’s Enterprise solution, you can have a machine learning system to automatically adapt and grow your Grakn schema.
 
 ##  Machine reasoning query language
 

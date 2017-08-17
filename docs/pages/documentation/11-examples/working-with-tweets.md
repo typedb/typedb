@@ -152,7 +152,7 @@ public static void main(String[] args) {
 Following that, another equally important object for operating on the knowledge base is `GraknTx`. After performing the operations we desire, we must not forget to commit. For convenience, let's define a helper method which opens a `GraknTx` in write mode, and commits it after executing the function `fn`. We will be using this function in various places throughout the tutorial.
 
 ```java-test-ignore
-public class GraknTweetOntologyHelper {
+public class GraknTweetSchemaHelper {
   public static void withGraknTx(GraknSession session, Consumer<GraknTx> fn) {
     GraknTx graphWriter = session.open(GraknTxType.WRITE);
     fn.accept(graphWriter);
@@ -178,8 +178,8 @@ The structure can be summarized by the following graph:
 With that set, let's define a new method `initTweetSchema` inside `GraknTweetSchemaHelper` class and define our schema creation there.
 
 ```java-test-ignore
-public class GraknTweetOntologyHelper {
-  public static void initTweetOntology(GraknTx tx) {
+public class GraknTweetSchemaHelper {
+  public static void initTweetSchema(GraknTx tx) {
 
   }
 }
@@ -229,7 +229,7 @@ Now invoke the method in `main` so the schema is created at the start of the app
 ```java-test-ignore
 public static void main(String[] args) {
   try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
-    withGraknTx(session, tx -> initTweetOntology(tx)); // initialize schema
+    withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
   }
 }
 ```
@@ -322,7 +322,7 @@ Let's wrap up this section by adding the call to `listenToTwitterStreamAsync` in
 ```java-test-ignore
 public static void main(String[] args) {
   try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
-    withGraknTx(session, tx -> initTweetOntology(tx)); // initialize schema
+    withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
 
     listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
       // TODO: do something upon receiving a new tweet
@@ -437,7 +437,7 @@ We're done with tweet insertion functionality! Next step: querying the stored da
 ```java-test-ignore
 public static void main(String[] args) {
   try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
-    withGraknTx(session, tx -> initTweetOntology(tx)); // initialize schema
+    withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
 
     listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
       withGraknTx(session, tx -> insertUserTweet(tx, screenName, tweet)); // insert tweet
@@ -544,7 +544,7 @@ public class Main {
 
   public static void main(String[] args) {
     try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
-      withGraknTx(session, tx -> initTweetOntology(tx)); // initialize schema
+      withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
 
       listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
         withGraknTx(session, tx -> {

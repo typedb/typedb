@@ -30,7 +30,7 @@ import ai.grakn.util.Schema;
  * </p>
  *
  * <p>
- *     An {@link SchemaConcept} which represents categories instances can fall within.
+ *     A {@link SchemaConcept} which represents categories instances can fall within.
  *     Any instance of a {@link EntityType} is called an {@link Entity}.
  * </p>
  *

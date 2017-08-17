@@ -216,12 +216,12 @@ public class ReasonerUtils {
     }
 
     /**
-     * @param scheamConcepts entry set
+     * @param schemaConcepts entry set
      * @return top non-meta {@link SchemaConcept} from within the provided set of {@link Role}
      */
-    public static <T extends SchemaConcept> Set<T> getSchemaConcepts(Set<T> scheamConcepts) {
-        return scheamConcepts.stream()
-                .filter(rt -> Sets.intersection(getSupers(rt), scheamConcepts).isEmpty())
+    public static <T extends SchemaConcept> Set<T> getSchemaConcepts(Set<T> schemaConcepts) {
+        return schemaConcepts.stream()
+                .filter(rt -> Sets.intersection(getSupers(rt), schemaConcepts).isEmpty())
                 .collect(toSet());
     }
 

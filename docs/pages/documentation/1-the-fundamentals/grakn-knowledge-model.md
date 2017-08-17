@@ -32,7 +32,7 @@ In Grakn, the [schema](https://en.wikipedia.org/wiki/Database_schema) is the for
 
 <br /> <img src="/images/knowledge-model1.png" style="width: 600px;"/> <br />
 
-### Building an Schema
+### Building a Schema
 
 In this section, we build up a simple schema to illustrate the concept types in the Grakn knowledge model. 
 

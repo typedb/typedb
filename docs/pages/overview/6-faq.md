@@ -62,7 +62,7 @@ If you have new data that requires a new model, which you have not considered be
 
 ### Is it practical to have to define a schema before I’ve worked with the data. Why can’t I just put it into a knowledge base as a set of entities and relationships?
 
-In the past, it hasn’t been practical with other technologies that use a schema, but that is the main mission for us at GRAKN.AI: to make ontologies and knowledge representation practical for the very first time, by integrating seamlessly with a database. Our goal is to ensure that users don’t worry about perceived “baggage”, but simply get expressive modelling abilities without having to worry about how to implement data structure and constraints.
+In the past, it hasn’t been practical with other technologies that use an ontology, but that is the main mission for us at GRAKN.AI: to make ontologies and knowledge representation practical for the very first time, by integrating seamlessly with a database. Our goal is to ensure that users don’t worry about perceived “baggage”, but simply get expressive modelling abilities without having to worry about how to implement data structure and constraints.
 
 And yes, you could just use a graph database, but with GRAKN.AI, your data sits in a knowledge base, which enables automation, pattern matching, inference and discovery with very little human intervention. You can uncover hidden patterns in the data that are too complex for human cognition.
 
