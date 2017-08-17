@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.internal.analytics.Utility.getResourceEdgeId;
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
 class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implements PathQuery {
@@ -97,9 +98,19 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
                 .collect(Collectors.toList()));
         path.add(destinationId);
 
-        LOGGER.debug("The path found is: " + path);
+        List<ConceptId> fullPath = new ArrayList<>();
+        for (int index = 0; index < path.size() - 1; index++) {
+            fullPath.add(path.get(index));
+            ConceptId resourceRelationId = getResourceEdgeId(graph.get(), path.get(index), path.get(index + 1));
+            if (resourceRelationId != null) {
+                fullPath.add(resourceRelationId);
+            }
+        }
+        fullPath.add(destinationId);
+
+        LOGGER.debug("The path found is: " + fullPath);
         LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(path.stream().map(graph.get()::<Thing>getConcept).collect(Collectors.toList()));
+        return Optional.of(fullPath.stream().map(graph.get()::<Thing>getConcept).collect(Collectors.toList()));
     }
 
     @Override

@@ -18,7 +18,12 @@
 
 package ai.grakn.graql.internal.analytics;
 
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.Relation;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -26,8 +31,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static ai.grakn.graql.Graql.var;
 
 /**
  * Some helper methods for MapReduce and vertex program.
@@ -106,5 +114,34 @@ public class Utility {
         Map<K, V> map = new HashMap<>();
         keyValues.forEachRemaining(pair -> map.put(pair.getKey(), pair.getValue()));
         return map;
+    }
+
+    /**
+     * Check whether it is possible that there is a resource edge between the two given concepts.
+     */
+    public static boolean mayHaveResourceEdge(GraknGraph graknGraph, ConceptId conceptId1, ConceptId conceptId2) {
+        Concept concept1 = graknGraph.getConcept(conceptId1);
+        Concept concept2 = graknGraph.getConcept(conceptId2);
+        return concept1 != null && concept2 != null && (concept1.isResource() || concept2.isResource());
+    }
+
+    /**
+     * Get the resource edge id if there is one. Return null if not.
+     */
+    public static ConceptId getResourceEdgeId(GraknGraph graph, ConceptId conceptId1, ConceptId conceptId2) {
+        if (mayHaveResourceEdge(graph, conceptId1, conceptId2)) {
+            List<Answer> answers = graph.graql().match(
+                    var("x").id(conceptId1),
+                    var("y").id(conceptId2),
+                    var("z").rel(var("x")).rel(var("y"))
+            ).select("z").execute();
+            for (Answer answer : answers) {
+                Relation concept = (Relation) answer.concepts().iterator().next();
+                if (concept.type().isImplicit()) {
+                    return concept.getId();
+                }
+            }
+        }
+        return null;
     }
 }
