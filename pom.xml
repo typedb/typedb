@@ -30,7 +30,7 @@
     <description>A distributed semantic graph database.</description>
     <url>https://grakn.ai/pages/platform/index.html</url>
     <modules>
-        <module>grakn-graph</module>
+        <module>grakn-kb</module>
         <module>grakn-graql</module>
         <module>grakn-graql-shell</module>
         <module>grakn-engine</module>

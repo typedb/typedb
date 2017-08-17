@@ -259,7 +259,7 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
                 ruleType1.sup(ruleType2);
                 summary(ruleType1, "superType", ruleType2);
             },
-            //TODO: re-enable when grakn-graph can create graql constructs
+            //TODO: re-enable when grakn-kb can create graql constructs
             /*() -> {
                 RuleType ruleType = ruleType();
                 Rule rule = ruleType.putRule(graql.parsePattern("$x"), graql.parsePattern("$x"));// TODO: generate more complicated rules
@@ -356,7 +356,7 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
         return chooseOrThrow((Stream<Attribute>) graph.admin().getMetaResourceType().instances());
     }
 
-    //TODO: re-enable when grakn-graph can create graql constructs
+    //TODO: re-enable when grakn-kb can create graql constructs
 //    private Rule rule() {
 //        return chooseOrThrow(graph.admin().getMetaRuleType().instances());
 //    }
