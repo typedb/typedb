@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -26,8 +27,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -187,10 +187,10 @@ public class MatchQueryTest {
     // This is a graph to contain unusual edge cases
     @ClassRule
     public static final GraphContext weirdGraph = GraphContext.preLoad(graph -> {
-        ResourceType<String> weirdLoopType = graph.putResourceType("name", ResourceType.DataType.STRING);
-        weirdLoopType.resource(weirdLoopType);
-        Resource<String> weird = weirdLoopType.putResource("weird");
-        weird.resource(weird);
+        AttributeType<String> weirdLoopType = graph.putAttributeType("name", AttributeType.DataType.STRING);
+        weirdLoopType.attribute(weirdLoopType);
+        Attribute<String> weird = weirdLoopType.putAttribute("weird");
+        weird.attribute(weird);
     });
 
     @Rule
@@ -276,7 +276,7 @@ public class MatchQueryTest {
         query.forEach(result -> {
             Concept cx = result.get(x);
             Concept cy = result.get(y);
-            assertEquals(cx.asResource().getValue(), cy.asResource().getValue());
+            assertEquals(cx.asAttribute().getValue(), cy.asAttribute().getValue());
         });
     }
 
@@ -290,7 +290,7 @@ public class MatchQueryTest {
         query.forEach(result -> {
             Concept x = result.get("x");
             Concept y = result.get("y");
-            assertEquals(x.asResource().getValue(), y.asResource().getValue());
+            assertEquals(x.asAttribute().getValue(), y.asAttribute().getValue());
         });
     }
 
@@ -491,7 +491,7 @@ public class MatchQueryTest {
 
     @Test
     public void testIsResource() {
-        MatchQuery query = qb.match(x.isa("resource")).limit(10);
+        MatchQuery query = qb.match(x.isa(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue())).limit(10);
 
         assertThat(query.execute(), hasSize(10));
         assertThat(query, variable("x", everyItem(hasType(resource))));
@@ -577,19 +577,19 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchDataType() {
-        MatchQuery query = qb.match(x.datatype(ResourceType.DataType.DOUBLE));
+        MatchQuery query = qb.match(x.datatype(AttributeType.DataType.DOUBLE));
         assertThat(query, variable("x", contains(tmdbVoteAverage)));
 
-        query = qb.match(x.datatype(ResourceType.DataType.LONG));
+        query = qb.match(x.datatype(AttributeType.DataType.LONG));
         assertThat(query, variable("x", containsInAnyOrder(tmdbVoteCount, runtime)));
 
-        query = qb.match(x.datatype(ResourceType.DataType.BOOLEAN));
+        query = qb.match(x.datatype(AttributeType.DataType.BOOLEAN));
         assertThat(query, variable("x", empty()));
 
-        query = qb.match(x.datatype(ResourceType.DataType.STRING));
+        query = qb.match(x.datatype(AttributeType.DataType.STRING));
 
         assertThat(query, variable("x", containsInAnyOrder(title, gender, realName, name)));
-        query = qb.match(x.datatype(ResourceType.DataType.DATE));
+        query = qb.match(x.datatype(AttributeType.DataType.DATE));
         assertThat(query, variable("x", contains(releaseDate)));
     }
 
@@ -762,8 +762,8 @@ public class MatchQueryTest {
         assertThat(results, hasSize(greaterThan(10)));
 
         results.forEach(result -> {
-            Comparable x = (Comparable) result.get("x").asResource().getValue();
-            Comparable y = (Comparable) result.get("y").asResource().getValue();
+            Comparable x = (Comparable) result.get("x").asAttribute().getValue();
+            Comparable y = (Comparable) result.get("y").asAttribute().getValue();
             assertThat(x, greaterThan(y));
         });
     }
@@ -801,20 +801,20 @@ public class MatchQueryTest {
         assertThat(results, hasSize(greaterThan(5)));
 
         results.forEach(result -> {
-            Comparable x = (Comparable) result.get("x").asResource().getValue();
-            Comparable y = (Comparable) result.get("y").asResource().getValue();
+            Comparable x = (Comparable) result.get("x").asAttribute().getValue();
+            Comparable y = (Comparable) result.get("y").asAttribute().getValue();
             assertThat(x, lessThanOrEqualTo(y));
         });
     }
 
     @Test
     public void testMatchAllResourcesUsingResourceName() {
-        MatchQuery query = qb.match(var().has("title", "Godfather").has("resource", x));
+        MatchQuery query = qb.match(var().has("title", "Godfather").has(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue(), x));
 
-        Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
-        Set<Resource<?>> expected = godfather.resources().collect(toSet());
+        Thing godfather = movieGraph.graph().getAttributeType("title").getAttribute("Godfather").owner();
+        Set<Attribute<?>> expected = godfather.attributes().collect(toSet());
 
-        Set<Resource<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
+        Set<Attribute<?>> results = query.get("x").map(Concept::asAttribute).collect(toSet());
 
         assertEquals(expected, results);
     }
@@ -833,7 +833,7 @@ public class MatchQueryTest {
 
     @Test
     public void testLookupResourcesOnId() {
-        Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = movieGraph.graph().getAttributeType("title").getAttribute("Godfather").owner();
         ConceptId id = godfather.getId();
         MatchQuery query = qb.match(var().id(id).has("title", x));
 

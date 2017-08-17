@@ -68,7 +68,7 @@ qb.match(var("x").isa("person")).aggregate(count());
 
 ### Sum
 
-Sum the given resource variable.
+Sum the given attribute variable.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell2" data-toggle="tab">Graql</a></li>
@@ -92,7 +92,7 @@ qb.match(
 
 ### Max
 
-Find the maximum of the given resource variable.
+Find the maximum of the given attribute variable.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell3" data-toggle="tab">Graql</a></li>
@@ -116,7 +116,7 @@ qb.match(
 
 ### Min
 
-Find the minimum of the given resource variable.
+Find the minimum of the given attribute variable.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell4" data-toggle="tab">Graql</a></li>
@@ -140,7 +140,7 @@ qb.match(
 
 ### Mean
 
-Find the mean (average) of the given resource variable.
+Find the mean (average) of the given attribute variable.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell5" data-toggle="tab">Graql</a></li>
@@ -164,7 +164,7 @@ qb.match(
 
 ### Median
 
-Find the median of the given resource variable.
+Find the median of the given attribute variable.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell6" data-toggle="tab">Graql</a></li>
@@ -244,7 +244,7 @@ qb.match(
 
 Aggregate queries are computationally light and run single-threaded on a single machine, but are more flexible than the equivalent [compute query](./compute-queries.html).
 
-For example, you can use an aggregate query to filter results by resource. The following  aggregate query, allows you to match the number of people of a particular name:
+For example, you can use an aggregate query to filter results by attribute. The following  aggregate query, allows you to match the number of people of a particular name:
 
 ```graql
 match $x has identifier contains "Elizabeth"; aggregate count;

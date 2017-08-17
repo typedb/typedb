@@ -21,6 +21,8 @@ package ai.grakn.graph.internal;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
@@ -29,8 +31,6 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
@@ -41,6 +41,7 @@ import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.cache.GraphCache;
 import ai.grakn.graph.internal.cache.TxCache;
+import ai.grakn.graph.internal.concept.AttributeImpl;
 import ai.grakn.graph.internal.concept.ConceptImpl;
 import ai.grakn.graph.internal.concept.ConceptVertex;
 import ai.grakn.graph.internal.concept.ElementFactory;
@@ -48,7 +49,6 @@ import ai.grakn.graph.internal.concept.RelationshipImpl;
 import ai.grakn.graph.internal.concept.SchemaConceptImpl;
 import ai.grakn.graph.internal.concept.RelationshipEdge;
 import ai.grakn.graph.internal.concept.RelationshipReified;
-import ai.grakn.graph.internal.concept.ResourceImpl;
 import ai.grakn.graph.internal.concept.TypeImpl;
 import ai.grakn.graph.internal.structure.EdgeElement;
 import ai.grakn.graph.internal.structure.VertexElement;
@@ -262,7 +262,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             VertexElement type = addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
             VertexElement entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
             VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATIONSHIP.getId(), Schema.MetaSchema.RELATIONSHIP.getLabel(), Schema.BaseType.RELATIONSHIP_TYPE);
-            VertexElement resourceType = addTypeVertex(Schema.MetaSchema.RESOURCE.getId(), Schema.MetaSchema.RESOURCE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
+            VertexElement resourceType = addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
             VertexElement role = addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
             VertexElement ruleType = addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
             VertexElement inferenceRuleType = addTypeVertex(Schema.MetaSchema.INFERENCE_RULE.getId(), Schema.MetaSchema.INFERENCE_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
@@ -521,25 +521,25 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public <V> ResourceType<V> putResourceType(String label, ResourceType.DataType<V> dataType) {
-        return putResourceType(Label.of(label), dataType);
+    public <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType) {
+        return putAttributeType(Label.of(label), dataType);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <V> ResourceType<V> putResourceType(Label label, ResourceType.DataType<V> dataType) {
+    public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
-        ResourceType<V> resourceType = putOntologyElement(label, Schema.BaseType.RESOURCE_TYPE,
+        AttributeType<V> attributeType = putOntologyElement(label, Schema.BaseType.ATTRIBUTE_TYPE,
                 v -> factory().buildResourceType(v, getMetaResourceType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
             throw GraphOperationException.metaTypeImmutable(label);
-        } else if (!dataType.equals(resourceType.getDataType())) {
-            throw GraphOperationException.immutableProperty(resourceType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+        } else if (!dataType.equals(attributeType.getDataType())) {
+            throw GraphOperationException.immutableProperty(attributeType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE);
         }
 
-        return resourceType;
+        return attributeType;
     }
 
     @Override
@@ -592,26 +592,26 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public <V> Collection<Resource<V>> getResourcesByValue(V value) {
+    public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
         if (value == null) return Collections.emptySet();
 
         //Make sure you trying to retrieve supported data type
-        if (!ResourceType.DataType.SUPPORTED_TYPES.containsKey(value.getClass().getName())) {
+        if (!AttributeType.DataType.SUPPORTED_TYPES.containsKey(value.getClass().getName())) {
             throw GraphOperationException.unsupportedDataType(value);
         }
 
-        HashSet<Resource<V>> resources = new HashSet<>();
-        ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName());
+        HashSet<Attribute<V>> attributes = new HashSet<>();
+        AttributeType.DataType dataType = AttributeType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName());
 
         //noinspection unchecked
         getConcepts(dataType.getVertexProperty(), dataType.getPersistenceValue(value)).forEach(concept -> {
-            if (concept != null && concept.isResource()) {
+            if (concept != null && concept.isAttribute()) {
                 //noinspection unchecked
-                resources.add(concept.asResource());
+                attributes.add(concept.asAttribute());
             }
         });
 
-        return resources;
+        return attributes;
     }
 
     @Override
@@ -635,8 +635,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public <V> ResourceType<V> getResourceType(String label) {
-        return getOntologyConcept(Label.of(label), Schema.BaseType.RESOURCE_TYPE);
+    public <V> AttributeType<V> getAttributeType(String label) {
+        return getOntologyConcept(Label.of(label), Schema.BaseType.ATTRIBUTE_TYPE);
     }
 
     @Override
@@ -665,8 +665,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public ResourceType getMetaResourceType() {
-        return getOntologyConcept(Schema.MetaSchema.RESOURCE.getId());
+    public AttributeType getMetaResourceType() {
+        return getOntologyConcept(Schema.MetaSchema.ATTRIBUTE.getId());
     }
 
     @Override
@@ -795,7 +795,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         validateGraph();
 
         boolean submissionNeeded = !txCache().getShardingCount().isEmpty() ||
-                !txCache().getModifiedResources().isEmpty();
+                !txCache().getModifiedAttributes().isEmpty();
         Json conceptLog = txCache().getFormattedLog();
 
         LOG.trace("Graph is valid. Committing graph . . . ");
@@ -876,7 +876,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public boolean duplicateResourcesExist(String index, Set<ConceptId> resourceVertexIds) {
         //This is done to ensure we merge into the indexed casting.
-        ResourceImpl<?> mainResource = getConcept(Schema.VertexProperty.INDEX, index);
+        AttributeImpl<?> mainResource = getConcept(Schema.VertexProperty.INDEX, index);
         return getDuplicates(mainResource, resourceVertexIds).size() > 0;
     }
 
@@ -887,19 +887,19 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds) {
         //This is done to ensure we merge into the indexed casting.
-        ResourceImpl<?> mainResource = this.getConcept(Schema.VertexProperty.INDEX, index);
-        Set<ResourceImpl> duplicates = getDuplicates(mainResource, resourceVertexIds);
+        AttributeImpl<?> mainResource = this.getConcept(Schema.VertexProperty.INDEX, index);
+        Set<AttributeImpl> duplicates = getDuplicates(mainResource, resourceVertexIds);
 
         if (duplicates.size() > 0) {
             //Remove any resources associated with this index that are not the main resource
-            for (Resource otherResource : duplicates) {
-                Stream<Relationship> otherRelations = otherResource.relations();
+            for (Attribute otherAttribute : duplicates) {
+                Stream<Relationship> otherRelations = otherAttribute.relations();
 
                 //Copy the actual relation
-                otherRelations.forEach(otherRelation -> copyRelation(mainResource, otherResource, otherRelation));
+                otherRelations.forEach(otherRelation -> copyRelation(mainResource, otherAttribute, otherRelation));
 
                 //Delete the node
-                ResourceImpl.from(otherResource).deleteNode();
+                AttributeImpl.from(otherAttribute).deleteNode();
             }
 
             //Restore the index
@@ -919,7 +919,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      * @param other         The other instance which already posses the relation
      * @param otherRelationship The other relation to potentially be absorbed
      */
-    private void copyRelation(Resource main, Resource other, Relationship otherRelationship) {
+    private void copyRelation(Attribute main, Attribute other, Relationship otherRelationship) {
         //Gets the other resource index and replaces all occurrences of the other resource id with the main resource id
         //This allows us to find relations far more quickly.
         Optional<RelationshipReified> reifiedRelation = ((RelationshipImpl) otherRelationship).reified();
@@ -934,7 +934,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     /**
      * Copy a relation which has been reified - {@link RelationshipReified}
      */
-    private void copyRelation(Resource main, Resource other, Relationship otherRelationship, RelationshipReified reifiedRelation) {
+    private void copyRelation(Attribute main, Attribute other, Relationship otherRelationship, RelationshipReified reifiedRelation) {
         String newIndex = reifiedRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
         Relationship foundRelationship = txCache().getCachedRelation(newIndex);
         if (foundRelationship == null) foundRelationship = getConcept(Schema.VertexProperty.INDEX, newIndex);
@@ -959,7 +959,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     /**
      * Copy a relation which is an edge - {@link RelationshipEdge}
      */
-    private void copyRelation(Resource main, Resource other, Relationship otherRelationship, RelationshipEdge relationEdge) {
+    private void copyRelation(Attribute main, Attribute other, Relationship otherRelationship, RelationshipEdge relationEdge) {
         ConceptVertex newOwner;
         ConceptVertex newValue;
 

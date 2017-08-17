@@ -148,9 +148,9 @@ public class ResourceAtom extends Binary{
     public PatternAdmin getCombinedPattern() {
         Set<VarPatternAdmin> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
-                .map(PatternAdmin::asVar)
+                .map(PatternAdmin::asVarPattern)
                 .collect(Collectors.toSet());
-        vars.add(super.getPattern().asVar());
+        vars.add(super.getPattern().asVarPattern());
         return Patterns.conjunction(vars);
     }
 
@@ -209,7 +209,7 @@ public class ResourceAtom extends Binary{
         }
 
         Set<String> errors = new HashSet<>();
-        if (!type.isResourceType()){
+        if (!type.isAttributeType()){
             errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage(type.getLabel()));
             return errors;
         }
@@ -218,7 +218,7 @@ public class ResourceAtom extends Binary{
 
         if (ownerType != null
                 && ownerType.isType()
-                && ownerType.asType().resources().noneMatch(rt -> rt.equals(type.asResourceType()))){
+                && ownerType.asType().attributes().noneMatch(rt -> rt.equals(type.asAttributeType()))){
             errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(type.getLabel(), ownerType.getLabel()));
         }
         return errors;
@@ -257,7 +257,7 @@ public class ResourceAtom extends Binary{
                     VarPatternAdmin inner = vp.getInnerVar().orElse(null);
                     //variable mapped inside the query
                     if (subbedVars.contains(getVarName())
-                        || subbedVars.contains(inner.getVarName())
+                        || subbedVars.contains(inner.var())
                             && !isSuperNode()) {
                         vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
                     } //variable equality

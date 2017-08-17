@@ -22,8 +22,8 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
@@ -336,13 +336,13 @@ public class RuleTest {
     }
     
     private void initGraph(GraknTx graph){
-        ResourceType<Integer> res1 = graph.putResourceType("res1", ResourceType.DataType.INTEGER);
+        AttributeType<Integer> res1 = graph.putAttributeType("res1", AttributeType.DataType.INTEGER);
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");
         Role role3 = graph.putRole("role3");
 
         graph.putEntityType("entity1")
-                .resource(res1)
+                .attribute(res1)
                 .plays(role1)
                 .plays(role2);
 

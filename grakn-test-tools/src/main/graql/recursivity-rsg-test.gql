@@ -32,7 +32,7 @@ person plays down-from, plays down-to;
 "flat" sub relationship, relates flat-to, relates flat-from;
 person plays flat-from, plays flat-to;
 
-"name" sub resource, datatype string;
+"name" sub attribute, datatype string;
 
 ####################################################
 ##################DATA#############################

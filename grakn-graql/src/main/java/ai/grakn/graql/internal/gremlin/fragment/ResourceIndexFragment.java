@@ -35,7 +35,7 @@ class ResourceIndexFragment extends AbstractFragment {
 
     ResourceIndexFragment(VarProperty varProperty, Var start, Label label, Object value) {
         super(varProperty, start);
-        this.resourceIndex = Schema.generateResourceIndex(label, value.toString());
+        this.resourceIndex = Schema.generateAttributeIndex(label, value.toString());
     }
 
     @Override

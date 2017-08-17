@@ -49,8 +49,8 @@ abstract class DisjunctionImpl<T extends PatternAdmin> extends AbstractPattern i
     }
 
     @Override
-    public Set<Var> commonVarNames() {
-        return getPatterns().stream().map(PatternAdmin::commonVarNames).reduce(Sets::intersection).orElse(ImmutableSet.of());
+    public Set<Var> commonVars() {
+        return getPatterns().stream().map(PatternAdmin::commonVars).reduce(Sets::intersection).orElse(ImmutableSet.of());
     }
 
     @Override

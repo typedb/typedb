@@ -33,7 +33,7 @@ import static ai.grakn.graql.Graql.var;
 /**
  * @author Felix Chapman
  */
-public class HasResourcePropertyTest {
+public class HasAttributePropertyTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

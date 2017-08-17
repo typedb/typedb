@@ -17,10 +17,10 @@
  */
 package ai.grakn.migration.export;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarPattern;
@@ -44,8 +44,8 @@ public class SchemaConceptMapper {
         VarPattern mapped = formatBase(schemaConcept);
         if (schemaConcept.isRelationshipType()) {
             mapped = map(mapped, schemaConcept.asRelationshipType());
-        } else if (schemaConcept.isResourceType()) {
-            mapped = map(mapped, schemaConcept.asResourceType());
+        } else if (schemaConcept.isAttributeType()) {
+            mapped = map(mapped, schemaConcept.asAttributeType());
         }
 
         return mapped;
@@ -62,13 +62,13 @@ public class SchemaConceptMapper {
     }
 
     /**
-     * Map a {@link ResourceType} to a {@link VarPattern} with the datatype
+     * Map a {@link AttributeType} to a {@link VarPattern} with the datatype
      * @param var holder var with basic information
-     * @param resourceType type to be mapped
-     * @return var with ResourceType specific metadata
+     * @param attributeType type to be mapped
+     * @return var with {@link AttributeType} specific metadata
      */
-    private static VarPattern map(VarPattern var, ResourceType resourceType) {
-        return datatype(var, resourceType);
+    private static VarPattern map(VarPattern var, AttributeType attributeType) {
+        return datatype(var, attributeType);
     }
 
     /**
@@ -134,8 +134,8 @@ public class SchemaConceptMapper {
      * @param type type from which metadata extracted
      * @return var with appropriate datatype
      */
-    private static VarPattern datatype(VarPattern var, ResourceType type) {
-        ResourceType.DataType dataType = type.getDataType();
+    private static VarPattern datatype(VarPattern var, AttributeType type) {
+        AttributeType.DataType dataType = type.getDataType();
         if (dataType != null) {
             return var.datatype(dataType);
         } else {

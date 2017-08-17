@@ -19,10 +19,10 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
@@ -60,8 +60,8 @@ import static java.util.stream.Collectors.joining;
  *
  * This property can be queried, inserted or deleted.
  *
- * The property is defined as a relationship between an {@link Thing} and a {@link Resource}, where the
- * {@link Resource} is of a particular type.
+ * The property is defined as a relationship between an {@link Thing} and a {@link Attribute}, where the
+ * {@link Attribute} is of a particular type.
  *
  * When matching, shortcut edges are used to speed up the traversal. The type of the relationship does not matter.
  *
@@ -93,8 +93,8 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
         repr.add(typeLabelToString(type()));
 
-        if (resource().getVarName().isUserDefinedName()) {
-            repr.add(resource().getVarName().toString());
+        if (resource().var().isUserDefinedName()) {
+            repr.add(resource().var().toString());
         } else {
             resource().getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.predicate().toString()));
         }
@@ -109,34 +109,34 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
         return ImmutableSet.of(
                 shortcut(this, relation, edge1, start, Optional.empty()),
-                shortcut(this, relation, edge2, resource().getVarName(), Optional.empty()),
+                shortcut(this, relation, edge2, resource().var(), Optional.empty()),
                 neq(this, edge1, edge2)
         );
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.of(resource());
     }
 
     @Override
     void checkValidProperty(GraknTx graph, VarPatternAdmin var) {
         SchemaConcept ontologyConcept = graph.getSchemaConcept(type());
-        if(ontologyConcept == null || !ontologyConcept.isResourceType()) {
+        if(ontologyConcept == null || !ontologyConcept.isAttributeType()) {
             throw GraqlQueryException.mustBeResourceType(type());
         }
     }
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Resource resourceConcept = executor.get(resource().getVarName()).asResource();
+        Attribute attributeConcept = executor.get(resource().var()).asAttribute();
         Thing thing = executor.get(var).asThing();
-        thing.resource(resourceConcept);
+        thing.attribute(attributeConcept);
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, resource().getVarName());
+        return ImmutableSet.of(var, resource().var());
     }
 
     @Override
@@ -153,7 +153,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     }
 
     private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relationship relationship, Role resourceRole) {
-        Object value = relationship.rolePlayers(resourceRole).iterator().next().asResource().getValue();
+        Object value = relationship.rolePlayers(resourceRole).iterator().next().asAttribute().getValue();
 
         return optPredicate
                 .flatMap(ValuePredicateAdmin::getPredicate)
@@ -168,11 +168,11 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName().asUserDefined();
+        Var varName = var.var().asUserDefined();
 
         Label type = this.type();
         VarPatternAdmin resource = this.resource();
-        Var resourceVariable = resource.getVarName().asUserDefined();
+        Var resourceVariable = resource.var().asUserDefined();
         Set<ValuePredicate> predicates = getValuePredicates(resourceVariable, resource, vars, parent);
 
         IsaProperty isaProp = resource.getProperties(IsaProperty.class).findFirst().orElse(null);

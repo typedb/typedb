@@ -17,7 +17,7 @@ entity2 plays parent, plays child;
 "SameGen" sub relationship, relates SG-role;
 entity2 plays SG-role;
 
-"name" sub resource, datatype string;
+"name" sub attribute, datatype string;
 
 ####################################################
 ##################DATA#############################

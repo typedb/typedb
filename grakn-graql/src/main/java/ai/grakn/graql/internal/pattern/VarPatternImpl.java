@@ -40,7 +40,7 @@ abstract class VarPatternImpl extends AbstractVarPattern {
     protected final Logger LOG = LoggerFactory.getLogger(VarPatternImpl.class);
 
     @Override
-    public abstract Var getVarName();
+    public abstract Var var();
 
     @Override
     protected abstract Set<VarProperty> properties();
@@ -53,13 +53,13 @@ abstract class VarPatternImpl extends AbstractVarPattern {
 
         AbstractVarPattern var = (AbstractVarPattern) o;
 
-        if (getVarName().isUserDefinedName() != var.getVarName().isUserDefinedName()) return false;
+        if (var().isUserDefinedName() != var.var().isUserDefinedName()) return false;
 
         // "simplifying" this makes it harder to read
         //noinspection SimplifiableIfStatement
         if (!properties().equals(var.properties())) return false;
 
-        return !getVarName().isUserDefinedName() || getVarName().equals(var.getVarName());
+        return !var().isUserDefinedName() || var().equals(var.var());
 
     }
 
@@ -67,18 +67,18 @@ abstract class VarPatternImpl extends AbstractVarPattern {
     public final int hashCode() {
         // This hashCode implementation is special: it considers all non-user-defined vars as equivalent
         int result = properties().hashCode();
-        if (getVarName().isUserDefinedName()) result = 31 * result + getVarName().hashCode();
-        result = 31 * result + (getVarName().isUserDefinedName() ? 1 : 0);
+        if (var().isUserDefinedName()) result = 31 * result + var().hashCode();
+        result = 31 * result + (var().isUserDefinedName() ? 1 : 0);
         return result;
     }
 
     @Override
     public final String toString() {
-        Collection<VarPatternAdmin> innerVars = getInnerVars();
+        Collection<VarPatternAdmin> innerVars = innerVarPatterns();
         innerVars.remove(this);
         getProperties(HasResourceProperty.class)
                 .map(HasResourceProperty::resource)
-                .flatMap(r -> r.getInnerVars().stream())
+                .flatMap(r -> r.innerVarPatterns().stream())
                 .forEach(innerVars::remove);
 
         if (innerVars.stream().anyMatch(VarPatternImpl::invalidInnerVariable)) {
@@ -87,11 +87,11 @@ abstract class VarPatternImpl extends AbstractVarPattern {
 
         StringBuilder builder = new StringBuilder();
 
-        String name = getVarName().isUserDefinedName() ? getVarName().toString() : "";
+        String name = var().isUserDefinedName() ? var().toString() : "";
 
         builder.append(name);
 
-        if (getVarName().isUserDefinedName() && !properties().isEmpty()) {
+        if (var().isUserDefinedName() && !properties().isEmpty()) {
             // Add a space after the var name
             builder.append(" ");
         }

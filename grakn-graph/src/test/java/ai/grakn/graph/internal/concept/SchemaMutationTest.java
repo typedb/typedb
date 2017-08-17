@@ -20,11 +20,11 @@ package ai.grakn.graph.internal.concept;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
@@ -136,7 +136,7 @@ public class SchemaMutationTest extends GraphTestBase {
         expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
-        graknGraphBatch.putResourceType("This Will Fail", ResourceType.DataType.STRING);
+        graknGraphBatch.putAttributeType("This Will Fail", AttributeType.DataType.STRING);
     }
 
     @Test
@@ -248,16 +248,16 @@ public class SchemaMutationTest extends GraphTestBase {
     @Test
     public void whenAddingResourceToSubTypeOfEntityType_EnsureNoValidationErrorsOccur(){
         //Create initial Ontology
-        ResourceType<String> name = graknGraph.putResourceType("name", ResourceType.DataType.STRING);
-        EntityType person = graknGraph.putEntityType("perspn").resource(name);
+        AttributeType<String> name = graknGraph.putAttributeType("name", AttributeType.DataType.STRING);
+        EntityType person = graknGraph.putEntityType("perspn").attribute(name);
         EntityType animal = graknGraph.putEntityType("animal").sup(person);
-        Resource bob = name.putResource("Bob");
-        person.addEntity().resource(bob);
+        Attribute bob = name.putAttribute("Bob");
+        person.addEntity().attribute(bob);
         graknGraph.commit();
 
         //Now make animal have the same resource type
         graknGraph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
-        animal.resource(name);
+        animal.attribute(name);
         graknGraph.commit();
     }
 
@@ -280,18 +280,18 @@ public class SchemaMutationTest extends GraphTestBase {
 
     @Test
     public void whenChangingTheSuperTypeOfAnEntityTypeWhichHasAResource_EnsureTheResourceIsStillAccessibleViaTheRelationTypeInstances_ByPreventingChange(){
-        ResourceType<String> name = graknGraph.putResourceType("name", ResourceType.DataType.STRING);
+        AttributeType<String> name = graknGraph.putAttributeType("name", AttributeType.DataType.STRING);
 
         //Create a person and allow person to have a name
-        EntityType person = graknGraph.putEntityType("person").resource(name);
+        EntityType person = graknGraph.putEntityType("person").attribute(name);
 
         //Create a man which is a person and is therefore allowed to have a name
         EntityType man = graknGraph.putEntityType("man").sup(person);
         RelationshipType has_name = graknGraph.putRelationshipType("has-name");
 
         //Create a Man and name him Bob
-        Resource<String> nameBob = name.putResource("Bob");
-        man.addEntity().resource(nameBob);
+        Attribute<String> nameBob = name.putAttribute("Bob");
+        man.addEntity().attribute(nameBob);
 
         //Get The Relationship which says that our man is name bob
         Relationship expectedEdge = Iterables.getOnlyElement(has_name.instances().collect(toSet()));

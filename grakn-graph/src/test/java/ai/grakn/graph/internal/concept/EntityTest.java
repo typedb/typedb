@@ -18,14 +18,14 @@
 
 package ai.grakn.graph.internal.concept;
 
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraphOperationException;
@@ -109,49 +109,49 @@ public class EntityTest extends GraphTestBase {
 
     @Test
     public void whenAddingResourceToAnEntity_EnsureTheImplicitStructureIsCreated(){
-        Label resourceLabel = Label.of("A Resource Thing");
+        Label resourceLabel = Label.of("A Attribute Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        ResourceType<String> resourceType = graknGraph.putResourceType(resourceLabel, ResourceType.DataType.STRING);
-        entityType.resource(resourceType);
+        AttributeType<String> attributeType = graknGraph.putAttributeType(resourceLabel, AttributeType.DataType.STRING);
+        entityType.attribute(attributeType);
 
         Entity entity = entityType.addEntity();
-        Resource resource = resourceType.putResource("A resource thing");
+        Attribute attribute = attributeType.putAttribute("A attribute thing");
 
-        entity.resource(resource);
+        entity.attribute(attribute);
         Relationship relationship = entity.relations().iterator().next();
 
-        checkImplicitStructure(resourceType, relationship, entity, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_OWNER, Schema.ImplicitType.HAS_VALUE);
+        checkImplicitStructure(attributeType, relationship, entity, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_OWNER, Schema.ImplicitType.HAS_VALUE);
     }
 
     @Test
     public void whenAddingResourceToEntityWithoutAllowingItBetweenTypes_Throw(){
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
+        AttributeType<String> attributeType = graknGraph.putAttributeType("A Attribute Thing", AttributeType.DataType.STRING);
 
         Entity entity = entityType.addEntity();
-        Resource resource = resourceType.putResource("A resource thing");
+        Attribute attribute = attributeType.putAttribute("A attribute thing");
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.hasNotAllowed(entity, resource).getMessage());
+        expectedException.expectMessage(GraphOperationException.hasNotAllowed(entity, attribute).getMessage());
 
-        entity.resource(resource);
+        entity.attribute(attribute);
     }
 
     @Test
     public void whenAddingMultipleResourcesToEntity_EnsureDifferentRelationsAreBuilt() throws InvalidGraphException {
-        String resourceTypeId = "A Resource Thing";
+        String resourceTypeId = "A Attribute Thing";
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
-        entityType.resource(resourceType);
+        AttributeType<String> attributeType = graknGraph.putAttributeType(resourceTypeId, AttributeType.DataType.STRING);
+        entityType.attribute(attributeType);
 
         Entity entity = entityType.addEntity();
-        Resource resource1 = resourceType.putResource("A resource thing");
-        Resource resource2 = resourceType.putResource("Another resource thing");
+        Attribute attribute1 = attributeType.putAttribute("A resource thing");
+        Attribute attribute2 = attributeType.putAttribute("Another resource thing");
 
         assertEquals(0, entity.relations().count());
-        entity.resource(resource1);
+        entity.attribute(attribute1);
         assertEquals(1, entity.relations().count());
-        entity.resource(resource2);
+        entity.attribute(attribute2);
         assertEquals(2, entity.relations().count());
 
         graknGraph.commit();
@@ -159,26 +159,26 @@ public class EntityTest extends GraphTestBase {
 
     @Test
     public void checkKeyCreatesCorrectResourceStructure(){
-        Label resourceLabel = Label.of("A Resource Thing");
+        Label resourceLabel = Label.of("A Attribute Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        ResourceType<String> resourceType = graknGraph.putResourceType(resourceLabel, ResourceType.DataType.STRING);
-        entityType.key(resourceType);
+        AttributeType<String> attributeType = graknGraph.putAttributeType(resourceLabel, AttributeType.DataType.STRING);
+        entityType.key(attributeType);
 
         Entity entity = entityType.addEntity();
-        Resource resource = resourceType.putResource("A resource thing");
+        Attribute attribute = attributeType.putAttribute("A attribute thing");
 
-        entity.resource(resource);
+        entity.attribute(attribute);
         Relationship relationship = entity.relations().iterator().next();
 
-        checkImplicitStructure(resourceType, relationship, entity, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_OWNER, Schema.ImplicitType.KEY_VALUE);
+        checkImplicitStructure(attributeType, relationship, entity, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_OWNER, Schema.ImplicitType.KEY_VALUE);
     }
 
     @Test
     public void whenCreatingAnEntityAndNotLinkingARequiredKey_Throw() throws InvalidGraphException {
-        String resourceTypeId = "A Resource Thing";
+        String resourceTypeId = "A Attribute Thing";
         EntityType entityType = graknGraph.putEntityType("A Thing");
-        ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
-        entityType.key(resourceType);
+        AttributeType<String> attributeType = graknGraph.putAttributeType(resourceTypeId, AttributeType.DataType.STRING);
+        entityType.key(attributeType);
 
         Entity entity = entityType.addEntity();
 
@@ -187,17 +187,17 @@ public class EntityTest extends GraphTestBase {
         graknGraph.commit();
     }
 
-    private void checkImplicitStructure(ResourceType<?> resourceType, Relationship relationship, Entity entity, Schema.ImplicitType has, Schema.ImplicitType hasOwner, Schema.ImplicitType hasValue){
+    private void checkImplicitStructure(AttributeType<?> attributeType, Relationship relationship, Entity entity, Schema.ImplicitType has, Schema.ImplicitType hasOwner, Schema.ImplicitType hasValue){
         assertEquals(2, relationship.allRolePlayers().size());
-        assertEquals(has.getLabel(resourceType.getLabel()), relationship.type().getLabel());
+        assertEquals(has.getLabel(attributeType.getLabel()), relationship.type().getLabel());
         relationship.allRolePlayers().entrySet().forEach(entry -> {
             Role role = entry.getKey();
             assertEquals(1, entry.getValue().size());
             entry.getValue().forEach(instance -> {
                 if(instance.equals(entity)){
-                    assertEquals(hasOwner.getLabel(resourceType.getLabel()), role.getLabel());
+                    assertEquals(hasOwner.getLabel(attributeType.getLabel()), role.getLabel());
                 } else {
-                    assertEquals(hasValue.getLabel(resourceType.getLabel()), role.getLabel());
+                    assertEquals(hasValue.getLabel(attributeType.getLabel()), role.getLabel());
                 }
             });
         });

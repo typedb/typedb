@@ -19,11 +19,11 @@
 package ai.grakn.test.graphs;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
 
@@ -36,14 +36,14 @@ import java.util.function.Consumer;
  */
 public class CWGraph extends TestGraph {
 
-    private static ResourceType<String> key;
+    private static AttributeType<String> key;
 
     private static EntityType person;
     private static EntityType weapon;
     private static EntityType rocket;
     private static EntityType country;
     
-    private static ResourceType<String> alignment, propulsion, nationality;
+    private static AttributeType<String> alignment, propulsion, nationality;
 
     private static RelationshipType isEnemyOf;
     private static RelationshipType isPaidBy;
@@ -62,12 +62,12 @@ public class CWGraph extends TestGraph {
 
     @Override
     protected void buildOntology(GraknTx graph) {
-        key = graph.putResourceType("name", ResourceType.DataType.STRING);
+        key = graph.putAttributeType("name", AttributeType.DataType.STRING);
 
         //Resources
-        nationality = graph.putResourceType("nationality", ResourceType.DataType.STRING);
-        propulsion = graph.putResourceType("propulsion", ResourceType.DataType.STRING);
-        alignment = graph.putResourceType("alignment", ResourceType.DataType.STRING);
+        nationality = graph.putAttributeType("nationality", AttributeType.DataType.STRING);
+        propulsion = graph.putAttributeType("propulsion", AttributeType.DataType.STRING);
+        alignment = graph.putAttributeType("alignment", AttributeType.DataType.STRING);
 
         //Roles
         owner = graph.putRole("item-owner");
@@ -84,31 +84,31 @@ public class CWGraph extends TestGraph {
         person = graph.putEntityType("person")
                 .plays(seller)
                 .plays(payee)
-                .resource(key)
-                .resource(nationality);
+                .attribute(key)
+                .attribute(nationality);
 
         graph.putEntityType("criminal")
                 .plays(seller)
                 .plays(payee)
-                .resource(key)
-                .resource(nationality);
+                .attribute(key)
+                .attribute(nationality);
 
         weapon = graph.putEntityType("weapon")
                 .plays(transactionItem)
                 .plays(ownedItem)
-                .resource(key);
+                .attribute(key);
 
         rocket = graph.putEntityType("rocket")
                 .plays(transactionItem)
                 .plays(ownedItem)
-                .resource(key)
-                .resource(propulsion);
+                .attribute(key)
+                .attribute(propulsion);
 
         graph.putEntityType("missile")
                 .sup(weapon)
                 .plays(transactionItem)
-                .resource(propulsion)
-                .resource(key);
+                .attribute(propulsion)
+                .attribute(key);
 
         country = graph.putEntityType("country")
                 .plays(buyer)
@@ -116,8 +116,8 @@ public class CWGraph extends TestGraph {
                 .plays(enemyTarget)
                 .plays(payer)
                 .plays(enemySource)
-                .resource(key)
-                .resource(alignment);
+                .attribute(key)
+                .attribute(alignment);
 
         //Relations
         owns = graph.putRelationshipType("owns")

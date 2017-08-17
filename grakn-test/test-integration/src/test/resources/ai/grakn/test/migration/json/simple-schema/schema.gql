@@ -19,11 +19,11 @@ insert
     has location
     has code;
 
-  code sub resource datatype long;
-  location sub resource datatype string;
-  number sub resource datatype long;
-  street sub resource datatype string;
-  city sub resource datatype string;
+  code sub attribute datatype long;
+  location sub attribute datatype string;
+  number sub attribute datatype long;
+  street sub attribute datatype string;
+  city sub attribute datatype string;
 
   person-with-address sub role;
   address-of-person sub role;

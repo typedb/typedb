@@ -96,7 +96,7 @@ public class GraqlPrinterTest {
     public void testResourceOutputNoResources() {
         Printer printer = Printers.graql(true);
 
-        Thing godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = rule.graph().getAttributeType("title").getAttribute("Godfather").owner();
 
         String repr = printer.graqlString(godfather);
 
@@ -111,10 +111,10 @@ public class GraqlPrinterTest {
     @Test
     public void testResourceOutputWithResource() {
         Printer printer = Printers.graql(
-                true, rule.graph().getResourceType("title"), rule.graph().getResourceType("tmdb-vote-count"), rule.graph().getResourceType("name")
+                true, rule.graph().getAttributeType("title"), rule.graph().getAttributeType("tmdb-vote-count"), rule.graph().getAttributeType("name")
         );
 
-        Thing godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = rule.graph().getAttributeType("title").getAttribute("Godfather").owner();
 
         String repr = printer.graqlString(godfather);
 

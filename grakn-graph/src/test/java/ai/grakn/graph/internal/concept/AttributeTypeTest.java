@@ -22,8 +22,8 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graph.internal.GraphTestBase;
 import org.hamcrest.CoreMatchers;
@@ -38,37 +38,37 @@ import static junit.framework.TestCase.assertNull;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 
-public class ResourceTypeTest extends GraphTestBase {
-    private ResourceType<String> resourceType;
+public class AttributeTypeTest extends GraphTestBase {
+    private AttributeType<String> attributeType;
 
 
     @Before
     public void buildGraph() {
-        resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        attributeType = graknGraph.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
     }
 
     @Test
     public void whenCreatingResourceTypeOfTypeString_DataTypeIsString() throws Exception {
-        assertEquals(ResourceType.DataType.STRING, resourceType.getDataType());
+        assertEquals(AttributeType.DataType.STRING, attributeType.getDataType());
     }
 
     @Test
     public void whenCreatingStringResourceTypeWithValidRegex_EnsureNoErrorsThrown(){
-        assertNull(resourceType.getRegex());
-        resourceType.setRegex("[abc]");
-        assertEquals(resourceType.getRegex(), "[abc]");
+        assertNull(attributeType.getRegex());
+        attributeType.setRegex("[abc]");
+        assertEquals(attributeType.getRegex(), "[abc]");
     }
 
     @Test
     public void whenCreatingStringResourceTypeWithInvalidRegex_Throw(){
-        assertNull(resourceType.getRegex());
+        assertNull(attributeType.getRegex());
         expectedException.expect(PatternSyntaxException.class);
-        resourceType.setRegex("[");
+        attributeType.setRegex("[");
     }
 
     @Test
     public void whenSettingRegexOnNonStringResourceType_Throw(){
-        ResourceType<Long> thing = graknGraph.putResourceType("Random ID", ResourceType.DataType.LONG);
+        AttributeType<Long> thing = graknGraph.putAttributeType("Random ID", AttributeType.DataType.LONG);
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.cannotSetRegex(thing).getMessage());
         thing.setRegex("blab");
@@ -76,57 +76,57 @@ public class ResourceTypeTest extends GraphTestBase {
 
     @Test
     public void whenAddingResourceWhichDoesNotMatchRegex_Throw(){
-        resourceType.setRegex("[abc]");
-        resourceType.putResource("a");
+        attributeType.setRegex("[abc]");
+        attributeType.putAttribute("a");
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(CoreMatchers.allOf(containsString("[abc]"), containsString("1"), containsString(resourceType.getLabel().getValue())));
-        resourceType.putResource("1");
+        expectedException.expectMessage(CoreMatchers.allOf(containsString("[abc]"), containsString("1"), containsString(attributeType.getLabel().getValue())));
+        attributeType.putAttribute("1");
     }
 
     @Test
     public void whenSettingRegexOnResourceTypeWithResourceNotMatchingRegex_Throw(){
-        resourceType.putResource("1");
+        attributeType.putAttribute("1");
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.regexFailure(resourceType, "1", "[abc]").getMessage());
-        resourceType.setRegex("[abc]");
+        expectedException.expectMessage(GraphOperationException.regexFailure(attributeType, "1", "[abc]").getMessage());
+        attributeType.setRegex("[abc]");
     }
 
     @Test
     public void whenGettingTheResourceFromAResourceType_ReturnTheResource(){
-        ResourceType<String> t1 = graknGraph.putResourceType("t1", ResourceType.DataType.STRING);
-        ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING);
+        AttributeType<String> t1 = graknGraph.putAttributeType("t1", AttributeType.DataType.STRING);
+        AttributeType<String> t2 = graknGraph.putAttributeType("t2", AttributeType.DataType.STRING);
 
-        Resource c1 = t1.putResource("1");
-        Resource c2 = t2.putResource("2");
+        Attribute c1 = t1.putAttribute("1");
+        Attribute c2 = t2.putAttribute("2");
 
-        assertEquals(c1, t1.getResource("1"));
-        assertNull(t1.getResource("2"));
+        assertEquals(c1, t1.getAttribute("1"));
+        assertNull(t1.getAttribute("2"));
 
-        assertEquals(c2, t2.getResource("2"));
-        assertNull(t2.getResource("1"));
+        assertEquals(c2, t2.getAttribute("2"));
+        assertNull(t2.getAttribute("1"));
     }
 
     @Test
     public void whenCreatingMultipleResourceTypesWithDifferentRegexes_EnsureAllRegexesAreChecked(){
-        ResourceType<String> t1 = graknGraph.putResourceType("t1", ResourceType.DataType.STRING).setRegex("[b]");
-        ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING).setRegex("[abc]").sup(t1);
+        AttributeType<String> t1 = graknGraph.putAttributeType("t1", AttributeType.DataType.STRING).setRegex("[b]");
+        AttributeType<String> t2 = graknGraph.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]").sup(t1);
 
-        //Valid Resource
-        Resource<String> resource = t2.putResource("b");
+        //Valid Attribute
+        Attribute<String> attribute = t2.putAttribute("b");
 
-        //Invalid Resource
+        //Invalid Attribute
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(CoreMatchers.allOf(containsString("[b]"), containsString("b"), containsString(resource.type().getLabel().getValue())));
-        t2.putResource("a");
+        expectedException.expectMessage(CoreMatchers.allOf(containsString("[b]"), containsString("b"), containsString(attribute.type().getLabel().getValue())));
+        t2.putAttribute("a");
     }
 
     @Test
     public void whenSettingTheSuperTypeOfAStringResourceType_EnsureAllRegexesAreAppliedToResources(){
-        ResourceType<String> t1 = graknGraph.putResourceType("t1", ResourceType.DataType.STRING).setRegex("[b]");
-        ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING).setRegex("[abc]");
+        AttributeType<String> t1 = graknGraph.putAttributeType("t1", AttributeType.DataType.STRING).setRegex("[b]");
+        AttributeType<String> t2 = graknGraph.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]");
 
         //Future Invalid
-        Resource<String> resource = t2.putResource("a");
+        Attribute<String> attribute = t2.putAttribute("a");
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.regexFailure(t2, "a", "[b]").getMessage());
@@ -135,9 +135,9 @@ public class ResourceTypeTest extends GraphTestBase {
 
     @Test
     public void whenSettingRegexOfSuperType_EnsureAllRegexesAreApplied(){
-        ResourceType<String> t1 = graknGraph.putResourceType("t1", ResourceType.DataType.STRING);
-        ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING).setRegex("[abc]").sup(t1);
-        Resource<String> resource = t2.putResource("a");
+        AttributeType<String> t1 = graknGraph.putAttributeType("t1", AttributeType.DataType.STRING);
+        AttributeType<String> t2 = graknGraph.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]").sup(t1);
+        Attribute<String> attribute = t2.putAttribute("a");
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.regexFailure(t1, "a", "[b]").getMessage());
@@ -154,8 +154,8 @@ public class ResourceTypeTest extends GraphTestBase {
         // now add the timezone to the graph
         try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "somethingmorerandom")) {
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-                ResourceType<LocalDateTime> aTime = graph.putResourceType("aTime", ResourceType.DataType.DATE);
-                aTime.putResource(rightNow);
+                AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.DataType.DATE);
+                aTime.putAttribute(rightNow);
                 graph.commit();
             }
         }
@@ -165,8 +165,8 @@ public class ResourceTypeTest extends GraphTestBase {
         // the colleague extracts the LocalTime which should be the same
         try (GraknSession session = Grakn.session(Grakn.IN_MEMORY, "somethingmorerandom")) {
             try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-                ResourceType aTime = graph.getResourceType("aTime");
-                LocalDateTime databaseTime = (LocalDateTime) ((Resource) aTime.instances().iterator().next()).getValue();
+                AttributeType aTime = graph.getAttributeType("aTime");
+                LocalDateTime databaseTime = (LocalDateTime) ((Attribute) aTime.instances().iterator().next()).getValue();
 
                 // localTime should not have changed as it should not be sensitive to timezone
                 assertEquals(rightNow, databaseTime);

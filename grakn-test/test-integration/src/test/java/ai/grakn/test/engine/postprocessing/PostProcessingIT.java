@@ -21,10 +21,10 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.manager.TaskState;
@@ -67,7 +67,7 @@ public class PostProcessingIT {
         int transactionSize = 50;
         int numAttempts = 200;
 
-        //Resource Variables
+        //Attribute Variables
         int numResTypes = 100;
         int numResVar = 100;
 
@@ -88,9 +88,9 @@ public class PostProcessingIT {
             }
 
             for (int i = 0; i < numResTypes; i++) {
-                ResourceType<Integer> rt = graph.putResourceType("res" + i, ResourceType.DataType.INTEGER);
+                AttributeType<Integer> rt = graph.putAttributeType("res" + i, AttributeType.DataType.INTEGER);
                 for (int j = 0; j < numEntTypes; j++) {
-                    graph.getEntityType("ent" + j).resource(rt);
+                    graph.getEntityType("ent" + j).attribute(rt);
                 }
             }
 
@@ -146,9 +146,9 @@ public class PostProcessingIT {
         try(GraknTx graph = session.open(GraknTxType.WRITE)) {
             //Check the resource indices are working
             graph.admin().getMetaResourceType().instances().forEach(object -> {
-                Resource resource = (Resource) object;
-                String index = Schema.generateResourceIndex(resource.type().getLabel(), resource.getValue().toString());
-                assertEquals(resource, ((GraknTxAbstract<?>) graph).getConcept(Schema.VertexProperty.INDEX, index));
+                Attribute attribute = (Attribute) object;
+                String index = Schema.generateAttributeIndex(attribute.type().getLabel(), attribute.getValue().toString());
+                assertEquals(attribute, ((GraknTxAbstract<?>) graph).getConcept(Schema.VertexProperty.INDEX, index));
             });
         }
     }
@@ -156,15 +156,15 @@ public class PostProcessingIT {
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     private boolean graphIsBroken(GraknSession session){
         try(GraknTx graph = session.open(GraknTxType.WRITE)) {
-            Stream<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subs();
+            Stream<AttributeType<?>> resourceTypes = graph.admin().getMetaResourceType().subs();
             return resourceTypes.anyMatch(resourceType -> {
-                if (!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
+                if (!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(resourceType.getLabel())) {
                     Set<Integer> foundValues = new HashSet<>();
-                    for (Resource<?> resource : resourceType.instances().collect(Collectors.toSet())) {
-                        if (foundValues.contains(resource.getValue())) {
+                    for (Attribute<?> attribute : resourceType.instances().collect(Collectors.toSet())) {
+                        if (foundValues.contains(attribute.getValue())) {
                             return true;
                         } else {
-                            foundValues.add((Integer) resource.getValue());
+                            foundValues.add((Integer) attribute.getValue());
                         }
                     }
                 }
@@ -174,8 +174,8 @@ public class PostProcessingIT {
     }
 
     private void forceDuplicateResources(GraknTx graph, int resourceTypeNum, int resourceValueNum, int entityTypeNum, int entityNum){
-        Resource resource = graph.getResourceType("res" + resourceTypeNum).putResource(resourceValueNum);
+        Attribute attribute = graph.getAttributeType("res" + resourceTypeNum).putAttribute(resourceValueNum);
         Entity entity = (Entity) graph.getEntityType("ent" + entityTypeNum).instances().toArray()[entityNum]; //Randomly pick an entity
-        entity.resource(resource);
+        entity.attribute(attribute);
     }
 }

@@ -39,7 +39,7 @@ import java.util.Set;
 public class NeqPredicate extends Predicate<Var> {
 
     public NeqPredicate(Var varName, NeqProperty prop, ReasonerQuery parent){
-        super(varName.neq(prop.var().getVarName()).admin(), parent);
+        super(varName.neq(prop.var().var()).admin(), parent);
     }
     public NeqPredicate(NeqPredicate a){
         super(a);
@@ -58,7 +58,7 @@ public class NeqPredicate extends Predicate<Var> {
 
     @Override
     protected Var extractPredicate(VarPatternAdmin pattern) {
-        return pattern.getProperties(NeqProperty.class).iterator().next().var().getVarName();
+        return pattern.getProperties(NeqProperty.class).iterator().next().var().var();
     }
 
     @Override

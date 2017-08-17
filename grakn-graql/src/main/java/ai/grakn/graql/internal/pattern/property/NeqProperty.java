@@ -66,8 +66,8 @@ public abstract class NeqProperty extends AbstractVarProperty implements NamedPr
     public Collection<EquivalentFragmentSet> match(Var start) {
         return Sets.newHashSet(
                 EquivalentFragmentSets.notInternalFragmentSet(this, start),
-                EquivalentFragmentSets.notInternalFragmentSet(this, var().getVarName()),
-                EquivalentFragmentSets.neq(this, start, var().getVarName())
+                EquivalentFragmentSets.notInternalFragmentSet(this, var().var()),
+                EquivalentFragmentSets.neq(this, start, var().var())
         );
     }
 
@@ -82,12 +82,12 @@ public abstract class NeqProperty extends AbstractVarProperty implements NamedPr
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.of(var());
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new NeqPredicate(var.getVarName(), this, parent);
+        return new NeqPredicate(var.var(), this, parent);
     }
 }

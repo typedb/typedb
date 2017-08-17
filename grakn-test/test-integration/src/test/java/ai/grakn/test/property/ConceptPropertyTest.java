@@ -140,7 +140,7 @@ public class ConceptPropertyTest {
 
         if (concept.isRole()) assertEquals(concept, concept.asRole());
 
-        if (concept.isResourceType()) assertEquals(concept, concept.asResourceType());
+        if (concept.isAttributeType()) assertEquals(concept, concept.asAttributeType());
 
         if (concept.isRuleType()) assertEquals(concept, concept.asRuleType());
 
@@ -150,7 +150,7 @@ public class ConceptPropertyTest {
 
         if (concept.isRelationship()) assertEquals(concept, concept.asRelationship());
 
-        if (concept.isResource()) assertEquals(concept, concept.asResource());
+        if (concept.isAttribute()) assertEquals(concept, concept.asAttribute());
 
         if (concept.isRule()) assertEquals(concept, concept.asRule());
     }
@@ -197,10 +197,10 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotAResourceType_TheConceptCannotBeConvertedToAResourceType(Concept concept) {
-        assumeFalse(concept.isResourceType());
+        assumeFalse(concept.isAttributeType());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asResourceType();
+        concept.asAttributeType();
     }
 
     @Property
@@ -237,10 +237,10 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotAResource_TheConceptCannotBeConvertedToAResource(Concept concept) {
-        assumeFalse(concept.isResource());
+        assumeFalse(concept.isAttribute());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asResource();
+        concept.asAttribute();
     }
 
     @Property

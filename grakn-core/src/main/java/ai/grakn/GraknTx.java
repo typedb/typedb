@@ -18,14 +18,14 @@
 
 package ai.grakn;
 
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
@@ -80,40 +80,40 @@ public interface GraknTx extends AutoCloseable{
     EntityType putEntityType(Label label);
 
     /**
-     * Create a new non-unique {@link ResourceType} with super-type {@code resource}, or return a pre-existing
-     * non-unique {@link ResourceType}, with the specified label and data type.
+     * Create a new non-unique {@link AttributeType} with super-type {@code resource}, or return a pre-existing
+     * non-unique {@link AttributeType}, with the specified label and data type.
      *
-     * @param label A unique label for the {@link ResourceType}
-     * @param dataType The data type of the {@link ResourceType}.
+     * @param label A unique label for the {@link AttributeType}
+     * @param dataType The data type of the {@link AttributeType}.
      *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *           This should match the parameter type
-     * @return A new or existing {@link ResourceType} with the provided label and data type.
+     * @return A new or existing {@link AttributeType} with the provided label and data type.
      *
      * @throws GraphOperationException if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link ResourceType}.
-     * @throws GraphOperationException if the {@param label} is already in use by an existing {@link ResourceType} which is
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link AttributeType}.
+     * @throws GraphOperationException if the {@param label} is already in use by an existing {@link AttributeType} which is
      *                          unique or has a different datatype.
      */
-    <V> ResourceType<V> putResourceType(String label, ResourceType.DataType<V> dataType);
+    <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType);
 
     /**
-     * Create a new non-unique {@link ResourceType} with super-type {@code resource}, or return a pre-existing
-     * non-unique {@link ResourceType}, with the specified label and data type.
+     * Create a new non-unique {@link AttributeType} with super-type {@code resource}, or return a pre-existing
+     * non-unique {@link AttributeType}, with the specified label and data type.
      *
-     * @param label A unique label for the {@link ResourceType}
-     * @param dataType The data type of the {@link ResourceType}.
+     * @param label A unique label for the {@link AttributeType}
+     * @param dataType The data type of the {@link AttributeType}.
      *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *           This should match the parameter type
-     * @return A new or existing {@link ResourceType} with the provided label and data type.
+     * @return A new or existing {@link AttributeType} with the provided label and data type.
      *
      * @throws GraphOperationException if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link ResourceType}.
-     * @throws GraphOperationException if the {@param label} is already in use by an existing {@link ResourceType} which is
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link AttributeType}.
+     * @throws GraphOperationException if the {@param label} is already in use by an existing {@link AttributeType} which is
      *                          unique or has a different datatype.
      */
-    <V> ResourceType<V> putResourceType(Label label, ResourceType.DataType<V> dataType);
+    <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType);
 
     /**
      * Create a {@link RuleType} with super-type {@code rule}, or return a pre-existing {@link RuleType}, with the
@@ -228,16 +228,16 @@ public interface GraknTx extends AutoCloseable{
     <T extends Type> T getType(Label label);
 
     /**
-     * Get all Resources holding the value provided, if they exist.
+     * Get all {@link Attribute} holding the value provided, if they exist.
      *
-     * @param value A value which a Resource in the graph may be holding.
+     * @param value A value which an {@link Attribute} in the graph may be holding.
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The Resources holding the provided value or an empty collection if no such Resource exists.
+     * @return The {@link Attribute}s holding the provided value or an empty collection if no such {@link Attribute} exists.
      *
      * @throws GraphOperationException if the graph is closed
      */
     @CheckReturnValue
-    <V> Collection<Resource<V>> getResourcesByValue(V value);
+    <V> Collection<Attribute<V>> getAttributesByValue(V value);
 
     /**
      * Get the Entity Type with the label provided, if it exists.
@@ -264,17 +264,17 @@ public interface GraknTx extends AutoCloseable{
     RelationshipType getRelationshipType(String label);
 
     /**
-     * Get the Resource Type with the label provided, if it exists.
+     * Get the {@link AttributeType} with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the Resource Type in the graph.
+     * @param label A unique label which identifies the {@link AttributeType} in the graph.
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The Resource Type with the provided label or null if no such Resource Type exists.
+     * @return The {@link AttributeType} with the provided label or null if no such {@link AttributeType} exists.
      *
      * @throws GraphOperationException if the graph is closed
      */
     @CheckReturnValue
     @Nullable
-    <V> ResourceType<V> getResourceType(String label);
+    <V> AttributeType<V> getAttributeType(String label);
 
     /**
      * Get the Role Type with the label provided, if it exists.

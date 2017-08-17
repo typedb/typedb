@@ -64,6 +64,16 @@ import java.util.function.Function;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.Task.CLASS_NAME;
+import static ai.grakn.util.REST.Response.Task.CREATOR;
+import static ai.grakn.util.REST.Response.Task.ENGINE_ID;
+import static ai.grakn.util.REST.Response.Task.EXCEPTION;
+import static ai.grakn.util.REST.Response.Task.ID;
+import static ai.grakn.util.REST.Response.Task.INTERVAL;
+import static ai.grakn.util.REST.Response.Task.RECURRING;
+import static ai.grakn.util.REST.Response.Task.RUN_AT;
+import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
+import static ai.grakn.util.REST.Response.Task.STATUS;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
@@ -417,21 +427,20 @@ public class TasksController {
     // TODO: Return 'schedule' object as its own object
     private Json serialiseStateSubset(TaskState state) {
         return Json.object()
-                .set("id", state.getId().getValue())
-                .set("status", state.status().name())
-                .set("creator", state.creator())
-                .set("className", state.taskClass().getName())
-                .set("runAt", state.schedule().runAt().toEpochMilli())
-                .set("recurring", state.schedule().isRecurring());
+                .set(ID, state.getId().getValue())
+                .set(STATUS, state.status().name())
+                .set(CREATOR, state.creator())
+                .set(CLASS_NAME, state.taskClass().getName())
+                .set(RUN_AT, state.schedule().runAt().toEpochMilli())
+                .set(RECURRING, state.schedule().isRecurring());
     }
 
     private Json serialiseStateFull(TaskState state) {
         return serialiseStateSubset(state)
-                .set("interval", state.schedule().interval().map(Duration::toMillis).orElse(null))
-                .set("recurring", state.schedule().isRecurring())
-                .set("exception", state.exception())
-                .set("stackTrace", state.stackTrace())
-                .set("engineID", state.engineID() != null ? state.engineID().value() : null);
+                .set(INTERVAL, state.schedule().interval().map(Duration::toMillis).orElse(null))
+                .set(EXCEPTION, state.exception())
+                .set(STACK_TRACE, state.stackTrace())
+                .set(ENGINE_ID, state.engineID() != null ? state.engineID().value() : null);
     }
 
     private static class TaskStateWithConfiguration {

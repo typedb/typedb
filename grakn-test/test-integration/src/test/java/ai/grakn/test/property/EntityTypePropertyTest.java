@@ -89,6 +89,6 @@ public class EntityTypePropertyTest {
     public void whenAddingAnEntity_TheEntityHasNoResources(@NonMeta @NonAbstract EntityType type) {
         Entity entity = type.addEntity();
 
-        assertThat(entity.resources().collect(toSet()), empty());
+        assertThat(entity.attributes().collect(toSet()), empty());
     }
 }

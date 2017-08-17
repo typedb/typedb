@@ -18,12 +18,12 @@
 
 package ai.grakn.graph.internal.concept;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.graph.internal.cache.ContainsTxCache;
@@ -94,14 +94,14 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     }
 
     @Override
-    public Relationship resource(Resource resource) {
-        reify().resource(resource);
+    public Relationship attribute(Attribute attribute) {
+        reify().attribute(attribute);
         return this;
     }
 
     @Override
-    public Stream<Resource<?>> resources(ResourceType[] resourceTypes) {
-        return readFromReified((relationReified) -> relationReified.resources(resourceTypes));
+    public Stream<Attribute<?>> attributes(AttributeType[] attributeTypes) {
+        return readFromReified((relationReified) -> relationReified.attributes(attributeTypes));
     }
 
     @Override

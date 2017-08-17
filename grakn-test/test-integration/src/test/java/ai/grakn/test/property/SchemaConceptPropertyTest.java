@@ -230,7 +230,7 @@ public class SchemaConceptPropertyTest {
         return concept1.isEntityType() && concept2.isEntityType() ||
                 concept1.isRelationshipType() && concept2.isRelationshipType() ||
                 concept1.isRole() && concept2.isRole() ||
-                concept1.isResourceType() && concept2.isResourceType() ||
+                concept1.isAttributeType() && concept2.isAttributeType() ||
                 concept1.isRuleType() && concept2.isRuleType();
     }
 
@@ -241,8 +241,8 @@ public class SchemaConceptPropertyTest {
             subConcept.asRelationshipType().sup(superConcept.asRelationshipType());
         } else if (subConcept.isRole()) {
             subConcept.asRole().sup(superConcept.asRole());
-        } else if (subConcept.isResourceType()) {
-            subConcept.asResourceType().sup(superConcept.asResourceType());
+        } else if (subConcept.isAttributeType()) {
+            subConcept.asAttributeType().sup(superConcept.asAttributeType());
         } else if (subConcept.isRuleType()) {
             subConcept.asRuleType().sup(superConcept.asRuleType());
         } else {
@@ -257,8 +257,8 @@ public class SchemaConceptPropertyTest {
             superConcept.asRelationshipType().sub(subConcept.asRelationshipType());
         } else if (superConcept.isRole()) {
             superConcept.asRole().sub(subConcept.asRole());
-        } else if (superConcept.isResourceType()) {
-            superConcept.asResourceType().sub(subConcept.asResourceType());
+        } else if (superConcept.isAttributeType()) {
+            superConcept.asAttributeType().sub(subConcept.asAttributeType());
         } else if (superConcept.isRuleType()) {
             superConcept.asRuleType().sub(subConcept.asRuleType());
         } else {

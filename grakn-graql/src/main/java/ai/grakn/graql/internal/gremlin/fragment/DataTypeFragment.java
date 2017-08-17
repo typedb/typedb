@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -29,9 +29,9 @@ import static ai.grakn.util.Schema.VertexProperty.DATA_TYPE;
 
 class DataTypeFragment extends AbstractFragment {
 
-    private final ResourceType.DataType dataType;
+    private final AttributeType.DataType dataType;
 
-    DataTypeFragment(VarProperty varProperty, Var start, ResourceType.DataType dataType) {
+    DataTypeFragment(VarProperty varProperty, Var start, AttributeType.DataType dataType) {
         super(varProperty, start);
         this.dataType = dataType;
     }

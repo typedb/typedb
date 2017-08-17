@@ -22,10 +22,10 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.Thing;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.json.JsonMigrator;
@@ -106,13 +106,13 @@ public class JsonMigratorTest {
 
             Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
 
-            Resource number = getResource(graph, streetAddress, Label.of("number"));
+            Attribute number = getResource(graph, streetAddress, Label.of("number"));
             assertEquals(21L, number.getValue());
 
-            Resource street = getResource(graph, streetAddress, Label.of("street"));
+            Attribute street = getResource(graph, streetAddress, Label.of("street"));
             assertEquals("2nd Street", street.getValue());
 
-            Resource city = getResource(graph, address, Label.of("city")).asResource();
+            Attribute city = getResource(graph, address, Label.of("city")).asAttribute();
             assertEquals("New York", city.getValue());
 
             Collection<Thing> phoneNumbers = getProperties(graph, person, "has-phone");
@@ -151,19 +151,19 @@ public class JsonMigratorTest {
 
             Entity thing = things.iterator().next();
 
-            Collection<Object> integers = getResources(graph, thing, Label.of("a-int")).map(Resource::getValue).collect(toSet());
+            Collection<Object> integers = getResources(graph, thing, Label.of("a-int")).map(Attribute::getValue).collect(toSet());
             assertEquals(Sets.newHashSet(1L, 2L, 3L), integers);
 
-            Resource aBoolean = getResource(graph, thing, Label.of("a-boolean"));
+            Attribute aBoolean = getResource(graph, thing, Label.of("a-boolean"));
             assertEquals(true, aBoolean.getValue());
 
-            Resource aNumber = getResource(graph, thing, Label.of("a-number"));
+            Attribute aNumber = getResource(graph, thing, Label.of("a-number"));
             assertEquals(42.1, aNumber.getValue());
 
-            Resource aString = getResource(graph, thing, Label.of("a-string"));
+            Attribute aString = getResource(graph, thing, Label.of("a-string"));
             assertEquals("hi", aString.getValue());
 
-            assertEquals(0, graph.getResourceType("a-null").instances().count());
+            assertEquals(0, graph.getAttributeType("a-null").instances().count());
         }
     }
 

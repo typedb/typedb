@@ -40,13 +40,13 @@ import java.util.stream.Stream;
 public interface Rule extends Thing {
     //------------------------------------- Modifiers ----------------------------------
     /**
-     * Creates a relation from this instance to the provided resource.
+     * Creates a relation from this instance to the provided {@link Attribute}.
      *
-     * @param resource The resource to which a relationship is created
+     * @param attribute The {@link Attribute} to which a relationship is created
      * @return The instance itself
      */
     @Override
-    Rule resource(Resource resource);
+    Rule attribute(Attribute attribute);
 
     //------------------------------------- Accessors ----------------------------------
     /**

@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -55,9 +55,9 @@ import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
  * This property can be queried or inserted. Whether this is a key is indicated by the
  * {@link HasResourceTypeProperty#required} field.
  *
- * This property is defined as an implicit ontological structure between a {@link Type} and a {@link ResourceType},
+ * This property is defined as an implicit ontological structure between a {@link Type} and a {@link AttributeType},
  * including one implicit {@link RelationshipType} and two implicit {@link Role}s. The labels of these types are derived
- * from the label of the {@link ResourceType}.
+ * from the label of the {@link AttributeType}.
  *
  * Like {@link HasResourceProperty}, if this is not a key and is used in a match query it will not use the implicit
  * structure - instead, it will match if there is any kind of relation type connecting the two types.
@@ -96,7 +96,7 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
         }
 
         VarPatternAdmin relationOwner = relationType.relates(ownerRole).admin();
-        VarPatternAdmin relationValue = relationType.admin().getVarName().relates(valueRole).admin();
+        VarPatternAdmin relationValue = relationType.admin().var().relates(valueRole).admin();
 
         return new AutoValue_HasResourceTypeProperty(
                 resourceType, ownerRole, valueRole, relationOwner, relationValue, required);
@@ -118,8 +118,8 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
 
         traversals.addAll(PlaysProperty.of(ownerRole(), required()).match(start));
         //TODO: Get this to use real constraints no just the required flag
-        traversals.addAll(PlaysProperty.of(valueRole(), false).match(resourceType().getVarName()));
-        traversals.addAll(NeqProperty.of(ownerRole()).match(valueRole().getVarName()));
+        traversals.addAll(PlaysProperty.of(valueRole(), false).match(resourceType().var()));
+        traversals.addAll(NeqProperty.of(ownerRole()).match(valueRole().var()));
 
         return traversals;
     }
@@ -130,36 +130,36 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.of(resourceType());
     }
 
     @Override
-    public Stream<VarPatternAdmin> getImplicitInnerVars() {
+    public Stream<VarPatternAdmin> implicitInnerVarPatterns() {
         return Stream.of(resourceType(), ownerRole(), valueRole(), relationOwner(), relationValue());
     }
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         Type entityTypeConcept = executor.get(var).asType();
-        ResourceType resourceTypeConcept = executor.get(resourceType().getVarName()).asResourceType();
+        AttributeType attributeTypeConcept = executor.get(resourceType().var()).asAttributeType();
 
         if (required()) {
-            entityTypeConcept.key(resourceTypeConcept);
+            entityTypeConcept.key(attributeTypeConcept);
         } else {
-            entityTypeConcept.resource(resourceTypeConcept);
+            entityTypeConcept.attribute(attributeTypeConcept);
         }
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, resourceType().getVarName());
+        return ImmutableSet.of(var, resourceType().var());
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
-        Var varName = var.getVarName().asUserDefined();
+        Var varName = var.var().asUserDefined();
         Label label = this.resourceType().getTypeLabel().orElse(null);
 
         Var predicateVar = var().asUserDefined();

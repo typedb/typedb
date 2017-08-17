@@ -27,7 +27,7 @@ import javax.annotation.CheckReturnValue;
  *
  * <p>
  *     This represents an entity in the graph.
- *     Entities are objects which are defined by their {@link Resource} and their links to
+ *     Entities are objects which are defined by their {@link Attribute} and their links to
  *     other entities via {@link Relationship}
  * </p>
  *
@@ -45,13 +45,13 @@ public interface Entity extends Thing {
     EntityType type();
 
     /**
-     * Creates a relation from this instance to the provided resource.
+     * Creates a relation from this instance to the provided {@link Attribute}.
      *
-     * @param resource The resource to which a relationship is created
+     * @param attribute The {@link Attribute} to which a relationship is created
      * @return The instance itself
      */
     @Override
-    Entity resource(Resource resource);
+    Entity attribute(Attribute attribute);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

@@ -349,13 +349,13 @@ public class ReasoningTests {
         String queryString2 = "match $x isa res2;";
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers2.size(), 1);
-        assertTrue(answers2.iterator().next().get(var("x")).isResource());
+        assertTrue(answers2.iterator().next().get(var("x")).isAttribute());
         String queryString3 = "match $x isa res1; $y isa res2;";
         QueryAnswers answers3 = queryAnswers(qb.parse(queryString3));
         assertEquals(answers3.size(), 1);
 
-        assertTrue(answers3.iterator().next().get(var("x")).isResource());
-        assertTrue(answers3.iterator().next().get(var("y")).isResource());
+        assertTrue(answers3.iterator().next().get(var("x")).isAttribute());
+        assertTrue(answers3.iterator().next().get(var("y")).isAttribute());
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
@@ -368,7 +368,7 @@ public class ReasoningTests {
         answers1.forEach(ans ->
                 {
                     assertTrue(ans.get(var("x")).isEntity());
-                    assertTrue(ans.get(var("y")).isResource());
+                    assertTrue(ans.get(var("y")).isAttribute());
                     assertTrue(ans.get(var("z")).isRelationship());
                 }
         );
@@ -379,7 +379,7 @@ public class ReasoningTests {
         answers2.forEach(ans ->
                 {
                     assertTrue(ans.get(var("x")).isRelationship());
-                    assertTrue(ans.get(var("y")).isResource());
+                    assertTrue(ans.get(var("y")).isAttribute());
                 }
         );
     }

@@ -32,7 +32,7 @@ entity2 plays G-role-A, plays G-role-B;
 "H" sub relationship, relates H-role-A, relates H-role-B;
 entity2 plays H-role-A, plays H-role-B;
 
-"index" sub resource, datatype string;
+"index" sub attribute, datatype string;
 
 #######################################################
 ######################DATA########################

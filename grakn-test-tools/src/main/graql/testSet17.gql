@@ -7,8 +7,8 @@ general-entity sub entity
 sub-entity sub general-entity;
 
 #Resources
-res1 sub resource datatype long;
-res2 sub resource datatype boolean;
+res1 sub attribute datatype long;
+res2 sub attribute datatype boolean;
 
 #Rules
 

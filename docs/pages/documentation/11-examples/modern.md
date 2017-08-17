@@ -60,14 +60,14 @@ insert software sub entity;
 To assign resources to the entities, which you can think of as attributes, we use resources. First, we define what they are (age is a number, programming language is a string that represents the language's name), then we allocate them to the entity in question:
 
 ```graql
-insert age sub resource datatype long;
-insert name sub resource datatype string;
+insert age sub attribute datatype long;
+insert name sub attribute datatype string;
 insert person has age, has name;
 
-insert lang sub resource datatype string;
+insert lang sub attribute datatype string;
 insert software has lang has name;
 
-insert weight sub resource datatype double;
+insert weight sub attribute datatype double;
 ```
 
 ### Relations
@@ -82,7 +82,7 @@ insert person plays known-about;
 insert knows sub relationship, relates knower, relates known-about, has weight;
 ```
 
-Note that the  `knows` relationship also has an attribute, in the form of a resource called `weight` (though it's not clear from the TinkerPop example what this represents).
+Note that the  `knows` relationship also has an attribute, in the form of an attribute called `weight` (though it's not clear from the TinkerPop example what this represents).
 
 We can set up a similar relationship between software and the people that created it:
 
@@ -163,8 +163,8 @@ Then type edit, which will open up the systems default text editor where you can
 
 ```graql 
 insert 
-age sub resource datatype long;
-name sub resource datatype string;
+age sub attribute datatype long;
+name sub attribute datatype string;
 person sub entity;
 person has age, has name;
 
@@ -177,7 +177,7 @@ $josh has age 32, has name "josh";
 $vadas has age 27, has name "vadas";
 $peter has age 35, has name "peter";
 
-weight sub resource datatype double;
+weight sub attribute datatype double;
 
 knower sub role;
 known-about sub role;
@@ -193,7 +193,7 @@ knows sub relationship
 (knower: $marko, known-about: $josh) isa knows has weight 1.0;
 (knower: $marko, known-about: $vadas) isa knows has weight 0.5;
 
-lang sub resource datatype string;
+lang sub attribute datatype string;
 software sub entity;
 software has lang, has name;
 

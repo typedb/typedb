@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
@@ -28,7 +29,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -131,9 +131,9 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             EntityType metaEntityType = graph.admin().getMetaEntityType();
             metaEntityType.subs().forEach(subTypes::add);
             subTypes.remove(metaEntityType);
-            ResourceType<?> metaResourceType = graph.admin().getMetaResourceType();
-            metaResourceType.subs().forEach(subTypes::add);
-            subTypes.remove(metaResourceType);
+            AttributeType<?> metaAttributeType = graph.admin().getMetaResourceType();
+            metaAttributeType.subs().forEach(subTypes::add);
+            subTypes.remove(metaAttributeType);
             RelationshipType metaRelationshipType = graph.admin().getMetaRelationType();
             metaRelationshipType.subs().forEach(subTypes::add);
             subTypes.remove(metaRelationshipType);
@@ -187,7 +187,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     Set<Label> getHasResourceRelationTypes() {
         return subTypes.stream()
-                .filter(Concept::isResourceType)
+                .filter(Concept::isAttributeType)
                 .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
                 .collect(Collectors.toSet());
     }

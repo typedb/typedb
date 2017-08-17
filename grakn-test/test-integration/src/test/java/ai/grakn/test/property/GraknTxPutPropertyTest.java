@@ -23,7 +23,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
@@ -128,37 +128,37 @@ public class GraknTxPutPropertyTest {
 
     @Property
     public void whenCallingPutResourceType_CreateATypeWithSuperTypeResource(
-            @Open GraknTx graph, @Unused Label label, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceType(label, dataType);
-        assertEquals(graph.admin().getMetaResourceType(), resourceType.sup());
+            @Open GraknTx graph, @Unused Label label, AttributeType.DataType<?> dataType) {
+        AttributeType<?> attributeType = graph.putAttributeType(label, dataType);
+        assertEquals(graph.admin().getMetaResourceType(), attributeType.sup());
     }
 
     @Property
     public void whenCallingPutResourceType_CreateATypeWithDefaultProperties(
-            @Open GraknTx graph, @Unused Label label, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceType(label, dataType);
+            @Open GraknTx graph, @Unused Label label, AttributeType.DataType<?> dataType) {
+        AttributeType<?> attributeType = graph.putAttributeType(label, dataType);
 
-        assertEquals("The data-type should be as specified", dataType, resourceType.getDataType());
-        assertNull("The resource type should have no regex constraint", resourceType.getRegex());
+        assertEquals("The data-type should be as specified", dataType, attributeType.getDataType());
+        assertNull("The resource type should have no regex constraint", attributeType.getRegex());
     }
 
     @Property
     public void whenCallingPutResourceTypeWithThePropertiesOfAnExistingResourceType_ItReturnsThatType(
-            @Open GraknTx graph, @FromGraph  ResourceType<?> resourceType) {
-        assumeFalse(resourceType.equals(graph.admin().getMetaResourceType()));
+            @Open GraknTx graph, @FromGraph AttributeType<?> attributeType) {
+        assumeFalse(attributeType.equals(graph.admin().getMetaResourceType()));
 
-        Label label = resourceType.getLabel();
-        ResourceType.DataType<?> dataType = resourceType.getDataType();
+        Label label = attributeType.getLabel();
+        AttributeType.DataType<?> dataType = attributeType.getDataType();
 
-        ResourceType<?> newType = graph.putResourceType(label, dataType);
+        AttributeType<?> newType = graph.putAttributeType(label, dataType);
 
-        assertEquals(resourceType, newType);
+        assertEquals(attributeType, newType);
     }
 
     @Property
     public void whenCallingPutResourceTypeWithAnExistingNonResourceTypeLabel_Throw(
-            @Open GraknTx graph, @FromGraph Type type, ResourceType.DataType<?> dataType) {
-        assumeFalse(type.isResourceType());
+            @Open GraknTx graph, @FromGraph Type type, AttributeType.DataType<?> dataType) {
+        assumeFalse(type.isAttributeType());
 
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
@@ -166,24 +166,24 @@ public class GraknTxPutPropertyTest {
         } else {
             exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
         }
-        graph.putResourceType(type.getLabel(), dataType);
+        graph.putAttributeType(type.getLabel(), dataType);
     }
 
     @Property
     public void whenCallingPutResourceTypeWithAnExistingNonUniqueResourceTypeLabelButADifferentDataType_Throw(
-            @Open GraknTx graph, @FromGraph ResourceType<?> resourceType,
-            ResourceType.DataType<?> dataType) {
-        assumeThat(dataType, not(is(resourceType.getDataType())));
-        Label label = resourceType.getLabel();
+            @Open GraknTx graph, @FromGraph AttributeType<?> attributeType,
+            AttributeType.DataType<?> dataType) {
+        assumeThat(dataType, not(is(attributeType.getDataType())));
+        Label label = attributeType.getLabel();
 
         exception.expect(GraphOperationException.class);
         if(isMetaLabel(label)) {
             exception.expectMessage(GraphOperationException.metaTypeImmutable(label).getMessage());
         } else {
-            exception.expectMessage(GraphOperationException.immutableProperty(resourceType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE).getMessage());
+            exception.expectMessage(GraphOperationException.immutableProperty(attributeType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE).getMessage());
         }
 
-        graph.putResourceType(label, dataType);
+        graph.putAttributeType(label, dataType);
     }
 
     @Property

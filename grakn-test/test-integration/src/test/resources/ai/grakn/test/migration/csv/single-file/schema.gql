@@ -10,10 +10,10 @@ make sub entity
     has name
     plays make-of-car;
 
-name sub resource datatype string;
-year sub resource datatype string;
-description sub resource datatype string;
-price sub resource datatype double;
+name sub attribute datatype string;
+year sub attribute datatype string;
+description sub attribute datatype string;
+price sub attribute datatype double;
 
 make-and-model sub relationship, relates make-of-car, relates model-of-car;
 make-of-car sub role;

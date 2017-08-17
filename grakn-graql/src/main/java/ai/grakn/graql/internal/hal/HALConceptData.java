@@ -18,11 +18,11 @@
 
 package ai.grakn.graql.internal.hal;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
@@ -139,8 +139,8 @@ public class HALConceptData {
             //Only when double clicking on a specific relation we want to fetch also the other relations the current one plays a role into.
             embedRelationsPlays(halResource, concept.asRelationship());
         }
-        if (concept.isResource()) {
-            generateOwnerInstances(halResource, concept.asResource(), separationDegree);
+        if (concept.isAttribute()) {
+            generateOwnerInstances(halResource, concept.asAttribute(), separationDegree);
         }
 
         if (concept.isType()) {
@@ -155,7 +155,7 @@ public class HALConceptData {
                 .withLink(EXPLORE_CONCEPT_LINK, EXPLORE)
                 .withProperty(ID_PROPERTY, "RHS-" + rule.getId().getValue())
                 .withProperty(TYPE_PROPERTY, "RHS")
-                .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
+                .withProperty(BASETYPE_PROPERTY, Schema.BaseType.ATTRIBUTE_TYPE.name())
                 .withProperty(VALUE_PROPERTY, rule.getThen().admin().toString());
         halResource.withRepresentation("RHS", RHS);
     }
@@ -166,14 +166,14 @@ public class HALConceptData {
                 .withLink(EXPLORE_CONCEPT_LINK, EXPLORE)
                 .withProperty(ID_PROPERTY, "LHS-" + rule.getId().getValue())
                 .withProperty(TYPE_PROPERTY, "LHS")
-                .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
+                .withProperty(BASETYPE_PROPERTY, Schema.BaseType.ATTRIBUTE_TYPE.name())
                 .withProperty(VALUE_PROPERTY, rule.getWhen().admin().toString());
         halResource.withRepresentation("LHS", LHS);
     }
 
-    private void generateOwnerInstances(Representation halResource, Resource<?> conceptResource, int separationDegree) {
-        final Label roleType = conceptResource.type().getLabel();
-        Stream<Thing> ownersStream = conceptResource.ownerInstances().skip(offset);
+    private void generateOwnerInstances(Representation halResource, Attribute<?> conceptAttribute, int separationDegree) {
+        final Label roleType = conceptAttribute.type().getLabel();
+        Stream<Thing> ownersStream = conceptAttribute.ownerInstances().skip(offset);
         if (limit >= 0) ownersStream = ownersStream.limit(limit);
         ownersStream.forEach(instance -> {
             Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
@@ -251,7 +251,7 @@ public class HALConceptData {
             for (Thing thing : entry.getValue()) {
                 //Some role players can be null
                 if (thing != null) {
-                    if (thing.isResource()) {
+                    if (thing.isAttribute()) {
                         isResource = true;
                     } else if (thing.getId().equals(concept.getId())) {
                         rolePlayedByCurrentConcept = entry.getKey().getLabel();

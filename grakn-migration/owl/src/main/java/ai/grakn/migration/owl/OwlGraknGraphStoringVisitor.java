@@ -17,13 +17,13 @@
  */
 package ai.grakn.migration.owl;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
@@ -336,29 +336,29 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         if (!axiom.getProperty().isOWLDataProperty() || !axiom.getSubject().isNamed()) {
             return null;
         }
-        ResourceType resourceType = migrator.resourceType(axiom.getProperty().asOWLDataProperty());
+        AttributeType attributeType = migrator.resourceType(axiom.getProperty().asOWLDataProperty());
         Entity entity = migrator.entity(axiom.getSubject().asOWLNamedIndividual());
         String valueAsString =  axiom.getObject().getLiteral();
         Object value = valueAsString;
-        if (resourceType.getDataType() == ResourceType.DataType.BOOLEAN) {
+        if (attributeType.getDataType() == AttributeType.DataType.BOOLEAN) {
             value = Boolean.parseBoolean(valueAsString);
-        } else if (resourceType.getDataType() == ResourceType.DataType.LONG) {
+        } else if (attributeType.getDataType() == AttributeType.DataType.LONG) {
             value = Long.parseLong(valueAsString);
-        } else if (resourceType.getDataType() == ResourceType.DataType.DOUBLE) {
+        } else if (attributeType.getDataType() == AttributeType.DataType.DOUBLE) {
             value = Double.parseDouble(valueAsString);
         }
-        Resource resource = resourceType.putResource(value);
+        Attribute attribute = attributeType.putAttribute(value);
         RelationshipType propertyRelation = migrator.relation(axiom.getProperty().asOWLDataProperty());
-        Role entityRole = migrator.entityRole(entity.type(), resource.type());
-        Role resourceRole = migrator.resourceRole(resource.type());
+        Role entityRole = migrator.entityRole(entity.type(), attribute.type());
+        Role resourceRole = migrator.resourceRole(attribute.type());
         try {       
             return propertyRelation.addRelationship()
                      .addRolePlayer(entityRole, entity)
-                     .addRolePlayer(resourceRole, resource);
+                     .addRolePlayer(resourceRole, attribute);
         }
         catch (GraphOperationException ex) {
             if (ex.getMessage().contains("The Relationship with the provided role players already exists")) {
-                System.err.println("[WARN] Grakn does not support multiple values per data property/resource, ignoring axiom " + axiom);
+                System.err.println("[WARN] Grakn does not support multiple values per data property/attribute, ignoring axiom " + axiom);
             } else {
                 ex.printStackTrace(System.err);
             }
@@ -376,13 +376,13 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
             return null;
         }
         @SuppressWarnings("unchecked")
-        ResourceType<String> resourceType = (ResourceType<String>)visit(axiom.getProperty());
+        AttributeType<String> attributeType = (AttributeType<String>)visit(axiom.getProperty());
         Entity entity = migrator.entity((OWLNamedIndividual)axiom.getSubject());
-        Resource<String> resource = resourceType.putResource(value.get().getLiteral());
+        Attribute<String> attribute = attributeType.putAttribute(value.get().getLiteral());
         RelationshipType propertyRelation = migrator.relation(axiom.getProperty());
         return propertyRelation.addRelationship()
-                 .addRolePlayer(migrator.entityRole(entity.type(), resource.type()), entity)
-                 .addRolePlayer(migrator.resourceRole(resource.type()), resource);
+                 .addRolePlayer(migrator.entityRole(entity.type(), attribute.type()), entity)
+                 .addRolePlayer(migrator.resourceRole(attribute.type()), attribute);
     }
 
     @Override

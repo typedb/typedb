@@ -21,14 +21,14 @@ package ai.grakn.test.property;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
@@ -162,41 +162,41 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingGetResourcesByValueAfterAddingAResource_TheResultIncludesTheResource(
             @Open GraknTx graph,
-            @FromGraph @NonMeta @NonAbstract ResourceType resourceType, @From(ResourceValues.class) Object value) {
-        assumeThat(value.getClass().getName(), is(resourceType.getDataType().getName()));
+            @FromGraph @NonMeta @NonAbstract AttributeType attributeType, @From(ResourceValues.class) Object value) {
+        assumeThat(value.getClass().getName(), is(attributeType.getDataType().getName()));
 
-        Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(value);
-        Resource resource = resourceType.putResource(value);
-        Collection<Resource<Object>> resourcesAfter = graph.getResourcesByValue(value);
+        Collection<Attribute<Object>> expectedAttributes = graph.getAttributesByValue(value);
+        Attribute attribute = attributeType.putAttribute(value);
+        Collection<Attribute<Object>> resourcesAfter = graph.getAttributesByValue(value);
 
-        expectedResources.add(resource);
+        expectedAttributes.add(attribute);
 
-        assertEquals(expectedResources, resourcesAfter);
+        assertEquals(expectedAttributes, resourcesAfter);
     }
 
     @Property
     public void whenCallingGetResourcesByValueAfterDeletingAResource_TheResultDoesNotIncludesTheResource(
-            @Open GraknTx graph, @FromGraph Resource<Object> resource) {
-        Object resourceValue = resource.getValue();
+            @Open GraknTx graph, @FromGraph Attribute<Object> attribute) {
+        Object resourceValue = attribute.getValue();
 
-        Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(resourceValue);
-        resource.delete();
-        Collection<Resource<Object>> resourcesAfter = graph.getResourcesByValue(resourceValue);
+        Collection<Attribute<Object>> expectedAttributes = graph.getAttributesByValue(resourceValue);
+        attribute.delete();
+        Collection<Attribute<Object>> resourcesAfter = graph.getAttributesByValue(resourceValue);
 
-        expectedResources.remove(resource);
+        expectedAttributes.remove(attribute);
 
-        assertEquals(expectedResources, resourcesAfter);
+        assertEquals(expectedAttributes, resourcesAfter);
     }
 
     @Property
     public void whenCallingGetResourcesByValue_TheResultIsAllResourcesWithTheGivenValue(
             @Open GraknTx graph, @From(ResourceValues.class) Object resourceValue) {
-        Stream<Resource<?>> allResources = graph.admin().getMetaResourceType().instances();
+        Stream<Attribute<?>> allResources = graph.admin().getMetaResourceType().instances();
 
-        Set<Resource<?>> allResourcesOfValue =
+        Set<Attribute<?>> allResourcesOfValue =
                 allResources.filter(resource -> resourceValue.equals(resource.getValue())).collect(toSet());
 
-        assertEquals(allResourcesOfValue, graph.getResourcesByValue(resourceValue));
+        assertEquals(allResourcesOfValue, graph.getAttributesByValue(resourceValue));
     }
 
     @Property
@@ -204,7 +204,7 @@ public class GraknTxPropertyTest {
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.unsupportedDataType(value).getMessage());
         //noinspection ResultOfMethodCallIgnored
-        graph.getResourcesByValue(value);
+        graph.getAttributesByValue(value);
     }
 
     @Property
@@ -223,9 +223,9 @@ public class GraknTxPropertyTest {
 
     @Property
     public void whenCallingGetResourceType_TheResultIsTheSameAsGetOntologyConcept(
-            @Open GraknTx graph, @FromGraph ResourceType type) {
+            @Open GraknTx graph, @FromGraph AttributeType type) {
         Label label = type.getLabel();
-        assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getResourceType(label.getValue()));
+        assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getAttributeType(label.getValue()));
     }
 
     @Property
@@ -294,7 +294,7 @@ public class GraknTxPropertyTest {
 
     @Property
     public void whenSetRegexOnMetaResourceType_Throw(@Open GraknTx graph, String regex) {
-        ResourceType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaResourceType();
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.cannotSetRegex(resource).getMessage());
@@ -305,18 +305,18 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCreateInstanceOfMetaResourceType_Throw(
             @Open GraknTx graph, @From(ResourceValues.class) Object value) {
-        ResourceType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaResourceType();
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
 
-        resource.putResource(value);
+        resource.putAttribute(value);
     }
 
     @Ignore // TODO: Fix this
     @Property
     public void whenCallingSuperTypeOnMetaResourceType_Throw(@Open GraknTx graph) {
-        ResourceType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaResourceType();
 
         // TODO: Test for a better error message
         exception.expect(GraphOperationException.class);
@@ -328,7 +328,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingHasWithMetaResourceType_ThrowMetaTypeImmutableException(
             @Open GraknTx graph, @FromGraph Type type) {
-        ResourceType resource = graph.admin().getMetaResourceType();
+        AttributeType resource = graph.admin().getMetaResourceType();
 
         exception.expect(GraphOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())) {
@@ -336,7 +336,7 @@ public class GraknTxPropertyTest {
         } else {
             exception.expectMessage(GraphOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
         }
-        type.resource(resource);
+        type.attribute(resource);
     }
 
     private <T> void assertSameResult(Supplier<T> expectedMethod, Supplier<T> actualMethod) {

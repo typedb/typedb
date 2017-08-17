@@ -74,8 +74,7 @@ public abstract class GraphMutators {
             Consumer<GraknTx> mutatingFunction
     ){
         if(!factory.systemKeyspace().containsKeyspace(keyspace)){ //This may be slow.
-            LOG.warn("Attempting to execute mutation on graph [" + keyspace + "] which no longer exists");
-            return;
+            throw GraknBackendException.noSuchKeyspace(keyspace);
         }
 
         for(int retry = 0; retry < maxRetry; retry++) {

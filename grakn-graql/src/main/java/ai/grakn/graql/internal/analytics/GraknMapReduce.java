@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
@@ -55,7 +55,7 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
         this.selectedTypes = selectedTypes;
     }
 
-    GraknMapReduce(Set<LabelId> selectedTypes, ResourceType.DataType resourceDataType) {
+    GraknMapReduce(Set<LabelId> selectedTypes, AttributeType.DataType resourceDataType) {
         this(selectedTypes);
         persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType.getName());
     }
@@ -140,6 +140,6 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
     }
 
     final boolean usingLong() {
-        return persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName());
+        return persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(AttributeType.DataType.LONG.getName());
     }
 }
