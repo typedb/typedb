@@ -86,7 +86,7 @@ public class MigratorTestUtils {
         RelationshipType relationshipType = graph.getSchemaConcept(relation);
 
         Role role1 = thing1.plays().filter(r -> r.relationTypes().anyMatch(rel -> rel.equals(relationshipType))).findFirst().get();
-        assertTrue(thing1.relations(role1).anyMatch(rel -> rel.rolePlayers().anyMatch(r -> r.equals(thing2))));
+        assertTrue(thing1.relationships(role1).anyMatch(rel -> rel.rolePlayers().anyMatch(r -> r.equals(thing2))));
     }
 
 
@@ -117,7 +117,7 @@ public class MigratorTestUtils {
         Role roleOwner = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
         Role roleOther = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 
-        Stream<Relationship> relations = thing.relations(roleOwner);
+        Stream<Relationship> relations = thing.relationships(roleOwner);
         return relations.flatMap(r -> r.rolePlayers(roleOther)).map(Concept::asAttribute);
     }
 

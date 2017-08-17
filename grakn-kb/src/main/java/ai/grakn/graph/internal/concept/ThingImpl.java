@@ -191,7 +191,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
      */
     @Override
-    public Stream<Relationship> relations(Role... roles) {
+    public Stream<Relationship> relationships(Role... roles) {
         return Stream.concat(reifiedRelations(roles), edgeRelations(roles));
     }
 

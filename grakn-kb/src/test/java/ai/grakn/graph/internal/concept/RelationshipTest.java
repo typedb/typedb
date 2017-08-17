@@ -246,11 +246,11 @@ public class RelationshipTest extends GraphTestBase {
         Relationship relationship1 = hasDegree.addRelationship().addRolePlayer(entityRole, entity).addRolePlayer(degreeRole, degree1);
         hasDegree.addRelationship().addRolePlayer(entityRole, entity).addRolePlayer(degreeRole, degree2);
 
-        assertEquals(2, entity.relations().count());
+        assertEquals(2, entity.relationships().count());
 
         relationship1.delete();
 
-        assertEquals(1, entity.relations().count());
+        assertEquals(1, entity.relationships().count());
     }
 
 
@@ -288,7 +288,7 @@ public class RelationshipTest extends GraphTestBase {
         Attribute<String> attribute = attributeType.putAttribute("a real pain");
 
         EntityType entityType = graknGraph.putEntityType("yay").attribute(attributeType);
-        Relationship implicitRelationship = Iterables.getOnlyElement(entityType.addEntity().attribute(attribute).relations().collect(Collectors.toSet()));
+        Relationship implicitRelationship = Iterables.getOnlyElement(entityType.addEntity().attribute(attribute).relationships().collect(Collectors.toSet()));
 
         expectedException.expect(GraphOperationException.class);
         expectedException.expectMessage(GraphOperationException.hasNotAllowed(implicitRelationship, attribute).getMessage());

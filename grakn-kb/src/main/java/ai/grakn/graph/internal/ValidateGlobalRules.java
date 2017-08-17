@@ -121,8 +121,8 @@ class ValidateGlobalRules {
                     satisfiesPlays = true;
 
                     // Assert unique relation for this role type
-                    if (required && !CommonUtil.containsOnly(thing.relations(role), 1)) {
-                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(thing.getId(), thing.type().getLabel(), role.getLabel(), thing.relations(role).count()));
+                    if (required && !CommonUtil.containsOnly(thing.relationships(role), 1)) {
+                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(thing.getId(), thing.type().getLabel(), role.getLabel(), thing.relationships(role).count()));
                     }
                 }
             }
@@ -250,7 +250,7 @@ class ValidateGlobalRules {
                 if(playsEntry.getValue()){
                     Role role = playsEntry.getKey();
                     // Assert there is a relation for this type
-                    Stream<Relationship> relations = thing.relations(role);
+                    Stream<Relationship> relations = thing.relationships(role);
 
                     if(!CommonUtil.containsOnly(relations, 1)){
                         Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.getLabel());

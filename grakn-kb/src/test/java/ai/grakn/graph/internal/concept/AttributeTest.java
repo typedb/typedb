@@ -163,7 +163,7 @@ public class AttributeTest extends GraphTestBase {
 
         entity.attribute(attribute);
 
-        RelationshipStructure relationshipStructure = RelationshipImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
+        RelationshipStructure relationshipStructure = RelationshipImpl.from(Iterables.getOnlyElement(entity.relationships().collect(toSet()))).structure();
         assertThat(relationshipStructure, instanceOf(RelationshipEdge.class));
         assertTrue("Edge Relationship id not starting with [" + Schema.PREFIX_EDGE + "]", relationshipStructure.getId().getValue().startsWith(Schema.PREFIX_EDGE));
         assertEquals(entity, attribute.owner());
@@ -178,7 +178,7 @@ public class AttributeTest extends GraphTestBase {
         EntityType entityType = graknGraph.putEntityType("My entity type").attribute(attributeType);
         Entity entity = entityType.addEntity();
         entity.attribute(attribute);
-        RelationshipImpl relation = RelationshipImpl.from(entity.relations().iterator().next());
+        RelationshipImpl relation = RelationshipImpl.from(entity.relationships().iterator().next());
 
         //Check it's a relation edge.
         RelationshipStructure relationshipStructureBefore = relation.structure();
@@ -240,15 +240,15 @@ public class AttributeTest extends GraphTestBase {
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
 
-        assertThat(attribute.relations().collect(toSet()), empty());
+        assertThat(attribute.relationships().collect(toSet()), empty());
 
         e1.attribute(attribute);
         e2.attribute(attribute);
 
-        Relationship rel1 = Iterables.getOnlyElement(e1.relations().collect(toSet()));
-        Relationship rel2 = Iterables.getOnlyElement(e2.relations().collect(toSet()));
+        Relationship rel1 = Iterables.getOnlyElement(e1.relationships().collect(toSet()));
+        Relationship rel2 = Iterables.getOnlyElement(e2.relationships().collect(toSet()));
 
-        assertThat(attribute.relations().collect(toSet()), containsInAnyOrder(rel1, rel2));
+        assertThat(attribute.relationships().collect(toSet()), containsInAnyOrder(rel1, rel2));
     }
 
 }

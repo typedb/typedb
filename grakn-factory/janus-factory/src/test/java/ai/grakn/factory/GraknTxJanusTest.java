@@ -154,7 +154,7 @@ public class GraknTxJanusTest extends JanusTestBase {
         Attribute<String> attribute = attributeType.putAttribute("A Attribute Thing");
 
         EntityType entityType = graknTx.putEntityType("My entity").attribute(attributeType);
-        Relationship relationship = Iterators.getOnlyElement(entityType.addEntity().attribute(attribute).relations().iterator());
+        Relationship relationship = Iterators.getOnlyElement(entityType.addEntity().attribute(attribute).relationships().iterator());
 
         //Closing so the cache is not accessed when doing the lookup
         graknTx.commit();

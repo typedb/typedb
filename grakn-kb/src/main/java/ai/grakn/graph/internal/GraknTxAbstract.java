@@ -893,7 +893,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         if (duplicates.size() > 0) {
             //Remove any resources associated with this index that are not the main resource
             for (Attribute otherAttribute : duplicates) {
-                Stream<Relationship> otherRelations = otherAttribute.relations();
+                Stream<Relationship> otherRelations = otherAttribute.relationships();
 
                 //Copy the actual relation
                 otherRelations.forEach(otherRelation -> copyRelation(mainResource, otherAttribute, otherRelation));

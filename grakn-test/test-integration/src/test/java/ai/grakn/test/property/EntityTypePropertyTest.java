@@ -82,7 +82,7 @@ public class EntityTypePropertyTest {
     public void whenAddingAnEntity_TheEntityIsInNoRelations(@NonMeta @NonAbstract EntityType type) {
         Entity entity = type.addEntity();
 
-        assertThat(entity.relations().collect(toSet()), empty());
+        assertThat(entity.relationships().collect(toSet()), empty());
     }
 
     @Property

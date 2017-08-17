@@ -133,13 +133,13 @@ public class PostProcessingTest extends GraphTestBase{
 
         //Check everything is broken
         assertEquals(3, resourceType.instances().count());
-        assertEquals(1, r1.relations().count());
-        assertEquals(2, r11.relations().count());
-        assertEquals(1, r1.relations().count());
+        assertEquals(1, r1.relationships().count());
+        assertEquals(2, r11.relationships().count());
+        assertEquals(1, r1.relationships().count());
         assertEquals(4, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATIONSHIP.name()).toList().size());
         assertEquals(2, graknGraph.getTinkerTraversal().E().hasLabel(Schema.EdgeLabel.RESOURCE.getLabel()).toList().size());
 
-        r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().anyMatch(thing -> thing.equals(e1))));
+        r1.relationships().forEach(rel -> assertTrue(rel.rolePlayers().anyMatch(thing -> thing.equals(e1))));
 
         //Now fix everything
         graknGraph.fixDuplicateResources(r1.getIndex(), resourceIds);

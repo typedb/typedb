@@ -151,7 +151,7 @@ public class ValidatorTest extends GraphTestBase{
 
         // now try to delete all assertions and then the movie
         godfather = graknGraph.getEntityType("movie").instances().iterator().next();
-        Collection<Relationship> assertions = godfather.relations().collect(Collectors.toSet());
+        Collection<Relationship> assertions = godfather.relationships().collect(Collectors.toSet());
         Set<ConceptId> assertionIds = new HashSet<>();
 
         for (Relationship a : assertions) {

@@ -118,7 +118,7 @@ public class EntityTest extends GraphTestBase {
         Attribute attribute = attributeType.putAttribute("A attribute thing");
 
         entity.attribute(attribute);
-        Relationship relationship = entity.relations().iterator().next();
+        Relationship relationship = entity.relationships().iterator().next();
 
         checkImplicitStructure(attributeType, relationship, entity, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_OWNER, Schema.ImplicitType.HAS_VALUE);
     }
@@ -148,11 +148,11 @@ public class EntityTest extends GraphTestBase {
         Attribute attribute1 = attributeType.putAttribute("A resource thing");
         Attribute attribute2 = attributeType.putAttribute("Another resource thing");
 
-        assertEquals(0, entity.relations().count());
+        assertEquals(0, entity.relationships().count());
         entity.attribute(attribute1);
-        assertEquals(1, entity.relations().count());
+        assertEquals(1, entity.relationships().count());
         entity.attribute(attribute2);
-        assertEquals(2, entity.relations().count());
+        assertEquals(2, entity.relationships().count());
 
         graknGraph.commit();
     }
@@ -168,7 +168,7 @@ public class EntityTest extends GraphTestBase {
         Attribute attribute = attributeType.putAttribute("A attribute thing");
 
         entity.attribute(attribute);
-        Relationship relationship = entity.relations().iterator().next();
+        Relationship relationship = entity.relationships().iterator().next();
 
         checkImplicitStructure(attributeType, relationship, entity, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_OWNER, Schema.ImplicitType.KEY_VALUE);
     }

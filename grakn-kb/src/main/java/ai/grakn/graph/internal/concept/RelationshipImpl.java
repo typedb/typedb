@@ -110,8 +110,8 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     }
 
     @Override
-    public Stream<Relationship> relations(Role... roles) {
-        return readFromReified((relationReified) -> relationReified.relations(roles));
+    public Stream<Relationship> relationships(Role... roles) {
+        return readFromReified((relationReified) -> relationReified.relationships(roles));
     }
 
     @Override
