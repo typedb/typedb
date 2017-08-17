@@ -43,7 +43,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RuleControllerTest {
+public class RuleTypeControllerTest {
     private static GraknGraph mockGraph;
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
 
@@ -73,7 +73,7 @@ public class RuleControllerTest {
     }
 
     @Test
-    public void getRuleFromMovieGraphShouldExecuteSuccessfully() {
+    public void getRuleTypeFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
             .get("/graph/ruleType/a-rule-type");
