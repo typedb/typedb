@@ -59,7 +59,7 @@ qb.match(var("x").has("id", "1216728"));
 
 ### val
 
-Match all resources that have a value matching the given [predicate](#predicates).
+Match all attributes that have a value matching the given [predicate](#predicates).
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell3" data-toggle="tab">Graql</a></li>
@@ -106,7 +106,7 @@ qb.match(var("x").has("identifier", contains("Bar")));
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
-You can also specify a variable to represent the relation connecting the thing and the resource:
+You can also specify a variable to represent the relationship connecting the thing and the attribute:
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell5" data-toggle="tab">Graql</a></li>

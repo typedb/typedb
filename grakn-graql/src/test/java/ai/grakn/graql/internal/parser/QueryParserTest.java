@@ -789,12 +789,12 @@ public class QueryParserTest {
     }
 
     @Test
-    public void whenParsingAQueryWithReifiedResourceRelationSyntax_ItIsEquivalentToJavaGraql() {
+    public void whenParsingAQueryWithReifiedAttributeRelationshipSyntax_ItIsEquivalentToJavaGraql() {
         assertParseEquivalence("match $x has name $z as $x;");
     }
 
     @Test(expected = GraqlSyntaxException.class)
-    public void testMultipleQueriesThrowsSyntaxException() {
+    public void whenParsingMultipleQueriesLikeOne_Throw() {
         //noinspection ResultOfMethodCallIgnored
         parse("insert $x isa movie; insert $y isa movie");
     }

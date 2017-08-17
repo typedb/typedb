@@ -138,7 +138,7 @@ qb.insert(var().isa("person").has("identifier", "Fuchsia Groan").has("gender", "
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
-You can also specify a variable to represent the relation connecting the thing and the resource:
+You can also specify a variable to represent the relationship connecting the thing and the attribute:
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell6" data-toggle="tab">Graql</a></li>

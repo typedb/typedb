@@ -59,25 +59,25 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void testBuildQueryGraphFirst() {
+    public void whenBuildingQueryWithGraphFirst_ItExecutes() {
         MatchQuery query = movieGraph.graph().graql().match(x.isa("movie"));
         assertThat(query, variable(x, containsAllMovies));
     }
 
     @Test
-    public void testBuildMatchQueryGraphLast() {
+    public void whenBuildingMatchQueryWithGraphLast_ItExecutes() {
         MatchQuery query = match(x.isa("movie")).withGraph(movieGraph.graph());
         assertThat(query, variable(x, containsAllMovies));
     }
 
     @Test
-    public void testBuildAskQueryGraphLast() {
+    public void whenBuildingAskQueryWithGraphLast_ItExecutes() {
         AskQuery query = match(x.isa("movie")).ask().withGraph(movieGraph.graph());
         assertTrue(query.execute());
     }
 
     @Test
-    public void testBuildInsertQueryGraphLast() {
+    public void whenBuildingInsertQueryWithGraphLast_ItExecutes() {
         assertFalse(movieGraph.graph().graql().match(var().has("title", "a-movie")).ask().execute());
         InsertQuery query = insert(var().has("title", "a-movie").isa("movie")).withGraph(movieGraph.graph());
         query.execute();
@@ -85,7 +85,7 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void testBuildDeleteQueryGraphLast() {
+    public void whenBuildingDeleteQueryWithGraphLast_ItExecutes() {
         // Insert some data to delete
         movieGraph.graph().graql().insert(var().has("title", "123").isa("movie")).execute();
 
@@ -98,7 +98,7 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void testBuildMatchInsertQueryGraphLast() {
+    public void whenBuildingMatchInsertQueryWithGraphLast_ItExecutes() {
         assertFalse(movieGraph.graph().graql().match(var().has("title", "a-movie")).ask().execute());
         InsertQuery query =
                 match(x.label("movie")).
@@ -108,7 +108,7 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void testErrorExecuteMatchQueryWithoutGraph() {
+    public void whenExecutingAMatchQueryWithoutAGraph_Throw() {
         MatchQuery query = match(x.isa("movie"));
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
@@ -117,14 +117,14 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void testErrorExecuteAskQueryWithoutGraph() {
+    public void whenExecutingAnAskQueryWithoutAGraph_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
         match(x.isa("movie")).ask().execute();
     }
 
     @Test
-    public void testErrorExecuteInsertQueryWithoutGraph() {
+    public void whenExecutingAnInsertQueryWithoutAGraph_Throw() {
         InsertQuery query = insert(var().id(ConceptId.of("another-movie")).isa("movie"));
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
@@ -132,14 +132,14 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void testErrorExecuteDeleteQueryWithoutGraph() {
+    public void whenExecutingADeleteQueryWithoutAGraph_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
         match(x.isa("movie")).delete(x).execute();
     }
 
     @Test
-    public void testValidationWhenGraphProvided() {
+    public void whenGraphIsProvidedAndQueryExecutedWithNonexistentType_Throw() {
         MatchQuery query = match(x.isa("not-a-thing"));
         exception.expect(GraqlQueryException.class);
         //noinspection ResultOfMethodCallIgnored
@@ -147,7 +147,7 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void testErrorWhenSpecifyGraphTwice() {
+    public void whenGraphIsProvidedTwice_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
         //noinspection ResultOfMethodCallIgnored

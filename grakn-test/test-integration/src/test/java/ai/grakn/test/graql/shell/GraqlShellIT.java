@@ -458,7 +458,7 @@ public class GraqlShellIT {
     @Test
     public void testCommitError() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        String out = testShell("insert bob sub relation;\ncommit;\nmatch $x sub relation;\n", err);
+        String out = testShell("insert bob sub relation;\ncommit;\nmatch $x sub relationship;\n", err);
         assertFalse(out, err.toString().isEmpty());
     }
 

@@ -196,18 +196,18 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final VarPattern has(String type, VarPattern resource) {
-        return has(Label.of(type), resource);
+    public final VarPattern has(String type, VarPattern attribute) {
+        return has(Label.of(type), attribute);
     }
 
     @Override
-    public final VarPattern has(Label type, VarPattern resource) {
-        return has(type, resource, Graql.var());
+    public final VarPattern has(Label type, VarPattern attribute) {
+        return has(type, attribute, Graql.var());
     }
 
     @Override
-    public final VarPattern has(Label type, VarPattern resource, VarPattern relation) {
-        return addProperty(HasResourceProperty.of(type, resource.admin(), relation.admin()));
+    public final VarPattern has(Label type, VarPattern attribute, VarPattern relationship) {
+        return addProperty(HasResourceProperty.of(type, attribute.admin(), relationship.admin()));
     }
 
     @Override

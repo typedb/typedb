@@ -83,7 +83,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * <p>
  * Atom implementation defining a relation atom corresponding to a combined {@link RelationProperty}
- * and (optional) {@link IsaProperty}. The relation atom is a {@link TypeAtom} with relation players.
+ * and (optional) {@link IsaProperty}. The relation atom is a {@link TypeAtom} with relationship players.
  * </p>
  *
  * @author Kasper Piskorski
@@ -383,7 +383,7 @@ public class RelationAtom extends IsaAtom {
     }
 
     /**
-     * infer relation types that this relation atom can potentially have
+     * infer relation types that this relationship atom can potentially have
      * NB: entity types and role types are treated separately as they behave differently:
      * entity types only play the explicitly defined roles (not the relevant part of the hierarchy of the specified role)
      * @return list of relation types this atom can have ordered by the number of compatible role types
@@ -426,9 +426,9 @@ public class RelationAtom extends IsaAtom {
     }
 
     /**
-     * attempt to infer the relation type of this relation
+     * attempt to infer the relation type of this relationship
      * @param sub extra instance information to aid entity type inference
-     * @return either this if relation type can't be inferred or a fresh relation with inferred relation type
+     * @return either this if relation type can't be inferred or a fresh relationship with inferred relationship type
      */
     private RelationAtom inferRelationType(Answer sub){
         if (getPredicate() != null) return this;
@@ -513,7 +513,7 @@ public class RelationAtom extends IsaAtom {
     }
 
     /**
-     * attempt to infer role types of this relation and return a fresh relation with inferred role types
+     * attempt to infer role types of this relation and return a fresh relationship with inferred role types
      * @return either this if nothing/no roles can be inferred or fresh relation with inferred role types
      */
     private RelationAtom inferRoleTypes(){

@@ -188,7 +188,7 @@ public class HALBuilder {
     private static Collection<Representation> loopThroughRelations(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Map<Var, Representation> mapFromVarNameToHALObject, Map<Var, Concept> resultLine, String keyspace, int limit, Map<VarPatternAdmin, Boolean> inferredRelations) {
 
         final Collection<Representation> generatedRelations = new ArrayList<>();
-        // For each relation (VarPatternAdmin key in roleTypes) we fetch all the role-players representations and embed them in the generated-relation's HAL representation.
+        // For each relation (VarPatternAdmin key in roleTypes) we fetch all the role-players representations and embed them in the generated-relationship's HAL representation.
         roleTypes.entrySet().forEach(currentEntry -> {
             Collection<Var> varNamesInCurrentRelation = currentEntry.getValue().getKey().keySet();
             // Chain Concept ids (sorted alphabetically) corresponding to varNames in current relation

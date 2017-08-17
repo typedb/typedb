@@ -127,7 +127,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
     }
 
     /**
-     * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relation
+     * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relationship
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin rolePlayer) {

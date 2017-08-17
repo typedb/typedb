@@ -252,7 +252,7 @@ public class DeleteQueryTest {
 
         qb.match(x.val(1000L).isa("tmdb-vote-count")).delete(x).execute();
 
-        assertTrue("When a resource is deleted, an owner of the resource should not be deleted", exists(godfather));
+        assertTrue("When a resource is deleted, an owner of the attribute should not be deleted", exists(godfather));
         assertFalse("When a resource is deleted, any attached implicit relations should be deleted", exists(relation));
         assertFalse("When a resource is deleted, it should no longer exist in the graph", exists(voteCount));
     }

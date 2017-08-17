@@ -485,7 +485,7 @@ public class InsertQueryTest {
                 label("an-unconnected-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
         ).execute();
 
-        // Make sure a-new-type can have the given resource type, but not other resource types
+        // Make sure a-new-type can have the given resource type, but not other attribute types
         assertTrue(qb.match(label("a-new-type").sub("entity").has(resourceType)).ask().execute());
         assertFalse(qb.match(label("a-new-type").has("title")).ask().execute());
         assertFalse(qb.match(label("movie").has(resourceType)).ask().execute());
@@ -553,7 +553,7 @@ public class InsertQueryTest {
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
                 label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
-                var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
+                var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-attribute-type", "goodbye")
         ).execute();
 
         exception.expect(InvalidGraphException.class);
@@ -624,7 +624,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void whenAddingAResourceRelationWithProvenance_TheResourceAndProvenanceAreAdded() {
+    public void whenAddingAnAttributeRelationshipWithProvenance_TheAttributeAndProvenanceAreAdded() {
         InsertQuery query = qb.insert(
                 y.has("provenance", z.val("Someone told me")),
                 w.isa("movie").has(title, x.val("My Movie"), y)
@@ -642,7 +642,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void whenAddingProvenanceToAnExistingRelation_TheProvenanceIsAdded() {
+    public void whenAddingProvenanceToAnExistingRelationship_TheProvenanceIsAdded() {
         InsertQuery query = qb
                 .match(w.isa("movie").has(title, x.val("The Muppets"), y))
                 .insert(y.has("provenance", z.val("Someone told me")));

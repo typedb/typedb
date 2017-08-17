@@ -255,7 +255,7 @@ public class ReasonerUtils {
     }
 
     /**
-     * compute the map of compatible relation types for given types (intersection of allowed sets of relation types for each entry type)
+     * compute the map of compatible relation types for given types (intersection of allowed sets of relationship types for each entry type)
      * and compatible role types
      * @param types for which the set of compatible relation types is to be computed
      //* @param typeMapper function mapping a type to the set of compatible relation types
