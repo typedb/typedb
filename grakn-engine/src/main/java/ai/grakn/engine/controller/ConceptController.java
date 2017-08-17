@@ -79,13 +79,13 @@ public class ConceptController {
     private static final int separationDegree = 1;
     private final EngineGraknGraphFactory factory;
     private final Timer conceptIdGetTimer;
-    private final Timer ontologyGetTimer;
+    private final Timer schemaGetTimer;
 
     public ConceptController(EngineGraknGraphFactory factory, Service spark,
             MetricRegistry metricRegistry){
         this.factory = factory;
         this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-identifier"));
-        this.ontologyGetTimer = metricRegistry.timer(name(ConceptController.class, "schema"));
+        this.schemaGetTimer = metricRegistry.timer(name(ConceptController.class, "schema"));
 
         spark.get(CONCEPT + ID_PARAMETER,  this::conceptByIdentifier);
         spark.get(SCHEMA,  this::schema);
@@ -129,7 +129,7 @@ public class ConceptController {
     private String schema(Request request, Response response) {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         validateRequest(request, APPLICATION_ALL, APPLICATION_JSON);
-        try(GraknTx graph = factory.getGraph(keyspace, READ); Context context = ontologyGetTimer.time()){
+        try(GraknTx graph = factory.getGraph(keyspace, READ); Context context = schemaGetTimer.time()){
             Json responseObj = Json.object();
             responseObj.set(ROLES_JSON_FIELD, subLabels(graph.admin().getMetaRole()));
             responseObj.set(ENTITIES_JSON_FIELD, subLabels(graph.admin().getMetaEntityType()));

@@ -13,7 +13,7 @@ comment_issue_id: 32
 ## Introduction
 This page introduces the concept of data migration into a Grakn knowledge base. We currently support migration of CSV, JSON, OWL, XML and SQL data. For each type of data, the steps to migrate to GRAKN.AI are:
 
-- define an schema for the data in Graql
+- define a schema for the data in Graql
 - create templated Graql to map the data to the schema
 - invoke the Grakn migrator through the shell script or Java API.
 

@@ -29,7 +29,7 @@ public class AuthControllerTest  {
 
     private UsersHandler usersHandler = UsersHandler.create(
             EngineTestHelper.config().getProperty(GraknEngineConfig.ADMIN_PASSWORD_PROPERTY), 
-                                                  EngineGraknGraphFactory.createAndLoadSystemOntology(EngineTestHelper.config().getProperties()));
+                                                  EngineGraknGraphFactory.createAndLoadSystemSchema(EngineTestHelper.config().getProperties()));
 
     @Test
     public void newSessionWithNonExistingUser() {

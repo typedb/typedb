@@ -78,7 +78,7 @@ CREATE TABLE event
 ALTER TABLE event ADD FOREIGN KEY ( name ) REFERENCES pet ( name );
 ```
 
-We can define an schema that corresponds to the SQL tables as follows:
+We can define a schema that corresponds to the SQL tables as follows:
 
 ```graql-test-ignore
 

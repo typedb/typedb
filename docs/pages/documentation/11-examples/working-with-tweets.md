@@ -584,4 +584,4 @@ Watch the terminal as the application runs. You should see the following text pr
 ------
 ```
 
-Finally, we have shown you many useful concepts — from creating an schema, storing data, crafting a Graql query, as well as displaying the result of the query. These are fundamental concepts that you will likely use in almost every area.
+Finally, we have shown you many useful concepts — from creating a schema, storing data, crafting a Graql query, as well as displaying the result of the query. These are fundamental concepts that you will likely use in almost every area.

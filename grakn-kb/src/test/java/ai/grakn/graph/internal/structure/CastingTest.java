@@ -44,7 +44,7 @@ public class CastingTest extends GraphTestBase {
     private Role role1;
 
     @Before
-    public void createOntology(){
+    public void setup(){
         role1 = graknGraph.putRole("role1");
         role2 = graknGraph.putRole("role2");
         role3 = graknGraph.putRole("role3");

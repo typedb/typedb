@@ -179,7 +179,7 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when attempting to mutate the schema while the transaction is in batch mode
      */
-    public static GraphOperationException ontologyMutation(){
+    public static GraphOperationException schemaMutation(){
         return new GraphOperationException(ErrorMessage.SCHEMA_LOCKED.getMessage());
     }
 

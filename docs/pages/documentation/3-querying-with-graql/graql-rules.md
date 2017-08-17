@@ -104,7 +104,7 @@ then {
 };
 ```
 
-When adding rules such as those defined above with Graql, we simply use an `insert` statement, and load the rules, saved as a *.gql* file, into the knowledge base in a standard manner, much as for an schema.
+When adding rules such as those defined above with Graql, we simply use an `insert` statement, and load the rules, saved as a *.gql* file, into the knowledge base in a standard manner, much as for a schema.
 
 Defining the above rules in terms of predicates and assuming left-to-right directionality of the roles, we can summarise them in the implication form as:
 

@@ -78,7 +78,7 @@ public class RemoteSessionTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EmbeddedCassandra.start();
         Properties properties = GraknEngineConfig.create().getProperties();
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.createAndLoadSystemOntology(properties);
+        EngineGraknGraphFactory factory = EngineGraknGraphFactory.createAndLoadSystemSchema(properties);
         new SystemController(factory, spark, new GraknEngineStatus(), new MetricRegistry());
     }).port(4567);
 

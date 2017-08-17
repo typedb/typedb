@@ -33,7 +33,7 @@ In Grakn, the schema is the formal specification of all the relevant concepts an
 
 We don’t think so! To model the world accurately, you need to model type hierarchies, since without that level of representation, you cannot interpret data or knowledge accurately, and you cannot build a model that is easily extensible. On GRAKN.AI, since the type system exists in the schema rather than in the data, you have control over what goes into the model. Wild streams of input data cannot mess up the model, and type definitions can only go out of control if you explicitly mess up the schema. You face fewer hurdles when ingesting your data and you spend less time and effort on data cleanup and integration.   
 
-If you didn’t model your data in an schema, you would have to do it in your system application layer. But modelling your data domain within code is difficult, hard to scale, maintain and extend. Our approach allows you to keep your data model and code separate.
+If you didn’t model your data in a schema, you would have to do it in your system application layer. But modelling your data domain within code is difficult, hard to scale, maintain and extend. Our approach allows you to keep your data model and code separate.
 
 ### What are the advantages compared to relational schema?
 
@@ -60,9 +60,9 @@ If you have new data that requires a new model, which you have not considered be
 * can be circumvented if you want to. You can still add data that doesn’t fit your schema, by creating a generic entity-relationship-resource model to ingest general information that doesn’t have any particular type. Imagine it to be “an abstract type”, but not really “abstract”. You will still get the benefit of having an intelligent and simple query language, but you won’t get the benefit of deep/advanced inference.
 * allows you to ask previously unimagined questions about the data because the schema provides a reasoning model for the query language to interpret future questions in the most flexible and expressive manner. Without the schema, you would be limited in this respect.
 
-### Is it practical to have to define an schema before I’ve worked with the data. Why can’t I just put it into a knowledge base as a set of entities and relationships?
+### Is it practical to have to define a schema before I’ve worked with the data. Why can’t I just put it into a knowledge base as a set of entities and relationships?
 
-In the past, it hasn’t been practical with other technologies that use an schema, but that is the main mission for us at GRAKN.AI: to make ontologies and knowledge representation practical for the very first time, by integrating seamlessly with a database. Our goal is to ensure that users don’t worry about perceived “baggage”, but simply get expressive modelling abilities without having to worry about how to implement data structure and constraints.
+In the past, it hasn’t been practical with other technologies that use a schema, but that is the main mission for us at GRAKN.AI: to make ontologies and knowledge representation practical for the very first time, by integrating seamlessly with a database. Our goal is to ensure that users don’t worry about perceived “baggage”, but simply get expressive modelling abilities without having to worry about how to implement data structure and constraints.
 
 And yes, you could just use a graph database, but with GRAKN.AI, your data sits in a knowledge base, which enables automation, pattern matching, inference and discovery with very little human intervention. You can uncover hidden patterns in the data that are too complex for human cognition.
 

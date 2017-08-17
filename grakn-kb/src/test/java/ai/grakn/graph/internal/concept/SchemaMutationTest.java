@@ -115,7 +115,7 @@ public class SchemaMutationTest extends GraphTestBase {
     @Test
     public void whenAddingEntityTypeUsingBatchLoadingGraph_Throw(){
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
+        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putEntityType("This Will Fail");
@@ -124,7 +124,7 @@ public class SchemaMutationTest extends GraphTestBase {
     @Test
     public void whenAddingRoleTypeUsingBatchLoadingGraph_Throw(){
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
+        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putRole("This Will Fail");
@@ -133,7 +133,7 @@ public class SchemaMutationTest extends GraphTestBase {
     @Test
     public void whenAddingResourceTypeUsingBatchLoadingGraph_Throw(){
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
+        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putAttributeType("This Will Fail", AttributeType.DataType.STRING);
@@ -142,7 +142,7 @@ public class SchemaMutationTest extends GraphTestBase {
     @Test
     public void whenAddingRuleTypeUsingBatchLoadingGraph_Throw(){
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
+        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putRuleType("This Will Fail");
@@ -151,7 +151,7 @@ public class SchemaMutationTest extends GraphTestBase {
     @Test
     public void whenAddingRelationTypeUsingBatchLoadingGraph_Throw(){
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
+        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putRelationshipType("This Will Fail");
@@ -169,7 +169,7 @@ public class SchemaMutationTest extends GraphTestBase {
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
+        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
 
         relationshipType.relates(role);
     }
@@ -186,7 +186,7 @@ public class SchemaMutationTest extends GraphTestBase {
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
+        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
 
         entityType.plays(role);
     }
@@ -204,7 +204,7 @@ public class SchemaMutationTest extends GraphTestBase {
         EntityType entityType2 = graknGraphBatch.getEntityType(entityTypeId2);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
+        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
 
         entityType1.sup(entityType2);
     }
@@ -222,7 +222,7 @@ public class SchemaMutationTest extends GraphTestBase {
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
+        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
 
         entityType.deletePlays(role);
     }
@@ -240,7 +240,7 @@ public class SchemaMutationTest extends GraphTestBase {
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.ontologyMutation().getMessage());
+        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
 
         relationshipType.deleteRelates(role);
     }

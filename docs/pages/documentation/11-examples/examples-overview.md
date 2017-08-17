@@ -81,10 +81,10 @@ It is possible to extract data from Grakn and use it as a data science tool for 
 
 ### Java Examples
 
-* Use of the core APIs for creating an schema, adding data and making basic queries is covered in a [blog post](https://blog.grakn.ai/working-with-grakn-ai-using-java-5f13f24f1269#.giljgrjb3), and also as a [basic example](./graph-api-example.html).
+* Use of the core APIs for creating a schema, adding data and making basic queries is covered in a [blog post](https://blog.grakn.ai/working-with-grakn-ai-using-java-5f13f24f1269#.giljgrjb3), and also as a [basic example](./graph-api-example.html).
 * JSON migration: There is an example of using the [Java Migration API](../developing-with-java/migration-api.html) for JSON migration on the [sample-projects repository](https://github.com/graknlabs/sample-projects/tree/master/example-json-migration-giphy) on Github.
 * SQL migration: We have documented an example of [SQL migration using the Java API](../examples/SQL-migration.html). 
-* Pokemon: The [sample-projects](https://github.com/graknlabs/sample-projects/tree/master/example-pokemon) repo on Github contains a Java project that uses the Java API on Pokemon data and an schema. 
+* Pokemon: The [sample-projects](https://github.com/graknlabs/sample-projects/tree/master/example-pokemon) repo on Github contains a Java project that uses the Java API on Pokemon data and a schema. 
 * Philosophers: The [sample-projects](https://github.com/graknlabs/sample-projects/tree/master/example-philosophers) repo on Github contains a Java project that uses the Java API on a Philosophers dataset and schema. 
 * [Analytics using Java APIs](./java-analytics.html) uses the Java APIs to show how to calculate clusters and degrees using the familar genealogy example set.
 

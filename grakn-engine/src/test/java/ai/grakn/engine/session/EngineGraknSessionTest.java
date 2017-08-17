@@ -33,7 +33,7 @@ public class EngineGraknSessionTest {
     @BeforeClass
     public static void beforeClass() {
         EngineTestHelper.engineWithGraphs();
-        graknFactory = EngineGraknGraphFactory.createAndLoadSystemOntology(EngineTestHelper.config().getProperties());
+        graknFactory = EngineGraknGraphFactory.createAndLoadSystemSchema(EngineTestHelper.config().getProperties());
     }
 
     @AfterClass

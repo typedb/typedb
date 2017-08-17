@@ -69,7 +69,7 @@ public class TxCache {
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
-    private final Map<Label, SchemaConcept> ontologyConceptCache = new HashMap<>();
+    private final Map<Label, SchemaConcept> schemaConceptCache = new HashMap<>();
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
     //Elements Tracked For Validation
@@ -186,8 +186,8 @@ public class TxCache {
      *
      * @return All the types currently cached in the transaction. Used for
      */
-    Map<Label, SchemaConcept> getOntologyConceptCache(){
-        return ontologyConceptCache;
+    Map<Label, SchemaConcept> getSchemaConceptCache(){
+        return schemaConceptCache;
     }
 
     /**
@@ -222,7 +222,7 @@ public class TxCache {
         conceptCache.remove(concept.getId());
         if (concept.isSchemaConcept()) {
             Label label = ((SchemaConceptImpl) concept).getLabel();
-            ontologyConceptCache.remove(label);
+            schemaConceptCache.remove(label);
             labelCache.remove(label);
         }
     }
@@ -245,7 +245,7 @@ public class TxCache {
         conceptCache.put(concept.getId(), concept);
         if(concept.isSchemaConcept()){
             SchemaConceptImpl ontologyElement = (SchemaConceptImpl) concept;
-            ontologyConceptCache.put(ontologyElement.getLabel(), ontologyElement);
+            schemaConceptCache.put(ontologyElement.getLabel(), ontologyElement);
             labelCache.put(ontologyElement.getLabel(), ontologyElement.getLabelId());
         }
     }
@@ -277,7 +277,7 @@ public class TxCache {
      * @return true if the concept is cached
      */
     public boolean isTypeCached(Label label){
-        return ontologyConceptCache.containsKey(label);
+        return schemaConceptCache.containsKey(label);
     }
 
     /**
@@ -310,7 +310,7 @@ public class TxCache {
      */
     public <X extends SchemaConcept> X getCachedOntologyElement(Label label){
         //noinspection unchecked
-        return (X) ontologyConceptCache.get(label);
+        return (X) schemaConceptCache.get(label);
     }
 
     public LabelId convertLabelToId(Label label){
@@ -405,7 +405,7 @@ public class TxCache {
         relationIndexCache.clear();
         shardingCount.clear();
         conceptCache.clear();
-        ontologyConceptCache.clear();
+        schemaConceptCache.clear();
         labelCache.clear();
     }
     public void openTx(GraknTxType txType){

@@ -381,7 +381,7 @@ The rule-based inference is currently set OFF by default when querying Grakn, an
 
 
 ## Where Next?
-Our [Quickstart Tutorial](../get-started/quickstart-tutorial.html) will show you how to load an schema, rules and data into Grakn using Graql, and to make basic queries.
+Our [Quickstart Tutorial](../get-started/quickstart-tutorial.html) will show you how to load a schema, rules and data into Grakn using Graql, and to make basic queries.
 
 You can find additional example code and documentation on this portal. We are always adding more and welcome ideas and improvement suggestions. Please get in touch!
 

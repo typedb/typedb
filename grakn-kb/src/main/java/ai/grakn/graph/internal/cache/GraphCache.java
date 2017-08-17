@@ -96,10 +96,10 @@ public class GraphCache {
     void readTxCache(TxCache txCache){
         //TODO: The difference between the caches need to be taken into account. For example if a type is delete then it should be removed from the cachedLabels
         cachedLabels.putAll(txCache.getLabelCache());
-        cachedTypes.putAll(txCache.getOntologyConceptCache());
+        cachedTypes.putAll(txCache.getSchemaConceptCache());
 
         //Flush All The Internal Transaction Caches
-        txCache.getOntologyConceptCache().values().forEach(ontologyConcept
+        txCache.getSchemaConceptCache().values().forEach(ontologyConcept
                 -> SchemaConceptImpl.from(ontologyConcept).txCacheFlush());
     }
 

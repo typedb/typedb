@@ -5,7 +5,7 @@ last_updated: December, 2016
 tags: [java, java-api]
 summary: "Demonstrates how to create a rule-driven schema for Grakn."
 sidebar: documentation_sidebar
-permalink: /documentation/building-an-schema/rule-driven-schema.html
+permalink: /documentation/building-a-schema/rule-driven-schema.html
 folder: documentation
 comment_issue_id: 22
 ---

@@ -41,7 +41,7 @@ OPTIONS
 
 The steps to migrate the CSV to GRAKN.AI are:
 
-* define an schema for the data to derive the full benefit of a knowledge base
+* define a schema for the data to derive the full benefit of a knowledge base
 * create templated Graql to map the data to the schema. Approach each JSON file as though you were inserting a single query, taking care that there are not more than one `match` or `insert` commands in your template. 
 * invoke the Grakn migrator through the shell script or Java API. 
 

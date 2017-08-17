@@ -372,7 +372,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     public void checkOntologyMutationAllowed() {
         checkMutationAllowed();
-        if (isBatchGraph()) throw GraphOperationException.ontologyMutation();
+        if (isBatchGraph()) throw GraphOperationException.schemaMutation();
     }
 
     public void checkMutationAllowed() {

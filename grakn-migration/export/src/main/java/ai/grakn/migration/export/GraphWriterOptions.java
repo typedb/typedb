@@ -35,7 +35,7 @@ public class GraphWriterOptions extends MigrationOptions {
         parse(args);
     }
 
-    public boolean exportOntology(){
+    public boolean exportSchema(){
         return command.hasOption("schema");
     }
 

@@ -226,7 +226,7 @@ public class TxCacheTest extends GraphTestBase {
 
         //Check the caches are not empty
         assertThat(cache.getConceptCache().keySet(), not(empty()));
-        assertThat(cache.getOntologyConceptCache().keySet(), not(empty()));
+        assertThat(cache.getSchemaConceptCache().keySet(), not(empty()));
         assertThat(cache.getLabelCache().keySet(), not(empty()));
         assertThat(cache.getRelationIndexCache().keySet(), not(empty()));
         assertThat(cache.getModifiedAttributes(), not(empty()));
@@ -238,7 +238,7 @@ public class TxCacheTest extends GraphTestBase {
 
         //Check the caches are empty
         assertThat(cache.getConceptCache().keySet(), empty());
-        assertThat(cache.getOntologyConceptCache().keySet(), empty());
+        assertThat(cache.getSchemaConceptCache().keySet(), empty());
         assertThat(cache.getLabelCache().keySet(), empty());
         assertThat(cache.getRelationIndexCache().keySet(), empty());
         assertThat(cache.getShardingCount().keySet(), empty());

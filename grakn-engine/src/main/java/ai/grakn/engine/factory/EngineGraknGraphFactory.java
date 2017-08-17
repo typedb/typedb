@@ -47,7 +47,7 @@ public class EngineGraknGraphFactory {
     private final String engineURI;
     private final SystemKeyspace systemKeyspace;
 
-    public static EngineGraknGraphFactory createAndLoadSystemOntology(Properties properties) {
+    public static EngineGraknGraphFactory createAndLoadSystemSchema(Properties properties) {
         return new EngineGraknGraphFactory(properties, true);
     }
 

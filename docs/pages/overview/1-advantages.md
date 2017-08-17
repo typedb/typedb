@@ -12,7 +12,7 @@ toc: false
 
 GRAKN.AI  working with complex data easymakes by providing:
 
-* an schema that allows you to model the world and all the type hierarchies and hyper-relationships contained within it.
+* a schema that allows you to model the world and all the type hierarchies and hyper-relationships contained within it.
 * a query language that uses machine reasoning for retrieving explicitly stored data and implicitly derived knowledge.
 
 ## Expressive data model
