@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
@@ -34,19 +34,19 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class TransitivityChainGraph extends TestGraph {
+public class TransitivityChainKB extends TestKB {
 
     private final static Label key = Label.of("index");
     private final static String gqlFile = "simple-transitivity.gql";
 
     private final int n;
 
-    public TransitivityChainGraph(int n){
+    public TransitivityChainKB(int n){
         this.n = n;
     }
 
     public static Consumer<GraknTx> get(int n) {
-        return new TransitivityChainGraph(n).build();
+        return new TransitivityChainKB(n).build();
     }
 
     @Override

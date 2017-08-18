@@ -31,7 +31,7 @@ import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.kbs.MovieKB;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
@@ -87,7 +87,7 @@ public class GraqlControllerReadOnlyTest {
     private static final JsonMapper jsonMapper = new JsonMapper();
 
     @ClassRule
-    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieGraph.get());
+    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {

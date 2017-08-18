@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
@@ -35,7 +35,7 @@ import static java.util.stream.Collectors.toSet;
  * @author borislav
  *
  */
-public abstract class TestGraph {
+public abstract class TestKB {
 
     protected void buildSchema(GraknTx graph){};
 

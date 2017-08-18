@@ -26,7 +26,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.Schema;
 import org.junit.After;
 import org.junit.Before;
@@ -58,7 +58,7 @@ public class DeleteQueryTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final SampleKBContext movieGraph = SampleKBContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext movieGraph = SampleKBContext.preLoad(MovieKB.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

@@ -16,14 +16,15 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
+import ai.grakn.concept.Label;
 import ai.grakn.test.SampleKBContext;
 
 import java.util.function.Consumer;
@@ -33,21 +34,21 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class DiagonalGraph extends TestGraph {
+public class TransitivityMatrixKB extends TestKB {
 
-    private final static Label key = Label.of("name");
-    private final static String gqlFile = "diagonal-test.gql";
+    private final static Label key = Label.of("index");
+    private final static String gqlFile = "simple-transitivity.gql";
 
     private final int n;
     private final int m;
 
-    public DiagonalGraph(int n, int m){
+    public TransitivityMatrixKB(int n, int m){
         this.m = m;
         this.n = n;
     }
 
     public static Consumer<GraknTx> get(int n, int m) {
-        return new DiagonalGraph(n, m).build();
+        return new TransitivityMatrixKB(n, m).build();
     }
 
     @Override
@@ -59,40 +60,36 @@ public class DiagonalGraph extends TestGraph {
     }
 
     private void buildExtensionalDB(GraknTx graph, int n, int m) {
-        Role relFrom = graph.getRole("rel-from");
-        Role relTo = graph.getRole("rel-to");
+        Role qfrom = graph.getRole("Q-from");
+        Role qto = graph.getRole("Q-to");
 
-        EntityType entity1 = graph.getEntityType("entity1");
-        RelationshipType horizontal = graph.getRelationshipType("horizontal");
-        RelationshipType vertical = graph.getRelationshipType("vertical");
-        ConceptId[][] instanceIds = new ConceptId[n][m];
-        long inserts = 0;
+        EntityType aEntity = graph.getEntityType("a-entity");
+        RelationshipType q = graph.getRelationshipType("Q");
+        Thing aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
+        ConceptId[][] aInstanceIds = new ConceptId[n][m];
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
-                instanceIds[i][j] = putEntity(graph, "a" + i + "," + j, entity1, key).getId();
-                inserts++;
-                if (inserts % 100 == 0) System.out.println("inst inserts: " + inserts);
-
+                aInstanceIds[i][j] = putEntity(graph, "a" + i + "," + j, aEntity, key).getId();
             }
         }
+        
+        q.addRelationship()
+                .addRolePlayer(qfrom, aInst)
+                .addRolePlayer(qto, graph.getConcept(aInstanceIds[0][0]));
 
         for(int i = 0 ; i < n ; i++) {
-            for (int j = 0; j < m; j++) {
+            for (int j = 0; j < m ; j++) {
                 if ( i < n - 1 ) {
-                    vertical.addRelationship()
-                            .addRolePlayer(relFrom, graph.getConcept(instanceIds[i][j]))
-                            .addRolePlayer(relTo, graph.getConcept(instanceIds[i+1][j]));
-                    inserts++;
+                    q.addRelationship()
+                            .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
+                            .addRolePlayer(qto, graph.getConcept(aInstanceIds[i+1][j]));
                 }
                 if ( j < m - 1){
-                    horizontal.addRelationship()
-                            .addRolePlayer(relFrom, graph.getConcept(instanceIds[i][j]))
-                            .addRolePlayer(relTo, graph.getConcept(instanceIds[i][j+1]));
-                    inserts++;
+                    q.addRelationship()
+                            .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i][j]))
+                            .addRolePlayer(qto, graph.getConcept(aInstanceIds[i][j+1]));
                 }
-                if (inserts % 100 == 0) System.out.println("rel inserts: " + inserts);
             }
         }
-        System.out.println("Extensional DB loaded.");
     }
 }

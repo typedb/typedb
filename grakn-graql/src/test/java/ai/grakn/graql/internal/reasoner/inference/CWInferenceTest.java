@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.inference;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.RuleType;
-import ai.grakn.test.graphs.CWGraph;
+import ai.grakn.test.kbs.CWKB;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
@@ -42,10 +42,10 @@ public class CWInferenceTest {
     private static QueryBuilder iqb;
 
     @ClassRule
-    public static SampleKBContext cwGraph = SampleKBContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static SampleKBContext cwGraph = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static SampleKBContext cwGraph2 = SampleKBContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static SampleKBContext cwGraph2 = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {

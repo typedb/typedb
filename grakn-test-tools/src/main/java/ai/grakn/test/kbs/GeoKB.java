@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
@@ -34,7 +34,7 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class GeoGraph extends TestGraph {
+public class GeoKB extends TestKB {
 
     private static AttributeType<String> key;
 
@@ -53,7 +53,7 @@ public class GeoGraph extends TestGraph {
     private static Thing UCL;
 
     public static Consumer<GraknTx> get(){
-        return new GeoGraph().build();
+        return new GeoKB().build();
     }
 
     @Override

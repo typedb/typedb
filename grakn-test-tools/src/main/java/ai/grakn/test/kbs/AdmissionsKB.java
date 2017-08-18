@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
@@ -31,7 +31,7 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class AdmissionsGraph extends TestGraph {
+public class AdmissionsKB extends TestKB {
 
     private static AttributeType<String> key;
 
@@ -51,7 +51,7 @@ public class AdmissionsGraph extends TestGraph {
     private static AttributeType<String> decisionType;
 
     public static Consumer<GraknTx> get() {
-        return new AdmissionsGraph().build();
+        return new AdmissionsKB().build();
     }
 
     @Override

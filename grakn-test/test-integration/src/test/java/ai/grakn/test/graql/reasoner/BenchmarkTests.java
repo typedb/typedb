@@ -24,10 +24,10 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.graphs.DiagonalGraph;
-import ai.grakn.test.graphs.MatrixGraphII;
-import ai.grakn.test.graphs.TransitivityChainGraph;
-import ai.grakn.test.graphs.TransitivityMatrixGraph;
+import ai.grakn.test.kbs.DiagonalKB;
+import ai.grakn.test.kbs.MatrixKBII;
+import ai.grakn.test.kbs.TransitivityChainKB;
+import ai.grakn.test.kbs.TransitivityMatrixKB;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -81,7 +81,7 @@ public class BenchmarkTests {
         //results @N = 30 216225  132s    65 s
 
         long startTime = System.currentTimeMillis();
-        graphContext.load(MatrixGraphII.get(N, N));
+        graphContext.load(MatrixKBII.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
         GraknTx graph = graphContext.graph();
@@ -120,7 +120,7 @@ public class BenchmarkTests {
     public void testTransitiveChain()  {
         final int N = 20;
         long startTime = System.currentTimeMillis();
-        graphContext.load(TransitivityChainGraph.get(N));
+        graphContext.load(TransitivityChainKB.get(N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
         GraknTx graph = graphContext.graph();
@@ -187,7 +187,7 @@ public class BenchmarkTests {
         //results @N = 35 396900   ?        ?      ?     76 s
 
         long startTime = System.currentTimeMillis();
-        graphContext.load(TransitivityMatrixGraph.get(N, N));
+        graphContext.load(TransitivityMatrixKB.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
         GraknTx graph = graphContext.graph();
@@ -259,7 +259,7 @@ public class BenchmarkTests {
         //results @N = 100 9604  loading takes ages
 
         long startTime = System.currentTimeMillis();
-        graphContext.load(DiagonalGraph.get(N, N));
+        graphContext.load(DiagonalKB.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
         GraknTx graph = graphContext.graph();

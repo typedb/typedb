@@ -24,7 +24,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.kbs.MovieKB;
 import com.google.common.collect.Sets;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -50,7 +50,7 @@ public class PatternTest {
     private GraknTx graph = rule.graph();
 
     @ClassRule
-    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

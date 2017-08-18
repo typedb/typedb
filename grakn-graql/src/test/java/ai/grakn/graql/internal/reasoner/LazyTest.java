@@ -20,8 +20,8 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
-import ai.grakn.test.graphs.GeoGraph;
-import ai.grakn.test.graphs.MatrixGraphII;
+import ai.grakn.test.kbs.GeoKB;
+import ai.grakn.test.kbs.MatrixKBII;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
@@ -59,7 +59,7 @@ import static org.junit.Assume.assumeTrue;
 public class LazyTest {
 
     @ClassRule
-    public static final SampleKBContext geoGraph = SampleKBContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoGraph = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
     public static final SampleKBContext graphContext = SampleKBContext.empty().assumeTrue(GraknTestSetup.usingTinker());
@@ -178,7 +178,7 @@ public class LazyTest {
 
         long startTime = System.currentTimeMillis();
         graphContext.graph().close();
-        graphContext.load(MatrixGraphII.get(N, N));
+        graphContext.load(MatrixKBII.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
         GraknTx graph = graphContext.graph();

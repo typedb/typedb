@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
@@ -32,7 +32,7 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class PathGraphII extends TestGraph {
+public class PathKBII extends TestKB {
 
     private final static Label key = Label.of("index");
     final static String gqlFile = "path-test.gql";
@@ -40,13 +40,13 @@ public class PathGraphII extends TestGraph {
     private final int n;
     private final int m;
 
-    public PathGraphII(int n, int m){
+    public PathKBII(int n, int m){
         this.m = m;
         this.n = n;
     }
 
     public static Consumer<GraknTx> get(int n, int m) {
-        return new PathGraphII(n, m).build();
+        return new PathKBII(n, m).build();
     }
 
     @Override
@@ -94,6 +94,6 @@ public class PathGraphII extends TestGraph {
         }
 
         long loadTime = System.currentTimeMillis() - startTime;
-        System.out.println("PathGraphII loading time: " + loadTime + " ms");
+        System.out.println("PathKBII loading time: " + loadTime + " ms");
     }
 }

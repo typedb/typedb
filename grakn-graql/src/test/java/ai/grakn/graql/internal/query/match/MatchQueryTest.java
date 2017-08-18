@@ -42,7 +42,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.matcher.MatchableConcept;
 import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -182,7 +182,7 @@ public class MatchQueryTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final SampleKBContext movieGraph = SampleKBContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext movieGraph = SampleKBContext.preLoad(MovieKB.get());
 
     // This is a graph to contain unusual edge cases
     @ClassRule

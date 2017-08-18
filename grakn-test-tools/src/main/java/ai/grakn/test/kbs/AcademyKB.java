@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.test.SampleKBContext;
@@ -28,14 +28,14 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class AcademyGraph extends TestGraph {
+public class AcademyKB extends TestKB {
 
     final private static String schemaFile = "academy/schema.gql";
     final private static String dataFile = "academy/data.gql";
     final private static String rulesFile = "academy/rules.gql";
 
     public static Consumer<GraknTx> get() {
-        return new AcademyGraph().build();
+        return new AcademyKB().build();
     }
 
     @Override

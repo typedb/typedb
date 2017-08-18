@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.test.SampleKBContext;
@@ -25,25 +25,28 @@ import java.util.function.Consumer;
 
 /**
  *
- * @author Kasper Piskorski
+ * @author Sheldon
  *
  */
-public class GenealogyGraph extends TestGraph {
-
-    final private static String schemaFile = "genealogy/schema.gql";
-    final private static String dataFile = "genealogy/data.gql";
-    final private static String rulesFile = "genealogy/rules.gql";
+public class SNBKB extends TestKB {
 
     public static Consumer<GraknTx> get() {
-        return new GenealogyGraph().build();
+        return new SNBKB().build();
     }
 
     @Override
-    public Consumer<GraknTx> build(){
-        return (GraknTx graph) -> {
-            SampleKBContext.loadFromFile(graph, schemaFile);
-            SampleKBContext.loadFromFile(graph, dataFile);
-            SampleKBContext.loadFromFile(graph, rulesFile);
-        };
+    protected void buildSchema(GraknTx graph) {
+        SampleKBContext.loadFromFile(graph, "ldbc-snb-schema.gql");
+        SampleKBContext.loadFromFile(graph, "ldbc-snb-product-schema.gql");
+    }
+
+    @Override
+    protected void buildRules(GraknTx graph) {
+        SampleKBContext.loadFromFile(graph, "ldbc-snb-rules.gql");
+    }
+
+    @Override
+    protected void buildInstances(GraknTx graph) {
+        SampleKBContext.loadFromFile(graph, "ldbc-snb-data.gql");
     }
 }

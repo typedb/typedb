@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.inference;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.test.graphs.GeoGraph;
+import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -41,7 +41,7 @@ import static org.junit.Assume.assumeTrue;
 public class GeoInferenceTest {
 
     @Rule
-    public final SampleKBContext geoGraph = SampleKBContext.preLoad(GeoGraph.get());
+    public final SampleKBContext geoGraph = SampleKBContext.preLoad(GeoKB.get());
 
     @BeforeClass
     public static void onStartup() throws Exception {

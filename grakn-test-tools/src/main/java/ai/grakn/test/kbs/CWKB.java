@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
@@ -34,7 +34,7 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class CWGraph extends TestGraph {
+public class CWKB extends TestKB {
 
     private static AttributeType<String> key;
 
@@ -57,7 +57,7 @@ public class CWGraph extends TestGraph {
     private static Thing colonelWest, Nono, America, Tomahawk;
 
     public static Consumer<GraknTx> get() {
-        return new CWGraph().build();
+        return new CWKB().build();
     }
 
     @Override

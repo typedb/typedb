@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
@@ -33,19 +33,19 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class NguyenGraph extends TestGraph {
+public class NguyenKB extends TestKB {
 
     private final static Label key = Label.of("index");
     private final static String gqlFile = "nguyen-test.gql";
 
     private final int n;
 
-    public NguyenGraph(int n){
+    public NguyenKB(int n){
         this.n = n;
     }
 
     public static Consumer<GraknTx> get(int n) {
-        return new NguyenGraph(n).build();
+        return new NguyenKB(n).build();
     }
 
     @Override

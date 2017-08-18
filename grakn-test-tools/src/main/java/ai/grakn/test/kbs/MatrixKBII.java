@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
@@ -34,7 +34,7 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class MatrixGraphII extends TestGraph {
+public class MatrixKBII extends TestKB {
 
     private final static Label key = Label.of("index");
     private final static String gqlFile = "matrix-testII.gql";
@@ -42,13 +42,13 @@ public class MatrixGraphII extends TestGraph {
     private final int n;
     private final int m;
 
-    public MatrixGraphII(int n, int m){
+    public MatrixKBII(int n, int m){
         this.m = m;
         this.n = n;
     }
 
     public static Consumer<GraknTx> get(int n, int m) {
-        return new MatrixGraphII(n, m).build();
+        return new MatrixKBII(n, m).build();
     }
 
     @Override

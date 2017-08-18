@@ -24,8 +24,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.graphs.AcademyGraph;
-import ai.grakn.test.graphs.GenealogyGraph;
+import ai.grakn.test.kbs.AcademyKB;
+import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.Schema;
 import mjson.Json;
 import org.junit.ClassRule;
@@ -41,9 +41,9 @@ import static org.junit.Assert.assertTrue;
 public class HALBuilderTest {
 
     @ClassRule
-    public static final SampleKBContext academyGraph = SampleKBContext.preLoad(AcademyGraph.get());
+    public static final SampleKBContext academyGraph = SampleKBContext.preLoad(AcademyKB.get());
 
-    public static final SampleKBContext genealogyGraph = SampleKBContext.preLoad(GenealogyGraph.get());
+    public static final SampleKBContext genealogyGraph = SampleKBContext.preLoad(GenealogyKB.get());
 
 
     @Test

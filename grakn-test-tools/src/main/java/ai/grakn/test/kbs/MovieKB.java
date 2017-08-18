@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
@@ -37,7 +37,7 @@ import java.util.function.Consumer;
  *
  * @author fppt, Felix Chapman
  */
-public class MovieGraph extends TestGraph {
+public class MovieKB extends TestKB {
 
     private static EntityType production, movie, person, genre, character, cluster, language;
     private static AttributeType<String> title, gender, realName, name;
@@ -59,7 +59,7 @@ public class MovieGraph extends TestGraph {
     private static Thing cluster0, cluster1;
 
     public static Consumer<GraknTx> get(){
-        return new MovieGraph().build();
+        return new MovieKB().build();
     }
 
     @Override

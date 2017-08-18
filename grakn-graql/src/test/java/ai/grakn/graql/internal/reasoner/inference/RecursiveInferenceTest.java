@@ -20,16 +20,16 @@ package ai.grakn.graql.internal.reasoner.inference;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.test.graphs.DiagonalGraph;
-import ai.grakn.test.graphs.MatrixGraph;
-import ai.grakn.test.graphs.MatrixGraphII;
-import ai.grakn.test.graphs.NguyenGraph;
-import ai.grakn.test.graphs.PathKB;
-import ai.grakn.test.graphs.PathGraphII;
-import ai.grakn.test.graphs.PathKBSymmetric;
-import ai.grakn.test.graphs.TailRecursionGraph;
-import ai.grakn.test.graphs.TransitivityChainGraph;
-import ai.grakn.test.graphs.TransitivityMatrixGraph;
+import ai.grakn.test.kbs.DiagonalKB;
+import ai.grakn.test.kbs.MatrixKB;
+import ai.grakn.test.kbs.MatrixKBII;
+import ai.grakn.test.kbs.NguyenKB;
+import ai.grakn.test.kbs.PathKB;
+import ai.grakn.test.kbs.PathKBII;
+import ai.grakn.test.kbs.PathKBSymmetric;
+import ai.grakn.test.kbs.TailRecursionKB;
+import ai.grakn.test.kbs.TransitivityChainKB;
+import ai.grakn.test.kbs.TransitivityMatrixKB;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -293,7 +293,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testMatrix(){
         final int N = 5;
-        graphContext.load(MatrixGraph.get(N, N));
+        graphContext.load(MatrixKB.get(N, N));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -310,7 +310,7 @@ public class RecursiveInferenceTest {
     public void testTailRecursion(){
         final int N = 10;
         final int M = 5;
-        graphContext.load(TailRecursionGraph.get(N, M));
+        graphContext.load(TailRecursionKB.get(N, M));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -343,7 +343,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testNguyen(){
         final int N = 9;
-        graphContext.load(NguyenGraph.get(N));
+        graphContext.load(NguyenKB.get(N));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -376,7 +376,7 @@ public class RecursiveInferenceTest {
     public void testMatrixII(){
         final int N = 5;
         final int M = 5;
-        graphContext.load(MatrixGraphII.get(N, M));
+        graphContext.load(MatrixKBII.get(N, M));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -449,7 +449,7 @@ public class RecursiveInferenceTest {
     /*modified test 6.10 from Cao p. 82*/
     public void testPathII(){
         final int N = 3;
-        graphContext.load(PathGraphII.get(N, N));
+        graphContext.load(PathKBII.get(N, N));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -464,7 +464,7 @@ public class RecursiveInferenceTest {
     /*modified test 6.10 from Cao p. 82*/
     public void testPathIIPrime(){
         final int N = 3;
-        graphContext.load(PathGraphII.get(N, N));
+        graphContext.load(PathKBII.get(N, N));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -509,7 +509,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testTransitiveChain(){
         final int N = 10;
-        graphContext.load(TransitivityChainGraph.get(N));
+        graphContext.load(TransitivityChainKB.get(N));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -523,7 +523,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testTransitiveMatrix(){
         final int N = 5;
-        graphContext.load(TransitivityMatrixGraph.get(N, N));
+        graphContext.load(TransitivityMatrixKB.get(N, N));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -537,7 +537,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testDiagonal(){
         final int N = 10;
-        graphContext.load(DiagonalGraph.get(N, N));
+        graphContext.load(DiagonalKB.get(N, N));
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal;";

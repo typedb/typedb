@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.reasoner.inference;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.test.graphs.GenealogyGraph;
+import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -50,7 +50,7 @@ public class GenealogyTest {
     private static QueryBuilder iqb;
 
     @ClassRule
-    public static final SampleKBContext genealogyGraph = SampleKBContext.preLoad(GenealogyGraph.get());
+    public static final SampleKBContext genealogyGraph = SampleKBContext.preLoad(GenealogyKB.get());
 
     @BeforeClass
     public static void setUpClass() throws Exception {

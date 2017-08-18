@@ -27,7 +27,7 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.test.SampleKBContext;
-import ai.grakn.test.graphs.SNBGraph;
+import ai.grakn.test.kbs.SNBKB;
 
 import ai.grakn.test.GraknTestSetup;
 import java.util.List;
@@ -46,7 +46,7 @@ import static org.junit.Assume.assumeTrue;
 public class SNBInferenceTest {
 
     @Rule
-    public final SampleKBContext snbGraph = SampleKBContext.preLoad(SNBGraph.get());
+    public final SampleKBContext snbGraph = SampleKBContext.preLoad(SNBKB.get());
 
     @BeforeClass
     public static void onStartup() throws Exception {

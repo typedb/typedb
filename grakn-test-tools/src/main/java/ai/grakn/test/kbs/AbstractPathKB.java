@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
@@ -33,7 +33,7 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public abstract class AbstractPathKB extends TestGraph {
+public abstract class AbstractPathKB extends TestKB {
     private final static Label key = Label.of("index");
     private final String gqlFile;
     private final int n;

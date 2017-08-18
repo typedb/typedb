@@ -16,9 +16,10 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
+import ai.grakn.test.SampleKBContext;
 
 import java.util.function.Consumer;
 
@@ -27,14 +28,22 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class PathKBSymmetric extends AbstractPathKB {
-    private final static String gqlFile = "path-test-symmetric.gql";
+public class GenealogyKB extends TestKB {
 
-    public PathKBSymmetric(int n, int m){
-        super(gqlFile, n, m);
+    final private static String schemaFile = "genealogy/schema.gql";
+    final private static String dataFile = "genealogy/data.gql";
+    final private static String rulesFile = "genealogy/rules.gql";
+
+    public static Consumer<GraknTx> get() {
+        return new GenealogyKB().build();
     }
 
-    public static Consumer<GraknTx> get(int n, int m) {
-        return new PathKBSymmetric(n, m).build();
+    @Override
+    public Consumer<GraknTx> build(){
+        return (GraknTx graph) -> {
+            SampleKBContext.loadFromFile(graph, schemaFile);
+            SampleKBContext.loadFromFile(graph, dataFile);
+            SampleKBContext.loadFromFile(graph, rulesFile);
+        };
     }
 }

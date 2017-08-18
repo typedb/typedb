@@ -17,7 +17,7 @@
  */
 package ai.grakn.test.migration.export;
 
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.migration.export.KBWriter;
 import ai.grakn.test.SampleKBContext;
 
@@ -35,7 +35,7 @@ public class MovieKBWriterTest {
     private KBWriter writer;
 
     @ClassRule
-    public static SampleKBContext original = SampleKBContext.preLoad(MovieGraph.get());
+    public static SampleKBContext original = SampleKBContext.preLoad(MovieKB.get());
 
     @Rule
     public SampleKBContext copy = SampleKBContext.empty();

@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.graphs;
+package ai.grakn.test.kbs;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
@@ -32,7 +32,7 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class TailRecursionGraph extends TestGraph {
+public class TailRecursionKB extends TestKB {
 
     private final static Label key = Label.of("index");
     private final static String gqlFile = "tail-recursion-test.gql";
@@ -40,13 +40,13 @@ public class TailRecursionGraph extends TestGraph {
     private final int n;
     private final int m;
 
-    public TailRecursionGraph(int n, int m) {
+    public TailRecursionKB(int n, int m) {
         this.n = n;
         this.m = m;
     }
 
     public static Consumer<GraknTx> get(int n, int m) {
-        return new TailRecursionGraph(n, m).build();
+        return new TailRecursionKB(n, m).build();
     }
 
     @Override
