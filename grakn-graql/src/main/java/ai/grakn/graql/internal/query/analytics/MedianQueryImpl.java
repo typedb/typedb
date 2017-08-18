@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.internal.analytics.MedianVertexProgram;
@@ -32,7 +32,7 @@ import java.util.Set;
 
 class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MedianQuery {
 
-    MedianQueryImpl(Optional<GraknGraph> graph) {
+    MedianQueryImpl(Optional<GraknTx> graph) {
         this.graph = graph;
     }
 
@@ -42,7 +42,7 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes();
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
         if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
         Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
         Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
@@ -79,7 +79,7 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
     }
 
     @Override
-    public MedianQuery withGraph(GraknGraph graph) {
+    public MedianQuery withGraph(GraknTx graph) {
         return (MedianQuery) super.withGraph(graph);
     }
 

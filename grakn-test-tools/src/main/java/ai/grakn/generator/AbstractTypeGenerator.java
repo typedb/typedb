@@ -40,7 +40,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  *
  * @author Felix Chapman
  */
-public abstract class AbstractTypeGenerator<T extends Type> extends AbstractOntologyConceptGenerator<T> {
+public abstract class AbstractTypeGenerator<T extends Type> extends AbstractSchemaConceptGenerator<T> {
 
     private Optional<Boolean> includeAbstract = Optional.empty();
 
@@ -52,7 +52,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends AbstractOnto
         return includeAbstract.orElse(true);
     }
 
-    final AbstractOntologyConceptGenerator<T> makeExcludeAbstractTypes() {
+    final AbstractSchemaConceptGenerator<T> makeExcludeAbstractTypes() {
         includeAbstract = Optional.of(false);
         return this;
     }
@@ -74,8 +74,8 @@ public abstract class AbstractTypeGenerator<T extends Type> extends AbstractOnto
     }
 
     @Override
-    protected final boolean filter(T type) {
-        return willIncludeAbstractTypes() || !type.isAbstract();
+    protected final boolean filter(T schemaConcept) {
+        return willIncludeAbstractTypes() || !schemaConcept.isAbstract();
     }
 
     /**

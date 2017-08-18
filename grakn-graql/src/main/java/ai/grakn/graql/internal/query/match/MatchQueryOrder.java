@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 
 import ai.grakn.graql.admin.Answer;
 import java.util.Optional;
@@ -37,7 +37,7 @@ class MatchQueryOrder extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Answer> stream(Optional<GraknGraph> graph) {
+    public Stream<Answer> stream(Optional<GraknTx> graph) {
         return order.orderStream(inner.stream(graph));
     }
 

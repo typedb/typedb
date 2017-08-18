@@ -20,8 +20,8 @@ package ai.grakn.exception;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -134,8 +134,8 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(var + " cannot be an instance of meta-type " + type.getLabel());
     }
 
-    public static GraqlQueryException insertMetaType(Label label, OntologyConcept ontologyConcept) {
-        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, ontologyConcept.getLabel()));
+    public static GraqlQueryException insertMetaType(Label label, SchemaConcept schemaConcept) {
+        return new GraqlQueryException(ErrorMessage.INSERT_METATYPE.getMessage(label, schemaConcept.getLabel()));
     }
 
     /**
@@ -244,7 +244,7 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.INSTANCE_DOES_NOT_EXIST.getMessage());
     }
 
-    public static GraqlQueryException resourceMustBeANumber(ResourceType.DataType dataType, Label resourceType) {
+    public static GraqlQueryException resourceMustBeANumber(AttributeType.DataType dataType, Label resourceType) {
         return new GraqlQueryException(resourceType + " must have data type of `long` or `double`, but was " + dataType.getName());
     }
 
@@ -292,7 +292,7 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage());
     }
 
-    public static GraqlQueryException insertAbstractOnNonType(OntologyConcept concept){
+    public static GraqlQueryException insertAbstractOnNonType(SchemaConcept concept){
         return new GraqlQueryException(INSERT_ABSTRACT_NOT_TYPE.getMessage(concept.getLabel()));
     }
 }

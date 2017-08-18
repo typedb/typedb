@@ -503,7 +503,7 @@ public class GenealogyTest {
         Iterator<Answer> it =  answers.iterator();
         while (it.hasNext() && isOk){
             Concept c = it.next().get(Graql.var(var));
-            isOk = c.asResource().getValue().equals(value);
+            isOk = c.asAttribute().getValue().equals(value);
         }
         return isOk;
     }

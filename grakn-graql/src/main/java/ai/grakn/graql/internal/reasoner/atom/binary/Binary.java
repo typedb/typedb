@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -79,7 +79,7 @@ public abstract class Binary extends Atom {
 
     @Nullable
     @Override
-    public OntologyConcept getOntologyConcept(){
+    public SchemaConcept getOntologyConcept(){
         if (type == null && typeId != null) {
             type = getParentQuery().graph().getConcept(typeId).asType();
         }
@@ -115,8 +115,8 @@ public abstract class Binary extends Atom {
 
     @Override
     public PatternAdmin getCombinedPattern() {
-        Set<VarPatternAdmin> vars = Sets.newHashSet(super.getPattern().asVar());
-        if (getPredicate() != null) vars.add(getPredicate().getPattern().asVar());
+        Set<VarPatternAdmin> vars = Sets.newHashSet(super.getPattern().asVarPattern());
+        if (getPredicate() != null) vars.add(getPredicate().getPattern().asVarPattern());
         return Patterns.conjunction(vars);
     }
 

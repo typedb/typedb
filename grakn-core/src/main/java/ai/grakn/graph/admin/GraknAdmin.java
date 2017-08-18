@@ -18,15 +18,15 @@
 
 package ai.grakn.graph.admin;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.InvalidGraphException;
@@ -42,7 +42,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Admin interface for {@link GraknGraph}.
+ * Admin interface for {@link GraknTx}.
  *
  * @author Filipe Teixeira
  */
@@ -90,18 +90,18 @@ public interface GraknAdmin {
      * @return The meta type -> type.
      */
     @CheckReturnValue
-    OntologyConcept getMetaConcept();
+    SchemaConcept getMetaConcept();
 
     /**
-     * Get the root of all Relation Types.
+     * Get the root of all {@link RelationshipType}.
      *
      * @return The meta relation type -> relation-type.
      */
     @CheckReturnValue
-    RelationType getMetaRelationType();
+    RelationshipType getMetaRelationType();
 
     /**
-     * Get the root of all the Role Types.
+     * Get the root of all the {@link Role}.
      *
      * @return The meta role type -> role-type.
      */
@@ -109,12 +109,12 @@ public interface GraknAdmin {
     Role getMetaRole();
 
     /**
-     * Get the root of all the Resource Types.
+     * Get the root of all the {@link AttributeType}.
      *
      * @return The meta resource type -> resource-type.
      */
     @CheckReturnValue
-    ResourceType getMetaResourceType();
+    AttributeType getMetaResourceType();
 
     /**
      * Get the root of all the Entity Types.

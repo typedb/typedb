@@ -22,7 +22,7 @@ entity1 sub entity
 
 superEntity1 sub entity1;
 
-relation1 sub relation
+relation1 sub relationship
     has res1
 	relates role1
 	relates role2
@@ -33,7 +33,7 @@ relation1 sub relation
 
 #Resources
 
-res1 sub resource datatype string;
+res1 sub attribute datatype string;
 
 #Instances
 

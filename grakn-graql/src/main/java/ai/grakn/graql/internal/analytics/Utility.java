@@ -18,11 +18,11 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.Relationship;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
@@ -119,16 +119,16 @@ public class Utility {
     /**
      * Check whether it is possible that there is a resource edge between the two given concepts.
      */
-    public static boolean mayHaveResourceEdge(GraknGraph graknGraph, ConceptId conceptId1, ConceptId conceptId2) {
+    public static boolean mayHaveResourceEdge(GraknTx graknGraph, ConceptId conceptId1, ConceptId conceptId2) {
         Concept concept1 = graknGraph.getConcept(conceptId1);
         Concept concept2 = graknGraph.getConcept(conceptId2);
-        return concept1 != null && concept2 != null && (concept1.isResource() || concept2.isResource());
+        return concept1 != null && concept2 != null && (concept1.isAttribute() || concept2.isAttribute());
     }
 
     /**
      * Get the resource edge id if there is one. Return null if not.
      */
-    public static ConceptId getResourceEdgeId(GraknGraph graph, ConceptId conceptId1, ConceptId conceptId2) {
+    public static ConceptId getResourceEdgeId(GraknTx graph, ConceptId conceptId1, ConceptId conceptId2) {
         if (mayHaveResourceEdge(graph, conceptId1, conceptId2)) {
             List<Answer> answers = graph.graql().match(
                     var("x").id(conceptId1),
@@ -136,7 +136,7 @@ public class Utility {
                     var("z").rel(var("x")).rel(var("y"))
             ).select("z").execute();
             for (Answer answer : answers) {
-                Relation concept = (Relation) answer.concepts().iterator().next();
+                Relationship concept = (Relationship) answer.concepts().iterator().next();
                 if (concept.type().isImplicit()) {
                     return concept.getId();
                 }

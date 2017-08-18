@@ -74,7 +74,7 @@ First, we load the ontology and data we will be working with, which is the famil
 private static void loadBasicGenealogy() {
     ClassLoader classLoader = Main.class.getClassLoader();
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
-        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
             try {
                 graph.graql().parse(IOUtils.toString(classLoader.getResourceAsStream("basic-genealogy.gql"))).execute();
                 } catch (IOException e) {
@@ -97,7 +97,7 @@ private static void testConnection() {
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
         // open a graph (database transaction)
-        try (GraknGraph graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
 
             // construct a match query to find people
             MatchQuery query = graph.graql().match(var("x").isa("person"));
@@ -124,7 +124,7 @@ private static Map<String, Set<String>> computeClusters() {
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
         // open a graph (database transaction)
-        try (GraknGraph graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
 
             // construct the analytics cluster query
             ClusterQuery<Map<String, Set<String>>> query = graph.graql().compute().cluster().in("person", "marriage").members();
@@ -147,7 +147,7 @@ If we had not used the members syntax we would only know the size of the cluster
 
 ## Persist the Cluster Information
 
-Now that we have information about the clusters, it would be useful to add it to the graph so that we can visualise it. We can do this by creating a new entity type called `cluster` and a new relation type called `grouping` with the roles `group` and `member`. The ontology can be mutated as follows:
+Now that we have information about the clusters, it would be useful to add it to the graph so that we can visualise it. We can do this by creating a new entity type called `cluster` and a new relationship type called `grouping` with the roles `group` and `member`. The ontology can be mutated as follows:
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
 ```java-test-ignore
@@ -156,12 +156,12 @@ private static void mutateOntology() {
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
         // open a graph (database transaction)
-        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
             // create set of vars representing the mutation
             Var group = Graql.var("group").label("group").sub("role");
             Var member = Graql.var("member").label("member").sub("role");
-            Var grouping = Graql.var("grouping").label("grouping").sub("relation").relates(group).relates(member);
+            Var grouping = Graql.var("grouping").label("grouping").sub("relationship").relates(group).relates(member);
             Var cluster = Graql.var("cluster").label("cluster").sub("entity").plays(group);
             Var personPlaysRole = Graql.var("person").label("person").plays("member");
             Var marriagePlaysRole = Graql.var("marriage").label("marriage").plays("member");
@@ -194,7 +194,7 @@ private static void persistClusters(Map<String, Set<String>> results) {
         results.forEach((clusterID, memberSet) -> {
 
             // open a graph (database transaction)
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
                     // collect the vars to insert
                     Set<Var> insertVars = new HashSet<>();
@@ -239,7 +239,7 @@ private static Map<Long, Set<String>> degreeOfClusters() {
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
         // open a graph (database transaction)
-        try (GraknGraph graph = session.open(GraknTxType.READ)) {
+        try (GraknTx graph = session.open(GraknTxType.READ)) {
 
             // construct the analytics cluster query
             DegreeQuery query = graph.graql().compute().degree().in("cluster", "grouping").of("cluster");
@@ -258,7 +258,7 @@ The `in` syntax has again been used here to restrict the algorithm to the graph 
 
 ## Persist the Degrees
 
-As we did when computing the clusters, we need to put the information back into the graph. This time we will attach a resource called `degree` to the cluster entity. The ontology mutation and persisting of the degrees is performed in a single method:
+As we did when computing the clusters, we need to put the information back into the graph. This time we will attach an attribute called `degree` to the cluster entity. The ontology mutation and persisting of the degrees is performed in a single method:
 
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
@@ -267,10 +267,10 @@ private static void persistDegrees(Map<Long, Set<String>> degrees) {
     // initialise the connection to Grakn engine
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
-        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
             // mutate the ontology
-            Var degree = Graql.var().label("degree").sub("resource").datatype(ResourceType.DataType.LONG);
+            Var degree = Graql.var().label("degree").sub("attribute").datatype(ResourceType.DataType.LONG);
             Var cluster = Graql.var().label("cluster").has("degree");
 
             // execute the query
@@ -280,7 +280,7 @@ private static void persistDegrees(Map<Long, Set<String>> degrees) {
             graph.commit();
             }
 
-            try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
             // add the degrees to the cluster
             Set<Var> degreeMutation = new HashSet<>();

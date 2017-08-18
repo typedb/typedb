@@ -63,21 +63,21 @@ european-maker sub carmaker;
 
 # Resources
 
-model sub resource datatype string;
-maker-name sub resource datatype string;
-mpg sub resource datatype double;
-cyl sub resource datatype long;
-disp sub resource datatype double;
-hp sub resource datatype long;
-wt sub resource datatype double;
-gear sub resource datatype long;
-carb sub resource datatype long;
-powerful sub resource datatype string;
-economical sub resource datatype string;
+model sub attribute datatype string;
+maker-name sub attribute datatype string;
+mpg sub attribute datatype double;
+cyl sub attribute datatype long;
+disp sub attribute datatype double;
+hp sub attribute datatype long;
+wt sub attribute datatype double;
+gear sub attribute datatype long;
+carb sub attribute datatype long;
+powerful sub attribute datatype string;
+economical sub attribute datatype string;
 
 # Roles and Relations
 
-manufactured sub relation
+manufactured sub relationship
 	relates maker
 	relates made;
 
@@ -124,7 +124,7 @@ At this point, you are ready to start investigating statistics within the data u
 
 ## `aggregate`
 
-You cannot make [`aggregate`](../graql/aggregate-queries.html) queries from within the **Graph** view in the Grakn visualiser, so you will need to switch views using the left hand navigation pane, from **Graph** to **Console**. This shows a read-write view on Grakn, and you can now submit queries in the usual way, via the form. Alternatively, from your terminal, you can start the Graql shell in its interactive (REPL) mode by typing `graql.sh` at the terminal, from within the *bin* directory of the Grakn installation.
+You cannot make [`aggregate`](../graql/aggregate-queries.html) queries from within the **knowledge base** view in the Grakn visualiser, so you will need to switch views using the left hand navigation pane, from **Graph** to **Console**. This shows a read-write view on Grakn, and you can now submit queries in the usual way, via the form. Alternatively, from your terminal, you can start the Graql shell in its interactive (REPL) mode by typing `graql.sh` at the terminal, from within the *bin* directory of the Grakn installation.
 
 Here are some example `aggregate` queries to try:
 
@@ -161,7 +161,7 @@ match $x isa car, has gear $g; aggregate min $g; # 3
 
 ## `compute`
 
-Graql also provides [compute queries](../graql/compute-queries.html) that can be used to determine values such as mean, minimum and maximum. These can be submitted using the **Graph** view on the Visualiser. For example, type each of the following into the form and submit:
+Graql also provides [compute queries](../graql/compute-queries.html) that can be used to determine values such as mean, minimum and maximum. These can be submitted using the **graph** view on the Visualiser. For example, type each of the following into the form and submit:
 
 ```graql
 # Number of automatic and manual cars
@@ -197,13 +197,13 @@ compute mean of mpg in manual-car; # 24.39
 
 ## When to Use `aggregate` and When to Use `compute`?
 
-Aggregate queries are computationally light and run single-threaded on a single machine, and are more flexible than the equivalent compute query (for example, you can use an aggregate query to filter results by resource). 
+Aggregate queries are computationally light and run single-threaded on a single machine, and are more flexible than the equivalent compute query (for example, you can use an aggregate query to filter results by attribute). 
 
 ```graql
 match $x isa car has model contains "Merc"; aggregate count; # 7
 ```
 
-Compute queries are computationally intensive and run in parallel on a cluster, so are good for big data and can be used to calculate results very fast. However, you can't filter the results by resource in the same way as you can for an `aggregate` query.
+Compute queries are computationally intensive and run in parallel on a cluster, so are good for big data and can be used to calculate results very fast. However, you can't filter the results by attribute in the same way as you can for an `aggregate` query.
 
 
 ## Inference

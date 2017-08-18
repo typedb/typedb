@@ -54,9 +54,19 @@ public interface Answer {
     @CheckReturnValue
     Set<Map.Entry<Var, Concept>> entrySet();
 
+    /**
+     * Return the {@link Concept} bound to the given variable name.
+     *
+     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link Answer}
+     */
     @CheckReturnValue
     Concept get(String var);
 
+    /**
+     * Return the {@link Concept} bound to the given {@link Var}.
+     *
+     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link Answer}
+     */
     @CheckReturnValue
     Concept get(Var var);
 

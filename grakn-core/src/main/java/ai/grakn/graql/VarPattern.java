@@ -18,9 +18,9 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.admin.VarPatternAdmin;
 
@@ -284,7 +284,7 @@ public interface VarPattern extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    VarPattern datatype(ResourceType.DataType<?> datatype);
+    VarPattern datatype(AttributeType.DataType<?> datatype);
 
     /**
      * Specify the regular expression instances of this resource type must match

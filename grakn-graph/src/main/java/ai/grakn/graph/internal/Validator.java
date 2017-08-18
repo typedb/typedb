@@ -18,13 +18,13 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
-import ai.grakn.graph.internal.concept.RelationImpl;
-import ai.grakn.graph.internal.concept.RelationReified;
+import ai.grakn.graph.internal.concept.RelationshipImpl;
+import ai.grakn.graph.internal.concept.RelationshipReified;
 import ai.grakn.graph.internal.structure.Casting;
 
 import java.util.ArrayList;
@@ -46,10 +46,10 @@ import java.util.Set;
  *
  */
 class Validator {
-    private final AbstractGraknGraph<?> graknGraph;
+    private final GraknTxAbstract<?> graknGraph;
     private final List<String> errorsFound = new ArrayList<>();
 
-    public Validator(AbstractGraknGraph graknGraph){
+    public Validator(GraknTxAbstract graknGraph){
         this.graknGraph = graknGraph;
     }
 
@@ -76,20 +76,20 @@ class Validator {
         //Validate Role Players
         graknGraph.txCache().getModifiedCastings().forEach(this::validateCasting);
 
-        //Validate Relation Types
-        graknGraph.txCache().getModifiedRelationTypes().forEach(this::validateRelationType);
+        //Validate Relationship Types
+        graknGraph.txCache().getModifiedRelationshipTypes().forEach(this::validateRelationType);
         //Validate Relations
-        graknGraph.txCache().getModifiedRelations().forEach(relation -> validateRelation(graknGraph, relation));
+        graknGraph.txCache().getModifiedRelationships().forEach(relation -> validateRelation(graknGraph, relation));
 
         //Validate Rule Types
         //Not Needed
         //Validate Rules
         graknGraph.txCache().getModifiedRules().forEach(rule -> validateRule(graknGraph, rule));
 
-        //Validate Resource Types
+        //Validate Attribute Types
         //Not Needed
-        //Validate Resource
-        graknGraph.txCache().getModifiedResources().forEach(this::validateThing);
+        //Validate Attribute
+        graknGraph.txCache().getModifiedAttributes().forEach(this::validateThing);
 
         return errorsFound.size() == 0;
     }
@@ -99,7 +99,7 @@ class Validator {
      * @param graph the graph to query against
      * @param rule the rule which needs to be validated
      */
-    private void validateRule(AbstractGraknGraph<?> graph, Rule rule){
+    private void validateRule(GraknTxAbstract<?> graph, Rule rule){
         Set<String> labelErrors = ValidateGlobalRules.validateRuleOntologyElementsExist(graph, rule);
         errorsFound.addAll(labelErrors);
         errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidHornClause(graph, rule));
@@ -110,11 +110,11 @@ class Validator {
 
     /**
      * Validation rules exclusive to relations
-     * @param relation The relation to validate
+     * @param relationship The {@link Relationship} to validate
      */
-    private void validateRelation(AbstractGraknGraph<?> graph, Relation relation){
-        validateThing(relation);
-        Optional<RelationReified> relationReified = ((RelationImpl) relation).reified();
+    private void validateRelation(GraknTxAbstract<?> graph, Relationship relationship){
+        validateThing(relationship);
+        Optional<RelationshipReified> relationReified = ((RelationshipImpl) relationship).reified();
         //TODO: We need new validation mechanisms for non-reified relations
         relationReified.ifPresent(relationReified1 -> {
             ValidateGlobalRules.validateRelationshipStructure(relationReified1).ifPresent(errorsFound::add);
@@ -140,11 +140,11 @@ class Validator {
 
     /**
      * Validation rules exclusive to relation types
-     * @param relationType The relationTypes to validate
+     * @param relationshipType The relationTypes to validate
      */
-    private void validateRelationType(RelationType relationType){
-        ValidateGlobalRules.validateHasMinimumRoles(relationType).ifPresent(errorsFound::add);
-        errorsFound.addAll(ValidateGlobalRules.validateRelationTypesToRolesSchema(relationType));
+    private void validateRelationType(RelationshipType relationshipType){
+        ValidateGlobalRules.validateHasMinimumRoles(relationshipType).ifPresent(errorsFound::add);
+        errorsFound.addAll(ValidateGlobalRules.validateRelationTypesToRolesSchema(relationshipType));
     }
 
     /**

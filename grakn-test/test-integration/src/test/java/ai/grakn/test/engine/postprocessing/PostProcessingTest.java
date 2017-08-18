@@ -18,11 +18,11 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
@@ -78,25 +78,25 @@ public class PostProcessingTest {
         String sample = "Sample";
 
         //Create Graph With Duplicate Resources
-        GraknGraph graph = session.open(GraknTxType.WRITE);
-        ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
+        GraknTx graph = session.open(GraknTxType.WRITE);
+        AttributeType<String> attributeType = graph.putAttributeType(sample, AttributeType.DataType.STRING);
 
-        Resource<String> resource = resourceType.putResource(value);
+        Attribute<String> attribute = attributeType.putAttribute(value);
         graph.admin().commitNoLogs();
         graph = session.open(GraknTxType.WRITE);
 
-        assertEquals(1, resourceType.instances().count());
+        assertEquals(1, attributeType.instances().count());
         //Check duplicates have been created
-        Set<Vertex> resource1 = createDuplicateResource(graph, resourceType, resource);
-        Set<Vertex> resource2 = createDuplicateResource(graph, resourceType, resource);
-        Set<Vertex> resource3 = createDuplicateResource(graph, resourceType, resource);
-        Set<Vertex> resource4 = createDuplicateResource(graph, resourceType, resource);
-        assertEquals(5, resourceType.instances().count());
+        Set<Vertex> resource1 = createDuplicateResource(graph, attributeType, attribute);
+        Set<Vertex> resource2 = createDuplicateResource(graph, attributeType, attribute);
+        Set<Vertex> resource3 = createDuplicateResource(graph, attributeType, attribute);
+        Set<Vertex> resource4 = createDuplicateResource(graph, attributeType, attribute);
+        assertEquals(5, attributeType.instances().count());
 
-        // Resource vertex index
+        // Attribute vertex index
         String resourceIndex = resource1.iterator().next().value(INDEX.name()).toString();
 
-        // Merge the resource sets
+        // Merge the attribute sets
         Set<Vertex> merged = Sets.newHashSet();
         merged.addAll(resource1);
         merged.addAll(resource2);
@@ -116,7 +116,7 @@ public class PostProcessingTest {
                 Json.object(
                         KEYSPACE, graph.getKeyspace(),
                         REST.Request.COMMIT_LOG_FIXING, Json.object(
-                                Schema.BaseType.RESOURCE.name(), Json.object(resourceIndex, resourceConcepts)
+                                Schema.BaseType.ATTRIBUTE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );
         task.initialize(null, configuration, (x, y) -> {}, engine.config(), null, engine.server().factory(),
@@ -127,7 +127,7 @@ public class PostProcessingTest {
         graph = session.open(GraknTxType.READ);
 
         //Check it's fixed
-        assertEquals(1, graph.getResourceType(sample).instances().count());
+        assertEquals(1, graph.getAttributeType(sample).instances().count());
 
         graph.close();
     }

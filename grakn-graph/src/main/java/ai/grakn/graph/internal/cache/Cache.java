@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal.cache;
 
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 
 import javax.annotation.Nullable;
@@ -33,7 +34,7 @@ import java.util.function.Supplier;
  * <p>
  *     An internal cached object which hits the database only when it needs to.
  *     This is used to cache the components of ontological concepts. i.e. the fields of {@link ai.grakn.concept.Type},
- *     {@link ai.grakn.concept.RelationType}, and {@link Role}.
+ *     {@link RelationshipType}, and {@link Role}.
  * </p>
  *
  * @param <V> The object it is caching

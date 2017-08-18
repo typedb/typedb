@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
@@ -104,7 +104,7 @@ public class Fragments {
         return new OutHasScopeFragment(varProperty, start, end);
     }
 
-    public static Fragment dataType(VarProperty varProperty, Var start, ResourceType.DataType dataType) {
+    public static Fragment dataType(VarProperty varProperty, Var start, AttributeType.DataType dataType) {
         return new DataTypeFragment(varProperty, start, dataType);
     }
 
@@ -213,7 +213,7 @@ public class Fragments {
     }
 
     static void applyTypeLabelsToTraversal(
-            GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property, Optional<Set<Label>> typeLabels, GraknGraph graph) {
+            GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property, Optional<Set<Label>> typeLabels, GraknTx graph) {
         typeLabels.ifPresent(labels -> {
             Set<Integer> typeIds = labels.stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
             traversal.has(property.name(), P.within(typeIds));

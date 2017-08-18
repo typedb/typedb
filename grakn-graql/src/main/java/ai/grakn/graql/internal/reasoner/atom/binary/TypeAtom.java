@@ -17,7 +17,7 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -82,7 +82,7 @@ public abstract class TypeAtom extends Binary{
         Atom ruleAtom = child.getHead().getAtom();
         return this.getOntologyConcept() != null
                 //ensure not ontological atom query
-                && getPattern().asVar().hasProperty(IsaProperty.class)
+                && getPattern().asVarPattern().hasProperty(IsaProperty.class)
                 && this.getOntologyConcept().subs().anyMatch(sub -> sub.equals(ruleAtom.getOntologyConcept()));
     }
 
@@ -96,7 +96,7 @@ public abstract class TypeAtom extends Binary{
 
     @Override
     public boolean requiresMaterialisation() {
-        return isUserDefinedName() && getOntologyConcept() != null && getOntologyConcept().isRelationType();
+        return isUserDefinedName() && getOntologyConcept() != null && getOntologyConcept().isRelationshipType();
     }
 
     @Override
@@ -109,7 +109,7 @@ public abstract class TypeAtom extends Binary{
 
     @Nullable
     @Override
-    public OntologyConcept getOntologyConcept() {
+    public SchemaConcept getOntologyConcept() {
         return getPredicate() != null ?
                 getParentQuery().graph().getConcept(getPredicate().getPredicate()) : null;
     }

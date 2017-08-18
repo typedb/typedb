@@ -9,9 +9,9 @@ permalink: /documentation/graql/insert-queries.html
 folder: documentation
 ---
 
-The page documents use of the Graql `insert` query, which will insert a specified [variable pattern](#variable-patterns) into the graph. To follow along, or experiment further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
+The page documents use of the Graql `insert` query, which will insert a specified [variable pattern](#variable-patterns) into the knowledge base. To follow along, or experiment further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
-{% include note.html content="If you are working in the Graql shell, don't forget to `commit` to store an insertion in the graph." %}
+{% include note.html content="If you are working in the Graql shell, don't forget to `commit` to store an insertion in the knowledge base." %}
 
 
 ## `match-insert`
@@ -118,7 +118,7 @@ qb.insert(var().val("Ash").isa("surname")).execute();
 
 ### has
 
-Add a resource of the given type to the concept.
+Add an attribute of the given type to the concept.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell5" data-toggle="tab">Graql</a></li>
@@ -138,9 +138,9 @@ qb.insert(var().isa("person").has("identifier", "Fuchsia Groan").has("gender", "
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
-### relation
+### relationship
 
-Make the concept a relation that relates the given role players, playing the given roles.   
+Make the concept a relationship that relates the given role players, playing the given roles.   
 *(With apologies to 'Gormenghast' fans, who will be aware that Titus and Fuchsia are siblings and thus cannot marry).*
 
 <ul id="profileTabs" class="nav nav-tabs">
@@ -201,7 +201,7 @@ qb.insert(label("woman").sub("person")).execute();
 
 
 ### relates
-Add a role to a relation.
+Add a role to a relationship.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell9" data-toggle="tab">Graql</a></li>
@@ -211,13 +211,13 @@ Add a role to a relation.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell9">
 <pre>
-insert siblings sub relation, relates sibling1, relates sibling2;
+insert siblings sub relationship, relates sibling1, relates sibling2;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java9">
 <pre>
 qb.insert(
-  label("siblings").sub("relation")
+  label("siblings").sub("relationship")
     .relates("sibling1").relates("sibling2")
 ).execute();
 </pre>
@@ -251,9 +251,9 @@ qb.insert(label("person").plays("sibling2")).execute();
 
 ### has
 
-Allow the concept type to have the given resource.
+Allow the concept type to have the given attribute.
 
-This is done by creating a specific relation relating the concept and resource.
+This is done by creating a specific relationship relating the concept and attribute.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell11" data-toggle="tab">Graql</a></li>

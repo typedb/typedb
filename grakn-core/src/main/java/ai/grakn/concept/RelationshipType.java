@@ -1,0 +1,210 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
+package ai.grakn.concept;
+
+import ai.grakn.exception.GraphOperationException;
+
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nonnull;
+import java.util.stream.Stream;
+
+/**
+ * <p>
+ *     An ontological element which categorises how {@link Thing}s may relate to each other.
+ * </p>
+ *
+ * <p>
+ *     A {@link RelationshipType} defines how {@link Type} may relate to one another.
+ *     They are used to model and categorise n-ary {@link Relationship}s.
+ * </p>
+ *
+ * @author fppt
+ *
+ */
+public interface RelationshipType extends Type {
+    //------------------------------------- Modifiers ----------------------------------
+    /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    RelationshipType setLabel(Label label);
+
+    /**
+     * Creates and returns a new {@link Relationship} instance, whose direct type will be this type.
+     * @see Relationship
+     *
+     * @return a new empty relation.
+     *
+     * @throws GraphOperationException if this is a meta type
+     */
+    Relationship addRelationship();
+
+    /**
+     * Sets the supertype of the {@link RelationshipType} to be the {@link RelationshipType} specified.
+     *
+     * @param type The supertype of this {@link RelationshipType}
+     * @return  The {@link RelationshipType} itself.
+     */
+    RelationshipType sup(RelationshipType type);
+
+    /**
+     * Adds another subtype to this type
+     *
+     * @param type The sub type of this {@link RelationshipType}
+     * @return The {@link RelationshipType} itself
+     */
+    RelationshipType sub(RelationshipType type);
+
+    /**
+     * Classifies the type to a specific scope. This allows you to optionally categorise types.
+     *
+     * @param scope The category of this Type
+     * @return The Type itself.
+     */
+    @Override
+    RelationshipType scope(Thing scope);
+
+    /**
+     * Delete the scope specified.
+     *
+     * @param scope The Instances that is currently scoping this Type.
+     * @return The Type itself
+     */
+    @Override
+    RelationshipType deleteScope(Thing scope);
+
+    /**
+     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     *
+     * @param attributeType The resource type which instances of this type should be allowed to play.
+     * @return The Type itself.
+     */
+    @Override
+    RelationshipType key(AttributeType attributeType);
+
+    /**
+     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked.
+     *
+     * @param attributeType The resource type which instances of this type should be allowed to play.
+     * @return The Type itself.
+     */
+    @Override
+    RelationshipType attribute(AttributeType attributeType);
+
+    //------------------------------------- Accessors ----------------------------------
+    /**
+     * Retrieves a list of the RoleTypes that make up this {@link RelationshipType}.
+     * @see Role
+     *
+     * @return A list of the RoleTypes which make up this {@link RelationshipType}.
+     */
+    @CheckReturnValue
+    Stream<Role> relates();
+
+    //------------------------------------- Edge Handling ----------------------------------
+
+    /**
+     * Sets a new Role for this {@link RelationshipType}.
+     * @see Role
+     *
+     * @param role A new role which is part of this relationship.
+     * @return The {@link RelationshipType} itself.
+     */
+    RelationshipType relates(Role role);
+
+    //------------------------------------- Other ----------------------------------
+
+    /**
+     * Delete a Role from this {@link RelationshipType}
+     * @see Role
+     *
+     * @param role The Role to delete from the {@link RelationshipType}.
+     * @return The {@link RelationshipType} itself.
+     */
+    RelationshipType deleteRelates(Role role);
+
+    //---- Inherited Methods
+    /**
+     * Sets the {@link RelationshipType} to be abstract - which prevents it from having any instances.
+     *
+     * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
+     * @return The {@link RelationshipType} itself.
+     */
+    @Override
+    RelationshipType setAbstract(Boolean isAbstract);
+
+    /**
+     * Returns the direct supertype of this {@link RelationshipType}.
+     * @return The direct supertype of this {@link RelationshipType}
+     */
+    @Override
+    @Nonnull
+    RelationshipType sup();
+
+    /**
+     * Returns a collection of subtypes of this {@link RelationshipType}.
+     *
+     * @return All the sub types of this {@link RelationshipType}
+     */
+    @Override
+    Stream<RelationshipType> subs();
+
+    /**
+     * Sets the Role which instances of this {@link RelationshipType} may play.
+     *
+     * @param role The Role which the instances of this Type are allowed to play.
+     * @return  The {@link RelationshipType} itself.
+     */
+    @Override
+    RelationshipType plays(Role role);
+
+    /**
+     * Removes the Role to prevent instances of this {@link RelationshipType} from playing it.
+     *
+     * @param role The Role which the instances of this Type should no longer be allowed to play.
+     * @return The {@link RelationshipType} itself.
+     */
+    @Override
+    RelationshipType deletePlays(Role role);
+
+    /**
+     * Retrieve all the {@link Relationship} instances of this {@link RelationshipType}
+     * @see Relationship
+     *
+     * @return All the {@link Relationship} instances of this {@link RelationshipType}
+     */
+    @Override
+    Stream<Relationship> instances();
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default RelationshipType asRelationshipType(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isRelationshipType(){
+        return true;
+    }
+}

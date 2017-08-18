@@ -11,13 +11,13 @@ has index;
 
 "arcA" sub role;
 "arcB" sub role;
-"arc" sub relation, relates arcA, relates arcB;
+"arc" sub relationship, relates arcA, relates arcB;
 vertex plays arcA, plays arcB;
 start-vertex plays arcA, plays arcB;
 
 "pathA" sub role;
 "pathB" sub role;
-"path" sub relation, relates pathA, relates pathB;
+"path" sub relationship, relates pathA, relates pathB;
 vertex plays pathA, plays pathB;
 start-vertex plays pathA, plays pathB;
 

@@ -1,7 +1,7 @@
 insert
-name sub resource
+name sub attribute
     datatype string;
-age sub resource
+age sub attribute
 	datatype long;
 person sub entity;
 person has name;
@@ -20,7 +20,7 @@ $josh has age 32;
 $vadas has age 27;
 $peter has age 35;
 
-weight sub resource
+weight sub attribute
 	datatype double;
 
 knower sub role;
@@ -29,7 +29,7 @@ known-about sub role;
 person plays knower;
 person plays known-about;
 
-knows sub relation
+knows sub relationship
 	relates knower
 	relates known-about
 	has weight;
@@ -37,7 +37,7 @@ knows sub relation
 (knower: $marko, known-about: $josh) isa knows has weight 1.0;
 (knower: $marko, known-about: $vadas) isa knows has weight 0.5;
 
-lang sub resource
+lang sub attribute
 	datatype string;
 software sub entity;
 software has name;
@@ -58,7 +58,7 @@ programmed sub role;
 person plays programmer;
 software plays programmed;
 
-programming sub relation
+programming sub relationship
 	relates programmer
 	relates programmed
 	has weight;

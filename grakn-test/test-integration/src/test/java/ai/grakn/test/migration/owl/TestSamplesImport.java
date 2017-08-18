@@ -21,10 +21,10 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
+import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
 import ai.grakn.migration.owl.OwlModel;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -106,7 +106,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             assertTrue(
                 type.instances()
                         .flatMap(inst -> inst
-                                .resources(graph.getResourceType(OwlModel.IRI.owlname())))
+                                .attributes(graph.getAttributeType(OwlModel.IRI.owlname())))
                         .anyMatch(s -> s.getValue().equals("eShakespeare"))
             );
             final Entity author = getEntity("eShakespeare");
@@ -114,7 +114,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             final Entity work = getEntity("eHamlet");
             Assert.assertNotNull(work);
             assertRelationBetweenInstancesExists(graph, work, author, Label.of("op-wrote"));
-            Assert.assertTrue(!ReasonerUtils.getRules(graph).isEmpty());
+            Assert.assertTrue(RuleGraph.getRules(graph).findFirst().isPresent());
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -141,7 +141,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Assert.assertNotNull(type);
             Optional<Entity> e = findById(type.instances().collect(toSet()), "eProduct5");
             assertTrue(e.isPresent());
-            e.get().resources().map(Resource::type).forEach(System.out::println);
+            e.get().attributes().map(Attribute::type).forEach(System.out::println);
             assertResourceEntityRelationExists(graph, "Product_Available", "14", e.get());
         }
         catch (Throwable t) {
@@ -170,20 +170,20 @@ public class TestSamplesImport extends TestOwlGraknBase {
             EntityType type = migrator.entityType(owlManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));          
             Assert.assertNotNull(type);         
             assertTrue(type.instances().flatMap(inst -> inst
-                    .resources(graph.getResourceType(OwlModel.IRI.owlname())))
+                    .attributes(graph.getAttributeType(OwlModel.IRI.owlname())))
                     .anyMatch(s -> s.getValue().equals("eItem1")));
 
             Entity item1 = getEntity("eItem1");
             // Item1 name data property is "First Name"
-            assertTrue(item1.resources().anyMatch(r -> r.getValue().equals("First Item")));
-            item1.resources().forEach(System.out::println);
+            assertTrue(item1.attributes().anyMatch(r -> r.getValue().equals("First Item")));
+            item1.attributes().forEach(System.out::println);
             Entity item2 = getEntity("eItem2");
-            Role subjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(Label.of("op-related")));
-            Role objectRole = graph.getOntologyConcept(migrator.namer().objectRole(Label.of("op-related")));
+            Role subjectRole = graph.getSchemaConcept(migrator.namer().subjectRole(Label.of("op-related")));
+            Role objectRole = graph.getSchemaConcept(migrator.namer().objectRole(Label.of("op-related")));
             assertTrue(item2.relations(subjectRole).anyMatch(
                     relation -> item1.equals(relation.rolePlayers(objectRole).iterator().next())));
-            Role catsubjectRole = graph.getOntologyConcept(migrator.namer().subjectRole(Label.of("op-hasCategory")));
-            Role catobjectRole = graph.getOntologyConcept(migrator.namer().objectRole(Label.of("op-hasCategory")));
+            Role catsubjectRole = graph.getSchemaConcept(migrator.namer().subjectRole(Label.of("op-hasCategory")));
+            Role catobjectRole = graph.getSchemaConcept(migrator.namer().objectRole(Label.of("op-hasCategory")));
             assertTrue(catobjectRole.playedByTypes().collect(toSet()).contains(migrator.graph().getEntityType("tCategory")));
             assertTrue(catsubjectRole.playedByTypes().collect(toSet()).contains(migrator.graph().getEntityType("tThing")));
             //Assert.assertFalse(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("Thing")));
@@ -192,7 +192,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             assertTrue(category2.relations(catobjectRole).anyMatch(
                     relation -> item1.equals(relation.rolePlayers(catsubjectRole).iterator().next())));
             Entity category1 = getEntity("eCategory1");
-            category1.resources().forEach(System.out::println);
+            category1.attributes().forEach(System.out::println);
             // annotation assertion axioms don't seem to be visited for some reason...need to troubleshoot seems like 
             // OWLAPI issue
             //this.checkResource(category1, "comment", "category 1 comment");
@@ -221,18 +221,18 @@ public class TestSamplesImport extends TestOwlGraknBase {
             EntityType type = migrator.graph().getEntityType("tPerson");
             Assert.assertNotNull(type);
 
-            RelationType ancestor = migrator.graph().getRelationType("op-hasAncestor");
-            RelationType isSiblingOf = migrator.graph().getRelationType("op-isSiblingOf");
-            RelationType isAuntOf = migrator.graph().getRelationType("op-isAuntOf");
-            RelationType isUncleOf = migrator.graph().getRelationType("op-isUncleOf");
-            RelationType bloodRelation = migrator.graph().getRelationType("op-isBloodRelationOf");
+            RelationshipType ancestor = migrator.graph().getRelationshipType("op-hasAncestor");
+            RelationshipType isSiblingOf = migrator.graph().getRelationshipType("op-isSiblingOf");
+            RelationshipType isAuntOf = migrator.graph().getRelationshipType("op-isAuntOf");
+            RelationshipType isUncleOf = migrator.graph().getRelationshipType("op-isUncleOf");
+            RelationshipType bloodRelation = migrator.graph().getRelationshipType("op-isBloodRelationOf");
 
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(ancestor)));
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(isSiblingOf)));
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(isAuntOf)));
             assertTrue(bloodRelation.subs().anyMatch(sub -> sub.equals(isUncleOf)));
 
-            assertTrue(!ReasonerUtils.getRules(graph).isEmpty());
+            assertTrue(RuleGraph.getRules(graph).findFirst().isPresent());
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);

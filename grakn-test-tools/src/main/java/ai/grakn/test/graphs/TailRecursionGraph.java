@@ -18,10 +18,10 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.test.GraphContext;
 
@@ -45,25 +45,25 @@ public class TailRecursionGraph extends TestGraph {
         this.m = m;
     }
 
-    public static Consumer<GraknGraph> get(int n, int m) {
+    public static Consumer<GraknTx> get(int n, int m) {
         return new TailRecursionGraph(n, m).build();
     }
 
     @Override
-    public Consumer<GraknGraph> build(){
-        return (GraknGraph graph) -> {
+    public Consumer<GraknTx> build(){
+        return (GraknTx graph) -> {
             GraphContext.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };
     }
 
-    private void buildExtensionalDB(GraknGraph graph, int n, int m) {
+    private void buildExtensionalDB(GraknTx graph, int n, int m) {
         Role qfrom = graph.getRole("Q-from");
         Role qto = graph.getRole("Q-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
         EntityType bEntity = graph.getEntityType("b-entity");
-        RelationType q = graph.getRelationType("Q");
+        RelationshipType q = graph.getRelationshipType("Q");
 
         putEntity(graph, "a0", aEntity, key);
         for(int i = 1 ; i <= m + 1 ;i++) {
@@ -73,11 +73,11 @@ public class TailRecursionGraph extends TestGraph {
         }
 
         for (int j = 1; j <= n; j++) {
-            q.addRelation()
+            q.addRelationship()
                     .addRolePlayer(qfrom, getInstance(graph, "a0"))
                     .addRolePlayer(qto, getInstance(graph, "b1" + "," + j));
             for(int i = 1 ; i <= m ;i++) {
-                q.addRelation()
+                q.addRelationship()
                         .addRolePlayer(qfrom, getInstance(graph, "b" + i + "," + j))
                         .addRolePlayer(qto, getInstance(graph, "b" + (i + 1) + "," + j));
             }

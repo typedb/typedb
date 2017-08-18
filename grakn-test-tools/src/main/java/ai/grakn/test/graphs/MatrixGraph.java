@@ -18,10 +18,10 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Label;
 import ai.grakn.test.GraphContext;
@@ -46,19 +46,19 @@ public class MatrixGraph extends TestGraph {
         this.n = n;
     }
 
-    public static Consumer<GraknGraph> get(int n, int m) {
+    public static Consumer<GraknTx> get(int n, int m) {
         return new MatrixGraph(n, m).build();
     }
 
     @Override
-    public Consumer<GraknGraph> build(){
-        return (GraknGraph graph) -> {
+    public Consumer<GraknTx> build(){
+        return (GraknTx graph) -> {
             GraphContext.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };
     }
 
-    private void buildExtensionalDB(GraknGraph graph, int n, int m) {
+    private void buildExtensionalDB(GraknTx graph, int n, int m) {
         Role R1from = graph.getRole("R1-from");
         Role R1to = graph.getRole("R1-to");
         Role R2from = graph.getRole("R2-from");
@@ -66,8 +66,8 @@ public class MatrixGraph extends TestGraph {
 
         EntityType aEntity = graph.getEntityType("a-entity");
         EntityType bEntity = graph.getEntityType("b-entity");
-        RelationType R1 = graph.getRelationType("R1");
-        RelationType R2 = graph.getRelationType("R2");
+        RelationshipType R1 = graph.getRelationshipType("R1");
+        RelationshipType R2 = graph.getRelationshipType("R2");
 
         ConceptId[] aInstancesIds = new ConceptId[m+1];
         ConceptId[][] bInstancesIds = new ConceptId[m][n+1];
@@ -84,20 +84,20 @@ public class MatrixGraph extends TestGraph {
         }
 
         for (int i = 0; i < m; i++) {
-            R1.addRelation()
+            R1.addRelationship()
                     .addRolePlayer(R1from, graph.getConcept(aInstancesIds[i]))
                     .addRolePlayer(R1to, graph.getConcept(aInstancesIds[i + 1]));
         }
 
         for(int j = 1 ; j <= n ;j++) {
-            R2.addRelation()
+            R2.addRelationship()
                     .addRolePlayer(R2from, graph.getConcept(aInstancesIds[0]))
                     .addRolePlayer(R2to, graph.getConcept(bInstancesIds[1][j]));
-            R2.addRelation()
+            R2.addRelationship()
                     .addRolePlayer(R2from, graph.getConcept(bInstancesIds[m-1][j]))
                     .addRolePlayer(R2to, graph.getConcept(aInstancesIds[m]));
             for (int i = 1; i < m - 1; i++) {
-                R2.addRelation()
+                R2.addRelationship()
                         .addRolePlayer(R2from, graph.getConcept(bInstancesIds[i][j]))
                         .addRolePlayer(R2to, graph.getConcept(bInstancesIds[i + 1][j]));
             }

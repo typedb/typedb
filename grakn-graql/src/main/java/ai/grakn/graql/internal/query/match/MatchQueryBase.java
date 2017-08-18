@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.MatchQuery;
@@ -76,10 +76,10 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
 
     @Override
-    public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
-        GraknGraph graph = optionalGraph.orElseThrow(GraqlQueryException::noGraph);
+    public Stream<Answer> stream(Optional<GraknTx> optionalGraph) {
+        GraknTx graph = optionalGraph.orElseThrow(GraqlQueryException::noGraph);
 
-        for (VarPatternAdmin var : pattern.getVars()) {
+        for (VarPatternAdmin var : pattern.varPatterns()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
 
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, graph);
@@ -87,7 +87,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
         LOG.trace(graqlTraversal.toString());
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(graph);
 
-        String[] selectedNames = pattern.commonVarNames().stream().map(Var::getValue).toArray(String[]::new);
+        String[] selectedNames = pattern.commonVars().stream().map(Var::getValue).toArray(String[]::new);
 
         // Must provide three arguments in order to pass an array to .select
         // If ordering, select the variable to order by as well
@@ -102,17 +102,17 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Set<OntologyConcept> getOntologyConcepts(GraknGraph graph) {
-        return pattern.getVars().stream()
-                .flatMap(v -> v.getInnerVars().stream())
+    public Set<SchemaConcept> getOntologyConcepts(GraknTx graph) {
+        return pattern.varPatterns().stream()
+                .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
-                .map(graph::<OntologyConcept>getOntologyConcept)
+                .map(graph::<SchemaConcept>getSchemaConcept)
                 .filter(Objects::nonNull)
                 .collect(toSet());
     }
 
     @Override
-    public Set<OntologyConcept> getOntologyConcepts() {
+    public Set<SchemaConcept> getOntologyConcepts() {
         throw GraqlQueryException.noGraph();
     }
 
@@ -122,13 +122,13 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Optional<GraknGraph> getGraph() {
+    public Optional<GraknTx> getGraph() {
         return Optional.empty();
     }
 
     @Override
     public Set<Var> getSelectedNames() {
-        return pattern.commonVarNames();
+        return pattern.commonVars();
     }
 
     @Override
@@ -145,8 +145,8 @@ public class MatchQueryBase extends AbstractMatchQuery {
      * @param elements a map of vertices and edges where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private Map<Var, Concept> makeResults(GraknGraph graph, Map<String, Element> elements) {
-        return pattern.commonVarNames().stream().collect(Collectors.<Var, Var, Concept>toMap(
+    private Map<Var, Concept> makeResults(GraknTx graph, Map<String, Element> elements) {
+        return pattern.commonVars().stream().collect(Collectors.<Var, Var, Concept>toMap(
                 Function.identity(),
                 name -> buildConcept(graph.admin(), elements.get(name.getValue()))
         ));

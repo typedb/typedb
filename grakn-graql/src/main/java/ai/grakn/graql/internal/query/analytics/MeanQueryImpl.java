@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -37,7 +37,7 @@ import java.util.Set;
 
 class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements MeanQuery {
 
-    MeanQueryImpl(Optional<GraknGraph> graph) {
+    MeanQueryImpl(Optional<GraknTx> graph) {
         this.graph = graph;
     }
 
@@ -47,7 +47,7 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes();
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
         if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
         Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
         Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
@@ -88,7 +88,7 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
     }
 
     @Override
-    public MeanQuery withGraph(GraknGraph graph) {
+    public MeanQuery withGraph(GraknTx graph) {
         return (MeanQuery) super.withGraph(graph);
     }
 

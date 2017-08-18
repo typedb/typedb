@@ -10,11 +10,11 @@ entity2 sub entity
     has res1;
 
 #Resources
-res1 sub resource datatype string;
-res-string sub resource datatype string;
-res-double sub resource datatype double;
-res-long sub resource datatype long;
-res-boolean sub resource datatype boolean;
+res1 sub attribute datatype string;
+res-string sub attribute datatype string;
+res-double sub attribute datatype double;
+res-long sub attribute datatype long;
+res-boolean sub attribute datatype boolean;
 
 #Rules
 

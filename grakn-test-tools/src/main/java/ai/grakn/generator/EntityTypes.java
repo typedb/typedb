@@ -39,7 +39,7 @@ public class EntityTypes extends AbstractTypeGenerator<EntityType> {
     }
 
     @Override
-    protected EntityType metaOntologyConcept() {
+    protected EntityType metaSchemaConcept() {
         return graph().admin().getMetaEntityType();
     }
 }

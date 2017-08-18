@@ -18,11 +18,11 @@
 
 package ai.grakn.graql.internal.hal;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
@@ -119,8 +119,8 @@ public class HALConceptData {
         }
 
         //If a match query contains an assertion we always embed the role players
-        if (concept.isRelation() && separationDegree == 0) {
-            generateRelationEmbedded(halResource, concept.asRelation(), 1);
+        if (concept.isRelationship() && separationDegree == 0) {
+            generateRelationEmbedded(halResource, concept.asRelationship(), 1);
         }
 
         if (concept.isRule()) {
@@ -134,13 +134,13 @@ public class HALConceptData {
             generateEntityEmbedded(halResource, concept.asEntity(), separationDegree);
         }
 
-        if (concept.isRelation()) {
-            generateRelationEmbedded(halResource, concept.asRelation(), separationDegree);
+        if (concept.isRelationship()) {
+            generateRelationEmbedded(halResource, concept.asRelationship(), separationDegree);
             //Only when double clicking on a specific relation we want to fetch also the other relations the current one plays a role into.
-            embedRelationsPlays(halResource, concept.asRelation());
+            embedRelationsPlays(halResource, concept.asRelationship());
         }
-        if (concept.isResource()) {
-            generateOwnerInstances(halResource, concept.asResource(), separationDegree);
+        if (concept.isAttribute()) {
+            generateOwnerInstances(halResource, concept.asAttribute(), separationDegree);
         }
 
         if (concept.isType()) {
@@ -155,7 +155,7 @@ public class HALConceptData {
                 .withLink(EXPLORE_CONCEPT_LINK, EXPLORE)
                 .withProperty(ID_PROPERTY, "RHS-" + rule.getId().getValue())
                 .withProperty(TYPE_PROPERTY, "RHS")
-                .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
+                .withProperty(BASETYPE_PROPERTY, Schema.BaseType.ATTRIBUTE_TYPE.name())
                 .withProperty(VALUE_PROPERTY, rule.getThen().admin().toString());
         halResource.withRepresentation("RHS", RHS);
     }
@@ -166,14 +166,14 @@ public class HALConceptData {
                 .withLink(EXPLORE_CONCEPT_LINK, EXPLORE)
                 .withProperty(ID_PROPERTY, "LHS-" + rule.getId().getValue())
                 .withProperty(TYPE_PROPERTY, "LHS")
-                .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
+                .withProperty(BASETYPE_PROPERTY, Schema.BaseType.ATTRIBUTE_TYPE.name())
                 .withProperty(VALUE_PROPERTY, rule.getWhen().admin().toString());
         halResource.withRepresentation("LHS", LHS);
     }
 
-    private void generateOwnerInstances(Representation halResource, Resource<?> conceptResource, int separationDegree) {
-        final Label roleType = conceptResource.type().getLabel();
-        Stream<Thing> ownersStream = conceptResource.ownerInstances().skip(offset);
+    private void generateOwnerInstances(Representation halResource, Attribute<?> conceptAttribute, int separationDegree) {
+        final Label roleType = conceptAttribute.type().getLabel();
+        Stream<Thing> ownersStream = conceptAttribute.ownerInstances().skip(offset);
         if (limit >= 0) ownersStream = ownersStream.limit(limit);
         ownersStream.forEach(instance -> {
             Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
@@ -209,7 +209,7 @@ public class HALConceptData {
 
 
     private void generateEntityEmbedded(Representation halResource, Entity entity, int separationDegree) {
-        Stream<Relation> relationStream = entity.relations();
+        Stream<Relationship> relationStream = entity.relations();
 
         relationStream = relationStream.skip(offset);
         if (limit >= 0) relationStream = relationStream.limit(limit);
@@ -225,13 +225,13 @@ public class HALConceptData {
     }
 
 
-    private void generateRelationEmbedded(Representation halResource, Relation rel, int separationDegree) {
+    private void generateRelationEmbedded(Representation halResource, Relationship rel, int separationDegree) {
         rel.allRolePlayers().forEach((roleType, instanceSet) -> {
             instanceSet.forEach(instance -> {
                 if (instance != null) {
                     Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
                             .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-                    if (!instance.isRelation()) {
+                    if (!instance.isRelationship()) {
                         handleConcept(roleResource, instance, separationDegree - 1);
                     } else {
                         // If instance is a relation we just add state properties to HAL representation
@@ -244,14 +244,14 @@ public class HALConceptData {
         });
     }
 
-    private void embedRelationsNotConnectedToResources(Representation halResource, Concept concept, Relation relation, int separationDegree) {
+    private void embedRelationsNotConnectedToResources(Representation halResource, Concept concept, Relationship relationship, int separationDegree) {
         Label rolePlayedByCurrentConcept = null;
         boolean isResource = false;
-        for (Map.Entry<Role, Set<Thing>> entry : relation.allRolePlayers().entrySet()) {
+        for (Map.Entry<Role, Set<Thing>> entry : relationship.allRolePlayers().entrySet()) {
             for (Thing thing : entry.getValue()) {
                 //Some role players can be null
                 if (thing != null) {
-                    if (thing.isResource()) {
+                    if (thing.isAttribute()) {
                         isResource = true;
                     } else if (thing.getId().equals(concept.getId())) {
                         rolePlayedByCurrentConcept = entry.getKey().getLabel();
@@ -260,11 +260,11 @@ public class HALConceptData {
             }
         }
         if (!isResource) {
-            attachRelation(halResource, relation, rolePlayedByCurrentConcept, separationDegree);
+            attachRelation(halResource, relationship, rolePlayedByCurrentConcept, separationDegree);
         }
     }
 
-    private void embedRelationsPlays(Representation halResource, Relation rel) {
+    private void embedRelationsPlays(Representation halResource, Relationship rel) {
         rel.plays().forEach(roleTypeRel -> {
             rel.relations(roleTypeRel).forEach(relation -> {
                 embedRelationsNotConnectedToResources(halResource, rel, relation, 1);
@@ -285,7 +285,7 @@ public class HALConceptData {
         }
         // We only limit the number of instances and not subtypes.
         // TODO: This `asOntologyElement` is a hack because `thing.subTypes()` will contain `Role`, which is not `Type`
-        type.asOntologyConcept().subs().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
+        type.asSchemaConcept().subs().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
             Representation subResource = factory.newRepresentation(resourceLinkPrefix + sub.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             handleConcept(subResource, sub, separationDegree - 1);

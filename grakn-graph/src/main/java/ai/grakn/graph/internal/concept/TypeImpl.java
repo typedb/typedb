@@ -18,10 +18,11 @@
 
 package ai.grakn.graph.internal.concept;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -57,10 +58,10 @@ import java.util.stream.Stream;
  *
  * @author fppt
  *
- * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
- * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
+ * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationshipType}
+ * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link Relationship}
  */
-public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptImpl<T> implements Type{
+public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
     private final Cache<Boolean> cachedIsAbstract = new Cache<>(Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
@@ -152,7 +153,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
     /**
      * Checks if an {@link Thing} is allowed to be created and linked to this {@link Type}.
      * This can fail is the {@link ai.grakn.GraknTxType} is read only.
-     * It can also fail when attempting to attach a resource to a meta type
+     * It can also fail when attempting to attach an {@link ai.grakn.concept.Attribute} to a meta type
      */
     private void preCheckForInstanceCreation(){
         vertex().graph().checkMutationAllowed();
@@ -180,17 +181,17 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
     }
 
     @Override
-    public Stream<ResourceType> resources() {
-        Stream<ResourceType> resources = resources(Schema.ImplicitType.HAS_OWNER);
-        return Stream.concat(resources, keys());
+    public Stream<AttributeType> attributes() {
+        Stream<AttributeType> attributes = attributes(Schema.ImplicitType.HAS_OWNER);
+        return Stream.concat(attributes, keys());
     }
 
     @Override
-    public Stream<ResourceType> keys() {
-        return resources(Schema.ImplicitType.KEY_OWNER);
+    public Stream<AttributeType> keys() {
+        return attributes(Schema.ImplicitType.KEY_OWNER);
     }
 
-    private Stream<ResourceType> resources(Schema.ImplicitType implicitType){
+    private Stream<AttributeType> attributes(Schema.ImplicitType implicitType){
         //TODO: Make this less convoluted
         String [] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
         String prefix = implicitIdentifiers[0] + "-";
@@ -200,8 +201,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
         return plays().map(role -> role.getLabel().getValue()).
                 filter(roleLabel -> roleLabel.startsWith(prefix) && roleLabel.endsWith(suffix)).
                 map(roleLabel -> {
-                    String resourceTypeLabel = roleLabel.replace(prefix, "").replace(suffix, "");
-                    return vertex().graph().getResourceType(resourceTypeLabel);
+                    String attributeTypeLabel = roleLabel.replace(prefix, "").replace(suffix, "");
+                    return vertex().graph().getAttributeType(attributeTypeLabel);
                 });
     }
 
@@ -244,19 +245,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
                 flatMap(Shard::<V>links);
     }
 
-    /**
-     *
-     * @return returns true if the type is set to be abstract.
-     */
     @Override
     public Boolean isAbstract() {
         return cachedIsAbstract.get();
     }
 
-    /**
-     *
-     * @return A list of the Instances which scope this Relation
-     */
     @Override
     public Stream<Thing> scopes() {
         return neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE);
@@ -273,10 +266,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
         return getThis();
     }
 
-    /**
-     * @param scope A concept which is currently scoping this concept.
-     * @return The Relation itself
-     */
     @Override
     public T deleteScope(Thing scope) {
         deleteEdge(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE, (Concept) scope);
@@ -316,14 +305,14 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
     }
 
     /**
-     * This is a temporary patch to prevent accidentally disconnecting implicit {@link RelationType}s from their
-     * {@link RelationEdge}s. This Disconnection happens because {@link RelationType#instances()} depends on the
-     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link Type} and the implicit {@link RelationType}.
+     * This is a temporary patch to prevent accidentally disconnecting implicit {@link RelationshipType}s from their
+     * {@link RelationshipEdge}s. This Disconnection happens because {@link RelationshipType#instances()} depends on the
+     * presence of a direct {@link Schema.EdgeLabel#PLAYS} edge between the {@link Type} and the implicit {@link RelationshipType}.
      *
      * When changing the super you may accidentally cause this disconnection. So we prevent it here.
      *
      */
-    //TODO: Remove this when traversing to the instances of an implicit Relation Type is no longer done via plays edges
+    //TODO: Remove this when traversing to the instances of an implicit Relationship Type is no longer done via plays edges
     @Override
     boolean changingSuperAllowed(T oldSuperType, T newSuperType){
         boolean changingSuperAllowed = super.changingSuperAllowed(oldSuperType, newSuperType);
@@ -389,83 +378,78 @@ public class TypeImpl<T extends Type, V extends Thing> extends OntologyConceptIm
     }
 
     /**
-     * Creates a relation type which allows this type and a resource type to be linked.
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * Creates a relation type which allows this type and a {@link ai.grakn.concept.Attribute} type to be linked.
+     * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
      * @param has the implicit relation type to build
-     * @param hasValue the implicit role type to build for the resource type
+     * @param hasValue the implicit role type to build for the {@link AttributeType}
      * @param hasOwner the implicit role type to build for the type
-     * @param required Indicates if the resource is required on the entity
-     * @return The Type itself
+     * @param required Indicates if the {@link ai.grakn.concept.Attribute} is required on the entity
+     * @return The {@link Type} itself
      */
-    private T has(ResourceType resourceType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
+    private T has(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
         //Check if this is a met type
         checkOntologyMutationAllowed();
 
-        //Check if resource type is the meta
-        if(Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())){
-            throw GraphOperationException.metaTypeImmutable(resourceType.getLabel());
+        //Check if attribute type is the meta
+        if(Schema.MetaSchema.ATTRIBUTE.getLabel().equals(attributeType.getLabel())){
+            throw GraphOperationException.metaTypeImmutable(attributeType.getLabel());
         }
 
-        Label resourceLabel = resourceType.getLabel();
-        Role ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(resourceLabel));
-        Role valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(resourceLabel));
-        RelationType relationType = vertex().graph().putRelationTypeImplicit(has.getLabel(resourceLabel)).
+        Label attributeLabel = attributeType.getLabel();
+        Role ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
+        Role valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
+        RelationshipType relationshipType = vertex().graph().putRelationTypeImplicit(has.getLabel(attributeLabel)).
                 relates(ownerRole).
                 relates(valueRole);
 
         //Linking with ako structure if present
-        ResourceType resourceTypeSuper = resourceType.sup();
-        Label superLabel = resourceTypeSuper.getLabel();
-        if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
+        AttributeType attributeTypeSuper = attributeType.sup();
+        Label superLabel = attributeTypeSuper.getLabel();
+        if(!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
             Role ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
             Role valueRoleSuper = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-            RelationType relationTypeSuper = vertex().graph().putRelationTypeImplicit(has.getLabel(superLabel)).
+            RelationshipType relationshipTypeSuper = vertex().graph().putRelationTypeImplicit(has.getLabel(superLabel)).
                     relates(ownerRoleSuper).relates(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation
             ownerRole.sup(ownerRoleSuper);
             valueRole.sup(valueRoleSuper);
-            relationType.sup(relationTypeSuper);
+            relationshipType.sup(relationshipTypeSuper);
 
-            //Make sure the supertype resource is linked with the role as well
-            ((ResourceTypeImpl) resourceTypeSuper).plays(valueRoleSuper);
+            //Make sure the supertype attribute is linked with the role as well
+            ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
         }
 
         this.plays(ownerRole, required);
         //TODO: Use explicit cardinality of 0-1 rather than just false
-        ((ResourceTypeImpl) resourceType).plays(valueRole, false);
+        ((AttributeTypeImpl) attributeType).plays(valueRole, false);
 
         return getThis();
     }
 
-    /**
-     * Creates a relation type which allows this type and a resource type to be linked.
-     * @param resourceType The resource type which instances of this type should be allowed to play.
-     * @return The Type itself
-     */
     @Override
-    public T resource(ResourceType resourceType){
-        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.KEY_OWNER, resourceType);
-        return has(resourceType, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_VALUE, Schema.ImplicitType.HAS_OWNER, false);
+    public T attribute(AttributeType attributeType){
+        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.KEY_OWNER, attributeType);
+        return has(attributeType, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_VALUE, Schema.ImplicitType.HAS_OWNER, false);
     }
 
     @Override
-    public T key(ResourceType resourceType) {
-        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_OWNER, resourceType);
-        return has(resourceType, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_VALUE, Schema.ImplicitType.KEY_OWNER, true);
+    public T key(AttributeType attributeType) {
+        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_OWNER, attributeType);
+        return has(attributeType, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_VALUE, Schema.ImplicitType.KEY_OWNER, true);
     }
 
     /**
-     * Checks if the provided resource type is already used in an other implicit relation.
+     * Checks if the provided {@link AttributeType} is already used in an other implicit relation.
      *
      * @param implicitType The implicit relation to check against.
-     * @param resourceType The resource type which should not be in that implicit relation
+     * @param attributeType The {@link AttributeType} which should not be in that implicit relation
      *
-     * @throws GraphOperationException when the resource type is already used in another implicit relation
+     * @throws GraphOperationException when the {@link AttributeType} is already used in another implicit relation
      */
-    private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, ResourceType resourceType){
-        if(resources(implicitType).anyMatch(rt -> rt.equals(resourceType))) {
-            throw GraphOperationException.duplicateHas(this, resourceType);
+    private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, AttributeType attributeType){
+        if(attributes(implicitType).anyMatch(rt -> rt.equals(attributeType))) {
+            throw GraphOperationException.duplicateHas(this, attributeType);
         }
     }
 

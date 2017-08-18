@@ -8,19 +8,19 @@ product sub recommendable
     has gender;
 
 # product resources
-min-age sub resource, datatype long;
-max-age sub resource, datatype long;
-gender sub resource, datatype string;
+min-age sub attribute, datatype long;
+max-age sub attribute, datatype long;
+gender sub attribute, datatype string;
 
 product-made sub role;
 product-origin sub role;
-made-in sub relation, relates product-origin, relates product-made;
+made-in sub relationship, relates product-origin, relates product-made;
 product plays product-made
     plays typed-product;
 
 recommended-product sub role;
 recommended-customer sub role;
-recommendation sub relation, relates recommended-product, relates recommended-customer;
+recommendation sub relationship, relates recommended-product, relates recommended-customer;
 product plays recommended-product;
 
 person sub entity2;
@@ -31,7 +31,7 @@ place plays product-origin;
 
 typed-product sub role;
 product-type sub role;
-typing sub relation, relates typed-product, relates product-type;
+typing sub relationship, relates typed-product, relates product-type;
 category sub entity2
     has name
     plays product-type

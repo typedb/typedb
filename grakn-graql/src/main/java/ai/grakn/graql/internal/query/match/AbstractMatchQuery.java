@@ -18,12 +18,11 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -79,7 +78,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
      * @param graph the graph to use to execute the query
      * @return a stream of results
      */
-    public abstract Stream<Answer> stream(Optional<GraknGraph> graph);
+    public abstract Stream<Answer> stream(Optional<GraknTx> graph);
 
     @Override
     public final Stream<Answer> stream() {
@@ -87,7 +86,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final MatchQuery withGraph(GraknGraph graph) {
+    public final MatchQuery withGraph(GraknTx graph) {
         return new MatchQueryGraph(graph, this);
     }
 
@@ -130,11 +129,6 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
             }
             return result.get(var);
         });
-    }
-
-    @Override
-    public final AskQuery ask() {
-        return Queries.ask(this);
     }
 
     @Override

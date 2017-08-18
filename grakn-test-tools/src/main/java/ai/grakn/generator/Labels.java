@@ -59,7 +59,7 @@ public class Labels extends FromGraphGenerator<Label> {
                     label = trueRandomLabel();
                 }
                 attempts += 1;
-            } while (graph().getOntologyConcept(label) != null);
+            } while (graph().getSchemaConcept(label) != null);
 
             return label;
         } else {

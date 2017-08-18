@@ -18,12 +18,12 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -83,38 +83,38 @@ public class GraphOperationException extends GraknException{
     }
 
     /**
-     * Thrown when a {@link Thing} is not allowed to have {@link Resource} of that {@link ResourceType}
+     * Thrown when a {@link Thing} is not allowed to have {@link Attribute} of that {@link AttributeType}
      */
-    public static GraphOperationException hasNotAllowed(Thing thing, Resource resource){
-        return new GraphOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), resource.type().getLabel()));
+    public static GraphOperationException hasNotAllowed(Thing thing, Attribute attribute){
+        return new GraphOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), attribute.type().getLabel()));
     }
 
     /**
-     * Thrown when attempting to set a regex on a {@link Resource} whose type {@link ResourceType} is not of the
-     * data type {@link ResourceType.DataType#STRING}
+     * Thrown when attempting to set a regex on a {@link Attribute} whose type {@link AttributeType} is not of the
+     * data type {@link AttributeType.DataType#STRING}
      */
-    public static GraphOperationException cannotSetRegex(ResourceType resourceType){
-        return new GraphOperationException(REGEX_NOT_STRING.getMessage(resourceType.getLabel()));
+    public static GraphOperationException cannotSetRegex(AttributeType attributeType){
+        return new GraphOperationException(REGEX_NOT_STRING.getMessage(attributeType.getLabel()));
     }
 
     /**
      * Thrown when a {@link Type} has incoming edges and therefore cannot be deleted
      */
-    public static GraphOperationException cannotBeDeleted(OntologyConcept ontologyConcept){
-        return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(ontologyConcept.getLabel()));
+    public static GraphOperationException cannotBeDeleted(SchemaConcept schemaConcept){
+        return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(schemaConcept.getLabel()));
     }
 
     /**
-     * Thrown when {@code type} has {@code resourceType} as a {@link Type#key(ResourceType)} and a {@link Type#resource(ResourceType)}
+     * Thrown when {@code type} has {@code attributeType} as a {@link Type#key(AttributeType)} and a {@link Type#attribute(AttributeType)}
      */
-    public static GraphOperationException duplicateHas(Type type, ResourceType resourceType){
-        return new GraphOperationException(ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE.getMessage(type.getLabel(), resourceType.getLabel()));
+    public static GraphOperationException duplicateHas(Type type, AttributeType attributeType){
+        return new GraphOperationException(ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE.getMessage(type.getLabel(), attributeType.getLabel()));
     }
 
     /**
      * Thrown when setting {@code superType} as the super type of {@code type} and a loop is created
      */
-    public static GraphOperationException loopCreated(OntologyConcept type, OntologyConcept superElement){
+    public static GraphOperationException loopCreated(SchemaConcept type, SchemaConcept superElement){
         throw new GraphOperationException(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(type.getLabel(), superElement.getLabel()));
     }
 
@@ -129,7 +129,7 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when creating a resource whose value {@code object} does not match it's resource's  {@code dataType}.
      */
-    public static GraphOperationException invalidResourceValue(Object object, ResourceType.DataType dataType){
+    public static GraphOperationException invalidResourceValue(Object object, AttributeType.DataType dataType){
         return new GraphOperationException(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.getVertexProperty().getDataType().getName()));
     }
 
@@ -137,7 +137,7 @@ public class GraphOperationException extends GraknException{
      * Thrown when using an unsupported datatype with resources
      */
     public static GraphOperationException unsupportedDataType(Object value) {
-        String supported = ResourceType.DataType.SUPPORTED_TYPES.keySet().stream().collect(Collectors.joining(","));
+        String supported = AttributeType.DataType.SUPPORTED_TYPES.keySet().stream().collect(Collectors.joining(","));
         return new GraphOperationException(ErrorMessage.INVALID_DATATYPE.getMessage(value.getClass().getName(), supported));
     }
 
@@ -151,14 +151,14 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when trying to set a {@code value} on the {@code resource} which does not conform to it's regex
      */
-    public static GraphOperationException regexFailure(ResourceType resourceType, String value, String regex){
-        return new GraphOperationException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resourceType.getLabel(), value));
+    public static GraphOperationException regexFailure(AttributeType attributeType, String value, String regex){
+        return new GraphOperationException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, attributeType.getLabel(), value));
     }
 
     /**
      * Thrown when attempting to open a transaction which is already open
      */
-    public static GraphOperationException transactionOpen(GraknGraph graph){
+    public static GraphOperationException transactionOpen(GraknTx graph){
         return new GraphOperationException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(graph.getKeyspace()));
     }
 
@@ -172,7 +172,7 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when attempting to mutate a read only transaction
      */
-    public static GraphOperationException transactionReadOnly(GraknGraph graph){
+    public static GraphOperationException transactionReadOnly(GraknTx graph){
         return new GraphOperationException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
     }
 
@@ -186,7 +186,7 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when attempting to use the graph when the transaction is closed
      */
-    public static GraphOperationException transactionClosed(GraknGraph graph, String reason){
+    public static GraphOperationException transactionClosed(GraknTx graph, String reason){
         if(reason == null){
             return new GraphOperationException(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()));
         } else {
@@ -197,15 +197,15 @@ public class GraphOperationException extends GraknException{
     /**
      * Thrown when the graph can not be closed due to an unknown reason.
      */
-    public static GraphOperationException closingGraphFailed(GraknGraph graph, Exception e){
+    public static GraphOperationException closingGraphFailed(GraknTx graph, Exception e){
         return new GraphOperationException(CLOSE_GRAPH_FAILURE.getMessage(graph.getKeyspace()), e);
     }
 
     /**
      * Thrown when using incompatible versions of Grakn
      */
-    public static GraphOperationException versionMistmatch(Resource versionResource){
-        return new GraphOperationException(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, versionResource.getValue()));
+    public static GraphOperationException versionMistmatch(Attribute versionAttribute){
+        return new GraphOperationException(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, versionAttribute.getValue()));
     }
 
     /**
@@ -252,7 +252,7 @@ public class GraphOperationException extends GraknException{
     }
 
     /**
-     * Thrown when changing the {@link Label} of an {@link OntologyConcept} which is owned by another {@link OntologyConcept}
+     * Thrown when changing the {@link Label} of an {@link SchemaConcept} which is owned by another {@link SchemaConcept}
      */
     public static GraphOperationException labelTaken(Label label){
         throw new GraphOperationException(LABEL_TAKEN.getMessage(label));

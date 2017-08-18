@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
+import com.google.auto.value.AutoValue;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 
@@ -34,12 +35,13 @@ import ai.grakn.graql.internal.query.InsertQueryExecutor;
  *
  * @author Felix Chapman
  */
-public class ThenProperty extends RuleProperty {
+@AutoValue
+public abstract class ThenProperty extends RuleProperty {
 
     public static final String NAME = "then";
 
-    public ThenProperty(Pattern then) {
-        super(then);
+    public static ThenProperty of(Pattern then) {
+        return new AutoValue_ThenProperty(then);
     }
 
     @Override
@@ -49,6 +51,6 @@ public class ThenProperty extends RuleProperty {
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.builder(var).then(pattern);
+        executor.builder(var).then(pattern());
     }
 }

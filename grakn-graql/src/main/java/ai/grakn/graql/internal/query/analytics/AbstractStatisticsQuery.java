@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
@@ -77,37 +77,37 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
                 .map(StringConverter::typeLabelToString).collect(joining(", "));
     }
 
-    private void getResourceTypes(GraknGraph graph) {
+    private void getResourceTypes(GraknTx graph) {
         if (statisticsResourceLabels.isEmpty()) {
             throw GraqlQueryException.statisticsResourceTypesNotSpecified();
         }
 
         statisticsResourceTypes = statisticsResourceLabels.stream()
                 .map((label) -> {
-                    Type type = graph.getOntologyConcept(label);
+                    Type type = graph.getSchemaConcept(label);
                     if (type == null) throw GraqlQueryException.labelNotFound(label);
-                    if (!type.isResourceType()) throw GraqlQueryException.mustBeResourceType(type.getLabel());
+                    if (!type.isAttributeType()) throw GraqlQueryException.mustBeResourceType(type.getLabel());
                     return type;
                 })
                 .flatMap(Type::subs)
                 .collect(Collectors.toSet());
         statisticsResourceLabels = statisticsResourceTypes.stream()
-                .map(OntologyConcept::getLabel)
+                .map(SchemaConcept::getLabel)
                 .collect(Collectors.toSet());
     }
 
     @Nullable
-    ResourceType.DataType getDataTypeOfSelectedResourceTypes() {
-        ResourceType.DataType dataType = null;
+    AttributeType.DataType getDataTypeOfSelectedResourceTypes() {
+        AttributeType.DataType dataType = null;
         for (Type type : statisticsResourceTypes) {
             // check if the selected type is a resource-type
-            if (!type.isResourceType()) throw GraqlQueryException.mustBeResourceType(type.getLabel());
-            ResourceType resourceType = (ResourceType) type;
+            if (!type.isAttributeType()) throw GraqlQueryException.mustBeResourceType(type.getLabel());
+            AttributeType resourceType = (AttributeType) type;
             if (dataType == null) {
                 // check if the resource-type has data-type LONG or DOUBLE
                 dataType = resourceType.getDataType();
-                if (!dataType.equals(ResourceType.DataType.LONG) &&
-                        !dataType.equals(ResourceType.DataType.DOUBLE)) {
+                if (!dataType.equals(AttributeType.DataType.LONG) &&
+                        !dataType.equals(AttributeType.DataType.DOUBLE)) {
                     throw GraqlQueryException.resourceMustBeANumber(dataType, resourceType.getLabel());
                 }
 
@@ -127,7 +127,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
                 Boolean patternExist = graph.get().graql().infer(false).match(
                         var("x").has(resourceType, var()),
                         var("x").isa(Graql.label(type))
-                ).ask().execute();
+                ).iterator().hasNext();
                 if (patternExist) return true;
             }
         }
@@ -139,7 +139,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 //                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
 //
 //        return graph.get().graql().infer(false)
-//                .match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
+//                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
     }
 
     Set<Label> getCombinedSubTypes() {

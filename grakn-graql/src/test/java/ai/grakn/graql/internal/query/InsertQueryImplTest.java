@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.admin.MatchQueryAdmin;
@@ -54,7 +54,7 @@ public class InsertQueryImplTest {
 
     @Test
     public void insertQueriesWithTheSameVarsAndGraphAreEqual() {
-        GraknGraph graph = mock(GraknGraph.class);
+        GraknTx graph = mock(GraknTx.class);
 
         InsertQuery query1 = new InsertQueryImpl(vars1, Optional.empty(), Optional.of(graph));
         InsertQuery query2 = new InsertQueryImpl(vars1, Optional.empty(), Optional.of(graph));
@@ -73,8 +73,8 @@ public class InsertQueryImplTest {
 
     @Test
     public void insertQueriesWithDifferentGraphsAreDifferent() {
-        GraknGraph graph1 = mock(GraknGraph.class);
-        GraknGraph graph2 = mock(GraknGraph.class);
+        GraknTx graph1 = mock(GraknTx.class);
+        GraknTx graph2 = mock(GraknTx.class);
 
         InsertQuery query1 = new InsertQueryImpl(vars1, Optional.empty(), Optional.of(graph1));
         InsertQuery query2 = new InsertQueryImpl(vars2, Optional.empty(), Optional.of(graph2));

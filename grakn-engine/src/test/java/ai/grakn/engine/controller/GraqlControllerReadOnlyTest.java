@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
@@ -79,7 +79,7 @@ import static org.mockito.Mockito.when;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GraqlControllerReadOnlyTest {
 
-    private static GraknGraph mockGraph;
+    private static GraknTx mockGraph;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
     private static SystemKeyspace mockSystemKeyspace = mock(SystemKeyspace.class);
@@ -105,7 +105,7 @@ public class GraqlControllerReadOnlyTest {
         when(mockQueryBuilder.parse(any()))
                 .thenAnswer(invocation -> graphContext.graph().graql().parse(invocation.getArgument(0)));
 
-        mockGraph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
         when(mockGraph.graql()).thenReturn(mockQueryBuilder);
@@ -373,8 +373,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePathWithTextType_ResponseIsCorrect() {
         assumeTrue(GraknTestSetup.usingJanus());
 
-        String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = graphContext.graph().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
+        String toId = graphContext.graph().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
         Response response = sendRequest(query, APPLICATION_TEXT);
@@ -388,8 +388,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePathWithHALType_ResponseContentTypeIsHAL() {
         assumeTrue(GraknTestSetup.usingJanus());
 
-        String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = graphContext.graph().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
+        String toId = graphContext.graph().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
         Response response = sendRequest(query, APPLICATION_HAL);
@@ -402,8 +402,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePathWithHALType_ResponseStatusIs200() {
         assumeTrue(GraknTestSetup.usingJanus());
 
-        String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = graphContext.graph().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
+        String toId = graphContext.graph().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
         Response response = sendRequest(query, APPLICATION_HAL);
@@ -417,8 +417,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePathWithHALType_ResponseIsNotEmpty() {
         assumeTrue(GraknTestSetup.usingJanus());
 
-        String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = graphContext.graph().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
+        String toId = graphContext.graph().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
         Response response = sendRequest(query, APPLICATION_HAL);
@@ -432,8 +432,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePathWithHALType_ResponseContainsValidHALObjects() {
         assumeTrue(GraknTestSetup.usingJanus());
 
-        String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = graphContext.graph().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
+        String toId = graphContext.graph().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
         Response response = sendRequest(query, APPLICATION_HAL);
@@ -448,8 +448,8 @@ public class GraqlControllerReadOnlyTest {
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
     public void ZGETGraqlComputePathWithHALTypeAndNoPath_ResponseIsEmptyJson() {
-        String fromId = graphContext.graph().getResourcesByValue("Apocalypse Now").iterator().next().owner().getId().getValue();
-        String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = graphContext.graph().getAttributesByValue("Apocalypse Now").iterator().next().owner().getId().getValue();
+        String toId = graphContext.graph().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
         Response response = sendRequest(query, APPLICATION_HAL);

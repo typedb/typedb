@@ -56,15 +56,15 @@ public class FactoryBuilderTest {
 
     @Test
     public void whenBuildingInMemoryFactory_ReturnTinkerFactory(){
-        assertThat(FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES), instanceOf(TinkerInternalFactory.class));
+        assertThat(FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES), instanceOf(TxFactoryTinker.class));
     }
 
     @Test
     public void whenBuildingFactoriesWithTheSameProperties_ReturnSameGraphs(){
-        InternalFactory mgf1 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
-        InternalFactory mgf2 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
-        InternalFactory mgf3 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_PROPERTIES);
-        InternalFactory mgf4 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_PROPERTIES);
+        TxFactory mgf1 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
+        TxFactory mgf2 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_PROPERTIES);
+        TxFactory mgf3 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_PROPERTIES);
+        TxFactory mgf4 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_PROPERTIES);
 
         assertEquals(mgf1, mgf2);
         assertEquals(mgf3, mgf4);

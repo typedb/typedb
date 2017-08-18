@@ -19,25 +19,25 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 
 /**
- * A generator that produces {@link Resource}s
+ * A generator that produces {@link Attribute}s
 <<<<<<< Updated upstream:grakn-test-tools/src/main/java/ai/grakn/generator/Resources.java
 =======
  *
  * @author Felix Chapman
 >>>>>>> Stashed changes:grakn-test-tools/src/main/java/ai/grakn/generator/Resources.java
  */
-public class Resources extends AbstractThingGenerator<Resource, ResourceType> {
+public class Resources extends AbstractThingGenerator<Attribute, AttributeType> {
 
     public Resources() {
-        super(Resource.class, ResourceTypes.class);
+        super(Attribute.class, ResourceTypes.class);
     }
 
     @Override
-    protected Resource newInstance(ResourceType type) {
+    protected Attribute newInstance(AttributeType type) {
         return newResource(type);
     }
 }

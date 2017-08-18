@@ -18,12 +18,12 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.test.GraphContext;
 
@@ -45,36 +45,36 @@ public class TransitivityChainGraph extends TestGraph {
         this.n = n;
     }
 
-    public static Consumer<GraknGraph> get(int n) {
+    public static Consumer<GraknTx> get(int n) {
         return new TransitivityChainGraph(n).build();
     }
 
     @Override
-    public Consumer<GraknGraph> build(){
-        return (GraknGraph graph) -> {
+    public Consumer<GraknTx> build(){
+        return (GraknTx graph) -> {
             GraphContext.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n);
         };
     }
 
-    private void buildExtensionalDB(GraknGraph graph, int n) {
+    private void buildExtensionalDB(GraknTx graph, int n) {
         Role qfrom = graph.getRole("Q-from");
         Role qto = graph.getRole("Q-to");
 
         EntityType aEntity = graph.getEntityType("a-entity");
-        RelationType q = graph.getRelationType("Q");
+        RelationshipType q = graph.getRelationshipType("Q");
         Thing aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
         ConceptId[] aInstanceIds = new ConceptId[n];
         for(int i = 0 ; i < n ;i++) {
             aInstanceIds[i] = putEntity(graph, "a" + i, aEntity, key).getId();
         }
 
-        q.addRelation()
+        q.addRelationship()
                 .addRolePlayer(qfrom, aInst)
                 .addRolePlayer(qto, graph.getConcept(aInstanceIds[0]));
 
         for(int i = 0 ; i < n - 1 ; i++) {
-                    q.addRelation()
+                    q.addRelationship()
                             .addRolePlayer(qfrom, graph.getConcept(aInstanceIds[i]))
                             .addRolePlayer(qto, graph.getConcept(aInstanceIds[i+1]));
         }

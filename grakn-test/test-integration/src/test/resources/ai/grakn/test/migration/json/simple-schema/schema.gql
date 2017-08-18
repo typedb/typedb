@@ -19,11 +19,11 @@ insert
     has location
     has code;
 
-  code sub resource datatype long;
-  location sub resource datatype string;
-  number sub resource datatype long;
-  street sub resource datatype string;
-  city sub resource datatype string;
+  code sub attribute datatype long;
+  location sub attribute datatype string;
+  number sub attribute datatype long;
+  street sub attribute datatype string;
+  city sub attribute datatype string;
 
   person-with-address sub role;
   address-of-person sub role;
@@ -32,8 +32,8 @@ insert
   person-with-phone sub role;
   phone-of-person sub role;
 
-  address-has-street sub relation relates street-of-address relates address-with-street;
-  has-address sub relation relates address-of-person relates person-with-address;
-  has-phone sub relation relates phone-of-person relates person-with-phone;
+  address-has-street sub relationship relates street-of-address relates address-with-street;
+  has-address sub relationship relates address-of-person relates person-with-address;
+  has-phone sub relationship relates phone-of-person relates person-with-phone;
 
 

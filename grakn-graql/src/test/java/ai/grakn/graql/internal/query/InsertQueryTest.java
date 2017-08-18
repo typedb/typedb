@@ -18,17 +18,16 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -61,17 +60,22 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import static ai.grakn.concept.ResourceType.DataType.BOOLEAN;
+import static ai.grakn.concept.AttributeType.DataType.BOOLEAN;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
+import static ai.grakn.util.GraqlTestUtil.assertExists;
+import static ai.grakn.util.GraqlTestUtil.assertNotExists;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
 import static ai.grakn.util.Schema.ImplicitType.KEY;
 import static ai.grakn.util.Schema.ImplicitType.KEY_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
+import static ai.grakn.util.Schema.MetaSchema.ENTITY;
+import static ai.grakn.util.Schema.MetaSchema.RELATIONSHIP;
+import static ai.grakn.util.Schema.MetaSchema.ROLE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -154,22 +158,22 @@ public class InsertQueryTest {
         VarPattern[] vars = new VarPattern[] {rel, x, y};
         Pattern[] patterns = new Pattern[] {rel, x, y};
 
-        assertFalse(qb.match(patterns).ask().execute());
+        assertNotExists(qb.match(patterns));
 
         qb.insert(vars).execute();
-        assertTrue(qb.match(patterns).ask().execute());
+        assertExists(qb, patterns);
 
         qb.match(patterns).delete("r").execute();
-        assertFalse(qb.match(patterns).ask().execute());
+        assertNotExists(qb, patterns);
     }
 
     @Test
     public void testInsertSameVarName() {
         qb.insert(var("x").has("title", "SW"), var("x").has("title", "Star Wars").isa("movie")).execute();
 
-        assertTrue(qb.match(var().isa("movie").has("title", "SW")).ask().execute());
-        assertTrue(qb.match(var().isa("movie").has("title", "Star Wars")).ask().execute());
-        assertTrue(qb.match(var().isa("movie").has("title", "SW").has("title", "Star Wars")).ask().execute());
+        assertExists(qb, var().isa("movie").has("title", "SW"));
+        assertExists(qb, var().isa("movie").has("title", "Star Wars"));
+        assertExists(qb, var().isa("movie").has("title", "SW").has("title", "Star Wars"));
     }
 
     @Test
@@ -195,23 +199,23 @@ public class InsertQueryTest {
         VarPattern language2 = var().isa("language").has("name", "456");
 
         qb.insert(language1, language2).execute();
-        assertTrue(qb.match(language1).ask().execute());
-        assertTrue(qb.match(language2).ask().execute());
+        assertExists(qb, language1);
+        assertExists(qb, language2);
 
         qb.match(var("x").isa("language")).insert(var("x").has("name", "HELLO")).execute();
-        assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
-        assertTrue(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
+        assertExists(qb, var().isa("language").has("name", "123").has("name", "HELLO"));
+        assertExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
 
         qb.match(var("x").isa("language")).delete("x").execute();
-        assertFalse(qb.match(language1).ask().execute());
-        assertFalse(qb.match(language2).ask().execute());
+        assertNotExists(qb, language1);
+        assertNotExists(qb, language2);
     }
 
     @Test
     public void testInsertOntology() {
         qb.insert(
                 label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("evolution").sub(Schema.MetaSchema.RELATION.getLabel().getValue()),
+                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
                 label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("evolution").relates("evolves-from").relates("evolves-to"),
@@ -224,30 +228,30 @@ public class InsertQueryTest {
                 var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
         ).execute();
 
-        assertTrue(qb.match(label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).ask().execute());
-        assertTrue(qb.match(label("evolution").sub(Schema.MetaSchema.RELATION.getLabel().getValue())).ask().execute());
-        assertTrue(qb.match(label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue())).ask().execute());
-        assertTrue(qb.match(label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue())).ask().execute());
-        assertTrue(qb.match(label("evolution").relates("evolves-from").relates("evolves-to")).ask().execute());
-        assertTrue(qb.match(label("pokemon").plays("evolves-from").plays("evolves-to")).ask().execute());
+        assertExists(qb, label("pokemon").sub(ENTITY.getLabel().getValue()));
+        assertExists(qb, label("evolution").sub(RELATIONSHIP.getLabel().getValue()));
+        assertExists(qb, label("evolves-from").sub(ROLE.getLabel().getValue()));
+        assertExists(qb, label("evolves-to").sub(ROLE.getLabel().getValue()));
+        assertExists(qb, label("evolution").relates("evolves-from").relates("evolves-to"));
+        assertExists(qb, label("pokemon").plays("evolves-from").plays("evolves-to"));
 
-        assertTrue(qb.match(
+        assertExists(qb,
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),
                 var("z").has("name", "Raichu").isa("pokemon")
-        ).ask().execute());
+        );
 
-        assertTrue(qb.match(
+        assertExists(qb,
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),
                 var().rel("evolves-from", "x").rel("evolves-to", "y").isa("evolution")
-        ).ask().execute());
+        );
 
-        assertTrue(qb.match(
+        assertExists(qb,
                 var("y").has("name", "Pikachu").isa("pokemon"),
                 var("z").has("name", "Raichu").isa("pokemon"),
                 var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
-        ).ask().execute());
+        );
     }
 
     @Test
@@ -257,45 +261,45 @@ public class InsertQueryTest {
                 label("abstract-type").isAbstract().sub(Schema.MetaSchema.ENTITY.getLabel().getValue())
         ).execute();
 
-        assertFalse(qb.match(label("concrete-type").isAbstract()).ask().execute());
-        assertTrue(qb.match(label("abstract-type").isAbstract()).ask().execute());
+        assertNotExists(qb, label("concrete-type").isAbstract());
+        assertExists(qb, label("abstract-type").isAbstract());
     }
 
     @Test
     public void testInsertDatatype() {
         qb.insert(
-                label("my-type").sub(Schema.MetaSchema.RESOURCE.getLabel().getValue()).datatype(ResourceType.DataType.LONG)
+                label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
         ).execute();
 
         MatchQuery query = qb.match(var("x").label("my-type"));
-        ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
+        AttributeType.DataType datatype = query.iterator().next().get("x").asAttributeType().getDataType();
 
-        Assert.assertEquals(ResourceType.DataType.LONG, datatype);
+        Assert.assertEquals(AttributeType.DataType.LONG, datatype);
     }
 
     @Test
     public void testInsertSubResourceType() {
         qb.insert(
-                label("my-type").sub(Schema.MetaSchema.RESOURCE.getLabel().getValue()).datatype(ResourceType.DataType.STRING),
+                label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
                 label("sub-type").sub("my-type")
         ).execute();
 
         MatchQuery query = qb.match(var("x").label("sub-type"));
-        ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
+        AttributeType.DataType datatype = query.iterator().next().get("x").asAttributeType().getDataType();
 
-        Assert.assertEquals(ResourceType.DataType.STRING, datatype);
+        Assert.assertEquals(AttributeType.DataType.STRING, datatype);
     }
 
     @Test
     public void testInsertSubRoleType() {
         qb.insert(
-                label("marriage").sub(Schema.MetaSchema.RELATION.getLabel().getValue()).relates("spouse1").relates("spouse2"),
+                label("marriage").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()).relates("spouse1").relates("spouse2"),
                 label("spouse").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("spouse1").sub("spouse"),
                 label("spouse2").sub("spouse")
         ).execute();
 
-        assertTrue(qb.match(label("spouse1")).ask().execute());
+        assertExists(qb, label("spouse1"));
     }
 
     @Test
@@ -307,9 +311,9 @@ public class InsertQueryTest {
                 var("abc").plays("director")
         ).execute();
 
-        assertTrue(qb.match(label("123").sub("entity")).ask().execute());
-        assertTrue(qb.match(label("123").plays("actor")).ask().execute());
-        assertTrue(qb.match(label("123").plays("director")).ask().execute());
+        assertExists(qb, label("123").sub("entity"));
+        assertExists(qb, label("123").plays("actor"));
+        assertExists(qb, label("123").plays("director"));
     }
 
     @Test
@@ -332,35 +336,30 @@ public class InsertQueryTest {
         VarPattern language2 = var().isa("language").has("name", "456");
 
         qb.insert(language1, language2).execute();
-        assertTrue(qb.match(language1).ask().execute());
-        assertTrue(qb.match(language2).ask().execute());
+        assertExists(qb, language1);
+        assertExists(qb, language2);
 
         InsertQuery query = qb.match(var("x").isa("language")).insert(var("x").has("name", "HELLO"));
         Iterator<Answer> results = query.iterator();
 
-        assertFalse(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
-        assertFalse(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
+        assertNotExists(qb, var().isa("language").has("name", "123").has("name", "HELLO"));
+        assertNotExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
 
         Answer result1 = results.next();
         assertEquals(ImmutableSet.of(var("x")), result1.keySet());
 
-        AskQuery query123 = qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask();
-        AskQuery query456 = qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask();
+        boolean query123 = qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).iterator().hasNext();
+        boolean query456 = qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).iterator().hasNext();
 
         //Check if one of the matches have had the insert executed correctly
-        boolean oneExists;
-        if(query123.execute()){
-            oneExists = !query456.execute();
-        } else {
-            oneExists = query456.execute();
-        }
+        boolean oneExists = query123 != query456;
         assertTrue("A match insert was not executed correctly for only one match", oneExists);
 
         //Check that both are inserted correctly
         Answer result2 = results.next();
         assertEquals(ImmutableSet.of(var("x")), result1.keySet());
-        assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
-        assertTrue(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
+        assertExists(qb, var().isa("language").has("name", "123").has("name", "HELLO"));
+        assertExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
         assertFalse(results.hasNext());
 
         assertNotEquals(result1.get("x"), result2.get("x"));
@@ -421,7 +420,7 @@ public class InsertQueryTest {
 
         assertTrue(newType.plays().anyMatch(role -> role.equals(movieGraph.graph().getRole(roleTypeLabel))));
 
-        assertTrue(qb.match(var().isa("new-type")).ask().execute());
+        assertExists(qb, var().isa("new-type"));
     }
 
     @Test
@@ -458,7 +457,7 @@ public class InsertQueryTest {
     public void testInsertResourceTypeAndInstance() {
         qb.insert(
                 label("movie").has("my-resource"),
-                label("my-resource").sub("resource").datatype(ResourceType.DataType.STRING),
+                label("my-resource").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
                 var("x").isa("movie").has("my-resource", "look a string")
         ).execute();
     }
@@ -469,28 +468,28 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").has(resourceType),
-                label(resourceType).sub("resource").datatype(ResourceType.DataType.STRING),
-                label("an-unconnected-resource-type").sub("resource").datatype(ResourceType.DataType.LONG)
+                label(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
+                label("an-unconnected-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
         ).execute();
 
         // Make sure a-new-type can have the given resource type, but not other resource types
-        assertTrue(qb.match(label("a-new-type").sub("entity").has(resourceType)).ask().execute());
-        assertFalse(qb.match(label("a-new-type").has("title")).ask().execute());
-        assertFalse(qb.match(label("movie").has(resourceType)).ask().execute());
-        assertFalse(qb.match(label("a-new-type").has("an-unconnected-resource-type")).ask().execute());
+        assertExists(qb, label("a-new-type").sub("entity").has(resourceType));
+        assertNotExists(qb, label("a-new-type").has("title"));
+        assertNotExists(qb, label("movie").has(resourceType));
+        assertNotExists(qb, label("a-new-type").has("an-unconnected-resource-type"));
 
         VarPattern hasResource = Graql.label(HAS.getLabel(resourceType));
         VarPattern hasResourceOwner = Graql.label(HAS_OWNER.getLabel(resourceType));
         VarPattern hasResourceValue = Graql.label(HAS_VALUE.getLabel(resourceType));
 
         // Make sure the expected ontology elements are created
-        assertTrue(qb.match(hasResource.sub("relation")).ask().execute());
-        assertTrue(qb.match(hasResourceOwner.sub("role")).ask().execute());
-        assertTrue(qb.match(hasResourceValue.sub("role")).ask().execute());
-        assertTrue(qb.match(hasResource.relates(hasResourceOwner)).ask().execute());
-        assertTrue(qb.match(hasResource.relates(hasResourceValue)).ask().execute());
-        assertTrue(qb.match(label("a-new-type").plays(hasResourceOwner)).ask().execute());
-        assertTrue(qb.match(label(resourceType).plays(hasResourceValue)).ask().execute());
+        assertExists(qb, hasResource.sub(RELATIONSHIP.getLabel().getValue()));
+        assertExists(qb, hasResourceOwner.sub(ROLE.getLabel().getValue()));
+        assertExists(qb, hasResourceValue.sub(ROLE.getLabel().getValue()));
+        assertExists(qb, hasResource.relates(hasResourceOwner));
+        assertExists(qb, hasResource.relates(hasResourceValue));
+        assertExists(qb, label("a-new-type").plays(hasResourceOwner));
+        assertExists(qb, label(resourceType).plays(hasResourceValue));
     }
 
     @Test
@@ -499,27 +498,27 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key(resourceType),
-                label(resourceType).sub("resource").datatype(ResourceType.DataType.STRING)
+                label(resourceType).sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
 
         // Make sure a-new-type can have the given resource type as a key or otherwise
-        assertTrue(qb.match(label("a-new-type").sub("entity").key(resourceType)).ask().execute());
-        assertTrue(qb.match(label("a-new-type").sub("entity").has(resourceType)).ask().execute());
-        assertFalse(qb.match(label("a-new-type").sub("entity").key("title")).ask().execute());
-        assertFalse(qb.match(label("movie").sub("entity").key(resourceType)).ask().execute());
+        assertExists(qb, label("a-new-type").sub("entity").key(resourceType));
+        assertExists(qb, label("a-new-type").sub("entity").has(resourceType));
+        assertNotExists(qb, label("a-new-type").sub("entity").key("title"));
+        assertNotExists(qb, label("movie").sub("entity").key(resourceType));
 
         VarPattern key = Graql.label(KEY.getLabel(resourceType));
         VarPattern keyOwner = Graql.label(KEY_OWNER.getLabel(resourceType));
         VarPattern keyValue = Graql.label(KEY_VALUE.getLabel(resourceType));
 
         // Make sure the expected ontology elements are created
-        assertTrue(qb.match(key.sub("relation")).ask().execute());
-        assertTrue(qb.match(keyOwner.sub("role")).ask().execute());
-        assertTrue(qb.match(keyValue.sub("role")).ask().execute());
-        assertTrue(qb.match(key.relates(keyOwner)).ask().execute());
-        assertTrue(qb.match(key.relates(keyValue)).ask().execute());
-        assertTrue(qb.match(label("a-new-type").plays(keyOwner)).ask().execute());
-        assertTrue(qb.match(label(resourceType).plays(keyValue)).ask().execute());
+        assertExists(qb, key.sub(RELATIONSHIP.getLabel().getValue()));
+        assertExists(qb, keyOwner.sub(ROLE.getLabel().getValue()));
+        assertExists(qb, keyValue.sub(ROLE.getLabel().getValue()));
+        assertExists(qb, key.relates(keyOwner));
+        assertExists(qb, key.relates(keyValue));
+        assertExists(qb, label("a-new-type").plays(keyOwner));
+        assertExists(qb, label(resourceType).plays(keyValue));
     }
 
     @Test
@@ -529,7 +528,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
+                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
     }
@@ -540,7 +539,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
+                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
         ).execute();
 
@@ -555,7 +554,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
+                label("a-new-resource-type").sub("resource").datatype(AttributeType.DataType.STRING),
                 var("x").isa("a-new-type").has("a-new-resource-type", "hello"),
                 var("y").isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
@@ -570,7 +569,7 @@ public class InsertQueryTest {
 
         qb.insert(
                 label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
+                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
                 var().isa("a-new-type")
         ).execute();
 
@@ -580,10 +579,10 @@ public class InsertQueryTest {
 
     @Test
     public void testResourceTypeRegex() {
-        qb.insert(label("greeting").sub("resource").datatype(ResourceType.DataType.STRING).regex("hello|good day")).execute();
+        qb.insert(label("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING).regex("hello|good day")).execute();
 
         MatchQuery match = qb.match(var("x").label("greeting"));
-        assertEquals("hello|good day", match.get("x").findFirst().get().asResourceType().getRegex());
+        assertEquals("hello|good day", match.get("x").findFirst().get().asAttributeType().getRegex());
     }
 
     @Test
@@ -629,7 +628,7 @@ public class InsertQueryTest {
         exception.expectMessage(
                 allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
         );
-        qb.insert(label("my-resource").sub(Schema.MetaSchema.RESOURCE.getLabel().getValue())).execute();
+        qb.insert(label("my-resource").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue())).execute();
     }
 
     @Test
@@ -686,36 +685,36 @@ public class InsertQueryTest {
     public void testInsertResourceOnExistingId() {
         ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
 
-        assertFalse(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
-        assertTrue(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
     @Test
     public void testInsertResourceOnExistingIdWithType() {
         ConceptId apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
 
-        assertFalse(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).isa("movie").has("title", "Apocalypse Maybe Tomorrow")).execute();
-        assertTrue(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
     @Test
     public void testInsertResourceOnExistingResourceId() {
         ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x").findAny().get().getId();
 
-        assertFalse(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
-        assertTrue(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
     @Test
     public void testInsertResourceOnExistingResourceIdWithType() {
         ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x").findAny().get().getId();
 
-        assertFalse(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        assertNotExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
         qb.insert(var().id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")).execute();
-        assertTrue(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        assertExists(qb, var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow"));
     }
 
     @Test
@@ -780,14 +779,14 @@ public class InsertQueryTest {
         Thing cluster = results.get(0).get("c").asThing();
         Thing godfather = results.get(0).get("g").asThing();
         Thing muppets = results.get(0).get("m").asThing();
-        Relation relation = results.get(0).get("r").asRelation();
+        Relationship relationship = results.get(0).get("r").asRelationship();
 
         Role clusterOfProduction = movieGraph.graph().getRole("cluster-of-production");
         Role productionWithCluster = movieGraph.graph().getRole("production-with-cluster");
 
-        assertEquals(relation.rolePlayers().collect(toSet()), ImmutableSet.of(cluster, godfather, muppets));
-        assertEquals(relation.rolePlayers(clusterOfProduction).collect(toSet()), ImmutableSet.of(cluster));
-        assertEquals(relation.rolePlayers(productionWithCluster).collect(toSet()), ImmutableSet.of(godfather, muppets));
+        assertEquals(relationship.rolePlayers().collect(toSet()), ImmutableSet.of(cluster, godfather, muppets));
+        assertEquals(relationship.rolePlayers(clusterOfProduction).collect(toSet()), ImmutableSet.of(cluster));
+        assertEquals(relationship.rolePlayers(productionWithCluster).collect(toSet()), ImmutableSet.of(godfather, muppets));
     }
 
     @Test(expected = Exception.class)
@@ -854,7 +853,7 @@ public class InsertQueryTest {
 
     @Test
     public void whenSpecifyingExistingTypeWithIncorrectDataType_Throw() {
-        ResourceType name = movieGraph.graph().getResourceType("name");
+        AttributeType name = movieGraph.graph().getAttributeType("name");
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(
@@ -877,7 +876,7 @@ public class InsertQueryTest {
     private void assertInsert(VarPattern... vars) {
         // Make sure vars don't exist
         for (VarPattern var : vars) {
-            assertFalse(qb.match(var).ask().execute());
+            assertNotExists(qb, var);
         }
 
         // Insert all vars
@@ -885,17 +884,17 @@ public class InsertQueryTest {
 
         // Make sure all vars exist
         for (VarPattern var : vars) {
-            assertTrue(qb.match(var).ask().execute());
+            assertExists(qb, var);
         }
 
         // Delete all vars
         for (VarPattern var : vars) {
-            qb.match(var).delete(var.admin().getVarName()).execute();
+            qb.match(var).delete(var.admin().var()).execute();
         }
 
         // Make sure vars don't exist
         for (VarPattern var : vars) {
-            assertFalse(qb.match(var).ask().execute());
+            assertNotExists(qb, var);
         }
     }
 }

@@ -18,9 +18,9 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Label;
 import ai.grakn.test.GraphContext;
@@ -45,7 +45,7 @@ public abstract class AbstractPathGraph extends TestGraph {
         this.m = m;
     }
 
-    protected void buildExtensionalDB(GraknGraph graph, int n, int children) {
+    protected void buildExtensionalDB(GraknTx graph, int n, int children) {
         long startTime = System.currentTimeMillis();
 
         EntityType vertex = graph.getEntityType("vertex");
@@ -53,7 +53,7 @@ public abstract class AbstractPathGraph extends TestGraph {
         Role arcFrom = graph.getRole("arc-from");
         Role arcTo = graph.getRole("arc-to");
 
-        RelationType arc = graph.getRelationType("arc");
+        RelationshipType arc = graph.getRelationshipType("arc");
         putEntity(graph, "a0", startVertex, key);
 
         for(int i = 1 ; i <= n ;i++) {
@@ -67,7 +67,7 @@ public abstract class AbstractPathGraph extends TestGraph {
         }
 
         for (int j = 0; j < children; j++) {
-            arc.addRelation()
+            arc.addRelationship()
                     .addRolePlayer(arcFrom, getInstance(graph, "a0"))
                     .addRolePlayer(arcTo, getInstance(graph, "a1," + j));
         }
@@ -76,7 +76,7 @@ public abstract class AbstractPathGraph extends TestGraph {
             int m = IntMath.pow(children, i);
             for (int j = 0; j < m; j++) {
                 for (int c = 0; c < children; c++) {
-                    arc.addRelation()
+                    arc.addRelationship()
                             .addRolePlayer(arcFrom, getInstance(graph, "a" + i + "," + j))
                             .addRolePlayer(arcTo, getInstance(graph, "a" + (i + 1) + "," + (j * children + c)));
 
@@ -92,8 +92,8 @@ public abstract class AbstractPathGraph extends TestGraph {
     }
 
     @Override
-    public Consumer<GraknGraph> build(){
-        return (GraknGraph graph) -> {
+    public Consumer<GraknTx> build(){
+        return (GraknTx graph) -> {
             GraphContext.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };

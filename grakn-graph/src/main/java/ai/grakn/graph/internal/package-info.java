@@ -17,7 +17,7 @@
  */
 
 /**
- * Internal implementation of {@link ai.grakn.GraknGraph}.
+ * Internal implementation of {@link ai.grakn.GraknTx}.
  */
 
 package ai.grakn.graph.internal;

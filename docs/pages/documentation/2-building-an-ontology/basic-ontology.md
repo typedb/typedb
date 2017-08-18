@@ -2,7 +2,7 @@
 title: Define a Basic Ontology
 keywords: schema
 last_updated: December, 2016
-tags: [graph-api, java, advanced-grakn]
+tags: [java-api, java, advanced-grakn]
 summary: "Demonstrates how to create a basic ontology"
 sidebar: documentation_sidebar
 permalink: /documentation/building-an-ontology/basic-ontology.html
@@ -18,15 +18,15 @@ comment_issue_id: 22
 
 In this section we are going to run through the construction of a basic ontology. We recommend that you refer to the [Knowledge Model](../the-fundamentals/grakn-knowledge-model.html) documentation before reading this page. The process we will follow is a general guideline as to how you may start designing an ontology.
 
-The ontology we will be building will be used for a genealogy graph used for mapping out a family tree. You can find the complete ontology, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
+The ontology we will be building will be used for a genealogy knowledge base used for mapping out a family tree. You can find the complete ontology, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
 
 
 ## Identifying Entity Types
 
-The first step is about identifying the categories of things that will be in your graph.
+The first step is about identifying the categories of things that will be in your knowledge base.
 For example if you are modelling a retail store, valid categories may be `product`, `electronics`, `books`, etc.  It is up to you to decide the granularity of your categories.
 
-For our genealogy graph we know that it will mostly be filled with people. So we can create an entity type:
+For our genealogy knowledge base we know that it will mostly be filled with people. So we can create an entity type:
 
 ```graql
 insert
@@ -56,21 +56,21 @@ person sub entity
   has death-date
   has gender;
 
-  identifier sub resource datatype string;
-  name sub resource datatype string;
+  identifier sub attribute datatype string;
+  name sub attribute datatype string;
   firstname sub name datatype string;
   surname sub name datatype string;
   middlename sub name datatype string;
-  picture sub resource datatype string;
-  age sub resource datatype long;
-  "date" sub resource datatype string;
+  picture sub attribute datatype string;
+  age sub attribute datatype long;
+  "date" sub attribute datatype string;
   birth-date sub "date" datatype string;
   death-date sub "date" datatype string;
-  gender sub resource datatype string;   
+  gender sub attribute datatype string;   
 ```	    
 
 ## Supported Resource Types
-The following resource types are supported: `string`, `boolean`, `long`, `double`, `date`.
+The following attribute types are supported: `string`, `boolean`, `long`, `double`, `date`.
 
 ## Identifying Relationships and Roles
 
@@ -85,7 +85,7 @@ In our example, we will add `marriage` and `parentship` relationships. A `marria
 ```graql
 insert
 
-marriage sub relation
+marriage sub relationship
   relates spouse1
   relates spouse2
   has picture;
@@ -93,7 +93,7 @@ marriage sub relation
 spouse1 sub role;
 spouse2 sub role;
 
-parentship sub relation
+parentship sub relationship
   relates parent
   relates child;
 
@@ -145,21 +145,21 @@ insert
 
  # Resources
 
-  identifier sub resource datatype string;
-  name sub resource datatype string;
+  identifier sub attribute datatype string;
+  name sub attribute datatype string;
   firstname sub name datatype string;
   surname sub name datatype string;
   middlename sub name datatype string;
-  picture sub resource datatype string;
-  age sub resource datatype long;
-  "date" sub resource datatype string;
+  picture sub attribute datatype string;
+  age sub attribute datatype long;
+  "date" sub attribute datatype string;
   birth-date sub "date" datatype string;
   death-date sub "date" datatype string;
-  gender sub resource datatype string;
+  gender sub attribute datatype string;
 
  # Roles and Relations
 
-  marriage sub relation
+  marriage sub relationship
     relates spouse1
     relates spouse2
     has picture;
@@ -167,7 +167,7 @@ insert
   spouse1 sub role;
   spouse2 sub role;
 
-  parentship sub relation
+  parentship sub relationship
     relates parent
     relates child;
 
@@ -182,7 +182,7 @@ insert
 
 In this tutorial we described our entity type `person` across separate steps. This was done to demonstrate the typical thought process when creating an ontology. It is typically good practice to group entity type definitions together as above.
 
-{% include note.html content="It is worth noting that the ontology does not need to be completely finalised before loading data. The ontology of a Grakn graph can be expanded even after loading data." %}
+{% include note.html content="It is worth noting that the ontology does not need to be completely finalised before loading data. The schema of a Grakn knowledge base can be expanded even after loading data." %}
 
 ## Where Next?
 

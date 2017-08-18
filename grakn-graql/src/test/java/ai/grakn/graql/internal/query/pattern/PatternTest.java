@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.pattern;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -40,13 +40,14 @@ import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class PatternTest {
 
-    private GraknGraph graph = rule.graph();
+    private GraknTx graph = rule.graph();
 
     @ClassRule
     public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
@@ -58,18 +59,18 @@ public class PatternTest {
     public void testVarPattern() {
         Pattern x = var("x");
 
-        assertTrue(x.admin().isVar());
+        assertTrue(x.admin().isVarPattern());
         assertFalse(x.admin().isDisjunction());
         assertFalse(x.admin().isConjunction());
 
-        assertEquals(x.admin(), x.admin().asVar());
+        assertEquals(x.admin(), x.admin().asVarPattern());
     }
 
     @Test
     public void testSimpleDisjunction() {
         Pattern disjunction = or();
 
-        assertFalse(disjunction.admin().isVar());
+        assertFalse(disjunction.admin().isVarPattern());
         assertTrue(disjunction.admin().isDisjunction());
         assertFalse(disjunction.admin().isConjunction());
 
@@ -81,7 +82,7 @@ public class PatternTest {
     public void testSimpleConjunction() {
         Pattern conjunction = and();
 
-        assertFalse(conjunction.admin().isVar());
+        assertFalse(conjunction.admin().isVarPattern());
         assertFalse(conjunction.admin().isDisjunction());
         assertTrue(conjunction.admin().isConjunction());
 
@@ -92,7 +93,7 @@ public class PatternTest {
     @Test(expected = UnsupportedOperationException.class)
     public void testConjunctionAsVar() {
         //noinspection ResultOfMethodCallIgnored
-        Graql.and(var("x").isa("movie"), var("x").isa("person")).admin().asVar();
+        Graql.and(var("x").isa("movie"), var("x").isa("person")).admin().asVarPattern();
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -294,7 +295,7 @@ public class PatternTest {
 
     @Test
     public void testNegation() {
-        assertTrue(graph.graql().match(var().isa("movie").has("title", "Godfather")).ask().execute());
+        assertExists(graph.graql(), var().isa("movie").has("title", "Godfather"));
         Set<Concept> result1 = graph.graql().match(
                 var("x").isa("movie").has("title", var("y")),
                 var("y").val(neq("Godfather"))).select("x").execute()

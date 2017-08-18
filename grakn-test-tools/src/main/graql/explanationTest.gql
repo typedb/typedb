@@ -14,25 +14,25 @@ entity1 sub entity
 
 #Relations
 
-relation1 sub relation
+relation1 sub relationship
 	relates role1
 	relates role2;
 
-relation2 sub relation
+relation2 sub relationship
 	relates role1
 	relates role2;
 
-relation3 sub relation
+relation3 sub relationship
 	relates role1
 	relates role2;
 
-inferredRelation sub relation
+inferredRelation sub relationship
     relates role1
     relates role2;
 
 #Resources
 
-"name" sub resource, datatype string;
+"name" sub attribute, datatype string;
 
 $a1 isa entity1, has name "a1";
 $a2 isa entity1, has name "a2";

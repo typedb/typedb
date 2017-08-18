@@ -38,8 +38,8 @@ public class RegexAtom extends AtomicBase {
     private final String regex;
 
     public RegexAtom(Var varName, RegexProperty prop, ReasonerQuery parent){
-        super(varName.regex(prop.getRegex()).admin(), parent);
-        this.regex = prop.getRegex();
+        super(varName.regex(prop.regex()).admin(), parent);
+        this.regex = prop.regex();
     }
 
     private RegexAtom(RegexAtom a) {

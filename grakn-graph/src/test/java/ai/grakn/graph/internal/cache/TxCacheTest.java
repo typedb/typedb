@@ -20,19 +20,19 @@ package ai.grakn.graph.internal.cache;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTxAbstract;
 import ai.grakn.graph.internal.GraphTestBase;
-import ai.grakn.graph.internal.concept.RelationImpl;
+import ai.grakn.graph.internal.concept.RelationshipImpl;
 import ai.grakn.graph.internal.structure.Casting;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -66,14 +66,14 @@ public class TxCacheTest extends GraphTestBase {
     public void whenNewAddingTypesToTheGraph_EnsureTheConceptLogContainsThem() {
         // add concepts to rootGraph in as many ways as possible
         EntityType t1 = graknGraph.putEntityType("1");
-        RelationType t2 = graknGraph.putRelationType("2");
+        RelationshipType t2 = graknGraph.putRelationshipType("2");
         Role t3 = graknGraph.putRole("3");
         RuleType t4 = graknGraph.putRuleType("4");
-        ResourceType t5 = graknGraph.putResourceType("5", ResourceType.DataType.STRING);
+        AttributeType t5 = graknGraph.putAttributeType("5", AttributeType.DataType.STRING);
 
         // verify the concepts that we expected are returned in the set
         assertThat(graknGraph.txCache().getModifiedRoles(), containsInAnyOrder(t3));
-        assertThat(graknGraph.txCache().getModifiedRelationTypes(), containsInAnyOrder(t2));
+        assertThat(graknGraph.txCache().getModifiedRelationshipTypes(), containsInAnyOrder(t2));
     }
 
     @Test
@@ -81,14 +81,14 @@ public class TxCacheTest extends GraphTestBase {
         Role r1 = graknGraph.putRole("r1");
         Role r2 = graknGraph.putRole("r2");
         EntityType t1 = graknGraph.putEntityType("t1").plays(r1).plays(r2);
-        RelationType rt1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
+        RelationshipType rt1 = graknGraph.putRelationshipType("rel1").relates(r1).relates(r2);
 
         Entity e1 = t1.addEntity();
         Entity e2 = t1.addEntity();
 
         assertThat(graknGraph.txCache().getModifiedCastings(), empty());
 
-        Set<Casting> castings = ((RelationImpl) rt1.addRelation().
+        Set<Casting> castings = ((RelationshipImpl) rt1.addRelationship().
                 addRolePlayer(r1, e1).
                 addRolePlayer(r2, e2)).reified().get().
                 castingsRelation().collect(toSet());
@@ -102,13 +102,13 @@ public class TxCacheTest extends GraphTestBase {
         Role r2 = graknGraph.putRole("r2");
         EntityType t1 = graknGraph.putEntityType("t1").plays(r1).plays(r2);
         EntityType t2 = graknGraph.putEntityType("t2");
-        RelationType rt1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
+        RelationshipType rt1 = graknGraph.putRelationshipType("rel1").relates(r1).relates(r2);
         Entity i1 = t1.addEntity();
         Entity i2 = t1.addEntity();
-        RelationImpl relation = (RelationImpl) rt1.addRelation().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
+        RelationshipImpl relation = (RelationshipImpl) rt1.addRelationship().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         assertThat(graknGraph.txCache().getModifiedCastings(), is(empty()));
 
@@ -121,7 +121,7 @@ public class TxCacheTest extends GraphTestBase {
         EntityType t1 = graknGraph.putEntityType("1");
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         assertThat(graknGraph.txCache().getModifiedEntities(), is(empty()));
 
@@ -134,16 +134,16 @@ public class TxCacheTest extends GraphTestBase {
         Role r1 = graknGraph.putRole("r1");
         Role r2 = graknGraph.putRole("r2");
         EntityType t1 = graknGraph.putEntityType("t1").plays(r1).plays(r2);
-        RelationType rt1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
+        RelationshipType rt1 = graknGraph.putRelationshipType("rel1").relates(r1).relates(r2);
         Entity i1 = t1.addEntity();
         Entity i2 = t1.addEntity();
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
-        assertThat(graknGraph.txCache().getModifiedRelations(), is(empty()));
-        Relation rel1 = rt1.addRelation().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
-        assertThat(graknGraph.txCache().getModifiedRelations(), containsInAnyOrder(rel1));
+        assertThat(graknGraph.txCache().getModifiedRelationships(), is(empty()));
+        Relationship rel1 = rt1.addRelationship().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
+        assertThat(graknGraph.txCache().getModifiedRelationships(), containsInAnyOrder(rel1));
     }
 
     @Test
@@ -152,7 +152,7 @@ public class TxCacheTest extends GraphTestBase {
         Entity i1 = t1.addEntity();
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         assertThat(graknGraph.txCache().getModifiedEntities(), is(empty()));
 
@@ -163,7 +163,7 @@ public class TxCacheTest extends GraphTestBase {
     @Test
     public void whenNoOp_EnsureLogWellFormed() {
         Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
-                "\":{\"" + Schema.BaseType.RESOURCE.name() + "\":{}},\"" +
+                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() + "\":{}},\"" +
                 REST.Request.COMMIT_LOG_COUNTING + "\":[]}");
         assertEquals("Unexpected graph logs", expected, graknGraph.txCache().getFormattedLog());
     }
@@ -174,7 +174,7 @@ public class TxCacheTest extends GraphTestBase {
         entityType.addEntity();
         entityType.addEntity();
         Json expected = Json.read("{\"" + REST.Request.COMMIT_LOG_FIXING +
-                "\":{\"" + Schema.BaseType.RESOURCE.name() +
+                "\":{\"" + Schema.BaseType.ATTRIBUTE.name() +
                 "\":{}},\"" + REST.Request.COMMIT_LOG_COUNTING  +
                 "\":[{\"" + REST.Request.COMMIT_LOG_CONCEPT_ID +
                 "\":\"" + entityType.getId() + "\",\"" + REST.Request.COMMIT_LOG_SHARDING_COUNT + "\":2}]}");
@@ -184,7 +184,7 @@ public class TxCacheTest extends GraphTestBase {
     @Test
     public void whenAddingAndRemovingInstancesFromTypes_EnsureLogTracksNumberOfChanges(){
         EntityType entityType = graknGraph.putEntityType("My Type");
-        RelationType relationType = graknGraph.putRelationType("My Relation Type");
+        RelationshipType relationshipType = graknGraph.putRelationshipType("My Relationship Type");
 
         TxCache txCache = graknGraph.txCache();
         assertThat(txCache.getShardingCount().keySet(), empty());
@@ -192,19 +192,19 @@ public class TxCacheTest extends GraphTestBase {
         //Add some instances
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
-        relationType.addRelation();
+        relationshipType.addRelationship();
         assertEquals(2, (long) txCache.getShardingCount().get(entityType.getId()));
-        assertEquals(1, (long) txCache.getShardingCount().get(relationType.getId()));
+        assertEquals(1, (long) txCache.getShardingCount().get(relationshipType.getId()));
 
         //Remove an entity
         e1.delete();
         assertEquals(1, (long) txCache.getShardingCount().get(entityType.getId()));
-        assertEquals(1, (long) txCache.getShardingCount().get(relationType.getId()));
+        assertEquals(1, (long) txCache.getShardingCount().get(relationshipType.getId()));
 
         //Remove another entity
         e2.delete();
         assertFalse(txCache.getShardingCount().containsKey(entityType.getId()));
-        assertEquals(1, (long) txCache.getShardingCount().get(relationType.getId()));
+        assertEquals(1, (long) txCache.getShardingCount().get(relationshipType.getId()));
     }
 
     @Test
@@ -212,24 +212,24 @@ public class TxCacheTest extends GraphTestBase {
         TxCache cache = graknGraph.txCache();
 
         //Load some sample data
-        ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        AttributeType<String> attributeType = graknGraph.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
         Role role1 = graknGraph.putRole("role 1");
         Role role2 = graknGraph.putRole("role 2");
-        EntityType entityType = graknGraph.putEntityType("My Type").plays(role1).plays(role2).resource(resourceType);
-        RelationType relationType = graknGraph.putRelationType("My Relation Type").relates(role1).relates(role2);
+        EntityType entityType = graknGraph.putEntityType("My Type").plays(role1).plays(role2).attribute(attributeType);
+        RelationshipType relationshipType = graknGraph.putRelationshipType("My Relationship Type").relates(role1).relates(role2);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
-        Resource<String> r1 = resourceType.putResource("test");
+        Attribute<String> r1 = attributeType.putAttribute("test");
 
-        e1.resource(r1);
-        relationType.addRelation().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
+        e1.attribute(r1);
+        relationshipType.addRelationship().addRolePlayer(role1, e1).addRolePlayer(role2, e2);
 
         //Check the caches are not empty
         assertThat(cache.getConceptCache().keySet(), not(empty()));
         assertThat(cache.getOntologyConceptCache().keySet(), not(empty()));
         assertThat(cache.getLabelCache().keySet(), not(empty()));
         assertThat(cache.getRelationIndexCache().keySet(), not(empty()));
-        assertThat(cache.getModifiedResources(), not(empty()));
+        assertThat(cache.getModifiedAttributes(), not(empty()));
         assertThat(cache.getShardingCount().keySet(), not(empty()));
         assertThat(cache.getModifiedCastings(), not(empty()));
 
@@ -244,10 +244,10 @@ public class TxCacheTest extends GraphTestBase {
         assertThat(cache.getShardingCount().keySet(), empty());
         assertThat(cache.getModifiedEntities(), empty());
         assertThat(cache.getModifiedRoles(), empty());
-        assertThat(cache.getModifiedRelationTypes(), empty());
-        assertThat(cache.getModifiedRelations(), empty());
+        assertThat(cache.getModifiedRelationshipTypes(), empty());
+        assertThat(cache.getModifiedRelationships(), empty());
         assertThat(cache.getModifiedRules(), empty());
-        assertThat(cache.getModifiedResources(), empty());
+        assertThat(cache.getModifiedAttributes(), empty());
         assertThat(cache.getModifiedCastings(), empty());
     }
 
@@ -259,7 +259,7 @@ public class TxCacheTest extends GraphTestBase {
         graknGraph.commit();
 
         //Check everything is okay
-        graknGraph = (AbstractGraknGraph<?>) graknSession.open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) graknSession.open(GraknTxType.WRITE);
         assertTxBoundConceptMatches(e2, Type::sup, is(e1));
 
         //Mutate Super Type
@@ -273,11 +273,11 @@ public class TxCacheTest extends GraphTestBase {
         Role rol2 = graknGraph.putRole("role2");
         EntityType e1 = graknGraph.putEntityType("e1").plays(rol1).plays(rol2);
         EntityType e2 = graknGraph.putEntityType("e2");
-        RelationType rel = graknGraph.putRelationType("rel").relates(rol1).relates(rol2);
+        RelationshipType rel = graknGraph.putRelationshipType("rel").relates(rol1).relates(rol2);
         graknGraph.commit();
 
         //Check concepts match what is in transaction cache
-        graknGraph = (AbstractGraknGraph<?>) graknSession.open(GraknTxType.WRITE);
+        graknGraph = (GraknTxAbstract<?>) graknSession.open(GraknTxType.WRITE);
         assertTxBoundConceptMatches(e1, t -> t.plays().collect(toSet()), containsInAnyOrder(rol1, rol2));
         assertTxBoundConceptMatches(rel, t -> t.relates().collect(toSet()), containsInAnyOrder(rol1, rol2));
         assertTxBoundConceptMatches(rol1, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1));
@@ -310,7 +310,7 @@ public class TxCacheTest extends GraphTestBase {
      * @param expectedMatch The expected result of the above operation
      */
     @SuppressWarnings("unchecked")
-    private <T extends OntologyConcept> void assertTxBoundConceptMatches(T type, Function<T, Object> resultSupplier, Matcher expectedMatch){
+    private <T extends SchemaConcept> void assertTxBoundConceptMatches(T type, Function<T, Object> resultSupplier, Matcher expectedMatch){
         assertThat(resultSupplier.apply(type), expectedMatch);
         assertThat(resultSupplier.apply(graknGraph.txCache().getCachedOntologyElement(type.getLabel())), expectedMatch);
     }

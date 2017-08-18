@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
@@ -65,8 +65,8 @@ abstract class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern i
     }
 
     @Override
-    public Set<Var> commonVarNames() {
-        return getPatterns().stream().map(PatternAdmin::commonVarNames).reduce(ImmutableSet.of(), Sets::union);
+    public Set<Var> commonVars() {
+        return getPatterns().stream().map(PatternAdmin::commonVars).reduce(ImmutableSet.of(), Sets::union);
     }
 
     @Override
@@ -80,7 +80,7 @@ abstract class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern i
     }
 
     @Override
-    public ReasonerQuery toReasonerQuery(GraknGraph graph){
+    public ReasonerQuery toReasonerQuery(GraknTx graph){
         Conjunction<VarPatternAdmin> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
         return ReasonerQueries.create(pattern, graph);
     }

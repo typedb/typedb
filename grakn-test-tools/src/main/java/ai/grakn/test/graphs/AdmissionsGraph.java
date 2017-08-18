@@ -18,10 +18,10 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.test.GraphContext;
 
 import java.util.function.Consumer;
@@ -33,62 +33,62 @@ import java.util.function.Consumer;
  */
 public class AdmissionsGraph extends TestGraph {
 
-    private static ResourceType<String> key;
+    private static AttributeType<String> key;
 
     private static EntityType applicant;
 
-    private static ResourceType<Long> TOEFL;
-    private static ResourceType<Double> GPR;
-    private static ResourceType<Long> GRE;
-    private static ResourceType<Long> vGRE;
-    private static ResourceType<String> specialHonours;
-    private static ResourceType<String> degreeOrigin;
-    private static ResourceType<String> transcript;
-    private static ResourceType<String> priorGraduateWork;
-    private static ResourceType<String> languageRequirement;
-    private static ResourceType<String> considerGPR;
-    private static ResourceType<String> admissionStatus;
-    private static ResourceType<String> decisionType;
+    private static AttributeType<Long> TOEFL;
+    private static AttributeType<Double> GPR;
+    private static AttributeType<Long> GRE;
+    private static AttributeType<Long> vGRE;
+    private static AttributeType<String> specialHonours;
+    private static AttributeType<String> degreeOrigin;
+    private static AttributeType<String> transcript;
+    private static AttributeType<String> priorGraduateWork;
+    private static AttributeType<String> languageRequirement;
+    private static AttributeType<String> considerGPR;
+    private static AttributeType<String> admissionStatus;
+    private static AttributeType<String> decisionType;
 
-    public static Consumer<GraknGraph> get() {
+    public static Consumer<GraknTx> get() {
         return new AdmissionsGraph().build();
     }
 
     @Override
-    protected void buildOntology(GraknGraph graph) {
-        key = graph.putResourceType("name", ResourceType.DataType.STRING);
+    protected void buildOntology(GraknTx graph) {
+        key = graph.putAttributeType("name", AttributeType.DataType.STRING);
 
-        TOEFL = graph.putResourceType("TOEFL", ResourceType.DataType.LONG);
-        GRE = graph.putResourceType("GRE", ResourceType.DataType.LONG);
-        vGRE = graph.putResourceType("vGRE", ResourceType.DataType.LONG);
-        GPR = graph.putResourceType("GPR", ResourceType.DataType.DOUBLE);
-        specialHonours = graph.putResourceType("specialHonours", ResourceType.DataType.STRING);
-        considerGPR = graph.putResourceType("considerGPR", ResourceType.DataType.STRING);
-        transcript = graph.putResourceType("transcript", ResourceType.DataType.STRING);
-        priorGraduateWork = graph.putResourceType("priorGraduateWork", ResourceType.DataType.STRING);
-        languageRequirement= graph.putResourceType("languageRequirement", ResourceType.DataType.STRING);
-        degreeOrigin = graph.putResourceType("degreeOrigin", ResourceType.DataType.STRING);
-        admissionStatus = graph.putResourceType("admissionStatus", ResourceType.DataType.STRING);
-        decisionType = graph.putResourceType("decisionType", ResourceType.DataType.STRING);
+        TOEFL = graph.putAttributeType("TOEFL", AttributeType.DataType.LONG);
+        GRE = graph.putAttributeType("GRE", AttributeType.DataType.LONG);
+        vGRE = graph.putAttributeType("vGRE", AttributeType.DataType.LONG);
+        GPR = graph.putAttributeType("GPR", AttributeType.DataType.DOUBLE);
+        specialHonours = graph.putAttributeType("specialHonours", AttributeType.DataType.STRING);
+        considerGPR = graph.putAttributeType("considerGPR", AttributeType.DataType.STRING);
+        transcript = graph.putAttributeType("transcript", AttributeType.DataType.STRING);
+        priorGraduateWork = graph.putAttributeType("priorGraduateWork", AttributeType.DataType.STRING);
+        languageRequirement= graph.putAttributeType("languageRequirement", AttributeType.DataType.STRING);
+        degreeOrigin = graph.putAttributeType("degreeOrigin", AttributeType.DataType.STRING);
+        admissionStatus = graph.putAttributeType("admissionStatus", AttributeType.DataType.STRING);
+        decisionType = graph.putAttributeType("decisionType", AttributeType.DataType.STRING);
 
         applicant = graph.putEntityType("applicant");
-        applicant.resource(TOEFL);
-        applicant.resource(GRE);
-        applicant.resource(vGRE);
-        applicant.resource(GPR);
-        applicant.resource(specialHonours);
-        applicant.resource(considerGPR);
-        applicant.resource(transcript);
-        applicant.resource(priorGraduateWork);
-        applicant.resource(languageRequirement);
-        applicant.resource(degreeOrigin);
-        applicant.resource(admissionStatus);
-        applicant.resource(decisionType);
-        applicant.resource(key);
+        applicant.attribute(TOEFL);
+        applicant.attribute(GRE);
+        applicant.attribute(vGRE);
+        applicant.attribute(GPR);
+        applicant.attribute(specialHonours);
+        applicant.attribute(considerGPR);
+        applicant.attribute(transcript);
+        applicant.attribute(priorGraduateWork);
+        applicant.attribute(languageRequirement);
+        applicant.attribute(degreeOrigin);
+        applicant.attribute(admissionStatus);
+        applicant.attribute(decisionType);
+        applicant.attribute(key);
     }
 
     @Override
-    protected void buildInstances(GraknGraph graph) {
+    protected void buildInstances(GraknTx graph) {
         Thing Alice = putEntity(graph, "Alice", applicant, key.getLabel());
         Thing Bob = putEntity(graph, "Bob", applicant, key.getLabel());
         Thing Charlie = putEntity(graph, "Charlie", applicant, key.getLabel());
@@ -135,12 +135,12 @@ public class AdmissionsGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRelations(GraknGraph graph) {
+    protected void buildRelations(GraknTx graph) {
 
     }
 
     @Override
-    protected void buildRules(GraknGraph graph) {
+    protected void buildRules(GraknTx graph) {
         GraphContext.loadFromFile(graph, "admission-rules.gql");
     }
 }

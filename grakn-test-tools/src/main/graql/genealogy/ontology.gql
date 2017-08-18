@@ -6,12 +6,12 @@ document sub entity
 	has document-location
 	has document-type
 	has notes;
-document-location sub resource datatype string;
-document-type sub resource datatype string;
+document-location sub attribute datatype string;
+document-type sub attribute datatype string;
 
-notes sub resource datatype string;
+notes sub attribute datatype string;
 
-conclusion-evidence sub relation
+conclusion-evidence sub relationship
 	relates evidence
 	relates conclusion;
 evidence sub role;
@@ -29,17 +29,17 @@ event sub entity
 	has identifier
 	has notes;
 
-# This is needed otherwise reasoner complains about the missing resource if it has not been persisted
-degree sub resource datatype long;
+# This is needed otherwise reasoner complains about the missing attribute if it has not been persisted
+degree sub attribute datatype long;
 # The following links events to people, specifying the role of the person in the event
 
-event-protagonist sub relation
+event-protagonist sub relationship
 	relates happening
 	relates protagonist
 	has event-role;
 happening sub role;
 protagonist sub role;
-event-role sub resource datatype string;
+event-role sub attribute datatype string;
 
 wedding sub event;
 funeral sub event
@@ -59,10 +59,10 @@ parent-identifier sub identifier;
 death sub event
 	has death-date;
 
-"date" sub resource datatype string;
+"date" sub attribute datatype string;
 
 #confidence level: low-mid-high
-confidence sub resource datatype string;
+confidence sub attribute datatype string;
 
 ### Genealogy tree: this is inferred from the events
 
@@ -85,16 +85,16 @@ person sub entity
 	has middlename
 	has surname;
 
-gender sub resource datatype string;
+gender sub attribute datatype string;
 birth-date sub "date";
 death-date sub "date";
-name sub resource datatype string;
+name sub attribute datatype string;
 firstname sub name;
 middlename sub name;
 surname sub name;
-identifier sub resource datatype string;
+identifier sub attribute datatype string;
 
-relatives sub relation
+relatives sub relationship
 	is-abstract;
 
 marriage sub relatives
@@ -169,9 +169,9 @@ father-in-law sub parent-in-law;
 
 #TODO: Kill this rubbish
 #This should really be looked at and removed later on
-#Filler relation type to bypass role validation rule which states every role must be linked to at least on relation type
+#Filler relationship type to bypass role validation rule which states every role must be linked to at least on relationship type
 #Before these roles were abstract but now role cannot be abstract. Hence the hack you see blow
-"fake-relation" sub relation
+"fake-relationship" sub relationship
     relates cousin
     relates spouse
     relates generic-spouse

@@ -20,18 +20,18 @@
 package ai.grakn.generator;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
@@ -60,25 +60,25 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Generator to create random {@link GraknGraph}s.
+ * Generator to create random {@link GraknTx}s.
  *
  * @author Felix Chapman
  */
 @SuppressWarnings("unchecked") // We're performing random operations. Generics will not constrain us!
-public class GraknGraphs extends AbstractGenerator<GraknGraph> implements MinimalCounterexampleHook {
+public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCounterexampleHook {
 
-    private static GraknGraph lastGeneratedGraph;
+    private static GraknTx lastGeneratedGraph;
 
     private static StringBuilder graphSummary;
 
-    private GraknGraph graph;
+    private GraknTx graph;
     private Boolean open = null;
 
     public GraknGraphs() {
-        super(GraknGraph.class);
+        super(GraknTx.class);
     }
 
-    public static GraknGraph lastGeneratedGraph() {
+    public static GraknTx lastGeneratedGraph() {
         return lastGeneratedGraph;
     }
 
@@ -100,7 +100,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     @Override
-    public GraknGraph generate() {
+    public GraknTx generate() {
         // TODO: Generate more keyspaces
         // We don't do this now because creating lots of keyspaces seems to slow the system graph
         String keyspace = gen().make(MetasyntacticStrings.class).generate(random, status);
@@ -132,11 +132,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return graph;
     }
 
-    private static void setLastGeneratedGraph(GraknGraph graph) {
+    private static void setLastGeneratedGraph(GraknTx graph) {
         lastGeneratedGraph = graph;
     }
 
-    private void closeGraph(GraknGraph graph){
+    private void closeGraph(GraknTx graph){
         if(graph != null && !graph.isClosed()){
             graph.close();
         }
@@ -162,11 +162,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 Label label = typeLabel();
-                ResourceType.DataType dataType = gen(ResourceType.DataType.class);
-                ResourceType superType = resourceType();
-                ResourceType resourceType = graph.putResourceType(label, dataType).sup(superType);
-                summaryAssign(resourceType, "graph", "putResourceType", label, dataType);
-                summary(resourceType, "superType", superType);
+                AttributeType.DataType dataType = gen(AttributeType.DataType.class);
+                AttributeType superType = resourceType();
+                AttributeType attributeType = graph.putAttributeType(label, dataType).sup(superType);
+                summaryAssign(attributeType, "graph", "putResourceType", label, dataType);
+                summary(attributeType, "superType", superType);
             },
             () -> {
                 Label label = typeLabel();
@@ -177,10 +177,10 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 Label label = typeLabel();
-                RelationType superType = relationType();
-                RelationType relationType = graph.putRelationType(label).sup(superType);
-                summaryAssign(relationType, "graph", "putRelationType", label);
-                summary(relationType, "superType", superType);
+                RelationshipType superType = relationType();
+                RelationshipType relationshipType = graph.putRelationshipType(label).sup(superType);
+                summaryAssign(relationshipType, "graph", "putRelationshipType", label);
+                summary(relationshipType, "superType", superType);
             },
             () -> {
                 Type type = type();
@@ -190,15 +190,15 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 Type type = type();
-                ResourceType resourceType = resourceType();
-                type.resource(resourceType);
-                summary(type, "resource", resourceType);
+                AttributeType attributeType = resourceType();
+                type.attribute(attributeType);
+                summary(type, "resource", attributeType);
             },
             () -> {
                 Type type = type();
-                ResourceType resourceType = resourceType();
-                type.key(resourceType);
-                summary(type, "key", resourceType);
+                AttributeType attributeType = resourceType();
+                type.key(attributeType);
+                summary(type, "key", attributeType);
             },
             () -> {
                 Type type = type();
@@ -224,33 +224,33 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary(role1, "superType", role2);
             },
             () -> {
-                RelationType relationType1 = relationType();
-                RelationType relationType2 = relationType();
-                relationType1.sup(relationType2);
-                summary(relationType1, "superType", relationType2);
+                RelationshipType relationshipType1 = relationType();
+                RelationshipType relationshipType2 = relationType();
+                relationshipType1.sup(relationshipType2);
+                summary(relationshipType1, "superType", relationshipType2);
             },
             () -> {
-                RelationType relationType = relationType();
-                Relation relation = relationType.addRelation();
-                summaryAssign(relation, relationType, "addRelation");
+                RelationshipType relationshipType = relationType();
+                Relationship relationship = relationshipType.addRelationship();
+                summaryAssign(relationship, relationshipType, "addRelationship");
             },
             () -> {
-                RelationType relationType = relationType();
+                RelationshipType relationshipType = relationType();
                 Role role = role();
-                relationType.relates(role);
-                summary(relationType, "relates", role);
+                relationshipType.relates(role);
+                summary(relationshipType, "relates", role);
             },
             () -> {
-                ResourceType resourceType1 = resourceType();
-                ResourceType resourceType2 = resourceType();
-                resourceType1.sup(resourceType2);
-                summary(resourceType1, "superType", resourceType2);
+                AttributeType attributeType1 = resourceType();
+                AttributeType attributeType2 = resourceType();
+                attributeType1.sup(attributeType2);
+                summary(attributeType1, "superType", attributeType2);
             },
             () -> {
-                ResourceType resourceType = resourceType();
+                AttributeType attributeType = resourceType();
                 Object value = gen().make(ResourceValues.class).generate(random, status);
-                Resource resource = resourceType.putResource(value);
-                summaryAssign(resource, resourceType, "putResource", valueToString(value));
+                Attribute attribute = attributeType.putAttribute(value);
+                summaryAssign(attribute, attributeType, "putResource", valueToString(value));
             },
             // () -> resourceType().setRegex(gen(String.class)), // TODO: Enable this when doesn't throw a NPE
             () -> {
@@ -267,9 +267,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },*/
             () -> {
                 Thing thing = instance();
-                Resource resource = resource();
-                thing.resource(resource);
-                summary(thing, "resource", resource);
+                Attribute attribute = resource();
+                thing.attribute(attribute);
+                summary(thing, "resource", attribute);
             },
             () -> {
                 Type type = type();
@@ -278,11 +278,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary(type, "scope", thing);
             },
             () -> {
-                Relation relation = relation();
+                Relationship relationship = relation();
                 Role role = role();
                 Thing thing = instance();
-                relation.addRolePlayer(role, thing);
-                summary(relation, "addRolePlayer", role, thing);
+                relationship.addRolePlayer(role, thing);
+                summary(relationship, "addRolePlayer", role, thing);
             }
     );
 
@@ -301,8 +301,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     private String summaryFormat(Object object) {
-        if (object instanceof OntologyConcept) {
-            return ((OntologyConcept) object).getLabel().getValue().replaceAll("-", "_");
+        if (object instanceof SchemaConcept) {
+            return ((SchemaConcept) object).getLabel().getValue().replaceAll("-", "_");
         } else if (object instanceof Thing) {
             Thing thing = (Thing) object;
             return summaryFormat(thing.type()) + thing.getId().getValue();
@@ -332,11 +332,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return random.choose(graph.admin().getMetaRole().subs().collect(toSet()));
     }
 
-    private ResourceType resourceType() {
-        return random.choose((Collection<ResourceType>) graph.admin().getMetaResourceType().subs().collect(toSet()));
+    private AttributeType resourceType() {
+        return random.choose((Collection<AttributeType>) graph.admin().getMetaResourceType().subs().collect(toSet()));
     }
 
-    private RelationType relationType() {
+    private RelationshipType relationType() {
         return random.choose(graph.admin().getMetaRelationType().subs().collect(toSet()));
     }
 
@@ -348,12 +348,12 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         return chooseOrThrow(allInstancesFrom(graph));
     }
 
-    private Relation relation() {
+    private Relationship relation() {
         return chooseOrThrow(graph.admin().getMetaRelationType().instances());
     }
 
-    private Resource resource() {
-        return chooseOrThrow((Stream<Resource>) graph.admin().getMetaResourceType().instances());
+    private Attribute resource() {
+        return chooseOrThrow((Stream<Attribute>) graph.admin().getMetaResourceType().instances());
     }
 
     //TODO: re-enable when grakn-graph can create graql constructs
@@ -370,20 +370,20 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         }
     }
 
-    public static List<Concept> allConceptsFrom(GraknGraph graph) {
+    public static List<Concept> allConceptsFrom(GraknTx graph) {
         List<Concept> concepts = Lists.newArrayList(GraknGraphs.allOntologyElementsFrom(graph));
         concepts.addAll(allInstancesFrom(graph).collect(toSet()));
         return concepts;
     }
 
-    public static Collection<? extends OntologyConcept> allOntologyElementsFrom(GraknGraph graph) {
-        Set<OntologyConcept> allOntologyConcepts = new HashSet<>();
-        allOntologyConcepts.addAll(graph.admin().getMetaConcept().subs().collect(toSet()));
-        allOntologyConcepts.addAll(graph.admin().getMetaRole().subs().collect(toSet()));
-        return allOntologyConcepts;
+    public static Collection<? extends SchemaConcept> allOntologyElementsFrom(GraknTx graph) {
+        Set<SchemaConcept> allSchemaConcepts = new HashSet<>();
+        allSchemaConcepts.addAll(graph.admin().getMetaConcept().subs().collect(toSet()));
+        allSchemaConcepts.addAll(graph.admin().getMetaRole().subs().collect(toSet()));
+        return allSchemaConcepts;
     }
 
-    public static Stream<? extends Thing> allInstancesFrom(GraknGraph graph) {
+    public static Stream<? extends Thing> allInstancesFrom(GraknTx graph) {
         // TODO: Revise this when meta concept is a type
         return graph.admin().getMetaConcept().subs().
                 flatMap(element -> element.asType().instances());

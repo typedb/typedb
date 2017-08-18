@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
@@ -36,7 +36,7 @@ import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
 import static ai.grakn.util.Schema.EdgeLabel.SHARD;
-import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
+import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 
 class OutIsaFragment extends AbstractFragment {
 
@@ -46,7 +46,7 @@ class OutIsaFragment extends AbstractFragment {
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
 
         GraphTraversal<Element, Vertex> vertexTraversal = Fragments.union(traversal, ImmutableSet.of(
                 Fragments.isVertex(__.identity()).out(ISA.getLabel()).out(SHARD.getLabel()),
@@ -57,7 +57,7 @@ class OutIsaFragment extends AbstractFragment {
     }
 
     private GraphTraversal<Element, Vertex> edgeTraversal() {
-        return Fragments.traverseOntologyConceptFromEdge(Fragments.isEdge(__.identity()), RELATION_TYPE_LABEL_ID);
+        return Fragments.traverseOntologyConceptFromEdge(Fragments.isEdge(__.identity()), RELATIONSHIP_TYPE_LABEL_ID);
     }
 
     @Override

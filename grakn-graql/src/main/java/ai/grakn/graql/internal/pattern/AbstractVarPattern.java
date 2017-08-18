@@ -19,9 +19,9 @@
 
 package ai.grakn.graql.internal.pattern;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
@@ -42,15 +42,15 @@ import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
-import ai.grakn.graql.internal.pattern.property.WhenProperty;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.pattern.property.ThenProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
+import ai.grakn.graql.internal.pattern.property.ThenProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.internal.pattern.property.WhenProperty;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableMultiset;
@@ -66,7 +66,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Stream;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -77,7 +76,7 @@ import static java.util.stream.Collectors.toSet;
 public abstract class AbstractVarPattern extends AbstractPattern implements VarPatternAdmin {
 
     @Override
-    public abstract Var getVarName();
+    public abstract Var var();
 
     protected abstract Set<VarProperty> properties();
 
@@ -87,13 +86,8 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final Optional<ConceptId> getId() {
-        return getProperty(IdProperty.class).map(IdProperty::getId);
-    }
-
-    @Override
     public final Optional<Label> getTypeLabel() {
-        return getProperty(LabelProperty.class).map(LabelProperty::getLabelValue);
+        return getProperty(LabelProperty.class).map(LabelProperty::label);
     }
 
     @Override
@@ -112,7 +106,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final Collection<VarPatternAdmin> getInnerVars() {
+    public final Collection<VarPatternAdmin> innerVarPatterns() {
         Stack<VarPatternAdmin> newVars = new Stack<>();
         List<VarPatternAdmin> vars = new ArrayList<>();
 
@@ -121,14 +115,14 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
         while (!newVars.isEmpty()) {
             VarPatternAdmin var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(VarProperty::getInnerVars).forEach(newVars::add);
+            var.getProperties().flatMap(VarProperty::innerVarPatterns).forEach(newVars::add);
         }
 
         return vars;
     }
 
     @Override
-    public final Collection<VarPatternAdmin> getImplicitInnerVars() {
+    public final Collection<VarPatternAdmin> implicitInnerVarPatterns() {
         Stack<VarPatternAdmin> newVars = new Stack<>();
         List<VarPatternAdmin> vars = new ArrayList<>();
 
@@ -137,7 +131,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
         while (!newVars.isEmpty()) {
             VarPatternAdmin var = newVars.pop();
             vars.add(var);
-            var.getProperties().flatMap(VarProperty::getImplicitInnerVars).forEach(newVars::add);
+            var.getProperties().flatMap(VarProperty::implicitInnerVarPatterns).forEach(newVars::add);
         }
 
         return vars;
@@ -159,16 +153,16 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final Set<Var> commonVarNames() {
-        return getInnerVars().stream()
-                .filter(v -> v.getVarName().isUserDefinedName())
-                .map(VarPatternAdmin::getVarName)
+    public final Set<Var> commonVars() {
+        return innerVarPatterns().stream()
+                .filter(v -> v.var().isUserDefinedName())
+                .map(VarPatternAdmin::var)
                 .collect(toSet());
     }
 
     @Override
     public final VarPattern id(ConceptId id) {
-        return addProperty(new IdProperty(id));
+        return addProperty(IdProperty.of(id));
     }
 
     @Override
@@ -178,7 +172,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern label(Label label) {
-        return addProperty(new LabelProperty(label));
+        return addProperty(LabelProperty.of(label));
     }
 
     @Override
@@ -188,7 +182,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern val(ValuePredicate predicate) {
-        return addProperty(new ValueProperty(predicate.admin()));
+        return addProperty(ValueProperty.of(predicate.admin()));
     }
 
     @Override
@@ -218,7 +212,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern isa(VarPattern type) {
-        return addProperty(new IsaProperty(type.admin()));
+        return addProperty(IsaProperty.of(type.admin()));
     }
 
     @Override
@@ -228,7 +222,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern sub(VarPattern type) {
-        return addProperty(new SubProperty(type.admin()));
+        return addProperty(SubProperty.of(type.admin()));
     }
 
     @Override
@@ -238,7 +232,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern relates(VarPattern type) {
-        return addProperty(new RelatesProperty(type.admin()));
+        return addProperty(RelatesProperty.of(type.admin()));
     }
 
     @Override
@@ -248,12 +242,12 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern plays(VarPattern type) {
-        return addProperty(new PlaysProperty(type.admin(), false));
+        return addProperty(PlaysProperty.of(type.admin(), false));
     }
 
     @Override
     public final VarPattern hasScope(VarPattern type) {
-        return addProperty(new HasScopeProperty(type.admin()));
+        return addProperty(HasScopeProperty.of(type.admin()));
     }
 
     @Override
@@ -263,7 +257,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern has(VarPattern type) {
-        return addProperty(new HasResourceTypeProperty(type.admin(), false));
+        return addProperty(HasResourceTypeProperty.of(type.admin(), false));
     }
 
     @Override
@@ -273,7 +267,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern key(VarPattern type) {
-        return addProperty(new HasResourceTypeProperty(type.admin(), true));
+        return addProperty(HasResourceTypeProperty.of(type.admin(), true));
     }
 
     @Override
@@ -308,27 +302,27 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern isAbstract() {
-        return addProperty(new IsAbstractProperty());
+        return addProperty(IsAbstractProperty.get());
     }
 
     @Override
-    public final VarPattern datatype(ResourceType.DataType<?> datatype) {
-        return addProperty(new DataTypeProperty(requireNonNull(datatype)));
+    public final VarPattern datatype(AttributeType.DataType<?> datatype) {
+        return addProperty(DataTypeProperty.of(datatype));
     }
 
     @Override
     public final VarPattern regex(String regex) {
-        return addProperty(new RegexProperty(regex));
+        return addProperty(RegexProperty.of(regex));
     }
 
     @Override
     public final VarPattern when(Pattern when) {
-        return addProperty(new WhenProperty(when));
+        return addProperty(WhenProperty.of(when));
     }
 
     @Override
     public final VarPattern then(Pattern then) {
-        return addProperty(new ThenProperty(then));
+        return addProperty(ThenProperty.of(then));
     }
 
     @Override
@@ -338,14 +332,14 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern neq(VarPattern varPattern) {
-        return addProperty(new NeqProperty(varPattern.admin()));
+        return addProperty(NeqProperty.of(varPattern.admin()));
     }
 
     @Override
     public final String getPrintableName() {
         if (properties().size() == 0) {
             // If there are no properties, we display the variable name
-            return getVarName().toString();
+            return var().toString();
         } else if (properties().size() == 1) {
             // If there is only a label, we display that
             Optional<Label> label = getTypeLabel();
@@ -366,14 +360,14 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     private VarPattern addCasting(RelationPlayer relationPlayer) {
         Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
-        Stream<RelationPlayer> oldCastings = relationProperty
-                .map(RelationProperty::getRelationPlayers)
-                .orElse(Stream.empty());
+        ImmutableMultiset<RelationPlayer> oldCastings = relationProperty
+                .map(RelationProperty::relationPlayers)
+                .orElse(ImmutableMultiset.of());
 
         ImmutableMultiset<RelationPlayer> relationPlayers =
-                Stream.concat(oldCastings, Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
+                Stream.concat(oldCastings.stream(), Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
 
-        RelationProperty newProperty = new RelationProperty(relationPlayers);
+        RelationProperty newProperty = RelationProperty.of(relationPlayers);
 
         return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }
@@ -382,11 +376,11 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
         if (property.isUnique()) {
             testUniqueProperty((UniqueVarProperty) property);
         }
-        return Patterns.varPattern(getVarName(), Sets.union(properties(), ImmutableSet.of(property)));
+        return Patterns.varPattern(var(), Sets.union(properties(), ImmutableSet.of(property)));
     }
 
     private AbstractVarPattern removeProperty(VarProperty property) {
-        return (AbstractVarPattern) Patterns.varPattern(getVarName(), Sets.difference(properties(), ImmutableSet.of(property)));
+        return (AbstractVarPattern) Patterns.varPattern(var(), Sets.difference(properties(), ImmutableSet.of(property)));
     }
 
     /**

@@ -20,6 +20,30 @@ An aggregate query applies an operation onto a [match query](match-queries.html)
 
 ## Aggregate Functions
 
+### Ask
+
+Whether the given [match query](match-queries.html) has any results.
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell-ask" data-toggle="tab">Graql</a></li>
+    <li><a href="#java-ask" data-toggle="tab">Java</a></li>
+</ul>
+
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell-ask">
+<pre>
+match divorce sub relationship; aggregate ask;
+match marriage sub relationship; aggregate ask;
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java-ask">
+<pre>
+qb.match(label("divorce").sub("relationship")).aggregate(ask()).execute();
+qb.match(label("marriage").sub("relationship")).aggregate(ask()).execute();
+</pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
 ### Count
 
 Count the number of results of the match query or aggregate result.
@@ -44,7 +68,7 @@ qb.match(var("x").isa("person")).aggregate(count());
 
 ### Sum
 
-Sum the given resource variable.
+Sum the given attribute variable.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell2" data-toggle="tab">Graql</a></li>
@@ -68,7 +92,7 @@ qb.match(
 
 ### Max
 
-Find the maximum of the given resource variable.
+Find the maximum of the given attribute variable.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell3" data-toggle="tab">Graql</a></li>
@@ -92,7 +116,7 @@ qb.match(
 
 ### Min
 
-Find the minimum of the given resource variable.
+Find the minimum of the given attribute variable.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell4" data-toggle="tab">Graql</a></li>
@@ -116,7 +140,7 @@ qb.match(
 
 ### Mean
 
-Find the mean (average) of the given resource variable.
+Find the mean (average) of the given attribute variable.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell5" data-toggle="tab">Graql</a></li>
@@ -140,7 +164,7 @@ qb.match(
 
 ### Median
 
-Find the median of the given resource variable.
+Find the median of the given attribute variable.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell6" data-toggle="tab">Graql</a></li>
@@ -220,7 +244,7 @@ qb.match(
 
 Aggregate queries are computationally light and run single-threaded on a single machine, but are more flexible than the equivalent [compute query](./compute-queries.html).
 
-For example, you can use an aggregate query to filter results by resource. The following  aggregate query, allows you to match the number of people of a particular name:
+For example, you can use an aggregate query to filter results by attribute. The following  aggregate query, allows you to match the number of people of a particular name:
 
 ```graql
 match $x has identifier contains "Elizabeth"; aggregate count;
@@ -232,7 +256,7 @@ Compute queries are computationally intensive and run in parallel on a cluster (
 compute count in person;
 ```
 
-Can be used to calculate the number of people in the graph very fast, but you can't filter the results to determine the number of people with a certain name.
+Can be used to calculate the number of people in the knowledge base very fast, but you can't filter the results to determine the number of people with a certain name.
 
 ## Comments
 Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/42" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

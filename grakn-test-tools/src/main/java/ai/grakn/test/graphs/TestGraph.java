@@ -18,12 +18,12 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 
 import java.util.Set;
 import java.util.function.Consumer;
@@ -37,16 +37,16 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class TestGraph {
 
-    protected void buildOntology(GraknGraph graph){};
+    protected void buildOntology(GraknTx graph){};
 
-    protected void buildInstances(GraknGraph graph){};
+    protected void buildInstances(GraknTx graph){};
 
-    protected void buildRelations(GraknGraph graph){};
+    protected void buildRelations(GraknTx graph){};
 
-    protected void buildRules(GraknGraph graph){};
+    protected void buildRules(GraknTx graph){};
 
-    public Consumer<GraknGraph> build() {
-        return (GraknGraph graph) -> {
+    public Consumer<GraknTx> build() {
+        return (GraknTx graph) -> {
             buildOntology(graph);
             buildInstances(graph);
             buildRelations(graph);
@@ -54,20 +54,20 @@ public abstract class TestGraph {
         };
     }
 
-    public static Thing putEntity(GraknGraph graph, String id, EntityType type, Label key) {
+    public static Thing putEntity(GraknTx graph, String id, EntityType type, Label key) {
         Thing inst = type.addEntity();
-        putResource(inst, graph.getOntologyConcept(key), id);
+        putResource(inst, graph.getSchemaConcept(key), id);
         return inst;
     }
 
-    public static <T> void putResource(Thing thing, ResourceType<T> resourceType, T resource) {
-        Resource resourceInstance = resourceType.putResource(resource);
-        thing.resource(resourceInstance);
+    public static <T> void putResource(Thing thing, AttributeType<T> attributeType, T resource) {
+        Attribute attributeInstance = attributeType.putAttribute(resource);
+        thing.attribute(attributeInstance);
     }
 
-    public static Thing getInstance(GraknGraph graph, String id){
-        Set<Thing> things = graph.getResourcesByValue(id)
-                .stream().flatMap(Resource::ownerInstances).collect(toSet());
+    public static Thing getInstance(GraknTx graph, String id){
+        Set<Thing> things = graph.getAttributesByValue(id)
+                .stream().flatMap(Attribute::ownerInstances).collect(toSet());
         if (things.size() != 1) {
             throw new IllegalStateException("Multiple things with given resource value");
         }

@@ -19,12 +19,12 @@
 package ai.grakn.test.migration.csv;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
@@ -115,7 +115,7 @@ public class CSVMigratorTest {
             migrator.load(template, m.setNullString("").convert());
         }
 
-        try(GraknGraph graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
+        try(GraknTx graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
 
             Stream<Entity> pets = graph.getEntityType("pet").instances();
             assertEquals(1, pets.count());
@@ -123,11 +123,11 @@ public class CSVMigratorTest {
             Stream<Entity> cats = graph.getEntityType("cat").instances();
             assertEquals(1, cats.count());
 
-            ResourceType<String> name = graph.getResourceType("name");
-            ResourceType<String> death = graph.getResourceType("death");
+            AttributeType<String> name = graph.getAttributeType("name");
+            AttributeType<String> death = graph.getAttributeType("death");
 
-            Entity fluffy = name.getResource("Fluffy").ownerInstances().iterator().next().asEntity();
-            assertEquals(1, fluffy.resources(death).count());
+            Entity fluffy = name.getAttribute("Fluffy").ownerInstances().iterator().next().asEntity();
+            assertEquals(1, fluffy.attributes(death).count());
         }
     }
 
@@ -139,7 +139,7 @@ public class CSVMigratorTest {
         String template = "if (<name> != \"Puffball\") do { insert $x isa cat; }";
         declareAndLoad(template, "pets/data/pets.quotes");
 
-        GraknGraph graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
+        GraknTx graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
         assertEquals(8, graph.getEntityType("pet").instances().count());
     }
 
@@ -148,7 +148,7 @@ public class CSVMigratorTest {
     public void multipleEntitiesInOneFileTest() throws IOException {
         load(factory, getFile("csv", "single-file/schema.gql"));
 
-        GraknGraph graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
+        GraknTx graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
         assertNotNull(graph.getEntityType("make"));
 
         String template = getFileAsString("csv", "single-file/template.gql");
@@ -162,13 +162,13 @@ public class CSVMigratorTest {
         assertEquals(4, models.count());
 
         // test empty value not created
-        ResourceType description = graph.getResourceType("description");
+        AttributeType description = graph.getAttributeType("description");
 
         Entity venture = graph.getConcept(ConceptId.of("Venture"));
-        assertEquals(1, venture.resources(description).count());
+        assertEquals(1, venture.attributes(description).count());
 
         Entity ventureLarge = graph.getConcept(ConceptId.of("Venture Large"));
-        assertEquals(0, ventureLarge.resources(description).count());
+        assertEquals(0, ventureLarge.attributes(description).count());
     }
 
     @Test
@@ -192,7 +192,7 @@ public class CSVMigratorTest {
 
         declareAndLoad(template, "pets/data/pets.csv");
 
-        try(GraknGraph graph = factory.open(GraknTxType.READ)){
+        try(GraknTx graph = factory.open(GraknTxType.READ)){
             assertEquals(0, graph.admin().getMetaEntityType().instances().count());
         }
     }

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
@@ -61,12 +61,6 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
      */
     @CheckReturnValue
     Stream<Concept> get(String name);
-
-    /**
-     * @return an ask query that will return true if any matches are found
-     */
-    @CheckReturnValue
-    AskQuery ask();
 
     /**
      * @param vars an array of variables to insert for each result of this match query
@@ -142,7 +136,7 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
      * @return a new MatchQuery with the graph set
      */
     @Override
-    MatchQuery withGraph(GraknGraph graph);
+    MatchQuery withGraph(GraknTx graph);
 
     /**
      * @param limit the maximum number of results the query should return

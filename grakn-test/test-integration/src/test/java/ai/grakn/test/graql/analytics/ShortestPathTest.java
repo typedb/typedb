@@ -1,16 +1,16 @@
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidGraphException;
@@ -66,7 +66,7 @@ public class ShortestPathTest {
     @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFound() throws Exception {
         // test on an empty graph
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId2).execute();
         }
     }
@@ -74,7 +74,7 @@ public class ShortestPathTest {
     @Test(expected = GraqlQueryException.class)
     public void testShortestPathExceptionIdNotFoundSubgraph() throws Exception {
         addOntologyAndEntities();
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             graph.graql().compute().path().from(entityId1).to(entityId4).in(thing, related).execute();
         }
     }
@@ -82,7 +82,7 @@ public class ShortestPathTest {
     @Test
     public void testShortestPathExceptionPathNotFound() throws Exception {
         addOntologyAndEntities();
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             assertFalse(graph.graql().compute().path().from(entityId1).to(entityId5).execute().isPresent());
         }
     }
@@ -93,7 +93,7 @@ public class ShortestPathTest {
         List<String> computedPath;
         addOntologyAndEntities();
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             // directly connected vertices
             correctPath = Lists.newArrayList(entityId1.getValue(), relationId12.getValue());
             computedPath = graph.graql().compute().path().from(entityId1).to(relationId12).execute()
@@ -154,7 +154,7 @@ public class ShortestPathTest {
             list.add(i);
         }
         Set<List<String>> result = list.parallelStream().map(i -> {
-            try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+            try (GraknTx graph = factory.open(GraknTxType.READ)) {
                 return graph.graql().compute().path().in(thing, related).from(entityId2).to(entityId1)
                         .execute().get().stream().map(concept -> concept.getId().getValue())
                         .collect(Collectors.toList());
@@ -169,7 +169,7 @@ public class ShortestPathTest {
         List<String> computedPath;
         addOntologyAndEntities2();
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(),
                     entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
             computedPath = graph.graql().compute().path().from(entityId2).to(entityId3).execute()
@@ -200,13 +200,13 @@ public class ShortestPathTest {
         ConceptId startId;
         ConceptId endId;
 
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
             entityType.plays(role1).plays(role2);
-            RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
             Entity start = entityType.addEntity();
             Entity end = entityType.addEntity();
@@ -224,14 +224,14 @@ public class ShortestPathTest {
 
                 Entity middle = entityType.addEntity();
                 ConceptId middleId = middle.getId();
-                ConceptId assertion1 = relationType.addRelation()
+                ConceptId assertion1 = relationshipType.addRelationship()
                         .addRolePlayer(role1, start)
                         .addRolePlayer(role2, middle).getId();
 
                 validPath.add(assertion1);
                 validPath.add(middleId);
 
-                ConceptId assertion2 = relationType.addRelation()
+                ConceptId assertion2 = relationshipType.addRelationship()
                         .addRolePlayer(role1, middle)
                         .addRolePlayer(role2, end).getId();
 
@@ -243,7 +243,7 @@ public class ShortestPathTest {
             graph.commit();
         }
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Optional<List<Concept>> result = graph.graql().compute().path().from(startId).to(endId).execute();
             assertEquals(1, validPaths.stream().filter(path -> checkPathsAreEqual(path, result)).count());
         }
@@ -253,22 +253,22 @@ public class ShortestPathTest {
     public void testResourceEdges() {
         ConceptId startId;
         ConceptId endId;
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType person = graph.putEntityType("person");
-            ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING);
-            person.resource(name);
+            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+            person.attribute(name);
             Entity aPerson = person.addEntity();
             startId = aPerson.getId();
-            aPerson.resource(name.putResource("jason"));
-            endId = name.getResource("jason").getId();
+            aPerson.attribute(name.putAttribute("jason"));
+            endId = name.getAttribute("jason").getId();
 
             graph.commit();
         }
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Optional<List<Concept>> result = graph.graql().compute().path().from(startId).to(endId).execute();
             assertEquals(3, result.get().size());
-            assertEquals("has-name", result.get().get(1).asRelation().type().getLabel().getValue());
+            assertEquals("has-name", result.get().get(1).asRelationship().type().getLabel().getValue());
         }
     }
 
@@ -291,16 +291,16 @@ public class ShortestPathTest {
         List<ConceptId> pathPower3Power1 = new ArrayList<>();
         List<ConceptId> pathPerson3Power3 = new ArrayList<>();
 
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             // manually construct the relation type and instance
             EntityType person = graph.putEntityType("person");
-            ResourceType<Long> power = graph.putResourceType("power", ResourceType.DataType.LONG);
+            AttributeType<Long> power = graph.putAttributeType("power", AttributeType.DataType.LONG);
             Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")));
             person.plays(resourceOwner);
             Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")));
             power.plays(resourceValue);
 
-            person.resource(power);
+            person.attribute(power);
 
             Entity person1 = person.addEntity();
             idPerson1 = person1.getId();
@@ -309,39 +309,39 @@ public class ShortestPathTest {
             Entity person3 = person.addEntity();
             idPerson3 = person3.getId();
 
-            Resource power1 = power.putResource(1L);
+            Attribute power1 = power.putAttribute(1L);
             idPower1 = power1.getId();
-            Resource power2 = power.putResource(2L);
+            Attribute power2 = power.putAttribute(2L);
             idPower2 = power2.getId();
-            Resource power3 = power.putResource(3L);
+            Attribute power3 = power.putAttribute(3L);
             idPower3 = power3.getId();
 
-            RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
+            RelationshipType relationType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
                     .relates(resourceOwner).relates(resourceValue);
 
-            idRelationPerson1Power1 = relationType.addRelation()
+            idRelationPerson1Power1 = relationType.addRelationship()
                     .addRolePlayer(resourceOwner, person1)
                     .addRolePlayer(resourceValue, power1).getId();
 
-            idRelationPerson2Power2 = relationType.addRelation()
+            idRelationPerson2Power2 = relationType.addRelationship()
                     .addRolePlayer(resourceOwner, person2)
                     .addRolePlayer(resourceValue, power2).getId();
 
-            person1.resource(power2);
-            person3.resource(power3);
+            person1.attribute(power2);
+            person3.attribute(power3);
 
             // finally add a relation between persons to make it more interesting
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
             person.plays(role1).plays(role2);
-            RelationType relationTypePerson = graph.putRelationType(related).relates(role1).relates(role2);
-            idRelationPerson1Person3 = relationTypePerson.addRelation()
+            RelationshipType relationTypePerson = graph.putRelationshipType(related).relates(role1).relates(role2);
+            idRelationPerson1Person3 = relationTypePerson.addRelationship()
                     .addRolePlayer(role1, person1)
                     .addRolePlayer(role2, person3).getId();
             graph.commit();
         }
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Optional<List<Concept>> result;
 
             // Path from power3 to power3
@@ -405,7 +405,7 @@ public class ShortestPathTest {
     }
 
     private void addOntologyAndEntities() throws InvalidGraphException {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -425,18 +425,18 @@ public class ShortestPathTest {
             Role role2 = graph.putRole("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
-            relationId12 = relationType.addRelation()
+            relationId12 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity1)
                     .addRolePlayer(role2, entity2).getId();
-            relationId13 = relationType.addRelation()
+            relationId13 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity1)
                     .addRolePlayer(role2, entity3).getId();
-            relationId24 = relationType.addRelation()
+            relationId24 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity2)
                     .addRolePlayer(role2, entity4).getId();
-            relationId34 = relationType.addRelation()
+            relationId34 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity3)
                     .addRolePlayer(role2, entity4).getId();
 
@@ -445,7 +445,7 @@ public class ShortestPathTest {
     }
 
     private void addOntologyAndEntities2() throws InvalidGraphException {
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 
             Entity entity1 = entityType.addEntity();
@@ -459,22 +459,22 @@ public class ShortestPathTest {
             Role role1 = graph.putRole("role1");
             Role role2 = graph.putRole("role2");
             entityType.plays(role1).plays(role2);
-            RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
+            RelationshipType relationshipType = graph.putRelationshipType(related).relates(role1).relates(role2);
 
             Role role3 = graph.putRole("role3");
             Role role4 = graph.putRole("role4");
             entityType.plays(role3).plays(role4);
-            relationType.plays(role3).plays(role4);
-            RelationType relationType2 = graph.putRelationType(veryRelated).relates(role3).relates(role4);
+            relationshipType.plays(role3).plays(role4);
+            RelationshipType relationshipType2 = graph.putRelationshipType(veryRelated).relates(role3).relates(role4);
 
-            relationId12 = relationType.addRelation()
+            relationId12 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity1)
                     .addRolePlayer(role2, entity2).getId();
-            relationId13 = relationType.addRelation()
+            relationId13 = relationshipType.addRelationship()
                     .addRolePlayer(role1, entity1)
                     .addRolePlayer(role2, entity3).getId();
 
-            relationId1A12 = relationType2.addRelation()
+            relationId1A12 = relationshipType2.addRelationship()
                     .addRolePlayer(role3, entity1)
                     .addRolePlayer(role4, graph.getConcept(relationId12)).getId();
 

@@ -18,20 +18,21 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.graph.internal.concept.AttributeImpl;
+import ai.grakn.graph.internal.concept.AttributeTypeImpl;
 import ai.grakn.graph.internal.concept.ConceptImpl;
 import ai.grakn.graph.internal.concept.EntityTypeImpl;
-import ai.grakn.graph.internal.concept.RelationImpl;
-import ai.grakn.graph.internal.concept.RelationTypeImpl;
-import ai.grakn.graph.internal.concept.ResourceImpl;
-import ai.grakn.graph.internal.concept.ResourceTypeImpl;
+import ai.grakn.graph.internal.concept.RelationshipImpl;
+import ai.grakn.graph.internal.concept.RelationshipReified;
+import ai.grakn.graph.internal.concept.RelationshipTypeImpl;
 import ai.grakn.graph.internal.concept.ThingImpl;
 import ai.grakn.graph.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
@@ -55,7 +56,7 @@ import static org.junit.Assert.assertTrue;
 public class PostProcessingTest extends GraphTestBase{
     private Role role1;
     private Role role2;
-    private RelationType relationType;
+    private RelationshipType relationshipType;
     private ThingImpl instance1;
     private ThingImpl instance2;
 
@@ -63,23 +64,23 @@ public class PostProcessingTest extends GraphTestBase{
     public void buildSampleGraph(){
         role1 = graknGraph.putRole("role 1");
         role2 = graknGraph.putRole("role 2");
-        relationType = graknGraph.putRelationType("rel type").relates(role1).relates(role2);
+        relationshipType = graknGraph.putRelationshipType("rel type").relates(role1).relates(role2);
         EntityType thing = graknGraph.putEntityType("thingy").plays(role1).plays(role2);
         instance1 = (ThingImpl) thing.addEntity();
         instance2 = (ThingImpl) thing.addEntity();
         thing.addEntity();
         thing.addEntity();
 
-        relationType.addRelation().addRolePlayer(role1, instance1).addRolePlayer(role2, instance2);
+        relationshipType.addRelationship().addRolePlayer(role1, instance1).addRolePlayer(role2, instance2);
     }
 
     @Test
     public void whenMergingDuplicateResources_EnsureSingleResourceRemains(){
-        ResourceTypeImpl<String> resourceType = (ResourceTypeImpl<String>) graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) graknGraph.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
 
         //Create fake resources
         Set<ConceptId> resourceIds = new HashSet<>();
-        ResourceImpl<String> mainResource = createFakeResource(resourceType, "1");
+        AttributeImpl<String> mainResource = createFakeResource(resourceType, "1");
         resourceIds.add(mainResource.getId());
         resourceIds.add(createFakeResource(resourceType, "1").getId());
         resourceIds.add(createFakeResource(resourceType, "1").getId());
@@ -97,32 +98,32 @@ public class PostProcessingTest extends GraphTestBase{
     @Test
     public void whenMergingDuplicateResourcesWithRelations_EnsureSingleResourceRemainsAndNoDuplicateRelationsAreCreated(){
         Role roleEntity = graknGraph.putRole("Entity Role");
-        Role roleResource = graknGraph.putRole("Resource Role");
-        RelationType relationType = graknGraph.putRelationType("Relation Type").relates(roleEntity).relates(roleResource);
-        ResourceTypeImpl<String> resourceType = (ResourceTypeImpl<String>) graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).plays(roleResource);
-        EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity).resource(resourceType);
+        Role roleResource = graknGraph.putRole("Attribute Role");
+        RelationshipType relationshipType = graknGraph.putRelationshipType("Relationship Type").relates(roleEntity).relates(roleResource);
+        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) graknGraph.putAttributeType("Attribute Type", AttributeType.DataType.STRING).plays(roleResource);
+        EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity).attribute(resourceType);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
         Entity e3 = entityType.addEntity();
 
         //Create fake resources
         Set<ConceptId> resourceIds = new HashSet<>();
-        ResourceImpl<?> r1 = createFakeResource(resourceType, "1");
-        ResourceImpl<?> r11 = createFakeResource(resourceType, "1");
-        ResourceImpl<?> r111 = createFakeResource(resourceType, "1");
+        AttributeImpl<?> r1 = createFakeResource(resourceType, "1");
+        AttributeImpl<?> r11 = createFakeResource(resourceType, "1");
+        AttributeImpl<?> r111 = createFakeResource(resourceType, "1");
 
         resourceIds.add(r1.getId());
         resourceIds.add(r11.getId());
         resourceIds.add(r111.getId());
 
         //Give resources some relationships
-        addReifiedRelation(roleEntity, roleResource, relationType, e1, r1);
+        addReifiedRelation(roleEntity, roleResource, relationshipType, e1, r1);
 
         //When merging this relation should not be absorbed
-        addReifiedRelation(roleEntity, roleResource, relationType, e1, r11);
+        addReifiedRelation(roleEntity, roleResource, relationshipType, e1, r11);
 
         //Absorb
-        addReifiedRelation(roleEntity, roleResource, relationType, e2, r11);
+        addReifiedRelation(roleEntity, roleResource, relationshipType, e2, r11);
 
         //Don't Absorb
         addEdgeRelation(e2, r111);
@@ -135,7 +136,7 @@ public class PostProcessingTest extends GraphTestBase{
         assertEquals(1, r1.relations().count());
         assertEquals(2, r11.relations().count());
         assertEquals(1, r1.relations().count());
-        assertEquals(4, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(4, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATIONSHIP.name()).toList().size());
         assertEquals(2, graknGraph.getTinkerTraversal().E().hasLabel(Schema.EdgeLabel.RESOURCE.getLabel()).toList().size());
 
         r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().anyMatch(thing -> thing.equals(e1))));
@@ -147,10 +148,10 @@ public class PostProcessingTest extends GraphTestBase{
         assertEquals(1, resourceType.instances().count());
 
         //Get back the surviving resource
-        Resource<String> foundR1 = null;
-        for (Resource<String> resource : resourceType.instances().collect(toSet())) {
-            if(resource.getValue().equals("1")){
-                foundR1 = resource;
+        Attribute<String> foundR1 = null;
+        for (Attribute<String> attribute : resourceType.instances().collect(toSet())) {
+            if(attribute.getValue().equals("1")){
+                foundR1 = attribute;
                 break;
             }
         }
@@ -160,26 +161,27 @@ public class PostProcessingTest extends GraphTestBase{
         assertEquals(5, graknGraph.admin().getMetaRelationType().instances().count());
     }
 
-    private void addEdgeRelation(Entity entity, Resource<?> resource) {
-        entity.resource(resource);
+    private void addEdgeRelation(Entity entity, Attribute<?> attribute) {
+        entity.attribute(attribute);
     }
 
-    private void addReifiedRelation(Role roleEntity, Role roleResource, RelationType relationType, Entity entity, Resource<?> resource) {
-        Relation relation = relationType.addRelation().addRolePlayer(roleResource, resource).addRolePlayer(roleEntity, entity);
-        RelationImpl.from(relation).reify().setHash();
+    private void addReifiedRelation(Role roleEntity, Role roleResource, RelationshipType relationshipType, Entity entity, Attribute<?> attribute) {
+        Relationship relationship = relationshipType.addRelationship().addRolePlayer(roleResource, attribute).addRolePlayer(roleEntity, entity);
+        String hash = RelationshipReified.generateNewHash(relationship.type(), relationship.allRolePlayers());
+        RelationshipImpl.from(relationship).reify().setHash(hash);
     }
 
 
-    private ResourceImpl<String> createFakeResource(ResourceTypeImpl<String> type, String value){
-        String index = Schema.generateResourceIndex(type.getLabel(), value);
-        Vertex resourceVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
+    private AttributeImpl<String> createFakeResource(AttributeTypeImpl<String> type, String value){
+        String index = Schema.generateAttributeIndex(type.getLabel(), value);
+        Vertex resourceVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.ATTRIBUTE.name());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), type.currentShard().vertex().element());
         resourceVertex.property(Schema.VertexProperty.INDEX.name(), index);
         resourceVertex.property(Schema.VertexProperty.VALUE_STRING.name(), value);
         resourceVertex.property(Schema.VertexProperty.ID.name(), Schema.PREFIX_VERTEX + resourceVertex.id().toString());
 
-        return new ResourceImpl<>(new VertexElement(graknGraph, resourceVertex));
+        return new AttributeImpl<>(new VertexElement(graknGraph, resourceVertex));
     }
 
     @Test
@@ -187,8 +189,8 @@ public class PostProcessingTest extends GraphTestBase{
         Map<ConceptId, Long> types = new HashMap<>();
         //Create Some Types;
         EntityTypeImpl t1 = (EntityTypeImpl) graknGraph.putEntityType("t1");
-        ResourceTypeImpl t2 = (ResourceTypeImpl)  graknGraph.putResourceType("t2", ResourceType.DataType.STRING);
-        RelationTypeImpl t3 = (RelationTypeImpl) graknGraph.putRelationType("t3");
+        AttributeTypeImpl t2 = (AttributeTypeImpl)  graknGraph.putAttributeType("t2", AttributeType.DataType.STRING);
+        RelationshipTypeImpl t3 = (RelationshipTypeImpl) graknGraph.putRelationshipType("t3");
 
         //Lets Set Some Counts
         types.put(t1.getId(), 5L);
@@ -211,34 +213,34 @@ public class PostProcessingTest extends GraphTestBase{
 
     @Test
     public void whenMergingDuplicateResourceEdges_EnsureNoDuplicatesRemain(){
-        ResourceTypeImpl<String> resourceType = (ResourceTypeImpl <String>) graknGraph.putResourceType("My Sad Resource", ResourceType.DataType.STRING);
-        EntityType entityType = graknGraph.putEntityType("My Happy EntityType").resource(resourceType);
-        RelationType relationType = graknGraph.putRelationType("My Miserable RelationType").resource(resourceType);
+        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) graknGraph.putAttributeType("My Sad Attribute", AttributeType.DataType.STRING);
+        EntityType entityType = graknGraph.putEntityType("My Happy EntityType").attribute(resourceType);
+        RelationshipType relationshipType = graknGraph.putRelationshipType("My Miserable RelationshipType").attribute(resourceType);
         Entity entity = entityType.addEntity();
-        Relation relation = relationType.addRelation();
+        Relationship relationship = relationshipType.addRelationship();
 
-        ResourceImpl<?> r1dup1 = createFakeResource(resourceType, "1");
-        ResourceImpl<?> r1dup2 = createFakeResource(resourceType, "1");
-        ResourceImpl<?> r1dup3 = createFakeResource(resourceType, "1");
+        AttributeImpl<?> r1dup1 = createFakeResource(resourceType, "1");
+        AttributeImpl<?> r1dup2 = createFakeResource(resourceType, "1");
+        AttributeImpl<?> r1dup3 = createFakeResource(resourceType, "1");
 
-        ResourceImpl<?> r2dup1 = createFakeResource(resourceType, "2");
-        ResourceImpl<?> r2dup2 = createFakeResource(resourceType, "2");
-        ResourceImpl<?> r2dup3 = createFakeResource(resourceType, "2");
+        AttributeImpl<?> r2dup1 = createFakeResource(resourceType, "2");
+        AttributeImpl<?> r2dup2 = createFakeResource(resourceType, "2");
+        AttributeImpl<?> r2dup3 = createFakeResource(resourceType, "2");
 
-        entity.resource(r1dup1);
-        entity.resource(r1dup2);
-        entity.resource(r1dup3);
+        entity.attribute(r1dup1);
+        entity.attribute(r1dup2);
+        entity.attribute(r1dup3);
 
-        relation.resource(r1dup1);
-        relation.resource(r1dup2);
-        relation.resource(r1dup3);
+        relationship.attribute(r1dup1);
+        relationship.attribute(r1dup2);
+        relationship.attribute(r1dup3);
 
-        entity.resource(r2dup1);
+        entity.attribute(r2dup1);
 
         //Check everything is broken
         //Entities Too Many Resources
-        assertEquals(4, entity.resources().count());
-        assertEquals(3, relation.resources().count());
+        assertEquals(4, entity.attributes().count());
+        assertEquals(3, relationship.attributes().count());
 
         //There are too many resources
         assertEquals(6, graknGraph.admin().getMetaResourceType().instances().count());
@@ -247,16 +249,16 @@ public class PostProcessingTest extends GraphTestBase{
         graknGraph.fixDuplicateResources(r1dup1.getIndex(), new HashSet<>(Arrays.asList(r1dup1.getId(), r1dup2.getId(), r1dup3.getId())));
 
         //Check resource one has been sorted out
-        assertEquals(2, entity.resources().count());
-        assertEquals(2, entity.resources().count());
+        assertEquals(2, entity.attributes().count());
+        assertEquals(2, entity.attributes().count());
         assertEquals(4, graknGraph.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
 
         //Now fix everything for resource 2
         graknGraph.fixDuplicateResources(r2dup1.getIndex(), new HashSet<>(Arrays.asList(r2dup1.getId(), r2dup2.getId(), r2dup3.getId())));
 
         //Check resource one has been sorted out
-        assertEquals(2, entity.resources().count());
-        assertEquals(2, entity.resources().count());
+        assertEquals(2, entity.attributes().count());
+        assertEquals(2, entity.attributes().count());
         assertEquals(2, graknGraph.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
     }
 }

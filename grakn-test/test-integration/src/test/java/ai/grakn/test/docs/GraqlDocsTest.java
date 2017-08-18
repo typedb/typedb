@@ -19,7 +19,7 @@
 
 package ai.grakn.test.docs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknException;
 import ai.grakn.exception.GraqlSyntaxException;
@@ -30,7 +30,6 @@ import org.apache.tinkerpop.gremlin.util.function.TriConsumer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -52,7 +51,6 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-@Ignore("Ignored because there has been a general slow down in graql and these are the tests we can most safely ignore without regressing")
 @RunWith(Parameterized.class)
 public class GraqlDocsTest {
 
@@ -113,14 +111,14 @@ public class GraqlDocsTest {
 
         String contents = new String(encoded, StandardCharsets.UTF_8);
 
-        try (GraknGraph graph = DocTestUtil.getTestGraph(engine.uri()).open(GraknTxType.WRITE)) {
+        try (GraknTx graph = DocTestUtil.getTestGraph(engine.uri()).open(GraknTxType.WRITE)) {
             executeAssertionOnContents(graph, TAG_GRAQL, file, contents, this::assertGraqlCodeblockValidSyntax);
             executeAssertionOnContents(graph, TEMPLATE_GRAQL, file, contents, this::assertGraqlTemplateValidSyntax);
         }
     }
 
-    private void executeAssertionOnContents(GraknGraph graph, Pattern pattern, File file, String contents,
-                                            TriConsumer<GraknGraph, String, String> assertion) throws IOException {
+    private void executeAssertionOnContents(GraknTx graph, Pattern pattern, File file, String contents,
+                                            TriConsumer<GraknTx, String, String> assertion) throws IOException {
         Matcher matcher = pattern.matcher(contents);
 
         while (matcher.find()) {
@@ -138,7 +136,7 @@ public class GraqlDocsTest {
         }
     }
 
-    private void assertGraqlCodeblockValidSyntax(GraknGraph graph, String fileAndLine, String block) {
+    private void assertGraqlCodeblockValidSyntax(GraknTx graph, String fileAndLine, String block) {
         Matcher shellMatcher = SHELL_GRAQL.matcher(block);
 
         if (shellMatcher.find()) {
@@ -151,7 +149,7 @@ public class GraqlDocsTest {
         }
     }
 
-    private void assertGraqlStringValidSyntax(GraknGraph graph, String fileAndLine, String graqlString) {
+    private void assertGraqlStringValidSyntax(GraknTx graph, String fileAndLine, String graqlString) {
         try {
             parse(graph, graqlString);
         } catch (GraknException e1) {
@@ -159,7 +157,7 @@ public class GraqlDocsTest {
         }
     }
 
-    private void assertGraqlTemplateValidSyntax(GraknGraph graph, String fileName, String templateBlock){
+    private void assertGraqlTemplateValidSyntax(GraknTx graph, String fileName, String templateBlock){
         try {
             graph.graql().parseTemplate(templateBlock, new HashMap<>());
         } catch (GraqlSyntaxException e){
@@ -167,7 +165,7 @@ public class GraqlDocsTest {
         } catch (Exception e){}
     }
 
-    private void parse(GraknGraph graph, String line) {
+    private void parse(GraknTx graph, String line) {
         // TODO: should `commit` be considered valid Graql? It strictly isn't.
         Matcher matcher = GRAQL_COMMIT.matcher(line);
         matcher.find();

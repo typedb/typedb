@@ -18,15 +18,15 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Relation;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
+import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.Methods.MethodOf;
@@ -83,7 +83,7 @@ public class ConceptPropertyTest {
     @Ignore // TODO: Either fix this, remove test or add exceptions to this rule
     @Property
     public void whenCallingAnyMethodsOnAConceptFromAClosedGraph_Throw(
-            @Open GraknGraph graph, @FromGraph Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
+            @Open GraknTx graph, @FromGraph Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
         graph.close();
 
         Object[] params = mockParamsOf(method);
@@ -97,7 +97,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenCallingToStringOnADeletedConcept_TheStringContainsTheId(
-            @Open GraknGraph graph, @FromGraph @NonMeta Concept concept) {
+            @Open GraknTx graph, @FromGraph @NonMeta Concept concept) {
         assumeDeletable(graph, concept);
         concept.delete();
         assertThat(concept.toString(), containsString(concept.getId().getValue()));
@@ -111,14 +111,14 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenCallingGetId_TheResultCanBeUsedToRetrieveTheSameConcept(
-            @Open GraknGraph graph, @FromGraph Concept concept) {
+            @Open GraknTx graph, @FromGraph Concept concept) {
         ConceptId id = concept.getId();
         assertEquals(concept, graph.getConcept(id));
     }
 
     @Property
     public void whenCallingDelete_TheConceptIsNoLongerInTheGraph(
-            @Open GraknGraph graph, @NonMeta @FromGraph Concept concept) {
+            @Open GraknTx graph, @NonMeta @FromGraph Concept concept) {
         assumeDeletable(graph, concept);
 
         assertThat(allConceptsFrom(graph), hasItem(concept));
@@ -130,17 +130,17 @@ public class ConceptPropertyTest {
     public void whenConceptIsASubClass_TheConceptCanBeConvertedToThatSubClass(Concept concept) {
         // These are all in one test only because they are trivial
 
-        if (concept.isOntologyConcept()) assertEquals(concept, concept.asOntologyConcept());
+        if (concept.isSchemaConcept()) assertEquals(concept, concept.asSchemaConcept());
 
         if (concept.isType()) assertEquals(concept, concept.asType());
 
         if (concept.isEntityType()) assertEquals(concept, concept.asEntityType());
 
-        if (concept.isRelationType()) assertEquals(concept, concept.asRelationType());
+        if (concept.isRelationshipType()) assertEquals(concept, concept.asRelationshipType());
 
         if (concept.isRole()) assertEquals(concept, concept.asRole());
 
-        if (concept.isResourceType()) assertEquals(concept, concept.asResourceType());
+        if (concept.isAttributeType()) assertEquals(concept, concept.asAttributeType());
 
         if (concept.isRuleType()) assertEquals(concept, concept.asRuleType());
 
@@ -148,9 +148,9 @@ public class ConceptPropertyTest {
 
         if (concept.isEntity()) assertEquals(concept, concept.asEntity());
 
-        if (concept.isRelation()) assertEquals(concept, concept.asRelation());
+        if (concept.isRelationship()) assertEquals(concept, concept.asRelationship());
 
-        if (concept.isResource()) assertEquals(concept, concept.asResource());
+        if (concept.isAttribute()) assertEquals(concept, concept.asAttribute());
 
         if (concept.isRule()) assertEquals(concept, concept.asRule());
     }
@@ -165,10 +165,10 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotAnOntologyConcept_TheConceptCannotBeConvertedToAnOntologyConcept(Concept concept) {
-        assumeFalse(concept.isOntologyConcept());
+        assumeFalse(concept.isSchemaConcept());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asOntologyConcept();
+        concept.asSchemaConcept();
     }
 
     @Property
@@ -181,10 +181,10 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotARelationType_TheConceptCannotBeConvertedToARelationType(Concept concept) {
-        assumeFalse(concept.isRelationType());
+        assumeFalse(concept.isRelationshipType());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asRelationType();
+        concept.asRelationshipType();
     }
 
     @Property
@@ -197,10 +197,10 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotAResourceType_TheConceptCannotBeConvertedToAResourceType(Concept concept) {
-        assumeFalse(concept.isResourceType());
+        assumeFalse(concept.isAttributeType());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asResourceType();
+        concept.asAttributeType();
     }
 
     @Property
@@ -229,18 +229,18 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotARelation_TheConceptCannotBeConvertedToARelation(Concept concept) {
-        assumeFalse(concept.isRelation());
+        assumeFalse(concept.isRelationship());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asRelation();
+        concept.asRelationship();
     }
 
     @Property
     public void whenConceptIsNotAResource_TheConceptCannotBeConvertedToAResource(Concept concept) {
-        assumeFalse(concept.isResource());
+        assumeFalse(concept.isAttribute());
         exception.expect(GraphOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asResource();
+        concept.asAttribute();
     }
 
     @Property
@@ -251,28 +251,28 @@ public class ConceptPropertyTest {
         concept.asRule();
     }
 
-    private static void assumeDeletable(GraknGraph graph, Concept concept) {
+    private static void assumeDeletable(GraknTx graph, Concept concept) {
         // Confirm this concept is allowed to be deleted
         // TODO: A better way to handle these assumptions?
-        if (concept.isOntologyConcept()) {
-            OntologyConcept ontologyConcept = concept.asOntologyConcept();
-            assumeThat(ontologyConcept.subs().collect(toSet()), contains(ontologyConcept));
-            if(ontologyConcept.isType()) {
-                Type type = ontologyConcept.asType();
+        if (concept.isSchemaConcept()) {
+            SchemaConcept schemaConcept = concept.asSchemaConcept();
+            assumeThat(schemaConcept.subs().collect(toSet()), contains(schemaConcept));
+            if(schemaConcept.isType()) {
+                Type type = schemaConcept.asType();
                 assumeThat(type.instances().collect(toSet()), empty());
                 assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());
                 assumeThat(type.getRulesOfConclusion().collect(toSet()), empty());
             }
 
-            if (ontologyConcept.isRole()) {
-                Role role = ontologyConcept.asRole();
+            if (schemaConcept.isRole()) {
+                Role role = schemaConcept.asRole();
                 assumeThat(role.playedByTypes().collect(toSet()), empty());
                 assumeThat(role.relationTypes().collect(toSet()), empty());
-                Stream<Relation> allRelations = graph.admin().getMetaRelationType().instances();
+                Stream<Relationship> allRelations = graph.admin().getMetaRelationType().instances();
                 Set<Role> allRolesPlayed = allRelations.flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
                 assumeThat(allRolesPlayed, not(hasItem(role)));
-            } else if (ontologyConcept.isRelationType()) {
-                assumeThat(ontologyConcept.asRelationType().relates().collect(toSet()), empty());
+            } else if (schemaConcept.isRelationshipType()) {
+                assumeThat(schemaConcept.asRelationshipType().relates().collect(toSet()), empty());
             }
         }
     }

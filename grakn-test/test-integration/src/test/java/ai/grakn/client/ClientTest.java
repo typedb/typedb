@@ -19,7 +19,7 @@
 package ai.grakn.client;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.test.EngineContext;
@@ -40,8 +40,8 @@ public class ClientTest {
         assertTrue(running);
 
         // Check that we've loaded the ontology
-        try(GraknGraph graph = engine.server().factory().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
-            assertNotNull(graph.getResourceType(SystemKeyspace.KEYSPACE_RESOURCE.getValue()));
+        try(GraknTx graph = engine.server().factory().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
+            assertNotNull(graph.getAttributeType(SystemKeyspace.KEYSPACE_RESOURCE.getValue()));
         }
 
         engine.after();

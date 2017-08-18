@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
@@ -93,10 +93,10 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     }
 
     public MedianVertexProgram(Set<LabelId> statisticsResourceLabelIds,
-                               ResourceType.DataType resourceDataType) {
+                               AttributeType.DataType resourceDataType) {
         this.statisticsResourceLabelIds = statisticsResourceLabelIds;
 
-        String resourceDataTypeValue = resourceDataType.equals(ResourceType.DataType.LONG) ?
+        String resourceDataTypeValue = resourceDataType.equals(AttributeType.DataType.LONG) ?
                 Schema.VertexProperty.VALUE_LONG.name() : Schema.VertexProperty.VALUE_DOUBLE.name();
         persistentProperties.put(RESOURCE_DATA_TYPE, resourceDataTypeValue);
     }

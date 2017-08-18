@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.parser;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Aggregate;
@@ -67,12 +67,12 @@ public class QueryParser {
     private final QueryBuilder queryBuilder;
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
 
-    public static final ImmutableBiMap<String, ResourceType.DataType> DATA_TYPES = ImmutableBiMap.of(
-            "long", ResourceType.DataType.LONG,
-            "double", ResourceType.DataType.DOUBLE,
-            "string", ResourceType.DataType.STRING,
-            "boolean", ResourceType.DataType.BOOLEAN,
-            "date", ResourceType.DataType.DATE
+    public static final ImmutableBiMap<String, AttributeType.DataType> DATA_TYPES = ImmutableBiMap.of(
+            "long", AttributeType.DataType.LONG,
+            "double", AttributeType.DataType.DOUBLE,
+            "string", AttributeType.DataType.STRING,
+            "boolean", AttributeType.DataType.BOOLEAN,
+            "date", AttributeType.DataType.DATE
     );
 
     private static final Set<Integer> NEW_QUERY_TOKENS = ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT);
@@ -183,7 +183,7 @@ public class QueryParser {
             }
 
             private InsertQuery joinMatchInsert(MatchQuery match, InsertQuery insert) {
-                return match.insert(insert.admin().getVars());
+                return match.insert(insert.admin().varPatterns());
             }
         };
 
@@ -293,6 +293,7 @@ public class QueryParser {
     @SuppressWarnings("unchecked")
     private void registerDefaultAggregates() {
         registerAggregate("count", 0, args -> Graql.count());
+        registerAggregate("ask", 0, args -> Graql.ask());
         registerAggregate("sum", 1, args -> Aggregates.sum((Var) args.get(0)));
         registerAggregate("max", 1, args -> Aggregates.max((Var) args.get(0)));
         registerAggregate("min", 1, args -> Aggregates.min((Var) args.get(0)));

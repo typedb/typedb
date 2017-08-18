@@ -18,10 +18,10 @@
 
 package ai.grakn.test.graphs;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.test.GraphContext;
 
@@ -45,19 +45,19 @@ public class PathGraphII extends TestGraph {
         this.n = n;
     }
 
-    public static Consumer<GraknGraph> get(int n, int m) {
+    public static Consumer<GraknTx> get(int n, int m) {
         return new PathGraphII(n, m).build();
     }
 
     @Override
-    public Consumer<GraknGraph> build(){
-        return (GraknGraph graph) -> {
+    public Consumer<GraknTx> build(){
+        return (GraknTx graph) -> {
             GraphContext.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };
     }
 
-    private void buildExtensionalDB(GraknGraph graph, int n, int m) {
+    private void buildExtensionalDB(GraknTx graph, int n, int m) {
         long startTime = System.currentTimeMillis();
 
         EntityType vertex = graph.getEntityType("vertex");
@@ -65,7 +65,7 @@ public class PathGraphII extends TestGraph {
         Role arcFrom = graph.getRole("arc-from");
         Role arcTo = graph.getRole("arc-to");
 
-        RelationType arc = graph.getRelationType("arc");
+        RelationshipType arc = graph.getRelationshipType("arc");
         putEntity(graph, "a0", startVertex, key);
 
         for(int i = 0 ; i < n ;i++) {
@@ -74,19 +74,19 @@ public class PathGraphII extends TestGraph {
             }
         }
 
-        arc.addRelation()
+        arc.addRelationship()
                 .addRolePlayer(arcFrom, getInstance(graph, "a0"))
                 .addRolePlayer(arcTo, getInstance(graph, "a0,0"));
 
         for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
                 if (j < n - 1) {
-                    arc.addRelation()
+                    arc.addRelationship()
                             .addRolePlayer(arcFrom, getInstance(graph, "a" + i + "," + j))
                             .addRolePlayer(arcTo, getInstance(graph, "a" + i + "," + (j + 1)));
                 }
                 if (i < m - 1) {
-                    arc.addRelation()
+                    arc.addRelationship()
                             .addRolePlayer(arcFrom, getInstance(graph, "a" + i + "," + j))
                             .addRolePlayer(arcTo, getInstance(graph, "a" + (i + 1) + "," + j));
                 }

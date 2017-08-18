@@ -18,12 +18,12 @@
 
 package ai.grakn.graph.internal.concept;
 
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -72,7 +72,7 @@ public class EntityTypeTest extends GraphTestBase {
     public void whenCreatingEntityTypeUsingLabelTakenByAnotherType_Throw(){
         Role original = graknGraph.putRole("Role Type");
         expectedException.expect(PropertyNotUniqueException.class);
-        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original, Schema.VertexProperty.ONTOLOGY_LABEL, original.getLabel()).getMessage());
+        expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original, Schema.VertexProperty.SCHEMA_LABEL, original.getLabel()).getMessage());
         graknGraph.putEntityType(original.getLabel());
     }
 
@@ -257,14 +257,14 @@ public class EntityTypeTest extends GraphTestBase {
         EntityType entityType1 = graknGraph.putEntityType("Entity Type 1");
         EntityType entityType2 = graknGraph.putEntityType("Entity Type 2");
 
-        Label superLabel = Label.of("Super Resource Type");
-        Label label = Label.of("Resource Type");
+        Label superLabel = Label.of("Super Attribute Type");
+        Label label = Label.of("Attribute Type");
 
-        ResourceType rtSuper = graknGraph.putResourceType(superLabel, ResourceType.DataType.STRING);
-        ResourceType rt = graknGraph.putResourceType(label, ResourceType.DataType.STRING).sup(rtSuper);
+        AttributeType rtSuper = graknGraph.putAttributeType(superLabel, AttributeType.DataType.STRING);
+        AttributeType rt = graknGraph.putAttributeType(label, AttributeType.DataType.STRING).sup(rtSuper);
 
-        entityType1.resource(rtSuper);
-        entityType2.resource(rt);
+        entityType1.attribute(rtSuper);
+        entityType2.attribute(rt);
 
         //Check role types are only built explicitly
         assertThat(entityType1.plays().collect(toSet()),
@@ -274,13 +274,13 @@ public class EntityTypeTest extends GraphTestBase {
                 containsInAnyOrder(graknGraph.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(label).getValue())));
 
         //Check Implicit Types Follow SUB Structure
-        RelationType rtSuperRelation = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(rtSuper.getLabel()));
-        Role rtSuperRoleOwner = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rtSuper.getLabel()));
-        Role rtSuperRoleValue = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rtSuper.getLabel()));
+        RelationshipType rtSuperRelation = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(rtSuper.getLabel()));
+        Role rtSuperRoleOwner = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rtSuper.getLabel()));
+        Role rtSuperRoleValue = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rtSuper.getLabel()));
 
-        RelationType rtRelation = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS.getLabel(rt.getLabel()));
-        Role reRoleOwner = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rt.getLabel()));
-        Role reRoleValue = graknGraph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rt.getLabel()));
+        RelationshipType rtRelation = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS.getLabel(rt.getLabel()));
+        Role reRoleOwner = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(rt.getLabel()));
+        Role reRoleValue = graknGraph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(rt.getLabel()));
 
         assertEquals(rtSuperRoleOwner, reRoleOwner.sup());
         assertEquals(rtSuperRoleValue, reRoleValue.sup());
@@ -342,84 +342,84 @@ public class EntityTypeTest extends GraphTestBase {
     @Test
     public void checkThatResourceTypesCanBeRetrievedFromTypes(){
         EntityType e1 = graknGraph.putEntityType("e1");
-        ResourceType r1 = graknGraph.putResourceType("r1", ResourceType.DataType.STRING);
-        ResourceType r2 = graknGraph.putResourceType("r2", ResourceType.DataType.LONG);
-        ResourceType r3 = graknGraph.putResourceType("r3", ResourceType.DataType.BOOLEAN);
+        AttributeType r1 = graknGraph.putAttributeType("r1", AttributeType.DataType.STRING);
+        AttributeType r2 = graknGraph.putAttributeType("r2", AttributeType.DataType.LONG);
+        AttributeType r3 = graknGraph.putAttributeType("r3", AttributeType.DataType.BOOLEAN);
 
-        assertTrue("Entity is linked to resources when it shouldn't", e1.resources().collect(toSet()).isEmpty());
-        e1.resource(r1);
-        e1.resource(r2);
-        e1.resource(r3);
-        assertThat(e1.resources().collect(toSet()), containsInAnyOrder(r1, r2, r3));
+        assertTrue("Entity is linked to resources when it shouldn't", e1.attributes().collect(toSet()).isEmpty());
+        e1.attribute(r1);
+        e1.attribute(r2);
+        e1.attribute(r3);
+        assertThat(e1.attributes().collect(toSet()), containsInAnyOrder(r1, r2, r3));
     }
 
     @Test
     public void addResourceTypeAsKeyToOneEntityTypeAndAsResourceToAnotherEntityType(){
-        ResourceType<String> resourceType1 = graknGraph.putResourceType("Shared Resource 1", ResourceType.DataType.STRING);
-        ResourceType<String> resourceType2 = graknGraph.putResourceType("Shared Resource 2", ResourceType.DataType.STRING);
+        AttributeType<String> attributeType1 = graknGraph.putAttributeType("Shared Attribute 1", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType2 = graknGraph.putAttributeType("Shared Attribute 2", AttributeType.DataType.STRING);
 
         EntityType entityType1 = graknGraph.putEntityType("EntityType 1");
         EntityType entityType2 = graknGraph.putEntityType("EntityType 2");
 
         assertThat(entityType1.keys().collect(toSet()), is(empty()));
-        assertThat(entityType1.resources().collect(toSet()), is(empty()));
+        assertThat(entityType1.attributes().collect(toSet()), is(empty()));
         assertThat(entityType2.keys().collect(toSet()), is(empty()));
-        assertThat(entityType2.resources().collect(toSet()), is(empty()));
+        assertThat(entityType2.attributes().collect(toSet()), is(empty()));
 
         //Link the resources
-        entityType1.resource(resourceType1);
+        entityType1.attribute(attributeType1);
 
-        entityType1.key(resourceType2);
-        entityType2.key(resourceType1);
-        entityType2.key(resourceType2);
+        entityType1.key(attributeType2);
+        entityType2.key(attributeType1);
+        entityType2.key(attributeType2);
 
-        assertThat(entityType1.resources().collect(toSet()), containsInAnyOrder(resourceType1, resourceType2));
-        assertThat(entityType2.resources().collect(toSet()), containsInAnyOrder(resourceType1, resourceType2));
+        assertThat(entityType1.attributes().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
+        assertThat(entityType2.attributes().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
 
-        assertThat(entityType1.keys().collect(toSet()), containsInAnyOrder(resourceType2));
-        assertThat(entityType2.keys().collect(toSet()), containsInAnyOrder(resourceType1, resourceType2));
+        assertThat(entityType1.keys().collect(toSet()), containsInAnyOrder(attributeType2));
+        assertThat(entityType2.keys().collect(toSet()), containsInAnyOrder(attributeType1, attributeType2));
 
         //Add resource which is a key for one entity and a resource for another
         Entity entity1 = entityType1.addEntity();
         Entity entity2 = entityType2.addEntity();
-        Resource<String> resource1 = resourceType1.putResource("Test 1");
-        Resource<String> resource2 = resourceType2.putResource("Test 2");
-        Resource<String> resource3 = resourceType2.putResource("Test 3");
+        Attribute<String> attribute1 = attributeType1.putAttribute("Test 1");
+        Attribute<String> attribute2 = attributeType2.putAttribute("Test 2");
+        Attribute<String> attribute3 = attributeType2.putAttribute("Test 3");
 
-        //Resource 1 is a key to one and a resource to another
-        entity1.resource(resource1);
-        entity2.resource(resource1);
+        //Attribute 1 is a key to one and a resource to another
+        entity1.attribute(attribute1);
+        entity2.attribute(attribute1);
 
-        entity1.resource(resource2);
-        entity2.resource(resource3);
+        entity1.attribute(attribute2);
+        entity2.attribute(attribute3);
 
         graknGraph.commit();
     }
 
     @Test
     public void whenAddingResourceTypeAsKeyAfterResource_Throw(){
-        ResourceType<String> resourceType = graknGraph.putResourceType("Shared Resource", ResourceType.DataType.STRING);
+        AttributeType<String> attributeType = graknGraph.putAttributeType("Shared Attribute", AttributeType.DataType.STRING);
         EntityType entityType = graknGraph.putEntityType("EntityType");
 
-        entityType.resource(resourceType);
+        entityType.attribute(attributeType);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), resourceType.getLabel()));
+        expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), attributeType.getLabel()));
 
-        entityType.key(resourceType);
+        entityType.key(attributeType);
     }
 
     @Test
     public void whenAddingResourceTypeAsResourceAfterResource_Throw(){
-        ResourceType<String> resourceType = graknGraph.putResourceType("Shared Resource", ResourceType.DataType.STRING);
+        AttributeType<String> attributeType = graknGraph.putAttributeType("Shared Attribute", AttributeType.DataType.STRING);
         EntityType entityType = graknGraph.putEntityType("EntityType");
 
-        entityType.key(resourceType);
+        entityType.key(attributeType);
 
         expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), resourceType.getLabel()));
+        expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), attributeType.getLabel()));
 
-        entityType.resource(resourceType);
+        entityType.attribute(attributeType);
     }
 
     @Test

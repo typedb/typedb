@@ -18,7 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
 import ai.grakn.test.graphs.GeoGraph;
 import ai.grakn.test.graphs.MatrixGraphII;
 import ai.grakn.graql.MatchQuery;
@@ -28,7 +29,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
@@ -71,7 +71,7 @@ public class LazyTest {
 
     @Test
     public void testLazyCache(){
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoGraph.graph();
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{(geo-entity: $y, entity-location: $z) isa is-located-in;}";
 
@@ -92,7 +92,7 @@ public class LazyTest {
 
     @Test
     public void testLazyCache2(){
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoGraph.graph();
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{(geo-entity: $y, entity-location: $z) isa is-located-in;}";
         String patternString3 = "{(geo-entity: $x, entity-location: $z) isa is-located-in;}";
@@ -120,7 +120,7 @@ public class LazyTest {
 
     @Test
     public void testJoin(){
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoGraph.graph();
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{(geo-entity: $y, entity-location: $z) isa is-located-in;}";
         String patternString3 = "{(geo-entity: $z, entity-location: $w) isa is-located-in;}";
@@ -134,7 +134,7 @@ public class LazyTest {
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         query.lookup(cache);
-        InferenceRule rule = new InferenceRule(ReasonerUtils.getRules(graph).iterator().next(), graph);
+        InferenceRule rule = new InferenceRule(RuleGraph.getRules(graph).iterator().next(), graph);
 
         Set<Var> joinVars = Sets.intersection(query.getVarNames(), query2.getVarNames());
         Stream<Answer> join = join(
@@ -161,7 +161,7 @@ public class LazyTest {
 
     @Test
     public void testKnownFilter(){
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoGraph.graph();
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         MatchQuery query = graph.graql().parse(queryString);
         QueryAnswers answers = queryAnswers(query);
@@ -181,7 +181,7 @@ public class LazyTest {
         graphContext.load(MatrixGraphII.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknGraph graph = graphContext.graph();
+        GraknTx graph = graphContext.graph();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         String queryString = "match (P-from: $x, P-to: $y) isa P;";
@@ -201,7 +201,7 @@ public class LazyTest {
         return new QueryAnswers(query.admin().stream().collect(toSet()));
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknGraph graph){
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){
         Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
