@@ -18,8 +18,8 @@
 
 package ai.grakn;
 
-import ai.grakn.graph.internal.GraknTxAbstract;
-import ai.grakn.graph.internal.GraknTxTinker;
+import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.GraknTxTinker;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.Test;
 

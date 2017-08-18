@@ -19,7 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknTxType;
-import ai.grakn.graph.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.GraknTxAbstract;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**

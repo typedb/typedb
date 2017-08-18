@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.graph.admin.GraknAdmin;
+import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.graql.Pattern;
 
 import javax.annotation.CheckReturnValue;

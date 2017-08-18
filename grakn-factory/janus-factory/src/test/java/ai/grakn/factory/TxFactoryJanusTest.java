@@ -21,7 +21,7 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.graph.internal.GraknTxJanus;
+import ai.grakn.kb.internal.GraknTxJanus;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

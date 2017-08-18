@@ -26,7 +26,7 @@ import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.graph.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.REST;
 import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer.Context;
