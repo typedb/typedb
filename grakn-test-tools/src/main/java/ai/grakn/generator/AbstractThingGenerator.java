@@ -71,8 +71,8 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
         if(withResource && !thing.attributes().findAny().isPresent()){
             //A new attribute type is created every time a attribute is lacking.
             //Existing attribute types and resources of those types are not used because we end up mutating the
-            // the ontology in strange ways. This approach is less complex but ensures everything has a attribute
-            // without conflicting with the ontology
+            // the schema in strange ways. This approach is less complex but ensures everything has a attribute
+            // without conflicting with the schema
 
             //Create a new attribute type
             AttributeType.DataType<?> dataType = gen(AttributeType.DataType.class);

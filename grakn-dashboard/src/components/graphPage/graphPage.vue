@@ -21,7 +21,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <div>
     <div class="graph-panel-body">
         <div v-on:contextmenu="customContextMenu" v-on:mousemove="updateRectangle" id="graph-div" ref="graph"></div>
-        <node-panel :showNodePanel="showNodePanel" :allNodeResources="allNodeResources" :allNodeOntologyProps="allNodeOntologyProps" :node="selectedNodeObject" v-on:load-resource-owners="onLoadResourceOwners" v-on:close-node-panel="showNodePanel=false"></node-panel>
+        <node-panel :showNodePanel="showNodePanel" :allNodeResources="allNodeResources" :allNodeSchemaProps="allNodeSchemaProps" :node="selectedNodeObject" v-on:load-resource-owners="onLoadResourceOwners" v-on:close-node-panel="showNodePanel=false"></node-panel>
         <context-menu :showContextMenu="showContextMenu" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop" v-on:type-query="emitInjectQuery" v-on:close-context="showContextMenu=false" v-on:fetch-relations="fetchFilteredRelations"></context-menu>
         <node-tool-tip :showToolTip="showToolTip" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop"></node-tool-tip>
         <footer-bar></footer-bar>

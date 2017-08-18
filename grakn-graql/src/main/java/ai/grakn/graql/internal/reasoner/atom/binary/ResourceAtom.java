@@ -82,7 +82,7 @@ public class ResourceAtom extends Binary{
         String multiPredicateString = getMultiPredicate().isEmpty()?
                 getPredicateVariable().toString() :
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
-        return getVarName() + " has " + getOntologyConcept().getLabel() + " " +
+        return getVarName() + " has " + getSchemaConcept().getLabel() + " " +
                 multiPredicateString +
                 getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
     }
@@ -165,8 +165,8 @@ public class ResourceAtom extends Binary{
         TypeAtom parentTypeConstraint = this.getTypeConstraints().findFirst().orElse(null);
         TypeAtom childTypeConstraint = childAtom.getTypeConstraints().findFirst().orElse(null);
 
-        SchemaConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getOntologyConcept() : null;
-        SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getOntologyConcept() : null;
+        SchemaConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getSchemaConcept() : null;
+        SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getSchemaConcept() : null;
         if (parentType != null && childType != null && checkDisjoint(parentType, childType)) return false;
 
         //check predicates
@@ -194,7 +194,7 @@ public class ResourceAtom extends Binary{
 
     @Override
     public boolean isAllowedToFormRuleHead(){
-        if (getOntologyConcept() == null || getMultiPredicate().size() > 1) return false;
+        if (getSchemaConcept() == null || getMultiPredicate().size() > 1) return false;
         if (getMultiPredicate().isEmpty()) return true;
 
         ValuePredicate predicate = getMultiPredicate().iterator().next();
@@ -203,7 +203,7 @@ public class ResourceAtom extends Binary{
 
     @Override
     public Set<String> validateOntologically() {
-        SchemaConcept type = getOntologyConcept();
+        SchemaConcept type = getSchemaConcept();
         if (type == null) {
             return new HashSet<>();
         }
@@ -214,7 +214,7 @@ public class ResourceAtom extends Binary{
             return errors;
         }
 
-        SchemaConcept ownerType = getParentQuery().getVarOntologyConceptMap().get(getVarName());
+        SchemaConcept ownerType = getParentQuery().getVarSchemaConceptMap().get(getVarName());
 
         if (ownerType != null
                 && ownerType.isType()
@@ -321,7 +321,7 @@ public class ResourceAtom extends Binary{
     public Set<TypeAtom> getSpecificTypeConstraints() {
         return getTypeConstraints()
                 .filter(t -> t.getVarName().equals(getVarName()))
-                .filter(t -> Objects.nonNull(t.getOntologyConcept()))
+                .filter(t -> Objects.nonNull(t.getSchemaConcept()))
                 .collect(Collectors.toSet());
     }
 

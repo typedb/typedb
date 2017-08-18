@@ -55,7 +55,7 @@ public class AdmissionsGraph extends TestGraph {
     }
 
     @Override
-    protected void buildOntology(GraknTx graph) {
+    protected void buildSchema(GraknTx graph) {
         key = graph.putAttributeType("name", AttributeType.DataType.STRING);
 
         TOEFL = graph.putAttributeType("TOEFL", AttributeType.DataType.LONG);

@@ -3,7 +3,7 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.graph.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

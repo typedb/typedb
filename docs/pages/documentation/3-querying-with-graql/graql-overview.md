@@ -54,7 +54,7 @@ boolean, double, long, string, date
 true, false
 ```
 
-#### Ontology definition
+#### Schema definition
 
 ```graql-test-ignore
 has, has-scope, 

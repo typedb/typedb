@@ -44,7 +44,7 @@ OPTIONS
 The steps to migrate XML data to GRAKN.AI are:
 
 * define a schema for the data to derive the full benefit of a knowledge base
-* create templated Graql to map the XML data to the ontology
+* create templated Graql to map the XML data to the schema
 * invoke the Grakn migrator through the shell script or Java API. The XML migrator will apply the template to each instance of the specified element `-element`, replacing the sections indicated in the template with provided data: the XML tags are the key to be used in the brackets `<>` and the content of each tag are the value of that key.
 
 {% include note.html content="XML Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [templating documentation](../graql/graql-templating.html) to find out more." %}
@@ -222,7 +222,7 @@ This example will migrate a single plant entity, along with various reosurces, f
 </CATALOG>
 ```
 
-Our ontology contains a single plant entity and various resources that are associated with it:
+Our schema contains a single plant entity and various resources that are associated with it:
 
 ```gql
 insert
@@ -263,10 +263,10 @@ This template contains a single insert query. As it will be applied to each elem
 
 The tirangle brackets are used to specify nested elements: in the XML `<BOTANICAL>` is a direct child of `<PLANT>` and so can be used whenever the template traversal is in the `PLANT` scope. 
 
-Before running any migration you need to ensure that the ontology has been loaded to the knowledge base: 
+Before running any migration you need to ensure that the schema has been loaded to the knowledge base: 
 
 ```
-./<grakn-install-location>/bin/graql.sh -f plants-ontology.gql -k plants
+./<grakn-install-location>/bin/graql.sh -f plants-schema.gql -k plants
 ```
 
 At this point you can run the XML migration script on the resources we have described above: 

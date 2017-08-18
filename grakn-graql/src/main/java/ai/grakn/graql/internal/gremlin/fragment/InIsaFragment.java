@@ -95,13 +95,13 @@ class InIsaFragment extends AbstractFragment {
         Var labelId = var();
 
         // There is no fast way to retrieve all edge instances, because edges cannot be globally indexed.
-        // This is a best-effort, that uses the ontology to limit the search space...
+        // This is a best-effort, that uses the schema to limit the search space...
 
         // First retrieve the type ID
         GraphTraversal<Vertex, Vertex> traversal =
                 __.<Vertex>as(type.getValue()).values(LABEL_ID.name()).as(labelId.getValue()).select(type.getValue());
 
-        // Next, navigate the ontology to all possible types whose instances can be in this relation
+        // Next, navigate the schema to all possible types whose instances can be in this relation
         traversal = Fragments.inSubs(traversal.out(RELATES.getLabel()).in(PLAYS.getLabel()));
 
         // Navigate to all (vertex) instances of those types

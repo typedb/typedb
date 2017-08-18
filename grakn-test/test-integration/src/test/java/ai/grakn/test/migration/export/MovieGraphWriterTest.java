@@ -47,17 +47,17 @@ public class MovieGraphWriterTest {
     }
 
     @Test
-    public void testWritingMovieGraphOntology() {
-        String ontology = writer.dumpOntology();
-        define(copy.graph(), ontology);
+    public void testWritingMovieGraphSchema() {
+        String schema = writer.dumpSchema();
+        define(copy.graph(), schema);
 
         assertOntologiesEqual(original.graph(), copy.graph());
     }
 
     @Test
     public void testWritingMovieGraphData() {
-        String ontology = writer.dumpOntology();
-        define(copy.graph(), ontology);
+        String schema = writer.dumpSchema();
+        define(copy.graph(), schema);
 
         String data = writer.dumpData();
         insert(copy.graph(), data);

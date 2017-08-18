@@ -274,7 +274,7 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testOntologyQuery() {
+    public void testSchemaQuery() {
         MatchQuery expected = match(var("x").plays("actor")).orderBy("x");
         MatchQuery parsed = parse("match $x plays actor; order by $x asc;");
         assertEquals(expected, parsed);

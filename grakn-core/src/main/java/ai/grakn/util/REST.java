@@ -69,7 +69,7 @@ public class REST {
          */
         public static class Concept {
             public static final String CONCEPT = "/graph/concept/";
-            public static final String ONTOLOGY = "/graph/ontology";
+            public static final String SCHEMA = "/graph/schema";
         }
 
         /**

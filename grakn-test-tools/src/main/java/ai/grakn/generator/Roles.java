@@ -34,7 +34,7 @@ public class Roles extends AbstractSchemaConceptGenerator<Role> {
     }
 
     @Override
-    protected Role newOntologyConcept(Label label) {
+    protected Role newSchemaConcept(Label label) {
         return graph().putRole(label);
     }
 

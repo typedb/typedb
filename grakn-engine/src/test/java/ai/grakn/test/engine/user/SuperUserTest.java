@@ -52,7 +52,7 @@ public class SuperUserTest {
     @BeforeClass
     public static void beforeClass() {
         // TODO: Doing it here because it has to happen after Cassandra starts. Consider refactoring
-        graknFactory = EngineGraknGraphFactory.createAndLoadSystemOntology(EngineTestHelper.config().getProperties());
+        graknFactory = EngineGraknGraphFactory.createAndLoadSystemSchema(EngineTestHelper.config().getProperties());
     }
 
     @Test

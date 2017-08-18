@@ -76,17 +76,17 @@ public interface SchemaConcept extends Concept {
      *
      * The indirect subs are the concept itself and all indirect subs of direct subs.
      *
-     * @return All the indirect sub-types of this Type
+     * @return All the indirect sub-types of this {@link SchemaConcept}
      */
     @CheckReturnValue
     Stream<? extends SchemaConcept> subs();
 
     /**
-     * Return whether the Ontology Element was created implicitly.
+     * Return whether the {@link SchemaConcept} was created implicitly.
      *
-     * By default, Ontology Elements are not implicit.
+     * By default, {@link SchemaConcept} are not implicit.
      *
-     * @return returns true if the type was created implicitly through the resource syntax
+     * @return returns true if the type was created implicitly through the {@link Attribute} syntax
      */
     @CheckReturnValue
     Boolean isImplicit();

@@ -133,7 +133,7 @@ public class MigrationCLI {
             QueryBuilder qb = graph.graql();
 
             StringBuilder builder = new StringBuilder();
-            builder.append("Graph ontology contains:\n");
+            builder.append("Graph schema contains:\n");
             builder.append("\t ").append(graph.admin().getMetaEntityType().instances().count()).append(" entity types\n");
             builder.append("\t ").append(graph.admin().getMetaRelationType().instances().count()).append(" relation types\n");
             builder.append("\t ").append("0 role types\n");

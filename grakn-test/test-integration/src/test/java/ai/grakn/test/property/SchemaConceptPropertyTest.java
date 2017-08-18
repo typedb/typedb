@@ -72,7 +72,7 @@ public class SchemaConceptPropertyTest {
     }
 
     @Property
-    public void whenDeletingAnOntologyConceptWithDirectSubs_Throw(@NonMeta SchemaConcept schemaConcept) {
+    public void whenDeletingASchemaConceptWithDirectSubs_Throw(@NonMeta SchemaConcept schemaConcept) {
         SchemaConcept superConcept = schemaConcept.sup();
         assumeFalse(isMetaLabel(superConcept.getLabel()));
 
@@ -95,7 +95,7 @@ public class SchemaConceptPropertyTest {
     }
 
     @Property
-    public void whenAnOntologyElementHasADirectSuper_ItIsADirectSubOfThatSuper(SchemaConcept schemaConcept) {
+    public void whenASchemaElementHasADirectSuper_ItIsADirectSubOfThatSuper(SchemaConcept schemaConcept) {
         SchemaConcept superConcept = schemaConcept.sup();
         assumeTrue(superConcept != null);
 
@@ -108,14 +108,14 @@ public class SchemaConceptPropertyTest {
     }
 
     @Property
-    public void whenAnOntologyConceptHasAnIndirectSuper_ItIsAnIndirectSubOfThatSuper(
+    public void whenASchemaConceptHasAnIndirectSuper_ItIsAnIndirectSubOfThatSuper(
             SchemaConcept subConcept, long seed) {
         SchemaConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(subConcept), seed);
         assertThat(superConcept.subs().collect(toSet()), hasItem(subConcept));
     }
 
     @Property
-    public void whenAnOntologyConceptHasAnIndirectSub_ItIsAnIndirectSuperOfThatSub(
+    public void whenASchemaConceptHasAnIndirectSub_ItIsAnIndirectSuperOfThatSub(
             SchemaConcept superConcept, long seed) {
         SchemaConcept subConcept = PropertyUtil.choose(superConcept.subs(), seed);
         assertThat(PropertyUtil.indirectSupers(subConcept), hasItem(superConcept));
@@ -133,14 +133,14 @@ public class SchemaConceptPropertyTest {
     }
 
     @Property
-    public void whenGettingTheIndirectSubs_TheyContainTheOntologyConcept(SchemaConcept concept) {
+    public void whenGettingTheIndirectSubs_TheyContainTheSchemaConcept(SchemaConcept concept) {
         assertThat(concept.subs().collect(toSet()), hasItem(concept));
     }
 
     @Property
     public void whenSettingTheDirectSuperOfAMetaConcept_Throw(
             @Meta SchemaConcept subConcept, @FromGraph SchemaConcept superConcept) {
-        assumeTrue(sameOntologyConcept(subConcept, superConcept));
+        assumeTrue(sameSchemaConcept(subConcept, superConcept));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
@@ -160,7 +160,7 @@ public class SchemaConceptPropertyTest {
     @Property
     public void whenSettingTheDirectSuper_TheDirectSuperIsSet(
             @NonMeta SchemaConcept subConcept, @FromGraph SchemaConcept superConcept) {
-        assumeTrue(sameOntologyConcept(subConcept, superConcept));
+        assumeTrue(sameSchemaConcept(subConcept, superConcept));
         assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
         //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
@@ -174,7 +174,7 @@ public class SchemaConceptPropertyTest {
     @Property
     public void whenAddingADirectSubThatIsAMetaConcept_Throw(
             SchemaConcept superConcept, @Meta @FromGraph SchemaConcept subConcept) {
-        assumeTrue(sameOntologyConcept(subConcept, superConcept));
+        assumeTrue(sameSchemaConcept(subConcept, superConcept));
 
         exception.expect(GraphOperationException.class);
         exception.expectMessage(GraphOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
@@ -194,7 +194,7 @@ public class SchemaConceptPropertyTest {
     @Property
     public void whenAddingADirectSub_TheDirectSubIsAdded(
             SchemaConcept superConcept, @NonMeta @FromGraph SchemaConcept subConcept) {
-        assumeTrue(sameOntologyConcept(subConcept, superConcept));
+        assumeTrue(sameSchemaConcept(subConcept, superConcept));
         assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
         //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
@@ -207,7 +207,7 @@ public class SchemaConceptPropertyTest {
 
     @Ignore // TODO: Find a way to generate linked rules
     @Property
-    public void whenDeletingAnOntologyConceptWithHypothesisRules_Throw(SchemaConcept concept) {
+    public void whenDeletingASchemaConceptWithHypothesisRules_Throw(SchemaConcept concept) {
         assumeThat(concept.getRulesOfHypothesis().collect(toSet()), not(empty()));
 
         exception.expect(GraphOperationException.class);
@@ -217,7 +217,7 @@ public class SchemaConceptPropertyTest {
 
     @Ignore // TODO: Find a way to generate linked rules
     @Property
-    public void whenDeletingAnOntologyConceptWithConclusionRules_Throw(SchemaConcept concept) {
+    public void whenDeletingASchemaConceptWithConclusionRules_Throw(SchemaConcept concept) {
         assumeThat(concept.getRulesOfConclusion().collect(toSet()), not(empty()));
 
         exception.expect(GraphOperationException.class);
@@ -226,7 +226,7 @@ public class SchemaConceptPropertyTest {
     }
 
 
-    private boolean sameOntologyConcept(SchemaConcept concept1, SchemaConcept concept2) {
+    private boolean sameSchemaConcept(SchemaConcept concept1, SchemaConcept concept2) {
         return concept1.isEntityType() && concept2.isEntityType() ||
                 concept1.isRelationshipType() && concept2.isRelationshipType() ||
                 concept1.isRole() && concept2.isRole() ||

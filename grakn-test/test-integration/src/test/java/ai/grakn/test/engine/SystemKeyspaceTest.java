@@ -96,7 +96,7 @@ public class SystemKeyspaceTest {
     }
 
     @Test
-    public void whenConnectingToSystemGraph_EnsureUserOntologyIsLoaded(){
+    public void whenConnectingToSystemGraph_EnsureUserSchemaIsLoaded(){
         try(GraknTx graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
 
             EntityType user = graph.getEntityType("user");

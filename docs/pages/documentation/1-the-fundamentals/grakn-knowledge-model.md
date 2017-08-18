@@ -10,13 +10,13 @@ folder: documentation
 comment_issue_id: 17
 ---
 
-In Grakn, a knowledge base is made of two layers: the ontology layer and the data layer. 
+In Grakn, a knowledge base is made of two layers: the schema layer and the data layer. 
 
-## Ontology
+## Schema
 
-In Grakn, the [ontology](https://en.wikipedia.org/wiki/Ontology_(information_science)) is the formal specification of all the relevant concepts and their meaningful associations in a given domain. It allows objects and relationships to be categorised into distinct types, and for generic properties of those types to be expressed. Specifying the ontology enables [automated reasoning](https://en.wikipedia.org/wiki/Inference_engine) over the represented knowledge, such as the extraction of implicit information from explicit data ([inference](./grakn-knowledge-model.html#rule-and-sub-type-inference)) or discovery of inconsistencies in the data ([validation](./grakn-knowledge-model.html#data-validation)).  For this reason, the ontology must be clearly defined before loading data into the knowledge base. 
+In Grakn, the [schema](https://en.wikipedia.org/wiki/Database_schema) is the formal specification of all the relevant concepts and their meaningful associations in a given domain. It allows objects and relationships to be categorised into distinct types, and for generic properties of those types to be expressed. Specifying the schema enables [automated reasoning](https://en.wikipedia.org/wiki/Inference_engine) over the represented knowledge, such as the extraction of implicit information from explicit data ([inference](./grakn-knowledge-model.html#rule-and-sub-type-inference)) or discovery of inconsistencies in the data ([validation](./grakn-knowledge-model.html#data-validation)).  For this reason, the schema must be clearly defined before loading data into the knowledge base. 
 
-[Grakn uses its own declarative ontology language, Graql](https://blog.grakn.ai/knowledge-graph-representation-grakn-ai-or-owl-506065bd3f24#.d6mtn9ic2), and Grakn ontologies use four types of concepts for modeling domain knowledge. The categorization of concept types is enforced in the Grakn knowledge model by declaring every concept type as a subtype (i.e. an extension) of exactly one of the four corresponding, built-in concept types:
+[Grakn uses its own declarative language, Graql](https://blog.grakn.ai/knowledge-graph-representation-grakn-ai-or-owl-506065bd3f24#.d6mtn9ic2), and Grakn ontologies use four types of concepts for modeling domain knowledge. The categorization of concept types is enforced in the Grakn knowledge model by declaring every concept type as a subtype (i.e. an extension) of exactly one of the four corresponding, built-in concept types:
 
 **`entity`**: Objects or things in the domain. For example, `person`, `man`, `woman`.    
 
@@ -32,9 +32,9 @@ In Grakn, the [ontology](https://en.wikipedia.org/wiki/Ontology_(information_sci
 
 <br /> <img src="/images/knowledge-model1.png" style="width: 600px;"/> <br />
 
-### Building an Ontology
+### Building a Schema
 
-In this section, we build up a simple ontology to illustrate the concept types in the Grakn knowledge model. 
+In this section, we build up a simple schema to illustrate the concept types in the Grakn knowledge model. 
 
 We define two entities, `person` and `company`, each of which have a `name` attribute.
 
@@ -191,7 +191,7 @@ Therefore, the `employment` relationship between a `company` and `person` is als
 {% include note.html content="Concept types can be declared as `is-abstract`, meaning that they cannot have any direct instances. For example, `person sub entity is-abstract` expresses that the only instances of `person` can be those that belong to more specialised subtypes of `person`, e.g., `customer`." %}
 
 ### Structural Properties
-A well-formed Grakn ontology is required to satisfy the following structural properties:
+A well-formed Grakn schema is required to satisfy the following structural properties:
 
 * each concept type can have at most one direct supertype,
 * each relationship type must involve at least two distinct role types, 
@@ -221,7 +221,7 @@ insert
 
 ### Data Validation
 
-To ensure data is correctly structured (i.e. consistent) with respect to the ontology, all data instances are validated against the ontology constraints. All the explicitly represented ontology constraints, together with the inherited ones, form complete schema templates for particular concept types, which guide the validation. 
+To ensure data is correctly structured (i.e. consistent) with respect to the schema, all data instances are validated against the schema constraints. All the explicitly represented schema constraints, together with the inherited ones, form complete schema templates for particular concept types, which guide the validation. 
 
 We will consider the structural validation rules that are enforced in a Grakn knowledge base. The following consistency checks are executed upon `commit` depending on what is being committed:
 
@@ -335,15 +335,15 @@ Now we are correctly modelling the marriage between `Alice` and `Bob`.
 
 Inference is a process of extracting implicit information from explicit data. Grakn supports two inference mechanisms:
 
-1. type inference, based on the semantics of the `sub` hierarchies included in the ontology
+1. type inference, based on the semantics of the `sub` hierarchies included in the schema
 2. rule-based inference involving user-defined IF-THEN rules.
 
 Both mechanisms can be employed when querying the knowledge base with Graql, thus supporting retrieval of both explicit and implicit information at query time.      
 
 ### Type Inference
-The type inference is based on a simple traversal along the `sub` links. Every instance of a given concept type is automatically classified as an (indirect) instance of all (possibly indirect) supertypes of that type. For example, whenever `customer sub human` is in the ontology, every instance of `customer` will be retrieved on the query `match $x isa human`.
+The type inference is based on a simple traversal along the `sub` links. Every instance of a given concept type is automatically classified as an (indirect) instance of all (possibly indirect) supertypes of that type. For example, whenever `customer sub human` is in the schema, every instance of `customer` will be retrieved on the query `match $x isa human`.
 
-Similarly for roles, every instance playing a given role is inferred to also play all its (possibly indirect) super-roles. <!--For example, whenever `inst` plays the role of wife in a relationship of the type `marriage`, the system will infer that `inst` plays also the role of `partner1` in that relationship, given the ontology from Figure 2.-->
+Similarly for roles, every instance playing a given role is inferred to also play all its (possibly indirect) super-roles. <!--For example, whenever `inst` plays the role of wife in a relationship of the type `marriage`, the system will infer that `inst` plays also the role of `partner1` in that relationship, given the schema from Figure 2.-->
 
 The type inference is set ON by default when querying Grakn.  
 
@@ -384,7 +384,7 @@ The rule-based inference is currently set OFF by default when querying Grakn, an
 
 
 ## Where Next?
-Our [Quickstart Tutorial](../get-started/quickstart-tutorial.html) will show you how to load an ontology, rules and data into Grakn using Graql, and to make basic queries.
+Our [Quickstart Tutorial](../get-started/quickstart-tutorial.html) will show you how to load a schema, rules and data into Grakn using Graql, and to make basic queries.
 
 You can find additional example code and documentation on this portal. We are always adding more and welcome ideas and improvement suggestions. Please get in touch!
 

@@ -21,7 +21,7 @@ It is also possible to interact with the knowledge base using a Java API to form
 
 ## Building a Schema with the Java API
 
-In the [Basic Ontology documentation](../building-an-ontology/basic-ontology.html) we introduced a simple ontology built using Graql.
+In the [Basic Schema documentation](../building-a-schema/basic-schema.html) we introduced a simple schema built using Graql.
 Let's see how we can build the same schema exclusively via the java API.
 First we need a knowledge base. For this example we will just use an [in-memory knowledge base](./java-setup.html#initialising-a-graph):
 
@@ -146,7 +146,7 @@ Now to commit the schema using the Java API:
 tx.commit();
 ```
 
-If you do not wish to commit the ontology you can revert your changes with:
+If you do not wish to commit the schema you can revert your changes with:
 
 ```java
 tx.abort();
@@ -217,9 +217,9 @@ theMarriage.attribute(weddingPicture);
 ```
 
 
-## Building A Hierarchical Ontology  
+## Building A Hierarchical Schema  
 
-In the [Hierarchical Ontology documentation](../building-an-ontology/hierarchical-ontology.html), we discussed how it is possible to create more expressive ontologies by creating a type hierarchy.
+In the [Hierarchical Schema documentation](../building-a-schema/hierarchical-schema.html), we discussed how it is possible to create more expressive ontologies by creating a type hierarchy.
 
 How can we create a hierarchy using the Java API? Well, this graql statement:
 

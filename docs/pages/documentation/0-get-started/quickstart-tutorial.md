@@ -12,15 +12,15 @@ comment_issue_id: 17
 
 ## Summary
 
-This example takes a simple genealogy dataset and briefly reviews its ontology, then illustrates how to query, extend and visualise the knowledge base, before demonstrating reasoning and analytics with Graql.  
+This example takes a simple genealogy dataset and briefly reviews its schema, then illustrates how to query, extend and visualise the knowledge base, before demonstrating reasoning and analytics with Graql.  
 
 ## Introduction 
 
-If you have not yet set up GRAKN.AI, please see the [Setup guide](../get-started/setup-guide.html). In this tutorial, we will load a simple ontology and some data from a file, *basic-genealogy.gql* and use the Graql shell and Grakn visualiser to illustrate some key features of GRAKN.AI.
+If you have not yet set up GRAKN.AI, please see the [Setup guide](../get-started/setup-guide.html). In this tutorial, we will load a simple schema and some data from a file, *basic-genealogy.gql* and use the Graql shell and Grakn visualiser to illustrate some key features of GRAKN.AI.
  
 ## The Graql Shell
 
-The first few steps mirror those in the [Setup Guide](./setup-guide.html), and you can skip to [The Ontology](#the-ontology) if you have already run through that example. Start Grakn and load the example knowledge base:
+The first few steps mirror those in the [Setup Guide](./setup-guide.html), and you can skip to [The Schema](#the-schema) if you have already run through that example. Start Grakn and load the example knowledge base:
 
 ```bash
 ./bin/grakn.sh start
@@ -44,13 +44,13 @@ match $x isa person, has identifier $n;
 
 You should see a printout of a number of lines of text, each of which includes a name, such as "William Sanford Titus" or "Elizabeth Niesz".
 
-### The Ontology
+### The Schema
 
-You can find out much more about the Grakn ontology in our documentation about the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html), which states that
+You can find out much more about the Grakn schema in our documentation about the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html), which states that
 
-> "The ontology is a formal specification of all the relevant concepts and their meaningful associations in a given application domain. It allows objects and relationships to be categorised into distinct types, and for generic properties about those types to be expressed". 
+> "The schema is a formal specification of all the relevant concepts and their meaningful associations in a given application domain. It allows objects and relationships to be categorised into distinct types, and for generic properties about those types to be expressed". 
 
-For the purposes of this guide, you can think of the ontology as a schema that describes items of data and defines how they relate to one another. You need to have a basic understanding of the ontology to be able to make useful queries on the data, so let's review the chunks of it that are important for our initial demonstration:
+For the purposes of this guide, the schema describes items of data and defines how they relate to one another. You need to have a basic understanding of the schema to be able to make useful queries on the data, so let's review the chunks of it that are important for our initial demonstration:
 
 ```graql
 define
@@ -105,7 +105,7 @@ parent sub role;
 child sub role;
 ```
 
-There are a number of things we can say about ontology shown above:
+There are a number of things we can say about schema shown above:
 
 * there is one entity, `person`, which represents a person in the family whose genealogy data we are studying. 
 * the `person` entity has a number of attributes to describe aspects of them, such as their name, age, dates of birth and death, gender and a URL to a picture of them (if one exists). Those attributes are all expressed as strings, except for the age, which is of datatype long.
@@ -198,7 +198,7 @@ commit
 
 ## Using the Grakn Visualiser
 
-You can open the [Grakn visualiser](../grakn-dashboard/visualiser.html) by navigating to [localhost:4567](http://localhost:4567) in your web browser. The visualiser allows you to make queries or simply browse the knowledge ontology within the knowledge base. The screenshot below shows a basic query (`match $x isa person; offset 0; limit 100;`) typed into the form at the top of the main pane, and visualised by pressing ">":
+You can open the [Grakn visualiser](../grakn-dashboard/visualiser.html) by navigating to [localhost:4567](http://localhost:4567) in your web browser. The visualiser allows you to make queries or simply browse the schema within the knowledge base. The screenshot below shows a basic query (`match $x isa person; offset 0; limit 100;`) typed into the form at the top of the main pane, and visualised by pressing ">":
 
 ![Person query](/images/match-$x-isa-person.png)
 
@@ -207,9 +207,9 @@ You can zoom the display in and out, and move the nodes around for better visibi
 
 ## Using Inference
 
-We will move on to discuss the use of GRAKN.AI to infer new information about a dataset. In the ontology, so far, we have dealt only with a person, not a man or woman, and the parentship relationships were simply between parent and child roles. We did not directly add information about the nature of the parent and child in each relationship - they could be father and son, father and daughter, mother and son or mother and daughter.
+We will move on to discuss the use of GRAKN.AI to infer new information about a dataset. In the schema, so far, we have dealt only with a person, not a man or woman, and the parentship relationships were simply between parent and child roles. We did not directly add information about the nature of the parent and child in each relationship - they could be father and son, father and daughter, mother and son or mother and daughter.
 
-However, the `person` entity does have a gender attribute, and we can use Grakn to infer more information about each relationship by using that property. The ontology accommodates the more specific roles of mother, father, daughter and son:
+However, the `person` entity does have a gender attribute, and we can use Grakn to infer more information about each relationship by using that property. The schema accommodates the more specific roles of mother, father, daughter and son:
 
 ```graql
 define
@@ -232,7 +232,7 @@ son sub child;
 daughter sub child;
 ```
 
-{% include note.html content="You don't need to reload the *basic-genealogy.gql* file into Grakn pick up these extra roles. We simply didn't show this part in our earlier discussion of the ontology, to keep things as simple as possible." %}
+{% include note.html content="You don't need to reload the *basic-genealogy.gql* file into Grakn pick up these extra roles. We simply didn't show this part in our earlier discussion of the schema, to keep things as simple as possible." %}
 
 Included in *basic-genealogy.gql* are a set of Graql rules to instruct Grakn's reasoner on how to label each parentship relationship:
 

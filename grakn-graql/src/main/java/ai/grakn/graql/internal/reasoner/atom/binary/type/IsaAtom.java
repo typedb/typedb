@@ -57,12 +57,12 @@ public class IsaAtom extends TypeAtom {
 
     @Override
     public boolean isAllowedToFormRuleHead(){
-        return getOntologyConcept() != null;
+        return getSchemaConcept() != null;
     }
 
     @Override
     public String toString(){
-        String typeString = (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") + "(" + getVarName() + ")";
+        String typeString = (getSchemaConcept() != null? getSchemaConcept().getLabel() : "") + "(" + getVarName() + ")";
         return typeString + getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
     }
 

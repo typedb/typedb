@@ -20,6 +20,7 @@ package ai.grakn.util;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
+import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.test.GraknTestSetup;
 import org.junit.Before;
 import org.junit.Test;
@@ -82,9 +83,9 @@ public class GraphLoaderTest {
         try(GraknTx graph = GraphLoader.empty().graph()){
             //String comparison is used here because we do not have the class available at compile time
             if(GraknTestSetup.usingTinker()){
-                assertEquals("ai.grakn.graph.internal.GraknTxTinker", graph.getClass().getName());
+                assertEquals(GraknTxTinker.class.getSimpleName(), graph.getClass().getSimpleName());
             } else if (GraknTestSetup.usingJanus()) {
-                assertEquals("ai.grakn.graph.internal.GraknTxJanus", graph.getClass().getName());
+                assertEquals("GraknTxJanus", graph.getClass().getSimpleName());
             } else {
                 throw new RuntimeException("Test run with unsupported graph backend");
             }

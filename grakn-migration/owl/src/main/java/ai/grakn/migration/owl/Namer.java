@@ -24,7 +24,7 @@ import org.semanticweb.owlapi.model.IRI;
 
 /**
  * <p>
- * A <code>Namer</code> provides functions to generate Grakn ontology names (IDs for
+ * A <code>Namer</code> provides functions to generate Grakn schema names (IDs for
  * types, relations, roles etc.) from OWL ontology elements. All methods have default
  * implementations.
  * </p>

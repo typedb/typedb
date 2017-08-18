@@ -845,8 +845,8 @@ public class AtomicTest {
         assertTrue(CollectionUtils.isEqualCollection(relationshipTypes, possibleTypes));
         assertTrue(CollectionUtils.isEqualCollection(relationshipTypes2, possibleTypes));
 
-        assertEquals(atom.getOntologyConcept(), null);
-        assertEquals(atom2.getOntologyConcept(), null);
+        assertEquals(atom.getSchemaConcept(), null);
+        assertEquals(atom2.getSchemaConcept(), null);
     }
 
     @Test
@@ -867,8 +867,8 @@ public class AtomicTest {
 
         assertEquals(relationshipTypes, possibleTypes);
         assertEquals(relationshipTypes2, possibleTypes);
-        assertEquals(atom.getOntologyConcept(), graph.getSchemaConcept(Label.of("relation1")));
-        assertEquals(atom2.getOntologyConcept(), graph.getSchemaConcept(Label.of("relation1")));
+        assertEquals(atom.getSchemaConcept(), graph.getSchemaConcept(Label.of("relation1")));
+        assertEquals(atom2.getSchemaConcept(), graph.getSchemaConcept(Label.of("relation1")));
     }
 
     @Test
@@ -886,7 +886,7 @@ public class AtomicTest {
 
         List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         assertTrue(CollectionUtils.isEqualCollection(relationshipTypes, possibleTypes));
-        assertEquals(atom.getOntologyConcept(), null);
+        assertEquals(atom.getSchemaConcept(), null);
     }
 
     @Test
@@ -902,7 +902,7 @@ public class AtomicTest {
         List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationshipTypes, possibleTypes);
-        assertEquals(atom.getOntologyConcept(), graph.getSchemaConcept(Label.of("relation3")));
+        assertEquals(atom.getSchemaConcept(), graph.getSchemaConcept(Label.of("relation3")));
     }
 
     @Test
@@ -925,8 +925,8 @@ public class AtomicTest {
         assertTrue(CollectionUtils.isEqualCollection(relationshipTypes, possibleTypes));
         assertTrue(CollectionUtils.isEqualCollection(relationshipTypes2, possibleTypes));
 
-        assertEquals(atom.getOntologyConcept(), null);
-        assertEquals(atom2.getOntologyConcept(), null);
+        assertEquals(atom.getSchemaConcept(), null);
+        assertEquals(atom2.getSchemaConcept(), null);
     }
 
     @Test
@@ -942,7 +942,7 @@ public class AtomicTest {
         List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationshipTypes, possibleTypes);
-        assertEquals(atom.getOntologyConcept(), graph.getSchemaConcept(Label.of("relation3")));
+        assertEquals(atom.getSchemaConcept(), graph.getSchemaConcept(Label.of("relation3")));
     }
 
     @Test
@@ -955,7 +955,7 @@ public class AtomicTest {
         List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertThat(relationshipTypes, empty());
-        assertEquals(atom.getOntologyConcept(), null);
+        assertEquals(atom.getSchemaConcept(), null);
     }
 
     @Test
@@ -968,7 +968,7 @@ public class AtomicTest {
         List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertThat(relationshipTypes, empty());
-        assertEquals(atom.getOntologyConcept(), null);
+        assertEquals(atom.getSchemaConcept(), null);
     }
 
     @Test
@@ -983,7 +983,7 @@ public class AtomicTest {
         );
         List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         assertEquals(relationshipTypes, possibleTypes);
-        assertEquals(atom.getOntologyConcept(), graph.getSchemaConcept(Label.of("relation1")));
+        assertEquals(atom.getSchemaConcept(), graph.getSchemaConcept(Label.of("relation1")));
     }
 
     @Test
@@ -999,7 +999,7 @@ public class AtomicTest {
         List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
 
         assertEquals(relationshipTypes, possibleTypes);
-        assertEquals(atom.getOntologyConcept(), graph.getSchemaConcept(Label.of("relation1")));
+        assertEquals(atom.getSchemaConcept(), graph.getSchemaConcept(Label.of("relation1")));
     }
 
     @Test
@@ -1015,7 +1015,7 @@ public class AtomicTest {
         );
         List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         assertEquals(relationshipTypes, possibleTypes);
-        assertEquals(atom.getOntologyConcept(), null);
+        assertEquals(atom.getSchemaConcept(), null);
     }
 
     @Test
@@ -1027,7 +1027,7 @@ public class AtomicTest {
 
         List<RelationshipType> relationshipTypes = atom.inferPossibleRelationTypes(new QueryAnswer());
         assertThat(relationshipTypes, empty());
-        assertEquals(atom.getOntologyConcept(), null);
+        assertEquals(atom.getSchemaConcept(), null);
     }
 
     @Test

@@ -85,7 +85,7 @@ public class AutocompleteTest {
     }
 
     @Test
-    public void whenAutocompletingAQuery_IncludeTypesInTheOntology() {
+    public void whenAutocompletingAQuery_IncludeTypesInTheSchema() {
         String queryString = "insert $x isa pro";
         Autocomplete autocomplete = Autocomplete.create(types, queryString, queryString.length());
         assertThat(autocomplete.getCandidates(), hasItem("production"));

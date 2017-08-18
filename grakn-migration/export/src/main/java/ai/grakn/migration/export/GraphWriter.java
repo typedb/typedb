@@ -43,10 +43,10 @@ public class GraphWriter {
     }
 
     /**
-     * Export the ontology of a Grakn graph as Graql string
-     * @return Graql insert query with ontology of given graph
+     * Export the schema of a Grakn graph as Graql string
+     * @return Graql insert query with schema of given graph
      */
-    public String dumpOntology(){
+    public String dumpSchema(){
         return join(types().map(SchemaConceptMapper::map));
     }
 

@@ -42,8 +42,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Load and verify the ontology from the test sample resources. 
- * 
+ * Load and verify the schema from the test sample resources.
+ *
  * @author borislav
  *
  */
@@ -51,7 +51,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
 
     @Ignore //TODO: Failing due to tighter temporary restrictions
     @Test
-    public void testShoppingOntology()  {       
+    public void testShoppingSchema()  {
         // Load
         try {
             OWLOntology O = loadOntologyFromResource("owl", "Shopping.owl");
@@ -79,7 +79,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
 
     @Ignore //TODO: Fix this test. Not sure why it is not working remotely
     @Test
-    public void testShakespeareOntology()   {       
+    public void testShakespeareSchema()   {
         // Load
         try {
             OWLOntology O = loadOntologyFromResource("owl", "shakespeare.owl");
@@ -123,7 +123,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
     }
     
     @Test
-    public void testProductOntology()   {
+    public void testProductSchema()   {
         // Load
         try {
             OWLOntology O = loadOntologyFromResource("owl", "Product.owl");
@@ -180,7 +180,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Entity item2 = getEntity("eItem2");
             Role subjectRole = graph.getSchemaConcept(migrator.namer().subjectRole(Label.of("op-related")));
             Role objectRole = graph.getSchemaConcept(migrator.namer().objectRole(Label.of("op-related")));
-            assertTrue(item2.relations(subjectRole).anyMatch(
+            assertTrue(item2.relationships(subjectRole).anyMatch(
                     relation -> item1.equals(relation.rolePlayers(objectRole).iterator().next())));
             Role catsubjectRole = graph.getSchemaConcept(migrator.namer().subjectRole(Label.of("op-hasCategory")));
             Role catobjectRole = graph.getSchemaConcept(migrator.namer().objectRole(Label.of("op-hasCategory")));
@@ -189,7 +189,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             //Assert.assertFalse(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("Thing")));
 
             Entity category2 = getEntity("eCategory2");
-            assertTrue(category2.relations(catobjectRole).anyMatch(
+            assertTrue(category2.relationships(catobjectRole).anyMatch(
                     relation -> item1.equals(relation.rolePlayers(catsubjectRole).iterator().next())));
             Entity category1 = getEntity("eCategory1");
             category1.attributes().forEach(System.out::println);
@@ -205,7 +205,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
 
     @Ignore //TODO: Fix this test. Not sure why it is not working remotely
     @Test
-    public void testFamilyOntology()   {
+    public void testFamilySchema()   {
         // Load
         try {
             OWLOntology O = loadOntologyFromResource("owl", "family.owl");

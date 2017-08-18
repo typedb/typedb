@@ -57,7 +57,7 @@ class OutIsaFragment extends AbstractFragment {
     }
 
     private GraphTraversal<Element, Vertex> edgeTraversal() {
-        return Fragments.traverseOntologyConceptFromEdge(Fragments.isEdge(__.identity()), RELATIONSHIP_TYPE_LABEL_ID);
+        return Fragments.traverseSchemaConceptFromEdge(Fragments.isEdge(__.identity()), RELATIONSHIP_TYPE_LABEL_ID);
     }
 
     @Override

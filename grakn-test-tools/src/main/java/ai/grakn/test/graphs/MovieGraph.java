@@ -63,7 +63,7 @@ public class MovieGraph extends TestGraph {
     }
 
     @Override
-    public void buildOntology(GraknTx graph) {
+    public void buildSchema(GraknTx graph) {
         work = graph.putRole("work");
         author = graph.putRole("author");
         authoredBy = graph.putRelationshipType("authored-by").relates(work).relates(author);
