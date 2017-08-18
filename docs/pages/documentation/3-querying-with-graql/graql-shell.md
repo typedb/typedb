@@ -81,6 +81,7 @@ While working in the shell, the following special commands can be used:
 | `license`    | Prints the license. |
 | `load <filename>` | Executes the given file containing a Graql query. |
 | `rollback`   | Rolls back the transaction, undoing everything that hasn't been committed. |
+| `clean`      | Cleans the entire keyspace, removing everything in the graph. |
 
 {% include tip.html content="Graql shell maintains a history of past commands with the 'up' and 'down' arrows. You can also autocomplete keywords, type and variable names using tab!" %}
 
