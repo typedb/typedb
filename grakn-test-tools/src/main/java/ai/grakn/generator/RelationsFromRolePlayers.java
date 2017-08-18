@@ -42,7 +42,7 @@ public class RelationsFromRolePlayers extends FromTxGenerator<Relationship> {
     }
 
     @Override
-    protected Relationship generateFromGraph() {
+    protected Relationship generateFromTx() {
         Stream<? extends Thing> things = ((Type) tx().admin().getMetaConcept()).instances();
 
         Optional<Relationship> relation = things.flatMap(thing -> thing.relationships()).findAny();
@@ -51,7 +51,7 @@ public class RelationsFromRolePlayers extends FromTxGenerator<Relationship> {
             return relation.get();
         } else {
             // Give up and fall back to normal generator
-            return genFromGraph(Relations.class).generate(random, status);
+            return genFromTx(Relations.class).generate(random, status);
         }
     }
 }

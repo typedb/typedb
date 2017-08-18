@@ -46,7 +46,7 @@ public class Labels extends FromTxGenerator<Label> {
     }
 
     @Override
-    public Label generateFromGraph() {
+    public Label generateFromTx() {
         if (mustBeUnused) {
             Label label;
 

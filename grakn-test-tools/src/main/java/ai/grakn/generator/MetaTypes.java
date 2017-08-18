@@ -37,7 +37,7 @@ public class MetaTypes extends FromTxGenerator<SchemaConcept> {
     }
 
     @Override
-    protected SchemaConcept generateFromGraph() {
+    protected SchemaConcept generateFromTx() {
         return tx().admin().getMetaConcept();
     }
 

@@ -314,17 +314,17 @@ public class GraknTxTest extends TxTestBase {
         GraknSession session = Grakn.session(Grakn.IN_MEMORY, keyspace);
 
         GraknTx graph = session.open(GraknTxType.READ);
-        failAtOpeningGraph(session, GraknTxType.WRITE, keyspace);
-        failAtOpeningGraph(session, GraknTxType.BATCH, keyspace);
+        failAtOpeningTx(session, GraknTxType.WRITE, keyspace);
+        failAtOpeningTx(session, GraknTxType.BATCH, keyspace);
         graph.close();
 
         //noinspection ResultOfMethodCallIgnored
         session.open(GraknTxType.BATCH);
-        failAtOpeningGraph(session, GraknTxType.WRITE, keyspace);
-        failAtOpeningGraph(session, GraknTxType.READ, keyspace);
+        failAtOpeningTx(session, GraknTxType.WRITE, keyspace);
+        failAtOpeningTx(session, GraknTxType.READ, keyspace);
     }
 
-    private void failAtOpeningGraph(GraknSession session, GraknTxType txType, String keyspace){
+    private void failAtOpeningTx(GraknSession session, GraknTxType txType, String keyspace){
         Exception exception = null;
         try{
             //noinspection ResultOfMethodCallIgnored

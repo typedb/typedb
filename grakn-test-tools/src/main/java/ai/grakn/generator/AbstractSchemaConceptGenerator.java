@@ -54,7 +54,7 @@ public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> ex
     }
 
     @Override
-    protected final T generateFromGraph() {
+    protected final T generateFromTx() {
         Collection<T> schemaConcepts;
 
         if (!includeNonMeta()) {
@@ -72,7 +72,7 @@ public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> ex
         }
 
         if (schemaConcepts.isEmpty() && includeNonMeta()) {
-            Label label = genFromGraph(Labels.class).mustBeUnused().generate(random, status);
+            Label label = genFromTx(Labels.class).mustBeUnused().generate(random, status);
             assert tx().getSchemaConcept(label) == null;
             return newSchemaConcept(label);
         } else {

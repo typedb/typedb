@@ -101,7 +101,7 @@ class GraqlSession {
 
         queryExecutor.execute(() -> {
             try {
-                refreshGraph();
+                refreshTx();
                 this.printer = getPrinter();
                 sendTypes();
                 sendEnd();
@@ -120,7 +120,7 @@ class GraqlSession {
         thread.start();
     }
 
-    private void refreshGraph() {
+    private void refreshTx() {
         if (tx != null && !tx.isClosed()) tx.close();
         tx = factory.open(GraknTxType.WRITE);
     }
@@ -279,7 +279,7 @@ class GraqlSession {
 
     private void attemptRefresh() {
         try {
-            refreshGraph();
+            refreshTx();
         } catch (Throwable e) {
             LOG.error("Error during refresh", e);
         }

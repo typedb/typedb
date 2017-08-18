@@ -56,12 +56,12 @@ public abstract class FromTxGenerator<T> extends AbstractGenerator<T> {
     @Override
     protected final T generate() {
         tx = txSupplier.get();
-        return generateFromGraph();
+        return generateFromTx();
     }
 
-    protected abstract T generateFromGraph();
+    protected abstract T generateFromTx();
 
-    protected final <S extends FromTxGenerator<?>> S genFromGraph(Class<S> generatorClass) {
+    protected final <S extends FromTxGenerator<?>> S genFromTx(Class<S> generatorClass) {
         S generator = gen().make(generatorClass);
         generator.fromTx(this::tx);
         return generator;
@@ -71,8 +71,8 @@ public abstract class FromTxGenerator<T> extends AbstractGenerator<T> {
         fromLastGeneratedTx();
     }
 
-    final FromTxGenerator<T> fromTx(Supplier<GraknTx> graphSupplier) {
-        this.txSupplier = graphSupplier;
+    final FromTxGenerator<T> fromTx(Supplier<GraknTx> txSupplier) {
+        this.txSupplier = txSupplier;
         return this;
     }
 
