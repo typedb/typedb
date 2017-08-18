@@ -63,44 +63,44 @@ public class MovieKB extends TestKB {
     }
 
     @Override
-    public void buildSchema(GraknTx graph) {
-        work = graph.putRole("work");
-        author = graph.putRole("author");
-        authoredBy = graph.putRelationshipType("authored-by").relates(work).relates(author);
+    public void buildSchema(GraknTx tx) {
+        work = tx.putRole("work");
+        author = tx.putRole("author");
+        authoredBy = tx.putRelationshipType("authored-by").relates(work).relates(author);
 
-        productionBeingDirected = graph.putRole("production-being-directed").sup(work);
-        director = graph.putRole("director").sup(author);
-        directedBy = graph.putRelationshipType("directed-by").sup(authoredBy)
+        productionBeingDirected = tx.putRole("production-being-directed").sup(work);
+        director = tx.putRole("director").sup(author);
+        directedBy = tx.putRelationshipType("directed-by").sup(authoredBy)
                 .relates(productionBeingDirected).relates(director);
 
-        productionWithCast = graph.putRole("production-with-cast");
-        actor = graph.putRole("actor");
-        characterBeingPlayed = graph.putRole("character-being-played");
-        hasCast = graph.putRelationshipType("has-cast")
+        productionWithCast = tx.putRole("production-with-cast");
+        actor = tx.putRole("actor");
+        characterBeingPlayed = tx.putRole("character-being-played");
+        hasCast = tx.putRelationshipType("has-cast")
                 .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
 
-        genreOfProduction = graph.putRole("genre-of-production");
-        productionWithGenre = graph.putRole("production-with-genre");
-        hasGenre = graph.putRelationshipType("has-genre")
+        genreOfProduction = tx.putRole("genre-of-production");
+        productionWithGenre = tx.putRole("production-with-genre");
+        hasGenre = tx.putRelationshipType("has-genre")
                 .relates(genreOfProduction).relates(productionWithGenre);
 
-        clusterOfProduction = graph.putRole("cluster-of-production");
-        productionWithCluster = graph.putRole("production-with-cluster");
-        hasCluster = graph.putRelationshipType("has-cluster")
+        clusterOfProduction = tx.putRole("cluster-of-production");
+        productionWithCluster = tx.putRole("production-with-cluster");
+        hasCluster = tx.putRelationshipType("has-cluster")
                 .relates(clusterOfProduction).relates(productionWithCluster);
 
-        title = graph.putAttributeType("title", AttributeType.DataType.STRING);
+        title = tx.putAttributeType("title", AttributeType.DataType.STRING);
         title.attribute(title);
 
-        tmdbVoteCount = graph.putAttributeType("tmdb-vote-count", AttributeType.DataType.LONG);
-        tmdbVoteAverage = graph.putAttributeType("tmdb-vote-average", AttributeType.DataType.DOUBLE);
-        releaseDate = graph.putAttributeType("release-date", AttributeType.DataType.DATE);
-        runtime = graph.putAttributeType("runtime", AttributeType.DataType.LONG);
-        gender = graph.putAttributeType("gender", AttributeType.DataType.STRING).setRegex("(fe)?male");
-        realName = graph.putAttributeType("real-name", AttributeType.DataType.STRING);
-        name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+        tmdbVoteCount = tx.putAttributeType("tmdb-vote-count", AttributeType.DataType.LONG);
+        tmdbVoteAverage = tx.putAttributeType("tmdb-vote-average", AttributeType.DataType.DOUBLE);
+        releaseDate = tx.putAttributeType("release-date", AttributeType.DataType.DATE);
+        runtime = tx.putAttributeType("runtime", AttributeType.DataType.LONG);
+        gender = tx.putAttributeType("gender", AttributeType.DataType.STRING).setRegex("(fe)?male");
+        realName = tx.putAttributeType("real-name", AttributeType.DataType.STRING);
+        name = tx.putAttributeType("name", AttributeType.DataType.STRING);
 
-        production = graph.putEntityType("production")
+        production = tx.putEntityType("production")
                 .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast)
                 .plays(productionWithGenre);
 
@@ -110,36 +110,36 @@ public class MovieKB extends TestKB {
         production.attribute(releaseDate);
         production.attribute(runtime);
 
-        movie = graph.putEntityType("movie").sup(production);
+        movie = tx.putEntityType("movie").sup(production);
 
-        graph.putEntityType("tv-show").sup(production);
+        tx.putEntityType("tv-show").sup(production);
 
-        person = graph.putEntityType("person")
+        person = tx.putEntityType("person")
                 .plays(director).plays(actor).plays(characterBeingPlayed);
 
         person.attribute(gender);
         person.attribute(name);
         person.attribute(realName);
 
-        genre = graph.putEntityType("genre").plays(genreOfProduction);
+        genre = tx.putEntityType("genre").plays(genreOfProduction);
         genre.key(name);
 
-        character = graph.putEntityType("character")
+        character = tx.putEntityType("character")
                 .plays(characterBeingPlayed);
 
         character.attribute(name);
 
-        graph.putEntityType("award");
-        language = graph.putEntityType("language");
+        tx.putEntityType("award");
+        language = tx.putEntityType("language");
 
         language.attribute(name);
 
-        cluster = graph.putEntityType("cluster").plays(clusterOfProduction);
+        cluster = tx.putEntityType("cluster").plays(clusterOfProduction);
         cluster.attribute(name);
     }
 
     @Override
-    protected void buildInstances(GraknTx graph) {
+    protected void buildInstances(GraknTx tx) {
         godfather = movie.addEntity();
         putResource(godfather, title, "Godfather");
         putResource(godfather, tmdbVoteCount, 1000L);
@@ -242,7 +242,7 @@ public class MovieKB extends TestKB {
     }
 
     @Override
-    protected void buildRelations(GraknTx graph) {
+    protected void buildRelations(GraknTx tx) {
         directedBy.addRelationship()
                 .addRolePlayer(productionBeingDirected, chineseCoffee)
                 .addRolePlayer(director, alPacino);
@@ -284,20 +284,20 @@ public class MovieKB extends TestKB {
     }
 
     @Override
-    protected void buildRules(GraknTx graph) {
+    protected void buildRules(GraknTx tx) {
         // These rules are totally made up for testing purposes and don't work!
-        aRuleType = graph.putRuleType("a-rule-type");
+        aRuleType = tx.putRuleType("a-rule-type");
         aRuleType.attribute(name);
 
-        Pattern when = graph.graql().parsePattern("$x plays actor");
-        Pattern then = graph.graql().parsePattern("$x isa person");
+        Pattern when = tx.graql().parsePattern("$x plays actor");
+        Pattern then = tx.graql().parsePattern("$x isa person");
 
         Rule expectation = aRuleType.putRule(when, then);
 
         putResource(expectation, name, "expectation-rule");
 
-        when = graph.graql().parsePattern("$x has name 'materialize-when'");
-        then = graph.graql().parsePattern("$x has name 'materialize-then'");
+        when = tx.graql().parsePattern("$x has name 'materialize-when'");
+        then = tx.graql().parsePattern("$x has name 'materialize-then'");
         Rule materialize = aRuleType.putRule(when, then);
 
         putResource(materialize, name, "materialize-rule");

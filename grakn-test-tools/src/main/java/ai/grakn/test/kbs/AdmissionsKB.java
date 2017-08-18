@@ -55,23 +55,23 @@ public class AdmissionsKB extends TestKB {
     }
 
     @Override
-    protected void buildSchema(GraknTx graph) {
-        key = graph.putAttributeType("name", AttributeType.DataType.STRING);
+    protected void buildSchema(GraknTx tx) {
+        key = tx.putAttributeType("name", AttributeType.DataType.STRING);
 
-        TOEFL = graph.putAttributeType("TOEFL", AttributeType.DataType.LONG);
-        GRE = graph.putAttributeType("GRE", AttributeType.DataType.LONG);
-        vGRE = graph.putAttributeType("vGRE", AttributeType.DataType.LONG);
-        GPR = graph.putAttributeType("GPR", AttributeType.DataType.DOUBLE);
-        specialHonours = graph.putAttributeType("specialHonours", AttributeType.DataType.STRING);
-        considerGPR = graph.putAttributeType("considerGPR", AttributeType.DataType.STRING);
-        transcript = graph.putAttributeType("transcript", AttributeType.DataType.STRING);
-        priorGraduateWork = graph.putAttributeType("priorGraduateWork", AttributeType.DataType.STRING);
-        languageRequirement= graph.putAttributeType("languageRequirement", AttributeType.DataType.STRING);
-        degreeOrigin = graph.putAttributeType("degreeOrigin", AttributeType.DataType.STRING);
-        admissionStatus = graph.putAttributeType("admissionStatus", AttributeType.DataType.STRING);
-        decisionType = graph.putAttributeType("decisionType", AttributeType.DataType.STRING);
+        TOEFL = tx.putAttributeType("TOEFL", AttributeType.DataType.LONG);
+        GRE = tx.putAttributeType("GRE", AttributeType.DataType.LONG);
+        vGRE = tx.putAttributeType("vGRE", AttributeType.DataType.LONG);
+        GPR = tx.putAttributeType("GPR", AttributeType.DataType.DOUBLE);
+        specialHonours = tx.putAttributeType("specialHonours", AttributeType.DataType.STRING);
+        considerGPR = tx.putAttributeType("considerGPR", AttributeType.DataType.STRING);
+        transcript = tx.putAttributeType("transcript", AttributeType.DataType.STRING);
+        priorGraduateWork = tx.putAttributeType("priorGraduateWork", AttributeType.DataType.STRING);
+        languageRequirement= tx.putAttributeType("languageRequirement", AttributeType.DataType.STRING);
+        degreeOrigin = tx.putAttributeType("degreeOrigin", AttributeType.DataType.STRING);
+        admissionStatus = tx.putAttributeType("admissionStatus", AttributeType.DataType.STRING);
+        decisionType = tx.putAttributeType("decisionType", AttributeType.DataType.STRING);
 
-        applicant = graph.putEntityType("applicant");
+        applicant = tx.putEntityType("applicant");
         applicant.attribute(TOEFL);
         applicant.attribute(GRE);
         applicant.attribute(vGRE);
@@ -88,13 +88,13 @@ public class AdmissionsKB extends TestKB {
     }
 
     @Override
-    protected void buildInstances(GraknTx graph) {
-        Thing Alice = putEntity(graph, "Alice", applicant, key.getLabel());
-        Thing Bob = putEntity(graph, "Bob", applicant, key.getLabel());
-        Thing Charlie = putEntity(graph, "Charlie", applicant, key.getLabel());
-        Thing Denis = putEntity(graph, "Denis", applicant, key.getLabel());
-        Thing Eva = putEntity(graph, "Eva", applicant, key.getLabel());
-        Thing Frank = putEntity(graph, "Frank", applicant, key.getLabel());
+    protected void buildInstances(GraknTx tx) {
+        Thing Alice = putEntity(tx, "Alice", applicant, key.getLabel());
+        Thing Bob = putEntity(tx, "Bob", applicant, key.getLabel());
+        Thing Charlie = putEntity(tx, "Charlie", applicant, key.getLabel());
+        Thing Denis = putEntity(tx, "Denis", applicant, key.getLabel());
+        Thing Eva = putEntity(tx, "Eva", applicant, key.getLabel());
+        Thing Frank = putEntity(tx, "Frank", applicant, key.getLabel());
 
         putResource(Alice, TOEFL, 470L);
         putResource(Alice, degreeOrigin, "nonUS");
@@ -135,12 +135,12 @@ public class AdmissionsKB extends TestKB {
     }
 
     @Override
-    protected void buildRelations(GraknTx graph) {
+    protected void buildRelations(GraknTx tx) {
 
     }
 
     @Override
-    protected void buildRules(GraknTx graph) {
-        SampleKBContext.loadFromFile(graph, "admission-rules.gql");
+    protected void buildRules(GraknTx tx) {
+        SampleKBContext.loadFromFile(tx, "admission-rules.gql");
     }
 }

@@ -76,8 +76,8 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public DeleteQuery withGraph(GraknTx graph) {
-        return Queries.delete(deleters, matchQuery.withGraph(graph));
+    public DeleteQuery withTx(GraknTx tx) {
+        return Queries.delete(deleters, matchQuery.withTx(tx));
     }
 
     @Override
@@ -115,7 +115,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     private GraknTx getGraph() {
-        return matchQuery.getGraph().orElseThrow(GraqlQueryException::noGraph);
+        return matchQuery.tx().orElseThrow(GraqlQueryException::noTx);
     }
 
     @Override

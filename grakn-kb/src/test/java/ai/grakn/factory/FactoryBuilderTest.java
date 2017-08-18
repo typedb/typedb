@@ -50,7 +50,7 @@ public class FactoryBuilderTest {
         try (InputStream in = new FileInputStream(TEST_CONFIG)){
             TEST_PROPERTIES.load(in);
         } catch (IOException e) {
-            throw GraknTxOperationException.invalidGraphConfig(TEST_CONFIG);
+            throw GraknTxOperationException.invalidConfig(TEST_CONFIG);
         }
     }
 

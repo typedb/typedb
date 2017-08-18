@@ -57,73 +57,73 @@ public class GeoKB extends TestKB {
     }
 
     @Override
-    public void buildSchema(GraknTx graph) {
-        key = graph.putAttributeType("name", AttributeType.DataType.STRING);
+    public void buildSchema(GraknTx tx) {
+        key = tx.putAttributeType("name", AttributeType.DataType.STRING);
 
-        geoEntity = graph.putRole("geo-entity");
-        entityLocation = graph.putRole("entity-location");
-        isLocatedIn = graph.putRelationshipType("is-located-in")
+        geoEntity = tx.putRole("geo-entity");
+        entityLocation = tx.putRole("entity-location");
+        isLocatedIn = tx.putRelationshipType("is-located-in")
                 .relates(geoEntity).relates(entityLocation);
 
-        geographicalObject = graph.putEntityType("geoObject")
+        geographicalObject = tx.putEntityType("geoObject")
                 .plays(geoEntity)
                 .plays(entityLocation);
         geographicalObject.attribute(key);
 
-        continent = graph.putEntityType("continent")
+        continent = tx.putEntityType("continent")
                 .sup(geographicalObject)
                 .plays(entityLocation);
-        country = graph.putEntityType("country")
-                .sup(geographicalObject)
-                .plays(geoEntity)
-                .plays(entityLocation);
-        region = graph.putEntityType("region")
+        country = tx.putEntityType("country")
                 .sup(geographicalObject)
                 .plays(geoEntity)
                 .plays(entityLocation);
-        city = graph.putEntityType("city")
+        region = tx.putEntityType("region")
                 .sup(geographicalObject)
                 .plays(geoEntity)
                 .plays(entityLocation);
-        university = graph.putEntityType("university")
+        city = tx.putEntityType("city")
+                .sup(geographicalObject)
+                .plays(geoEntity)
+                .plays(entityLocation);
+        university = tx.putEntityType("university")
                         .plays(geoEntity);
         university.attribute(key);
     }
 
     @Override
-    public void buildInstances(GraknTx graph) {
-        Europe = putEntity(graph, "Europe", continent, key.getLabel());
+    public void buildInstances(GraknTx tx) {
+        Europe = putEntity(tx, "Europe", continent, key.getLabel());
 
-        Poland = putEntity(graph, "Poland", country, key.getLabel());
-        Masovia = putEntity(graph, "Masovia", region, key.getLabel());
-        Silesia = putEntity(graph, "Silesia", region, key.getLabel());
-        Warsaw = putEntity(graph, "Warsaw", city, key.getLabel());
-        Wroclaw = putEntity(graph, "Wroclaw", city, key.getLabel());
-        UW = putEntity(graph, "University-of-Warsaw", university, key.getLabel());
-        PW = putEntity(graph, "Warsaw-Polytechnics", university, key.getLabel());
+        Poland = putEntity(tx, "Poland", country, key.getLabel());
+        Masovia = putEntity(tx, "Masovia", region, key.getLabel());
+        Silesia = putEntity(tx, "Silesia", region, key.getLabel());
+        Warsaw = putEntity(tx, "Warsaw", city, key.getLabel());
+        Wroclaw = putEntity(tx, "Wroclaw", city, key.getLabel());
+        UW = putEntity(tx, "University-of-Warsaw", university, key.getLabel());
+        PW = putEntity(tx, "Warsaw-Polytechnics", university, key.getLabel());
 
-        England = putEntity(graph, "England", country, key.getLabel());
-        GreaterLondon = putEntity(graph, "GreaterLondon", region, key.getLabel());
-        London = putEntity(graph, "London", city, key.getLabel());
-        Imperial = putEntity(graph, "Imperial College London", university, key.getLabel());
-        UCL = putEntity(graph, "University College London", university, key.getLabel());
+        England = putEntity(tx, "England", country, key.getLabel());
+        GreaterLondon = putEntity(tx, "GreaterLondon", region, key.getLabel());
+        London = putEntity(tx, "London", city, key.getLabel());
+        Imperial = putEntity(tx, "Imperial College London", university, key.getLabel());
+        UCL = putEntity(tx, "University College London", university, key.getLabel());
 
-        Germany = putEntity(graph, "Germany", country, key.getLabel());
-        Bavaria = putEntity(graph, "Bavaria", region, key.getLabel());
-        Munich = putEntity(graph, "Munich", city, key.getLabel());
-        putEntity(graph, "University of Munich", university, key.getLabel());
+        Germany = putEntity(tx, "Germany", country, key.getLabel());
+        Bavaria = putEntity(tx, "Bavaria", region, key.getLabel());
+        Munich = putEntity(tx, "Munich", city, key.getLabel());
+        putEntity(tx, "University of Munich", university, key.getLabel());
 
-        France = putEntity(graph, "France", country, key.getLabel());
-        IleDeFrance = putEntity(graph, "IleDeFrance", region, key.getLabel());
-        Paris = putEntity(graph, "Paris", city, key.getLabel());
+        France = putEntity(tx, "France", country, key.getLabel());
+        IleDeFrance = putEntity(tx, "IleDeFrance", region, key.getLabel());
+        Paris = putEntity(tx, "Paris", city, key.getLabel());
 
-        Italy = putEntity(graph, "Italy", country, key.getLabel());
-        Lombardy = putEntity(graph, "Lombardy", region, key.getLabel());
-        Milan = putEntity(graph, "Milan", city, key.getLabel());
+        Italy = putEntity(tx, "Italy", country, key.getLabel());
+        Lombardy = putEntity(tx, "Lombardy", region, key.getLabel());
+        Milan = putEntity(tx, "Milan", city, key.getLabel());
     }
 
     @Override
-    public void buildRelations(GraknTx graph) {
+    public void buildRelations(GraknTx tx) {
         isLocatedIn.addRelationship()
                 .addRolePlayer(geoEntity, Poland)
                 .addRolePlayer(entityLocation, Europe);
@@ -199,12 +199,12 @@ public class GeoKB extends TestKB {
     }
 
     @Override
-    public void buildRules(GraknTx graph) {
-        RuleType inferenceRule = graph.admin().getMetaRuleInference();
-        Pattern transitivity_LHS = graph.graql().parsePattern(
+    public void buildRules(GraknTx tx) {
+        RuleType inferenceRule = tx.admin().getMetaRuleInference();
+        Pattern transitivity_LHS = tx.graql().parsePattern(
                 "{(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;}");
-        Pattern transitivity_RHS = graph.graql().parsePattern("{(geo-entity: $x, entity-location: $z) isa is-located-in;}");
+        Pattern transitivity_RHS = tx.graql().parsePattern("{(geo-entity: $x, entity-location: $z) isa is-located-in;}");
         inferenceRule.putRule(transitivity_LHS, transitivity_RHS);
     }
 }

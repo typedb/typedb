@@ -38,15 +38,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class GraknTxTinkerTest extends KBTestBase {
+public class GraknTxTinkerTest extends TxTestBase {
 
     @Test
     public void whenAddingMultipleConceptToTinkerGraph_EnsureGraphIsMutatedDirectlyNotViaTransaction() throws ExecutionException, InterruptedException {
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
-        graknGraph.putEntityType("Thing");
-        graknGraph.commit();
+        tx.putEntityType("Thing");
+        tx.commit();
 
         for(int i = 0; i < 20; i ++){
             futures.add(pool.submit(this::addRandomEntity));
@@ -56,11 +56,11 @@ public class GraknTxTinkerTest extends KBTestBase {
             future.get();
         }
 
-        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
-        assertEquals(20, graknGraph.getEntityType("Thing").instances().count());
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        assertEquals(20, tx.getEntityType("Thing").instances().count());
     }
     private synchronized void addRandomEntity(){
-        try(GraknTx graph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE)){
+        try(GraknTx graph = Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE)){
             graph.getEntityType("Thing").addEntity();
             graph.commit();
         }
@@ -68,13 +68,13 @@ public class GraknTxTinkerTest extends KBTestBase {
 
     @Test
     public void whenClearingGraph_EnsureGraphIsClosedAndRealodedWhenNextOpening(){
-        graknGraph.putEntityType("entity type");
-        assertNotNull(graknGraph.getEntityType("entity type"));
-        graknGraph.admin().delete();
-        assertTrue(graknGraph.isClosed());
-        graknGraph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
-        assertNull(graknGraph.getEntityType("entity type"));
-        assertNotNull(graknGraph.getMetaEntityType());
+        tx.putEntityType("entity type");
+        assertNotNull(tx.getEntityType("entity type"));
+        tx.admin().delete();
+        assertTrue(tx.isClosed());
+        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
+        assertNull(tx.getEntityType("entity type"));
+        assertNotNull(tx.getMetaEntityType());
     }
 
     @Test

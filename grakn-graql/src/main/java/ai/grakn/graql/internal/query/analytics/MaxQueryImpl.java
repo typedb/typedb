@@ -87,8 +87,8 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MaxQuery withGraph(GraknTx graph) {
-        return (MaxQuery) super.withGraph(graph);
+    public MaxQuery withTx(GraknTx tx) {
+        return (MaxQuery) super.withTx(tx);
     }
 
     @Override

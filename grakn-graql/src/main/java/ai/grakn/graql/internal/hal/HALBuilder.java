@@ -76,7 +76,7 @@ public class HALBuilder {
     }
 
     public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Answer> results, int offset, int limit, boolean filterInstances) {
-        String keyspace = matchQuery.admin().getGraph().get().getKeyspace();
+        String keyspace = matchQuery.admin().tx().get().getKeyspace();
 
         //For each VarPatterAdmin containing a relation we store a map containing varNames associated to RoleTypes
         Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();

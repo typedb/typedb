@@ -146,7 +146,7 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
      * @param value The new value of the unique property
      */
     public void propertyUnique(P key, String value){
-        if(!graph().isBatchGraph()) {
+        if(!graph().isBatchTx()) {
             GraphTraversal<Vertex, Vertex> traversal = graph().getTinkerTraversal().V().has(key.name(), value);
             if(traversal.hasNext()) throw PropertyNotUniqueException.cannotChangeProperty(element(), traversal.next(), key, value);
         }

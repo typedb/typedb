@@ -45,21 +45,21 @@ public abstract class AbstractPathKB extends TestKB {
         this.m = m;
     }
 
-    protected void buildExtensionalDB(GraknTx graph, int n, int children) {
+    protected void buildExtensionalDB(GraknTx tx, int n, int children) {
         long startTime = System.currentTimeMillis();
 
-        EntityType vertex = graph.getEntityType("vertex");
-        EntityType startVertex = graph.getEntityType("start-vertex");
-        Role arcFrom = graph.getRole("arc-from");
-        Role arcTo = graph.getRole("arc-to");
+        EntityType vertex = tx.getEntityType("vertex");
+        EntityType startVertex = tx.getEntityType("start-vertex");
+        Role arcFrom = tx.getRole("arc-from");
+        Role arcTo = tx.getRole("arc-to");
 
-        RelationshipType arc = graph.getRelationshipType("arc");
-        putEntity(graph, "a0", startVertex, key);
+        RelationshipType arc = tx.getRelationshipType("arc");
+        putEntity(tx, "a0", startVertex, key);
 
         for(int i = 1 ; i <= n ;i++) {
             int m = IntMath.pow(children, i);
             for (int j = 0; j < m; j++) {
-                putEntity(graph, "a" + i + "," + j, vertex, key);
+                putEntity(tx, "a" + i + "," + j, vertex, key);
                 if (j != 0 && j % 100 ==0) {
                     System.out.println(j + " entities out of " + m + " inserted");
                 }
@@ -68,8 +68,8 @@ public abstract class AbstractPathKB extends TestKB {
 
         for (int j = 0; j < children; j++) {
             arc.addRelationship()
-                    .addRolePlayer(arcFrom, getInstance(graph, "a0"))
-                    .addRolePlayer(arcTo, getInstance(graph, "a1," + j));
+                    .addRolePlayer(arcFrom, getInstance(tx, "a0"))
+                    .addRolePlayer(arcTo, getInstance(tx, "a1," + j));
         }
 
         for(int i = 1 ; i < n ;i++) {
@@ -77,8 +77,8 @@ public abstract class AbstractPathKB extends TestKB {
             for (int j = 0; j < m; j++) {
                 for (int c = 0; c < children; c++) {
                     arc.addRelationship()
-                            .addRolePlayer(arcFrom, getInstance(graph, "a" + i + "," + j))
-                            .addRolePlayer(arcTo, getInstance(graph, "a" + (i + 1) + "," + (j * children + c)));
+                            .addRolePlayer(arcFrom, getInstance(tx, "a" + i + "," + j))
+                            .addRolePlayer(arcTo, getInstance(tx, "a" + (i + 1) + "," + (j * children + c)));
 
                 }
                 if (j!= 0 && j % 100 == 0) {
@@ -93,9 +93,9 @@ public abstract class AbstractPathKB extends TestKB {
 
     @Override
     public Consumer<GraknTx> build(){
-        return (GraknTx graph) -> {
-            SampleKBContext.loadFromFile(graph, gqlFile);
-            buildExtensionalDB(graph, n, m);
+        return (GraknTx tx) -> {
+            SampleKBContext.loadFromFile(tx, gqlFile);
+            buildExtensionalDB(tx, n, m);
         };
     }
 }

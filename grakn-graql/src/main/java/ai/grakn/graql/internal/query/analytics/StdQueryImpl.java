@@ -94,8 +94,8 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
     }
 
     @Override
-    public StdQuery withGraph(GraknTx graph) {
-        return (StdQuery) super.withGraph(graph);
+    public StdQuery withTx(GraknTx tx) {
+        return (StdQuery) super.withTx(tx);
     }
 
     @Override

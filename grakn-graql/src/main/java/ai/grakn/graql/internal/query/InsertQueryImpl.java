@@ -81,11 +81,11 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public InsertQuery withGraph(GraknTx graph) {
+    public InsertQuery withTx(GraknTx tx) {
         return matchQuery.map(
-                m -> Queries.insert(vars, m.withGraph(graph).admin())
+                m -> Queries.insert(vars, m.withTx(tx).admin())
         ).orElseGet(
-                () -> new InsertQueryImpl(vars, Optional.empty(), Optional.of(graph))
+                () -> new InsertQueryImpl(vars, Optional.empty(), Optional.of(tx))
         );
     }
 
@@ -106,7 +106,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Stream<Answer> stream() {
-        GraknTx theGraph = getTx().orElseThrow(GraqlQueryException::noGraph);
+        GraknTx theGraph = getTx().orElseThrow(GraqlQueryException::noTx);
 
         return matchQuery.map(
                 query -> query.stream().map(answer -> InsertQueryExecutor.insertAll(vars, theGraph, answer))
@@ -127,7 +127,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Set<SchemaConcept> getSchemaConcepts() {
-        GraknTx theGraph = getTx().orElseThrow(GraqlQueryException::noGraph);
+        GraknTx theGraph = getTx().orElseThrow(GraqlQueryException::noTx);
 
         Set<SchemaConcept> types = vars.stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
@@ -148,7 +148,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Optional<GraknTx> getTx() {
-        return matchQuery.map(MatchQueryAdmin::getGraph).orElse(tx);
+        return matchQuery.map(MatchQueryAdmin::tx).orElse(tx);
     }
 
     @Override

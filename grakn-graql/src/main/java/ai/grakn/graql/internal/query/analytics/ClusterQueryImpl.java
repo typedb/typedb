@@ -136,8 +136,8 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     }
 
     @Override
-    public ClusterQuery<T> withGraph(GraknTx graph) {
-        return (ClusterQuery<T>) super.withGraph(graph);
+    public ClusterQuery<T> withTx(GraknTx tx) {
+        return (ClusterQuery<T>) super.withTx(tx);
     }
 
     @Override

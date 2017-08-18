@@ -85,12 +85,12 @@ public class OWLMigrator {
         return this.ontology;
     }
     
-    public OWLMigrator graph(GraknTx graph) {
+    public OWLMigrator tx(GraknTx graph) {
         this.tx = graph;
         return this;
     }
     
-    public GraknTx graph() {
+    public GraknTx tx() {
         return tx;
     }
     

@@ -61,56 +61,56 @@ public class CWKB extends TestKB {
     }
 
     @Override
-    protected void buildSchema(GraknTx graph) {
-        key = graph.putAttributeType("name", AttributeType.DataType.STRING);
+    protected void buildSchema(GraknTx tx) {
+        key = tx.putAttributeType("name", AttributeType.DataType.STRING);
 
         //Resources
-        nationality = graph.putAttributeType("nationality", AttributeType.DataType.STRING);
-        propulsion = graph.putAttributeType("propulsion", AttributeType.DataType.STRING);
-        alignment = graph.putAttributeType("alignment", AttributeType.DataType.STRING);
+        nationality = tx.putAttributeType("nationality", AttributeType.DataType.STRING);
+        propulsion = tx.putAttributeType("propulsion", AttributeType.DataType.STRING);
+        alignment = tx.putAttributeType("alignment", AttributeType.DataType.STRING);
 
         //Roles
-        owner = graph.putRole("item-owner");
-        ownedItem = graph.putRole("owned-item");
-        seller = graph.putRole("seller");
-        buyer = graph.putRole("buyer");
-        payee = graph.putRole("payee");
-        payer = graph.putRole("payer");
-        enemySource = graph.putRole("enemy-source");
-        enemyTarget = graph.putRole("enemy-target");
-        transactionItem = graph.putRole("transaction-item");
+        owner = tx.putRole("item-owner");
+        ownedItem = tx.putRole("owned-item");
+        seller = tx.putRole("seller");
+        buyer = tx.putRole("buyer");
+        payee = tx.putRole("payee");
+        payer = tx.putRole("payer");
+        enemySource = tx.putRole("enemy-source");
+        enemyTarget = tx.putRole("enemy-target");
+        transactionItem = tx.putRole("transaction-item");
 
         //Entitites
-        person = graph.putEntityType("person")
+        person = tx.putEntityType("person")
                 .plays(seller)
                 .plays(payee)
                 .attribute(key)
                 .attribute(nationality);
 
-        graph.putEntityType("criminal")
+        tx.putEntityType("criminal")
                 .plays(seller)
                 .plays(payee)
                 .attribute(key)
                 .attribute(nationality);
 
-        weapon = graph.putEntityType("weapon")
+        weapon = tx.putEntityType("weapon")
                 .plays(transactionItem)
                 .plays(ownedItem)
                 .attribute(key);
 
-        rocket = graph.putEntityType("rocket")
+        rocket = tx.putEntityType("rocket")
                 .plays(transactionItem)
                 .plays(ownedItem)
                 .attribute(key)
                 .attribute(propulsion);
 
-        graph.putEntityType("missile")
+        tx.putEntityType("missile")
                 .sup(weapon)
                 .plays(transactionItem)
                 .attribute(propulsion)
                 .attribute(key);
 
-        country = graph.putEntityType("country")
+        country = tx.putEntityType("country")
                 .plays(buyer)
                 .plays(owner)
                 .plays(enemyTarget)
@@ -120,37 +120,37 @@ public class CWKB extends TestKB {
                 .attribute(alignment);
 
         //Relations
-        owns = graph.putRelationshipType("owns")
+        owns = tx.putRelationshipType("owns")
                 .relates(owner)
                 .relates(ownedItem);
 
-        isEnemyOf = graph.putRelationshipType("is-enemy-of")
+        isEnemyOf = tx.putRelationshipType("is-enemy-of")
                 .relates(enemySource)
                 .relates(enemyTarget);
 
-        graph.putRelationshipType("transaction")
+        tx.putRelationshipType("transaction")
                 .relates(seller)
                 .relates(buyer)
                 .relates(transactionItem);
 
-        isPaidBy = graph.putRelationshipType("is-paid-by")
+        isPaidBy = tx.putRelationshipType("is-paid-by")
                 .relates(payee)
                 .relates(payer);
     }
 
     @Override
-    protected void buildInstances(GraknTx graph) {
-        colonelWest =  putEntity(graph, "colonelWest", person, key.getLabel());
-        Nono =  putEntity(graph, "Nono", country, key.getLabel());
-        America =  putEntity(graph, "America", country, key.getLabel());
-        Tomahawk =  putEntity(graph, "Tomahawk", rocket, key.getLabel());
+    protected void buildInstances(GraknTx tx) {
+        colonelWest =  putEntity(tx, "colonelWest", person, key.getLabel());
+        Nono =  putEntity(tx, "Nono", country, key.getLabel());
+        America =  putEntity(tx, "America", country, key.getLabel());
+        Tomahawk =  putEntity(tx, "Tomahawk", rocket, key.getLabel());
 
         putResource(colonelWest, nationality, "American");
         putResource(Tomahawk, propulsion, "gsp");
     }
 
     @Override
-    protected void buildRelations(GraknTx graph) {
+    protected void buildRelations(GraknTx tx) {
         //Enemy(Nono, America)
         isEnemyOf.addRelationship()
                 .addRolePlayer(enemySource, Nono)
@@ -168,44 +168,44 @@ public class CWKB extends TestKB {
     }
 
     @Override
-    protected void buildRules(GraknTx graph) {
-        RuleType inferenceRule = graph.admin().getMetaRuleInference();
+    protected void buildRules(GraknTx tx) {
+        RuleType inferenceRule = tx.admin().getMetaRuleInference();
 
         //R1: "It is a crime for an American to sell weapons to hostile nations"
-        Pattern R1_LHS = graph.graql().parsePattern("{$x isa person;$x has nationality 'American';" +
+        Pattern R1_LHS = tx.graql().parsePattern("{$x isa person;$x has nationality 'American';" +
                         "$y isa weapon;" +
                         "$z isa country;$z has alignment 'hostile';" +
                         "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;}");
 
-        Pattern R1_RHS = graph.graql().parsePattern("{$x isa criminal;}");
+        Pattern R1_RHS = tx.graql().parsePattern("{$x isa criminal;}");
         inferenceRule.putRule(R1_LHS, R1_RHS);
 
         //R2: "Missiles are a kind of a weapon"
-        Pattern R2_LHS = graph.graql().parsePattern("{$x isa missile;}");
-        Pattern R2_RHS = graph.graql().parsePattern("{$x isa weapon;}");
+        Pattern R2_LHS = tx.graql().parsePattern("{$x isa missile;}");
+        Pattern R2_RHS = tx.graql().parsePattern("{$x isa weapon;}");
         inferenceRule.putRule(R2_LHS, R2_RHS);
 
         //R3: "If a country is an enemy of America then it is hostile"
-        Pattern R3_LHS = graph.graql().parsePattern(
+        Pattern R3_LHS = tx.graql().parsePattern(
                 "{$x isa country;" +
                 "($x, $y) isa is-enemy-of;" +
                 "$y isa country;$y has name 'America';}");
-        Pattern R3_RHS = graph.graql().parsePattern("{$x has alignment 'hostile';}");
+        Pattern R3_RHS = tx.graql().parsePattern("{$x has alignment 'hostile';}");
         inferenceRule.putRule(R3_LHS, R3_RHS);
 
         //R4: "If a rocket is self-propelled and guided, it is a missile"
-        Pattern R4_LHS = graph.graql().parsePattern("{$x isa rocket;$x has propulsion 'gsp';}");
-        Pattern R4_RHS = graph.graql().parsePattern("{$x isa missile;}");
+        Pattern R4_LHS = tx.graql().parsePattern("{$x isa rocket;$x has propulsion 'gsp';}");
+        Pattern R4_RHS = tx.graql().parsePattern("{$x isa missile;}");
         inferenceRule.putRule(R4_LHS, R4_RHS);
 
-        Pattern R5_LHS = graph.graql().parsePattern(
+        Pattern R5_LHS = tx.graql().parsePattern(
                 "{$x isa person;" +
                 "$y isa country;" +
                 "$z isa weapon;" +
                 "($x, $y) isa is-paid-by;" +
                 "($y, $z) isa owns;}");
 
-        Pattern R5_RHS = graph.graql().parsePattern("{(seller: $x, buyer: $y, transaction-item: $z) isa transaction;}");
+        Pattern R5_RHS = tx.graql().parsePattern("{(seller: $x, buyer: $y, transaction-item: $z) isa transaction;}");
         inferenceRule.putRule(R5_LHS, R5_RHS);
     }
 }

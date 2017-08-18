@@ -61,34 +61,34 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class GraknTxTest extends KBTestBase {
+public class GraknTxTest extends TxTestBase {
 
     @Test
     public void whenGettingConceptById_ReturnTheConcept(){
-        EntityType entityType = graknGraph.putEntityType("test-name");
-        assertEquals(entityType, graknGraph.getConcept(entityType.getId()));
+        EntityType entityType = tx.putEntityType("test-name");
+        assertEquals(entityType, tx.getConcept(entityType.getId()));
     }
 
     @Test
     public void whenAttemptingToMutateViaTraversal_Throw(){
         expectedException.expect(VerificationException.class);
         expectedException.expectMessage("not read only");
-        graknGraph.getTinkerTraversal().V().drop().iterate();
+        tx.getTinkerTraversal().V().drop().iterate();
     }
 
     @Test
     public void whenGettingResourcesByValue_ReturnTheMatchingResources(){
         String targetValue = "Geralt";
-        assertThat(graknGraph.getAttributesByValue(targetValue), is(empty()));
+        assertThat(tx.getAttributesByValue(targetValue), is(empty()));
 
-        AttributeType<String> t1 = graknGraph.putAttributeType("Parent 1", AttributeType.DataType.STRING);
-        AttributeType<String> t2 = graknGraph.putAttributeType("Parent 2", AttributeType.DataType.STRING);
+        AttributeType<String> t1 = tx.putAttributeType("Parent 1", AttributeType.DataType.STRING);
+        AttributeType<String> t2 = tx.putAttributeType("Parent 2", AttributeType.DataType.STRING);
 
         Attribute<String> r1 = t1.putAttribute(targetValue);
         Attribute<String> r2 = t2.putAttribute(targetValue);
         t2.putAttribute("Dragon");
 
-        assertThat(graknGraph.getAttributesByValue(targetValue), containsInAnyOrder(r1, r2));
+        assertThat(tx.getAttributesByValue(targetValue), containsInAnyOrder(r1, r2));
     }
 
     @Test
@@ -99,38 +99,38 @@ public class GraknTxTest extends KBTestBase {
         String resourceTypeLabel = "My Attribute Type";
         String ruleTypeLabel = "My Rule Type";
 
-        assertNull(graknGraph.getEntityType(entityTypeLabel));
-        assertNull(graknGraph.getRelationshipType(relationTypeLabel));
-        assertNull(graknGraph.getRole(roleTypeLabel));
-        assertNull(graknGraph.getAttributeType(resourceTypeLabel));
-        assertNull(graknGraph.getRuleType(ruleTypeLabel));
+        assertNull(tx.getEntityType(entityTypeLabel));
+        assertNull(tx.getRelationshipType(relationTypeLabel));
+        assertNull(tx.getRole(roleTypeLabel));
+        assertNull(tx.getAttributeType(resourceTypeLabel));
+        assertNull(tx.getRuleType(ruleTypeLabel));
 
-        EntityType entityType = graknGraph.putEntityType(entityTypeLabel);
-        RelationshipType relationshipType = graknGraph.putRelationshipType(relationTypeLabel);
-        Role role = graknGraph.putRole(roleTypeLabel);
-        AttributeType attributeType = graknGraph.putAttributeType(resourceTypeLabel, AttributeType.DataType.STRING);
-        RuleType ruleType = graknGraph.putRuleType(ruleTypeLabel);
+        EntityType entityType = tx.putEntityType(entityTypeLabel);
+        RelationshipType relationshipType = tx.putRelationshipType(relationTypeLabel);
+        Role role = tx.putRole(roleTypeLabel);
+        AttributeType attributeType = tx.putAttributeType(resourceTypeLabel, AttributeType.DataType.STRING);
+        RuleType ruleType = tx.putRuleType(ruleTypeLabel);
 
-        assertEquals(entityType, graknGraph.getEntityType(entityTypeLabel));
-        assertEquals(relationshipType, graknGraph.getRelationshipType(relationTypeLabel));
-        assertEquals(role, graknGraph.getRole(roleTypeLabel));
-        assertEquals(attributeType, graknGraph.getAttributeType(resourceTypeLabel));
-        assertEquals(ruleType, graknGraph.getRuleType(ruleTypeLabel));
+        assertEquals(entityType, tx.getEntityType(entityTypeLabel));
+        assertEquals(relationshipType, tx.getRelationshipType(relationTypeLabel));
+        assertEquals(role, tx.getRole(roleTypeLabel));
+        assertEquals(attributeType, tx.getAttributeType(resourceTypeLabel));
+        assertEquals(ruleType, tx.getRuleType(ruleTypeLabel));
     }
 
     @Test
     public void whenGettingSubTypesFromRootMeta_IncludeAllTypes(){
-        EntityType sampleEntityType = graknGraph.putEntityType("Sample Entity Type");
-        RelationshipType sampleRelationshipType = graknGraph.putRelationshipType("Sample Relationship Type");
+        EntityType sampleEntityType = tx.putEntityType("Sample Entity Type");
+        RelationshipType sampleRelationshipType = tx.putRelationshipType("Sample Relationship Type");
 
-        assertThat(graknGraph.admin().getMetaConcept().subs().collect(Collectors.toSet()), containsInAnyOrder(
-                graknGraph.admin().getMetaConcept(),
-                graknGraph.admin().getMetaRelationType(),
-                graknGraph.admin().getMetaEntityType(),
-                graknGraph.admin().getMetaRuleType(),
-                graknGraph.admin().getMetaResourceType(),
-                graknGraph.admin().getMetaRuleConstraint(),
-                graknGraph.admin().getMetaRuleInference(),
+        assertThat(tx.admin().getMetaConcept().subs().collect(Collectors.toSet()), containsInAnyOrder(
+                tx.admin().getMetaConcept(),
+                tx.admin().getMetaRelationType(),
+                tx.admin().getMetaEntityType(),
+                tx.admin().getMetaRuleType(),
+                tx.admin().getMetaResourceType(),
+                tx.admin().getMetaRuleConstraint(),
+                tx.admin().getMetaRuleInference(),
                 sampleEntityType,
                 sampleRelationshipType
         ));
@@ -140,31 +140,31 @@ public class GraknTxTest extends KBTestBase {
     public void whenClosingReadOnlyGraph_EnsureTypesAreCached(){
         assertCacheOnlyContainsMetaTypes();
         //noinspection ResultOfMethodCallIgnored
-        graknGraph.getMetaConcept().subs(); //This loads some types into transaction cache
-        graknGraph.abort();
+        tx.getMetaConcept().subs(); //This loads some types into transaction cache
+        tx.abort();
         assertCacheOnlyContainsMetaTypes(); //Ensure central cache is empty
 
-        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.READ);
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.READ);
 
         Set<SchemaConcept> finalTypes = new HashSet<>();
-        finalTypes.addAll(graknGraph.getMetaConcept().subs().collect(Collectors.toSet()));
-        finalTypes.add(graknGraph.admin().getMetaRole());
+        finalTypes.addAll(tx.getMetaConcept().subs().collect(Collectors.toSet()));
+        finalTypes.add(tx.admin().getMetaRole());
 
-        graknGraph.abort();
+        tx.abort();
 
-        for (SchemaConcept type : graknGraph.getGlobalCache().getCachedTypes().values()) {
+        for (SchemaConcept type : tx.getGlobalCache().getCachedTypes().values()) {
             assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", finalTypes.contains(type));
         }
     }
     private void assertCacheOnlyContainsMetaTypes(){
         Set<Label> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(Collectors.toSet());
-        graknGraph.getGlobalCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
+        tx.getGlobalCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
     }
 
     @Test
     public void whenBuildingAConceptFromAVertex_ReturnConcept(){
-        EntityTypeImpl et = (EntityTypeImpl) graknGraph.putEntityType("Sample Entity Type");
-        assertEquals(et, graknGraph.factory().buildConcept(et.vertex()));
+        EntityTypeImpl et = (EntityTypeImpl) tx.putEntityType("Sample Entity Type");
+        assertEquals(et, tx.factory().buildConcept(et.vertex()));
     }
 
     @Test
@@ -205,17 +205,17 @@ public class GraknTxTest extends KBTestBase {
         //Check Central cache is empty
         assertCacheOnlyContainsMetaTypes();
 
-        Role r1 = graknGraph.putRole("r1");
-        Role r2 = graknGraph.putRole("r2");
-        EntityType e1 = graknGraph.putEntityType("e1").plays(r1).plays(r2);
-        RelationshipType rel1 = graknGraph.putRelationshipType("rel1").relates(r1).relates(r2);
+        Role r1 = tx.putRole("r1");
+        Role r2 = tx.putRole("r2");
+        EntityType e1 = tx.putEntityType("e1").plays(r1).plays(r2);
+        RelationshipType rel1 = tx.putRelationshipType("rel1").relates(r1).relates(r2);
 
         //Purge the above concepts into the main cache
-        graknGraph.commit();
-        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        tx.commit();
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
 
         //Check cache is in good order
-        Collection<SchemaConcept> cachedValues = graknGraph.getGlobalCache().getCachedTypes().values();
+        Collection<SchemaConcept> cachedValues = tx.getGlobalCache().getCachedTypes().values();
         assertTrue("Type [" + r1 + "] was not cached", cachedValues.contains(r1));
         assertTrue("Type [" + r2 + "] was not cached", cachedValues.contains(r2));
         assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
@@ -226,31 +226,31 @@ public class GraknTxTest extends KBTestBase {
         ExecutorService pool = Executors.newSingleThreadExecutor();
         //Mutate Schema in a separate thread
         pool.submit(() -> {
-            GraknTx innerGraph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+            GraknTx innerGraph = Grakn.session(Grakn.IN_MEMORY, tx.getKeyspace()).open(GraknTxType.WRITE);
             EntityType entityType = innerGraph.getEntityType("e1");
             Role role = innerGraph.getRole("r1");
             entityType.deletePlays(role);
         }).get();
 
         //Check the above mutation did not affect central repo
-        SchemaConcept foundE1 = graknGraph.getGlobalCache().getCachedTypes().get(e1.getLabel());
+        SchemaConcept foundE1 = tx.getGlobalCache().getCachedTypes().get(e1.getLabel());
         assertTrue("Main cache was affected by transaction", foundE1.asType().plays().anyMatch(role -> role.equals(r1)));
     }
 
     @Test
     public void whenClosingAGraphWhichWasJustCommitted_DoNothing(){
-        graknGraph.commit();
-        assertTrue("Graph is still open after commit", graknGraph.isClosed());
-        graknGraph.close();
-        assertTrue("Graph is somehow open after close", graknGraph.isClosed());
+        tx.commit();
+        assertTrue("Graph is still open after commit", tx.isClosed());
+        tx.close();
+        assertTrue("Graph is somehow open after close", tx.isClosed());
     }
 
     @Test
     public void whenCommittingAGraphWhichWasJustCommitted_DoNothing(){
-        graknGraph.commit();
-        assertTrue("Graph is still open after commit", graknGraph.isClosed());
-        graknGraph.commit();
-        assertTrue("Graph is somehow open after 2nd commit", graknGraph.isClosed());
+        tx.commit();
+        assertTrue("Graph is still open after commit", tx.isClosed());
+        tx.commit();
+        assertTrue("Graph is somehow open after 2nd commit", tx.isClosed());
     }
 
     @Test
@@ -264,31 +264,31 @@ public class GraknTxTest extends KBTestBase {
         String resourceType = "My Attribute Type";
 
         //Fail Some Mutations
-        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
-        failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));
-        failMutation(graknGraph, () -> graknGraph.putRole(roleType1));
-        failMutation(graknGraph, () -> graknGraph.putRelationshipType(relationType1));
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
+        failMutation(tx, () -> tx.putEntityType(entityType));
+        failMutation(tx, () -> tx.putRole(roleType1));
+        failMutation(tx, () -> tx.putRelationshipType(relationType1));
 
         //Pass some mutations
-        graknGraph.close();
-        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
-        EntityType entityT = graknGraph.putEntityType(entityType);
+        tx.close();
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        EntityType entityT = tx.putEntityType(entityType);
         entityT.addEntity();
-        Role roleT1 = graknGraph.putRole(roleType1);
-        Role roleT2 = graknGraph.putRole(roleType2);
-        RelationshipType relationT1 = graknGraph.putRelationshipType(relationType1).relates(roleT1);
-        RelationshipType relationT2 = graknGraph.putRelationshipType(relationType2).relates(roleT2);
-        AttributeType<String> resourceT = graknGraph.putAttributeType(resourceType, AttributeType.DataType.STRING);
-        graknGraph.commit();
+        Role roleT1 = tx.putRole(roleType1);
+        Role roleT2 = tx.putRole(roleType2);
+        RelationshipType relationT1 = tx.putRelationshipType(relationType1).relates(roleT1);
+        RelationshipType relationT2 = tx.putRelationshipType(relationType2).relates(roleT2);
+        AttributeType<String> resourceT = tx.putAttributeType(resourceType, AttributeType.DataType.STRING);
+        tx.commit();
 
         //Fail some mutations again
-        graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
-        failMutation(graknGraph, entityT::addEntity);
-        failMutation(graknGraph, () -> resourceT.putAttribute("A resource"));
-        failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));
-        failMutation(graknGraph, () -> entityT.plays(roleT1));
-        failMutation(graknGraph, () -> relationT1.relates(roleT2));
-        failMutation(graknGraph, () -> relationT2.relates(roleT1));
+        tx = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
+        failMutation(tx, entityT::addEntity);
+        failMutation(tx, () -> resourceT.putAttribute("A resource"));
+        failMutation(tx, () -> tx.putEntityType(entityType));
+        failMutation(tx, () -> entityT.plays(roleT1));
+        failMutation(tx, () -> relationT1.relates(roleT2));
+        failMutation(tx, () -> relationT2.relates(roleT1));
     }
     private void failMutation(GraknTx graph, Runnable mutator){
         int vertexCount = graph.admin().getTinkerTraversal().V().toList().size();
@@ -339,14 +339,14 @@ public class GraknTxTest extends KBTestBase {
 
     @Test
     public void whenShardingSuperNode_EnsureNewInstancesGoToNewShard(){
-        EntityTypeImpl entityType = (EntityTypeImpl) graknGraph.putEntityType("The Special Type");
+        EntityTypeImpl entityType = (EntityTypeImpl) tx.putEntityType("The Special Type");
         Shard s1 = entityType.currentShard();
 
         //Add 3 instances to first shard
         Entity s1_e1 = entityType.addEntity();
         Entity s1_e2 = entityType.addEntity();
         Entity s1_e3 = entityType.addEntity();
-        graknGraph.admin().shard(entityType.getId());
+        tx.admin().shard(entityType.getId());
 
         Shard s2 = entityType.currentShard();
 
@@ -357,7 +357,7 @@ public class GraknTxTest extends KBTestBase {
         Entity s2_e4 = entityType.addEntity();
         Entity s2_e5 = entityType.addEntity();
 
-        graknGraph.admin().shard(entityType.getId());
+        tx.admin().shard(entityType.getId());
         Shard s3 = entityType.currentShard();
 
         //Add 2 instances to 3rd shard

@@ -40,7 +40,7 @@ public class SuperUserTest {
     private static EngineGraknTxFactory graknFactory;
 
     @ClassRule
-    public static final SampleKBContext graph = SampleKBContext.empty();
+    public static final SampleKBContext sampleKB = SampleKBContext.empty();
 
     private UsersHandler users;
 

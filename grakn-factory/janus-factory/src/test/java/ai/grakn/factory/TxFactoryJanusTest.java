@@ -107,8 +107,8 @@ public class TxFactoryJanusTest extends JanusTestBase {
         assertEquals(mg1, mg3);
         assertEquals(tinkerGraphMg1, mg3.getTinkerPopGraph());
 
-        assertTrue(mg1.isBatchGraph());
-        assertFalse(mg2.isBatchGraph());
+        assertTrue(mg1.isBatchTx());
+        assertFalse(mg2.isBatchTx());
 
         assertNotEquals(mg1, mg2);
         assertNotEquals(tinkerGraphMg1, tinkerGraphMg2);

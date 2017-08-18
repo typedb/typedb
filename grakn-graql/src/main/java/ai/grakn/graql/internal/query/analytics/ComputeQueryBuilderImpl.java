@@ -51,8 +51,8 @@ public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
     }
 
     @Override
-    public ComputeQueryBuilder withGraph(GraknTx graph) {
-        this.graph = Optional.of(graph);
+    public ComputeQueryBuilder withTx(GraknTx tx) {
+        this.graph = Optional.of(tx);
         return this;
     }
 

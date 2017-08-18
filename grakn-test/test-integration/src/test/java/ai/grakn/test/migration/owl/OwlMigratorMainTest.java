@@ -53,13 +53,13 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
 
     @Before
     public void setup(){
-        keyspace = graph.getKeyspace();
-        graph.close();
+        keyspace = tx.getKeyspace();
+        tx.close();
     }
 
     @After
     public void delete(){
-        graph.admin().delete();
+        tx.admin().delete();
     }
 
     @Ignore //TODO: Failing due to tighter temporary restrictions

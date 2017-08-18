@@ -34,7 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.ErrorMessage.CLOSE_GRAPH_FAILURE;
+import static ai.grakn.util.ErrorMessage.CLOSE_FAILURE;
 import static ai.grakn.util.ErrorMessage.HAS_INVALID;
 import static ai.grakn.util.ErrorMessage.INVALID_DIRECTION;
 import static ai.grakn.util.ErrorMessage.INVALID_PATH_TO_CONFIG;
@@ -158,8 +158,8 @@ public class GraknTxOperationException extends GraknException{
     /**
      * Thrown when attempting to open a transaction which is already open
      */
-    public static GraknTxOperationException transactionOpen(GraknTx graph){
-        return new GraknTxOperationException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(graph.getKeyspace()));
+    public static GraknTxOperationException transactionOpen(GraknTx tx){
+        return new GraknTxOperationException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(tx.getKeyspace()));
     }
 
     /**
@@ -172,8 +172,8 @@ public class GraknTxOperationException extends GraknException{
     /**
      * Thrown when attempting to mutate a read only transaction
      */
-    public static GraknTxOperationException transactionReadOnly(GraknTx graph){
-        return new GraknTxOperationException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
+    public static GraknTxOperationException transactionReadOnly(GraknTx tx){
+        return new GraknTxOperationException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.getKeyspace()));
     }
 
     /**
@@ -186,9 +186,9 @@ public class GraknTxOperationException extends GraknException{
     /**
      * Thrown when attempting to use the graph when the transaction is closed
      */
-    public static GraknTxOperationException transactionClosed(GraknTx graph, String reason){
+    public static GraknTxOperationException transactionClosed(GraknTx tx, String reason){
         if(reason == null){
-            return new GraknTxOperationException(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()));
+            return new GraknTxOperationException(ErrorMessage.TX_CLOSED.getMessage(tx.getKeyspace()));
         } else {
             return new GraknTxOperationException(reason);
         }
@@ -197,8 +197,8 @@ public class GraknTxOperationException extends GraknException{
     /**
      * Thrown when the graph can not be closed due to an unknown reason.
      */
-    public static GraknTxOperationException closingGraphFailed(GraknTx graph, Exception e){
-        return new GraknTxOperationException(CLOSE_GRAPH_FAILURE.getMessage(graph.getKeyspace()), e);
+    public static GraknTxOperationException closingFailed(GraknTx tx, Exception e){
+        return new GraknTxOperationException(CLOSE_FAILURE.getMessage(tx.getKeyspace()), e);
     }
 
     /**
@@ -225,7 +225,7 @@ public class GraknTxOperationException extends GraknException{
     /**
      * Thrown when attempting to read a config file which cannot be accessed
      */
-    public static GraknTxOperationException invalidGraphConfig(String pathToFile){
+    public static GraknTxOperationException invalidConfig(String pathToFile){
         return new GraknTxOperationException(INVALID_PATH_TO_CONFIG.getMessage(pathToFile));
     }
 

@@ -71,8 +71,8 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     private String url;
 
     @Override
-    public ComputeQuery<T> withGraph(GraknTx graph) {
-        this.graph = Optional.of(graph);
+    public ComputeQuery<T> withTx(GraknTx tx) {
+        this.graph = Optional.of(tx);
         return this;
     }
 
@@ -118,7 +118,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     void initSubGraph() {
-        GraknTx theGraph = graph.orElseThrow(GraqlQueryException::noGraph);
+        GraknTx theGraph = graph.orElseThrow(GraqlQueryException::noTx);
         keySpace = theGraph.getKeyspace();
         url = theGraph.admin().getEngineUrl();
 

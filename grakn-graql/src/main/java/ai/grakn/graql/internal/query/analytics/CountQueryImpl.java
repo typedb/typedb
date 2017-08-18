@@ -110,8 +110,8 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
     }
 
     @Override
-    public CountQuery withGraph(GraknTx graph) {
-        return (CountQuery) super.withGraph(graph);
+    public CountQuery withTx(GraknTx tx) {
+        return (CountQuery) super.withTx(tx);
     }
 
 }

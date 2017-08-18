@@ -40,10 +40,10 @@ public class AcademyKB extends TestKB {
 
     @Override
     public Consumer<GraknTx> build() {
-        return (GraknTx graph) -> {
-            SampleKBContext.loadFromFile(graph, schemaFile);
-            SampleKBContext.loadFromFile(graph, dataFile);
-            SampleKBContext.loadFromFile(graph, rulesFile);
+        return (GraknTx tx) -> {
+            SampleKBContext.loadFromFile(tx, schemaFile);
+            SampleKBContext.loadFromFile(tx, dataFile);
+            SampleKBContext.loadFromFile(tx, rulesFile);
         };
     }
 }

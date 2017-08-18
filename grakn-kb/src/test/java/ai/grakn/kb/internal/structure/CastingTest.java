@@ -23,7 +23,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.KBTestBase;
+import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.kb.internal.concept.RelationshipImpl;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +35,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class CastingTest extends KBTestBase {
+public class CastingTest extends TxTestBase {
 
     private RelationshipType relationshipType;
     private EntityType entityType;
@@ -45,11 +45,11 @@ public class CastingTest extends KBTestBase {
 
     @Before
     public void setup(){
-        role1 = graknGraph.putRole("role1");
-        role2 = graknGraph.putRole("role2");
-        role3 = graknGraph.putRole("role3");
-        entityType = graknGraph.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
-        relationshipType = graknGraph.putRelationshipType("Relationship Type").relates(role1).relates(role2).relates(role3);
+        role1 = tx.putRole("role1");
+        role2 = tx.putRole("role2");
+        role3 = tx.putRole("role3");
+        entityType = tx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
+        relationshipType = tx.putRelationshipType("Relationship Type").relates(role1).relates(role2).relates(role3);
     }
 
     @Test

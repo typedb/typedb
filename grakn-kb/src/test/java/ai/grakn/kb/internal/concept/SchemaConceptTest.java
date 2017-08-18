@@ -24,7 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.KBTestBase;
+import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -42,33 +42,33 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class SchemaConceptTest extends KBTestBase {
+public class SchemaConceptTest extends TxTestBase {
 
     @Test
     public void whenChangingSchemaConceptLabel_EnsureLabelIsChangedAndOldLabelIsDead(){
         Label originalLabel = Label.of("my original label");
         Label newLabel = Label.of("my new label");
-        EntityType entityType = graknGraph.putEntityType(originalLabel.getValue());
+        EntityType entityType = tx.putEntityType(originalLabel.getValue());
 
         //Original label works
-        assertEquals(entityType, graknGraph.getType(originalLabel));
+        assertEquals(entityType, tx.getType(originalLabel));
 
         //Change The Label
         entityType.setLabel(newLabel);
 
         //Check the label is changes
         assertEquals(newLabel, entityType.getLabel());
-        assertEquals(entityType, graknGraph.getType(newLabel));
+        assertEquals(entityType, tx.getType(newLabel));
 
         //Check old label is dead
-        assertNull(graknGraph.getType(originalLabel));
+        assertNull(tx.getType(originalLabel));
     }
 
     @Test
     public void whenSpecifyingTheResourceTypeOfAnEntityType_EnsureTheImplicitStructureIsCreated(){
         Label resourceLabel = Label.of("Attribute Type");
-        EntityType entityType = graknGraph.putEntityType("Entity1");
-        AttributeType attributeType = graknGraph.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
+        EntityType entityType = tx.putEntityType("Entity1");
+        AttributeType attributeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
 
         //Implicit Names
         Label hasResourceOwnerLabel = Schema.ImplicitType.HAS_OWNER.getLabel(resourceLabel);
@@ -77,14 +77,14 @@ public class SchemaConceptTest extends KBTestBase {
 
         entityType.attribute(attributeType);
 
-        RelationshipType relationshipType = graknGraph.getRelationshipType(hasResourceLabel.getValue());
+        RelationshipType relationshipType = tx.getRelationshipType(hasResourceLabel.getValue());
         Assert.assertEquals(hasResourceLabel, relationshipType.getLabel());
 
         Set<Label> roleLabels = relationshipType.relates().map(SchemaConcept::getLabel).collect(toSet());
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
-        assertThat(entityType.plays().collect(toSet()), containsInAnyOrder(graknGraph.getRole(hasResourceOwnerLabel.getValue())));
-        assertThat(attributeType.plays().collect(toSet()), containsInAnyOrder(graknGraph.getRole(hasResourceValueLabel.getValue())));
+        assertThat(entityType.plays().collect(toSet()), containsInAnyOrder(tx.getRole(hasResourceOwnerLabel.getValue())));
+        assertThat(attributeType.plays().collect(toSet()), containsInAnyOrder(tx.getRole(hasResourceValueLabel.getValue())));
 
         //Check everything is implicit
         assertTrue(relationshipType.isImplicit());
@@ -101,8 +101,8 @@ public class SchemaConceptTest extends KBTestBase {
     public void whenChangingTheLabelOfSchemaConceptAndThatLabelIsTakenByAnotherConcept_Throw(){
         Label label = Label.of("mylabel");
 
-        EntityType e1 = graknGraph.putEntityType("Entity1");
-        graknGraph.putEntityType(label);
+        EntityType e1 = tx.putEntityType("Entity1");
+        tx.putEntityType(label);
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(ErrorMessage.LABEL_TAKEN.getMessage(label));

@@ -109,7 +109,7 @@ public class QueryBuilderImpl implements QueryBuilder {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
         MatchQueryBase base = new MatchQueryBase(conjunction);
         MatchQuery query = infer ? base.infer(materialise).admin() : base;
-        return tx.map(query::withGraph).orElse(query);
+        return tx.map(query::withTx).orElse(query);
     }
 
     /**

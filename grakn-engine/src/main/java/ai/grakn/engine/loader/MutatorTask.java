@@ -81,7 +81,7 @@ public class MutatorTask extends BackgroundTask {
             } else {
                 inserts.forEach(q -> {
                     try(Context contextSingle = metricRegistry().timer(name(MutatorTask.class, "execution-single")).time()){
-                        q.withGraph(graph).execute();
+                        q.withTx(graph).execute();
                     }
                 });
 

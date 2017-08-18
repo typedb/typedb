@@ -96,7 +96,7 @@ public class ShortestPathTest {
             checkPath(correctPath, computedPath);
 
             Collections.reverse(correctPath);
-            computedPath = Graql.compute().withGraph(graph).path().to(entityId1).from(relationId12).execute()
+            computedPath = Graql.compute().withTx(graph).path().to(entityId1).from(relationId12).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
             checkPath(correctPath, computedPath);
 
@@ -114,7 +114,7 @@ public class ShortestPathTest {
             // only one path exists with given subtypes
             correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(),
                     entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
-            computedPath = Graql.compute().withGraph(graph).path().to(entityId3).from(entityId2).in(thing, related).execute()
+            computedPath = Graql.compute().withTx(graph).path().to(entityId3).from(entityId2).in(thing, related).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
             checkPath(correctPath, computedPath);
 

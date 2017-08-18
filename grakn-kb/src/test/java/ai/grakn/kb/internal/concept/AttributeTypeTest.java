@@ -25,7 +25,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.KBTestBase;
+import ai.grakn.kb.internal.TxTestBase;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,13 +38,13 @@ import static junit.framework.TestCase.assertNull;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 
-public class AttributeTypeTest extends KBTestBase {
+public class AttributeTypeTest extends TxTestBase {
     private AttributeType<String> attributeType;
 
 
     @Before
     public void buildGraph() {
-        attributeType = graknGraph.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
+        attributeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
     }
 
     @Test
@@ -68,7 +68,7 @@ public class AttributeTypeTest extends KBTestBase {
 
     @Test
     public void whenSettingRegexOnNonStringResourceType_Throw(){
-        AttributeType<Long> thing = graknGraph.putAttributeType("Random ID", AttributeType.DataType.LONG);
+        AttributeType<Long> thing = tx.putAttributeType("Random ID", AttributeType.DataType.LONG);
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.cannotSetRegex(thing).getMessage());
         thing.setRegex("blab");
@@ -93,8 +93,8 @@ public class AttributeTypeTest extends KBTestBase {
 
     @Test
     public void whenGettingTheResourceFromAResourceType_ReturnTheResource(){
-        AttributeType<String> t1 = graknGraph.putAttributeType("t1", AttributeType.DataType.STRING);
-        AttributeType<String> t2 = graknGraph.putAttributeType("t2", AttributeType.DataType.STRING);
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING);
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING);
 
         Attribute c1 = t1.putAttribute("1");
         Attribute c2 = t2.putAttribute("2");
@@ -108,8 +108,8 @@ public class AttributeTypeTest extends KBTestBase {
 
     @Test
     public void whenCreatingMultipleResourceTypesWithDifferentRegexes_EnsureAllRegexesAreChecked(){
-        AttributeType<String> t1 = graknGraph.putAttributeType("t1", AttributeType.DataType.STRING).setRegex("[b]");
-        AttributeType<String> t2 = graknGraph.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]").sup(t1);
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING).setRegex("[b]");
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]").sup(t1);
 
         //Valid Attribute
         Attribute<String> attribute = t2.putAttribute("b");
@@ -122,8 +122,8 @@ public class AttributeTypeTest extends KBTestBase {
 
     @Test
     public void whenSettingTheSuperTypeOfAStringResourceType_EnsureAllRegexesAreAppliedToResources(){
-        AttributeType<String> t1 = graknGraph.putAttributeType("t1", AttributeType.DataType.STRING).setRegex("[b]");
-        AttributeType<String> t2 = graknGraph.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]");
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING).setRegex("[b]");
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]");
 
         //Future Invalid
         Attribute<String> attribute = t2.putAttribute("a");
@@ -135,8 +135,8 @@ public class AttributeTypeTest extends KBTestBase {
 
     @Test
     public void whenSettingRegexOfSuperType_EnsureAllRegexesAreApplied(){
-        AttributeType<String> t1 = graknGraph.putAttributeType("t1", AttributeType.DataType.STRING);
-        AttributeType<String> t2 = graknGraph.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]").sup(t1);
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING);
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]").sup(t1);
         Attribute<String> attribute = t2.putAttribute("a");
 
         expectedException.expect(GraknTxOperationException.class);

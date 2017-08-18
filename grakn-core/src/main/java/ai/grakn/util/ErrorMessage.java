@@ -49,16 +49,16 @@ public enum ErrorMessage {
     INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
     BACKEND_EXCEPTION("Backend Exception."),
     INITIALIZATION_EXCEPTION("Graph for keyspace [%s] not properly initialized. Missing keyspace name resource"),
-    GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
+    TX_CLOSED("The Transaction for keyspace [%s] is closed"),
     SESSION_CLOSED("The session for graph [%s] was closed"),
-    GRAPH_CLOSED_ON_ACTION("The transaction was %s and closed graph [%s]. Use the session to get a new transaction for the graph."),
+    GRAPH_CLOSED_ON_ACTION("The transaction was %s and closed [%s]. Use the session to get a new transaction for the graph."),
     TRANSACTIONS_OPEN("Closed session on graph [%s] with [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
     CANNOT_BE_KEY_AND_RESOURCE("The Type [%s] cannot have the Attribute Type [%s] as a key and as a resource"),
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]"),
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
     IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
-    CLOSE_GRAPH_FAILURE("Unable to close graph [%s]"),
+    CLOSE_FAILURE("Unable to close graph [%s]"),
     VERSION_MISMATCH("You are attempting to use Grakn Version [%s] with a graph build using version [%s], this is not supported."),
     NO_TYPE("Concept [%s] does not have a type"),
     INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
@@ -111,7 +111,7 @@ public enum ErrorMessage {
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
     INVALID_COMPUTER("The graph computer [%s] is not supported"),
     CONFIG_IGNORED("The config parameter [%s] with value [%s] is ignored for this implementation"),
-    CANNOT_PRODUCE_GRAPH("Cannot produce a Grakn graph using the backend [%s]"),
+    CANNOT_PRODUCE_GRAPH("Cannot produce a Grakn Transaction using the backend [%s]"),
 
     //--------------------------------------------- Client Errors
     INVALID_ENGINE_RESPONSE("Grakn Engine located at [%s] returned response [%s], cannot proceed."),
@@ -121,7 +121,7 @@ public enum ErrorMessage {
     COULD_NOT_REACH_ENGINE("Could not reach Grakn engine at [%s]"),
 
     //--------------------------------------------- Graql Errors -----------------------------------------------
-    NO_GRAPH("no graph provided"),
+    NO_TX("no graph provided"),
 
     SYNTAX_ERROR_NO_POINTER("syntax error at line %s:\n%s"),
     SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
@@ -144,7 +144,7 @@ public enum ErrorMessage {
     NO_PATTERNS("no patterns have been provided. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
     NO_LABEL_SPECIFIED_FOR_HAS("no label was specified for a resource type in a 'has' property"),
-    MULTIPLE_GRAPH("a graph has been specified twice for this query"),
+    MULTIPLE_TX("a graph has been specified twice for this query"),
 
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
     INSERT_PREDICATE("cannot insert a concept with a predicate"),

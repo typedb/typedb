@@ -28,10 +28,10 @@ import org.junit.rules.ExpectedException;
 
 import java.util.UUID;
 
-public class KBTestBase {
-    protected GraknSession graknSession;
-    protected GraknTxAbstract<?> graknGraph;
-    private GraknTxAbstract<?> graknGraphBatch;
+public class TxTestBase {
+    protected GraknSession session;
+    protected GraknTxAbstract<?> tx;
+    private GraknTxAbstract<?> txBatch;
     private String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
 
     @Rule
@@ -40,20 +40,20 @@ public class KBTestBase {
 
     @Before
     public void setUpGraph() {
-        graknSession = Grakn.session(Grakn.IN_MEMORY, keyspace);
-        graknGraph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        session = Grakn.session(Grakn.IN_MEMORY, keyspace);
+        tx = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
     }
 
     @After
     public void closeSession() throws Exception {
-        graknGraph.close();
-        if(graknGraphBatch != null) graknGraphBatch.close();
-        graknSession.close();
+        tx.close();
+        if(txBatch != null) txBatch.close();
+        session.close();
     }
 
     protected GraknTxAbstract<?> switchToBatchGraph(){
-        graknGraph.close();
-        graknGraphBatch = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
-        return graknGraphBatch;
+        tx.close();
+        txBatch = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
+        return txBatch;
     }
 }

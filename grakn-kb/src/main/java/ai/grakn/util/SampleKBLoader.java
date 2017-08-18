@@ -146,7 +146,7 @@ public class SampleKBLoader {
                 graphConfig.load(inputStream);
             } catch (IOException e) {
                 e.printStackTrace();
-                throw GraknTxOperationException.invalidGraphConfig(configFilePath);
+                throw GraknTxOperationException.invalidConfig(configFilePath);
             }
         }
 

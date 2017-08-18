@@ -137,8 +137,8 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     }
 
     @Override
-    public DegreeQuery withGraph(GraknTx graph) {
-        return (DegreeQuery) super.withGraph(graph);
+    public DegreeQuery withTx(GraknTx tx) {
+        return (DegreeQuery) super.withTx(tx);
     }
 
     @Override

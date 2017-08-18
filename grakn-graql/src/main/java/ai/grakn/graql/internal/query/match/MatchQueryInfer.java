@@ -47,7 +47,7 @@ class MatchQueryInfer extends MatchQueryModifier {
 
     @Override
     public Stream<Answer> stream(Optional<GraknTx> optionalGraph) {
-        GraknTx graph = optionalOr(optionalGraph, inner.getGraph()).orElseThrow(GraqlQueryException::noGraph);
+        GraknTx graph = optionalOr(optionalGraph, inner.tx()).orElseThrow(GraqlQueryException::noTx);
 
         if (!RuleUtil.hasRules(graph)) return inner.stream(optionalGraph);
 

@@ -37,26 +37,26 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class TestKB {
 
-    protected void buildSchema(GraknTx graph){};
+    protected void buildSchema(GraknTx tx){};
 
-    protected void buildInstances(GraknTx graph){};
+    protected void buildInstances(GraknTx tx){};
 
-    protected void buildRelations(GraknTx graph){};
+    protected void buildRelations(GraknTx tx){};
 
-    protected void buildRules(GraknTx graph){};
+    protected void buildRules(GraknTx tx){};
 
     public Consumer<GraknTx> build() {
-        return (GraknTx graph) -> {
-            buildSchema(graph);
-            buildInstances(graph);
-            buildRelations(graph);
-            buildRules(graph);
+        return (GraknTx tx) -> {
+            buildSchema(tx);
+            buildInstances(tx);
+            buildRelations(tx);
+            buildRules(tx);
         };
     }
 
-    public static Thing putEntity(GraknTx graph, String id, EntityType type, Label key) {
+    public static Thing putEntity(GraknTx tx, String id, EntityType type, Label key) {
         Thing inst = type.addEntity();
-        putResource(inst, graph.getSchemaConcept(key), id);
+        putResource(inst, tx.getSchemaConcept(key), id);
         return inst;
     }
 
@@ -65,8 +65,8 @@ public abstract class TestKB {
         thing.attribute(attributeInstance);
     }
 
-    public static Thing getInstance(GraknTx graph, String id){
-        Set<Thing> things = graph.getAttributesByValue(id)
+    public static Thing getInstance(GraknTx tx, String id){
+        Set<Thing> things = tx.getAttributesByValue(id)
                 .stream().flatMap(Attribute::ownerInstances).collect(toSet());
         if (things.size() != 1) {
             throw new IllegalStateException("Multiple things with given resource value");

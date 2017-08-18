@@ -42,14 +42,14 @@ class MatchQueryTx extends MatchQueryModifier {
     @Override
     public Stream<Answer> stream(Optional<GraknTx> graph) {
         if (graph.isPresent()) {
-            throw GraqlQueryException.multipleGraphs();
+            throw GraqlQueryException.multipleTxs();
         }
 
         return inner.stream(Optional.of(this.graph));
     }
 
     @Override
-    public Optional<GraknTx> getGraph() {
+    public Optional<GraknTx> tx() {
         return Optional.of(graph);
     }
 

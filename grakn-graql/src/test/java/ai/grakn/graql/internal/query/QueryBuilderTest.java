@@ -61,14 +61,14 @@ public class QueryBuilderTest {
 
     @Test
     public void testBuildMatchQueryGraphLast() {
-        MatchQuery query = match(var("x").isa("movie")).withGraph(movieGraph.tx());
+        MatchQuery query = match(var("x").isa("movie")).withTx(movieGraph.tx());
         assertThat(query, variable("x", containsAllMovies));
     }
 
     @Test
     public void testBuildInsertQueryGraphLast() {
         assertNotExists(movieGraph.tx(), var().has("title", "a-movie"));
-        InsertQuery query = insert(var().has("title", "a-movie").isa("movie")).withGraph(movieGraph.tx());
+        InsertQuery query = insert(var().has("title", "a-movie").isa("movie")).withTx(movieGraph.tx());
         query.execute();
         assertExists(movieGraph.tx(), var().has("title", "a-movie"));
     }
@@ -80,7 +80,7 @@ public class QueryBuilderTest {
 
         assertExists(movieGraph.tx(), var().has("title", "123"));
 
-        DeleteQuery query = match(var("x").has("title", "123")).delete("x").withGraph(movieGraph.tx());
+        DeleteQuery query = match(var("x").has("title", "123")).delete("x").withTx(movieGraph.tx());
         query.execute();
 
         assertNotExists(movieGraph.tx(), var().has("title", "123"));
@@ -91,7 +91,7 @@ public class QueryBuilderTest {
         assertNotExists(movieGraph.tx(), var().has("title", "a-movie"));
         InsertQuery query =
                 match(var("x").label("movie")).
-                insert(var().has("title", "a-movie").isa("movie")).withGraph(movieGraph.tx());
+                insert(var().has("title", "a-movie").isa("movie")).withTx(movieGraph.tx());
         query.execute();
         assertExists(movieGraph.tx(), var().has("title", "a-movie"));
     }
@@ -125,7 +125,7 @@ public class QueryBuilderTest {
         MatchQuery query = match(var("x").isa("not-a-thing"));
         exception.expect(GraqlQueryException.class);
         //noinspection ResultOfMethodCallIgnored
-        query.withGraph(movieGraph.tx()).stream();
+        query.withTx(movieGraph.tx()).stream();
     }
 
     @Test
@@ -133,6 +133,6 @@ public class QueryBuilderTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
         //noinspection ResultOfMethodCallIgnored
-        movieGraph.tx().graql().match(var("x").isa("movie")).withGraph(movieGraph.tx()).stream();
+        movieGraph.tx().graql().match(var("x").isa("movie")).withTx(movieGraph.tx()).stream();
     }
 }

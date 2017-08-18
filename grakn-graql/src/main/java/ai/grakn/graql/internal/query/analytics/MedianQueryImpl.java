@@ -81,8 +81,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
     }
 
     @Override
-    public MedianQuery withGraph(GraknTx graph) {
-        return (MedianQuery) super.withGraph(graph);
+    public MedianQuery withTx(GraknTx tx) {
+        return (MedianQuery) super.withTx(tx);
     }
 
     @Override

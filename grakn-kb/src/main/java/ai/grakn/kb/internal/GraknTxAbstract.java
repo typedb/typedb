@@ -251,7 +251,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public boolean isBatchGraph() {
+    public boolean isBatchTx() {
         return GraknTxType.BATCH.equals(txCache().txType());
     }
 
@@ -372,7 +372,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     public void checkSchemaMutationAllowed() {
         checkMutationAllowed();
-        if (isBatchGraph()) throw GraknTxOperationException.schemaMutation();
+        if (isBatchTx()) throw GraknTxOperationException.schemaMutation();
     }
 
     public void checkMutationAllowed() {
@@ -727,7 +727,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(getKeyspace()));
             getTinkerPopGraph().close();
         } catch (Exception e) {
-            throw GraknTxOperationException.closingGraphFailed(this, e);
+            throw GraknTxOperationException.closingFailed(this, e);
         }
     }
 

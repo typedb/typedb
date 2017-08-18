@@ -53,7 +53,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class PostProcessingTest extends KBTestBase {
+public class PostProcessingTest extends TxTestBase {
     private Role role1;
     private Role role2;
     private RelationshipType relationshipType;
@@ -62,10 +62,10 @@ public class PostProcessingTest extends KBTestBase {
 
     @Before
     public void buildSampleGraph(){
-        role1 = graknGraph.putRole("role 1");
-        role2 = graknGraph.putRole("role 2");
-        relationshipType = graknGraph.putRelationshipType("rel type").relates(role1).relates(role2);
-        EntityType thing = graknGraph.putEntityType("thingy").plays(role1).plays(role2);
+        role1 = tx.putRole("role 1");
+        role2 = tx.putRole("role 2");
+        relationshipType = tx.putRelationshipType("rel type").relates(role1).relates(role2);
+        EntityType thing = tx.putEntityType("thingy").plays(role1).plays(role2);
         instance1 = (ThingImpl) thing.addEntity();
         instance2 = (ThingImpl) thing.addEntity();
         thing.addEntity();
@@ -76,7 +76,7 @@ public class PostProcessingTest extends KBTestBase {
 
     @Test
     public void whenMergingDuplicateResources_EnsureSingleResourceRemains(){
-        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) graknGraph.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
+        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
 
         //Create fake resources
         Set<ConceptId> resourceIds = new HashSet<>();
@@ -89,7 +89,7 @@ public class PostProcessingTest extends KBTestBase {
         assertEquals(3, resourceType.instances().count());
 
         //Fix duplicates
-        graknGraph.fixDuplicateResources(mainResource.getIndex(), resourceIds);
+        tx.fixDuplicateResources(mainResource.getIndex(), resourceIds);
 
         //Check we no longer have duplicates
         assertEquals(1, resourceType.instances().count());
@@ -97,11 +97,11 @@ public class PostProcessingTest extends KBTestBase {
 
     @Test
     public void whenMergingDuplicateResourcesWithRelations_EnsureSingleResourceRemainsAndNoDuplicateRelationsAreCreated(){
-        Role roleEntity = graknGraph.putRole("Entity Role");
-        Role roleResource = graknGraph.putRole("Attribute Role");
-        RelationshipType relationshipType = graknGraph.putRelationshipType("Relationship Type").relates(roleEntity).relates(roleResource);
-        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) graknGraph.putAttributeType("Attribute Type", AttributeType.DataType.STRING).plays(roleResource);
-        EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity).attribute(resourceType);
+        Role roleEntity = tx.putRole("Entity Role");
+        Role roleResource = tx.putRole("Attribute Role");
+        RelationshipType relationshipType = tx.putRelationshipType("Relationship Type").relates(roleEntity).relates(roleResource);
+        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING).plays(roleResource);
+        EntityType entityType = tx.putEntityType("Entity Type").plays(roleEntity).attribute(resourceType);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
         Entity e3 = entityType.addEntity();
@@ -136,13 +136,13 @@ public class PostProcessingTest extends KBTestBase {
         assertEquals(1, r1.relationships().count());
         assertEquals(2, r11.relationships().count());
         assertEquals(1, r1.relationships().count());
-        assertEquals(4, graknGraph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATIONSHIP.name()).toList().size());
-        assertEquals(2, graknGraph.getTinkerTraversal().E().hasLabel(Schema.EdgeLabel.RESOURCE.getLabel()).toList().size());
+        assertEquals(4, tx.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATIONSHIP.name()).toList().size());
+        assertEquals(2, tx.getTinkerTraversal().E().hasLabel(Schema.EdgeLabel.RESOURCE.getLabel()).toList().size());
 
         r1.relationships().forEach(rel -> assertTrue(rel.rolePlayers().anyMatch(thing -> thing.equals(e1))));
 
         //Now fix everything
-        graknGraph.fixDuplicateResources(r1.getIndex(), resourceIds);
+        tx.fixDuplicateResources(r1.getIndex(), resourceIds);
 
         //Check everything is in order
         assertEquals(1, resourceType.instances().count());
@@ -158,7 +158,7 @@ public class PostProcessingTest extends KBTestBase {
 
         assertNotNull(foundR1);
         assertThat(foundR1.ownerInstances().collect(toSet()), containsInAnyOrder(e1, e2, e3));
-        assertEquals(5, graknGraph.admin().getMetaRelationType().instances().count());
+        assertEquals(5, tx.admin().getMetaRelationType().instances().count());
     }
 
     private void addEdgeRelation(Entity entity, Attribute<?> attribute) {
@@ -174,37 +174,37 @@ public class PostProcessingTest extends KBTestBase {
 
     private AttributeImpl<String> createFakeResource(AttributeTypeImpl<String> type, String value){
         String index = Schema.generateAttributeIndex(type.getLabel(), value);
-        Vertex resourceVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.ATTRIBUTE.name());
+        Vertex resourceVertex = tx.getTinkerPopGraph().addVertex(Schema.BaseType.ATTRIBUTE.name());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), type.currentShard().vertex().element());
         resourceVertex.property(Schema.VertexProperty.INDEX.name(), index);
         resourceVertex.property(Schema.VertexProperty.VALUE_STRING.name(), value);
         resourceVertex.property(Schema.VertexProperty.ID.name(), Schema.PREFIX_VERTEX + resourceVertex.id().toString());
 
-        return new AttributeImpl<>(new VertexElement(graknGraph, resourceVertex));
+        return new AttributeImpl<>(new VertexElement(tx, resourceVertex));
     }
 
     @Test
     public void whenUpdatingTheCountsOfTypes_TheTypesHaveNewCounts() {
         Map<ConceptId, Long> types = new HashMap<>();
         //Create Some Types;
-        EntityTypeImpl t1 = (EntityTypeImpl) graknGraph.putEntityType("t1");
-        AttributeTypeImpl t2 = (AttributeTypeImpl)  graknGraph.putAttributeType("t2", AttributeType.DataType.STRING);
-        RelationshipTypeImpl t3 = (RelationshipTypeImpl) graknGraph.putRelationshipType("t3");
+        EntityTypeImpl t1 = (EntityTypeImpl) tx.putEntityType("t1");
+        AttributeTypeImpl t2 = (AttributeTypeImpl)  tx.putAttributeType("t2", AttributeType.DataType.STRING);
+        RelationshipTypeImpl t3 = (RelationshipTypeImpl) tx.putRelationshipType("t3");
 
         //Lets Set Some Counts
         types.put(t1.getId(), 5L);
         types.put(t2.getId(), 6L);
         types.put(t3.getId(), 2L);
 
-        graknGraph.admin().updateConceptCounts(types);
-        types.forEach((key, value) -> assertEquals((long) value, ((ConceptImpl) graknGraph.getConcept(key)).getShardCount()));
+        tx.admin().updateConceptCounts(types);
+        types.forEach((key, value) -> assertEquals((long) value, ((ConceptImpl) tx.getConcept(key)).getShardCount()));
 
         //Lets Set Some Counts
         types.put(t1.getId(), -5L);
         types.put(t2.getId(), -2L);
         types.put(t3.getId(), 3L);
-        graknGraph.admin().updateConceptCounts(types);
+        tx.admin().updateConceptCounts(types);
 
         assertEquals(0L, t1.getShardCount());
         assertEquals(4L, t2.getShardCount());
@@ -213,9 +213,9 @@ public class PostProcessingTest extends KBTestBase {
 
     @Test
     public void whenMergingDuplicateResourceEdges_EnsureNoDuplicatesRemain(){
-        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) graknGraph.putAttributeType("My Sad Attribute", AttributeType.DataType.STRING);
-        EntityType entityType = graknGraph.putEntityType("My Happy EntityType").attribute(resourceType);
-        RelationshipType relationshipType = graknGraph.putRelationshipType("My Miserable RelationshipType").attribute(resourceType);
+        AttributeTypeImpl<String> resourceType = (AttributeTypeImpl<String>) tx.putAttributeType("My Sad Attribute", AttributeType.DataType.STRING);
+        EntityType entityType = tx.putEntityType("My Happy EntityType").attribute(resourceType);
+        RelationshipType relationshipType = tx.putRelationshipType("My Miserable RelationshipType").attribute(resourceType);
         Entity entity = entityType.addEntity();
         Relationship relationship = relationshipType.addRelationship();
 
@@ -243,22 +243,22 @@ public class PostProcessingTest extends KBTestBase {
         assertEquals(3, relationship.attributes().count());
 
         //There are too many resources
-        assertEquals(6, graknGraph.admin().getMetaResourceType().instances().count());
+        assertEquals(6, tx.admin().getMetaResourceType().instances().count());
 
         //Now fix everything for resource 1
-        graknGraph.fixDuplicateResources(r1dup1.getIndex(), new HashSet<>(Arrays.asList(r1dup1.getId(), r1dup2.getId(), r1dup3.getId())));
+        tx.fixDuplicateResources(r1dup1.getIndex(), new HashSet<>(Arrays.asList(r1dup1.getId(), r1dup2.getId(), r1dup3.getId())));
 
         //Check resource one has been sorted out
         assertEquals(2, entity.attributes().count());
         assertEquals(2, entity.attributes().count());
-        assertEquals(4, graknGraph.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
+        assertEquals(4, tx.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
 
         //Now fix everything for resource 2
-        graknGraph.fixDuplicateResources(r2dup1.getIndex(), new HashSet<>(Arrays.asList(r2dup1.getId(), r2dup2.getId(), r2dup3.getId())));
+        tx.fixDuplicateResources(r2dup1.getIndex(), new HashSet<>(Arrays.asList(r2dup1.getId(), r2dup2.getId(), r2dup3.getId())));
 
         //Check resource one has been sorted out
         assertEquals(2, entity.attributes().count());
         assertEquals(2, entity.attributes().count());
-        assertEquals(2, graknGraph.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
+        assertEquals(2, tx.admin().getMetaResourceType().instances().count()); // 4 because we still have 2 dups on r2
     }
 }

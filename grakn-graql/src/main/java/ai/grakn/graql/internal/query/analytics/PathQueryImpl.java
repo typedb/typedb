@@ -133,8 +133,8 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     }
 
     @Override
-    public PathQuery withGraph(GraknTx graph) {
-        return (PathQuery) super.withGraph(graph);
+    public PathQuery withTx(GraknTx tx) {
+        return (PathQuery) super.withTx(tx);
     }
 
     @Override

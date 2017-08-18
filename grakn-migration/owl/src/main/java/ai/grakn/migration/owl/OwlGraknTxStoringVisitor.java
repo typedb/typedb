@@ -87,8 +87,8 @@ public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWL
     public OwlGraknTxStoringVisitor prepareOWL() {
         migrator.entityType(migrator.ontology().getOWLOntologyManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));
         migrator.relation(migrator.ontology().getOWLOntologyManager().getOWLDataFactory().getOWLObjectProperty(OwlModel.OBJECT_PROPERTY.owlname()))
-          .relates(migrator.graph().putRole(OwlModel.OBJECT.owlname()))
-          .relates(migrator.graph().putRole(OwlModel.SUBJECT.owlname()));
+          .relates(migrator.tx().putRole(OwlModel.OBJECT.owlname()))
+          .relates(migrator.tx().putRole(OwlModel.SUBJECT.owlname()));
         return this;
     }
     
@@ -195,7 +195,7 @@ public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWL
         Map<Label, Label> roleMap = new HashMap<>();
         roleMap.put(migrator.namer().subjectRole(superRelation.getLabel()), migrator.namer().subjectRole(subRelation.getLabel()));
         roleMap.put(migrator.namer().objectRole(superRelation.getLabel()), migrator.namer().objectRole(subRelation.getLabel()));
-        ReasonerUtils.createSubPropertyRule(superRelation, subRelation, roleMap, migrator.graph());
+        ReasonerUtils.createSubPropertyRule(superRelation, subRelation, roleMap, migrator.tx());
 
         migrator.subjectRole(subRelation).sup(migrator.subjectRole(superRelation));
         migrator.objectRole(subRelation).sup(migrator.objectRole(superRelation));
@@ -232,7 +232,7 @@ public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWL
                             migrator.namer().subjectRole(eqRelation.getLabel()));
                     roleMap.put(migrator.namer().objectRole(relation.getLabel()),
                             migrator.namer().objectRole(eqRelation.getLabel()));
-                    ReasonerUtils.createSubPropertyRule(relation, eqRelation, roleMap, migrator.graph());
+                    ReasonerUtils.createSubPropertyRule(relation, eqRelation, roleMap, migrator.tx());
                 }
             });
         }
@@ -250,12 +250,12 @@ public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWL
         Map<Label, Label> roleMapFD = new HashMap<>();
         roleMapFD.put(migrator.namer().subjectRole(relation.getLabel()), migrator.namer().objectRole(inverseRelation.getLabel()));
         roleMapFD.put(migrator.namer().objectRole(relation.getLabel()), migrator.namer().subjectRole(inverseRelation.getLabel()));
-        ReasonerUtils.createSubPropertyRule(relation, inverseRelation, roleMapFD, migrator.graph());
+        ReasonerUtils.createSubPropertyRule(relation, inverseRelation, roleMapFD, migrator.tx());
 
         Map<Label, Label> roleMapBD = new HashMap<>();
         roleMapBD.put(migrator.namer().subjectRole(inverseRelation.getLabel()), migrator.namer().objectRole(relation.getLabel()));
         roleMapBD.put(migrator.namer().objectRole(inverseRelation.getLabel()), migrator.namer().subjectRole(relation.getLabel()));
-        ReasonerUtils.createSubPropertyRule(inverseRelation, relation, roleMapBD, migrator.graph());
+        ReasonerUtils.createSubPropertyRule(inverseRelation, relation, roleMapBD, migrator.tx());
         return null;
     }
 
@@ -269,7 +269,7 @@ public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWL
                 relation,
                 migrator.namer().subjectRole(relation.getLabel()),
                 migrator.namer().objectRole(relation.getLabel()),
-                migrator.graph());
+                migrator.tx());
         return null;
     }
 
@@ -283,7 +283,7 @@ public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWL
                 relation,
                 migrator.namer().subjectRole(relation.getLabel()),
                 migrator.namer().objectRole(relation.getLabel()),
-                migrator.graph());
+                migrator.tx());
         return null;
     }
 
@@ -302,7 +302,7 @@ public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWL
         });
 
         ReasonerUtils.createPropertyChainRule(superRelation, migrator.namer().subjectRole(superRelation.getLabel()),
-                migrator.namer().objectRole(superRelation.getLabel()), chain, migrator.graph());
+                migrator.namer().objectRole(superRelation.getLabel()), chain, migrator.tx());
         return null;
     }
 

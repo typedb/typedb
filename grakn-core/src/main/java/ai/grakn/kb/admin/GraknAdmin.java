@@ -81,7 +81,7 @@ public interface GraknAdmin {
      * @return true if batch loading is enabled
      */
     @CheckReturnValue
-    boolean isBatchGraph();
+    boolean isBatchTx();
 
     //------------------------------------- Meta Types ----------------------------------
     /**

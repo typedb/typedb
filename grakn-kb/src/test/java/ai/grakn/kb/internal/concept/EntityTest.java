@@ -30,7 +30,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
-import ai.grakn.kb.internal.KBTestBase;
+import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.util.Schema;
 import org.junit.Test;
@@ -43,11 +43,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
-public class EntityTest extends KBTestBase {
+public class EntityTest extends TxTestBase {
 
     @Test
     public void whenGettingTypeOfEntity_ReturnEntityType(){
-        EntityType entityType = graknGraph.putEntityType("Entiy Type");
+        EntityType entityType = tx.putEntityType("Entiy Type");
         Entity entity = entityType.addEntity();
         assertEquals(entityType, entity.type());
     }
@@ -55,11 +55,11 @@ public class EntityTest extends KBTestBase {
     @Test
     public void whenDeletingInstanceInRelationShip_TheInstanceAndCastingsAreDeletedAndTheRelationRemains() throws GraknTxOperationException {
         //Schema
-        EntityType type = graknGraph.putEntityType("Concept Type");
-        RelationshipType relationshipType = graknGraph.putRelationshipType("relationTypes");
-        Role role1 = graknGraph.putRole("role1");
-        Role role2 = graknGraph.putRole("role2");
-        Role role3 = graknGraph.putRole("role3");
+        EntityType type = tx.putEntityType("Concept Type");
+        RelationshipType relationshipType = tx.putRelationshipType("relationTypes");
+        Role role1 = tx.putRole("role1");
+        Role role2 = tx.putRole("role2");
+        Role role3 = tx.putRole("role3");
 
         //Data
         ThingImpl<?, ?> rolePlayer1 = (ThingImpl) type.addEntity();
@@ -86,32 +86,32 @@ public class EntityTest extends KBTestBase {
         ConceptId idOfDeleted = rolePlayer1.getId();
         rolePlayer1.delete();
 
-        assertNull(graknGraph.getConcept(idOfDeleted));
+        assertNull(tx.getConcept(idOfDeleted));
         assertThat(relation.reified().get().castingsRelation().collect(Collectors.toSet()), containsInAnyOrder(rp2, rp3));
     }
 
     @Test
     public void whenDeletingLastRolePlayerInRelation_TheRelationIsDeleted() throws GraknTxOperationException {
-        EntityType type = graknGraph.putEntityType("Concept Type");
-        RelationshipType relationshipType = graknGraph.putRelationshipType("relationTypes");
-        Role role1 = graknGraph.putRole("role1");
+        EntityType type = tx.putEntityType("Concept Type");
+        RelationshipType relationshipType = tx.putRelationshipType("relationTypes");
+        Role role1 = tx.putRole("role1");
         Thing rolePlayer1 = type.addEntity();
 
         Relationship relationship = relationshipType.addRelationship().
                 addRolePlayer(role1, rolePlayer1);
 
-        assertNotNull(graknGraph.getConcept(relationship.getId()));
+        assertNotNull(tx.getConcept(relationship.getId()));
 
         rolePlayer1.delete();
 
-        assertNull(graknGraph.getConcept(relationship.getId()));
+        assertNull(tx.getConcept(relationship.getId()));
     }
 
     @Test
     public void whenAddingResourceToAnEntity_EnsureTheImplicitStructureIsCreated(){
         Label resourceLabel = Label.of("A Attribute Thing");
-        EntityType entityType = graknGraph.putEntityType("A Thing");
-        AttributeType<String> attributeType = graknGraph.putAttributeType(resourceLabel, AttributeType.DataType.STRING);
+        EntityType entityType = tx.putEntityType("A Thing");
+        AttributeType<String> attributeType = tx.putAttributeType(resourceLabel, AttributeType.DataType.STRING);
         entityType.attribute(attributeType);
 
         Entity entity = entityType.addEntity();
@@ -125,8 +125,8 @@ public class EntityTest extends KBTestBase {
 
     @Test
     public void whenAddingResourceToEntityWithoutAllowingItBetweenTypes_Throw(){
-        EntityType entityType = graknGraph.putEntityType("A Thing");
-        AttributeType<String> attributeType = graknGraph.putAttributeType("A Attribute Thing", AttributeType.DataType.STRING);
+        EntityType entityType = tx.putEntityType("A Thing");
+        AttributeType<String> attributeType = tx.putAttributeType("A Attribute Thing", AttributeType.DataType.STRING);
 
         Entity entity = entityType.addEntity();
         Attribute attribute = attributeType.putAttribute("A attribute thing");
@@ -140,8 +140,8 @@ public class EntityTest extends KBTestBase {
     @Test
     public void whenAddingMultipleResourcesToEntity_EnsureDifferentRelationsAreBuilt() throws InvalidKBException {
         String resourceTypeId = "A Attribute Thing";
-        EntityType entityType = graknGraph.putEntityType("A Thing");
-        AttributeType<String> attributeType = graknGraph.putAttributeType(resourceTypeId, AttributeType.DataType.STRING);
+        EntityType entityType = tx.putEntityType("A Thing");
+        AttributeType<String> attributeType = tx.putAttributeType(resourceTypeId, AttributeType.DataType.STRING);
         entityType.attribute(attributeType);
 
         Entity entity = entityType.addEntity();
@@ -154,14 +154,14 @@ public class EntityTest extends KBTestBase {
         entity.attribute(attribute2);
         assertEquals(2, entity.relationships().count());
 
-        graknGraph.commit();
+        tx.commit();
     }
 
     @Test
     public void checkKeyCreatesCorrectResourceStructure(){
         Label resourceLabel = Label.of("A Attribute Thing");
-        EntityType entityType = graknGraph.putEntityType("A Thing");
-        AttributeType<String> attributeType = graknGraph.putAttributeType(resourceLabel, AttributeType.DataType.STRING);
+        EntityType entityType = tx.putEntityType("A Thing");
+        AttributeType<String> attributeType = tx.putAttributeType(resourceLabel, AttributeType.DataType.STRING);
         entityType.key(attributeType);
 
         Entity entity = entityType.addEntity();
@@ -176,15 +176,15 @@ public class EntityTest extends KBTestBase {
     @Test
     public void whenCreatingAnEntityAndNotLinkingARequiredKey_Throw() throws InvalidKBException {
         String resourceTypeId = "A Attribute Thing";
-        EntityType entityType = graknGraph.putEntityType("A Thing");
-        AttributeType<String> attributeType = graknGraph.putAttributeType(resourceTypeId, AttributeType.DataType.STRING);
+        EntityType entityType = tx.putEntityType("A Thing");
+        AttributeType<String> attributeType = tx.putAttributeType(resourceTypeId, AttributeType.DataType.STRING);
         entityType.key(attributeType);
 
         Entity entity = entityType.addEntity();
 
         expectedException.expect(InvalidKBException.class);
 
-        graknGraph.commit();
+        tx.commit();
     }
 
     private void checkImplicitStructure(AttributeType<?> attributeType, Relationship relationship, Entity entity, Schema.ImplicitType has, Schema.ImplicitType hasOwner, Schema.ImplicitType hasValue){
@@ -205,7 +205,7 @@ public class EntityTest extends KBTestBase {
 
     @Test
     public void whenAddingEntity_EnsureInternalTypeIsTheSameAsRealType(){
-        EntityType et = graknGraph.putEntityType("et");
+        EntityType et = tx.putEntityType("et");
         EntityImpl e = (EntityImpl) et.addEntity();
         assertEquals(et.getLabel(), e.getInternalType());
     }

@@ -132,11 +132,11 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
     MatchQuery orderBy(Var varName, Order order);
 
     /**
-     * @param graph the graph to execute the query on
+     * @param tx the graph to execute the query on
      * @return a new MatchQuery with the graph set
      */
     @Override
-    MatchQuery withGraph(GraknTx graph);
+    MatchQuery withTx(GraknTx tx);
 
     /**
      * @param limit the maximum number of results the query should return

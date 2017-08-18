@@ -56,46 +56,46 @@ public class DegreeTest {
     @ClassRule
     public static final EngineContext context = EngineContext.startInMemoryServer();
     private GraknSession factory;
-    private GraknTx graph;
+    private GraknTx tx;
 
     @Before
     public void setUp() {
         factory = context.factoryWithNewKeyspace();
-        graph = factory.open(GraknTxType.WRITE);
+        tx = factory.open(GraknTxType.WRITE);
     }
 
     @Test
     public void testDegrees() throws Exception {
         // create instances
-        EntityType thingy = graph.putEntityType("thingy");
-        EntityType anotherThing = graph.putEntityType("another");
+        EntityType thingy = tx.putEntityType("thingy");
+        EntityType anotherThing = tx.putEntityType("another");
 
         ConceptId entity1 = thingy.addEntity().getId();
         ConceptId entity2 = thingy.addEntity().getId();
         ConceptId entity3 = thingy.addEntity().getId();
         ConceptId entity4 = anotherThing.addEntity().getId();
 
-        Role role1 = graph.putRole("role1");
-        Role role2 = graph.putRole("role2");
+        Role role1 = tx.putRole("role1");
+        Role role2 = tx.putRole("role2");
         thingy.plays(role1).plays(role2);
         anotherThing.plays(role1).plays(role2);
-        RelationshipType related = graph.putRelationshipType("related").relates(role1).relates(role2);
+        RelationshipType related = tx.putRelationshipType("related").relates(role1).relates(role2);
 
         // relate them
         ConceptId id1 = related.addRelationship()
-                .addRolePlayer(role1, graph.getConcept(entity1))
-                .addRolePlayer(role2, graph.getConcept(entity2))
+                .addRolePlayer(role1, tx.getConcept(entity1))
+                .addRolePlayer(role2, tx.getConcept(entity2))
                 .getId();
         ConceptId id2 = related.addRelationship()
-                .addRolePlayer(role1, graph.getConcept(entity2))
-                .addRolePlayer(role2, graph.getConcept(entity3))
+                .addRolePlayer(role1, tx.getConcept(entity2))
+                .addRolePlayer(role2, tx.getConcept(entity3))
                 .getId();
         ConceptId id3 = related.addRelationship()
-                .addRolePlayer(role1, graph.getConcept(entity2))
-                .addRolePlayer(role2, graph.getConcept(entity4))
+                .addRolePlayer(role1, tx.getConcept(entity2))
+                .addRolePlayer(role2, tx.getConcept(entity4))
                 .getId();
-        graph.commit();
-        graph = factory.open(GraknTxType.READ);
+        tx.commit();
+        tx = factory.open(GraknTxType.READ);
 
         Map<ConceptId, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1L);
@@ -113,7 +113,7 @@ public class DegreeTest {
         for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
-        graph.close();
+        tx.close();
 
         Set<Map<Long, Set<String>>> result = list.parallelStream().map(i -> {
             try (GraknTx graph = factory.open(GraknTxType.READ)) {
@@ -194,15 +194,15 @@ public class DegreeTest {
 
     @Test
     public void testSubIsAccountedForInSubgraph() throws Exception {
-        // create a simple graph
-        Role pet = graph.putRole("pet");
-        Role owner = graph.putRole("owner");
-        graph.putRelationshipType("mans-best-friend").relates(pet).relates(owner);
-        graph.putEntityType("person").plays(owner);
-        EntityType animal = graph.putEntityType("animal").plays(pet);
-        EntityType dog = graph.putEntityType("dog").sup(animal);
+        // create a simple tx
+        Role pet = tx.putRole("pet");
+        Role owner = tx.putRole("owner");
+        tx.putRelationshipType("mans-best-friend").relates(pet).relates(owner);
+        tx.putEntityType("person").plays(owner);
+        EntityType animal = tx.putEntityType("animal").plays(pet);
+        EntityType dog = tx.putEntityType("dog").sup(animal);
         dog.addEntity();
-        graph.commit();
+        tx.commit();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             // set subgraph
@@ -217,20 +217,20 @@ public class DegreeTest {
 
     @Test
     public void testDegreeIsCorrect() throws InvalidKBException, ExecutionException, InterruptedException {
-        // create a simple graph
-        Role pet = graph.putRole("pet");
-        Role owner = graph.putRole("owner");
-        RelationshipType mansBestFriend = graph.putRelationshipType("mans-best-friend").relates(pet).relates(owner);
-        Role target = graph.putRole("target");
-        Role value = graph.putRole("value");
-        RelationshipType hasName = graph.putRelationshipType("has-name").relates(value).relates(target);
-        EntityType person = graph.putEntityType("person").plays(owner);
-        EntityType animal = graph.putEntityType("animal").plays(pet).plays(target);
-        AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING).plays(value);
+        // create a simple tx
+        Role pet = tx.putRole("pet");
+        Role owner = tx.putRole("owner");
+        RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend").relates(pet).relates(owner);
+        Role target = tx.putRole("target");
+        Role value = tx.putRole("value");
+        RelationshipType hasName = tx.putRelationshipType("has-name").relates(value).relates(target);
+        EntityType person = tx.putEntityType("person").plays(owner);
+        EntityType animal = tx.putEntityType("animal").plays(pet).plays(target);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING).plays(value);
         AttributeType<String> altName =
-                graph.putAttributeType("alternate-name", AttributeType.DataType.STRING).plays(value);
+                tx.putAttributeType("alternate-name", AttributeType.DataType.STRING).plays(value);
 
-        // add data to the graph
+        // add data to the tx
         Entity coco = animal.addEntity();
         Entity dave = person.addEntity();
         Attribute coconut = name.putAttribute("coconut");
@@ -239,13 +239,13 @@ public class DegreeTest {
         Relationship cocoName = hasName.addRelationship().addRolePlayer(target, coco).addRolePlayer(value, coconut);
         Relationship cocoAltName = hasName.addRelationship().addRolePlayer(target, coco).addRolePlayer(value, stinky);
 
-        // manually compute the degree for small graph
+        // manually compute the degree for small tx
         Map<ConceptId, Long> subGraphReferenceDegrees = new HashMap<>();
         subGraphReferenceDegrees.put(coco.getId(), 1L);
         subGraphReferenceDegrees.put(dave.getId(), 1L);
         subGraphReferenceDegrees.put(daveOwnsCoco.getId(), 2L);
 
-        // manually compute degree for almost full graph
+        // manually compute degree for almost full tx
         Map<ConceptId, Long> almostFullReferenceDegrees = new HashMap<>();
         almostFullReferenceDegrees.put(coco.getId(), 3L);
         almostFullReferenceDegrees.put(dave.getId(), 1L);
@@ -264,7 +264,7 @@ public class DegreeTest {
         referenceDegrees.put(cocoName.getId(), 2L);
         referenceDegrees.put(cocoAltName.getId(), 2L);
 
-        graph.commit();
+        tx.commit();
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
 
             // create a subgraph excluding resources and the relationship
@@ -291,7 +291,7 @@ public class DegreeTest {
                     }
             ));
 
-            // full graph
+            // full tx
             degrees = graph.graql().compute().degree().execute();
             assertFalse(degrees.isEmpty());
             degrees.forEach((key, value1) -> value1.forEach(
@@ -305,14 +305,14 @@ public class DegreeTest {
 
     @Test
     public void testDegreeMissingRolePlayer() throws Exception {
-        // create a simple graph
-        Role pet = graph.putRole("pet");
-        Role owner = graph.putRole("owner");
-        Role breeder = graph.putRole("breeder");
-        RelationshipType mansBestFriend = graph.putRelationshipType("mans-best-friend")
+        // create a simple tx
+        Role pet = tx.putRole("pet");
+        Role owner = tx.putRole("owner");
+        Role breeder = tx.putRole("breeder");
+        RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend")
                 .relates(pet).relates(owner).relates(breeder);
-        EntityType person = graph.putEntityType("person").plays(owner).plays(breeder);
-        EntityType animal = graph.putEntityType("animal").plays(pet);
+        EntityType person = tx.putEntityType("person").plays(owner).plays(breeder);
+        EntityType animal = tx.putEntityType("animal").plays(pet);
 
         // make one person breeder and owner
         Entity coco = animal.addEntity();
@@ -326,7 +326,7 @@ public class DegreeTest {
         referenceDegrees.put(dave.getId(), 1L);
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
 
-        graph.commit();
+        tx.commit();
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
 
             // compute and persist degrees
@@ -342,27 +342,27 @@ public class DegreeTest {
     @Test
     public void testDegreeAssertionAboutAssertion()
             throws InvalidKBException, ExecutionException, InterruptedException {
-        // create a simple graph
-        Role pet = graph.putRole("pet");
-        Role owner = graph.putRole("owner");
-        RelationshipType mansBestFriend = graph.putRelationshipType("mans-best-friend").relates(pet).relates(owner);
-        Role target = graph.putRole("target");
-        Role value = graph.putRole("value");
-        RelationshipType hasName = graph.putRelationshipType("has-name").relates(value).relates(target);
-        EntityType person = graph.putEntityType("person").plays(owner);
-        EntityType animal = graph.putEntityType("animal").plays(pet).plays(target);
-        AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING).plays(value);
+        // create a simple tx
+        Role pet = tx.putRole("pet");
+        Role owner = tx.putRole("owner");
+        RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend").relates(pet).relates(owner);
+        Role target = tx.putRole("target");
+        Role value = tx.putRole("value");
+        RelationshipType hasName = tx.putRelationshipType("has-name").relates(value).relates(target);
+        EntityType person = tx.putEntityType("person").plays(owner);
+        EntityType animal = tx.putEntityType("animal").plays(pet).plays(target);
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING).plays(value);
         AttributeType<String> altName =
-                graph.putAttributeType("alternate-name", AttributeType.DataType.STRING).plays(value);
-        Role ownership = graph.putRole("ownership");
-        Role ownershipResource = graph.putRole("ownership-resource");
+                tx.putAttributeType("alternate-name", AttributeType.DataType.STRING).plays(value);
+        Role ownership = tx.putRole("ownership");
+        Role ownershipResource = tx.putRole("ownership-resource");
         RelationshipType hasOwnershipResource =
-                graph.putRelationshipType("has-ownership-resource").relates(ownership).relates(ownershipResource);
+                tx.putRelationshipType("has-ownership-resource").relates(ownership).relates(ownershipResource);
         AttributeType<String> startDate =
-                graph.putAttributeType("start-date", AttributeType.DataType.STRING).plays(ownershipResource);
+                tx.putAttributeType("start-date", AttributeType.DataType.STRING).plays(ownershipResource);
         mansBestFriend.plays(ownership);
 
-        // add data to the graph
+        // add data to the tx
         Entity coco = animal.addEntity();
         Entity dave = person.addEntity();
         Attribute coconut = name.putAttribute("coconut");
@@ -389,7 +389,7 @@ public class DegreeTest {
         referenceDegrees2.put(dave.getId(), 1L);
         referenceDegrees2.put(daveOwnsCoco.getId(), 2L);
 
-        graph.commit();
+        tx.commit();
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
 
             // create a subgraph with assertion on assertion
@@ -428,17 +428,17 @@ public class DegreeTest {
     public void testDegreeTernaryRelationships()
             throws InvalidKBException, ExecutionException, InterruptedException {
         // make relationship
-        Role productionWithCast = graph.putRole("production-with-cast");
-        Role actor = graph.putRole("actor");
-        Role characterBeingPlayed = graph.putRole("character-being-played");
-        RelationshipType hasCast = graph.putRelationshipType("has-cast")
+        Role productionWithCast = tx.putRole("production-with-cast");
+        Role actor = tx.putRole("actor");
+        Role characterBeingPlayed = tx.putRole("character-being-played");
+        RelationshipType hasCast = tx.putRelationshipType("has-cast")
                 .relates(productionWithCast)
                 .relates(actor)
                 .relates(characterBeingPlayed);
 
-        EntityType movie = graph.putEntityType("movie").plays(productionWithCast);
-        EntityType person = graph.putEntityType("person").plays(actor);
-        EntityType character = graph.putEntityType("character").plays(characterBeingPlayed);
+        EntityType movie = tx.putEntityType("movie").plays(productionWithCast);
+        EntityType person = tx.putEntityType("person").plays(actor);
+        EntityType character = tx.putEntityType("character").plays(characterBeingPlayed);
 
         Entity godfather = movie.addEntity();
         Entity marlonBrando = person.addEntity();
@@ -451,7 +451,7 @@ public class DegreeTest {
                 .addRolePlayer(characterBeingPlayed, donVitoCorleone);
         ConceptId relationId = relationship.getId();
 
-        graph.commit();
+        tx.commit();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
@@ -463,14 +463,14 @@ public class DegreeTest {
     @Test
     public void testDegreeOneRolePlayerMultipleRoles()
             throws InvalidKBException, ExecutionException, InterruptedException {
-        // create a simple graph
-        Role pet = graph.putRole("pet");
-        Role owner = graph.putRole("owner");
-        Role breeder = graph.putRole("breeder");
-        RelationshipType mansBestFriend = graph.putRelationshipType("mans-best-friend")
+        // create a simple tx
+        Role pet = tx.putRole("pet");
+        Role owner = tx.putRole("owner");
+        Role breeder = tx.putRole("breeder");
+        RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend")
                 .relates(pet).relates(owner).relates(breeder);
-        EntityType person = graph.putEntityType("person").plays(owner).plays(breeder);
-        EntityType animal = graph.putEntityType("animal").plays(pet);
+        EntityType person = tx.putEntityType("person").plays(owner).plays(breeder);
+        EntityType animal = tx.putEntityType("animal").plays(pet);
 
         // make one person breeder and owner
         Entity coco = animal.addEntity();
@@ -487,7 +487,7 @@ public class DegreeTest {
         referenceDegrees.put(dave.getId(), 2L);
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 3L);
 
-        graph.commit();
+        tx.commit();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
@@ -503,12 +503,12 @@ public class DegreeTest {
 
     @Test
     public void testDegreeWithHasResourceEdges() {
-        EntityType thingy = graph.putEntityType("thingy");
-        AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+        EntityType thingy = tx.putEntityType("thingy");
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
         thingy.attribute(name);
         Entity entity1 = thingy.addEntity();
         entity1.attribute(name.putAttribute("1"));
-        graph.commit();
+        tx.commit();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().in().execute();
@@ -516,16 +516,16 @@ public class DegreeTest {
             assertEquals(degrees.get(1L).size(), 2);
         }
 
-        graph = factory.open(GraknTxType.WRITE);
+        tx = factory.open(GraknTxType.WRITE);
         Entity entity2 = thingy.addEntity();
-        Role role1 = graph.putRole("role1");
-        Role role2 = graph.putRole("role2");
+        Role role1 = tx.putRole("role1");
+        Role role2 = tx.putRole("role2");
         thingy.plays(role1).plays(role2);
-        RelationshipType related = graph.putRelationshipType("related").relates(role1).relates(role2);
+        RelationshipType related = tx.putRelationshipType("related").relates(role1).relates(role2);
         related.addRelationship()
                 .addRolePlayer(role1, entity1)
                 .addRolePlayer(role2, entity2);
-        graph.commit();
+        tx.commit();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees = graph.graql().compute().degree().in("thingy", "name").execute();
@@ -543,15 +543,15 @@ public class DegreeTest {
     @Test
     public void testDegreeRolePlayerWrongType()
             throws InvalidKBException, ExecutionException, InterruptedException {
-        // create a simple graph
-        Role pet = graph.putRole("pet");
-        Role owner = graph.putRole("owner");
-        Role breeder = graph.putRole("breeder");
-        RelationshipType mansBestFriend = graph.putRelationshipType("mans-best-friend")
+        // create a simple tx
+        Role pet = tx.putRole("pet");
+        Role owner = tx.putRole("owner");
+        Role breeder = tx.putRole("breeder");
+        RelationshipType mansBestFriend = tx.putRelationshipType("mans-best-friend")
                 .relates(pet).relates(owner).relates(breeder);
-        EntityType person = graph.putEntityType("person").plays(owner).plays(breeder);
-        EntityType dog = graph.putEntityType("dog").plays(pet);
-        EntityType cat = graph.putEntityType("cat").plays(pet);
+        EntityType person = tx.putEntityType("person").plays(owner).plays(breeder);
+        EntityType dog = tx.putEntityType("dog").plays(pet);
+        EntityType cat = tx.putEntityType("cat").plays(pet);
 
         // make one person breeder and owner of a dog and a cat
         Entity beast = dog.addEntity();
@@ -570,7 +570,7 @@ public class DegreeTest {
         referenceDegrees.put(daveBreedsAndOwnsBeast.getId(), 2L);
 
         // validate
-        graph.commit();
+        tx.commit();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             // check degree for dave owning cats

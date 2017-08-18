@@ -35,18 +35,18 @@ public class SNBKB extends TestKB {
     }
 
     @Override
-    protected void buildSchema(GraknTx graph) {
-        SampleKBContext.loadFromFile(graph, "ldbc-snb-schema.gql");
-        SampleKBContext.loadFromFile(graph, "ldbc-snb-product-schema.gql");
+    protected void buildSchema(GraknTx tx) {
+        SampleKBContext.loadFromFile(tx, "ldbc-snb-schema.gql");
+        SampleKBContext.loadFromFile(tx, "ldbc-snb-product-schema.gql");
     }
 
     @Override
-    protected void buildRules(GraknTx graph) {
-        SampleKBContext.loadFromFile(graph, "ldbc-snb-rules.gql");
+    protected void buildRules(GraknTx tx) {
+        SampleKBContext.loadFromFile(tx, "ldbc-snb-rules.gql");
     }
 
     @Override
-    protected void buildInstances(GraknTx graph) {
-        SampleKBContext.loadFromFile(graph, "ldbc-snb-data.gql");
+    protected void buildInstances(GraknTx tx) {
+        SampleKBContext.loadFromFile(tx, "ldbc-snb-data.gql");
     }
 }

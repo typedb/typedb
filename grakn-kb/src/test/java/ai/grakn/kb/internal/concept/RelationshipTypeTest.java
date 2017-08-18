@@ -25,7 +25,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.KBTestBase;
+import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.util.Schema;
 import org.junit.Test;
 
@@ -36,22 +36,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-public class RelationshipTypeTest extends KBTestBase {
+public class RelationshipTypeTest extends TxTestBase {
     @Test
     public void whenGettingTheRolesOfRelationTypes_AllTheRolesAreReturned() throws Exception {
-        RelationshipType relationshipType = graknGraph.putRelationshipType("relationTypes");
-        Role role1 = graknGraph.putRole("role1");
-        Role role2 = graknGraph.putRole("role2");
-        Role role3 = graknGraph.putRole("role3");
+        RelationshipType relationshipType = tx.putRelationshipType("relationTypes");
+        Role role1 = tx.putRole("role1");
+        Role role2 = tx.putRole("role2");
+        Role role3 = tx.putRole("role3");
         relationshipType.relates(role1).relates(role2).relates(role3);
         assertThat(relationshipType.relates().collect(toSet()), containsInAnyOrder(role1, role2, role3));
     }
 
     @Test
     public void whenMutatingRolesOfRelationType_EnsureRelationTypeRolesAreAlwaysUpdated(){
-        RelationshipType relationshipType = graknGraph.putRelationshipType("c1");
-        Role role1 = graknGraph.putRole("c2");
-        Role role2 = graknGraph.putRole("c3");
+        RelationshipType relationshipType = tx.putRelationshipType("c1");
+        Role role1 = tx.putRole("c2");
+        Role role2 = tx.putRole("c3");
         assertThat(relationshipType.relates().collect(toSet()), empty());
 
         relationshipType.relates(role1).relates(role2);
@@ -63,13 +63,13 @@ public class RelationshipTypeTest extends KBTestBase {
 
     @Test
     public void whenCallingInstancesOnImplicitRelationType_RelationEdgesAreReturned(){
-        AttributeType<String> attributeType = graknGraph.putAttributeType("My Special Attribute Type", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("My Special Attribute Type", AttributeType.DataType.STRING);
         Attribute<String> attribute = attributeType.putAttribute("Ad thing");
 
-        EntityType entityType = graknGraph.putEntityType("My Special Entity Type").attribute(attributeType);
+        EntityType entityType = tx.putEntityType("My Special Entity Type").attribute(attributeType);
         Entity entity = entityType.addEntity();
 
-        RelationshipType implicitRelationshipType = graknGraph.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.getLabel()).getValue());
+        RelationshipType implicitRelationshipType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.getLabel()).getValue());
 
         assertNotNull(implicitRelationshipType);
         assertThat(implicitRelationshipType.instances().collect(toSet()), empty());
@@ -81,13 +81,13 @@ public class RelationshipTypeTest extends KBTestBase {
 
     @Test
     public void whenSettingAnImplicitRelationTypeWithInstancesAbstract_Throw(){
-        AttributeType<String> attributeType = graknGraph.putAttributeType("My Special Attribute Type", AttributeType.DataType.STRING);
+        AttributeType<String> attributeType = tx.putAttributeType("My Special Attribute Type", AttributeType.DataType.STRING);
         Attribute<String> attribute = attributeType.putAttribute("Ad thing");
 
-        EntityType entityType = graknGraph.putEntityType("My Special Entity Type").attribute(attributeType);
+        EntityType entityType = tx.putEntityType("My Special Entity Type").attribute(attributeType);
         entityType.addEntity().attribute(attribute);
 
-        RelationshipType implicitRelationshipType = graknGraph.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.getLabel()).getValue());
+        RelationshipType implicitRelationshipType = tx.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.getLabel()).getValue());
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.addingInstancesToAbstractType(implicitRelationshipType).getMessage());
