@@ -48,6 +48,8 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
 
     private static final IsAbstractProperty INSTANCE = new IsAbstractProperty();
 
+    public static final String NAME = "is-abstract";
+
     private IsAbstractProperty() {
 
     }
@@ -58,12 +60,17 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
 
     @Override
     public void buildString(StringBuilder builder) {
-        builder.append("is-abstract");
+        builder.append(NAME);
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         return ImmutableSet.of(isAbstract(this, start));
+    }
+
+    @Override
+    String getName() {
+        return NAME;
     }
 
     @Override

@@ -35,6 +35,8 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.pattern.property.PlaysProperty;
+import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
@@ -582,13 +584,17 @@ public class InsertQueryTest {
 
     @Test
     public void whenInsertingASchemaConcept_Throw() {
-        exception.expect(Exception.class);
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(SubProperty.NAME).getMessage());
+
         qb.insert(label("new-type").sub(label(ENTITY.getLabel()))).execute();
     }
 
     @Test
     public void whenModifyingASchemaConceptInAnInsertQuery_Throw() {
-        exception.expect(Exception.class);
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(PlaysProperty.NAME).getMessage());
+
         qb.insert(label("movie").plays("actor")).execute();
     }
 

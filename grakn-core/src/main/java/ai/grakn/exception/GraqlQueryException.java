@@ -98,6 +98,14 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.DELETE_UNSUPPORTED_PROPERTY.getMessage(builder.toString()));
     }
 
+    public static GraqlQueryException insertUnsupportedProperty(String propertyName) {
+        return GraqlQueryException.create("inserting property '%s' is not supported", propertyName);
+    }
+
+    public static GraqlQueryException defineUnsupportedProperty(String propertyName) {
+        return GraqlQueryException.create("defining property '%s' is not supported", propertyName);
+    }
+
     public static GraqlQueryException mustBeResourceType(Label resourceType) {
         return new GraqlQueryException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
     }

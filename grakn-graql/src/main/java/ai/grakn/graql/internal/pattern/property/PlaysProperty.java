@@ -54,6 +54,8 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
 @AutoValue
 public abstract class PlaysProperty extends AbstractVarProperty implements NamedProperty {
 
+    public static final String NAME = "plays";
+
     public static PlaysProperty of(VarPatternAdmin role, boolean required) {
         return new AutoValue_PlaysProperty(role, required);
     }
@@ -64,7 +66,7 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
 
     @Override
     public String getName() {
-        return "plays";
+        return NAME;
     }
 
     @Override

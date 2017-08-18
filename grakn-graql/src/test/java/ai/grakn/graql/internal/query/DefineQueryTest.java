@@ -30,10 +30,14 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
+import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -60,6 +64,7 @@ import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -355,14 +360,22 @@ public class DefineQueryTest {
 
     @Test
     public void whenDefiningAThing_Throw() {
-        exception.expect(Exception.class);
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(IsaProperty.NAME).getMessage());
+
         qb.define(var("x").isa("movie")).execute();
     }
 
     @Test
     public void whenModifyingAThingInADefineQuery_Throw() {
-        exception.expect(Exception.class);
         ConceptId id = movieGraph.graph().getEntityType("movie").instances().iterator().next().getId();
+
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(Matchers.anyOf(
+                is(GraqlQueryException.defineUnsupportedProperty(HasResourceProperty.NAME).getMessage()),
+                is(GraqlQueryException.defineUnsupportedProperty(ValueProperty.NAME).getMessage())
+        ));
+
         qb.define(var().id(id).has("title", "Bob")).execute();
     }
 

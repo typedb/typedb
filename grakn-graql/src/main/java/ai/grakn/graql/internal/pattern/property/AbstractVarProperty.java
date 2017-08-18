@@ -45,14 +45,16 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
 
     }
 
+    abstract String getName();
+
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        throw new RuntimeException();
+        throw GraqlQueryException.insertUnsupportedProperty(getName());
     }
 
     @Override
     public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        throw new RuntimeException();
+        throw GraqlQueryException.defineUnsupportedProperty(getName());
     }
 
     @Override
