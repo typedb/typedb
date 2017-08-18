@@ -19,7 +19,7 @@ package ai.grakn.kb.internal.structure;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.Schema;
@@ -167,7 +167,7 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
 
         if(foundValue != null){
             if(!foundValue.equals(newValue)){
-                throw GraphOperationException.immutableProperty(foundValue, newValue, property);
+                throw GraknTxOperationException.immutableProperty(foundValue, newValue, property);
             }
         } else {
             property(property, converter.apply(newValue));

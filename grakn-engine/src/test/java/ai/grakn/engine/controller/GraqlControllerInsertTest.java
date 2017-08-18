@@ -19,7 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.MovieGraph;
@@ -59,7 +59,7 @@ public class GraqlControllerInsertTest {
 
     private static GraknTx mockGraph;
     private static QueryBuilder mockQueryBuilder;
-    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
+    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
     public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieGraph.get());
@@ -129,7 +129,7 @@ public class GraqlControllerInsertTest {
 
         Response response = RestAssured.with()
                 .body(query)
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
@@ -138,7 +138,7 @@ public class GraqlControllerInsertTest {
     @Test
     public void POSTWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -216,6 +216,6 @@ public class GraqlControllerInsertTest {
                 .queryParam(INFER, false)
                 .queryParam(MATERIALISE, false)
                 .body(query)
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
     }
 }

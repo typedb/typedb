@@ -20,7 +20,7 @@ package ai.grakn.kb.internal.concept;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.cache.ContainsTxCache;
@@ -67,10 +67,10 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
 
     /**
      * Deletes the concept.
-     * @throws GraphOperationException Throws an exception if the node has any edges attached to it.
+     * @throws GraknTxOperationException Throws an exception if the node has any edges attached to it.
      */
     @Override
-    public void delete() throws GraphOperationException {
+    public void delete() throws GraknTxOperationException {
         deleteNode();
     }
 
@@ -105,7 +105,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
                         vertex().graph().factory().buildConcept(edge.target())
                 );
             default:
-                throw GraphOperationException.invalidDirection(direction);
+                throw GraknTxOperationException.invalidDirection(direction);
         }
     }
 

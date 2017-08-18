@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -294,7 +294,7 @@ public class DeleteQueryTest {
         assertExists(qb, x.label("movie").sub("entity"));
         assertExists(qb, x.isa("movie"));
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         exception.expectMessage(allOf(containsString("movie"), containsString("delet")));
         qb.match(x.label("movie").sub("entity")).delete(x).execute();
     }
@@ -303,7 +303,7 @@ public class DeleteQueryTest {
     public void testErrorWhenDeleteSuperEntityType() {
         assertExists(qb, x.label("production").sub("entity"));
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         exception.expectMessage(allOf(containsString("production"), containsString("delet")));
         qb.match(x.label("production").sub("entity")).delete(x).execute();
     }
@@ -312,7 +312,7 @@ public class DeleteQueryTest {
     public void testErrorWhenDeleteRoleTypeWithPlayers() {
         assertExists(qb, x.label("actor"));
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         exception.expectMessage(allOf(containsString("actor"), containsString("delet")));
         qb.match(x.label("actor")).delete(x).execute();
     }

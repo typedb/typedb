@@ -28,7 +28,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.UUID;
 
-public class GraphTestBase {
+public class KBTestBase {
     protected GraknSession graknSession;
     protected GraknTxAbstract<?> graknGraph;
     private GraknTxAbstract<?> graknGraphBatch;

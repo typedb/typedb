@@ -29,7 +29,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
@@ -236,7 +236,7 @@ public class ClusteringTest {
         });
     }
 
-    private void addSchemaAndEntities() throws InvalidGraphException {
+    private void addSchemaAndEntities() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
 
             EntityType entityType1 = graph.putEntityType(thing);
@@ -337,7 +337,7 @@ public class ClusteringTest {
         }
     }
 
-    private void addResourceRelations() throws InvalidGraphException {
+    private void addResourceRelations() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
 
             Entity entity1 = graph.getConcept(entityId1);

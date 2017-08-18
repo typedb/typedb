@@ -26,9 +26,9 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
+import ai.grakn.kb.internal.KBTestBase;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
 import org.junit.Test;
@@ -47,7 +47,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class AttributeTest extends GraphTestBase {
+public class AttributeTest extends KBTestBase {
     @Test
     public void whenCreatingResource_EnsureTheResourcesDataTypeIsTheSameAsItsType() throws Exception {
         AttributeType<String> attributeType = graknGraph.putAttributeType("attributeType", AttributeType.DataType.STRING);
@@ -119,8 +119,8 @@ public class AttributeTest extends GraphTestBase {
     public void whenCreatingResourceWithAnInvalidDataType_Throw(){
         String invalidThing = "Invalid Thing";
         AttributeType longAttributeType = graknGraph.putAttributeType("long", AttributeType.DataType.LONG);
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.invalidResourceValue(invalidThing, AttributeType.DataType.LONG).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.invalidResourceValue(invalidThing, AttributeType.DataType.LONG).getMessage());
         longAttributeType.putAttribute(invalidThing);
     }
 
@@ -133,7 +133,7 @@ public class AttributeTest extends GraphTestBase {
         try {
             longAttributeType.putAttribute("Invalid Thing");
             fail("Expected to throw");
-        } catch (GraphOperationException e) {
+        } catch (GraknTxOperationException e) {
             // expected failure
         }
 
@@ -226,7 +226,7 @@ public class AttributeTest extends GraphTestBase {
         entity.attribute(key1);
         entity.attribute(key2);
 
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
 
         graknGraph.commit();
     }

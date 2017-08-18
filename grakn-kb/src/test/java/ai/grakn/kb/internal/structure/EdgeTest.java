@@ -19,7 +19,7 @@
 package ai.grakn.kb.internal.structure;
 
 import ai.grakn.concept.Entity;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.kb.internal.KBTestBase;
 import ai.grakn.kb.internal.concept.EntityImpl;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
 import ai.grakn.util.Schema;
@@ -30,7 +30,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-public class EdgeTest extends GraphTestBase {
+public class EdgeTest extends KBTestBase {
 
     private EntityTypeImpl entityType;
     private EntityImpl entity;

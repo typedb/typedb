@@ -29,7 +29,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
@@ -502,7 +502,7 @@ public class StatisticsTest {
         numberList.forEach(value -> assertEquals(1.5D, value.doubleValue(), delta));
     }
 
-    private void addSchemaAndEntities() throws InvalidGraphException {
+    private void addSchemaAndEntities() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
@@ -600,7 +600,7 @@ public class StatisticsTest {
         }
     }
 
-    private void addResourcesInstances() throws InvalidGraphException {
+    private void addResourcesInstances() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.<Double>getAttributeType(resourceType1).putAttribute(1.2);
             graph.<Double>getAttributeType(resourceType1).putAttribute(1.5);
@@ -626,7 +626,7 @@ public class StatisticsTest {
         }
     }
 
-    private void addResourceRelations() throws InvalidGraphException {
+    private void addResourceRelations() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             Entity entity1 = graph.getConcept(entityId1);
             Entity entity2 = graph.getConcept(entityId2);

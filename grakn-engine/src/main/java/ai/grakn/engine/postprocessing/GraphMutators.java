@@ -20,7 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
@@ -50,7 +50,7 @@ public abstract class GraphMutators {
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
     public static void runBatchMutationWithRetry(
-            EngineGraknGraphFactory factory, String keyspace, int maxRetry, Consumer<GraknTx> mutatingFunction){
+            EngineGraknTxFactory factory, String keyspace, int maxRetry, Consumer<GraknTx> mutatingFunction){
         runGraphMutationWithRetry(factory, keyspace, GraknTxType.BATCH, maxRetry, mutatingFunction);
     }
 
@@ -60,7 +60,7 @@ public abstract class GraphMutators {
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
     static void runGraphMutationWithRetry(
-            EngineGraknGraphFactory factory, String keyspace, int maxRetry, Consumer<GraknTx> mutatingFunction){
+            EngineGraknTxFactory factory, String keyspace, int maxRetry, Consumer<GraknTx> mutatingFunction){
         runGraphMutationWithRetry(factory, keyspace, GraknTxType.WRITE, maxRetry, mutatingFunction);
     }
 
@@ -70,7 +70,7 @@ public abstract class GraphMutators {
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
     private static void runGraphMutationWithRetry(
-            EngineGraknGraphFactory factory , String keyspace, GraknTxType txType, int maxRetry,
+            EngineGraknTxFactory factory , String keyspace, GraknTxType txType, int maxRetry,
             Consumer<GraknTx> mutatingFunction
     ){
         if(!factory.systemKeyspace().containsKeyspace(keyspace)){ //This may be slow.

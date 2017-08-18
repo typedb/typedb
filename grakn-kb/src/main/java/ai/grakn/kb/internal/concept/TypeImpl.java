@@ -26,7 +26,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.EdgeElement;
@@ -141,7 +141,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean checkNeeded){
         if(checkNeeded) preCheckForInstanceCreation();
 
-        if(isAbstract()) throw GraphOperationException.addingInstancesToAbstractType(this);
+        if(isAbstract()) throw GraknTxOperationException.addingInstancesToAbstractType(this);
 
         VertexElement instanceVertex = vertex().graph().addVertex(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
@@ -159,7 +159,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         vertex().graph().checkMutationAllowed();
 
         if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
-            throw GraphOperationException.metaTypeImmutable(getLabel());
+            throw GraknTxOperationException.metaTypeImmutable(getLabel());
         }
     }
 
@@ -330,7 +330,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             //It is possible to be disconnecting from a role which is no longer in use but checking this will take too long
             //So we assume the role is in sure and throw if that is the case
             if(!superPlays.isEmpty() && instancesDirect().findAny().isPresent()){
-                throw GraphOperationException.changingSuperWillDisconnectRole(oldSuperType, newSuperType, superPlays.iterator().next());
+                throw GraknTxOperationException.changingSuperWillDisconnectRole(oldSuperType, newSuperType, superPlays.iterator().next());
             }
 
             return true;
@@ -363,7 +363,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      */
     public T setAbstract(Boolean isAbstract) {
         if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract && instancesDirect().findAny().isPresent()){
-            throw GraphOperationException.addingInstancesToAbstractType(this);
+            throw GraknTxOperationException.addingInstancesToAbstractType(this);
         }
 
         property(Schema.VertexProperty.IS_ABSTRACT, isAbstract);
@@ -392,7 +392,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         //Check if attribute type is the meta
         if(Schema.MetaSchema.ATTRIBUTE.getLabel().equals(attributeType.getLabel())){
-            throw GraphOperationException.metaTypeImmutable(attributeType.getLabel());
+            throw GraknTxOperationException.metaTypeImmutable(attributeType.getLabel());
         }
 
         Label attributeLabel = attributeType.getLabel();
@@ -445,11 +445,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @param implicitType The implicit relation to check against.
      * @param attributeType The {@link AttributeType} which should not be in that implicit relation
      *
-     * @throws GraphOperationException when the {@link AttributeType} is already used in another implicit relation
+     * @throws GraknTxOperationException when the {@link AttributeType} is already used in another implicit relation
      */
     private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, AttributeType attributeType){
         if(attributes(implicitType).anyMatch(rt -> rt.equals(attributeType))) {
-            throw GraphOperationException.duplicateHas(this, attributeType);
+            throw GraknTxOperationException.duplicateHas(this, attributeType);
         }
     }
 

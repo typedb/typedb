@@ -10,7 +10,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
@@ -190,7 +190,7 @@ public class ShortestPathTest {
     }
 
     @Test
-    public void testMultipleIndependentShortestPaths() throws InvalidGraphException {
+    public void testMultipleIndependentShortestPaths() throws InvalidKBException {
         Set<List<ConceptId>> validPaths = new HashSet<>();
         ConceptId startId;
         ConceptId endId;
@@ -269,7 +269,7 @@ public class ShortestPathTest {
         }
     }
 
-    private void addSchemaAndEntities() throws InvalidGraphException {
+    private void addSchemaAndEntities() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
@@ -309,7 +309,7 @@ public class ShortestPathTest {
         }
     }
 
-    private void addSchemaAndEntities2() throws InvalidGraphException {
+    private void addSchemaAndEntities2() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 

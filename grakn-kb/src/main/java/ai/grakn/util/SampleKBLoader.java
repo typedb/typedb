@@ -22,8 +22,8 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.TxFactory;
 import ai.grakn.kb.internal.GraknTxTinker;
@@ -146,7 +146,7 @@ public class SampleKBLoader {
                 graphConfig.load(inputStream);
             } catch (IOException e) {
                 e.printStackTrace();
-                throw GraphOperationException.invalidGraphConfig(configFilePath);
+                throw GraknTxOperationException.invalidGraphConfig(configFilePath);
             }
         }
 
@@ -178,7 +178,7 @@ public class SampleKBLoader {
             graph.graql()
                     .parseList(Files.readLines(graql, StandardCharsets.UTF_8).stream().collect(Collectors.joining("\n")))
                     .forEach(Query::execute);
-        } catch (IOException |InvalidGraphException e){
+        } catch (IOException |InvalidKBException e){
             throw new RuntimeException(e);
         }
     }

@@ -27,7 +27,7 @@ import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.data.RedisWrapper.Builder;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
@@ -93,7 +93,7 @@ public class GraknEngineServer implements AutoCloseable {
     private final EngineID engineId = EngineID.me();
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private final MetricRegistry metricRegistry;
     private final LockProvider lockProvider;
     private final GraknEngineStatus graknEngineStatus = new GraknEngineStatus();
@@ -110,7 +110,7 @@ public class GraknEngineServer implements AutoCloseable {
         boolean inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
         this.lockProvider = inMemoryQueue ? new ProcessWideLockProvider()
                 : new JedisLockProvider(redisWrapper.getJedisPool());
-        this.factory = EngineGraknGraphFactory.create(prop.getProperties());
+        this.factory = EngineGraknTxFactory.create(prop.getProperties());
         // Task manager
         this.taskManager = startTaskManager(inMemoryQueue, redisWrapper.getJedisPool(), lockProvider);
     }
@@ -296,7 +296,7 @@ public class GraknEngineServer implements AutoCloseable {
         return taskManager;
     }
 
-    public EngineGraknGraphFactory factory() {
+    public EngineGraknTxFactory factory() {
         return factory;
     }
 

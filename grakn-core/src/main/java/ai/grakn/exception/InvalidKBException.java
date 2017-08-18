@@ -35,21 +35,21 @@ import java.util.List;
  *
  * @author fppt
  */
-public class InvalidGraphException extends GraknException{
+public class InvalidKBException extends GraknException{
 
-    private InvalidGraphException(String message) {
+    private InvalidKBException(String message) {
         super(message);
     }
 
     /**
      * Thrown on commit when validation errors are found
      */
-    public static InvalidGraphException validationErrors(List<String> errors){
+    public static InvalidKBException validationErrors(List<String> errors){
         StringBuilder message = new StringBuilder();
         message.append(ErrorMessage.VALIDATION.getMessage(errors.size()));
         for (String s : errors) {
             message.append(s);
         }
-        return new InvalidGraphException(message.toString());
+        return new InvalidKBException(message.toString());
     }
 }

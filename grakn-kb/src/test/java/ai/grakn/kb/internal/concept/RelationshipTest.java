@@ -31,10 +31,10 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.kb.internal.GraknTxAbstract;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.kb.internal.KBTestBase;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterables;
@@ -58,7 +58,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class RelationshipTest extends GraphTestBase {
+public class RelationshipTest extends KBTestBase {
     private RelationshipImpl relation;
     private RoleImpl role1;
     private ThingImpl rolePlayer1;
@@ -156,7 +156,7 @@ public class RelationshipTest extends GraphTestBase {
     }
 
     @Test
-    public void whenCreatingRelation_EnsureUniqueHashIsCreatedBasedOnRolePlayers() throws InvalidGraphException {
+    public void whenCreatingRelation_EnsureUniqueHashIsCreatedBasedOnRolePlayers() throws InvalidKBException {
         Role role1 = graknGraph.putRole("role type 1");
         Role role2 = graknGraph.putRole("role type 2");
         EntityType type = graknGraph.putEntityType("concept type").plays(role1).plays(role2);
@@ -193,7 +193,7 @@ public class RelationshipTest extends GraphTestBase {
     }
 
     @Test
-    public void whenAddingDuplicateRelations_Throw() throws InvalidGraphException {
+    public void whenAddingDuplicateRelations_Throw() throws InvalidKBException {
         Role role1 = graknGraph.putRole("role type 1");
         Role role2 = graknGraph.putRole("role type 2");
         EntityType type = graknGraph.putEntityType("concept type").plays(role1).plays(role2);
@@ -204,7 +204,7 @@ public class RelationshipTest extends GraphTestBase {
         relationshipType.addRelationship().addRolePlayer(role1, thing1).addRolePlayer(role2, thing2);
         relationshipType.addRelationship().addRolePlayer(role1, thing1).addRolePlayer(role2, thing2);
 
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(containsString("You have created one or more relations"));
 
         graknGraph.commit();
@@ -290,8 +290,8 @@ public class RelationshipTest extends GraphTestBase {
         EntityType entityType = graknGraph.putEntityType("yay").attribute(attributeType);
         Relationship implicitRelationship = Iterables.getOnlyElement(entityType.addEntity().attribute(attribute).relationships().collect(Collectors.toSet()));
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.hasNotAllowed(implicitRelationship, attribute).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.hasNotAllowed(implicitRelationship, attribute).getMessage());
 
         implicitRelationship.attribute(attribute);
     }
@@ -343,7 +343,7 @@ public class RelationshipTest extends GraphTestBase {
 
         String message = ErrorMessage.VALIDATION_RELATION_DUPLICATE.getMessage("");
         message = message.substring(0, message.length() - 5);
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(containsString(message));
 
         graknGraph.commit();

@@ -20,7 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.kb.internal.GraknTxJanus;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -149,7 +149,7 @@ public class TxFactoryJanusTest extends JanusTestBase {
                 graph.putEntityType("A Thing");
                 try {
                     graph.close();
-                } catch (InvalidGraphException e) {
+                } catch (InvalidKBException e) {
                     e.printStackTrace();
                 }
             }));
@@ -171,7 +171,7 @@ public class TxFactoryJanusTest extends JanusTestBase {
     }
 
     @Test
-    public void testGraphNotClosed() throws InvalidGraphException {
+    public void testGraphNotClosed() throws InvalidKBException {
         TxFactoryJanus factory = new TxFactoryJanus("stuff", Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknTxJanus graph = factory.open(GraknTxType.WRITE);
         assertFalse(graph.getTinkerPopGraph().isClosed());

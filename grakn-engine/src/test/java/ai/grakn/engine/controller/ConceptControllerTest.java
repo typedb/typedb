@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
@@ -54,7 +54,7 @@ import static org.mockito.Mockito.when;
 public class ConceptControllerTest {
 
     private static GraknTx mockGraph;
-    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
+    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
     public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieGraph.get());

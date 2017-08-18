@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
@@ -62,8 +62,8 @@ public interface EntityType extends Type{
      * @param type The supertype of this EntityType
      * @return The EntityType itself
      *
-     * @throws GraphOperationException if this is a meta type
-     * @throws GraphOperationException if the given supertype is already an indirect subtype of this type
+     * @throws GraknTxOperationException if this is a meta type
+     * @throws GraknTxOperationException if the given supertype is already an indirect subtype of this type
      */
     EntityType sup(EntityType type);
 
@@ -73,8 +73,8 @@ public interface EntityType extends Type{
      * @param type The sub type of this entity type
      * @return The EntityType itself
      *
-     * @throws GraphOperationException if the sub type is a meta type
-     * @throws GraphOperationException if the given subtype is already an indirect supertype of this type
+     * @throws GraknTxOperationException if the sub type is a meta type
+     * @throws GraknTxOperationException if the given subtype is already an indirect supertype of this type
      */
     EntityType sub(EntityType type);
 
@@ -102,7 +102,7 @@ public interface EntityType extends Type{
      *
      * @return a new empty entity.
      *
-     * @throws GraphOperationException if this is a meta type
+     * @throws GraknTxOperationException if this is a meta type
      */
     Entity addEntity();
 

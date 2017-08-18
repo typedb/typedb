@@ -30,7 +30,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.Sets;
@@ -216,7 +216,7 @@ public class DegreeTest {
     }
 
     @Test
-    public void testDegreeIsCorrect() throws InvalidGraphException, ExecutionException, InterruptedException {
+    public void testDegreeIsCorrect() throws InvalidKBException, ExecutionException, InterruptedException {
         // create a simple graph
         Role pet = graph.putRole("pet");
         Role owner = graph.putRole("owner");
@@ -341,7 +341,7 @@ public class DegreeTest {
 
     @Test
     public void testDegreeAssertionAboutAssertion()
-            throws InvalidGraphException, ExecutionException, InterruptedException {
+            throws InvalidKBException, ExecutionException, InterruptedException {
         // create a simple graph
         Role pet = graph.putRole("pet");
         Role owner = graph.putRole("owner");
@@ -426,7 +426,7 @@ public class DegreeTest {
 
     @Test
     public void testDegreeTernaryRelationships()
-            throws InvalidGraphException, ExecutionException, InterruptedException {
+            throws InvalidKBException, ExecutionException, InterruptedException {
         // make relationship
         Role productionWithCast = graph.putRole("production-with-cast");
         Role actor = graph.putRole("actor");
@@ -462,7 +462,7 @@ public class DegreeTest {
 
     @Test
     public void testDegreeOneRolePlayerMultipleRoles()
-            throws InvalidGraphException, ExecutionException, InterruptedException {
+            throws InvalidKBException, ExecutionException, InterruptedException {
         // create a simple graph
         Role pet = graph.putRole("pet");
         Role owner = graph.putRole("owner");
@@ -542,7 +542,7 @@ public class DegreeTest {
 
     @Test
     public void testDegreeRolePlayerWrongType()
-            throws InvalidGraphException, ExecutionException, InterruptedException {
+            throws InvalidKBException, ExecutionException, InterruptedException {
         // create a simple graph
         Role pet = graph.putRole("pet");
         Role owner = graph.putRole("owner");

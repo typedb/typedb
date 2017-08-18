@@ -23,7 +23,7 @@ import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.kb.internal.computer.GraknComputerImpl;
@@ -83,7 +83,7 @@ public class GraknSessionImpl implements GraknSession {
                 graphBatch = factory.open(transactionType);
                 return graphBatch;
             default:
-                throw GraphOperationException.transactionInvalid(transactionType);
+                throw GraknTxOperationException.transactionInvalid(transactionType);
         }
     }
 
@@ -102,7 +102,7 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     @Override
-    public void close() throws GraphOperationException {
+    public void close() throws GraknTxOperationException {
         int openTransactions = openTransactions(graph) + openTransactions(graphBatch);
         if(openTransactions > 0){
             LOG.warn(ErrorMessage.TRANSACTIONS_OPEN.getMessage(this.keyspace, openTransactions));

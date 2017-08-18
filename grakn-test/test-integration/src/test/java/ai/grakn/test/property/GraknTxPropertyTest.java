@@ -32,8 +32,8 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
@@ -96,7 +96,7 @@ public class GraknTxPropertyTest {
         Object[] params = mockParamsOf(method);
 
         exception.expect(InvocationTargetException.class);
-        exception.expectCause(isA(GraphOperationException.class));
+        exception.expectCause(isA(GraknTxOperationException.class));
         exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
 
         method.invoke(graph, params);
@@ -201,8 +201,8 @@ public class GraknTxPropertyTest {
 
     @Property
     public void whenCallingGetResourcesByValueWithAnUnsupportedDataType_Throw(@Open GraknTx graph, List value) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.unsupportedDataType(value).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.unsupportedDataType(value).getMessage());
         //noinspection ResultOfMethodCallIgnored
         graph.getAttributesByValue(value);
     }
@@ -284,7 +284,7 @@ public class GraknTxPropertyTest {
     }
 
     @Property
-    public void whenCallingClose_TheGraphIsClosed(GraknTx graph) throws InvalidGraphException {
+    public void whenCallingClose_TheGraphIsClosed(GraknTx graph) throws InvalidKBException {
         graph.close();
         assertTrue(graph.isClosed());
     }
@@ -296,8 +296,8 @@ public class GraknTxPropertyTest {
     public void whenSetRegexOnMetaResourceType_Throw(@Open GraknTx graph, String regex) {
         AttributeType resource = graph.admin().getMetaResourceType();
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.cannotSetRegex(resource).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.cannotSetRegex(resource).getMessage());
 
         resource.setRegex(regex);
     }
@@ -307,8 +307,8 @@ public class GraknTxPropertyTest {
             @Open GraknTx graph, @From(ResourceValues.class) Object value) {
         AttributeType resource = graph.admin().getMetaResourceType();
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
 
         resource.putAttribute(value);
     }
@@ -319,7 +319,7 @@ public class GraknTxPropertyTest {
         AttributeType resource = graph.admin().getMetaResourceType();
 
         // TODO: Test for a better error message
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
 
         //noinspection ResultOfMethodCallIgnored
         resource.sup();
@@ -330,11 +330,11 @@ public class GraknTxPropertyTest {
             @Open GraknTx graph, @FromGraph Type type) {
         AttributeType resource = graph.admin().getMetaResourceType();
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())) {
-            exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+            exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         } else {
-            exception.expectMessage(GraphOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
+            exception.expectMessage(GraknTxOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
         }
         type.attribute(resource);
     }

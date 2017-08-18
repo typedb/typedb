@@ -35,7 +35,7 @@ import org.junit.contrib.java.lang.system.SystemOutRule;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
-public class GraphWriterMainTest {
+public class KBWriterMainTest {
 
     private static String keyspace;
 

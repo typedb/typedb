@@ -21,7 +21,7 @@ package ai.grakn.test.property;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
@@ -63,10 +63,10 @@ public class SchemaConceptPropertyTest {
 
     @Property
     public void whenDeletingAMetaConcept_Throw(@Meta SchemaConcept schemaConcept) {
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         exception.expectMessage(isOneOf(
-                GraphOperationException.metaTypeImmutable(schemaConcept.getLabel()).getMessage(),
-                GraphOperationException.cannotBeDeleted(schemaConcept).getMessage()
+                GraknTxOperationException.metaTypeImmutable(schemaConcept.getLabel()).getMessage(),
+                GraknTxOperationException.cannotBeDeleted(schemaConcept).getMessage()
         ));
         schemaConcept.delete();
     }
@@ -76,8 +76,8 @@ public class SchemaConceptPropertyTest {
         SchemaConcept superConcept = schemaConcept.sup();
         assumeFalse(isMetaLabel(superConcept.getLabel()));
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.cannotBeDeleted(superConcept).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.cannotBeDeleted(superConcept).getMessage());
         superConcept.delete();
     }
 
@@ -142,8 +142,8 @@ public class SchemaConceptPropertyTest {
             @Meta SchemaConcept subConcept, @FromGraph SchemaConcept superConcept) {
         assumeTrue(sameSchemaConcept(subConcept, superConcept));
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
         setDirectSuper(subConcept, superConcept);
     }
 
@@ -152,8 +152,8 @@ public class SchemaConceptPropertyTest {
             @NonMeta SchemaConcept concept, long seed) {
         SchemaConcept newSuperConcept = PropertyUtil.choose(concept.subs(), seed);
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.loopCreated(concept, newSuperConcept).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.loopCreated(concept, newSuperConcept).getMessage());
         setDirectSuper(concept, newSuperConcept);
     }
 
@@ -176,8 +176,8 @@ public class SchemaConceptPropertyTest {
             SchemaConcept superConcept, @Meta @FromGraph SchemaConcept subConcept) {
         assumeTrue(sameSchemaConcept(subConcept, superConcept));
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
         addDirectSub(superConcept, subConcept);
     }
 
@@ -186,8 +186,8 @@ public class SchemaConceptPropertyTest {
             @NonMeta SchemaConcept newSubConcept, long seed) {
         SchemaConcept concept = PropertyUtil.choose(newSubConcept.subs(), seed);
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.loopCreated(newSubConcept, concept).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.loopCreated(newSubConcept, concept).getMessage());
         addDirectSub(concept, newSubConcept);
     }
 
@@ -210,8 +210,8 @@ public class SchemaConceptPropertyTest {
     public void whenDeletingASchemaConceptWithHypothesisRules_Throw(SchemaConcept concept) {
         assumeThat(concept.getRulesOfHypothesis().collect(toSet()), not(empty()));
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.cannotBeDeleted(concept).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.cannotBeDeleted(concept).getMessage());
         concept.delete();
     }
 
@@ -220,8 +220,8 @@ public class SchemaConceptPropertyTest {
     public void whenDeletingASchemaConceptWithConclusionRules_Throw(SchemaConcept concept) {
         assumeThat(concept.getRulesOfConclusion().collect(toSet()), not(empty()));
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.cannotBeDeleted(concept).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.cannotBeDeleted(concept).getMessage());
         concept.delete();
     }
 

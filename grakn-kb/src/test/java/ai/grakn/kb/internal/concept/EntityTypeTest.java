@@ -27,9 +27,9 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.kb.internal.KBTestBase;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -52,7 +52,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("unchecked")
-public class EntityTypeTest extends GraphTestBase {
+public class EntityTypeTest extends KBTestBase {
 
     @Before
     public void buildGraph(){
@@ -77,7 +77,7 @@ public class EntityTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void creatingAccessingDeletingScopes_Works() throws GraphOperationException {
+    public void creatingAccessingDeletingScopes_Works() throws GraknTxOperationException {
         EntityType entityType = graknGraph.putEntityType("entity type");
         Thing scope1 = entityType.addEntity();
         Thing scope2 = entityType.addEntity();
@@ -97,13 +97,13 @@ public class EntityTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void whenDeletingEntityTypeWithSubTypes_Throw() throws GraphOperationException{
+    public void whenDeletingEntityTypeWithSubTypes_Throw() throws GraknTxOperationException {
         EntityType c1 = graknGraph.putEntityType("C1");
         EntityType c2 = graknGraph.putEntityType("C2");
         c1.sup(c2);
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.cannotBeDeleted(c2).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.cannotBeDeleted(c2).getMessage());
 
         c2.delete();
     }
@@ -212,8 +212,8 @@ public class EntityTypeTest extends GraphTestBase {
     @Test
     public void settingTheSuperTypeToItself_Throw(){
         EntityType entityType = graknGraph.putEntityType("Entity");
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.loopCreated(entityType, entityType).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.loopCreated(entityType, entityType).getMessage());
         entityType.sup(entityType);
     }
 
@@ -225,8 +225,8 @@ public class EntityTypeTest extends GraphTestBase {
         entityType1.sup(entityType2);
         entityType2.sup(entityType3);
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.loopCreated(entityType3, entityType1).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.loopCreated(entityType3, entityType1).getMessage());
 
         entityType3.sup(entityType1);
     }
@@ -235,8 +235,8 @@ public class EntityTypeTest extends GraphTestBase {
     public void whenSettingMetaTypeToAbstract_Throw(){
         Type meta = graknGraph.getMetaRuleType();
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.metaTypeImmutable(meta.getLabel()).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.metaTypeImmutable(meta.getLabel()).getMessage());
 
         meta.setAbstract(true);
     }
@@ -246,8 +246,8 @@ public class EntityTypeTest extends GraphTestBase {
         Type meta = graknGraph.getMetaRuleType();
         Role role = graknGraph.putRole("A Role");
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.metaTypeImmutable(meta.getLabel()).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.metaTypeImmutable(meta.getLabel()).getMessage());
 
         meta.plays(role);
     }
@@ -297,8 +297,8 @@ public class EntityTypeTest extends GraphTestBase {
         entityTypeA.delete();
         assertNull(graknGraph.getEntityType("entityTypeA"));
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.cannotBeDeleted(entityTypeB).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.cannotBeDeleted(entityTypeB).getMessage());
 
         entityTypeB.delete();
     }
@@ -403,7 +403,7 @@ public class EntityTypeTest extends GraphTestBase {
 
         entityType.attribute(attributeType);
 
-        expectedException.expect(GraphOperationException.class);
+        expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), attributeType.getLabel()));
 
         entityType.key(attributeType);
@@ -416,7 +416,7 @@ public class EntityTypeTest extends GraphTestBase {
 
         entityType.key(attributeType);
 
-        expectedException.expect(GraphOperationException.class);
+        expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), attributeType.getLabel()));
 
         entityType.attribute(attributeType);
@@ -443,7 +443,7 @@ public class EntityTypeTest extends GraphTestBase {
     public void whenAddingTypeUsingReservedWord_ThrowReadableError(){
         String reservedWord = Schema.MetaSchema.THING.getLabel().getValue();
 
-        expectedException.expect(GraphOperationException.class);
+        expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(RESERVED_WORD.getMessage(reservedWord));
 
         graknGraph.putEntityType(reservedWord);

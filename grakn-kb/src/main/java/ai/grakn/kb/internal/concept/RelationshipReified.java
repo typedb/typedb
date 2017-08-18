@@ -24,7 +24,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
@@ -84,7 +84,7 @@ public class RelationshipReified extends ThingImpl<Relationship, RelationshipTyp
         Objects.requireNonNull(role);
         Objects.requireNonNull(thing);
 
-        if(Schema.MetaSchema.isMetaLabel(role.getLabel())) throw GraphOperationException.metaTypeImmutable(role.getLabel());
+        if(Schema.MetaSchema.isMetaLabel(role.getLabel())) throw GraknTxOperationException.metaTypeImmutable(role.getLabel());
 
         //Do the actual put of the role and role player
         vertex().graph().putShortcutEdge(thing, this, role);

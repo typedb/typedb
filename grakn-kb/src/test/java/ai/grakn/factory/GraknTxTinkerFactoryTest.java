@@ -21,7 +21,7 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxTinker;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -52,7 +52,7 @@ public class GraknTxTinkerFactoryTest {
         try (InputStream in = new FileInputStream(TEST_CONFIG)){
             TEST_PROPERTIES.load(in);
         } catch (IOException e) {
-            throw GraphOperationException.invalidGraphConfig(TEST_CONFIG);
+            throw GraknTxOperationException.invalidGraphConfig(TEST_CONFIG);
         }
     }
 
@@ -106,7 +106,7 @@ public class GraknTxTinkerFactoryTest {
     public void whenGettingGraphFromFactoryWithAlreadyOpenGraph_Throw(){
         TxFactoryTinker factory = new TxFactoryTinker("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES);
         factory.open(GraknTxType.WRITE);
-        expectedException.expect(GraphOperationException.class);
+        expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(TRANSACTION_ALREADY_OPEN.getMessage("mytest"));
         factory.open(GraknTxType.WRITE);
     }

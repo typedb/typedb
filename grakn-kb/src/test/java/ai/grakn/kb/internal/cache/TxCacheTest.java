@@ -31,7 +31,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.kb.internal.GraknTxAbstract;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.kb.internal.KBTestBase;
 import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.util.REST;
@@ -60,7 +60,7 @@ import static org.junit.Assert.assertTrue;
  * and concepts that have had new vertices added.
  *
  */
-public class TxCacheTest extends GraphTestBase {
+public class TxCacheTest extends KBTestBase {
 
     @Test
     public void whenNewAddingTypesToTheGraph_EnsureTheConceptLogContainsThem() {

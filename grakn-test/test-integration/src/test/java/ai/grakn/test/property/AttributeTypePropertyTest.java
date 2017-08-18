@@ -19,7 +19,7 @@
 package ai.grakn.test.property;
 
 import ai.grakn.concept.AttributeType;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
 import ai.grakn.generator.ResourceValues;
@@ -54,7 +54,7 @@ public class AttributeTypePropertyTest {
         try {
             type.putAttribute(value);
             assumeTrue("Assumed putResource would throw", false);
-        } catch (GraphOperationException e) {
+        } catch (GraknTxOperationException e) {
             // This is expected to throw
         }
 

@@ -21,7 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.GraknTx;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -81,7 +81,7 @@ public class GraqlControllerReadOnlyTest {
 
     private static GraknTx mockGraph;
     private static QueryBuilder mockQueryBuilder;
-    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
+    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
     private static SystemKeyspace mockSystemKeyspace = mock(SystemKeyspace.class);
 
     private static final JsonMapper jsonMapper = new JsonMapper();
@@ -168,7 +168,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithNoKeyspace_ResponseStatusIs400() {
-        Response response = RestAssured.with().body("match $x isa movie;").post(REST.WebPath.Graph.ANY_GRAQL);
+        Response response = RestAssured.with().body("match $x isa movie;").post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
@@ -178,7 +178,7 @@ public class GraqlControllerReadOnlyTest {
     public void GETGraqlMatchWithNoQuery_ResponseStatusIs400() {
         Response response = RestAssured.with()
                 .queryParam(KEYSPACE, mockGraph.getKeyspace())
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage(QUERY)));
@@ -190,7 +190,7 @@ public class GraqlControllerReadOnlyTest {
                 .body("match $x isa movie;")
                 .queryParam(INFER, true)
                 .accept(APPLICATION_TEXT)
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(MATERIALISE)));
@@ -215,7 +215,7 @@ public class GraqlControllerReadOnlyTest {
         Response response = RestAssured.with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .body("match $x isa movie;")
                 .accept(APPLICATION_TEXT)
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(INFER)));
@@ -475,7 +475,7 @@ public class GraqlControllerReadOnlyTest {
                 .queryParam(MATERIALISE, materialise)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .accept(acceptType)
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
     }
 
     protected static String exception(Response response) {

@@ -42,20 +42,20 @@ import java.util.Properties;
  *
  * @author fppt
  */
-public class EngineGraknGraphFactory {
+public class EngineGraknTxFactory {
     private final Properties properties;
     private final String engineURI;
     private final SystemKeyspace systemKeyspace;
 
-    public static EngineGraknGraphFactory createAndLoadSystemSchema(Properties properties) {
-        return new EngineGraknGraphFactory(properties, true);
+    public static EngineGraknTxFactory createAndLoadSystemSchema(Properties properties) {
+        return new EngineGraknTxFactory(properties, true);
     }
 
-    public static EngineGraknGraphFactory create(Properties properties) {
-        return new EngineGraknGraphFactory(properties, false);
+    public static EngineGraknTxFactory create(Properties properties) {
+        return new EngineGraknTxFactory(properties, false);
     }
 
-    private EngineGraknGraphFactory(Properties properties, boolean loadSchema) {
+    private EngineGraknTxFactory(Properties properties, boolean loadSchema) {
         this.properties = new Properties();
         this.properties.putAll(properties);
         this.engineURI = properties.getProperty(GraknEngineConfig.SERVER_HOST_NAME) + ":" + properties.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER);

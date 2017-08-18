@@ -29,7 +29,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -163,9 +163,9 @@ public interface GraknAdmin {
     /**
      * Commits to the graph without submitting any commit logs.
      * @return the commit log that would have been submitted if it is needed.
-     * @throws InvalidGraphException when the graph does not conform to the object concept
+     * @throws InvalidKBException when the graph does not conform to the object concept
      */
-    Optional<String> commitNoLogs() throws InvalidGraphException;
+    Optional<String> commitNoLogs() throws InvalidKBException;
 
     /**
      * Check if there are duplicate resources in the provided set of vertex IDs

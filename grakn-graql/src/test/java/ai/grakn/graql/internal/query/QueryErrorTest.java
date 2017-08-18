@@ -22,9 +22,9 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -147,7 +147,7 @@ public class QueryErrorTest {
     }
 
     @Test
-    public void testExceptionWhenNoHasResourceRelation() throws InvalidGraphException {
+    public void testExceptionWhenNoHasResourceRelation() throws InvalidKBException {
         // Create a fresh graph, with no has between person and name
         QueryBuilder emptyQb = empty.graph().graql();
         emptyQb.insert(
@@ -155,7 +155,7 @@ public class QueryErrorTest {
                 label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         exception.expectMessage(allOf(
                 containsString("person"),
                 containsString("name")

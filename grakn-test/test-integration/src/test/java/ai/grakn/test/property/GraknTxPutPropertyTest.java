@@ -27,7 +27,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
@@ -117,7 +117,7 @@ public class GraknTxPutPropertyTest {
             @Open GraknTx graph, @FromGraph Type type) {
         assumeFalse(type.isEntityType());
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
@@ -160,7 +160,7 @@ public class GraknTxPutPropertyTest {
             @Open GraknTx graph, @FromGraph Type type, AttributeType.DataType<?> dataType) {
         assumeFalse(type.isAttributeType());
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
@@ -176,11 +176,11 @@ public class GraknTxPutPropertyTest {
         assumeThat(dataType, not(is(attributeType.getDataType())));
         Label label = attributeType.getLabel();
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         if(isMetaLabel(label)) {
-            exception.expectMessage(GraphOperationException.metaTypeImmutable(label).getMessage());
+            exception.expectMessage(GraknTxOperationException.metaTypeImmutable(label).getMessage());
         } else {
-            exception.expectMessage(GraphOperationException.immutableProperty(attributeType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE).getMessage());
+            exception.expectMessage(GraknTxOperationException.immutableProperty(attributeType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE).getMessage());
         }
 
         graph.putAttributeType(label, dataType);
@@ -204,7 +204,7 @@ public class GraknTxPutPropertyTest {
             @Open GraknTx graph, @FromGraph Type type) {
         assumeFalse(type.isRuleType());
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
@@ -240,7 +240,7 @@ public class GraknTxPutPropertyTest {
             @Open GraknTx graph, @FromGraph Type type) {
         assumeFalse(type.isRelationshipType());
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
@@ -274,7 +274,7 @@ public class GraknTxPutPropertyTest {
     @Property
     public void whenCallingPutRoleWithAnExistingTypeLabel_Throw(
             @Open GraknTx graph, @FromGraph Type type) {
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {

@@ -20,7 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
@@ -141,7 +141,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @param keyspace The graph containing the type to shard
      * @param conceptId The id of the concept to shard
      */
-    private void shardConcept(RedisCountStorage redis, EngineGraknGraphFactory factory,
+    private void shardConcept(RedisCountStorage redis, EngineGraknTxFactory factory,
             String keyspace, ConceptId conceptId, int maxRetry, long shardingThreshold){
         Lock engineLock = this.getLockProvider().getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock

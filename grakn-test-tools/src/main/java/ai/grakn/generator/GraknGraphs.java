@@ -36,7 +36,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.MinimalCounterexampleHook;
@@ -92,7 +92,7 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
             succesfulMutation = true;
             try {
                 random.choose(mutators).run();
-            } catch (UnsupportedOperationException | GraphOperationException | GraphGeneratorException e) {
+            } catch (UnsupportedOperationException | GraknTxOperationException | GraphGeneratorException e) {
                 // We only catch acceptable exceptions for the graph API to throw
                 succesfulMutation = false;
             }

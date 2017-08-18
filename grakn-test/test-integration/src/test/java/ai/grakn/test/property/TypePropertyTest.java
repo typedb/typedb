@@ -23,7 +23,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
@@ -63,29 +63,29 @@ public class TypePropertyTest {
 
     @Property
     public void whenSettingAMetaTypeAsAbstract_Throw(@Meta Type type, boolean isAbstract) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.setAbstract(isAbstract);
     }
 
     @Property
     public void whenMakingAMetaTypePlayRole_Throw(@Meta Type type, Role role) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.plays(role);
     }
 
     @Property
     public void whenGivingAMetaTypeAKey_Throw(@Meta Type type, AttributeType attributeType) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.key(attributeType);
     }
 
     @Property
     public void whenGivingAMetaTypeAResource_Throw(@Meta Type type, AttributeType attributeType) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.attribute(attributeType);
     }
 
@@ -94,8 +94,8 @@ public class TypePropertyTest {
     public void whenDeletingATypeWithIndirectInstances_Throw(@NonMeta Type type) {
         assumeThat(type.instances().collect(toSet()), not(empty()));
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.cannotBeDeleted(type).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.cannotBeDeleted(type).getMessage());
         type.delete();
     }
 
@@ -104,7 +104,7 @@ public class TypePropertyTest {
     public void whenATypeWithDirectInstancesIsSetToAbstract_Throw(Type type) {
         assumeThat(PropertyUtil.directInstances(type), not(empty()));
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         exception.expectMessage(IS_ABSTRACT.getMessage(type.getLabel()));
 
         type.setAbstract(true);

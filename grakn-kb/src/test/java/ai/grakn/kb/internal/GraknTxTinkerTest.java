@@ -21,8 +21,8 @@ package ai.grakn.kb.internal;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Test;
 
@@ -38,7 +38,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class GraknTxTinkerTest extends GraphTestBase{
+public class GraknTxTinkerTest extends KBTestBase {
 
     @Test
     public void whenAddingMultipleConceptToTinkerGraph_EnsureGraphIsMutatedDirectlyNotViaTransaction() throws ExecutionException, InterruptedException {
@@ -78,11 +78,11 @@ public class GraknTxTinkerTest extends GraphTestBase{
     }
 
     @Test
-    public void whenMutatingClosedGraph_Throw() throws InvalidGraphException {
+    public void whenMutatingClosedGraph_Throw() throws InvalidKBException {
         GraknTxAbstract graph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, "new graph").open(GraknTxType.WRITE);
         graph.close();
 
-        expectedException.expect(GraphOperationException.class);
+        expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
 
         graph.putEntityType("thing");

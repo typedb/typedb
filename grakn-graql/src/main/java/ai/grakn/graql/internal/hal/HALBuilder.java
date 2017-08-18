@@ -229,7 +229,7 @@ public class HALBuilder {
 
         String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, dollarR, parenthesis, isaString, selectR, limit);
 
-        String URL = (isInferred) ? REST.WebPath.Dashboard.EXPLAIN : REST.WebPath.Graph.GRAQL;
+        String URL = (isInferred) ? REST.WebPath.Dashboard.EXPLAIN : REST.WebPath.KB.GRAQL;
 
         return URL + withoutUrl;
     }

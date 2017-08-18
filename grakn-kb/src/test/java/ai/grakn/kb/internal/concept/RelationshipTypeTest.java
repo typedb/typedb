@@ -24,8 +24,8 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.kb.internal.KBTestBase;
 import ai.grakn.util.Schema;
 import org.junit.Test;
 
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-public class RelationshipTypeTest extends GraphTestBase {
+public class RelationshipTypeTest extends KBTestBase {
     @Test
     public void whenGettingTheRolesOfRelationTypes_AllTheRolesAreReturned() throws Exception {
         RelationshipType relationshipType = graknGraph.putRelationshipType("relationTypes");
@@ -89,8 +89,8 @@ public class RelationshipTypeTest extends GraphTestBase {
 
         RelationshipType implicitRelationshipType = graknGraph.getRelationshipType(Schema.ImplicitType.HAS.getLabel(attributeType.getLabel()).getValue());
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.addingInstancesToAbstractType(implicitRelationshipType).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.addingInstancesToAbstractType(implicitRelationshipType).getMessage());
 
         implicitRelationshipType.setAbstract(true);
     }

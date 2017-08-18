@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;
 
-public class MatchQueryGraphTest {
+public class MatchQueryKBTest {
 
     private final AbstractMatchQuery query =
             new MatchQueryBase(Patterns.conjunction(Sets.newHashSet(var("x").admin())));

@@ -2,7 +2,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
@@ -56,7 +56,7 @@ public class GraqlControllerTest {
             .queryParam(MATERIALISE, materialise)
             .queryParam(LIMIT_EMBEDDED, limitEmbedded)
             .accept(acceptType)
-            .post(REST.WebPath.Graph.ANY_GRAQL);
+            .post(REST.WebPath.KB.ANY_GRAQL);
     }
 
     @ClassRule
@@ -64,7 +64,7 @@ public class GraqlControllerTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.createAndLoadSystemSchema(GraknEngineConfig.create().getProperties());
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(GraknEngineConfig.create().getProperties());
         new GraqlController(factory, spark, new MetricRegistry());
     });
 

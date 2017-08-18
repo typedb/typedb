@@ -35,11 +35,11 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.kb.internal.cache.GraphCache;
+import ai.grakn.kb.internal.cache.GlobalCache;
 import ai.grakn.kb.internal.cache.TxCache;
 import ai.grakn.kb.internal.concept.AttributeImpl;
 import ai.grakn.kb.internal.concept.ConceptImpl;
@@ -114,7 +114,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private final Properties properties;
     private final G graph;
     private final ElementFactory elementFactory;
-    private final GraphCache graphCache;
+    private final GlobalCache globalCache;
 
     private static Constructor<?> queryConstructor = null;
 
@@ -137,7 +137,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         elementFactory = new ElementFactory(this);
 
         //Initialise Graph Caches
-        graphCache = new GraphCache(properties);
+        globalCache = new GlobalCache(properties);
 
         //Initialise Graph
         txCache().openTx(GraknTxType.WRITE);
@@ -174,8 +174,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     /**
      * @return The graph cache which contains all the data cached and accessible by all transactions.
      */
-    GraphCache getGraphCache() {
-        return graphCache;
+    GlobalCache getGlobalCache() {
+        return globalCache;
     }
 
     /**
@@ -213,7 +213,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     public TxCache txCache() {
         TxCache txCache = localConceptLog.get();
         if (txCache == null) {
-            localConceptLog.set(txCache = new TxCache(getGraphCache()));
+            localConceptLog.set(txCache = new TxCache(getGlobalCache()));
         }
 
         if (txCache.isTxOpen() && txCache.schemaNotCached()) {
@@ -311,8 +311,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      */
     private void copyToCache(SchemaConcept schemaConcept) {
         schemaConcept.subs().forEach(concept -> {
-            getGraphCache().cacheLabel(concept.getLabel(), concept.getLabelId());
-            getGraphCache().cacheType(concept.getLabel(), concept);
+            getGlobalCache().cacheLabel(concept.getLabel(), concept.getLabelId());
+            getGlobalCache().cacheType(concept.getLabel(), concept);
         });
     }
 
@@ -372,11 +372,11 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     public void checkSchemaMutationAllowed() {
         checkMutationAllowed();
-        if (isBatchGraph()) throw GraphOperationException.schemaMutation();
+        if (isBatchGraph()) throw GraknTxOperationException.schemaMutation();
     }
 
     public void checkMutationAllowed() {
-        if (isReadOnly()) throw GraphOperationException.transactionReadOnly(this);
+        if (isReadOnly()) throw GraknTxOperationException.transactionReadOnly(this);
     }
 
 
@@ -429,10 +429,10 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      *
      * @param supplier The operation to be performed on the graph
      * @return The result of the operation on the graph.
-     * @throws GraphOperationException if the graph is closed.
+     * @throws GraknTxOperationException if the graph is closed.
      */
     private <X> X operateOnOpenGraph(Supplier<X> supplier) {
-        if (isClosed()) throw GraphOperationException.transactionClosed(this, txCache().getClosedReason());
+        if (isClosed()) throw GraknTxOperationException.transactionClosed(this, txCache().getClosedReason());
         return supplier.get();
     }
 
@@ -452,7 +452,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         SchemaConcept schemaConcept = buildSchemaConcept(label, () -> factory.apply(putVertex(label, baseType)));
 
         T finalType = validateSchemaConcept(schemaConcept, baseType, () -> {
-            if (Schema.MetaSchema.isMetaLabel(label)) throw GraphOperationException.reservedLabel(label);
+            if (Schema.MetaSchema.isMetaLabel(label)) throw GraknTxOperationException.reservedLabel(label);
             throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, label);
         });
 
@@ -534,9 +534,9 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
-            throw GraphOperationException.metaTypeImmutable(label);
+            throw GraknTxOperationException.metaTypeImmutable(label);
         } else if (!dataType.equals(attributeType.getDataType())) {
-            throw GraphOperationException.immutableProperty(attributeType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+            throw GraknTxOperationException.immutableProperty(attributeType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE);
         }
 
         return attributeType;
@@ -597,7 +597,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
         //Make sure you trying to retrieve supported data type
         if (!AttributeType.DataType.SUPPORTED_TYPES.containsKey(value.getClass().getName())) {
-            throw GraphOperationException.unsupportedDataType(value);
+            throw GraknTxOperationException.unsupportedDataType(value);
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
@@ -727,7 +727,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             txCache().closeTx(ErrorMessage.SESSION_CLOSED.getMessage(getKeyspace()));
             getTinkerPopGraph().close();
         } catch (Exception e) {
-            throw GraphOperationException.closingGraphFailed(this, e);
+            throw GraknTxOperationException.closingGraphFailed(this, e);
         }
     }
 
@@ -742,7 +742,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public void commit() throws InvalidGraphException {
+    public void commit() throws InvalidKBException {
         close(true, true);
     }
 
@@ -784,14 +784,14 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     /**
      * Commits to the graph without submitting any commit logs.
      *
-     * @throws InvalidGraphException when the graph does not conform to the object concept
+     * @throws InvalidKBException when the graph does not conform to the object concept
      */
     @Override
-    public Optional<String> commitNoLogs() throws InvalidGraphException {
+    public Optional<String> commitNoLogs() throws InvalidKBException {
         return close(true, false);
     }
 
-    private Optional<String> commitWithLogs() throws InvalidGraphException {
+    private Optional<String> commitWithLogs() throws InvalidKBException {
         validateGraph();
 
         boolean submissionNeeded = !txCache().getShardingCount().isEmpty() ||
@@ -817,11 +817,11 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         }
     }
 
-    private void validateGraph() throws InvalidGraphException {
+    private void validateGraph() throws InvalidKBException {
         Validator validator = new Validator(this);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();
-            if (!errors.isEmpty()) throw InvalidGraphException.validationErrors(errors);
+            if (!errors.isEmpty()) throw InvalidKBException.validationErrors(errors);
         }
     }
 

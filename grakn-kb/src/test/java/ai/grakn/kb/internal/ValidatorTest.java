@@ -27,7 +27,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Test;
 
@@ -44,7 +44,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
-public class ValidatorTest extends GraphTestBase{
+public class ValidatorTest extends KBTestBase {
 
     @Test
     public void whenCommittingGraphWhichFollowsValidationRules_Commit(){
@@ -96,7 +96,7 @@ public class ValidatorTest extends GraphTestBase{
         String error1 = ErrorMessage.VALIDATION_CASTING.getMessage(kyle.type().getLabel(), kyle.getId(), kicker.getLabel());
         String error2 = ErrorMessage.VALIDATION_CASTING.getMessage(icke.type().getLabel(), icke.getId(), kickee.getLabel());
 
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(allOf(containsString(error1), containsString(error2)));
 
         graknGraph.commit();
@@ -106,7 +106,7 @@ public class ValidatorTest extends GraphTestBase{
     public void whenCommittingNonAbstractRoleTypeNotLinkedToAnyRelationType_Throw(){
         Role alone = graknGraph.putRole("alone");
 
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(alone.getLabel())));
 
         graknGraph.commit();
@@ -116,14 +116,14 @@ public class ValidatorTest extends GraphTestBase{
     public void whenCommittingNonAbstractRelationTypeNotLinkedToAnyRoleType_Throw(){
         RelationshipType alone = graknGraph.putRelationshipType("alone");
 
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(alone.getLabel())));
 
         graknGraph.commit();
     }
 
     @Test
-    public void whenDeletingRelations_EnsureGraphRemainsValid() throws InvalidGraphException {
+    public void whenDeletingRelations_EnsureGraphRemainsValid() throws InvalidKBException {
         // schema
         EntityType person = graknGraph.putEntityType("person");
         EntityType movie = graknGraph.putEntityType("movie");
@@ -169,7 +169,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void whenManuallyCreatingCorrectBinaryRelation_Commit() throws InvalidGraphException {
+    public void whenManuallyCreatingCorrectBinaryRelation_Commit() throws InvalidKBException {
         Role characterBeingPlayed = graknGraph.putRole("Character being played");
         Role personPlayingCharacter = graknGraph.putRole("Person Playing Char");
         RelationshipType playsChar = graknGraph.putRelationshipType("Plays Char").relates(characterBeingPlayed).relates(personPlayingCharacter);
@@ -189,7 +189,7 @@ public class ValidatorTest extends GraphTestBase{
 
     /*------------------------------- Entity Type to Role Type Validation (Schema) -----------------------------------*/
     @Test
-    public void whenCommittingWithRoleTypeHierarchy_EnsureEntityTypesPlayAllRolesExplicitly1() throws InvalidGraphException {
+    public void whenCommittingWithRoleTypeHierarchy_EnsureEntityTypesPlayAllRolesExplicitly1() throws InvalidKBException {
         Role relative = graknGraph.putRole("relative");
         Role parent = graknGraph.putRole("parent").sup(relative);
         Role father = graknGraph.putRole("father").sup(parent);
@@ -208,7 +208,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void whenCommittingWithRoleTypeHierarchy_EnsureEntityTypesPlayAllRolesExplicitly2() throws InvalidGraphException {
+    public void whenCommittingWithRoleTypeHierarchy_EnsureEntityTypesPlayAllRolesExplicitly2() throws InvalidKBException {
         Role parent = graknGraph.putRole("parent");
         Role child = graknGraph.putRole("child");
 
@@ -224,7 +224,7 @@ public class ValidatorTest extends GraphTestBase{
     /*-------------------------------- Entity Type to Role Type Validation (Data) ------------------------------------*/
 
     @Test
-    public void whenCommittingWithRoleTypeHierarchy_EnsureInstancesCanPlayRelevantRoles1() throws InvalidGraphException {
+    public void whenCommittingWithRoleTypeHierarchy_EnsureInstancesCanPlayRelevantRoles1() throws InvalidKBException {
         Role parent = graknGraph.putRole("parent");
         Role child = graknGraph.putRole("child");
 
@@ -242,7 +242,7 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.commit();
     }
     @Test
-    public void whenCommittingWithRoleTypeHierarchy_EnsureInstancesCanPlayRelevantRoles2() throws InvalidGraphException {
+    public void whenCommittingWithRoleTypeHierarchy_EnsureInstancesCanPlayRelevantRoles2() throws InvalidKBException {
         Role parent = graknGraph.putRole("parent");
         Role child = graknGraph.putRole("child");
 
@@ -259,7 +259,7 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.commit();
     }
     @Test
-    public void whenCommittingWithRoleTypeHierarchyAndInstancesCannotPlayRolesExplicitly_Throw1() throws InvalidGraphException {
+    public void whenCommittingWithRoleTypeHierarchyAndInstancesCannotPlayRolesExplicitly_Throw1() throws InvalidKBException {
         Role parent = graknGraph.putRole("parent");
         Role child = graknGraph.putRole("child");
 
@@ -273,14 +273,14 @@ public class ValidatorTest extends GraphTestBase{
 
         parenthood.addRelationship().addRolePlayer(parent, x).addRolePlayer(child, y);
 
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
                 ErrorMessage.VALIDATION_CASTING.getMessage(man.getLabel(), x.getId(), parent.getLabel()));
 
         graknGraph.commit();
     }
     @Test
-    public void whenCommittingWithRoleTypeHierarchyAndInstancesCannotPlayRolesExplicitly_Throw2() throws InvalidGraphException {
+    public void whenCommittingWithRoleTypeHierarchyAndInstancesCannotPlayRolesExplicitly_Throw2() throws InvalidKBException {
         Role parent = graknGraph.putRole("parent");
         Role child = graknGraph.putRole("child");
 
@@ -293,14 +293,14 @@ public class ValidatorTest extends GraphTestBase{
 
         parenthood.addRelationship().addRolePlayer(parent, x).addRolePlayer(child, y);
 
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
                 ErrorMessage.VALIDATION_CASTING.getMessage(person.getLabel(), x.getId(), parent.getLabel()));
 
         graknGraph.commit();
     }
     @Test
-    public void whenCommittingWithRoleTypeHierarchyAndInstancesCannotPlayRolesExplicitly_Throw3() throws InvalidGraphException {
+    public void whenCommittingWithRoleTypeHierarchyAndInstancesCannotPlayRolesExplicitly_Throw3() throws InvalidKBException {
         Role parent = graknGraph.putRole("parent");
         Role child = graknGraph.putRole("child");
 
@@ -313,7 +313,7 @@ public class ValidatorTest extends GraphTestBase{
         Entity y = person.addEntity();
         parenthood.addRelationship().addRolePlayer(parent, x).addRolePlayer(child, y);
 
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
                 ErrorMessage.VALIDATION_CASTING.getMessage(person.getLabel(), x.getId(), parent.getLabel()));
 
@@ -322,7 +322,7 @@ public class ValidatorTest extends GraphTestBase{
 
     /*------------------------------- Relationship Type to Role Type Validation (Schema) ---------------------------------*/
     @Test
-    public void whenARelationTypeHasASubTypeHierarchy_EnsureThatWhenARelationTypeHasMatchingRoleTypes1() throws InvalidGraphException {
+    public void whenARelationTypeHasASubTypeHierarchy_EnsureThatWhenARelationTypeHasMatchingRoleTypes1() throws InvalidKBException {
         Role relative = graknGraph.putRole("relative");
         Role parent = graknGraph.putRole("parent").sup(relative);
         Role father = graknGraph.putRole("father").sup(parent);
@@ -351,7 +351,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void whenARelationTypeHasASubTypeHierarchy_EnsureThatWhenARelationTypeHasMatchingRoleTypes2() throws InvalidGraphException {
+    public void whenARelationTypeHasASubTypeHierarchy_EnsureThatWhenARelationTypeHasMatchingRoleTypes2() throws InvalidKBException {
         Role relative = graknGraph.putRole("relative");
         Role parent = graknGraph.putRole("parent").sup(relative);
         Role father = graknGraph.putRole("father").sup(parent);
@@ -376,7 +376,7 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.commit();
     }
     @Test
-    public void whenARelationTypeHasASubTypeHierarchy_EnsureThatWhenARelationTypeHasMatchingRoleTypes3() throws InvalidGraphException {
+    public void whenARelationTypeHasASubTypeHierarchy_EnsureThatWhenARelationTypeHasMatchingRoleTypes3() throws InvalidKBException {
         Role relative = graknGraph.putRole("relative");
         Role parent = graknGraph.putRole("parent").sup(relative);
         Role father = graknGraph.putRole("father").sup(parent);
@@ -399,7 +399,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void whenCreatingRelationWithSubTypeHierarchyAndNoMatchingRoleTypeHierarchy_Throw1() throws InvalidGraphException {
+    public void whenCreatingRelationWithSubTypeHierarchyAndNoMatchingRoleTypeHierarchy_Throw1() throws InvalidKBException {
         Role pChild = graknGraph.putRole("pChild");
         Role fChild = graknGraph.putRole("fChild").sup(pChild);
         Role parent = graknGraph.putRole("parent");
@@ -412,7 +412,7 @@ public class ValidatorTest extends GraphTestBase{
         RelationshipType parenthood = graknGraph.putRelationshipType("parenthood").relates(parent).relates(pChild);
         RelationshipType fatherhood = graknGraph.putRelationshipType("fatherhood").sup(parenthood).relates(father).relates(fChild).relates(inContext);
 
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
                 ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getLabel(), fatherhood.getLabel(), "super", "super", parenthood.getLabel()));
 
@@ -420,7 +420,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void whenCreatingRelationWithSubTypeHierarchyAndNoMatchingRoleTypeHierarchy_Throw2() throws InvalidGraphException {
+    public void whenCreatingRelationWithSubTypeHierarchyAndNoMatchingRoleTypeHierarchy_Throw2() throws InvalidKBException {
         Role parent = graknGraph.putRole("parent");
         Role father = graknGraph.putRole("father").sup(parent);
         Role pChild = graknGraph.putRole("pChild");
@@ -433,7 +433,7 @@ public class ValidatorTest extends GraphTestBase{
         RelationshipType parenthood = graknGraph.putRelationshipType("parenthood").relates(parent).relates(pChild).relates(inContext);
         RelationshipType fatherhood = graknGraph.putRelationshipType("fatherhood").sup(parenthood).relates(father).relates(fChild);
 
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
                 ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getLabel(), parenthood.getLabel(), "sub", "sub", fatherhood.getLabel()));
 
@@ -441,7 +441,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void checkRoleTypeValidSuperOfSelfTypeWhenLinkedToRelationsWhichAreSubsOfEachOther() throws InvalidGraphException {
+    public void checkRoleTypeValidSuperOfSelfTypeWhenLinkedToRelationsWhichAreSubsOfEachOther() throws InvalidKBException {
         Role insurer = graknGraph.putRole("insurer");
         Role monoline = graknGraph.putRole("monoline").sup(insurer);
         Role insured = graknGraph.putRole("insured");

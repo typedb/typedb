@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class ValidateGlobalRulesTest extends GraphTestBase{
+public class ValidateGlobalRulesTest extends KBTestBase {
 
     @Test
     public void testValidatePlaysStructure() throws Exception {

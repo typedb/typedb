@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * </p>
  *
  * <p>
- *     Caches Knowledge Bas or Session specific data which is shared across transactions:
+ *     Caches Knowledge Base or Session specific data which is shared across transactions:
  *     <ol>
  *         <li>Schema Cache - All the types which make up the schema. This cache expires</li>
  *         <li>
@@ -51,12 +51,12 @@ import java.util.concurrent.TimeUnit;
  * @author fppt
  *
  */
-public class GraphCache {
+public class GlobalCache {
     //Caches
     private final Cache<Label, SchemaConcept> cachedTypes;
     private final Map<Label, LabelId> cachedLabels;
 
-    public GraphCache(Properties properties){
+    public GlobalCache(Properties properties){
         cachedLabels = new ConcurrentHashMap<>();
 
         int cacheTimeout = Integer.parseInt(properties.get(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS).toString());

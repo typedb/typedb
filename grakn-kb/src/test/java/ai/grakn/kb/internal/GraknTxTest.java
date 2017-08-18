@@ -31,8 +31,8 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.util.ErrorMessage;
@@ -61,7 +61,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class GraknTxTest extends GraphTestBase {
+public class GraknTxTest extends KBTestBase {
 
     @Test
     public void whenGettingConceptById_ReturnTheConcept(){
@@ -152,13 +152,13 @@ public class GraknTxTest extends GraphTestBase {
 
         graknGraph.abort();
 
-        for (SchemaConcept type : graknGraph.getGraphCache().getCachedTypes().values()) {
+        for (SchemaConcept type : graknGraph.getGlobalCache().getCachedTypes().values()) {
             assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", finalTypes.contains(type));
         }
     }
     private void assertCacheOnlyContainsMetaTypes(){
         Set<Label> metas = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getLabel).collect(Collectors.toSet());
-        graknGraph.getGraphCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
+        graknGraph.getGlobalCache().getCachedTypes().keySet().forEach(cachedLabel -> assertTrue("Type [" + cachedLabel + "] is missing from central cache", metas.contains(cachedLabel)));
     }
 
     @Test
@@ -172,8 +172,8 @@ public class GraknTxTest extends GraphTestBase {
         ExecutorService pool = Executors.newSingleThreadExecutor();
         GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "testing").open(GraknTxType.WRITE);
 
-        expectedException.expectCause(IsInstanceOf.instanceOf(GraphOperationException.class));
-        expectedException.expectMessage(GraphOperationException.transactionClosed(graph, null).getMessage());
+        expectedException.expectCause(IsInstanceOf.instanceOf(GraknTxOperationException.class));
+        expectedException.expectMessage(GraknTxOperationException.transactionClosed(graph, null).getMessage());
 
         Future future = pool.submit(() -> {
             graph.putEntityType("A Thing");
@@ -182,14 +182,14 @@ public class GraknTxTest extends GraphTestBase {
     }
 
     @Test
-    public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws InvalidGraphException {
+    public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws InvalidKBException {
         GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "testing-again").open(GraknTxType.WRITE);
         graph.close();
 
         boolean errorThrown = false;
         try{
             graph.putEntityType("A Thing");
-        } catch (GraphOperationException e){
+        } catch (GraknTxOperationException e){
             if(e.getMessage().equals(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))){
                 errorThrown = true;
             }
@@ -201,7 +201,7 @@ public class GraknTxTest extends GraphTestBase {
     }
 
     @Test
-    public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws InvalidGraphException, ExecutionException, InterruptedException {
+    public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws InvalidKBException, ExecutionException, InterruptedException {
         //Check Central cache is empty
         assertCacheOnlyContainsMetaTypes();
 
@@ -215,7 +215,7 @@ public class GraknTxTest extends GraphTestBase {
         graknGraph = (GraknTxAbstract<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         //Check cache is in good order
-        Collection<SchemaConcept> cachedValues = graknGraph.getGraphCache().getCachedTypes().values();
+        Collection<SchemaConcept> cachedValues = graknGraph.getGlobalCache().getCachedTypes().values();
         assertTrue("Type [" + r1 + "] was not cached", cachedValues.contains(r1));
         assertTrue("Type [" + r2 + "] was not cached", cachedValues.contains(r2));
         assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
@@ -233,7 +233,7 @@ public class GraknTxTest extends GraphTestBase {
         }).get();
 
         //Check the above mutation did not affect central repo
-        SchemaConcept foundE1 = graknGraph.getGraphCache().getCachedTypes().get(e1.getLabel());
+        SchemaConcept foundE1 = graknGraph.getGlobalCache().getCachedTypes().get(e1.getLabel());
         assertTrue("Main cache was affected by transaction", foundE1.asType().plays().anyMatch(role -> role.equals(r1)));
     }
 
@@ -302,7 +302,7 @@ public class GraknTxTest extends GraphTestBase {
         }
 
         assertNotNull("No exception thrown when attempting to mutate a read only graph", caughtException);
-        assertThat(caughtException, instanceOf(GraphOperationException.class));
+        assertThat(caughtException, instanceOf(GraknTxOperationException.class));
         assertEquals(caughtException.getMessage(), ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
         assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.admin().getTinkerTraversal().V().toList().size());
         assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.admin().getTinkerTraversal().E().toList().size());
@@ -329,11 +329,11 @@ public class GraknTxTest extends GraphTestBase {
         try{
             //noinspection ResultOfMethodCallIgnored
             session.open(txType);
-        } catch (GraphOperationException e){
+        } catch (GraknTxOperationException e){
             exception = e;
         }
         assertNotNull(exception);
-        assertThat(exception, instanceOf(GraphOperationException.class));
+        assertThat(exception, instanceOf(GraknTxOperationException.class));
         assertEquals(exception.getMessage(), ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(keyspace));
     }
 

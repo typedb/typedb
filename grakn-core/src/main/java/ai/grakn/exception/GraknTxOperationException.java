@@ -59,210 +59,210 @@ import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
  *
  * @author fppt
  */
-public class GraphOperationException extends GraknException{
-    protected GraphOperationException(String error){
+public class GraknTxOperationException extends GraknException{
+    protected GraknTxOperationException(String error){
         super(error);
     }
 
-    protected GraphOperationException(String error, Exception e){
+    protected GraknTxOperationException(String error, Exception e){
         super(error, e);
     }
 
     /**
      * Thrown when attempting to mutate a {@link ai.grakn.util.Schema.MetaSchema}
      */
-    public static GraphOperationException metaTypeImmutable(Label metaLabel){
-        return new GraphOperationException(META_TYPE_IMMUTABLE.getMessage(metaLabel));
+    public static GraknTxOperationException metaTypeImmutable(Label metaLabel){
+        return new GraknTxOperationException(META_TYPE_IMMUTABLE.getMessage(metaLabel));
     }
 
     /**
      * Throw when trying to add instances to an abstract Type
      */
-    public static GraphOperationException addingInstancesToAbstractType(Type type){
-        return new GraphOperationException(ErrorMessage.IS_ABSTRACT.getMessage(type.getLabel()));
+    public static GraknTxOperationException addingInstancesToAbstractType(Type type){
+        return new GraknTxOperationException(ErrorMessage.IS_ABSTRACT.getMessage(type.getLabel()));
     }
 
     /**
      * Thrown when a {@link Thing} is not allowed to have {@link Attribute} of that {@link AttributeType}
      */
-    public static GraphOperationException hasNotAllowed(Thing thing, Attribute attribute){
-        return new GraphOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), attribute.type().getLabel()));
+    public static GraknTxOperationException hasNotAllowed(Thing thing, Attribute attribute){
+        return new GraknTxOperationException(HAS_INVALID.getMessage(thing.type().getLabel(), attribute.type().getLabel()));
     }
 
     /**
      * Thrown when attempting to set a regex on a {@link Attribute} whose type {@link AttributeType} is not of the
      * data type {@link AttributeType.DataType#STRING}
      */
-    public static GraphOperationException cannotSetRegex(AttributeType attributeType){
-        return new GraphOperationException(REGEX_NOT_STRING.getMessage(attributeType.getLabel()));
+    public static GraknTxOperationException cannotSetRegex(AttributeType attributeType){
+        return new GraknTxOperationException(REGEX_NOT_STRING.getMessage(attributeType.getLabel()));
     }
 
     /**
      * Thrown when a {@link Type} has incoming edges and therefore cannot be deleted
      */
-    public static GraphOperationException cannotBeDeleted(SchemaConcept schemaConcept){
-        return new GraphOperationException(ErrorMessage.CANNOT_DELETE.getMessage(schemaConcept.getLabel()));
+    public static GraknTxOperationException cannotBeDeleted(SchemaConcept schemaConcept){
+        return new GraknTxOperationException(ErrorMessage.CANNOT_DELETE.getMessage(schemaConcept.getLabel()));
     }
 
     /**
      * Thrown when {@code type} has {@code attributeType} as a {@link Type#key(AttributeType)} and a {@link Type#attribute(AttributeType)}
      */
-    public static GraphOperationException duplicateHas(Type type, AttributeType attributeType){
-        return new GraphOperationException(ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE.getMessage(type.getLabel(), attributeType.getLabel()));
+    public static GraknTxOperationException duplicateHas(Type type, AttributeType attributeType){
+        return new GraknTxOperationException(ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE.getMessage(type.getLabel(), attributeType.getLabel()));
     }
 
     /**
      * Thrown when setting {@code superType} as the super type of {@code type} and a loop is created
      */
-    public static GraphOperationException loopCreated(SchemaConcept type, SchemaConcept superElement){
-        throw new GraphOperationException(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(type.getLabel(), superElement.getLabel()));
+    public static GraknTxOperationException loopCreated(SchemaConcept type, SchemaConcept superElement){
+        throw new GraknTxOperationException(ErrorMessage.SUPER_LOOP_DETECTED.getMessage(type.getLabel(), superElement.getLabel()));
     }
 
     /**
      * Thrown when casting concepts incorrectly. For example when doing {@link Concept#asEntityType()} on a
      * {@link ai.grakn.concept.Entity}
      */
-    public static GraphOperationException invalidCasting(Object concept, Class type){
-        throw new GraphOperationException(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
+    public static GraknTxOperationException invalidCasting(Object concept, Class type){
+        throw new GraknTxOperationException(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(concept, type));
     }
 
     /**
      * Thrown when creating a resource whose value {@code object} does not match it's resource's  {@code dataType}.
      */
-    public static GraphOperationException invalidResourceValue(Object object, AttributeType.DataType dataType){
-        return new GraphOperationException(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.getVertexProperty().getDataType().getName()));
+    public static GraknTxOperationException invalidResourceValue(Object object, AttributeType.DataType dataType){
+        return new GraknTxOperationException(ErrorMessage.INVALID_DATATYPE.getMessage(object, dataType.getVertexProperty().getDataType().getName()));
     }
 
     /**
      * Thrown when using an unsupported datatype with resources
      */
-    public static GraphOperationException unsupportedDataType(Object value) {
+    public static GraknTxOperationException unsupportedDataType(Object value) {
         String supported = AttributeType.DataType.SUPPORTED_TYPES.keySet().stream().collect(Collectors.joining(","));
-        return new GraphOperationException(ErrorMessage.INVALID_DATATYPE.getMessage(value.getClass().getName(), supported));
+        return new GraknTxOperationException(ErrorMessage.INVALID_DATATYPE.getMessage(value.getClass().getName(), supported));
     }
 
     /**
      * Thrown when attempting to mutate a property which is immutable
      */
-    public static GraphOperationException immutableProperty(Object oldValue, Object newValue, Enum vertexProperty){
-        return new GraphOperationException(ErrorMessage.IMMUTABLE_VALUE.getMessage(oldValue, newValue, vertexProperty.name()));
+    public static GraknTxOperationException immutableProperty(Object oldValue, Object newValue, Enum vertexProperty){
+        return new GraknTxOperationException(ErrorMessage.IMMUTABLE_VALUE.getMessage(oldValue, newValue, vertexProperty.name()));
     }
 
     /**
      * Thrown when trying to set a {@code value} on the {@code resource} which does not conform to it's regex
      */
-    public static GraphOperationException regexFailure(AttributeType attributeType, String value, String regex){
-        return new GraphOperationException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, attributeType.getLabel(), value));
+    public static GraknTxOperationException regexFailure(AttributeType attributeType, String value, String regex){
+        return new GraknTxOperationException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, attributeType.getLabel(), value));
     }
 
     /**
      * Thrown when attempting to open a transaction which is already open
      */
-    public static GraphOperationException transactionOpen(GraknTx graph){
-        return new GraphOperationException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(graph.getKeyspace()));
+    public static GraknTxOperationException transactionOpen(GraknTx graph){
+        return new GraknTxOperationException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(graph.getKeyspace()));
     }
 
     /**
      * Thrown when attempting to open an invalid type of transaction
      */
-    public static GraphOperationException transactionInvalid(Object tx){
-        return new GraphOperationException("Unknown type of transaction [" + tx + "]");
+    public static GraknTxOperationException transactionInvalid(Object tx){
+        return new GraknTxOperationException("Unknown type of transaction [" + tx + "]");
     }
 
     /**
      * Thrown when attempting to mutate a read only transaction
      */
-    public static GraphOperationException transactionReadOnly(GraknTx graph){
-        return new GraphOperationException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
+    public static GraknTxOperationException transactionReadOnly(GraknTx graph){
+        return new GraknTxOperationException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
     }
 
     /**
      * Thrown when attempting to mutate the schema while the transaction is in batch mode
      */
-    public static GraphOperationException schemaMutation(){
-        return new GraphOperationException(ErrorMessage.SCHEMA_LOCKED.getMessage());
+    public static GraknTxOperationException schemaMutation(){
+        return new GraknTxOperationException(ErrorMessage.SCHEMA_LOCKED.getMessage());
     }
 
     /**
      * Thrown when attempting to use the graph when the transaction is closed
      */
-    public static GraphOperationException transactionClosed(GraknTx graph, String reason){
+    public static GraknTxOperationException transactionClosed(GraknTx graph, String reason){
         if(reason == null){
-            return new GraphOperationException(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()));
+            return new GraknTxOperationException(ErrorMessage.GRAPH_CLOSED.getMessage(graph.getKeyspace()));
         } else {
-            return new GraphOperationException(reason);
+            return new GraknTxOperationException(reason);
         }
     }
 
     /**
      * Thrown when the graph can not be closed due to an unknown reason.
      */
-    public static GraphOperationException closingGraphFailed(GraknTx graph, Exception e){
-        return new GraphOperationException(CLOSE_GRAPH_FAILURE.getMessage(graph.getKeyspace()), e);
+    public static GraknTxOperationException closingGraphFailed(GraknTx graph, Exception e){
+        return new GraknTxOperationException(CLOSE_GRAPH_FAILURE.getMessage(graph.getKeyspace()), e);
     }
 
     /**
      * Thrown when using incompatible versions of Grakn
      */
-    public static GraphOperationException versionMistmatch(Attribute versionAttribute){
-        return new GraphOperationException(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, versionAttribute.getValue()));
+    public static GraknTxOperationException versionMistmatch(Attribute versionAttribute){
+        return new GraknTxOperationException(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, versionAttribute.getValue()));
     }
 
     /**
      * Thrown when an thing does not have a type
      */
-    public static GraphOperationException noType(Thing thing){
-        return new GraphOperationException(NO_TYPE.getMessage(thing.getId()));
+    public static GraknTxOperationException noType(Thing thing){
+        return new GraknTxOperationException(NO_TYPE.getMessage(thing.getId()));
     }
 
     /**
      * Thrown when attempting to traverse an edge in an invalid direction
      */
-    public static GraphOperationException invalidDirection(Direction direction){
-        return new GraphOperationException(INVALID_DIRECTION.getMessage(direction));
+    public static GraknTxOperationException invalidDirection(Direction direction){
+        return new GraknTxOperationException(INVALID_DIRECTION.getMessage(direction));
     }
 
     /**
      * Thrown when attempting to read a config file which cannot be accessed
      */
-    public static GraphOperationException invalidGraphConfig(String pathToFile){
-        return new GraphOperationException(INVALID_PATH_TO_CONFIG.getMessage(pathToFile));
+    public static GraknTxOperationException invalidGraphConfig(String pathToFile){
+        return new GraknTxOperationException(INVALID_PATH_TO_CONFIG.getMessage(pathToFile));
     }
 
     /**
      * Thrown when trying to create something using a label reserved by the system
      */
-    public static GraphOperationException reservedLabel(Label label){
-        return new GraphOperationException(RESERVED_WORD.getMessage(label.getValue()));
+    public static GraknTxOperationException reservedLabel(Label label){
+        return new GraknTxOperationException(RESERVED_WORD.getMessage(label.getValue()));
     }
 
     /**
      * Thrown when trying to add a {@link Schema.VertexProperty} to a {@link Concept} which does not accept that type
      * of {@link Schema.VertexProperty}
      */
-    public static GraphOperationException invalidPropertyUse(Concept concept, Schema.VertexProperty property) {
-        return new GraphOperationException(INVALID_PROPERTY_USE.getMessage(concept, property));
+    public static GraknTxOperationException invalidPropertyUse(Concept concept, Schema.VertexProperty property) {
+        return new GraknTxOperationException(INVALID_PROPERTY_USE.getMessage(concept, property));
     }
 
     /**
      * Thrown when trying to build a {@link Concept} using an invalid graph construct
      */
-    public static GraphOperationException unknownConcept(String type){
-        return new GraphOperationException(UNKNOWN_CONCEPT.getMessage(type));
+    public static GraknTxOperationException unknownConcept(String type){
+        return new GraknTxOperationException(UNKNOWN_CONCEPT.getMessage(type));
     }
 
     /**
      * Thrown when changing the {@link Label} of an {@link SchemaConcept} which is owned by another {@link SchemaConcept}
      */
-    public static GraphOperationException labelTaken(Label label){
-        throw new GraphOperationException(LABEL_TAKEN.getMessage(label));
+    public static GraknTxOperationException labelTaken(Label label){
+        throw new GraknTxOperationException(LABEL_TAKEN.getMessage(label));
     }
 
     /**
      * Thrown when changing the super of a {@link Type} will result in a {@link Role} disconnection which is in use.
      */
-    public static GraphOperationException changingSuperWillDisconnectRole(Type oldSuper, Type newSuper, Role role){
-        throw new GraphOperationException(String.format("Cannot change the super type {%s} to {%s} because {%s} is connected to role {%s} which {%s} is not connected to.",
+    public static GraknTxOperationException changingSuperWillDisconnectRole(Type oldSuper, Type newSuper, Role role){
+        throw new GraknTxOperationException(String.format("Cannot change the super type {%s} to {%s} because {%s} is connected to role {%s} which {%s} is not connected to.",
                 oldSuper.getLabel(), newSuper.getLabel(), oldSuper.getLabel(), role.getLabel(), newSuper.getLabel()));
     }
 }

@@ -23,8 +23,8 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.kb.internal.KBTestBase;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class ConceptTest extends GraphTestBase {
+public class ConceptTest extends KBTestBase {
 
     @Test
     public void whenComparingConcepts_EnsureEqualityIsBasedOnConceptID() {
@@ -105,8 +105,8 @@ public class ConceptTest extends GraphTestBase {
         EntityType thingType = graknGraph.putEntityType("thing type");
         Entity thing = thingType.addEntity();
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.invalidCasting(thing, Type.class).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.invalidCasting(thing, Type.class).getMessage());
 
         //noinspection ResultOfMethodCallIgnored
         thing.asType();

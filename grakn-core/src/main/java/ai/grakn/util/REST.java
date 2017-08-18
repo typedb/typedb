@@ -37,10 +37,10 @@ public class REST {
         /**
          * URIs to visualiser controller
          */
-        public static class Graph {
+        public static class KB {
             @Deprecated
-            public static final String GRAQL = "/graph/graql";
-            public static final String ANY_GRAQL = "/graph/graql/execute";
+            public static final String GRAQL = "/kb/graql";
+            public static final String ANY_GRAQL = "/kb/graql/execute";
         }
 
         /**

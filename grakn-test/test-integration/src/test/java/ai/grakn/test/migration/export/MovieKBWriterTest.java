@@ -30,7 +30,7 @@ import static ai.grakn.test.migration.export.GraphWriterTestUtil.assertDataEqual
 import static ai.grakn.test.migration.export.GraphWriterTestUtil.assertOntologiesEqual;
 import static ai.grakn.test.migration.export.GraphWriterTestUtil.insert;
 
-public class MovieGraphWriterTest {
+public class MovieKBWriterTest {
 
     private GraphWriter writer;
 

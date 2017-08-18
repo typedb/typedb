@@ -27,7 +27,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.ErrorMessage;
 import com.codahale.metrics.MetricFilter;
@@ -102,14 +102,14 @@ public class SystemController {
     private static final String JSON = "json";
 
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private final GraknEngineStatus graknEngineStatus;
     private final MetricRegistry metricRegistry;
     private final ObjectMapper mapper;
     private final CollectorRegistry prometheusRegistry;
 
-    public SystemController(EngineGraknGraphFactory factory, Service spark,
-            GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
+    public SystemController(EngineGraknTxFactory factory, Service spark,
+                            GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
         this.factory = factory;
         this.graknEngineStatus = graknEngineStatus;
         this.metricRegistry = metricRegistry;

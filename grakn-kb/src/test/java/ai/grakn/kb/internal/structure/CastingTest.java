@@ -23,7 +23,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.kb.internal.KBTestBase;
 import ai.grakn.kb.internal.concept.RelationshipImpl;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +35,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class CastingTest extends GraphTestBase {
+public class CastingTest extends KBTestBase {
 
     private RelationshipType relationshipType;
     private EntityType entityType;

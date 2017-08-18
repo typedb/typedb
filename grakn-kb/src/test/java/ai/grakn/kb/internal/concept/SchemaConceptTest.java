@@ -23,8 +23,8 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.kb.internal.KBTestBase;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -42,7 +42,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class SchemaConceptTest extends GraphTestBase {
+public class SchemaConceptTest extends KBTestBase {
 
     @Test
     public void whenChangingSchemaConceptLabel_EnsureLabelIsChangedAndOldLabelIsDead(){
@@ -104,7 +104,7 @@ public class SchemaConceptTest extends GraphTestBase {
         EntityType e1 = graknGraph.putEntityType("Entity1");
         graknGraph.putEntityType(label);
 
-        expectedException.expect(GraphOperationException.class);
+        expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(ErrorMessage.LABEL_TAKEN.getMessage(label));
 
         e1.setLabel(label);

@@ -25,10 +25,10 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.Stopwatch;
@@ -76,13 +76,13 @@ public class SystemKeyspace {
 
     private static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
     private final ConcurrentHashMap<String, Boolean> openSpaces;
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
 
-    public SystemKeyspace(EngineGraknGraphFactory factory){
+    public SystemKeyspace(EngineGraknTxFactory factory){
         this(factory, true);
     }
 
-    public SystemKeyspace(EngineGraknGraphFactory factory, boolean loadSystemSchema){
+    public SystemKeyspace(EngineGraknTxFactory factory, boolean loadSystemSchema){
         this.factory = factory;
         this.openSpaces = new ConcurrentHashMap<>();
         if (loadSystemSchema) {
@@ -108,7 +108,7 @@ public class SystemKeyspace {
                 graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).addEntity().attribute(attribute);
             }
             graph.admin().commitNoLogs();
-        } catch (InvalidGraphException e) {
+        } catch (InvalidKBException e) {
             throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
         }
 
@@ -183,12 +183,12 @@ public class SystemKeyspace {
      * Helper method which checks the version persisted in the system keyspace with the version of the running grakn
      * instance
      *
-     * @throws ai.grakn.exception.GraphOperationException when the versions do not match
+     * @throws GraknTxOperationException when the versions do not match
      */
     private void checkVersion(GraknTx graph){
         Attribute existingVersion = graph.getAttributeType(SYSTEM_VERSION).instances().iterator().next();
         if(!GraknVersion.VERSION.equals(existingVersion.getValue())) {
-            throw GraphOperationException.versionMistmatch(existingVersion);
+            throw GraknTxOperationException.versionMistmatch(existingVersion);
         } else {
             LOG.info("Found version {}", existingVersion.getValue());
         }

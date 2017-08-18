@@ -27,7 +27,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -522,7 +522,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testKeyCorrectUsage() throws InvalidGraphException {
+    public void testKeyCorrectUsage() throws InvalidKBException {
         // This should only run on tinker because it commits
         assumeTrue(GraknTestSetup.usingTinker());
 
@@ -534,7 +534,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidGraphException {
+    public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidKBException {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
@@ -543,13 +543,13 @@ public class InsertQueryTest {
                 var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
         ).execute();
 
-        exception.expect(InvalidGraphException.class);
+        exception.expect(InvalidKBException.class);
         movieGraph.graph().commit();
     }
 
     @Ignore // TODO: Un-ignore this when constraints are designed and implemented
     @Test
-    public void testKeyUniqueValue() throws InvalidGraphException {
+    public void testKeyUniqueValue() throws InvalidKBException {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
@@ -559,12 +559,12 @@ public class InsertQueryTest {
                 var("y").isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
 
-        exception.expect(InvalidGraphException.class);
+        exception.expect(InvalidKBException.class);
         movieGraph.graph().commit();
     }
 
     @Test
-    public void testKeyRequiredOwner() throws InvalidGraphException {
+    public void testKeyRequiredOwner() throws InvalidKBException {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
@@ -573,7 +573,7 @@ public class InsertQueryTest {
                 var().isa("a-new-type")
         ).execute();
 
-        exception.expect(InvalidGraphException.class);
+        exception.expect(InvalidKBException.class);
         movieGraph.graph().commit();
     }
 

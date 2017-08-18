@@ -19,12 +19,12 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.MatchQuery;
@@ -84,18 +84,18 @@ import static java.lang.Boolean.parseBoolean;
 public class GraqlController {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private final Timer executeGraqlGetTimer;
     private final Timer executeGraqlPostTimer;
 
-    public GraqlController(EngineGraknGraphFactory factory, Service spark,
-            MetricRegistry metricRegistry) {
+    public GraqlController(EngineGraknTxFactory factory, Service spark,
+                           MetricRegistry metricRegistry) {
         this.factory = factory;
         this.executeGraqlGetTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-get"));
         this.executeGraqlPostTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-post"));
 
-        spark.post(REST.WebPath.Graph.ANY_GRAQL, this::executeGraql);
-        spark.get(REST.WebPath.Graph.GRAQL,    this::executeGraqlGET);
+        spark.post(REST.WebPath.KB.ANY_GRAQL, this::executeGraql);
+        spark.get(REST.WebPath.KB.GRAQL,    this::executeGraqlGET);
 
         //TODO The below exceptions are very broad. They should be revised after we improve exception
         //TODO hierarchies in Graql and GraknTx
@@ -103,8 +103,8 @@ public class GraqlController {
         spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
 
         // Handle invalid type castings and invalid insertions
-        spark.exception(GraphOperationException.class, (e, req, res) -> handleError(422, e, res));
-        spark.exception(InvalidGraphException.class, (e, req, res) -> handleError(422, e, res));
+        spark.exception(GraknTxOperationException.class, (e, req, res) -> handleError(422, e, res));
+        spark.exception(InvalidKBException.class, (e, req, res) -> handleError(422, e, res));
     }
 
     @POST

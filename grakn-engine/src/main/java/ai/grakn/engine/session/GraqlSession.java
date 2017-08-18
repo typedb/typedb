@@ -25,7 +25,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraknException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
@@ -248,7 +248,7 @@ class GraqlSession {
         queryExecutor.execute(() -> {
             try {
                 graph.commit();
-            } catch (InvalidGraphException e) {
+            } catch (InvalidKBException e) {
                 sendError(e.getMessage());
             } finally {
                 sendEnd();

@@ -29,8 +29,8 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
@@ -62,7 +62,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label for the {@link EntityType}
      * @return A new or existing {@link EntityType} with the provided label
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
      */
     EntityType putEntityType(String label);
@@ -74,7 +74,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label for the {@link EntityType}
      * @return A new or existing {@link EntityType} with the provided label
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
      */
     EntityType putEntityType(Label label);
@@ -90,9 +90,9 @@ public interface GraknTx extends AutoCloseable{
      *           This should match the parameter type
      * @return A new or existing {@link AttributeType} with the provided label and data type.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link AttributeType}.
-     * @throws GraphOperationException if the {@param label} is already in use by an existing {@link AttributeType} which is
+     * @throws GraknTxOperationException if the {@param label} is already in use by an existing {@link AttributeType} which is
      *                          unique or has a different datatype.
      */
     <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType);
@@ -108,9 +108,9 @@ public interface GraknTx extends AutoCloseable{
      *           This should match the parameter type
      * @return A new or existing {@link AttributeType} with the provided label and data type.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link AttributeType}.
-     * @throws GraphOperationException if the {@param label} is already in use by an existing {@link AttributeType} which is
+     * @throws GraknTxOperationException if the {@param label} is already in use by an existing {@link AttributeType} which is
      *                          unique or has a different datatype.
      */
     <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType);
@@ -122,7 +122,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label for the {@link RuleType}
      * @return new or existing {@link RuleType} with the provided label.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RuleType}.
      */
     RuleType putRuleType(String label);
@@ -134,7 +134,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label for the {@link RuleType}
      * @return new or existing {@link RuleType} with the provided label.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RuleType}.
      */
     RuleType putRuleType(Label label);
@@ -146,7 +146,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label for the {@link RelationshipType}
      * @return A new or existing {@link RelationshipType} with the provided label.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationshipType}.
      */
     RelationshipType putRelationshipType(String label);
@@ -158,7 +158,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label for the {@link RelationshipType}
      * @return A new or existing {@link RelationshipType} with the provided label.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationshipType}.
      */
     RelationshipType putRelationshipType(Label label);
@@ -170,7 +170,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label for the {@link Role}
      * @return new or existing {@link Role} with the provided Id.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Role}.
      */
     Role putRole(String label);
@@ -182,7 +182,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label for the {@link Role}
      * @return new or existing {@link Role} with the provided Id.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Role}.
      */
     Role putRole(Label label);
@@ -194,7 +194,7 @@ public interface GraknTx extends AutoCloseable{
      * @param id A unique identifier for the {@link Concept} in the graph.
      * @return The {@link Concept} with the provided id or null if no such {@link Concept} exists.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      * @throws ClassCastException if the concept is not an instance of {@link T}
      */
     @CheckReturnValue
@@ -207,7 +207,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label which identifies the {@link SchemaConcept} in the graph.
      * @return The {@link SchemaConcept} with the provided label or null if no such {@link SchemaConcept} exists.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      * @throws ClassCastException if the type is not an instance of {@link T}
      */
     @CheckReturnValue
@@ -220,7 +220,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label which identifies the {@link Type} in the graph.
      * @return The {@link Type} with the provided label or null if no such {@link Type} exists.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      * @throws ClassCastException if the type is not an instance of {@link T}
      */
     @CheckReturnValue
@@ -234,7 +234,7 @@ public interface GraknTx extends AutoCloseable{
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @return The {@link Attribute}s holding the provided value or an empty collection if no such {@link Attribute} exists.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      */
     @CheckReturnValue
     <V> Collection<Attribute<V>> getAttributesByValue(V value);
@@ -245,7 +245,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label which identifies the Entity Type in the graph.
      * @return The Entity Type  with the provided label or null if no such Entity Type exists.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      */
     @CheckReturnValue
     @Nullable
@@ -257,7 +257,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label which identifies the {@link RelationshipType} in the graph.
      * @return The {@link RelationshipType} with the provided label or null if no such {@link RelationshipType} exists.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      */
     @CheckReturnValue
     @Nullable
@@ -270,7 +270,7 @@ public interface GraknTx extends AutoCloseable{
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @return The {@link AttributeType} with the provided label or null if no such {@link AttributeType} exists.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      */
     @CheckReturnValue
     @Nullable
@@ -282,7 +282,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label which identifies the Role Type in the graph.
      * @return The Role Type  with the provided label or null if no such Role Type exists.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      */
     @CheckReturnValue
     @Nullable
@@ -294,7 +294,7 @@ public interface GraknTx extends AutoCloseable{
      * @param label A unique label which identifies the Rule Type in the graph.
      * @return The Rule Type with the provided label or null if no such Rule Type exists.
      *
-     * @throws GraphOperationException if the graph is closed
+     * @throws GraknTxOperationException if the graph is closed
      */
     @CheckReturnValue
     @Nullable
@@ -363,9 +363,9 @@ public interface GraknTx extends AutoCloseable{
      * Commits any changes to the graph and closes the transaction. You must use the {@link GraknSession} to
      * get a new open transaction.
      *
-     * @throws InvalidGraphException when the transaction contains graph mutations which does not conform to the Grakn
+     * @throws InvalidKBException when the transaction contains graph mutations which does not conform to the Grakn
      * knowledge model.
      */
-    void commit() throws InvalidGraphException;
+    void commit() throws InvalidKBException;
 
 }

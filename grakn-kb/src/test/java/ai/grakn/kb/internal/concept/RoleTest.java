@@ -23,9 +23,9 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.InvalidGraphException;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
+import ai.grakn.kb.internal.KBTestBase;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
-public class RoleTest extends GraphTestBase {
+public class RoleTest extends KBTestBase {
     private Role role;
     private RelationshipType relationshipType;
 
@@ -72,8 +72,8 @@ public class RoleTest extends GraphTestBase {
         Role role = graknGraph.putRole("New Role Type");
         graknGraph.putEntityType("Entity Type").plays(role);
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.cannotBeDeleted(role).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.cannotBeDeleted(role).getMessage());
 
         role.delete();
     }
@@ -83,8 +83,8 @@ public class RoleTest extends GraphTestBase {
         Role role2 = graknGraph.putRole("New Role Type");
         graknGraph.putRelationshipType("Thing").relates(role2).relates(role);
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.cannotBeDeleted(role2).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.cannotBeDeleted(role2).getMessage());
 
         role2.delete();
     }
@@ -101,14 +101,14 @@ public class RoleTest extends GraphTestBase {
 
         relationshipType.addRelationship().addRolePlayer(roleA, a).addRolePlayer(roleB, b);
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.cannotBeDeleted(roleA).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.cannotBeDeleted(roleA).getMessage());
 
         roleA.delete();
     }
 
     @Test
-    public void whenAddingRoleTypeToMultipleRelationTypes_EnsureItLinkedToBothRelationTypes() throws InvalidGraphException {
+    public void whenAddingRoleTypeToMultipleRelationTypes_EnsureItLinkedToBothRelationTypes() throws InvalidKBException {
         Role roleA = graknGraph.putRole("roleA");
         Role roleB = graknGraph.putRole("roleB");
         relationshipType.relates(roleA).relates(role);

@@ -19,7 +19,7 @@
 package ai.grakn;
 
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
 
@@ -63,7 +63,7 @@ public interface GraknSession extends AutoCloseable {
     /**
      * Closes the main connection to the graph. This should be done at the end of using the graph.
      *
-     * @throws GraphOperationException when more than 1 transaction is open on the graph
+     * @throws GraknTxOperationException when more than 1 transaction is open on the graph
      */
-    void close() throws GraphOperationException;
+    void close() throws GraknTxOperationException;
 }

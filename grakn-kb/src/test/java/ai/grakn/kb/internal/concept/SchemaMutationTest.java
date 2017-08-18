@@ -27,10 +27,10 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.kb.internal.GraknTxAbstract;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.kb.internal.KBTestBase;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Iterables;
 import org.hamcrest.Matchers;
@@ -43,7 +43,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertThat;
 
-public class SchemaMutationTest extends GraphTestBase {
+public class SchemaMutationTest extends KBTestBase {
     private Role husband;
     private Role wife;
     private RelationshipType marriage;
@@ -56,7 +56,7 @@ public class SchemaMutationTest extends GraphTestBase {
     private Role driver;
 
     @Before
-    public void buildMarriageGraph() throws InvalidGraphException {
+    public void buildMarriageGraph() throws InvalidKBException {
         husband = graknGraph.putRole("Husband");
         wife = graknGraph.putRole("Wife");
         driver = graknGraph.putRole("Driver");
@@ -78,35 +78,35 @@ public class SchemaMutationTest extends GraphTestBase {
     }
 
     @Test
-    public void whenDeletingPlaysUsedByExistingCasting_Throw() throws InvalidGraphException {
+    public void whenDeletingPlaysUsedByExistingCasting_Throw() throws InvalidKBException {
         person.deletePlays(wife);
 
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(VALIDATION_CASTING.getMessage(woman.getLabel(), alice.getId(), wife.getLabel()));
 
         graknGraph.commit();
     }
 
     @Test
-    public void whenDeletingRelatesUsedByExistingRelation_Throw() throws InvalidGraphException {
+    public void whenDeletingRelatesUsedByExistingRelation_Throw() throws InvalidKBException {
         marriage.deleteRelates(husband);
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
         graknGraph.commit();
     }
 
     @Test
-    public void whenChangingSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidGraphException {
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.changingSuperWillDisconnectRole(person, car, driver).getMessage());
+    public void whenChangingSuperTypeAndInstancesNoLongerAllowedToPlayRoles_Throw() throws InvalidKBException {
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(person, car, driver).getMessage());
 
         man.sup(car);
     }
 
     @Test
-    public void whenChangingTypeWithInstancesToAbstract_Throw() throws InvalidGraphException {
+    public void whenChangingTypeWithInstancesToAbstract_Throw() throws InvalidKBException {
         man.addEntity();
 
-        expectedException.expect(GraphOperationException.class);
+        expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(IS_ABSTRACT.getMessage(man.getLabel()));
 
         man.setAbstract(true);
@@ -114,8 +114,8 @@ public class SchemaMutationTest extends GraphTestBase {
 
     @Test
     public void whenAddingEntityTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putEntityType("This Will Fail");
@@ -123,8 +123,8 @@ public class SchemaMutationTest extends GraphTestBase {
 
     @Test
     public void whenAddingRoleTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putRole("This Will Fail");
@@ -132,8 +132,8 @@ public class SchemaMutationTest extends GraphTestBase {
 
     @Test
     public void whenAddingResourceTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putAttributeType("This Will Fail", AttributeType.DataType.STRING);
@@ -141,8 +141,8 @@ public class SchemaMutationTest extends GraphTestBase {
 
     @Test
     public void whenAddingRuleTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putRuleType("This Will Fail");
@@ -150,8 +150,8 @@ public class SchemaMutationTest extends GraphTestBase {
 
     @Test
     public void whenAddingRelationTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
         GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
         graknGraphBatch.putRelationshipType("This Will Fail");
@@ -168,8 +168,8 @@ public class SchemaMutationTest extends GraphTestBase {
         Role role = graknGraphBatch.getRole(roleTypeId);
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
         relationshipType.relates(role);
     }
@@ -185,8 +185,8 @@ public class SchemaMutationTest extends GraphTestBase {
         Role role = graknGraphBatch.getRole(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
         entityType.plays(role);
     }
@@ -203,8 +203,8 @@ public class SchemaMutationTest extends GraphTestBase {
         EntityType entityType1 = graknGraphBatch.getEntityType(entityTypeId1);
         EntityType entityType2 = graknGraphBatch.getEntityType(entityTypeId2);
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
         entityType1.sup(entityType2);
     }
@@ -221,8 +221,8 @@ public class SchemaMutationTest extends GraphTestBase {
         role = graknGraphBatch.getRole(roleTypeId);
         EntityType entityType = graknGraphBatch.getEntityType(entityTypeId);
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
         entityType.deletePlays(role);
     }
@@ -239,8 +239,8 @@ public class SchemaMutationTest extends GraphTestBase {
         role = graknGraphBatch.getRole(roleTypeId);
         RelationshipType relationshipType = graknGraphBatch.getRelationshipType(relationTypeId);
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.schemaMutation().getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
 
         relationshipType.deleteRelates(role);
     }
@@ -272,7 +272,7 @@ public class SchemaMutationTest extends GraphTestBase {
         graknGraph = (GraknTxAbstract) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
         relation.delete();
 
-        expectedException.expect(InvalidGraphException.class);
+        expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(Matchers.containsString(ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.getLabel())));
 
         graknGraph.commit();
@@ -299,8 +299,8 @@ public class SchemaMutationTest extends GraphTestBase {
 
         assertThat(expectedEdge.type().instances().collect(toSet()), hasItem(expectedEdge));
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.changingSuperWillDisconnectRole(person, graknGraph.admin().getMetaEntityType(), hasNameOwner).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.changingSuperWillDisconnectRole(person, graknGraph.admin().getMetaEntityType(), hasNameOwner).getMessage());
 
         //Man is no longer a person and therefore is not allowed to have a name
         man.sup(graknGraph.admin().getMetaEntityType());

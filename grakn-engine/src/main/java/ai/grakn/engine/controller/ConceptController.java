@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -77,12 +77,12 @@ import static java.util.stream.Collectors.toList;
 public class ConceptController {
 
     private static final int separationDegree = 1;
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private final Timer conceptIdGetTimer;
     private final Timer schemaGetTimer;
 
-    public ConceptController(EngineGraknGraphFactory factory, Service spark,
-            MetricRegistry metricRegistry){
+    public ConceptController(EngineGraknTxFactory factory, Service spark,
+                             MetricRegistry metricRegistry){
         this.factory = factory;
         this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-identifier"));
         this.schemaGetTimer = metricRegistry.timer(name(ConceptController.class, "schema"));

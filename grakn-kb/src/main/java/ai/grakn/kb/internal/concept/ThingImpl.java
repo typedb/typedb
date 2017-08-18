@@ -29,7 +29,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.Casting;
@@ -79,7 +79,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 flatMap(edge -> edge.target().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).findAny();
 
         if(!typeEdge.isPresent()) {
-            throw GraphOperationException.noType(this);
+            throw GraknTxOperationException.noType(this);
         }
 
         return vertex().graph().factory().buildConcept(typeEdge.get().target());
@@ -249,7 +249,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Role hasResourceValue = vertex().graph().getSchemaConcept(hasValue.getLabel(label));
 
         if(hasResource == null || hasResourceOwner == null || hasResourceValue == null || type().plays().noneMatch(play -> play.equals(hasResourceOwner))){
-            throw GraphOperationException.hasNotAllowed(this, attribute);
+            throw GraknTxOperationException.hasNotAllowed(this, attribute);
         }
 
         EdgeElement resourceEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.RESOURCE);

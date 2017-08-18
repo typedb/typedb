@@ -23,7 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
@@ -49,9 +49,9 @@ import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
  */
 public class SystemKeyspaceUsers extends UsersHandler {
     private final Logger LOG = LoggerFactory.getLogger(SystemKeyspaceUsers.class);
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
 
-    SystemKeyspaceUsers(String adminPassword, EngineGraknGraphFactory factory) {
+    SystemKeyspaceUsers(String adminPassword, EngineGraknTxFactory factory) {
         super(adminPassword);
         this.factory = factory;
     }

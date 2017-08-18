@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
@@ -72,8 +72,8 @@ public class RelationshipTypePropertyTest {
 
     @Property
     public void whenAddingARelationOfAMetaType_Throw(@Meta RelationshipType type) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.addRelationship();
     }
 
@@ -114,8 +114,8 @@ public class RelationshipTypePropertyTest {
 
     @Property
     public void whenMakingTheMetaRelationTypeRelateARole_Throw(@Meta RelationshipType relationshipType, @FromGraph Role role) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(relationshipType.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(relationshipType.getLabel()).getMessage());
         relationshipType.relates(role);
     }
 
@@ -157,8 +157,8 @@ public class RelationshipTypePropertyTest {
     @Property
     public void whenDeletingARelatedRoleFromTheMetaRelationType_Throw(
             @Meta RelationshipType relationshipType, @FromGraph Role role) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(relationshipType.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(relationshipType.getLabel()).getMessage());
         relationshipType.deleteRelates(role);
     }
 

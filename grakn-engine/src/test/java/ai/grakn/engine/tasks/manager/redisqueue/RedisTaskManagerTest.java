@@ -24,7 +24,7 @@ import ai.grakn.engine.TaskId;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
@@ -79,7 +79,7 @@ public class RedisTaskManagerTest {
     public static final ProcessWideLockProvider LOCK_PROVIDER = new ProcessWideLockProvider();
 
     private static JedisPool jedisPool;
-    private static EngineGraknGraphFactory engineGraknGraphFactory;
+    private static EngineGraknTxFactory engineGraknTxFactory;
 
     private static ExecutorService executor;
     private static RedisTaskManager taskManager;
@@ -95,10 +95,10 @@ public class RedisTaskManagerTest {
         poolConfig.setMaxTotal(MAX_TOTAL);
         jedisPool = new JedisPool(poolConfig, "localhost", 9899);
         assertFalse(jedisPool.isClosed());
-        engineGraknGraphFactory = EngineGraknGraphFactory.createAndLoadSystemSchema(CONFIG.getProperties());
+        engineGraknTxFactory = EngineGraknTxFactory.createAndLoadSystemSchema(CONFIG.getProperties());
         int nThreads = 2;
         executor = Executors.newFixedThreadPool(nThreads);
-        taskManager = new RedisTaskManager(engineID, CONFIG, jedisPool, nThreads, engineGraknGraphFactory, LOCK_PROVIDER, metricRegistry);
+        taskManager = new RedisTaskManager(engineID, CONFIG, jedisPool, nThreads, engineGraknTxFactory, LOCK_PROVIDER, metricRegistry);
         CompletableFuture<Void> cf = taskManager.start();
         cf.join();
     }

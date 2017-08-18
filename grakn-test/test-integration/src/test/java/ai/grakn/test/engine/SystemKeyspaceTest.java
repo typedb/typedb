@@ -7,7 +7,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
@@ -54,7 +54,7 @@ public class SystemKeyspaceTest {
             //Insert fake version number
             setVersionInSystemGraph(rubbishVersion);
 
-            expectedException.expect(GraphOperationException.class);
+            expectedException.expect(GraknTxOperationException.class);
             expectedException.expectMessage(ErrorMessage.VERSION_MISMATCH.getMessage(GraknVersion.VERSION, rubbishVersion));
 
             //This simulates accessing the system for the first time
