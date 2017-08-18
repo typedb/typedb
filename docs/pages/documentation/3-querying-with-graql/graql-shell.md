@@ -53,19 +53,6 @@ To load data into a different knowledge base, or keyspace, you can specify the g
 ./graql.sh -k <graphname> -f ./examples/reptile-dataset.gql
 ``` 
 
-## Queries
-
-The following queries are supported by the shell. Examples and additional details can be found on the corresponding documentation pages.
-
-| Query | Description                                   |
-| ----------- | --------------------------------------------- |
-| [`match`](./match-queries.html)     | Match a pattern in the knowledge base. Defaults to return the first 100 results. |
-| [`ask`](./ask-queries.html)       | Query for a specific pattern in the knowledge base. Returns `true` or `false`. |
-| [`insert`](./insert-queries.html)    | Inserts the specified concept into the knowledge base. |
-| [`delete`](./delete-queries.html)    | Deletes from the knowledge base with no output. |
-| [`compute`](./compute-queries.html)   | Computes analytics about the knowledge base. Returns either a value or a map from concept to value. |
-
-   
 The interactive shell commits to the knowledge base only when the user types `commit`.
 
 ## Special Commands
