@@ -19,9 +19,16 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.admin.Answer;
 
 /**
+ * A query for defining {@link SchemaConcept}s.
+ * <p>
+ *     The query will define all {@link SchemaConcept}s described in the {@link VarPattern}s provided and return an
+ *     {@link Answer} containing bindings for all {@link Var}s in the {@link VarPattern}s.
+ * </p>
+ *
  * @author Felix Chapman
  */
 public interface DefineQuery extends Query<Answer> {

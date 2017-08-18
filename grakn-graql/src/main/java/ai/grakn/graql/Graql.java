@@ -20,6 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -97,11 +98,19 @@ public class Graql {
         return withoutGraph().insert(varPatterns);
     }
 
+    /**
+     * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
+     */
     @CheckReturnValue
     public static DefineQuery define(VarPattern... varPatterns) {
         return withoutGraph().define(varPatterns);
     }
 
+    /**
+     * @param varPatterns a collection of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
+     */
     @CheckReturnValue
     public static DefineQuery define(Collection<? extends VarPattern> varPatterns) {
         return withoutGraph().define(varPatterns);

@@ -35,6 +35,8 @@ import java.util.stream.Stream;
 import static ai.grakn.util.CommonUtil.toImmutableList;
 
 /**
+ * Implementation for {@link DefineQuery}
+ *
  * @author Felix Chapman
  */
 @AutoValue
