@@ -55,8 +55,10 @@ public class EntityController {
     public EntityController(EngineGraknGraphFactory factory, Service spark,
                                 MetricRegistry metricRegistry) {
         this.factory = factory;
+
         spark.post("/graph/entityType/:entityTypeLabel/entity", this::postEntity);
         spark.put("/graph/entity/:entityConceptId/resource/:resourceConceptId", this::assignResourceToEntity);
+        spark.delete("/graph/entity/:entityConceptId/resource/:resourceConceptId", this::deleteResourceToEntityAssignment);
     }
 
     private Json postEntity(Request request, Response response) {
