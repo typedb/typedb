@@ -25,7 +25,6 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -33,8 +32,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.var;
@@ -132,16 +131,18 @@ public class Utility {
      */
     public static ConceptId getResourceEdgeId(GraknTx graph, ConceptId conceptId1, ConceptId conceptId2) {
         if (mayHaveResourceEdge(graph, conceptId1, conceptId2)) {
-            List<Answer> answers = graph.graql().match(
+            Optional<Concept> firstConcept = graph.graql().match(
                     var("x").id(conceptId1),
                     var("y").id(conceptId2),
-                    var("z").rel(var("x")).rel(var("y"))
-            ).select("z").execute();
-            for (Answer answer : answers) {
-                Relationship concept = (Relationship) answer.concepts().iterator().next();
-                if (concept.type().isImplicit()) {
-                    return concept.getId();
-                }
+                    var("z").rel(var("x")).rel(var("y")))
+                    .get("z")
+                    .filter(concept -> {
+                        Relationship relationship = (Relationship) concept;
+                        return relationship.type().isImplicit();
+                    })
+                    .findFirst();
+            if (firstConcept.isPresent()) {
+                return firstConcept.get().getId();
             }
         }
         return null;
