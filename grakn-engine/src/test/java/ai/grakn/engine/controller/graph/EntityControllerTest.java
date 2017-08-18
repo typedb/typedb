@@ -84,7 +84,7 @@ public class EntityControllerTest {
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
     }
 
-//    @Test
+    @Test
     public void postEntityShouldExecuteSuccessfully() {
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
@@ -96,14 +96,14 @@ public class EntityControllerTest {
         assertThat(responseBody.get("conceptId"), notNullValue());
     }
 
-    @Test
-    public void assignResourceToEntityShouldExecuteSuccessfully() {
-        Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .put("/graph/entity/production/resource/tmdb-vote-count");
-
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
-
-        assertThat(response.statusCode(), equalTo(200));
-    }
+//    @Test // TODO
+//    public void assignResourceToEntityShouldExecuteSuccessfully() {
+//        Response response = with()
+//            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+//            .put("/graph/entity/production/resource/tmdb-vote-count");
+//
+//        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+//
+//        assertThat(response.statusCode(), equalTo(200));
+//    }
 }
