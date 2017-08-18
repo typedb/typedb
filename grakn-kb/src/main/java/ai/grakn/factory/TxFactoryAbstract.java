@@ -36,15 +36,15 @@ import static javax.annotation.meta.When.NEVER;
  * <p/>
  *
  * <p>
- *     Defines the abstract construction of Grakn graphs on top of Tinkerpop Graphs.
+ *     Defines the abstract construction of {@link GraknTx}s on top of Tinkerpop Graphs.
  *     For this factory to function a vendor specific implementation of a graph extending
  *     {@link GraknTxAbstract} must be provided. This must be provided with a matching TinkerPop {@link Graph}
- *     which is wrapped within the Grakn Graph
+ *     which is wrapped within the {@link GraknTx}
  * </p>
  *
  * @author fppt
  *
- * @param <M> A Graph Graph extending {@link GraknTxAbstract} and wrapping a Tinkerpop Graph
+ * @param <M> A {@link GraknTx} extending {@link GraknTxAbstract} and wrapping a Tinkerpop Graph
  * @param <G> A vendor implementation of a Tinkerpop {@link Graph}
  */
 abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> implements TxFactory<G> {

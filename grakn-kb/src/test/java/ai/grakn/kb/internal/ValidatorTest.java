@@ -48,7 +48,6 @@ public class ValidatorTest extends GraphTestBase{
 
     @Test
     public void whenCommittingGraphWhichFollowsValidationRules_Commit(){
-        //Actual Concepts To Appear Linked In Graph
         RelationshipType cast = graknGraph.putRelationshipType("Cast");
         Role feature = graknGraph.putRole("Feature");
         Role actor = graknGraph.putRole("Actor");

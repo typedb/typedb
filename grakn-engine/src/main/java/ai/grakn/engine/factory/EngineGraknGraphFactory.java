@@ -29,7 +29,7 @@ import java.util.Properties;
 
 /**
  * <p>
- *     Engine's internal Graph Factory
+ *     Engine's internal {@link GraknTx} Factory
  * </p>
  *
  * <p>

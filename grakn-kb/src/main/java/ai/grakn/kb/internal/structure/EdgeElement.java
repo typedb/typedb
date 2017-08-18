@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.internal.structure;
 
+import ai.grakn.GraknTx;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -26,7 +27,7 @@ import javax.annotation.Nullable;
 
 /**
  * <p>
- *     Represent an Edge in a Grakn Graph
+ *     Represent an {@link Edge} in a {@link GraknTx}
  * </p>
  *
  * <p>

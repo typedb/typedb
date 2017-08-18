@@ -17,10 +17,12 @@
  */
 package ai.grakn.kb.internal.structure;
 
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -34,7 +36,7 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
 
 /**
  * <p>
- *     Graph AbstractElement
+ *     {@link GraknTx} AbstractElement
  * </p>
  *
  * <p>
@@ -43,8 +45,8 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
  * </p>
  *
  * @param <E> The type of the element. Either {@link VertexElement} of {@link EdgeElement}
- * @param <P> Enum indicating the allowed properties on each type. Either {@link ai.grakn.util.Schema.VertexProperty} or
- *           {@link ai.grakn.util.Schema.EdgeProperty}
+ * @param <P> Enum indicating the allowed properties on each type. Either {@link Schema.VertexProperty} or
+ *           {@link Schema.EdgeProperty}
  *
  * @author fppt
  *

@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.internal;
 
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraknBackendException;
@@ -39,11 +40,11 @@ import java.util.function.Supplier;
 
 /**
  * <p>
- *     A Grakn Graph using {@link JanusGraph} as a vendor backend.
+ *     A {@link GraknTx} using {@link JanusGraph} as a vendor backend.
  * </p>
  *
  * <p>
- *     Wraps up a {@link JanusGraph} as a method of storing the Grakn Graph object Model.
+ *     Wraps up a {@link JanusGraph} as a method of storing the {@link GraknTx} object Model.
  *     With this vendor some issues to be aware of:
  *     1. Whenever a transaction is closed if none remain open then the connection to the graph is closed permanently.
  *     2. Clearing the graph explicitly closes the connection as well.

@@ -29,7 +29,7 @@ import java.util.Properties;
 
 /**
  * <p>
- *     A Grakn Graph on top of {@link HadoopGraph}
+ *     A {@link GraknTx} on top of {@link HadoopGraph}
  * </p>
  *
  * <p>

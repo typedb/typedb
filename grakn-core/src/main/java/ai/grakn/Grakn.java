@@ -35,7 +35,7 @@ import java.util.Map;
 
 /**
  <p>
- Grakn is the main entry point to connect to a Grakn Knowledge Graph.
+ Grakn is the main entry point to connect to a Grakn Knowledge Base.
 
  To connect to a knowledge graph, first make sure you have a Grakn Engine server running by starting it from the shell using:
  <pre>{@code grakn.sh start}</pre>

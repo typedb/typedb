@@ -34,11 +34,11 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
- *     Tracks Graph Specific Variables
+ *     Tracks Knowledge Base Specific Variables
  * </p>
  *
  * <p>
- *     Caches Graph or Session specific data which is shared across transactions:
+ *     Caches Knowledge Bas or Session specific data which is shared across transactions:
  *     <ol>
  *         <li>Schema Cache - All the types which make up the schema. This cache expires</li>
  *         <li>

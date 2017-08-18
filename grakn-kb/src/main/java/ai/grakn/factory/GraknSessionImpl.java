@@ -43,15 +43,15 @@ import static mjson.Json.read;
 
 /**
  * <p>
- *     Builds a Grakn Graph factory
+ *     Builds a {@link TxFactory}
  * </p>
  *
  * <p>
- *     This class facilitates the construction of Grakn Graphs by determining which factory should be built.
+ *     This class facilitates the construction of {@link GraknTx} by determining which factory should be built.
  *     It does this by either defaulting to an in memory graph {@link GraknTxTinker} or by
  *     retrieving the factory definition from engine.
  *
- *     The deployer of engine decides on the backend and this class will handle producing the correct graphs.
+ *     The deployment of engine decides on the backend and this class will handle producing the correct graphs.
  * </p>
  *
  * @author fppt

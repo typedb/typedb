@@ -77,7 +77,7 @@ public class PostProcessingTest {
         String value = "1";
         String sample = "Sample";
 
-        //Create Graph With Duplicate Resources
+        //Create GraknTx With Duplicate Resources
         GraknTx graph = session.open(GraknTxType.WRITE);
         AttributeType<String> attributeType = graph.putAttributeType(sample, AttributeType.DataType.STRING);
 

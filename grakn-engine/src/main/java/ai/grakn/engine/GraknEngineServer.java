@@ -110,7 +110,6 @@ public class GraknEngineServer implements AutoCloseable {
         boolean inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
         this.lockProvider = inMemoryQueue ? new ProcessWideLockProvider()
                 : new JedisLockProvider(redisWrapper.getJedisPool());
-        // Graph
         this.factory = EngineGraknGraphFactory.create(prop.getProperties());
         // Task manager
         this.taskManager = startTaskManager(inMemoryQueue, redisWrapper.getJedisPool(), lockProvider);

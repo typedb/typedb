@@ -25,7 +25,7 @@ import java.util.List;
 
 /**
  * <p>
- *     Broken Graph Exception
+ *     Broken Knowledge Base Exception
  * </p>
  *
  * <p>

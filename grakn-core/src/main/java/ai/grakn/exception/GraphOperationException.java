@@ -49,7 +49,7 @@ import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 
 /**
  * <p>
- *     Illegal Graph Mutation Exception
+ *     Illegal Mutation Exception
  * </p>
  *
  * <p>

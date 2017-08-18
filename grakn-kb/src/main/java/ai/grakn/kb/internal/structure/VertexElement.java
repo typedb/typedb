@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.internal.structure;
 
+import ai.grakn.GraknTx;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -34,7 +35,7 @@ import java.util.stream.StreamSupport;
 
 /**
  * <p>
- *     Represent a Vertex in a Grakn Graph
+ *     Represent a {@link Vertex} in a {@link GraknTx}
  * </p>
  *
  * <p>

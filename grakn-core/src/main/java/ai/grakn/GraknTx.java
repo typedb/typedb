@@ -41,12 +41,12 @@ import java.util.Collection;
 
 /**
  * <p>
- *     A Grakn Graph
+ *     A {@link GraknTx} holding a database transaction
  * </p>
  *
  * <p>
  *     This is produced by {@link Grakn#session(String, String)} and allows the user to construct and perform
- *     basic look ups to a Grakn Graph. This also allows the execution of Graql queries.
+ *     basic look ups to the knowledge base. This also allows the execution of Graql queries.
  * </p>
  *
  * @author fppt

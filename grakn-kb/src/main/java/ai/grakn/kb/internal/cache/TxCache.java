@@ -46,7 +46,7 @@ import java.util.Set;
 
 /**
  * <p>
- *     Tracks Graph Transaction Specific Variables
+ *     Tracks Transaction Specific Variables
  * </p>
  *
  * <p>
@@ -64,7 +64,7 @@ import java.util.Set;
  *
  */
 public class TxCache {
-    //Graph cache which is shared across multiple transactions
+    //Cache which is shared across multiple transactions
     private final GraphCache graphCache;
 
     //Caches any concept which has been touched before

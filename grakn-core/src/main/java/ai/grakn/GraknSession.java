@@ -25,7 +25,7 @@ import javax.annotation.CheckReturnValue;
 
 /**
  * <p>
- *     Builds a Grakn Graph Session
+ *     Builds a {@link GraknSession}
  * </p>
  *
  * <p>

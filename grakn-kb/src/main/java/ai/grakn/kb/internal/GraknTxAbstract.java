@@ -88,7 +88,7 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * <p>
- * The Grakn Graph Base Implementation
+ * The {@link GraknTx} Base Implementation
  * </p>
  * <p>
  * <p>
@@ -108,7 +108,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     public static final String SHARDING_THRESHOLD = "graph.sharding-threshold";
     public static final String NORMAL_CACHE_TIMEOUT_MS = "graph.schema-cache-timeout-ms";
 
-    //----------------------------- Graph Shared Variable
+    //----------------------------- Shared Variables
     private final String keyspace;
     private final String engineUri;
     private final Properties properties;

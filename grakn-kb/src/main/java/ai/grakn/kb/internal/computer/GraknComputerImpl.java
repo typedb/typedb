@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 
 /**
  * <p>
- * Graph Computer Used For Analytics Algorithms
+ * {@link GraphComputer} Used For Analytics Algorithms
  * </p>
  * <p>
  * <p>
