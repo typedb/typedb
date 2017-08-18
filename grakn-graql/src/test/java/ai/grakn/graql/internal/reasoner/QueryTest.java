@@ -28,7 +28,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.GeoGraph;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
@@ -45,10 +45,10 @@ import static org.junit.Assume.assumeTrue;
 public class QueryTest {
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoGraph = SampleKBContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogySchema = GraphContext.preLoad("genealogy/schema.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext genealogySchema = SampleKBContext.preLoad("genealogy/schema.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void setUpClass() throws Exception {

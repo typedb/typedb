@@ -37,7 +37,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.GeoGraph;
 import ai.grakn.test.graphs.SNBGraph;
 import ai.grakn.util.Schema;
@@ -67,34 +67,34 @@ import static org.junit.Assume.assumeTrue;
 public class ReasonerTest {
 
     @ClassRule
-    public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext snbGraph = SampleKBContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext snbGraph2 = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext snbGraph2 = SampleKBContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext snbGraph3 = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext snbGraph3 = SampleKBContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testSnbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testSnbGraph = SampleKBContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext testGeoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext testGeoGraph = SampleKBContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext nonMaterialisedGeoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext nonMaterialisedGeoGraph = SampleKBContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext nonMaterialisedSnbGraph = GraphContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext nonMaterialisedSnbGraph = SampleKBContext.preLoad(SNBGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoGraph = SampleKBContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph2 = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoGraph2 = SampleKBContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext geoGraph3 = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoGraph3 = SampleKBContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();

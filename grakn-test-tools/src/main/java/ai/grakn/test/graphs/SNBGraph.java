@@ -19,7 +19,7 @@
 package ai.grakn.test.graphs;
 
 import ai.grakn.GraknTx;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 
 import java.util.function.Consumer;
 
@@ -37,17 +37,17 @@ public class SNBGraph extends TestGraph {
 
     @Override
     protected void buildSchema(GraknTx graph) {
-        GraphContext.loadFromFile(graph, "ldbc-snb-schema.gql");
-        GraphContext.loadFromFile(graph, "ldbc-snb-product-schema.gql");
+        SampleKBContext.loadFromFile(graph, "ldbc-snb-schema.gql");
+        SampleKBContext.loadFromFile(graph, "ldbc-snb-product-schema.gql");
     }
 
     @Override
     protected void buildRules(GraknTx graph) {
-        GraphContext.loadFromFile(graph, "ldbc-snb-rules.gql");
+        SampleKBContext.loadFromFile(graph, "ldbc-snb-rules.gql");
     }
 
     @Override
     protected void buildInstances(GraknTx graph) {
-        GraphContext.loadFromFile(graph, "ldbc-snb-data.gql");
+        SampleKBContext.loadFromFile(graph, "ldbc-snb-data.gql");
     }
 }

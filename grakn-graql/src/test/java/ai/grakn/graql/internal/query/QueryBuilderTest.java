@@ -23,7 +23,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.MovieGraph;
 import org.junit.After;
 import org.junit.ClassRule;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertThat;
 public class QueryBuilderTest {
 
     @ClassRule
-    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext movieGraph = SampleKBContext.preLoad(MovieGraph.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

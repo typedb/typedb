@@ -20,7 +20,7 @@ package ai.grakn.test;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSystemProperty;
-import ai.grakn.util.GraphLoader;
+import ai.grakn.util.SampleKBLoader;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -37,29 +37,29 @@ import java.util.function.Consumer;
  *     Contains utility methods and statically initialized environment variables to control
  *     Grakn unit tests.
  *
- *     This specific class extend {@link GraphLoader} and starts Cassandra instance via
+ *     This specific class extend {@link SampleKBLoader} and starts Cassandra instance via
  *     {@link ai.grakn.util.EmbeddedCassandra} if needed.
  * </p>
  *
  * @author borislav, fppt
  *
  */
-public class GraphContext extends GraphLoader implements TestRule {
+public class SampleKBContext extends SampleKBLoader implements TestRule {
     private boolean assumption = true;
 
-    private GraphContext(@Nullable Consumer<GraknTx> preLoad){
+    private SampleKBContext(@Nullable Consumer<GraknTx> preLoad){
         super(preLoad);
     }
 
-    public static GraphContext empty(){
+    public static SampleKBContext empty(){
         return getContext(null);
     }
 
-    public static GraphContext preLoad(Consumer<GraknTx> build){
+    public static SampleKBContext preLoad(Consumer<GraknTx> build){
         return getContext(build);
     }
 
-    public static GraphContext preLoad(String ... files){
+    public static SampleKBContext preLoad(String ... files){
         return getContext((graknGraph) -> {
             for (String file : files) {
                 loadFromFile(graknGraph, file);
@@ -67,18 +67,18 @@ public class GraphContext extends GraphLoader implements TestRule {
         });
     }
 
-    private static GraphContext getContext(@Nullable Consumer<GraknTx> preLoad){
+    private static SampleKBContext getContext(@Nullable Consumer<GraknTx> preLoad){
         GraknTestSetup.startCassandraIfNeeded();
-        return new GraphContext(preLoad);
+        return new SampleKBContext(preLoad);
     }
 
-    public GraphContext assumeTrue(boolean bool){
+    public SampleKBContext assumeTrue(boolean bool){
         this.assumption = bool;
         return this;
     }
 
     public static void loadFromFile(GraknTx graph, String file) {
-        GraphLoader.loadFromFile(graph, GraknSystemProperty.PROJECT_RELATIVE_DIR.value()+"/grakn-test-tools/src/main/graql/" + file);
+        SampleKBLoader.loadFromFile(graph, GraknSystemProperty.PROJECT_RELATIVE_DIR.value()+"/grakn-test-tools/src/main/graql/" + file);
     }
 
     @Override

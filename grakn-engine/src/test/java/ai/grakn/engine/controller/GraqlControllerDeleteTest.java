@@ -21,7 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.GraknTx;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
@@ -59,7 +59,7 @@ public class GraqlControllerDeleteTest {
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
 
     @ClassRule
-    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
+    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieGraph.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {

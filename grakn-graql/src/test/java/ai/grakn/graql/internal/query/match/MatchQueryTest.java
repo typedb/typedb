@@ -41,7 +41,7 @@ import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.matcher.MatchableConcept;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
@@ -182,11 +182,11 @@ public class MatchQueryTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext movieGraph = SampleKBContext.preLoad(MovieGraph.get());
 
     // This is a graph to contain unusual edge cases
     @ClassRule
-    public static final GraphContext weirdGraph = GraphContext.preLoad(graph -> {
+    public static final SampleKBContext weirdGraph = SampleKBContext.preLoad(graph -> {
         AttributeType<String> weirdLoopType = graph.putAttributeType("name", AttributeType.DataType.STRING);
         weirdLoopType.attribute(weirdLoopType);
         Attribute<String> weird = weirdLoopType.putAttribute("weird");
@@ -640,7 +640,7 @@ public class MatchQueryTest {
 
     @Test
     public void testGraqlPlaysSemanticsMatchGraphAPI() {
-        GraknTx graph = GraphContext.empty().graph(); // TODO: Try and remove this call if possible
+        GraknTx graph = SampleKBContext.empty().graph(); // TODO: Try and remove this call if possible
         QueryBuilder qb = graph.graql();
 
         Label a = Label.of("a");

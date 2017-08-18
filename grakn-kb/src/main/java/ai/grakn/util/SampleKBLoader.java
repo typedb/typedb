@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
  * </p>
  *
  * <p>
- *     A helper class which is used to build grakn graphs for testing purposes.
+ *     A helper class which is used to build {@link GraknTx} for testing purposes.
  *     This class bypasses requiring an instance of engine to be running in the background.
  *     Rather it acquires the necessary properties for building a graph directly from system properties.
  *     This does however mean that commit logs are not submitted and no post processing is ran
@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
  *
  * @author fppt
  */
-public class GraphLoader {
+public class SampleKBLoader {
     private static final AtomicBoolean propertiesLoaded = new AtomicBoolean(false);
     private static Properties graphConfig;
 
@@ -66,21 +66,21 @@ public class GraphLoader {
     private boolean graphLoaded = false;
     private GraknTx graph;
 
-    protected GraphLoader(@Nullable Consumer<GraknTx> preLoad){
+    protected SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
         factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
         this.preLoad = preLoad;
     }
 
-    public static GraphLoader empty(){
-        return new GraphLoader(null);
+    public static SampleKBLoader empty(){
+        return new SampleKBLoader(null);
     }
 
-    public static GraphLoader preLoad(Consumer<GraknTx> build){
-        return new GraphLoader(build);
+    public static SampleKBLoader preLoad(Consumer<GraknTx> build){
+        return new SampleKBLoader(build);
     }
 
-    public static GraphLoader preLoad(String [] files){
-        return new GraphLoader((graknGraph) -> {
+    public static SampleKBLoader preLoad(String [] files){
+        return new SampleKBLoader((graknGraph) -> {
             for (String file : files) {
                 loadFromFile(graknGraph, file);
             }

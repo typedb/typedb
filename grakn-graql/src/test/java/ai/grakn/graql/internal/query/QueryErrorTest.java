@@ -28,7 +28,7 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -52,10 +52,10 @@ public class QueryErrorTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieGraph.get());
 
     @ClassRule
-    public static final GraphContext empty = GraphContext.empty();
+    public static final SampleKBContext empty = SampleKBContext.empty();
 
     private QueryBuilder qb;
 

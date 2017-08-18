@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 
 import java.util.function.Consumer;
 
@@ -141,6 +141,6 @@ public class AdmissionsGraph extends TestGraph {
 
     @Override
     protected void buildRules(GraknTx graph) {
-        GraphContext.loadFromFile(graph, "admission-rules.gql");
+        SampleKBContext.loadFromFile(graph, "admission-rules.gql");
     }
 }

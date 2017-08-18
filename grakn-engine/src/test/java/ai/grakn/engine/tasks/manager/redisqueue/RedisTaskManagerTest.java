@@ -32,7 +32,7 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskState.Priority;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.util.EmbeddedRedis;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.KEYSPACE;
@@ -85,7 +85,7 @@ public class RedisTaskManagerTest {
     private static RedisTaskManager taskManager;
 
     @ClassRule
-    public static final GraphContext graph = GraphContext.empty();
+    public static final SampleKBContext graph = SampleKBContext.empty();
 
     @BeforeClass
     public static void setupClass() {

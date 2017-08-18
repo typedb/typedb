@@ -23,7 +23,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Printer;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableList;
@@ -45,7 +45,7 @@ public class JsonPrinterTest {
     private Printer printer;
 
     @ClassRule
-    public static final GraphContext movieContext = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext movieContext = SampleKBContext.preLoad(MovieGraph.get());
 
     @Before
     public void setUp() {

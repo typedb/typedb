@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.MovieGraph;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 public class AskQueryTest {
 
     @ClassRule
-    public static final GraphContext graph = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext graph = SampleKBContext.preLoad(MovieGraph.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

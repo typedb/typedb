@@ -30,7 +30,7 @@ import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.MovieGraph;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
@@ -87,7 +87,7 @@ public class GraqlControllerReadOnlyTest {
     private static final JsonMapper jsonMapper = new JsonMapper();
 
     @ClassRule
-    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
+    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieGraph.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {

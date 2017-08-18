@@ -34,7 +34,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 
 import ai.grakn.test.GraknTestSetup;
 import org.junit.Before;
@@ -51,37 +51,37 @@ public class RecursiveInferenceTest {
 
     // The recursivity graph is loaded to test if possible, but is unused elsewhere
     @ClassRule
-    public static final GraphContext recursivityContext = GraphContext.preLoad("recursivity-test.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext recursivityContext = SampleKBContext.preLoad("recursivity-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext recursivitySGContext = GraphContext.preLoad("recursivity-sg-test.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext recursivitySGContext = SampleKBContext.preLoad("recursivity-sg-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext recursivityTCContext = GraphContext.preLoad("recursivity-tc-test.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext recursivityTCContext = SampleKBContext.preLoad("recursivity-tc-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext recursivityRSGContext = GraphContext.preLoad("recursivity-rsg-test.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext recursivityRSGContext = SampleKBContext.preLoad("recursivity-rsg-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ancestorFriendContext = GraphContext.preLoad("ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext ancestorFriendContext = SampleKBContext.preLoad("ancestor-friend-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext transitivityContext = GraphContext.preLoad("transitivity-test.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext transitivityContext = SampleKBContext.preLoad("transitivity-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ancestorContext = GraphContext.preLoad("ancestor-test.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext ancestorContext = SampleKBContext.preLoad("ancestor-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext reachabilityContext = GraphContext.preLoad("reachability-test.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext reachabilityContext = SampleKBContext.preLoad("reachability-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext sameGenerationContext = GraphContext.preLoad("same-generation-test.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext sameGenerationContext = SampleKBContext.preLoad("same-generation-test.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext reachabilitySymmetricContext = GraphContext.preLoad("reachability-test-symmetric.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext reachabilitySymmetricContext = SampleKBContext.preLoad("reachability-test-symmetric.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @Rule
-    public final GraphContext graphContext = GraphContext.empty();
+    public final SampleKBContext graphContext = SampleKBContext.empty();
 
     @Before
     public void onStartup() throws Exception {

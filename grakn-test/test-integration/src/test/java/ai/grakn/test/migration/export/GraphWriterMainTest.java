@@ -24,7 +24,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.migration.export.Main;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.graphs.MovieGraph;
-import ai.grakn.util.GraphLoader;
+import ai.grakn.util.SampleKBLoader;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -50,7 +50,7 @@ public class GraphWriterMainTest {
 
     @BeforeClass
     public static void loadMovieGraph() {
-        keyspace = GraphLoader.randomKeyspace();
+        keyspace = SampleKBLoader.randomKeyspace();
         try(GraknTx graph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
             MovieGraph.get().accept(graph);
             graph.commit();

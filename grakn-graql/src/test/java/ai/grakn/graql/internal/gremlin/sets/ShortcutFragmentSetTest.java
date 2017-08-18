@@ -23,7 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.MovieGraph;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertEquals;
 public class ShortcutFragmentSetTest {
 
     @ClassRule
-    public static final GraphContext graph = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext graph = SampleKBContext.preLoad(MovieGraph.get());
 
     private final Var a = Graql.var("a"), b = Graql.var("b"), c = Graql.var("c"), d = Graql.var("d");
 

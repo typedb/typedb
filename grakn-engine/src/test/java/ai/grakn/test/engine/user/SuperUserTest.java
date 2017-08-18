@@ -20,7 +20,7 @@ package ai.grakn.test.engine.user;
 import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,7 +40,7 @@ public class SuperUserTest {
     private static EngineGraknGraphFactory graknFactory;
 
     @ClassRule
-    public static final GraphContext graph = GraphContext.empty();
+    public static final SampleKBContext graph = SampleKBContext.empty();
 
     private UsersHandler users;
 

@@ -43,7 +43,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class GraphLoaderTest {
+public class SampleKBLoaderTest {
 
     //TODO: Put this somewhere common
     @Before
@@ -53,7 +53,7 @@ public class GraphLoaderTest {
 
     @Test
     public void whenCreatingEmptyGraph_EnsureGraphIsEmpty(){
-        GraphLoader loader = GraphLoader.empty();
+        SampleKBLoader loader = SampleKBLoader.empty();
 
         try (GraknTx graph = loader.graph()){
             assertThat(graph.admin().getMetaEntityType().instances().collect(toSet()), is(empty()));
@@ -68,7 +68,7 @@ public class GraphLoaderTest {
 
         Consumer<GraknTx> preLoader = graph -> labels.forEach(graph::putEntityType);
 
-        GraphLoader loader = GraphLoader.preLoad(preLoader);
+        SampleKBLoader loader = SampleKBLoader.preLoad(preLoader);
 
         try (GraknTx graph = loader.graph()){
             Set<Label> foundLabels = graph.admin().getMetaEntityType().subs().
@@ -80,7 +80,7 @@ public class GraphLoaderTest {
 
     @Test
     public void whenBuildingGraph_EnsureBackendMatchesTheTestProfile(){
-        try(GraknTx graph = GraphLoader.empty().graph()){
+        try(GraknTx graph = SampleKBLoader.empty().graph()){
             //String comparison is used here because we do not have the class available at compile time
             if(GraknTestSetup.usingTinker()){
                 assertEquals(GraknTxTinker.class.getSimpleName(), graph.getClass().getSimpleName());
@@ -114,7 +114,7 @@ public class GraphLoaderTest {
         }
 
         //Load the data in
-        GraphLoader loader = GraphLoader.preLoad(files);
+        SampleKBLoader loader = SampleKBLoader.preLoad(files);
 
         //Check the data is there
         try (GraknTx graph = loader.graph()){

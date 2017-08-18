@@ -36,7 +36,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 
 import ai.grakn.test.GraknTestSetup;
 import com.google.common.collect.ImmutableSet;
@@ -59,10 +59,10 @@ import static org.junit.Assume.assumeTrue;
 public class LazyTest {
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoGraph = SampleKBContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext graphContext = GraphContext.empty().assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext graphContext = SampleKBContext.empty().assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {

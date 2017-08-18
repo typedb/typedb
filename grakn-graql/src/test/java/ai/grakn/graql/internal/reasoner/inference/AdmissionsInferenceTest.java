@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.inference;
 import ai.grakn.test.graphs.AdmissionsGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 
 import ai.grakn.test.GraknTestSetup;
 import org.junit.BeforeClass;
@@ -37,7 +37,7 @@ import static org.junit.Assume.assumeTrue;
 public class AdmissionsInferenceTest {
 
     @Rule
-    public final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get());
+    public final SampleKBContext admissionsGraph = SampleKBContext.preLoad(AdmissionsGraph.get());
 
     @BeforeClass
     public static void onStartup(){

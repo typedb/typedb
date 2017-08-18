@@ -28,7 +28,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraphLoader;
+import ai.grakn.util.SampleKBLoader;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -62,7 +62,7 @@ public class CSVMigratorTest {
 
     @Before
     public void setup() {
-        String keyspace = GraphLoader.randomKeyspace();
+        String keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
         migrator = Migrator.to(engine.uri(), keyspace);
     }

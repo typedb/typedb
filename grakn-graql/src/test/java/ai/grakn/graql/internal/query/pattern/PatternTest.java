@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.MovieGraph;
 import com.google.common.collect.Sets;
 import org.junit.ClassRule;
@@ -50,7 +50,7 @@ public class PatternTest {
     private GraknTx graph = rule.graph();
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieGraph.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

@@ -43,7 +43,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.CWGraph;
 import ai.grakn.util.Schema;
 import com.google.common.collect.HashMultimap;
@@ -77,28 +77,28 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicTest {
 
     @ClassRule
-    public static final GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext cwGraph = SampleKBContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext typeInferenceSet = GraphContext.preLoad("typeInferenceTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext typeInferenceSet = SampleKBContext.preLoad("typeInferenceTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilitySet = GraphContext.preLoad("ruleApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext ruleApplicabilitySet = SampleKBContext.preLoad("ruleApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext resourceApplicabilitySet = GraphContext.preLoad("resourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext resourceApplicabilitySet = SampleKBContext.preLoad("resourceApplicabilityTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilitySetWithTypes = GraphContext.preLoad("ruleApplicabilityTestWithTypes.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext ruleApplicabilitySetWithTypes = SampleKBContext.preLoad("ruleApplicabilityTestWithTypes.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilityInstanceTypesSet = GraphContext.preLoad("testSet19.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext ruleApplicabilityInstanceTypesSet = SampleKBContext.preLoad("testSet19.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext ruleApplicabilitySingleRoleSet = GraphContext.preLoad("testSet22.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext ruleApplicabilitySingleRoleSet = SampleKBContext.preLoad("testSet22.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext unificationTestSet = GraphContext.preLoad("unificationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext unificationTestSet = SampleKBContext.preLoad("unificationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {

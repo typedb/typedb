@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.DiagonalGraph;
 import ai.grakn.test.graphs.MatrixGraphII;
 import ai.grakn.test.graphs.TransitivityChainGraph;
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 public class BenchmarkTests {
 
     @Rule
-    public final GraphContext graphContext = GraphContext.empty();
+    public final SampleKBContext graphContext = SampleKBContext.empty();
 
     @Before
     public void setUpGraph(){

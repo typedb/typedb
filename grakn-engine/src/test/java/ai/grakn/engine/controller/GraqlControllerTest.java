@@ -6,7 +6,7 @@ import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.graphs.MovieGraph;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
@@ -60,7 +60,7 @@ public class GraqlControllerTest {
     }
 
     @ClassRule
-    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
+    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieGraph.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {

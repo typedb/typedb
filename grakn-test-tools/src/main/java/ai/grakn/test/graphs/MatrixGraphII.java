@@ -25,7 +25,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 
 import java.util.function.Consumer;
 
@@ -54,7 +54,7 @@ public class MatrixGraphII extends TestGraph {
     @Override
     public Consumer<GraknTx> build(){
         return (GraknTx graph) -> {
-            GraphContext.loadFromFile(graph, gqlFile);
+            SampleKBContext.loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };
     }
