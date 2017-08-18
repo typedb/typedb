@@ -5,17 +5,17 @@ last_updated: March 2017
 tags: [java]
 summary: "The Java API."
 sidebar: documentation_sidebar
-permalink: /documentation/developing-with-java/graph-api.html
+permalink: /documentation/developing-with-java/java-api.html
 folder: documentation
 ---
 
-The Java API is the low level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). The API provides Java object constructs for ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build a graph programmatically. 
+The Java API is the low level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). The API provides Java object constructs for ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build a knowledge base programmatically. 
 
 To get set up to use this API, please read through our [Setup Guide](../get-started/setup-guide.html) and guide to [starting Java development with GRAKN.AI](./java-setup.html).
 
 ## Java API vs Graql
 
-On this page we will focus primarily on the methods provided by the `GraknTx` interface which is used by all knowledge base mutation operations executed by Graql statements. If you are primarily interested in mutating the graph, as well as doing simple concept lookups the `GraknTx` interface will be sufficient. 
+On this page we will focus primarily on the methods provided by the `GraknTx` interface which is used by all knowledge base mutation operations executed by Graql statements. If you are primarily interested in mutating the knowledge base, as well as doing simple concept lookups the `GraknTx` interface will be sufficient. 
 
 It is also possible to interact with the knowledge base using a Java API to form Graql queries via `GraknTx.graql()`, which is discussed separately [here](./java-graql.html), and is best suited for advanced querying.
 
@@ -23,7 +23,7 @@ It is also possible to interact with the knowledge base using a Java API to form
 
 In the [Basic Schema documentation](../building-a-schema/basic-schema.html) we introduced a simple schema built using Graql.
 Let's see how we can build the same schema exclusively via the java API.
-First we need a knowledge base. For this example we will just use an [in-memory knowledge base](./java-setup.html#initialising-a-graph):
+First we need a knowledge base. For this example we will just use an [in-memory knowledge base](./java-setup.html#initialising-a-knowledge-base):
 
 ```java
 GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "MyKnowlegdeBase").open(GraknTxType.WRITE);
