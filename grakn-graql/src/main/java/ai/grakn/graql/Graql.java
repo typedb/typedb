@@ -97,6 +97,16 @@ public class Graql {
         return withoutGraph().insert(varPatterns);
     }
 
+    @CheckReturnValue
+    public static DefineQuery define(VarPattern... varPatterns) {
+        return withoutGraph().define(varPatterns);
+    }
+
+    @CheckReturnValue
+    public static DefineQuery define(Collection<? extends VarPattern> varPatterns) {
+        return withoutGraph().define(varPatterns);
+    }
+
     /**
      * @return a compute query builder without a specified graph
      */

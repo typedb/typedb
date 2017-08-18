@@ -134,7 +134,12 @@ public class QueryBuilderImpl implements QueryBuilder {
 
     @Override
     public DefineQuery define(VarPattern... patterns) {
-        ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(Arrays.asList(patterns)));
+        return define(Arrays.asList(patterns));
+    }
+
+    @Override
+    public DefineQuery define(Collection<? extends VarPattern> patterns) {
+        ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(patterns));
         return DefineQueryImpl.of(admins, graph.orElse(null));
     }
 

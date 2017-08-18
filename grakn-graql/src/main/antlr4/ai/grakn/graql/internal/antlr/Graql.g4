@@ -9,7 +9,7 @@ queryListElem : matchQuery | insertOnly | simpleQuery ;
 
 queryEOF       : query EOF ;
 query          : matchQuery | insertQuery | simpleQuery ;
-simpleQuery    : deleteQuery | aggregateQuery | computeQuery ;
+simpleQuery    : defineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
 matchQuery     : MATCH patterns                                   # matchBase
                | matchQuery 'select' VARIABLE (',' VARIABLE)* ';' # matchSelect
@@ -22,6 +22,7 @@ matchQuery     : MATCH patterns                                   # matchBase
 insertQuery    : matchInsert | insertOnly ;
 insertOnly     : INSERT varPatterns ;
 matchInsert    : matchQuery INSERT varPatterns ;
+defineQuery    : 'define' varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
