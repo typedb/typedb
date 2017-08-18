@@ -20,7 +20,7 @@ package ai.grakn.kb.internal.concept;
 
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.graph.admin.GraknAdmin;
+import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;

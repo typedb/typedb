@@ -38,7 +38,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.graph.admin.GraknAdmin;
+import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.kb.internal.cache.GraphCache;
 import ai.grakn.kb.internal.cache.TxCache;
 import ai.grakn.kb.internal.concept.AttributeImpl;
