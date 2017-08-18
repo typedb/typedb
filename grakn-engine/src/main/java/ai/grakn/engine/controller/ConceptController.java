@@ -62,7 +62,7 @@ import static ai.grakn.util.REST.Response.Json.RELATIONS_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.RESOURCES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.ROLES_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Concept.CONCEPT;
-import static ai.grakn.util.REST.WebPath.Concept.ONTOLOGY;
+import static ai.grakn.util.REST.WebPath.Concept.SCHEMA;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.stream.Collectors.toList;
 
@@ -79,16 +79,16 @@ public class ConceptController {
     private static final int separationDegree = 1;
     private final EngineGraknGraphFactory factory;
     private final Timer conceptIdGetTimer;
-    private final Timer ontologyGetTimer;
+    private final Timer schemaGetTimer;
 
     public ConceptController(EngineGraknGraphFactory factory, Service spark,
             MetricRegistry metricRegistry){
         this.factory = factory;
         this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-identifier"));
-        this.ontologyGetTimer = metricRegistry.timer(name(ConceptController.class, "ontology"));
+        this.schemaGetTimer = metricRegistry.timer(name(ConceptController.class, "schema"));
 
         spark.get(CONCEPT + ID_PARAMETER,  this::conceptByIdentifier);
-        spark.get(ONTOLOGY,  this::ontology);
+        spark.get(SCHEMA,  this::schema);
 
     }
 
@@ -120,16 +120,16 @@ public class ConceptController {
     }
 
     @GET
-    @Path("/ontology")
+    @Path("/schema")
     @ApiOperation(
-            value = "Produces a Json object containing meta-ontology types instances.",
-            notes = "The built Json object will contain ontology nodes divided in roles, entities, relations and resources.",
+            value = "Produces a Json object containing meta-schema types instances.",
+            notes = "The built Json object will contain schema nodes divided in roles, entities, relations and resources.",
             response = Json.class)
     @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
-    private String ontology(Request request, Response response) {
+    private String schema(Request request, Response response) {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         validateRequest(request, APPLICATION_ALL, APPLICATION_JSON);
-        try(GraknTx graph = factory.getGraph(keyspace, READ); Context context = ontologyGetTimer.time()){
+        try(GraknTx graph = factory.getGraph(keyspace, READ); Context context = schemaGetTimer.time()){
             Json responseObj = Json.object();
             responseObj.set(ROLES_JSON_FIELD, subLabels(graph.admin().getMetaRole()));
             responseObj.set(ENTITIES_JSON_FIELD, subLabels(graph.admin().getMetaEntityType()));

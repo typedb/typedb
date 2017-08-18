@@ -262,11 +262,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return map of variable name - type pairs
      */
     @Override
-    public Map<Var, SchemaConcept> getVarOntologyConceptMap() {
+    public Map<Var, SchemaConcept> getVarSchemaConceptMap() {
         Map<Var, SchemaConcept> typeMap = new HashMap<>();
         getAtoms(TypeAtom.class)
-                .filter(at -> Objects.nonNull(at.getOntologyConcept()))
-                .forEach(atom -> typeMap.putIfAbsent(atom.getVarName(), atom.getOntologyConcept()));
+                .filter(at -> Objects.nonNull(at.getSchemaConcept()))
+                .forEach(atom -> typeMap.putIfAbsent(atom.getVarName(), atom.getSchemaConcept()));
         return typeMap;
     }
 
@@ -532,7 +532,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         List<Set<Atom>> atomOptions = getAtoms(Atom.class)
                 .map(at -> {
-                    if (at.isRelation() && at.getOntologyConcept() == null) {
+                    if (at.isRelation() && at.getSchemaConcept() == null) {
                         RelationAtom rel = (RelationAtom) at;
                         Set<Atom> possibleRels = new HashSet<>();
                         rel.inferPossibleRelationTypes(sub).stream()

@@ -10,7 +10,7 @@ folder: documentation
 comment_issue_id: 27
 ---
 
-This example shows how to use Java in a basic example that can be extended as a template for your own projects. It shows how to get set up, then how to build up an ontology, add data and how to make some queries. The example we will build is very simple: it's based on the genealogy dataset we have used throughout the GRAKN.AI documentation. We have kept it very simple (as close to a Hello World as you can get while still being useful as a template for creating and querying a knowledge base). You can find it in our sample-projects repository on [Github](https://github.com/graknlabs/sample-projects/tree/master/example-graph-api-genealogy).
+This example shows how to use Java in a basic example that can be extended as a template for your own projects. It shows how to get set up, then how to build up a schema, add data and how to make some queries. The example we will build is very simple: it's based on the genealogy dataset we have used throughout the GRAKN.AI documentation. We have kept it very simple (as close to a Hello World as you can get while still being useful as a template for creating and querying a knowledge base). You can find it in our sample-projects repository on [Github](https://github.com/graknlabs/sample-projects/tree/master/example-graph-api-genealogy).
 
 ## Dependencies
 All Grakn applications have the following Maven dependency:
@@ -47,9 +47,9 @@ cd [your Grakn install directory]
 
 The Java API, `GraknTx`, is a low-level API that encapsulates the [Grakn knowledge model](../the-fundamentals/grakn-knowledge-model.html). It provides Java object constructs for the Grakn ontological elements (entity types, relationship types, etc.) and data instances (entities, relationships, etc.), allowing you to build up a knowledge base programmatically. It is also possible to perform simple concept lookups using the java API, which I’ll illustrate presently. First, let’s look at building up the knowledge base.
 
-### Building the Ontology
+### Building the Schema
 
-We will look at the same ontology as is covered in the [Basic Ontology documentation](../building-an-ontology/basic-ontology.html) using Graql, which you may already be familiar with. If you’re not, the ontology is fully specified in Graql [here](../building-an-ontology/basic-ontology.html#the-complete-ontology). 
+We will look at the same schema as is covered in the [Basic Schema documentation](../building-a-schema/basic-schema.html) using Graql, which you may already be familiar with. If you’re not, the schema is fully specified in Graql [here](../building-a-schema/basic-schema.html#the-complete-schema). 
 
 First we need a [knowledge base](../developing-with-java/java-setup.html#initialising-a-transaction-on-the-graph):
 
@@ -59,7 +59,7 @@ GraknTx tx = session.open(GraknTxType.WRITE)
 ```
 
 
-Building the ontology is covered in `writeOntology()`. First, the method adds the attribute types using putAttributeType():
+Building the schema is covered in `writeSchema()`. First, the method adds the attribute types using putAttributeType():
 
 ```java
 identifier = tx.putAttributeType("identifier", AttributeType.DataType.STRING);
@@ -107,7 +107,7 @@ person.attribute(middlename);
 person.attribute(surname);
 ```
 
-Now to commit the ontology:
+Now to commit the schema:
 
 ```java
 tx.commit();

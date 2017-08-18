@@ -35,7 +35,7 @@ public class XMLMigratorTest {
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @BeforeClass
-    public static void loadOntology(){
+    public static void loadSchema(){
         keyspace = GraphLoader.randomKeyspace();
         session = Grakn.session(engine.uri(), keyspace);
     }
@@ -100,8 +100,8 @@ public class XMLMigratorTest {
     }
 
     private static void migrateXMLWithElement(String element, String template){
-        // load the ontology
-        MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "ontology.gql"));
+        // load the schema
+        MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "schema.gql"));
 
         // load the data
         Migrator migrator = Migrator.to(engine.uri(), keyspace);

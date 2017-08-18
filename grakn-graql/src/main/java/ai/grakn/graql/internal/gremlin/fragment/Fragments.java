@@ -231,19 +231,19 @@ public class Fragments {
         role.ifPresent(var -> {
             Var edge = Graql.var();
             traversal.as(edge.getValue());
-            Fragments.outSubs(traverseOntologyConceptFromEdge(traversal, edgeProperty));
+            Fragments.outSubs(traverseSchemaConceptFromEdge(traversal, edgeProperty));
             traversal.as(var.getValue()).select(edge.getValue());
         });
     }
 
-    static <S> GraphTraversal<S, Vertex> traverseOntologyConceptFromEdge(
+    static <S> GraphTraversal<S, Vertex> traverseSchemaConceptFromEdge(
             GraphTraversal<S, Edge> traversal, Schema.EdgeProperty edgeProperty) {
 
         // Access label ID from edge
         Var labelId = Graql.var();
         traversal.values(edgeProperty.name()).as(labelId.getValue());
 
-        // Look up ontology concept using ID
+        // Look up schema concept using ID
         return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
     }
 

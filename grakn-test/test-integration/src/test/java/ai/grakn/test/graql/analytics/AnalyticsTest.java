@@ -131,7 +131,7 @@ public class AnalyticsTest {
         // TODO: move parallel tests to integration tests
         assumeFalse(GraknTestSetup.usingTinker());
 
-        addOntologyAndEntities();
+        addSchemaAndEntities();
 
         List<String> queryList = new ArrayList<>();
         queryList.add("compute count;");
@@ -147,7 +147,7 @@ public class AnalyticsTest {
         assertEquals(queryList.size(), result.size());
     }
 
-    private void addOntologyAndEntities() throws InvalidGraphException {
+    private void addSchemaAndEntities() throws InvalidGraphException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);

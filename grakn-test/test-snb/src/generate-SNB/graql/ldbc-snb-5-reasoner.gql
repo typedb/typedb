@@ -5,7 +5,7 @@
 
 insert
 
-#ontology extension
+#schema extension
 
 knows sub knows-trans;
 

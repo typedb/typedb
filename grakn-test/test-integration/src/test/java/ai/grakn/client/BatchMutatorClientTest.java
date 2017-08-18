@@ -220,7 +220,7 @@ public class BatchMutatorClientTest {
     }
 
     private BatchMutatorClient loader(){
-        // load ontology
+        // load schema
         try(GraknTx graph = session.open(GraknTxType.WRITE)){
             EntityType nameTag = graph.putEntityType("name_tag");
             AttributeType<String> nameTagString = graph.putAttributeType("name_tag_string", AttributeType.DataType.STRING);

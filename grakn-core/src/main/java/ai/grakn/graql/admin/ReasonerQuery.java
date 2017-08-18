@@ -111,5 +111,5 @@ public interface ReasonerQuery{
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    Map<Var, SchemaConcept> getVarOntologyConceptMap();
+    Map<Var, SchemaConcept> getVarSchemaConceptMap();
 }

@@ -132,9 +132,9 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertOntologiesEqual(GraknTx one, GraknTx two){
-        boolean ontologyCorrect = one.admin().getMetaConcept().subs().filter(Concept::isType)
+        boolean schemaCorrect = one.admin().getMetaConcept().subs().filter(Concept::isType)
                 .allMatch(t -> typesEqual(t.asType(), two.getSchemaConcept(t.asType().getLabel())));
-        assertEquals(true, ontologyCorrect);
+        assertEquals(true, schemaCorrect);
     }
 
     public static boolean typesEqual(Type one, Type two){

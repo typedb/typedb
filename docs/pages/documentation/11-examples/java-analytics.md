@@ -67,7 +67,7 @@ The rest of the project is contained in the Java example code, which can be foun
 
 The Janus factory is required because engine is configured with Janus as the backend. The `slf4j-nop` dependency is a work around because we are using a later version of Spark. The spring framework dependency is a current bug workaround in GRAKN.AI version 0.12.0.
 
-First, we load the ontology and data we will be working with, which is the familiar *basic-genealogy.gql* dataset.
+First, we load the schema and data we will be working with, which is the familiar *basic-genealogy.gql* dataset.
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
 ```java-test-ignore
@@ -147,7 +147,7 @@ If we had not used the members syntax we would only know the size of the cluster
 
 ## Persist the Cluster Information
 
-Now that we have information about the clusters, it would be useful to add it to the graph so that we can visualise it. We can do this by creating a new entity type called `cluster` and a new relationship type called `grouping` with the roles `group` and `member`. The ontology can be mutated as follows:
+Now that we have information about the clusters, it would be useful to add it to the graph so that we can visualise it. We can do this by creating a new entity type called `cluster` and a new relationship type called `grouping` with the roles `group` and `member`. The schema can be mutated as follows:
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
 ```java-test-ignore
@@ -179,7 +179,7 @@ private static void mutateOntology() {
 }
 ```
 
-We also have to ensure that the existing types in the ontology can play the specified roles.
+We also have to ensure that the existing types in the schema can play the specified roles.
 
 Now all that is left is to populate the graph with the clusters and grouping relationships. To do this we can create a cluster for each result from the analytics query, which can then be attached to each of the concepts returned in the set of members:
 
@@ -258,7 +258,7 @@ The `in` syntax has again been used here to restrict the algorithm to the graph 
 
 ## Persist the Degrees
 
-As we did when computing the clusters, we need to put the information back into the graph. This time we will attach an attribute called `degree` to the cluster entity. The ontology mutation and persisting of the degrees is performed in a single method:
+As we did when computing the clusters, we need to put the information back into the graph. This time we will attach an attribute called `degree` to the cluster entity. The schema mutation and persisting of the degrees is performed in a single method:
 
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
@@ -269,7 +269,7 @@ private static void persistDegrees(Map<Long, Set<String>> degrees) {
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
 
-            // mutate the ontology
+            // mutate the schema
             Var degree = Graql.var().label("degree").sub("attribute").datatype(ResourceType.DataType.LONG);
             Var cluster = Graql.var().label("cluster").has("degree");
 

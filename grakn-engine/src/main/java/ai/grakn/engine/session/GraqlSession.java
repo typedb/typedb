@@ -334,7 +334,7 @@ class GraqlSession {
     }
 
     /**
-     * Send a list of all types in the ontology
+     * Send a list of all types in the schema
      */
     private void sendTypes() {
         sendJson(Json.object(
@@ -359,7 +359,7 @@ class GraqlSession {
 
     /**
      * @param graph the graph to find types in
-     * @return all type IDs in the ontology
+     * @return all type IDs in the schema
      */
     private static Stream<Label> getTypes(GraknTx graph) {
         return graph.admin().getMetaConcept().subs().map(SchemaConcept::getLabel);

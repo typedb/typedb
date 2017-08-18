@@ -34,7 +34,7 @@ public class EntityTypes extends AbstractTypeGenerator<EntityType> {
     }
 
     @Override
-    protected EntityType newOntologyConcept(Label label) {
+    protected EntityType newSchemaConcept(Label label) {
         return graph().putEntityType(label);
     }
 

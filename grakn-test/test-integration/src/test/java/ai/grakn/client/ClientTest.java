@@ -39,7 +39,7 @@ public class ClientTest {
         boolean running = Client.serverIsRunning(engine.uri());
         assertTrue(running);
 
-        // Check that we've loaded the ontology
+        // Check that we've loaded the schema
         try(GraknTx graph = engine.server().factory().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
             assertNotNull(graph.getAttributeType(SystemKeyspace.KEYSPACE_RESOURCE.getValue()));
         }

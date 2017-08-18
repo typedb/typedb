@@ -54,8 +54,8 @@ class MatchQueryGraph extends MatchQueryModifier {
     }
 
     @Override
-    public Set<SchemaConcept> getOntologyConcepts() {
-        return inner.getOntologyConcepts(graph);
+    public Set<SchemaConcept> getSchemaConcepts() {
+        return inner.getSchemaConcepts(graph);
     }
 
     @Override

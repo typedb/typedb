@@ -26,8 +26,8 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Attribute;
 import ai.grakn.exception.GraphOperationException;
-import ai.grakn.graph.internal.GraknTxAbstract;
-import ai.grakn.graph.internal.GraknTxJanus;
+import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.GraknTxJanus;
 import com.google.common.collect.Iterators;
 import org.junit.After;
 import org.junit.Before;
@@ -154,7 +154,7 @@ public class GraknTxJanusTest extends JanusTestBase {
         Attribute<String> attribute = attributeType.putAttribute("A Attribute Thing");
 
         EntityType entityType = graknTx.putEntityType("My entity").attribute(attributeType);
-        Relationship relationship = Iterators.getOnlyElement(entityType.addEntity().attribute(attribute).relations().iterator());
+        Relationship relationship = Iterators.getOnlyElement(entityType.addEntity().attribute(attribute).relationships().iterator());
 
         //Closing so the cache is not accessed when doing the lookup
         graknTx.commit();

@@ -21,8 +21,10 @@ package ai.grakn.graql.internal.analytics;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
@@ -48,7 +50,7 @@ import static ai.grakn.graql.Graql.var;
 public class Utility {
     /**
      * The Grakn type property on a given Tinkerpop vertex.
-     * If the vertex is an ontology element, return invalid type.
+     * If the vertex is a {@link SchemaConcept}, return invalid {@link Label}.
      *
      * @param vertex the Tinkerpop vertex
      * @return the type

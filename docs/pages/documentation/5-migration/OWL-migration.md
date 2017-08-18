@@ -70,7 +70,7 @@ Consider the following OWL ontology:
 <\rdf:RDF>
 ```
 
-The ontology defines a single class (type) `Person` as well as two instances of the class - individuals `Witold` and `Stefan`. The ontology defines properties `hasAncestor` and its inverse `isAncestorOf` as well as `hasParent` and `isParentOf` properties. The `hasAncestor` property is defined as transitive and additionally defines a property chain which corresponds to the rule:
+The schema defines a single class (type) `Person` as well as two instances of the class - individuals `Witold` and `Stefan`. The schema defines properties `hasAncestor` and its inverse `isAncestorOf` as well as `hasParent` and `isParentOf` properties. The `hasAncestor` property is defined as transitive and additionally defines a property chain which corresponds to the rule:
 
 ```
 hasAncestor(X, Y) :- hasParent(X, Z), hasAncestor(Z, Y);

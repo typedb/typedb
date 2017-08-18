@@ -9,7 +9,7 @@ GRAQL=$SCRIPTPATH/./graql
 $SCRIPTPATH/run.sh
 
 exit
-# load ontology
+# load schema
 graql.sh -k $2 -f $GRAQL/ldbc-snb-1-resources.gql -r $1
 graql.sh -k $2 -f $GRAQL/ldbc-snb-2-relations.gql -r $1
 graql.sh -k $2 -f $GRAQL/ldbc-snb-3-entities.gql -r $1

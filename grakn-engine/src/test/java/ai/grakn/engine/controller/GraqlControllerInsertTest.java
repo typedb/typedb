@@ -195,7 +195,7 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlInsertWithOntology_GraphCommitIsCalled(){
+    public void POSTGraqlInsertWithSchema_GraphCommitIsCalled(){
         String query = "insert thingy sub entity;";
 
         verify(mockGraph, times(0)).commit();

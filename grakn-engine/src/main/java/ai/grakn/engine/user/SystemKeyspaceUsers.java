@@ -41,7 +41,7 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
 
 /**
- * A DAO for managing users in the Grakn system keyspace. System the 'system.gql' ontology
+ * A DAO for managing users in the Grakn system keyspace. System the 'system.gql' schema
  * for how users are modeled.
  * 
  * @author borislav

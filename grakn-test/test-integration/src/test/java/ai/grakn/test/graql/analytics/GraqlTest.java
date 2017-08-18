@@ -86,7 +86,7 @@ public class GraqlTest {
 
     @Test
     public void testGraqlCount() throws InvalidGraphException, InterruptedException, ExecutionException {
-        addOntologyAndEntities();
+        addSchemaAndEntities();
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             assertEquals(6L,
                     ((Long) graph.graql().parse("compute count;").execute()).longValue());
@@ -97,7 +97,7 @@ public class GraqlTest {
 
     @Test
     public void testDegrees() throws Exception {
-        addOntologyAndEntities();
+        addSchemaAndEntities();
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             Map<Long, Set<String>> degrees = graph.graql().<DegreeQuery>parse("compute degrees;").execute();
 
@@ -193,7 +193,7 @@ public class GraqlTest {
 
     @Test
     public void testPath() throws InvalidGraphException {
-        addOntologyAndEntities();
+        addSchemaAndEntities();
 
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             PathQuery query =
@@ -260,7 +260,7 @@ public class GraqlTest {
         });
     }
 
-    private void addOntologyAndEntities() throws InvalidGraphException {
+    private void addSchemaAndEntities() throws InvalidGraphException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);

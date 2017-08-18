@@ -34,7 +34,7 @@ public class RelationTypes extends AbstractTypeGenerator<RelationshipType> {
     }
 
     @Override
-    protected RelationshipType newOntologyConcept(Label label) {
+    protected RelationshipType newSchemaConcept(Label label) {
         return graph().putRelationshipType(label);
     }
 

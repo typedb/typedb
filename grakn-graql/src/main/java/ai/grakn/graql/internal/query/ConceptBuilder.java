@@ -205,7 +205,7 @@ public class ConceptBuilder {
         Concept concept;
 
         if (has(SUPER_CONCEPT)) {
-            concept = putOntologyConcept();
+            concept = putSchemaConcept();
         } else if (has(TYPE)) {
             concept = putInstance();
         } else {
@@ -345,7 +345,7 @@ public class ConceptBuilder {
         }
     }
 
-    private SchemaConcept putOntologyConcept() {
+    private SchemaConcept putSchemaConcept() {
         SchemaConcept superConcept = use(SUPER_CONCEPT);
         Label label = use(LABEL);
 
