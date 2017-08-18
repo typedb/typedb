@@ -65,7 +65,7 @@ import static java.util.stream.Collectors.toSet;
  * @author Felix Chapman
  */
 @SuppressWarnings("unchecked") // We're performing random operations. Generics will not constrain us!
-public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCounterexampleHook {
+public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCounterexampleHook {
 
     private static GraknTx lastGeneratedGraph;
 
@@ -74,7 +74,7 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
     private GraknTx graph;
     private Boolean open = null;
 
-    public GraknGraphs() {
+    public GraknTxs() {
         super(GraknTx.class);
     }
 
@@ -92,7 +92,7 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
             succesfulMutation = true;
             try {
                 random.choose(mutators).run();
-            } catch (UnsupportedOperationException | GraknTxOperationException | GraphGeneratorException e) {
+            } catch (UnsupportedOperationException | GraknTxOperationException | KBGeneratorException e) {
                 // We only catch acceptable exceptions for the graph API to throw
                 succesfulMutation = false;
             }
@@ -146,7 +146,7 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
         setOpen(open.value());
     }
 
-    public GraknGraphs setOpen(boolean open) {
+    public GraknTxs setOpen(boolean open) {
         this.open = open;
         return this;
     }
@@ -364,14 +364,14 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
     private <T> T chooseOrThrow(Stream<? extends T> stream) {
         Set<? extends  T> collection = stream.collect(toSet());
         if (collection.isEmpty()) {
-            throw new GraphGeneratorException();
+            throw new KBGeneratorException();
         } else {
             return random.choose(collection);
         }
     }
 
     public static List<Concept> allConceptsFrom(GraknTx graph) {
-        List<Concept> concepts = Lists.newArrayList(GraknGraphs.allSchemaElementsFrom(graph));
+        List<Concept> concepts = Lists.newArrayList(GraknTxs.allSchemaElementsFrom(graph));
         concepts.addAll(allInstancesFrom(graph).collect(toSet()));
         return concepts;
     }
@@ -404,7 +404,7 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
         boolean value() default true;
     }
 
-    private static class GraphGeneratorException extends RuntimeException {
+    private static class KBGeneratorException extends RuntimeException {
 
     }
 }

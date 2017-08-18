@@ -27,14 +27,14 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class PathGraphSymmetric extends AbstractPathGraph {
+public class PathKBSymmetric extends AbstractPathKB {
     private final static String gqlFile = "path-test-symmetric.gql";
 
-    public PathGraphSymmetric(int n, int m){
+    public PathKBSymmetric(int n, int m){
         super(gqlFile, n, m);
     }
 
     public static Consumer<GraknTx> get(int n, int m) {
-        return new PathGraphSymmetric(n, m).build();
+        return new PathKBSymmetric(n, m).build();
     }
 }

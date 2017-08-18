@@ -27,14 +27,14 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public class PathGraph extends AbstractPathGraph {
+public class PathKB extends AbstractPathKB {
     private final static String gqlFile = "path-test.gql";
 
-    public PathGraph(int n, int m){
+    public PathKB(int n, int m){
         super(gqlFile, n, m);
     }
 
     public static Consumer<GraknTx> get(int n, int children) {
-        return new PathGraph(n, children).build();
+        return new PathKB(n, children).build();
     }
 }

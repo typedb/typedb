@@ -77,7 +77,7 @@ public class PostProcessingTask extends BackgroundTask {
                     int maxRetry = engineConfiguration()
                             .getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
-                    GraphMutators.runGraphMutationWithRetry(factory(), keyspace, maxRetry,
+                    GraknTxMutators.runGraphMutationWithRetry(factory(), keyspace, maxRetry,
                             (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
                 } finally {
                     contextSingle.stop();

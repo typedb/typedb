@@ -29,16 +29,16 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Export contents of a Grakn graph as a Graql insert query.
+ * Export contents of a Grakn Knowledge Base as a Graql insert query.
  * @author alexandraorth
  */
-public class GraphWriter {
+public class KBWriter {
 
     private static final String EOL = ";\n";
 
     private final GraknTx graph;
 
-    public GraphWriter(GraknTx graph){
+    public KBWriter(GraknTx graph){
         this.graph = graph;
     }
 

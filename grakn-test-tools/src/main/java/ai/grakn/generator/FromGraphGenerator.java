@@ -41,7 +41,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  */
 public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
     private Supplier<GraknTx> graphSupplier =
-            () -> gen().make(GraknGraphs.class).setOpen(true).generate(random, status);
+            () -> gen().make(GraknTxs.class).setOpen(true).generate(random, status);
 
     private GraknTx graph;
 
@@ -77,7 +77,7 @@ public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
     }
 
     final FromGraphGenerator<T> fromLastGeneratedGraph() {
-        fromGraph(GraknGraphs::lastGeneratedGraph);
+        fromGraph(GraknTxs::lastGeneratedGraph);
         return this;
     }
 

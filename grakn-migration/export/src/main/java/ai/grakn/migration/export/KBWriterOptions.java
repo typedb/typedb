@@ -24,9 +24,9 @@ import ai.grakn.migration.base.MigrationOptions;
  * Configure the default export options and access arguments passed by the user
  * @author alexandraorth
  */
-public class GraphWriterOptions extends MigrationOptions {
+public class KBWriterOptions extends MigrationOptions {
 
-    public GraphWriterOptions(String[] args) {
+    public KBWriterOptions(String[] args) {
         super();
 
         options.addOption("schema", false, "export schema");

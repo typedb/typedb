@@ -33,13 +33,13 @@ import java.util.function.Consumer;
  * @author Kasper Piskorski
  *
  */
-public abstract class AbstractPathGraph extends TestGraph {
+public abstract class AbstractPathKB extends TestGraph {
     private final static Label key = Label.of("index");
     private final String gqlFile;
     private final int n;
     private final int m;
 
-    protected AbstractPathGraph(String gqlFile, int n, int m){
+    protected AbstractPathKB(String gqlFile, int n, int m){
         this.gqlFile = gqlFile;
         this.n = n;
         this.m = m;
@@ -88,7 +88,7 @@ public abstract class AbstractPathGraph extends TestGraph {
         }
 
         long loadTime = System.currentTimeMillis() - startTime;
-        System.out.println("PathGraph loading time: " + loadTime + " ms");
+        System.out.println("PathKB loading time: " + loadTime + " ms");
     }
 
     @Override

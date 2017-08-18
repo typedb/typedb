@@ -18,7 +18,7 @@
 package ai.grakn.test.migration.export;
 
 import ai.grakn.test.graphs.MovieGraph;
-import ai.grakn.migration.export.GraphWriter;
+import ai.grakn.migration.export.KBWriter;
 import ai.grakn.test.SampleKBContext;
 
 import org.junit.Before;
@@ -26,13 +26,13 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static ai.grakn.test.migration.export.GraphWriterTestUtil.assertDataEqual;
-import static ai.grakn.test.migration.export.GraphWriterTestUtil.assertOntologiesEqual;
-import static ai.grakn.test.migration.export.GraphWriterTestUtil.insert;
+import static ai.grakn.test.migration.export.KBWriterTestUtil.assertDataEqual;
+import static ai.grakn.test.migration.export.KBWriterTestUtil.assertOntologiesEqual;
+import static ai.grakn.test.migration.export.KBWriterTestUtil.insert;
 
 public class MovieKBWriterTest {
 
-    private GraphWriter writer;
+    private KBWriter writer;
 
     @ClassRule
     public static SampleKBContext original = SampleKBContext.preLoad(MovieGraph.get());
@@ -42,7 +42,7 @@ public class MovieKBWriterTest {
 
     @Before
     public void setup() {
-        writer = new GraphWriter(original.graph());
+        writer = new KBWriter(original.graph());
     }
 
     @Test

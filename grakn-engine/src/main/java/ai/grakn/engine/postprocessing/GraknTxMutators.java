@@ -39,9 +39,9 @@ import java.util.function.Consumer;
  *
  * @author alexandraorth, fppt
  */
-public abstract class GraphMutators {
+public abstract class GraknTxMutators {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GraphMutators.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GraknTxMutators.class);
 
     /**
      *

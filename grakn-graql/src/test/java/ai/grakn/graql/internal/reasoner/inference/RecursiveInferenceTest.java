@@ -24,9 +24,9 @@ import ai.grakn.test.graphs.DiagonalGraph;
 import ai.grakn.test.graphs.MatrixGraph;
 import ai.grakn.test.graphs.MatrixGraphII;
 import ai.grakn.test.graphs.NguyenGraph;
-import ai.grakn.test.graphs.PathGraph;
+import ai.grakn.test.graphs.PathKB;
 import ai.grakn.test.graphs.PathGraphII;
-import ai.grakn.test.graphs.PathGraphSymmetric;
+import ai.grakn.test.graphs.PathKBSymmetric;
 import ai.grakn.test.graphs.TailRecursionGraph;
 import ai.grakn.test.graphs.TransitivityChainGraph;
 import ai.grakn.test.graphs.TransitivityMatrixGraph;
@@ -391,7 +391,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testPathTree(){
         final int N = 3;
-        graphContext.load(PathGraph.get(N, 3));
+        graphContext.load(PathKB.get(N, 3));
         GraknTx graph = graphContext.graph();
         QueryBuilder qb = graph.graql().infer(false);
         QueryBuilder iqb = graph.graql().infer(true);
@@ -419,7 +419,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testPathTreePrime(){
         final int N = 3;
-        graphContext.load(PathGraph.get(N, 3));
+        graphContext.load(PathKB.get(N, 3));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -434,7 +434,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testPathSymmetric(){
         final int N = 3;
-        graphContext.load(PathGraphSymmetric.get(N, 3));
+        graphContext.load(PathKBSymmetric.get(N, 3));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 

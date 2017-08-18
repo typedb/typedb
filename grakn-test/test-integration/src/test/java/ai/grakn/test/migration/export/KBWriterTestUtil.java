@@ -40,7 +40,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public abstract class GraphWriterTestUtil {
+public abstract class KBWriterTestUtil {
 
     public static void insert(GraknTx graph, String query) {
         graph.graql().parse("insert " + query).execute();

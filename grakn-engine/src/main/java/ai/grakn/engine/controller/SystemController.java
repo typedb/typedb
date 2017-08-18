@@ -64,8 +64,8 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.engine.GraknEngineConfig.FACTORY_ANALYTICS;
 import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
-import static ai.grakn.util.REST.GraphConfig.COMPUTER;
-import static ai.grakn.util.REST.GraphConfig.DEFAULT;
+import static ai.grakn.util.REST.KBConfig.COMPUTER;
+import static ai.grakn.util.REST.KBConfig.DEFAULT;
 import static ai.grakn.util.REST.Request.FORMAT;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.Request.KEYSPACE;

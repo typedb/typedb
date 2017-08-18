@@ -143,7 +143,7 @@ public class REST {
     /**
      * Class listing possible graph configuration options.
      */
-    public static class GraphConfig{
+    public static class KBConfig {
         public static final String DEFAULT = "default";
         public static final String COMPUTER = "computer";
     }
@@ -153,9 +153,6 @@ public class REST {
      */
     public static class HttpConn{
         public static final int OK = 200;
-        public static final String UTF8 = "UTF8";
-        public static final String CONTENT_LENGTH = "Content-Length";
-        public static final String CONTENT_TYPE = "Content-Type";
         public static final String POST_METHOD = "POST";
         public static final String DELETE_METHOD = "DELETE";
         public static final String GET_METHOD = "GET";

@@ -23,7 +23,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
-import ai.grakn.generator.GraknGraphs;
+import ai.grakn.generator.GraknTxs;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.Rule;
@@ -57,7 +57,7 @@ public class RelationshipPropertyTest {
         assertThat(relationship.rolePlayers().collect(toSet()), hasItem(rolePlayer));
     }
 
-    @Property(onMinimalCounterexample = GraknGraphs.class)
+    @Property(onMinimalCounterexample = GraknTxs.class)
     public void whenAddingARolePlayerPlayingARole_TheRolePlayerIsAddedToTheCollectionOfRolePlayersForThatRole(
             Relationship relationship, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
 

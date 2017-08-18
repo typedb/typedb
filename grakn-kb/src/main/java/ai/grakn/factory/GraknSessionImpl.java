@@ -88,7 +88,7 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     private TxFactory<?> getConfiguredFactory(){
-        return configureGraphFactory(keyspace, location, REST.GraphConfig.DEFAULT);
+        return configureGraphFactory(keyspace, location, REST.KBConfig.DEFAULT);
     }
 
     /**
@@ -96,7 +96,7 @@ public class GraknSessionImpl implements GraknSession {
      */
     @Override
     public GraknComputer getGraphComputer() {
-        TxFactory<?> configuredFactory = configureGraphFactory(keyspace, location, REST.GraphConfig.COMPUTER);
+        TxFactory<?> configuredFactory = configureGraphFactory(keyspace, location, REST.KBConfig.COMPUTER);
         Graph graph = configuredFactory.getTinkerPopGraph(false);
         return new GraknComputerImpl(graph);
     }

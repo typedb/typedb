@@ -30,7 +30,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
-import ai.grakn.generator.GraknGraphs.Open;
+import ai.grakn.generator.GraknTxs.Open;
 import ai.grakn.generator.Labels.Unused;
 import ai.grakn.generator.PutSchemaConceptFunctions;
 import ai.grakn.generator.PutTypeFunctions;

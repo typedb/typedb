@@ -28,7 +28,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
-import ai.grakn.generator.GraknGraphs.Open;
+import ai.grakn.generator.GraknTxs.Open;
 import ai.grakn.generator.Methods.MethodOf;
 import ai.grakn.util.ErrorMessage;
 import com.pholser.junit.quickcheck.Property;
@@ -43,7 +43,7 @@ import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
+import static ai.grakn.generator.GraknTxs.allConceptsFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
