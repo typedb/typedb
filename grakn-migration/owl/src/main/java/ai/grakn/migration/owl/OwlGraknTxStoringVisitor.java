@@ -77,14 +77,14 @@ import java.util.stream.Collectors;
  * @author borislav
  *
  */
-public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWLEntityVisitorEx<Concept> {
+public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWLEntityVisitorEx<Concept> {
     private final OWLMigrator migrator;
 
-    public OwlGraknGraphStoringVisitor(OWLMigrator migrator) {
+    public OwlGraknTxStoringVisitor(OWLMigrator migrator) {
         this.migrator = migrator;
     }
     
-    public OwlGraknGraphStoringVisitor prepareOWL() {
+    public OwlGraknTxStoringVisitor prepareOWL() {
         migrator.entityType(migrator.ontology().getOWLOntologyManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));
         migrator.relation(migrator.ontology().getOWLOntologyManager().getOWLDataFactory().getOWLObjectProperty(OwlModel.OBJECT_PROPERTY.owlname()))
           .relates(migrator.graph().putRole(OwlModel.OBJECT.owlname()))

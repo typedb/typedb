@@ -30,11 +30,11 @@ import java.util.stream.Stream;
 /**
  * Modifier that specifies the graph to execute the match query with.
  */
-class MatchQueryGraph extends MatchQueryModifier {
+class MatchQueryTx extends MatchQueryModifier {
 
     private final GraknTx graph;
 
-    MatchQueryGraph(GraknTx graph, AbstractMatchQuery inner) {
+    MatchQueryTx(GraknTx graph, AbstractMatchQuery inner) {
         super(inner);
         this.graph = graph;
     }
@@ -69,7 +69,7 @@ class MatchQueryGraph extends MatchQueryModifier {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        MatchQueryGraph maps = (MatchQueryGraph) o;
+        MatchQueryTx maps = (MatchQueryTx) o;
 
         return graph.equals(maps.graph);
     }

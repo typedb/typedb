@@ -46,7 +46,7 @@ import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
 import com.google.common.collect.ImmutableSet;
@@ -116,7 +116,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     ReasonerQueryImpl(Atom atom) {
-        this(Collections.singleton(atom), atom.getParentQuery().graph());
+        this(Collections.singleton(atom), atom.getParentQuery().tx());
     }
 
     @Override
@@ -175,7 +175,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public GraknTx graph() {
+    public GraknTx tx() {
         return graph;
     }
 
@@ -371,7 +371,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         getAtoms(IdPredicate.class).forEach(predicates::add);
 
         // the mapping function is declared separately to please the Eclipse compiler
-        Function<IdPredicate, Concept> f = p -> graph().getConcept(p.getPredicate());
+        Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
 
         return new QueryAnswer(predicates.stream()
                 .collect(Collectors.toMap(IdPredicate::getVarName, f))
@@ -550,7 +550,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
 
         return Sets.cartesianProduct(atomOptions).stream()
-                .map(atomList -> ReasonerQueries.create(new HashSet<>(atomList), graph()));
+                .map(atomList -> ReasonerQueries.create(new HashSet<>(atomList), tx()));
     }
 
     /**
@@ -560,8 +560,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public boolean requiresReiteration() {
 
-        Set<InferenceRule> dependentRules = RuleGraph.getDependentRules(this).collect(Collectors.toSet());
-        return RuleGraph.subGraphHasLoopsWithNegativeFlux(dependentRules, graph())
-                || RuleGraph.subGraphHasRulesWithHeadSatisfyingBody(dependentRules, graph());
+        Set<InferenceRule> dependentRules = RuleUtil.getDependentRules(this).collect(Collectors.toSet());
+        return RuleUtil.subGraphHasLoopsWithNegativeFlux(dependentRules, tx())
+                || RuleUtil.subGraphHasRulesWithHeadSatisfyingBody(dependentRules, tx());
     }
 }

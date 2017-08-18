@@ -56,14 +56,14 @@ public class ConjunctionQueryTest {
     private VarPattern resourceTypeWithoutSubTypes = Graql.label(resourceTypeWithoutSubTypesLabel);
     private VarPattern resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";
-    private GraknTx graph;
+    private GraknTx tx;
     private Var x = Graql.var("x");
     private Var y = Graql.var("y");
 
     @SuppressWarnings("ResultOfMethodCallIgnored") // Mockito confuses IntelliJ
     @Before
     public void setUp() {
-        graph = mock(GraknTx.class);
+        tx = mock(GraknTx.class);
 
         Type resourceTypeWithoutSubTypesMock = mock(Type.class);
         doAnswer((answer) -> Stream.of(resourceTypeWithoutSubTypesMock)).when(resourceTypeWithoutSubTypesMock).subs();
@@ -72,8 +72,8 @@ public class ConjunctionQueryTest {
         doAnswer((answer) -> Stream.of(resourceTypeWithoutSubTypesMock, resourceTypeWithSubTypesMock))
                 .when(resourceTypeWithSubTypesMock).subs();
 
-        when(graph.getSchemaConcept(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
-        when(graph.getSchemaConcept(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
+        when(tx.getSchemaConcept(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
+        when(tx.getSchemaConcept(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
     }
 
     @Test
@@ -159,7 +159,7 @@ public class ConjunctionQueryTest {
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
             Conjunction<VarPatternAdmin> conjunction = pattern.admin().getDisjunctiveNormalForm().getPatterns().iterator().next();
-            return new ConjunctionQuery(conjunction, graph).getEquivalentFragmentSets();
+            return new ConjunctionQuery(conjunction, tx).getEquivalentFragmentSets();
         });
     }
 }

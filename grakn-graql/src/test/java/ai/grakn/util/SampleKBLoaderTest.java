@@ -55,7 +55,7 @@ public class SampleKBLoaderTest {
     public void whenCreatingEmptyGraph_EnsureGraphIsEmpty(){
         SampleKBLoader loader = SampleKBLoader.empty();
 
-        try (GraknTx graph = loader.graph()){
+        try (GraknTx graph = loader.tx()){
             assertThat(graph.admin().getMetaEntityType().instances().collect(toSet()), is(empty()));
             assertThat(graph.admin().getMetaRelationType().instances().collect(toSet()), is(empty()));
             assertThat(graph.admin().getMetaRuleType().instances().collect(toSet()), is(empty()));
@@ -70,7 +70,7 @@ public class SampleKBLoaderTest {
 
         SampleKBLoader loader = SampleKBLoader.preLoad(preLoader);
 
-        try (GraknTx graph = loader.graph()){
+        try (GraknTx graph = loader.tx()){
             Set<Label> foundLabels = graph.admin().getMetaEntityType().subs().
                     map(Type::getLabel).collect(Collectors.toSet());
 
@@ -80,7 +80,7 @@ public class SampleKBLoaderTest {
 
     @Test
     public void whenBuildingGraph_EnsureBackendMatchesTheTestProfile(){
-        try(GraknTx graph = SampleKBLoader.empty().graph()){
+        try(GraknTx graph = SampleKBLoader.empty().tx()){
             //String comparison is used here because we do not have the class available at compile time
             if(GraknTestSetup.usingTinker()){
                 assertEquals(GraknTxTinker.class.getSimpleName(), graph.getClass().getSimpleName());
@@ -117,7 +117,7 @@ public class SampleKBLoaderTest {
         SampleKBLoader loader = SampleKBLoader.preLoad(files);
 
         //Check the data is there
-        try (GraknTx graph = loader.graph()){
+        try (GraknTx graph = loader.tx()){
             for (String typeName : typeNames) {
                 assertNotNull(graph.getEntityType(typeName));
             }

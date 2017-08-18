@@ -36,7 +36,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  *
  * @author Felix Chapman
  */
-public class Labels extends FromGraphGenerator<Label> {
+public class Labels extends FromTxGenerator<Label> {
 
     private boolean mustBeUnused = false;
 
@@ -59,7 +59,7 @@ public class Labels extends FromGraphGenerator<Label> {
                     label = trueRandomLabel();
                 }
                 attempts += 1;
-            } while (graph().getSchemaConcept(label) != null);
+            } while (tx().getSchemaConcept(label) != null);
 
             return label;
         } else {

@@ -96,19 +96,19 @@ public class JsonPrinterTest {
 
     @Test
     public void testJsonMetaType() {
-        ConceptId id = movieContext.graph().admin().getMetaEntityType().getId();
-        assertJsonEquals(Json.object("id", id.getValue(), "name", "entity", "sub", Schema.MetaSchema.THING.getLabel().getValue()), movieContext.graph().admin().getMetaEntityType());
+        ConceptId id = movieContext.tx().admin().getMetaEntityType().getId();
+        assertJsonEquals(Json.object("id", id.getValue(), "name", "entity", "sub", Schema.MetaSchema.THING.getLabel().getValue()), movieContext.tx().admin().getMetaEntityType());
     }
 
     @Test
     public void testJsonEntityType() {
-        ConceptId id = movieContext.graph().getEntityType("movie").getId();
-        assertJsonEquals(Json.object("id", id.getValue(), "name", "movie", "sub", "production"), movieContext.graph().getEntityType("movie"));
+        ConceptId id = movieContext.tx().getEntityType("movie").getId();
+        assertJsonEquals(Json.object("id", id.getValue(), "name", "movie", "sub", "production"), movieContext.tx().getEntityType("movie"));
     }
 
     @Test
     public void testJsonResource() {
-        AttributeType<String> attributeType = movieContext.graph().getAttributeType("title");
+        AttributeType<String> attributeType = movieContext.tx().getAttributeType("title");
         Attribute<String> attribute = attributeType.getAttribute("The Muppets");
 
         assertJsonEquals(
@@ -119,7 +119,7 @@ public class JsonPrinterTest {
 
     @Test
     public void testJsonRule() {
-        Rule jsonRule = movieContext.graph().getAttributeType("name").getAttribute("expectation-rule").owner().asRule();
+        Rule jsonRule = movieContext.tx().getAttributeType("name").getAttribute("expectation-rule").owner().asRule();
         assertJsonEquals(
                 Json.object("id", jsonRule.getId().getValue(), "isa", "a-rule-type", "when", jsonRule.getWhen().toString(), "then", jsonRule.getThen().toString()),
                 jsonRule
@@ -128,8 +128,8 @@ public class JsonPrinterTest {
 
     @Test
     public void whenPrintingRole_PrintWithLabel() {
-        ConceptId id = movieContext.graph().getRole("actor").getId();
-        assertJsonEquals(Json.object("id", id.getValue(), "name", "actor", "sub", "role"), movieContext.graph().getRole("actor"));
+        ConceptId id = movieContext.tx().getRole("actor").getId();
+        assertJsonEquals(Json.object("id", id.getValue(), "name", "actor", "sub", "role"), movieContext.tx().getRole("actor"));
     }
 
     private void assertJsonEquals(Json expected, Object object) {

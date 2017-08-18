@@ -49,6 +49,6 @@ public class HasAttributePropertyTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.mustBeResourceType(label).getMessage());
 
-        property.checkValidProperty(graph.graph(), var("y").admin());
+        property.checkValidProperty(graph.tx(), var("y").admin());
     }
 }

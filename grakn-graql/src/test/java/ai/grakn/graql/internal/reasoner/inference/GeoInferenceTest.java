@@ -50,7 +50,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testEntitiesLocatedInThemselves(){
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder iqb = geoGraph.tx().graql().infer(true);
         String queryString = "match (geo-entity: $x, entity-location: $x) isa is-located-in;";
 
         MatchQuery query = iqb.materialise(false).parse(queryString);
@@ -60,8 +60,8 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveQueryWithTypes() {
-        QueryBuilder qb = geoGraph.graph().graql().infer(false);
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder qb = geoGraph.tx().graql().infer(false);
+        QueryBuilder iqb = geoGraph.tx().graql().infer(true);
         String queryString = "match $x isa city;"+
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                         "$y isa country;$y has name 'Poland'; select $x;";
@@ -75,8 +75,8 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveQueryWithTypes_NoRoles() {
-        QueryBuilder qb = geoGraph.graph().graql().infer(false);
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder qb = geoGraph.tx().graql().infer(false);
+        QueryBuilder iqb = geoGraph.tx().graql().infer(true);
         String queryString = "match " +
                 "$z1 isa city;$z1 has name $name;" +
                 "($z1, $z2) isa is-located-in;" +
@@ -105,8 +105,8 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveQueryWithTypes2() {
-        QueryBuilder qb = geoGraph.graph().graql().infer(false);
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder qb = geoGraph.tx().graql().infer(false);
+        QueryBuilder iqb = geoGraph.tx().graql().infer(true);
         String queryString = "match " +
                 "$x isa university;$x has name $name;"+
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
@@ -126,8 +126,8 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveQueryWithTypes2_NoRoles() {
-        QueryBuilder qb = geoGraph.graph().graql().infer(false);
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder qb = geoGraph.tx().graql().infer(false);
+        QueryBuilder iqb = geoGraph.tx().graql().infer(true);
         String queryString = "match " +
                 "$z1 isa university;$z1 has name $name;"+
                 "($z1, $z2) isa is-located-in;" +
@@ -152,7 +152,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testSpecificTransitiveQuery() {
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoGraph.tx();
         QueryBuilder iqb = graph.graql().infer(true);
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$y has name 'Poland';";
@@ -176,7 +176,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testSpecificTransitiveQueryWithIds() {
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoGraph.tx();
         QueryBuilder iqb = graph.graql().infer(true);
         Concept poland = getConcept(graph, "name", "Poland");
         Concept europe = getConcept(graph, "name", "Europe");
@@ -202,7 +202,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testSpecificTransitiveQuery_NoRoles() {
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoGraph.tx();
         QueryBuilder iqb = graph.graql().infer(true);
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
@@ -223,7 +223,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testSpecificTransitiveQueryWithIds_NoRoles() {
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoGraph.tx();
         QueryBuilder iqb = graph.graql().infer(true);
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
@@ -245,7 +245,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveClosureQuery() {
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder iqb = geoGraph.tx().graql().infer(true);
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
@@ -256,7 +256,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveClosureQuery_NoRoles() {
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder iqb = geoGraph.tx().graql().infer(true);
         String queryString = "match ($x, $y) isa is-located-in;";
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
@@ -267,7 +267,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveClosureQueryWithRelationVar() {
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder iqb = geoGraph.tx().graql().infer(true);
         String queryString = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in;";
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
@@ -278,7 +278,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testRelationVarQuery_WithAndWithoutRelationPlayers() {
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder iqb = geoGraph.tx().graql().infer(true);
         String queryString = "match $x isa is-located-in;";
         String queryString2 = "match $x ($x1, $x2) isa is-located-in;select $x;";
 
@@ -294,7 +294,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testLazy() {
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder iqb = geoGraph.tx().graql().infer(true);
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; limit 1;";
         String queryString2 = "match (geo-entity: $x, entity-location: $y) isa is-located-in; limit 22;";
         String queryString3 = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";

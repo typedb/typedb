@@ -57,7 +57,7 @@ public class ShortcutFragmentSetTest {
                 authorLabelFragmentSet
         );
 
-        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
+        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.tx());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
                 new ShortcutFragmentSet(null, a, b, c, Optional.empty(), Optional.of(ImmutableSet.of(author, director)), Optional.empty()),
@@ -78,7 +78,7 @@ public class ShortcutFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
+        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.tx());
 
         assertEquals(expected, fragmentSets);
     }
@@ -94,7 +94,7 @@ public class ShortcutFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
+        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.tx());
 
         assertEquals(expected, fragmentSets);
     }
@@ -109,7 +109,7 @@ public class ShortcutFragmentSetTest {
                 authorLabelFragmentSet
         );
 
-        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
+        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.tx());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
                 new ShortcutFragmentSet(null, a, b, c, Optional.empty(), Optional.empty(), Optional.empty()),
@@ -131,7 +131,7 @@ public class ShortcutFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        ShortcutFragmentSet.applyShortcutRelationTypeOptimisation(fragmentSets, graph.graph());
+        ShortcutFragmentSet.applyShortcutRelationTypeOptimisation(fragmentSets, graph.tx());
 
         assertEquals(expected, fragmentSets);
     }
@@ -148,7 +148,7 @@ public class ShortcutFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        ShortcutFragmentSet.applyShortcutRelationTypeOptimisation(fragmentSets, graph.graph());
+        ShortcutFragmentSet.applyShortcutRelationTypeOptimisation(fragmentSets, graph.tx());
 
         assertEquals(expected, fragmentSets);
     }

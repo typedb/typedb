@@ -22,7 +22,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
-import ai.grakn.generator.FromGraphGenerator.FromGraph;
+import ai.grakn.generator.FromTxGenerator.FromGraph;
 import ai.grakn.generator.GraknTxs;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;

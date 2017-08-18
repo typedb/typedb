@@ -27,7 +27,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
-import ai.grakn.generator.FromGraphGenerator.FromGraph;
+import ai.grakn.generator.FromTxGenerator.FromGraph;
 import ai.grakn.generator.GraknTxs.Open;
 import ai.grakn.generator.Methods.MethodOf;
 import ai.grakn.util.ErrorMessage;

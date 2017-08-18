@@ -81,7 +81,7 @@ public abstract class Binary extends Atom {
     @Override
     public SchemaConcept getSchemaConcept(){
         if (type == null && typeId != null) {
-            type = getParentQuery().graph().getConcept(typeId).asType();
+            type = getParentQuery().tx().getConcept(typeId).asType();
         }
         return type;
     }

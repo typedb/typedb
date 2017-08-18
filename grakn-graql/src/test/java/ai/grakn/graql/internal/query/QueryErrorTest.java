@@ -61,7 +61,7 @@ public class QueryErrorTest {
 
     @Before
     public void setUp() {
-        qb = rule.graph().graql();
+        qb = rule.tx().graql();
     }
 
     @Test
@@ -149,7 +149,7 @@ public class QueryErrorTest {
     @Test
     public void testExceptionWhenNoHasResourceRelation() throws InvalidKBException {
         // Create a fresh graph, with no has between person and name
-        QueryBuilder emptyQb = empty.graph().graql();
+        QueryBuilder emptyQb = empty.tx().graql();
         emptyQb.insert(
                 label("person").sub("entity"),
                 label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
@@ -207,8 +207,8 @@ public class QueryErrorTest {
 
     @Test
     public void whenTryingToSetExistingInstanceType_Throw() {
-        Thing movie = rule.graph().getEntityType("movie").instances().iterator().next();
-        Type person = rule.graph().getEntityType("person");
+        Thing movie = rule.tx().getEntityType("movie").instances().iterator().next();
+        Type person = rule.tx().getEntityType("person");
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("person"));

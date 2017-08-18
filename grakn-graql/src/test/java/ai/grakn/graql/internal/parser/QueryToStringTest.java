@@ -48,7 +48,7 @@ public class QueryToStringTest {
 
     @Before
     public void setUp() {
-        qb = rule.graph().graql();
+        qb = rule.tx().graql();
     }
 
     @Test

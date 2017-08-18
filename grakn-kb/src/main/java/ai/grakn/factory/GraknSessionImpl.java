@@ -48,7 +48,7 @@ import static mjson.Json.read;
  *
  * <p>
  *     This class facilitates the construction of {@link GraknTx} by determining which factory should be built.
- *     It does this by either defaulting to an in memory graph {@link GraknTxTinker} or by
+ *     It does this by either defaulting to an in memory tx {@link GraknTxTinker} or by
  *     retrieving the factory definition from engine.
  *
  *     The deployment of engine decides on the backend and this class will handle producing the correct graphs.
@@ -61,9 +61,9 @@ public class GraknSessionImpl implements GraknSession {
     private final String location;
     private final String keyspace;
 
-    //References so we don't have to open a graph just to check the count of the transactions
-    private GraknTxAbstract<?> graph = null;
-    private GraknTxAbstract<?> graphBatch = null;
+    //References so we don't have to open a tx just to check the count of the transactions
+    private GraknTxAbstract<?> tx = null;
+    private GraknTxAbstract<?> txBatch = null;
 
     //This constructor must remain public because it is accessed via reflection
     public GraknSessionImpl(String keyspace, String location){
@@ -77,11 +77,11 @@ public class GraknSessionImpl implements GraknSession {
         switch (transactionType){
             case READ:
             case WRITE:
-                graph = factory.open(transactionType);
-                return graph;
+                tx = factory.open(transactionType);
+                return tx;
             case BATCH:
-                graphBatch = factory.open(transactionType);
-                return graphBatch;
+                txBatch = factory.open(transactionType);
+                return txBatch;
             default:
                 throw GraknTxOperationException.transactionInvalid(transactionType);
         }
@@ -92,7 +92,7 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     /**
-     * @return A new or existing grakn graph compute with the defined name
+     * @return A new or existing grakn tx compute with the defined name
      */
     @Override
     public GraknComputer getGraphComputer() {
@@ -103,14 +103,14 @@ public class GraknSessionImpl implements GraknSession {
 
     @Override
     public void close() throws GraknTxOperationException {
-        int openTransactions = openTransactions(graph) + openTransactions(graphBatch);
+        int openTransactions = openTransactions(tx) + openTransactions(txBatch);
         if(openTransactions > 0){
             LOG.warn(ErrorMessage.TRANSACTIONS_OPEN.getMessage(this.keyspace, openTransactions));
         }
 
-        //Close the main graph connections
-        if(graph != null) graph.admin().closeSession();
-        if(graphBatch != null) graphBatch.admin().closeSession();
+        //Close the main tx connections
+        if(tx != null) tx.admin().closeSession();
+        if(txBatch != null) txBatch.admin().closeSession();
     }
 
     private int openTransactions(GraknTxAbstract<?> graph){
@@ -119,10 +119,10 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     /**
-     * @param keyspace The keyspace of the graph
-     * @param location The of where the graph is stored
-     * @param graphType The type of graph to produce, default, batch, or compute
-     * @return A new or existing grakn graph factory with the defined name connecting to the specified remote location
+     * @param keyspace The keyspace of the tx
+     * @param location The of where the tx is stored
+     * @param graphType The type of tx to produce, default, batch, or compute
+     * @return A new or existing grakn tx factory with the defined name connecting to the specified remote location
      */
     static TxFactory<?> configureGraphFactory(String keyspace, String location, String graphType){
         if(Grakn.IN_MEMORY.equals(location)){
@@ -134,10 +134,10 @@ public class GraknSessionImpl implements GraknSession {
 
     /**
      *
-     * @param keyspace The keyspace of the graph
-     * @param engineUrl The url of engine to get the graph factory config from
-     * @param graphType The type of graph to produce, default, batch, or compute
-     * @return A new or existing grakn graph factory with the defined name connecting to the specified remote location
+     * @param keyspace The keyspace of the tx
+     * @param engineUrl The url of engine to get the tx factory config from
+     * @param graphType The type of tx to produce, default, batch, or compute
+     * @return A new or existing grakn tx factory with the defined name connecting to the specified remote location
      */
     private static TxFactory<?> configureGraphFactoryRemote(String keyspace, String engineUrl, String graphType){
         String restFactoryUri = engineUrl + INITIALISE + "?" + GRAPH_CONFIG_PARAM + "=" + graphType + "&" + KEYSPACE_PARAM + "=" + keyspace;
@@ -150,8 +150,8 @@ public class GraknSessionImpl implements GraknSession {
 
     /**
      *
-     * @param keyspace The keyspace of the graph
-     * @return  A new or existing grakn graph factory with the defined name holding the graph in memory
+     * @param keyspace The keyspace of the tx
+     * @return  A new or existing grakn tx factory with the defined name holding the tx in memory
      */
     private static TxFactory<?> configureGraphFactoryInMemory(String keyspace){
         Properties inMemoryProperties = new Properties();

@@ -43,7 +43,7 @@ public class BenchmarkTests {
 
     @Before
     public void setUpGraph(){
-        graphContext.graph().close();
+        graphContext.tx().close();
     }
 
     /**
@@ -84,7 +84,7 @@ public class BenchmarkTests {
         graphContext.load(MatrixKBII.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknTx graph = graphContext.graph();
+        GraknTx graph = graphContext.tx();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         String queryString = "match (P-from: $x, P-to: $y) isa P;";
@@ -123,7 +123,7 @@ public class BenchmarkTests {
         graphContext.load(TransitivityChainKB.get(N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknTx graph = graphContext.graph();
+        GraknTx graph = graphContext.tx();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
 
@@ -190,7 +190,7 @@ public class BenchmarkTests {
         graphContext.load(TransitivityMatrixKB.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknTx graph = graphContext.graph();
+        GraknTx graph = graphContext.tx();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
 
@@ -262,7 +262,7 @@ public class BenchmarkTests {
         graphContext.load(DiagonalKB.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknTx graph = graphContext.graph();
+        GraknTx graph = graphContext.tx();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal;";

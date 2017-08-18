@@ -50,7 +50,7 @@ public class GraqlControllerTest {
                                boolean materialise,
                                int limitEmbedded) {
         return RestAssured.with()
-            .queryParam(KEYSPACE, graphContext.graph().getKeyspace())
+            .queryParam(KEYSPACE, graphContext.tx().getKeyspace())
             .body(query)
             .queryParam(INFER, reasonser)
             .queryParam(MATERIALISE, materialise)
@@ -72,7 +72,7 @@ public class GraqlControllerTest {
     public void setUp() {
         jsonPrinter = Printers.json();
         graqlPrinter = Printers.graql(false);
-        halPrinter = Printers.hal(graphContext.graph().getKeyspace(), -1);
+        halPrinter = Printers.hal(graphContext.tx().getKeyspace(), -1);
     }
 
     @Test
@@ -99,7 +99,7 @@ public class GraqlControllerTest {
         } finally {
             ConceptId id = ConceptId.of(resp.jsonPath().getList("x.id").get(0).toString());
             graphContext.rollback();
-            graphContext.graph().graql().match(var("x").id(id)).delete("x").execute();
+            graphContext.tx().graql().match(var("x").id(id)).delete("x").execute();
         }
     }
 
@@ -163,7 +163,7 @@ public class GraqlControllerTest {
         String queryString = "match $x isa movie;";
         int limitEmbedded = 42;
         Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded);
-        Printer printer = Printers.hal(graphContext.graph().getKeyspace(), limitEmbedded);
+        Printer printer = Printers.hal(graphContext.tx().getKeyspace(), limitEmbedded);
         assertResponseSameAsJavaGraql(resp, queryString, printer, APPLICATION_HAL);
     }
 
@@ -186,7 +186,7 @@ public class GraqlControllerTest {
         resp.then().statusCode(200);
 
         graphContext.rollback();
-        Query<?> query = graphContext.graph().graql().parse(queryString);
+        Query<?> query = graphContext.tx().graql().parse(queryString);
 
         String expectedString = printer.graqlString(query.execute());
 

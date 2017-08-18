@@ -44,8 +44,8 @@ public class WineInferenceTest {
     @Test
     public void testRecommendation() {
         String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;$y has name $nameW;";
-        QueryBuilder qb = wineGraph.graph().graql().infer(false);
-        QueryBuilder iqb = wineGraph.graph().graql().infer(true);
+        QueryBuilder qb = wineGraph.tx().graql().infer(false);
+        QueryBuilder iqb = wineGraph.tx().graql().infer(true);
 
         String explicitQuery = "match $x isa person, has name $nameP;$y isa wine, has name $nameW;" +
                             "{$nameP val 'Bob';$nameW val 'White Champagne';} or" +

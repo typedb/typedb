@@ -38,16 +38,16 @@ public class RuleTypes extends AbstractTypeGenerator<RuleType> {
 
     @Override
     protected RuleType newSchemaConcept(Label label) {
-        return graph().putRuleType(label);
+        return tx().putRuleType(label);
     }
 
     @Override
     protected RuleType metaSchemaConcept() {
-        return graph().admin().getMetaRuleType();
+        return tx().admin().getMetaRuleType();
     }
 
     @Override
     protected Collection<RuleType> otherMetaSchemaConcepts() {
-        return ImmutableSet.of(graph().admin().getMetaRuleInference(), graph().admin().getMetaRuleConstraint());
+        return ImmutableSet.of(tx().admin().getMetaRuleInference(), tx().admin().getMetaRuleConstraint());
     }
 }

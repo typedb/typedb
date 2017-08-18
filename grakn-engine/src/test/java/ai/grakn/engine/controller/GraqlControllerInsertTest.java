@@ -76,7 +76,7 @@ public class GraqlControllerInsertTest {
         when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.parse(any()))
-                .thenAnswer(invocation -> graphContext.graph().graql().parse(invocation.getArgument(0)));
+                .thenAnswer(invocation -> graphContext.tx().graql().parse(invocation.getArgument(0)));
 
         mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
@@ -89,20 +89,20 @@ public class GraqlControllerInsertTest {
     @Test
     public void POSTGraqlInsert_InsertWasExecutedOnGraph(){
         doAnswer(answer -> {
-            graphContext.graph().commit();
+            graphContext.tx().commit();
             return null;
         }).when(mockGraph).commit();
 
         String query = "insert $x isa movie;";
 
-        long genreCountBefore = graphContext.graph().getEntityType("movie").instances().count();
+        long genreCountBefore = graphContext.tx().getEntityType("movie").instances().count();
 
         sendRequest(query);
 
         // refresh graph
-        graphContext.graph().close();
+        graphContext.tx().close();
 
-        long genreCountAfter = graphContext.graph().getEntityType("movie").instances().count();
+        long genreCountAfter = graphContext.tx().getEntityType("movie").instances().count();
 
         assertEquals(genreCountBefore + 1, genreCountAfter);
     }

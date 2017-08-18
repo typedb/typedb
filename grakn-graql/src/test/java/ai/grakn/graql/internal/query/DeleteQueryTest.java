@@ -70,7 +70,7 @@ public class DeleteQueryTest {
 
     @Before
     public void setUp() {
-        qb = movieGraph.graph().graql();
+        qb = movieGraph.tx().graql();
 
         kurtz = qb.match(x.has("name", "Colonel Walter E. Kurtz"));
         marlonBrando = qb.match(x.has("name", "Marlon Brando"));
@@ -264,17 +264,17 @@ public class DeleteQueryTest {
     public void testDeleteEntityTypeAfterInstances() {
         MatchQuery movie = qb.match(x.isa("movie"));
 
-        assertNotNull(movieGraph.graph().getEntityType("movie"));
+        assertNotNull(movieGraph.tx().getEntityType("movie"));
         assertExists(movie);
 
         movie.delete(x).execute();
 
-        assertNotNull(movieGraph.graph().getEntityType("movie"));
+        assertNotNull(movieGraph.tx().getEntityType("movie"));
         assertNotExists(movie);
 
         qb.match(x.label("movie").sub("entity")).delete(x).execute();
 
-        assertNull(movieGraph.graph().getEntityType("movie"));
+        assertNull(movieGraph.tx().getEntityType("movie"));
     }
 
     @Test
@@ -328,24 +328,24 @@ public class DeleteQueryTest {
     public void whenDeletingAVariableNotInTheQuery_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y));
-        movieGraph.graph().graql().match(x.isa("movie")).delete(y).execute();
+        movieGraph.tx().graql().match(x.isa("movie")).delete(y).execute();
     }
 
     @Test
     public void whenDeletingAnEmptyPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
-        movieGraph.graph().graql().match(var()).delete(Collections.EMPTY_SET).execute();
+        movieGraph.tx().graql().match(var()).delete(Collections.EMPTY_SET).execute();
     }
 
     @Test(expected = Exception.class)
     public void deleteVarNameNullSet() {
-        movieGraph.graph().graql().match(var()).delete((Set<VarPattern>) null).execute();
+        movieGraph.tx().graql().match(var()).delete((Set<VarPattern>) null).execute();
     }
 
     @Test(expected = Exception.class)
     public void whenDeleteIsPassedNull_Throw() {
-        movieGraph.graph().graql().match(var()).delete((String) null).execute();
+        movieGraph.tx().graql().match(var()).delete((String) null).execute();
     }
 
 }

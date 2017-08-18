@@ -55,7 +55,7 @@ public class AdminTest {
 
     @Before
     public void setUp() {
-        qb = rule.graph().graql();
+        qb = rule.tx().graql();
     }
 
     @Test
@@ -68,7 +68,7 @@ public class AdminTest {
 
         Set<SchemaConcept> types = Stream.of(
                 "movie", "production", "tmdb-vote-count", "character", "production-with-cast", "has-cast"
-        ).map(t -> rule.graph().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
+        ).map(t -> rule.tx().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
 
         assertEquals(types, query.admin().getSchemaConcepts());
     }
@@ -142,7 +142,7 @@ public class AdminTest {
     @Test
     public void testInsertQueryGetTypes() {
         InsertQuery query = qb.insert(var("x").isa("person").has("name", var("y")), var().rel("actor", "x").isa("has-cast"));
-        Set<SchemaConcept> types = Stream.of("person", "name", "actor", "has-cast").map(t -> rule.graph().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
+        Set<SchemaConcept> types = Stream.of("person", "name", "actor", "has-cast").map(t -> rule.tx().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
         assertEquals(types, query.admin().getSchemaConcepts());
     }
 
@@ -152,7 +152,7 @@ public class AdminTest {
                         .insert(var("x").isa("person").has("name", var("z")), var().rel("actor", "x").isa("has-cast"));
 
         Set<SchemaConcept> types =
-                Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.graph().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
+                Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.tx().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
 
         assertEquals(types, query.admin().getSchemaConcepts());
     }

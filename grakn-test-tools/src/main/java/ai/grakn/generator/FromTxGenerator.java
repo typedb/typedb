@@ -33,37 +33,37 @@ import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Generator for creating things using an existing graph.
+ * Generator for creating things using an existing tx.
  *
  * @param <T> the type of thing to generate
  *
  * @author Felix Chapman
  */
-public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
-    private Supplier<GraknTx> graphSupplier =
+public abstract class FromTxGenerator<T> extends AbstractGenerator<T> {
+    private Supplier<GraknTx> txSupplier =
             () -> gen().make(GraknTxs.class).setOpen(true).generate(random, status);
 
-    private GraknTx graph;
+    private GraknTx tx;
 
-    FromGraphGenerator(Class<T> type) {
+    FromTxGenerator(Class<T> type) {
         super(type);
     }
 
-    protected final GraknTx graph() {
-        return graph;
+    protected final GraknTx tx() {
+        return tx;
     }
 
     @Override
     protected final T generate() {
-        graph = graphSupplier.get();
+        tx = txSupplier.get();
         return generateFromGraph();
     }
 
     protected abstract T generateFromGraph();
 
-    protected final <S extends FromGraphGenerator<?>> S genFromGraph(Class<S> generatorClass) {
+    protected final <S extends FromTxGenerator<?>> S genFromGraph(Class<S> generatorClass) {
         S generator = gen().make(generatorClass);
-        generator.fromGraph(this::graph);
+        generator.fromGraph(this::tx);
         return generator;
     }
 
@@ -71,18 +71,18 @@ public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
         fromLastGeneratedGraph();
     }
 
-    final FromGraphGenerator<T> fromGraph(Supplier<GraknTx> graphSupplier) {
-        this.graphSupplier = graphSupplier;
+    final FromTxGenerator<T> fromGraph(Supplier<GraknTx> graphSupplier) {
+        this.txSupplier = graphSupplier;
         return this;
     }
 
-    final FromGraphGenerator<T> fromLastGeneratedGraph() {
+    final FromTxGenerator<T> fromLastGeneratedGraph() {
         fromGraph(GraknTxs::lastGeneratedGraph);
         return this;
     }
 
     /**
-     * Specify that the generated objects should be from the graph generated in a previous parameter
+     * Specify that the generated objects should be from the tx generated in a previous parameter
      */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)

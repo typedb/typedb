@@ -35,7 +35,7 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public class RelationsFromRolePlayers extends FromGraphGenerator<Relationship> {
+public class RelationsFromRolePlayers extends FromTxGenerator<Relationship> {
 
     public RelationsFromRolePlayers() {
         super(Relationship.class);
@@ -43,7 +43,7 @@ public class RelationsFromRolePlayers extends FromGraphGenerator<Relationship> {
 
     @Override
     protected Relationship generateFromGraph() {
-        Stream<? extends Thing> things = ((Type) graph().admin().getMetaConcept()).instances();
+        Stream<? extends Thing> things = ((Type) tx().admin().getMetaConcept()).instances();
 
         Optional<Relationship> relation = things.flatMap(thing -> thing.relationships()).findAny();
 

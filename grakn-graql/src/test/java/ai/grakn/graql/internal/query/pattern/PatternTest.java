@@ -47,7 +47,7 @@ import static org.junit.Assert.assertTrue;
 
 public class PatternTest {
 
-    private GraknTx graph = rule.graph();
+    private GraknTx graph = rule.tx();
 
     @ClassRule
     public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());

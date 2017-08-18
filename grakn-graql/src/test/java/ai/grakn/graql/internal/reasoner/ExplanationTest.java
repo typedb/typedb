@@ -68,7 +68,7 @@ public class ExplanationTest {
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(GraknTestSetup.usingTinker());
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoGraph.tx();
         iqb = graph.graql().infer(true).materialise(false);
         polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
         uw = getConcept(graph, "name", "University-of-Warsaw");
@@ -214,7 +214,7 @@ public class ExplanationTest {
 
     @Test
     public void testExplainingQueryContainingContradiction2(){
-        GraknTx expGraph = explanationGraph.graph();
+        GraknTx expGraph = explanationGraph.tx();
         QueryBuilder eiqb = expGraph.graql().infer(true);
 
         Concept a1 = getConcept(expGraph, "name", "a1");
@@ -231,7 +231,7 @@ public class ExplanationTest {
 
     @Test
     public void testExplainingConjunctions(){
-        GraknTx expGraph = explanationGraph.graph();
+        GraknTx expGraph = explanationGraph.tx();
         QueryBuilder eiqb = expGraph.graql().infer(true);
 
         String queryString = "match " +

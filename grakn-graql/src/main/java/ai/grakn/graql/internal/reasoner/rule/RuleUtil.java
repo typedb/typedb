@@ -44,7 +44,7 @@ import static ai.grakn.graql.Graql.var;
  * @author Kasper Piskorski
  *
  */
-public class RuleGraph {
+public class RuleUtil {
 
     /**
      * @return set of inference rule contained in the graph

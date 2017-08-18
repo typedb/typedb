@@ -36,10 +36,10 @@ public class KBWriter {
 
     private static final String EOL = ";\n";
 
-    private final GraknTx graph;
+    private final GraknTx tx;
 
-    public KBWriter(GraknTx graph){
-        this.graph = graph;
+    public KBWriter(GraknTx tx){
+        this.tx = tx;
     }
 
     /**
@@ -80,7 +80,7 @@ public class KBWriter {
      * @return a stream of all types with non-reserved IDs
      */
     private Stream<? extends SchemaConcept> types(){
-        return Stream.concat(graph.admin().getMetaConcept().subs(), graph.admin().getMetaRole().subs()).
+        return Stream.concat(tx.admin().getMetaConcept().subs(), tx.admin().getMetaRole().subs()).
                 filter(t -> !Schema.MetaSchema.isMetaLabel(t.getLabel()));
     }
 }

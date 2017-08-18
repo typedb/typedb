@@ -54,8 +54,8 @@ public class GenealogyTest {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        qb = genealogyGraph.graph().graql().infer(false);
-        iqb = genealogyGraph.graph().graql().infer(true).materialise(true);
+        qb = genealogyGraph.tx().graql().infer(false);
+        iqb = genealogyGraph.tx().graql().infer(true).materialise(true);
     }
 
     /*
@@ -83,7 +83,7 @@ public class GenealogyTest {
 
     @Test
     public void testSpecificPerson(){
-        Concept concept = Sets.newHashSet(genealogyGraph.graph().graql().infer(false).<MatchQuery>parse("match $x isa person;"))
+        Concept concept = Sets.newHashSet(genealogyGraph.tx().graql().infer(false).<MatchQuery>parse("match $x isa person;"))
                 .iterator().next()
                 .entrySet().iterator().next().getValue();
         String queryString = "match $x id '" + concept.getId() + "' has gender $g;";
@@ -462,7 +462,7 @@ public class GenealogyTest {
         String queryString = "match (father: $x) isa parentship; $x has gender $g; $g val 'female';";
         MatchQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
-        QueryAnswers answers2 =  queryAnswers(genealogyGraph.graph().graql().infer(true).materialise(true).parse(queryString));
+        QueryAnswers answers2 =  queryAnswers(genealogyGraph.tx().graql().infer(true).materialise(true).parse(queryString));
         assertTrue(answers.isEmpty());
         assertEquals(answers, answers2);
     }

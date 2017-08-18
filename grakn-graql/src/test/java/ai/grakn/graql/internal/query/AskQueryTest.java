@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 public class AskQueryTest {
 
     @ClassRule
-    public static final SampleKBContext graph = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -45,7 +45,7 @@ public class AskQueryTest {
 
     @Before
     public void setUp() {
-        qb = graph.graph().graql();
+        qb = sampleKB.tx().graql();
     }
 
     @Test

@@ -38,8 +38,8 @@ public class MatchQueryKBTest {
     public void matchQueriesContainingTheSameGraphAndMatchQueryBaseAreEqual() {
         GraknTx graph = mock(GraknTx.class);
 
-        MatchQueryGraph query1 = new MatchQueryGraph(graph, query);
-        MatchQueryGraph query2 = new MatchQueryGraph(graph, query);
+        MatchQueryTx query1 = new MatchQueryTx(graph, query);
+        MatchQueryTx query2 = new MatchQueryTx(graph, query);
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -50,8 +50,8 @@ public class MatchQueryKBTest {
         GraknTx graph1 = mock(GraknTx.class);
         GraknTx graph2 = mock(GraknTx.class);
 
-        MatchQueryGraph query1 = new MatchQueryGraph(graph1, query);
-        MatchQueryGraph query2 = new MatchQueryGraph(graph2, query);
+        MatchQueryTx query1 = new MatchQueryTx(graph1, query);
+        MatchQueryTx query2 = new MatchQueryTx(graph2, query);
 
         assertNotEquals(query1, query2);
     }

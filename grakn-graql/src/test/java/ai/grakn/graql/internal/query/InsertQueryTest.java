@@ -103,7 +103,7 @@ public class InsertQueryTest {
 
     @Before
     public void setUp() {
-        qb = movieGraph.graph().graql();
+        qb = movieGraph.tx().graql();
     }
 
     @After
@@ -418,7 +418,7 @@ public class InsertQueryTest {
         //noinspection OptionalGetWithoutIsPresent
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
-        assertTrue(newType.plays().anyMatch(role -> role.equals(movieGraph.graph().getRole(roleTypeLabel))));
+        assertTrue(newType.plays().anyMatch(role -> role.equals(movieGraph.tx().getRole(roleTypeLabel))));
 
         assertExists(qb, var().isa("new-type"));
     }
@@ -436,7 +436,7 @@ public class InsertQueryTest {
         VarPattern vars = var("x").isa(ruleTypeId).when(when).then(then);
         qb.insert(vars).execute();
 
-        RuleType ruleType = movieGraph.graph().getRuleType(ruleTypeId);
+        RuleType ruleType = movieGraph.tx().getRuleType(ruleTypeId);
         boolean found = ruleType.instances().
                 anyMatch(rule -> when.equals(rule.getWhen()) && then.equals(rule.getThen()));
 
@@ -544,7 +544,7 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(InvalidKBException.class);
-        movieGraph.graph().commit();
+        movieGraph.tx().commit();
     }
 
     @Ignore // TODO: Un-ignore this when constraints are designed and implemented
@@ -560,7 +560,7 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(InvalidKBException.class);
-        movieGraph.graph().commit();
+        movieGraph.tx().commit();
     }
 
     @Test
@@ -574,7 +574,7 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(InvalidKBException.class);
-        movieGraph.graph().commit();
+        movieGraph.tx().commit();
     }
 
     @Test
@@ -602,8 +602,8 @@ public class InsertQueryTest {
 
     @Test
     public void whenChangingTheSuperOfAnExistingConcept_ApplyTheChange() {
-        EntityType newType = movieGraph.graph().putEntityType("a-new-type");
-        EntityType movie = movieGraph.graph().getEntityType("movie");
+        EntityType newType = movieGraph.tx().putEntityType("a-new-type");
+        EntityType movie = movieGraph.tx().getEntityType("movie");
 
         qb.match(var("x").label("a-new-type")).insert(var("x").sub("movie")).execute();
         
@@ -781,8 +781,8 @@ public class InsertQueryTest {
         Thing muppets = results.get(0).get("m").asThing();
         Relationship relationship = results.get(0).get("r").asRelationship();
 
-        Role clusterOfProduction = movieGraph.graph().getRole("cluster-of-production");
-        Role productionWithCluster = movieGraph.graph().getRole("production-with-cluster");
+        Role clusterOfProduction = movieGraph.tx().getRole("cluster-of-production");
+        Role productionWithCluster = movieGraph.tx().getRole("production-with-cluster");
 
         assertEquals(relationship.rolePlayers().collect(toSet()), ImmutableSet.of(cluster, godfather, muppets));
         assertEquals(relationship.rolePlayers(clusterOfProduction).collect(toSet()), ImmutableSet.of(cluster));
@@ -791,42 +791,42 @@ public class InsertQueryTest {
 
     @Test(expected = Exception.class)
     public void matchInsertNullVar() {
-        movieGraph.graph().graql().match(var("x").isa("movie")).insert((VarPattern) null).execute();
+        movieGraph.tx().graql().match(var("x").isa("movie")).insert((VarPattern) null).execute();
     }
 
     @Test(expected = Exception.class)
     public void matchInsertNullCollection() {
-        movieGraph.graph().graql().match(var("x").isa("movie")).insert((Collection<? extends VarPattern>) null).execute();
+        movieGraph.tx().graql().match(var("x").isa("movie")).insert((Collection<? extends VarPattern>) null).execute();
     }
 
     @Test
     public void whenMatchInsertingAnEmptyPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
-        movieGraph.graph().graql().match(var()).insert(Collections.EMPTY_SET).execute();
+        movieGraph.tx().graql().match(var()).insert(Collections.EMPTY_SET).execute();
     }
 
     @Test(expected = Exception.class)
     public void insertNullVar() {
-        movieGraph.graph().graql().insert((VarPattern) null).execute();
+        movieGraph.tx().graql().insert((VarPattern) null).execute();
     }
 
     @Test(expected = Exception.class)
     public void insertNullCollection() {
-        movieGraph.graph().graql().insert((Collection<? extends VarPattern>) null).execute();
+        movieGraph.tx().graql().insert((Collection<? extends VarPattern>) null).execute();
     }
 
     @Test
     public void whenInsertingAnEmptyPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
-        movieGraph.graph().graql().insert(Collections.EMPTY_SET).execute();
+        movieGraph.tx().graql().insert(Collections.EMPTY_SET).execute();
     }
 
     @Test
     public void whenSettingTwoTypes_Throw() {
-        EntityType movie = movieGraph.graph().getEntityType("movie");
-        EntityType person = movieGraph.graph().getEntityType("person");
+        EntityType movie = movieGraph.tx().getEntityType("movie");
+        EntityType person = movieGraph.tx().getEntityType("person");
 
         // We don't know in what order the message will be
         exception.expect(GraqlQueryException.class);
@@ -835,32 +835,32 @@ public class InsertQueryTest {
                 GraqlQueryException.insertMultipleProperties("isa", person, movie).getMessage()
         ));
 
-        movieGraph.graph().graql().insert(var("x").isa("movie"), var("x").isa("person")).execute();
+        movieGraph.tx().graql().insert(var("x").isa("movie"), var("x").isa("person")).execute();
     }
 
     @Test
     public void whenSpecifyingExistingConceptIdWithIncorrectType_Throw() {
-        EntityType movie = movieGraph.graph().getEntityType("movie");
-        EntityType person = movieGraph.graph().getEntityType("person");
+        EntityType movie = movieGraph.tx().getEntityType("movie");
+        EntityType person = movieGraph.tx().getEntityType("person");
 
         Concept aMovie = movie.instances().iterator().next();
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
 
-        movieGraph.graph().graql().insert(var("x").id(aMovie.getId()).isa("person")).execute();
+        movieGraph.tx().graql().insert(var("x").id(aMovie.getId()).isa("person")).execute();
     }
 
     @Test
     public void whenSpecifyingExistingTypeWithIncorrectDataType_Throw() {
-        AttributeType name = movieGraph.graph().getAttributeType("name");
+        AttributeType name = movieGraph.tx().getAttributeType("name");
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(
                 GraqlQueryException.insertPropertyOnExistingConcept("datatype", BOOLEAN, name).getMessage()
         );
 
-        movieGraph.graph().graql().insert(label("name").datatype(BOOLEAN)).execute();
+        movieGraph.tx().graql().insert(label("name").datatype(BOOLEAN)).execute();
     }
 
     @Test
@@ -870,7 +870,7 @@ public class InsertQueryTest {
                 allOf(containsString("unexpected property"), containsString("datatype"), containsString("my-type"))
         );
 
-        movieGraph.graph().graql().insert(label("my-type").sub("entity").datatype(BOOLEAN)).execute();
+        movieGraph.tx().graql().insert(label("my-type").sub("entity").datatype(BOOLEAN)).execute();
     }
 
     private void assertInsert(VarPattern... vars) {

@@ -60,10 +60,10 @@ public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGrap
 
     @Override
     protected TinkerGraph getTinkerPopGraph(TinkerGraph graph, boolean batchLoading){
-        if(super.graph == null || isClosed(super.graph)){
-            super.graph = buildTinkerPopGraph(batchLoading);
+        if(super.tx == null || isClosed(super.tx)){
+            super.tx = buildTinkerPopGraph(batchLoading);
         }
-        return super.graph;
+        return super.tx;
     }
 
     @Override

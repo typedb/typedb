@@ -64,7 +64,7 @@ public class SampleKBLoader {
     private final TxFactory<?> factory;
     private @Nullable Consumer<GraknTx> preLoad;
     private boolean graphLoaded = false;
-    private GraknTx graph;
+    private GraknTx tx;
 
     protected SampleKBLoader(@Nullable Consumer<GraknTx> preLoad){
         factory = FactoryBuilder.getFactory(randomKeyspace(), Grakn.IN_MEMORY, properties());
@@ -87,8 +87,8 @@ public class SampleKBLoader {
         });
     }
 
-    public GraknTx graph(){
-        if(graph == null || graph.isClosed()){
+    public GraknTx tx(){
+        if(tx == null || tx.isClosed()){
             //Load the graph if we need to
             if(!graphLoaded) {
                 try(GraknTx graph = factory.open(GraknTxType.WRITE)){
@@ -98,26 +98,26 @@ public class SampleKBLoader {
                 }
             }
 
-            graph = factory.open(GraknTxType.WRITE);
+            tx = factory.open(GraknTxType.WRITE);
         }
 
-        return graph;
+        return tx;
     }
 
     public void load(Consumer<GraknTx> preLoad){
         this.preLoad = preLoad;
         graphLoaded = false;
-        graph();
+        tx();
     }
 
     public void rollback() {
-        if (graph instanceof GraknTxTinker) {
-            graph.admin().delete();
+        if (tx instanceof GraknTxTinker) {
+            tx.admin().delete();
             graphLoaded = false;
-        } else if (!graph.isClosed()) {
-            graph.close();
+        } else if (!tx.isClosed()) {
+            tx.close();
         }
-        graph = graph();
+        tx = tx();
     }
 
     /**

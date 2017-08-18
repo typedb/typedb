@@ -51,6 +51,6 @@ public class RelationPropertyTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.notARelationType(role).getMessage());
 
-        property.checkValidProperty(graph.graph(), var("x").isa(label(role)).admin());
+        property.checkValidProperty(graph.tx(), var("x").isa(label(role)).admin());
     }
 }

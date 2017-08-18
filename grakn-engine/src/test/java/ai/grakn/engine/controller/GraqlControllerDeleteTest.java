@@ -73,7 +73,7 @@ public class GraqlControllerDeleteTest {
         when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.parse(any()))
-                .thenAnswer(invocation -> graphContext.graph().graql().parse(invocation.getArgument(0)));
+                .thenAnswer(invocation -> graphContext.tx().graql().parse(invocation.getArgument(0)));
 
         mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
@@ -142,20 +142,20 @@ public class GraqlControllerDeleteTest {
     @Test
     public void DELETEGraqlDelete_DeleteWasExecutedOnGraph(){
         doAnswer(answer -> {
-            graphContext.graph().commit();
+            graphContext.tx().commit();
             return null;
         }).when(mockGraph).commit();
 
         String query = "match $x has title \"Godfather\"; delete $x;";
 
-        long movieCountBefore = graphContext.graph().getEntityType("movie").instances().count();
+        long movieCountBefore = graphContext.tx().getEntityType("movie").instances().count();
 
         sendRequest(query);
 
         // refresh graph
-        graphContext.graph().close();
+        graphContext.tx().close();
 
-        long movieCountAfter = graphContext.graph().getEntityType("movie").instances().count();
+        long movieCountAfter = graphContext.tx().getEntityType("movie").instances().count();
 
         assertEquals(movieCountBefore - 1, movieCountAfter);
     }

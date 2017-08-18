@@ -46,8 +46,8 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testConditionalAdmission() {
-        QueryBuilder qb = admissionsGraph.graph().graql().infer(false);
-        QueryBuilder iqb = admissionsGraph.graph().graql().infer(true);
+        QueryBuilder qb = admissionsGraph.tx().graql().infer(false);
+        QueryBuilder iqb = admissionsGraph.tx().graql().infer(true);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'conditional';";
         String explicitQuery = "match $x isa applicant, has name 'Bob';";
@@ -58,8 +58,8 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testDeniedAdmission() {
-        QueryBuilder qb = admissionsGraph.graph().graql().infer(false);
-        QueryBuilder iqb = admissionsGraph.graph().graql().infer(true);
+        QueryBuilder qb = admissionsGraph.tx().graql().infer(false);
+        QueryBuilder iqb = admissionsGraph.tx().graql().infer(true);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'denied';";
         String explicitQuery = "match $x isa applicant, has name 'Alice';";
@@ -70,8 +70,8 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testProvisionalAdmission() {
-        QueryBuilder qb = admissionsGraph.graph().graql().infer(false);
-        QueryBuilder iqb = admissionsGraph.graph().graql().infer(true);
+        QueryBuilder qb = admissionsGraph.tx().graql().infer(false);
+        QueryBuilder iqb = admissionsGraph.tx().graql().infer(true);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'provisional';";
         String explicitQuery = "match $x isa applicant, has name 'Denis';";
@@ -82,8 +82,8 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testWaitForTranscriptAdmission() {
-        QueryBuilder qb = admissionsGraph.graph().graql().infer(false);
-        QueryBuilder iqb = admissionsGraph.graph().graql().infer(true);
+        QueryBuilder qb = admissionsGraph.tx().graql().infer(false);
+        QueryBuilder iqb = admissionsGraph.tx().graql().infer(true);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'wait for transcript';";
         String explicitQuery = "match $x isa applicant, has name 'Frank';";
@@ -94,8 +94,8 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testFullStatusAdmission() {
-        QueryBuilder qb = admissionsGraph.graph().graql().infer(false);
-        QueryBuilder iqb = admissionsGraph.graph().graql().infer(true);
+        QueryBuilder qb = admissionsGraph.tx().graql().infer(false);
+        QueryBuilder iqb = admissionsGraph.tx().graql().infer(true);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'full';";
         String explicitQuery = "match $x isa applicant, has name $name;{$name val 'Charlie';} or {$name val 'Eva';};select $x;";
@@ -106,8 +106,8 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testAdmissions() {
-        QueryBuilder qb = admissionsGraph.graph().graql().infer(false);
-        QueryBuilder iqb = admissionsGraph.graph().graql().infer(true);
+        QueryBuilder qb = admissionsGraph.tx().graql().infer(false);
+        QueryBuilder iqb = admissionsGraph.tx().graql().infer(true);
 
         String queryString = "match $x has admissionStatus $y;$x has name $name;";
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(queryString));

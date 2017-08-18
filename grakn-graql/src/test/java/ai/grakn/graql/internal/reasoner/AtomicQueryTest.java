@@ -74,7 +74,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenConstructingNonAtomicQuery_ExceptionIsThrown() {
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoGraph.tx();
         String patternString = "{$x isa university;$y isa country;($x, $y) isa is-located-in;($y, $z) isa is-located-in;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         exception.expect(GraqlQueryException.class);
@@ -83,7 +83,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenMaterialising_MaterialisedInformationIsPresentInGraph(){
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoGraph.tx();
         QueryBuilder qb = graph.graql().infer(false);
         String explicitQuery = "match (geo-entity: $x, entity-location: $y) isa is-located-in;$x has name 'Warsaw';$y has name 'Poland';";
         assertTrue(!qb.<MatchQuery>parse(explicitQuery).iterator().hasNext());
@@ -114,7 +114,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenCopying_TheCopyIsAlphaEquivalent(){
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoGraph.tx();
         String patternString = "{($x, $y) isa is-located-in;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
@@ -125,7 +125,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenRoleTypesAreAmbiguous_answersArePermutedCorrectly(){
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoGraph.tx();
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
 
@@ -153,7 +153,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenReifyingRelation_ExtraAtomIsCreatedWithUserDefinedName(){
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoGraph.tx();
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{($x, $y) relates geo-entity;}";
 
@@ -169,7 +169,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenUnifiyingAtomWithItself_UnifierIsTrivial(){
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoGraph.tx();
         String patternString = "{$x isa city;($x, $y) isa is-located-in;$y isa country;}";
 
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
@@ -181,7 +181,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenUnifiyingBinaryRelationWithTypes_SomeVarsHaveTypes_UnifierMatchesTypes(){
-        GraknTx graph =  unificationWithTypesSet.graph();
+        GraknTx graph =  unificationWithTypesSet.tx();
         String patternString = "{$x1 isa entity1;($x1, $x2) isa binary;}";
         String patternString2 = "{$y1 isa entity1;($y1, $y2) isa binary;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
@@ -198,7 +198,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenUnifiyingBinaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes(){
-        GraknTx graph =  unificationWithTypesSet.graph();
+        GraknTx graph =  unificationWithTypesSet.tx();
         String patternString = "{$x1 isa entity1;$x2 isa entity2;($x1, $x2) isa binary;}";
         String patternString2 = "{$y1 isa entity1;$y2 isa entity2;($y1, $y2) isa binary;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
@@ -215,7 +215,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenUnifiyingTernaryRelationWithTypes_SomeVarsHaveTypes_UnifierMatchesTypes(){
-        GraknTx graph =  unificationWithTypesSet.graph();
+        GraknTx graph =  unificationWithTypesSet.tx();
         String patternString = "{$x1 isa entity3;$x3 isa entity5;($x1, $x2, $x3) isa ternary;}";
         String patternString2 = "{$y3 isa entity5;$y1 isa entity3;($y2, $y3, $y1) isa ternary;}";
         String patternString3 = "{$y3 isa entity5;$y2 isa entity4;$y1 isa entity3;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
@@ -238,7 +238,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenUnifiyingTernaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes(){
-        GraknTx graph =  unificationWithTypesSet.graph();
+        GraknTx graph =  unificationWithTypesSet.tx();
         String patternString = "{$x1 isa entity3;$x2 isa entity4; $x3 isa entity5;($x1, $x2, $x3) isa ternary;}";
         String patternString2 = "{$y3 isa entity5;$y2 isa entity4;$y1 isa entity3;($y2, $y3, $y1) isa ternary;}";
         String patternString3 = "{$y3 isa entity5;$y2 isa entity4;$y1 isa entity3;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";
@@ -261,7 +261,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenUnifiyingTernaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes_TypeHierarchyInvolved(){
-        GraknTx graph =  unificationWithTypesSet.graph();
+        GraknTx graph =  unificationWithTypesSet.tx();
         String patternString = "{$x1 isa entity5;$x2 isa entity6; $x3 isa entity7;($x1, $x2, $x3) isa ternary;}";
         String patternString2 = "{$y3 isa entity7;$y2 isa entity6;$y1 isa entity5;($y2, $y3, $y1) isa ternary;}";
         String patternString3 = "{$y3 isa entity7;$y2 isa entity6;$y1 isa entity5;(role2: $y2, role3: $y3, role1: $y1) isa ternary;}";

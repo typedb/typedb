@@ -36,7 +36,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
-import ai.grakn.generator.FromGraphGenerator.FromGraph;
+import ai.grakn.generator.FromTxGenerator.FromGraph;
 import ai.grakn.generator.GraknTxs.Open;
 import ai.grakn.generator.MetaLabels;
 import ai.grakn.generator.Methods.MethodOf;

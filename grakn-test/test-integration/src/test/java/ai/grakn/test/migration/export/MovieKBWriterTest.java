@@ -42,25 +42,25 @@ public class MovieKBWriterTest {
 
     @Before
     public void setup() {
-        writer = new KBWriter(original.graph());
+        writer = new KBWriter(original.tx());
     }
 
     @Test
     public void testWritingMovieGraphSchema() {
         String schema = writer.dumpSchema();
-        insert(copy.graph(), schema);
+        insert(copy.tx(), schema);
 
-        assertOntologiesEqual(original.graph(), copy.graph());
+        assertOntologiesEqual(original.tx(), copy.tx());
     }
 
     @Test
     public void testWritingMovieGraphData() {
         String schema = writer.dumpSchema();
-        insert(copy.graph(), schema);
+        insert(copy.tx(), schema);
 
         String data = writer.dumpData();
-        insert(copy.graph(), data);
+        insert(copy.tx(), data);
 
-        assertDataEqual(original.graph(), copy.graph());
+        assertDataEqual(original.tx(), copy.tx());
     }
 }
