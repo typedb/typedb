@@ -103,7 +103,7 @@ public class GraphLoaderTest {
 
                 try(BufferedWriter out = new BufferedWriter(new FileWriter(temp))){
                     typeNames[i]= "my-entity-type-" + i;
-                    out.write("insert " + typeNames[i] + " sub entity;");
+                    out.write("define " + typeNames[i] + " sub entity;");
                 }
 
                 files[i] = temp.getAbsolutePath();

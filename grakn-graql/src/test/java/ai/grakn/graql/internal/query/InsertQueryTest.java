@@ -38,7 +38,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -300,15 +299,6 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testInsertResourceTypeAndInstance() {
-        qb.insert(
-                label("movie").has("my-resource"),
-                label("my-resource").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING),
-                var("x").isa("movie").has("my-resource", "look a string")
-        ).execute();
-    }
-
-    @Test
     public void testKeyCorrectUsage() throws InvalidGraphException {
         // This should only run on tinker because it commits
         assumeTrue(GraknTestSetup.usingTinker());
@@ -502,21 +492,7 @@ public class InsertQueryTest {
     public void whenInsertingANonRuleWithAThenPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("unexpected property"), containsString("then")));
-        qb.insert(label("thingy").sub("movie").then(var("x"))).execute();
-    }
-
-    @Test
-    public void testErrorWhenNonExistentResource() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage("nothing");
-        qb.insert(label("blah this").sub("entity").has("nothing")).execute();
-    }
-
-    @Test
-    public void whenInsertingMetaType_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(ErrorMessage.INSERT_METATYPE.getMessage("my-metatype", Schema.MetaSchema.THING.getLabel().getValue()));
-        qb.insert(label("my-metatype").sub(Schema.MetaSchema.THING.getLabel().getValue())).execute();
+        qb.insert(var().isa("movie").then(var("x"))).execute();
     }
 
     @Test

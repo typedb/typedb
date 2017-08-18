@@ -650,7 +650,7 @@ public class MatchQueryTest {
         Label e = Label.of("e");
         Label f = Label.of("f");
 
-        qb.insert(
+        qb.define(
                 Graql.label(c).sub(Graql.label(b).sub(Graql.label(a).sub("entity"))),
                 Graql.label(f).sub(Graql.label(e).sub(Graql.label(d).sub("role"))),
                 Graql.label(b).plays(Graql.label(e))
