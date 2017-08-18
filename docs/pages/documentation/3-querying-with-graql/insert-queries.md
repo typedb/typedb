@@ -9,9 +9,13 @@ permalink: /documentation/graql/insert-queries.html
 folder: documentation
 ---
 
-The page documents use of the Graql `insert` query, which will insert a specified [variable pattern](#variable-patterns) into the knowledge base. To follow along, or experiment further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
+The page documents use of the Graql `insert` query, which will insert a specified [variable pattern](#variable-patterns)
+describing data into the knowledge base. To follow along, or experiment further, with the examples given below, please
+load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on
+[Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
-{% include note.html content="If you are working in the Graql shell, don't forget to `commit` to store an insertion in the knowledge base." %}
+{% include note.html content="If you are working in the Graql shell, don't forget to `commit` to store an insertion in
+the knowledge base." %}
 
 
 ## `match-insert`
@@ -170,109 +174,6 @@ qb.match(
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
-
-## Type Properties
-
-The following properties only apply to types.
-
-### sub
-
-Set up a hierarchy.
-
-<ul id="profileTabs" class="nav nav-tabs">
-    <li class="active"><a href="#shell8" data-toggle="tab">Graql</a></li>
-    <li><a href="#java8" data-toggle="tab">Java</a></li>
-</ul>
-
-<div class="tab-content">
-<div role="tabpanel" class="tab-pane active" id="shell8">
-<pre>
-insert man sub person;
-insert woman sub person;
-</pre>
-</div>
-<div role="tabpanel" class="tab-pane" id="java8">
-<pre>
-qb.insert(label("man").sub("person")).execute();
-qb.insert(label("woman").sub("person")).execute();
-</pre>
-</div> <!-- tab-pane -->
-</div> <!-- tab-content -->
-
-
-### relates
-Add a role to a relationship.
-
-<ul id="profileTabs" class="nav nav-tabs">
-    <li class="active"><a href="#shell9" data-toggle="tab">Graql</a></li>
-    <li><a href="#java9" data-toggle="tab">Java</a></li>
-</ul>
-
-<div class="tab-content">
-<div role="tabpanel" class="tab-pane active" id="shell9">
-<pre>
-insert siblings sub relationship, relates sibling1, relates sibling2;
-</pre>
-</div>
-<div role="tabpanel" class="tab-pane" id="java9">
-<pre>
-qb.insert(
-  label("siblings").sub("relationship")
-    .relates("sibling1").relates("sibling2")
-).execute();
-</pre>
-</div> <!-- tab-pane -->
-</div> <!-- tab-content -->
-
-
-### plays
-Allow the concept type to play the given role.
-
-<ul id="profileTabs" class="nav nav-tabs">
-    <li class="active"><a href="#shell10" data-toggle="tab">Graql</a></li>
-    <li><a href="#java10" data-toggle="tab">Java</a></li>
-</ul>
-
-<div class="tab-content">
-<div role="tabpanel" class="tab-pane active" id="shell10">
-<pre>
-insert person plays sibling1;
-insert person plays sibling2;
-</pre>
-</div>
-<div role="tabpanel" class="tab-pane" id="java10">
-<pre>
-qb.insert(label("person").plays("sibling1")).execute();
-qb.insert(label("person").plays("sibling2")).execute();
-</pre>
-</div> <!-- tab-pane -->
-</div> <!-- tab-content -->
-
-
-### has
-
-Allow the concept type to have the given attribute.
-
-This is done by creating a specific relationship relating the concept and attribute.
-
-<ul id="profileTabs" class="nav nav-tabs">
-    <li class="active"><a href="#shell11" data-toggle="tab">Graql</a></li>
-    <li><a href="#java11" data-toggle="tab">Java</a></li>
-</ul>
-
-<div class="tab-content">
-<div role="tabpanel" class="tab-pane active" id="shell11">
-<pre>
-insert person has nickname;
-</pre>
-</div>
-
-<div role="tabpanel" class="tab-pane" id="java11">
-<pre>
-qb.insert(label("person").has("nickname")).execute();
-</pre>
-</div> <!-- tab-pane -->
-</div> <!-- tab-content -->
 
 ## Comments
 Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/42" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
