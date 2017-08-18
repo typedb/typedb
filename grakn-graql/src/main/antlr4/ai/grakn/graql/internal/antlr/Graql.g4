@@ -22,7 +22,7 @@ matchQuery     : MATCH patterns                                   # matchBase
 insertQuery    : matchInsert | insertOnly ;
 insertOnly     : INSERT varPatterns ;
 matchInsert    : matchQuery INSERT varPatterns ;
-defineQuery    : 'define' varPatterns ;
+defineQuery    : DEFINE varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
@@ -135,6 +135,7 @@ MEMBERS        : 'members' ;
 SIZE           : 'size' ;
 MATCH          : 'match' ;
 INSERT         : 'insert' ;
+DEFINE         : 'define' ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
 ORDER          : 'asc' | 'desc' ;
