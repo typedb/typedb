@@ -46,6 +46,10 @@ public abstract class GraphWriterTestUtil {
         graph.graql().parse("insert " + query).execute();
     }
 
+    public static void define(GraknTx graph, String query) {
+        graph.graql().parse("define " + query).execute();
+    }
+
     public static void assertDataEqual(GraknTx one, GraknTx two){
         one.admin().getMetaConcept().subs().
                 filter(Concept::isType).

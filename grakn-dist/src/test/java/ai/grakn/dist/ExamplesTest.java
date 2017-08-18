@@ -21,6 +21,7 @@ package ai.grakn.dist;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.graql.Query;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -67,6 +68,6 @@ public class ExamplesTest {
 
     private void runInsertQuery(String path) throws IOException {
         String query = Files.readAllLines(Paths.get(path)).stream().collect(joining("\n"));
-        tx.graql().parse(query).execute();
+        tx.graql().parseList(query).forEach(Query::execute);
     }
 }

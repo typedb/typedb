@@ -1,5 +1,5 @@
 
-insert
+define
   person sub entity
     plays person-with-address
     plays person-with-phone;

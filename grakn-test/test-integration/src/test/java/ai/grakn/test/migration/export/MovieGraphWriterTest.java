@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import static ai.grakn.test.migration.export.GraphWriterTestUtil.assertDataEqual;
 import static ai.grakn.test.migration.export.GraphWriterTestUtil.assertOntologiesEqual;
+import static ai.grakn.test.migration.export.GraphWriterTestUtil.define;
 import static ai.grakn.test.migration.export.GraphWriterTestUtil.insert;
 
 public class MovieGraphWriterTest {
@@ -48,7 +49,7 @@ public class MovieGraphWriterTest {
     @Test
     public void testWritingMovieGraphOntology() {
         String ontology = writer.dumpOntology();
-        insert(copy.graph(), ontology);
+        define(copy.graph(), ontology);
 
         assertOntologiesEqual(original.graph(), copy.graph());
     }
@@ -56,7 +57,7 @@ public class MovieGraphWriterTest {
     @Test
     public void testWritingMovieGraphData() {
         String ontology = writer.dumpOntology();
-        insert(copy.graph(), ontology);
+        define(copy.graph(), ontology);
 
         String data = writer.dumpData();
         insert(copy.graph(), data);

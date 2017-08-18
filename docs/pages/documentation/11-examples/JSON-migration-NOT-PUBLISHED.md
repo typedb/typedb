@@ -55,7 +55,7 @@ The `id` value can be considered to be unique and identify each book. However, o
 The ontology for the book catalogue is as follows:
 
 ```graql
-insert
+define
 
 # Entities
 

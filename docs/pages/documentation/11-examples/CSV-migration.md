@@ -42,7 +42,7 @@ The ontology is a way to describe the entities and their relationships, so the u
 The ontology is shown below. There is a single entity, `person`, which has a number of resources and can play various roles (`parent`, `child`, `spouse1` and `spouse2`) in two possible relationships (`parentship` and `marriage`).
 
 ```graql
-insert
+define
 
 # Entities
 

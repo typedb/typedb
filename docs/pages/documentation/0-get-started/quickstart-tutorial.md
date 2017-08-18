@@ -53,7 +53,7 @@ You can find out much more about the Grakn ontology in our documentation about t
 For the purposes of this guide, you can think of the ontology as a schema that describes items of data and defines how they relate to one another. You need to have a basic understanding of the ontology to be able to make useful queries on the data, so let's review the chunks of it that are important for our initial demonstration:
 
 ```graql
-insert
+define
 
 # Entities
 
@@ -212,7 +212,7 @@ We will move on to discuss the use of GRAKN.AI to infer new information about a 
 However, the `person` entity does have a gender attribute, and we can use Grakn to infer more information about each relationship by using that property. The ontology accommodates the more specific roles of mother, father, daughter and son:
 
 ```graql
-insert
+define
 
 person 
   plays son

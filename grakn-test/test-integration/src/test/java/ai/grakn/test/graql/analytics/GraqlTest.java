@@ -248,7 +248,7 @@ public class GraqlTest {
         analyticsCommands.forEach(command -> {
             try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
                 // insert a node but do not commit it
-                graph.graql().parse("insert thingy sub entity;").execute();
+                graph.graql().parse("define thingy sub entity;").execute();
                 // use analytics
                 graph.graql().parse(command).execute();
             }
