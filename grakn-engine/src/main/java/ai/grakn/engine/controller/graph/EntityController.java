@@ -61,7 +61,7 @@ public class EntityController {
         String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postEntity - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
-        try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.READ)) {
+        try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
             Optional<EntityType> entityTypeOptional = Optional.ofNullable(graph.getEntityType(entityTypeLabel));
             if (entityTypeOptional.isPresent()) {
                 LOG.info("postEntity - entityType " + entityTypeLabel + " found.");
