@@ -41,7 +41,7 @@ public class RoleTest extends TxTestBase {
     private RelationshipType relationshipType;
 
     @Before
-    public void buildGraph(){
+    public void setup(){
         role = tx.putRole("My Role");
         relationshipType = tx.putRelationshipType("RelationshipType");
     }

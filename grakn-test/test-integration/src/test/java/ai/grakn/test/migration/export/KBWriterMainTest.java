@@ -49,7 +49,7 @@ public class KBWriterMainTest {
     public final SystemErrRule sysErr = new SystemErrRule().enableLog();
 
     @BeforeClass
-    public static void loadMovieGraph() {
+    public static void loadMovieKB() {
         keyspace = SampleKBLoader.randomKeyspace();
         try(GraknTx graph = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
             MovieKB.get().accept(graph);

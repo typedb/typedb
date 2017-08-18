@@ -56,7 +56,7 @@ public class SchemaMutationTest extends TxTestBase {
     private Role driver;
 
     @Before
-    public void buildMarriageGraph() throws InvalidKBException {
+    public void setup() throws InvalidKBException {
         husband = tx.putRole("Husband");
         wife = tx.putRole("Wife");
         driver = tx.putRole("Driver");

@@ -72,7 +72,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            Role role = vertex().graph().factory().buildConcept(edge.target());
+            Role role = vertex().tx().factory().buildConcept(edge.target());
             Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
             roleTypes.put(role, required);
         });
@@ -143,9 +143,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         if(isAbstract()) throw GraknTxOperationException.addingInstancesToAbstractType(this);
 
-        VertexElement instanceVertex = vertex().graph().addVertex(instanceBaseType);
+        VertexElement instanceVertex = vertex().tx().addVertex(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
-            vertex().graph().txCache().addedInstance(getId());
+            vertex().tx().txCache().addedInstance(getId());
         }
         return producer.apply(instanceVertex, getThis());
     }
@@ -156,7 +156,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * It can also fail when attempting to attach an {@link ai.grakn.concept.Attribute} to a meta type
      */
     private void preCheckForInstanceCreation(){
-        vertex().graph().checkMutationAllowed();
+        vertex().tx().checkMutationAllowed();
 
         if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
             throw GraknTxOperationException.metaTypeImmutable(getLabel());
@@ -202,7 +202,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                 filter(roleLabel -> roleLabel.startsWith(prefix) && roleLabel.endsWith(suffix)).
                 map(roleLabel -> {
                     String attributeTypeLabel = roleLabel.replace(prefix, "").replace(suffix, "");
-                    return vertex().graph().getAttributeType(attributeTypeLabel);
+                    return vertex().tx().getAttributeType(attributeTypeLabel);
                 });
     }
 
@@ -241,7 +241,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     Stream<V> instancesDirect(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
-                map(edge -> vertex().graph().factory().buildShard(edge.source())).
+                map(edge -> vertex().tx().factory().buildShard(edge.source())).
                 flatMap(Shard::<V>links);
     }
 
@@ -274,7 +274,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     void trackRolePlayers(){
         instances().forEach(concept -> ((ThingImpl<?, ?>)concept).castingsInstance().forEach(
-                rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer)));
+                rolePlayer -> vertex().tx().txCache().trackForValidation(rolePlayer)));
     }
 
     public T plays(Role role, boolean required) {
@@ -396,9 +396,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         }
 
         Label attributeLabel = attributeType.getLabel();
-        Role ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
-        Role valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
-        RelationshipType relationshipType = vertex().graph().putRelationTypeImplicit(has.getLabel(attributeLabel)).
+        Role ownerRole = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
+        Role valueRole = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
+        RelationshipType relationshipType = vertex().tx().putRelationTypeImplicit(has.getLabel(attributeLabel)).
                 relates(ownerRole).
                 relates(valueRole);
 
@@ -406,9 +406,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         AttributeType attributeTypeSuper = attributeType.sup();
         Label superLabel = attributeTypeSuper.getLabel();
         if(!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
-            Role ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
-            Role valueRoleSuper = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-            RelationshipType relationshipTypeSuper = vertex().graph().putRelationTypeImplicit(has.getLabel(superLabel)).
+            Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
+            Role valueRoleSuper = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(superLabel));
+            RelationshipType relationshipTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
                     relates(ownerRoleSuper).relates(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation

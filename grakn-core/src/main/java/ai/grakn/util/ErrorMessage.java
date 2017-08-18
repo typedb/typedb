@@ -51,8 +51,8 @@ public enum ErrorMessage {
     INITIALIZATION_EXCEPTION("Graph for keyspace [%s] not properly initialized. Missing keyspace name resource"),
     TX_CLOSED("The Transaction for keyspace [%s] is closed"),
     SESSION_CLOSED("The session for graph [%s] was closed"),
-    GRAPH_CLOSED_ON_ACTION("The transaction was %s and closed [%s]. Use the session to get a new transaction for the graph."),
-    TRANSACTIONS_OPEN("Closed session on graph [%s] with [%s] open transactions"),
+    TX_CLOSED_ON_ACTION("The transaction was %s and closed [%s]. Use the session to get a new transaction for the graph."),
+    TXS_OPEN("Closed session on graph [%s] with [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
     CANNOT_BE_KEY_AND_RESOURCE("The Type [%s] cannot have the Attribute Type [%s] as a key and as a resource"),
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]"),
@@ -111,7 +111,7 @@ public enum ErrorMessage {
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
     INVALID_COMPUTER("The graph computer [%s] is not supported"),
     CONFIG_IGNORED("The config parameter [%s] with value [%s] is ignored for this implementation"),
-    CANNOT_PRODUCE_GRAPH("Cannot produce a Grakn Transaction using the backend [%s]"),
+    CANNOT_PRODUCE_TX("Cannot produce a Grakn Transaction using the backend [%s]"),
 
     //--------------------------------------------- Client Errors
     INVALID_ENGINE_RESPONSE("Grakn Engine located at [%s] returned response [%s], cannot proceed."),
@@ -184,8 +184,8 @@ public enum ErrorMessage {
     CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
 
     //Post processing Errors
-    GRAPH_MUTATION_ERROR("Unexpected error during graph mutation due to [%s]"),
-    UNABLE_TO_MUTATE_GRAPH("Unable to mutate graph [%s] due to several repeating errors"),
+    TX_MUTATION_ERROR("Unexpected error during graph mutation due to [%s]"),
+    UNABLE_TO_MUTATE("Unable to mutate [%s] due to several repeating errors"),
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
 
     //Distributed loading Errors

@@ -69,7 +69,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
 
     private static GraknTx lastGeneratedGraph;
 
-    private static StringBuilder graphSummary;
+    private static StringBuilder txSummary;
 
     private GraknTx tx;
     private Boolean open = null;
@@ -110,7 +110,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
 
         startSummary();
 
-        graphSummary.append("size: ").append(size).append("\n");
+        txSummary.append("size: ").append(size).append("\n");
 
         closeGraph(lastGeneratedGraph);
 
@@ -287,13 +287,13 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
     );
 
     private static void startSummary() {
-        graphSummary = new StringBuilder();
+        txSummary = new StringBuilder();
     }
 
     private void summary(Object target, String methodName, Object... args) {
-        graphSummary.append(summaryFormat(target)).append(".").append(methodName).append("(");
-        graphSummary.append(Stream.of(args).map(this::summaryFormat).collect(joining(", ")));
-        graphSummary.append(");\n");
+        txSummary.append(summaryFormat(target)).append(".").append(methodName).append("(");
+        txSummary.append(Stream.of(args).map(this::summaryFormat).collect(joining(", ")));
+        txSummary.append(");\n");
     }
 
     private void summaryAssign(Object assign, Object target, String methodName, Object... args) {
@@ -391,7 +391,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
 
     @Override
     public void handle(Object[] counterexample, Runnable action) {
-        System.err.println("Graph generated:\n" + graphSummary);
+        System.err.println("Graph generated:\n" + txSummary);
     }
 
     /**

@@ -51,7 +51,7 @@ public abstract class GraknTxMutators {
      */
     public static void runBatchMutationWithRetry(
             EngineGraknTxFactory factory, String keyspace, int maxRetry, Consumer<GraknTx> mutatingFunction){
-        runGraphMutationWithRetry(factory, keyspace, GraknTxType.BATCH, maxRetry, mutatingFunction);
+        runMutationWithRetry(factory, keyspace, GraknTxType.BATCH, maxRetry, mutatingFunction);
     }
 
     /**
@@ -59,9 +59,9 @@ public abstract class GraknTxMutators {
      * @param keyspace keyspace of the graph to mutate
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
-    static void runGraphMutationWithRetry(
+    static void runMutationWithRetry(
             EngineGraknTxFactory factory, String keyspace, int maxRetry, Consumer<GraknTx> mutatingFunction){
-        runGraphMutationWithRetry(factory, keyspace, GraknTxType.WRITE, maxRetry, mutatingFunction);
+        runMutationWithRetry(factory, keyspace, GraknTxType.WRITE, maxRetry, mutatingFunction);
     }
 
     /**
@@ -69,7 +69,7 @@ public abstract class GraknTxMutators {
      * @param keyspace keyspace of the graph to mutate
      * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
      */
-    private static void runGraphMutationWithRetry(
+    private static void runMutationWithRetry(
             EngineGraknTxFactory factory , String keyspace, GraknTxType txType, int maxRetry,
             Consumer<GraknTx> mutatingFunction
     ){
@@ -78,20 +78,20 @@ public abstract class GraknTxMutators {
         }
 
         for(int retry = 0; retry < maxRetry; retry++) {
-            try(GraknTx graph = factory.getGraph(keyspace, txType))  {
+            try(GraknTx graph = factory.tx(keyspace, txType))  {
 
                 mutatingFunction.accept(graph);
 
                 return;
             } catch (GraknBackendException e){
                 // retry...
-                LOG.debug(ErrorMessage.GRAPH_MUTATION_ERROR.getMessage(e.getMessage()), e);
+                LOG.debug(ErrorMessage.TX_MUTATION_ERROR.getMessage(e.getMessage()), e);
             }
 
             performRetry(retry);
         }
 
-        throw new RuntimeException(ErrorMessage.UNABLE_TO_MUTATE_GRAPH.getMessage(keyspace));
+        throw new RuntimeException(ErrorMessage.UNABLE_TO_MUTATE.getMessage(keyspace));
     }
 
     /**

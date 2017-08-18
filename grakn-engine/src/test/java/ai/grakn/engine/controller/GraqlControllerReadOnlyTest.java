@@ -112,7 +112,7 @@ public class GraqlControllerReadOnlyTest {
 
         when(mockSystemKeyspace.ensureKeyspaceInitialised(any())).thenReturn(true);
 
-        when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
+        when(mockFactory.tx(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
         when(mockFactory.systemKeyspace()).thenReturn(mockSystemKeyspace);
         when(mockFactory.properties()).thenReturn(sparkContext.config().getProperties());
     }

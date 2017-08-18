@@ -79,9 +79,9 @@ public abstract class KBWriterTestUtil {
     /**
      * Get all instances with the same resources
      */
-    public static Collection<Thing> getInstancesByResources(GraknTx graph, Thing thing){
+    public static Collection<Thing> getInstancesByResources(GraknTx tx, Thing thing){
         return thing.attributes()
-                .map(r -> getResourceFromGraph(graph, r))
+                .map(r -> getResourceFromTx(tx, r))
                 .flatMap(Attribute::ownerInstances)
                 .collect(toSet());
     }
@@ -89,13 +89,13 @@ public abstract class KBWriterTestUtil {
     /**
      * Get an entity that is uniquely defined by its resources
      */
-    public static Thing getInstanceUniqueByResourcesFromGraph(GraknTx graph, Thing thing){
-        return getInstancesByResources(graph, thing)
+    public static Thing getInstanceUniqueByResourcesFromTx(GraknTx tx, Thing thing){
+        return getInstancesByResources(tx, thing)
                .iterator().next();
     }
 
-    public static <V> Attribute<V> getResourceFromGraph(GraknTx graph, Attribute<V> attribute){
-        return (Attribute<V>) graph.getAttributeType(attribute.type().getLabel().getValue()).getAttribute(attribute.getValue());
+    public static <V> Attribute<V> getResourceFromTx(GraknTx tx, Attribute<V> attribute){
+        return (Attribute<V>) tx.getAttributeType(attribute.type().getLabel().getValue()).getAttribute(attribute.getValue());
     }
 
     public static void assertRelationCopied(Relationship relationship1, GraknTx two){
@@ -107,7 +107,7 @@ public abstract class KBWriterTestUtil {
         Map<Role, Set<Thing>> rolemap = relationship1.allRolePlayers().entrySet().stream().collect(toMap(
                 e -> two.getRole(e.getKey().getLabel().getValue()),
                 e -> e.getValue().stream().
-                        map(instance -> getInstanceUniqueByResourcesFromGraph(two, instance)).
+                        map(instance -> getInstanceUniqueByResourcesFromTx(two, instance)).
                         collect(Collectors.toSet())
         ));
 
@@ -125,7 +125,7 @@ public abstract class KBWriterTestUtil {
     }
 
     public static void assertRuleCopied(Rule rule1, GraknTx two){
-        Rule rule2 = getInstanceUniqueByResourcesFromGraph(two, rule1).asRule();
+        Rule rule2 = getInstanceUniqueByResourcesFromTx(two, rule1).asRule();
 
         assertEquals(Graql.and(rule1.getWhen()), rule2.getWhen());
         assertEquals(Graql.and(rule1.getThen()), rule2.getThen());

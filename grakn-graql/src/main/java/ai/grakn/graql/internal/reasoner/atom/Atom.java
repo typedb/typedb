@@ -148,7 +148,7 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     private Stream<Rule> getPotentialRules(){
-        return RuleUtil.getRulesWithType(getSchemaConcept(), graph());
+        return RuleUtil.getRulesWithType(getSchemaConcept(), tx());
     }
 
     /**
@@ -158,7 +158,7 @@ public abstract class Atom extends AtomicBase {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
             return getPotentialRules()
-                    .map(rule -> new InferenceRule(rule, graph()))
+                    .map(rule -> new InferenceRule(rule, tx()))
                     .filter(this::isRuleApplicable)
                     .map(r -> r.rewriteToUserDefined(this))
                     .peek(applicableRules::add);

@@ -751,11 +751,11 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         if (isClosed()) {
             return logs;
         }
-        String closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", getKeyspace());
+        String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", getKeyspace());
 
         try {
             if (commitRequired) {
-                closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
+                closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
                 logs = commitWithLogs();
                 if (logs.isPresent() && submitLogs) {
                     String logsToUpload = logs.get();

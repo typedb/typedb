@@ -61,7 +61,7 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
     public Stream<EdgeElement> getEdgesOfType(Direction direction, Schema.EdgeLabel label){
         Iterable<Edge> iterable = () -> element().edges(direction, label.getLabel());
         return StreamSupport.stream(iterable.spliterator(), false).
-                map(edge -> graph().factory().buildEdgeElement(edge));
+                map(edge -> tx().factory().buildEdgeElement(edge));
     }
 
     /**
@@ -71,7 +71,7 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
      * @return The edge created
      */
     public EdgeElement addEdge(VertexElement to, Schema.EdgeLabel type) {
-        return graph().factory().buildEdgeElement(element().addEdge(type.getLabel(), to.element()));
+        return tx().factory().buildEdgeElement(element().addEdge(type.getLabel(), to.element()));
     }
 
     /**
@@ -79,7 +79,7 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
      * @param type the type of the edge to create
      */
     public EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type){
-        GraphTraversal<Vertex, Edge> traversal = graph().getTinkerTraversal().V().
+        GraphTraversal<Vertex, Edge> traversal = tx().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), id().getValue()).
                 outE(type.getLabel()).as("edge").otherV().
                 has(Schema.VertexProperty.ID.name(), to.id().getValue()).select("edge");
@@ -87,7 +87,7 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
         if(!traversal.hasNext()) {
             return addEdge(to, type);
         } else {
-            return graph().factory().buildEdgeElement(traversal.next());
+            return tx().factory().buildEdgeElement(traversal.next());
         }
     }
 

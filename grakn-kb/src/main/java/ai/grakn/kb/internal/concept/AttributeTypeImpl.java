@@ -110,7 +110,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
             if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
             Object persistenceValue = castValue(value);
-            AttributeImpl<D> resource = vertex().graph().factory().buildResource(vertex, type, persistenceValue);
+            AttributeImpl<D> resource = vertex().tx().factory().buildResource(vertex, type, persistenceValue);
             resource.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateAttributeIndex(getLabel(), value.toString()));
             return resource;
         };
@@ -161,7 +161,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Override
     public Attribute<D> getAttribute(D value) {
         String index = Schema.generateAttributeIndex(getLabel(), value.toString());
-        return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
+        return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
     }
 
     /**

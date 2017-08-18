@@ -66,8 +66,8 @@ public class EngineGraknTxFactory {
         FactoryBuilder.refresh();
     }
 
-    public GraknTx getGraph(String keyspace, GraknTxType type){
-        if(!keyspace.equals(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+    public GraknTx tx(String keyspace, GraknTxType type){
+        if(!keyspace.equals(SystemKeyspace.SYSTEM_KB_NAME)) {
             systemKeyspace.ensureKeyspaceInitialised(keyspace);
         }
         return FactoryBuilder.getFactory(keyspace, engineURI, properties).open(type);

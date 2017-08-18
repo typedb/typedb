@@ -109,12 +109,12 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
             result.delete();
         } else {
             deleter.getProperties().forEach(property ->
-                    ((VarPropertyInternal) property).delete(getGraph(), result)
+                    ((VarPropertyInternal) property).delete(tx(), result)
             );
         }
     }
 
-    private GraknTx getGraph() {
+    private GraknTx tx() {
         return matchQuery.tx().orElseThrow(GraqlQueryException::noTx);
     }
 

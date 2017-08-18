@@ -63,26 +63,26 @@ public abstract class FromTxGenerator<T> extends AbstractGenerator<T> {
 
     protected final <S extends FromTxGenerator<?>> S genFromGraph(Class<S> generatorClass) {
         S generator = gen().make(generatorClass);
-        generator.fromGraph(this::tx);
+        generator.fromTx(this::tx);
         return generator;
     }
 
     public final void configure(FromGraph fromGraph) {
-        fromLastGeneratedGraph();
+        fromLastGeneratedTx();
     }
 
-    final FromTxGenerator<T> fromGraph(Supplier<GraknTx> graphSupplier) {
+    final FromTxGenerator<T> fromTx(Supplier<GraknTx> graphSupplier) {
         this.txSupplier = graphSupplier;
         return this;
     }
 
-    final FromTxGenerator<T> fromLastGeneratedGraph() {
-        fromGraph(GraknTxs::lastGeneratedGraph);
+    final FromTxGenerator<T> fromLastGeneratedTx() {
+        fromTx(GraknTxs::lastGeneratedGraph);
         return this;
     }
 
     /**
-     * Specify that the generated objects should be from the tx generated in a previous parameter
+     * Specify that the generated objects should be from the {@link GraknTx} generated in a previous parameter
      */
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)

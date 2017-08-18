@@ -70,7 +70,7 @@ public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
      */
     @Nullable
     public VertexElement source(){
-        return graph().factory().buildVertexElement(element().outVertex());
+        return tx().factory().buildVertexElement(element().outVertex());
     }
 
     /**
@@ -79,6 +79,6 @@ public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
      */
     @Nullable
     public VertexElement target(){
-        return graph().factory().buildVertexElement(element().inVertex());
+        return tx().factory().buildVertexElement(element().inVertex());
     }
 }

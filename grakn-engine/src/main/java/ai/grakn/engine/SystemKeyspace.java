@@ -69,7 +69,7 @@ public class SystemKeyspace {
     // This will eventually be configurable and obtained the same way the factory is obtained
     // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
-    public static final String SYSTEM_GRAPH_NAME = "graknSystem";
+    public static final String SYSTEM_KB_NAME = "graknSystem";
     private static final String SYSTEM_VERSION = "system-version";
     public static final Label KEYSPACE_ENTITY = Label.of("keyspace");
     public static final Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
@@ -98,7 +98,7 @@ public class SystemKeyspace {
              return true;
          }
 
-        try (GraknTx graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.tx(SYSTEM_KB_NAME, GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
             if (keyspaceName == null) {
                 throw GraknBackendException.initializationException(keyspace);
@@ -123,7 +123,7 @@ public class SystemKeyspace {
      * @return true if the keyspace is in the system
      */
     public boolean containsKeyspace(String keyspace){
-        try (GraknTx graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.READ)) {
+        try (GraknTx graph = factory.tx(SYSTEM_KB_NAME, GraknTxType.READ)) {
             return graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).getAttribute(keyspace) != null;
         }
     }
@@ -135,11 +135,11 @@ public class SystemKeyspace {
      * @param keyspace the keyspace to be removed from the system graph
      */
     public boolean deleteKeyspace(String keyspace){
-        if(keyspace.equals(SYSTEM_GRAPH_NAME)){
+        if(keyspace.equals(SYSTEM_KB_NAME)){
            return false;
         }
 
-        try (GraknTx graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.tx(SYSTEM_KB_NAME, GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
             Attribute<String> attribute = keyspaceName.getAttribute(keyspace);
 
@@ -163,15 +163,15 @@ public class SystemKeyspace {
      */
     public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
-        try (GraknTx graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-            if (graph.getSchemaConcept(KEYSPACE_ENTITY) != null) {
-                checkVersion(graph);
+        try (GraknTx tx = factory.tx(SYSTEM_KB_NAME, GraknTxType.WRITE)) {
+            if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
+                checkVersion(tx);
                 return;
             }
             LOG.info("No other version found, loading schema for version {}", GraknVersion.VERSION);
-            loadSystemSchema(graph);
-            graph.getAttributeType(SYSTEM_VERSION).putAttribute(GraknVersion.VERSION);
-            graph.admin().commitNoLogs();
+            loadSystemSchema(tx);
+            tx.getAttributeType(SYSTEM_VERSION).putAttribute(GraknVersion.VERSION);
+            tx.admin().commitNoLogs();
             LOG.info("Loaded system schema to system keyspace. Took: {}", timer.stop());
         } catch (Exception e) {
             LOG.error("Error while loading system schema in {}. The error was: {}", timer.stop(), e.getMessage(), e);
@@ -185,8 +185,8 @@ public class SystemKeyspace {
      *
      * @throws GraknTxOperationException when the versions do not match
      */
-    private void checkVersion(GraknTx graph){
-        Attribute existingVersion = graph.getAttributeType(SYSTEM_VERSION).instances().iterator().next();
+    private void checkVersion(GraknTx tx){
+        Attribute existingVersion = tx.getAttributeType(SYSTEM_VERSION).instances().iterator().next();
         if(!GraknVersion.VERSION.equals(existingVersion.getValue())) {
             throw GraknTxOperationException.versionMistmatch(existingVersion);
         } else {
@@ -195,25 +195,25 @@ public class SystemKeyspace {
     }
 
     /**
-     * Loads the system schema inside the provided grakn graph.
+     * Loads the system schema inside the provided {@link GraknTx}.
      *
-     * @param graph The graph to contain the system schema
+     * @param tx The tx to contain the system schema
      */
-    private void loadSystemSchema(GraknTx graph){
+    private void loadSystemSchema(GraknTx tx){
         //Keyspace data
-        AttributeType<String> keyspaceName = graph.putAttributeType("keyspace-name", AttributeType.DataType.STRING);
-        graph.putEntityType("keyspace").key(keyspaceName);
+        AttributeType<String> keyspaceName = tx.putAttributeType("keyspace-name", AttributeType.DataType.STRING);
+        tx.putEntityType("keyspace").key(keyspaceName);
 
         //User Data
-        AttributeType<String> userName = graph.putAttributeType("user-name", AttributeType.DataType.STRING);
-        AttributeType<String> userPassword = graph.putAttributeType("user-password", AttributeType.DataType.STRING);
-        AttributeType<String> userPasswordSalt = graph.putAttributeType("user-password-salt", AttributeType.DataType.STRING);
-        AttributeType<String> userFirstName = graph.putAttributeType("user-first-name", AttributeType.DataType.STRING);
-        AttributeType<String> userLastName = graph.putAttributeType("user-last-name", AttributeType.DataType.STRING);
-        AttributeType<String> userEmail = graph.putAttributeType("user-email", AttributeType.DataType.STRING);
-        AttributeType<Boolean> userIsAdmin = graph.putAttributeType("user-is-admin", AttributeType.DataType.BOOLEAN);
+        AttributeType<String> userName = tx.putAttributeType("user-name", AttributeType.DataType.STRING);
+        AttributeType<String> userPassword = tx.putAttributeType("user-password", AttributeType.DataType.STRING);
+        AttributeType<String> userPasswordSalt = tx.putAttributeType("user-password-salt", AttributeType.DataType.STRING);
+        AttributeType<String> userFirstName = tx.putAttributeType("user-first-name", AttributeType.DataType.STRING);
+        AttributeType<String> userLastName = tx.putAttributeType("user-last-name", AttributeType.DataType.STRING);
+        AttributeType<String> userEmail = tx.putAttributeType("user-email", AttributeType.DataType.STRING);
+        AttributeType<Boolean> userIsAdmin = tx.putAttributeType("user-is-admin", AttributeType.DataType.BOOLEAN);
 
-        graph.putEntityType("user").key(userName).
+        tx.putEntityType("user").key(userName).
                 attribute(userPassword).
                 attribute(userPasswordSalt).
                 attribute(userFirstName).
@@ -222,6 +222,6 @@ public class SystemKeyspace {
                 attribute(userIsAdmin);
 
         //System Version
-        graph.putAttributeType("system-version", AttributeType.DataType.STRING);
+        tx.putAttributeType("system-version", AttributeType.DataType.STRING);
     }
 }

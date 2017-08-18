@@ -78,7 +78,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
      * Deletes the node and adds it neighbours for validation
      */
     public void deleteNode(){
-        vertex().graph().txCache().remove(this);
+        vertex().tx().txCache().remove(this);
         vertex().delete();
     }
 
@@ -93,16 +93,16 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
             case BOTH:
                 return vertex().getEdgesOfType(direction, label).
                         flatMap(edge -> Stream.of(
-                                vertex().graph().factory().buildConcept(edge.source()),
-                                vertex().graph().factory().buildConcept(edge.target())
+                                vertex().tx().factory().buildConcept(edge.source()),
+                                vertex().tx().factory().buildConcept(edge.target())
                         ));
             case IN:
                 return vertex().getEdgesOfType(direction, label).map(edge ->
-                        vertex().graph().factory().buildConcept(edge.source())
+                        vertex().tx().factory().buildConcept(edge.source())
                 );
             case OUT:
                 return  vertex().getEdgesOfType(direction, label).map(edge ->
-                        vertex().graph().factory().buildConcept(edge.target())
+                        vertex().tx().factory().buildConcept(edge.target())
                 );
             default:
                 throw GraknTxOperationException.invalidDirection(direction);
@@ -165,7 +165,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     @Override
     public final String toString(){
         try {
-            vertex().graph().validVertex(vertex().element());
+            vertex().tx().validVertex(vertex().element());
             return innerToString();
         } catch (RuntimeException e){
             // Vertex is broken somehow. Most likely deleted.
@@ -189,20 +189,20 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
 
     //----------------------------------- Sharding Functionality
     public void createShard(){
-        VertexElement shardVertex = vertex().graph().addVertex(Schema.BaseType.SHARD);
-        Shard shard = vertex().graph().factory().buildShard(this, shardVertex);
+        VertexElement shardVertex = vertex().tx().addVertex(Schema.BaseType.SHARD);
+        Shard shard = vertex().tx().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
     }
 
     public Stream<Shard> shards(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).map(edge ->
-                vertex().graph().factory().buildShard(edge.source()));
+                vertex().tx().factory().buildShard(edge.source()));
     }
 
     public Shard currentShard(){
         String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
-        Vertex shardVertex = vertex().graph().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
-        return vertex().graph().factory().buildShard(shardVertex);
+        Vertex shardVertex = vertex().tx().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
+        return vertex().tx().factory().buildShard(shardVertex);
     }
 
     public long getShardCount(){

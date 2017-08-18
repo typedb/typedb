@@ -58,7 +58,7 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<GraknTxAbstract<Hado
 
     @Override
     GraknTxAbstract<HadoopGraph> buildGraknGraphFromTinker(HadoopGraph graph) {
-        throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_GRAPH.getMessage(HadoopGraph.class.getName()));
+        throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_TX.getMessage(HadoopGraph.class.getName()));
     }
 
     @Override

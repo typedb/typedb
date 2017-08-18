@@ -59,10 +59,10 @@ import static org.junit.Assume.assumeTrue;
 public class LazyTest {
 
     @ClassRule
-    public static final SampleKBContext geoGraph = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final SampleKBContext graphContext = SampleKBContext.empty().assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext sampleKB = SampleKBContext.empty().assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {
@@ -71,7 +71,7 @@ public class LazyTest {
 
     @Test
     public void testLazyCache(){
-        GraknTx graph = geoGraph.tx();
+        GraknTx graph = geoKB.tx();
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{(geo-entity: $y, entity-location: $z) isa is-located-in;}";
 
@@ -92,7 +92,7 @@ public class LazyTest {
 
     @Test
     public void testLazyCache2(){
-        GraknTx graph = geoGraph.tx();
+        GraknTx graph = geoKB.tx();
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{(geo-entity: $y, entity-location: $z) isa is-located-in;}";
         String patternString3 = "{(geo-entity: $x, entity-location: $z) isa is-located-in;}";
@@ -120,7 +120,7 @@ public class LazyTest {
 
     @Test
     public void testJoin(){
-        GraknTx graph = geoGraph.tx();
+        GraknTx graph = geoKB.tx();
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{(geo-entity: $y, entity-location: $z) isa is-located-in;}";
         String patternString3 = "{(geo-entity: $z, entity-location: $w) isa is-located-in;}";
@@ -161,7 +161,7 @@ public class LazyTest {
 
     @Test
     public void testKnownFilter(){
-        GraknTx graph = geoGraph.tx();
+        GraknTx graph = geoKB.tx();
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         MatchQuery query = graph.graql().parse(queryString);
         QueryAnswers answers = queryAnswers(query);
@@ -177,11 +177,11 @@ public class LazyTest {
         final int N = 20;
 
         long startTime = System.currentTimeMillis();
-        graphContext.tx().close();
-        graphContext.load(MatrixKBII.get(N, N));
+        sampleKB.tx().close();
+        sampleKB.load(MatrixKBII.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknTx graph = graphContext.tx();
+        GraknTx graph = sampleKB.tx();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         String queryString = "match (P-from: $x, P-to: $y) isa P;";

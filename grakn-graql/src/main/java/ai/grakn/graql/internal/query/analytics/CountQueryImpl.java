@@ -40,7 +40,7 @@ import static java.util.stream.Collectors.toSet;
 class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
 
     CountQueryImpl(Optional<GraknTx> graph) {
-        this.graph = graph;
+        this.tx = graph;
     }
 
     @Override
@@ -60,7 +60,7 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
                 .map(relationType -> ((RelationshipType) relationType).relates().collect(toSet()))
                 .filter(roles -> roles.size() == 2)
                 .flatMap(roles -> roles.stream().flatMap(Role::playedByTypes))
-                .map(type -> graph.get().admin().convertToId(type.getLabel()))
+                .map(type -> tx.get().admin().convertToId(type.getLabel()))
                 .filter(LabelId::isValid)
                 .collect(toSet());
 

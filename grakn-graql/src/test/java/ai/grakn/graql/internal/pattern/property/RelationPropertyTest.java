@@ -38,7 +38,7 @@ import static ai.grakn.graql.Graql.var;
 public class RelationPropertyTest {
 
     @ClassRule
-    public static SampleKBContext graph = SampleKBContext.empty();
+    public static SampleKBContext sampleKB = SampleKBContext.empty();
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -51,6 +51,6 @@ public class RelationPropertyTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.notARelationType(role).getMessage());
 
-        property.checkValidProperty(graph.tx(), var("x").isa(label(role)).admin());
+        property.checkValidProperty(sampleKB.tx(), var("x").isa(label(role)).admin());
     }
 }

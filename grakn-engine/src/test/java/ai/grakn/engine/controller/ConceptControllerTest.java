@@ -57,7 +57,7 @@ public class ConceptControllerTest {
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -72,22 +72,22 @@ public class ConceptControllerTest {
 
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
         when(mockGraph.getConcept(any())).thenAnswer(invocation ->
-                graphContext.tx().getConcept(invocation.getArgument(0)));
+                sampleKB.tx().getConcept(invocation.getArgument(0)));
 
-        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
+        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
     }
 
 
     @Test
     public void gettingConceptById_ResponseStatusIs200(){
-        Response response = sendRequest(graphContext.tx().getEntityType("movie"), 0);
+        Response response = sendRequest(sampleKB.tx().getEntityType("movie"), 0);
 
         assertThat(response.statusCode(), equalTo(200));
     }
 
     @Test
     public void gettingConceptByIdWithNoAcceptType_ResponseContentTypeIsHAL() {
-        Concept concept = graphContext.tx().getEntityType("movie");
+        Concept concept = sampleKB.tx().getEntityType("movie");
 
         Response response = with()
                 .queryParam(KEYSPACE, mockGraph.getKeyspace())
@@ -99,7 +99,7 @@ public class ConceptControllerTest {
 
     @Test
     public void gettingConceptByIdWithHAlAcceptType_ResponseContentTypeIsHAL(){
-        Concept concept = graphContext.tx().getEntityType("movie");
+        Concept concept = sampleKB.tx().getEntityType("movie");
 
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .accept(APPLICATION_HAL)
@@ -110,7 +110,7 @@ public class ConceptControllerTest {
 
     @Test
     public void gettingConceptByIdWithInvalidAcceptType_ResponseStatusIs406(){
-        Concept concept = graphContext.tx().getEntityType("movie");
+        Concept concept = sampleKB.tx().getEntityType("movie");
 
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
@@ -124,7 +124,7 @@ public class ConceptControllerTest {
     @Test
     @Ignore //TODO Figure out how to properly check the Json objects
     public void gettingInstanceElementById_ConceptIdIsReturnedWithCorrectHAL(){
-        Concept concept = graphContext.tx().getEntityType("movie").instances().iterator().next();
+        Concept concept = sampleKB.tx().getEntityType("movie").instances().iterator().next();
 
         Response response = sendRequest(concept, 1);
 
@@ -135,7 +135,7 @@ public class ConceptControllerTest {
     @Test
     @Ignore //TODO Figure out how to properly check the Json objects
     public void gettingSchemaConceptById_ConceptIdIsReturnedWithCorrectHAL(){
-        Concept concept = graphContext.tx().getEntityType("movie");
+        Concept concept = sampleKB.tx().getEntityType("movie");
 
         Response response = sendRequest(concept, 1);
 

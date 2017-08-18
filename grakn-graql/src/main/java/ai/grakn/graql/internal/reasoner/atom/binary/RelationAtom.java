@@ -670,7 +670,7 @@ public class RelationAtom extends IsaAtom {
                     Label parentRoleLabel = parentRoleTypeVar.getTypeLabel().orElse(null);
 
                     //TODO take into account indirect roles
-                    Role parentRole = parentRoleLabel != null ? graph().getSchemaConcept(parentRoleLabel) : null;
+                    Role parentRole = parentRoleLabel != null ? tx().getSchemaConcept(parentRoleLabel) : null;
 
                     if (parentRole != null) {
                         boolean isMetaRole = Schema.MetaSchema.isMetaLabel(parentRole.getLabel());

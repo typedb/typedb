@@ -23,13 +23,13 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static ai.grakn.engine.SystemKeyspace.SYSTEM_GRAPH_NAME;
+import static ai.grakn.engine.SystemKeyspace.SYSTEM_KB_NAME;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class SystemKeyspaceTest {
 
-    private final Function<String, GraknTx> engineFactoryGraphProvider = (k) -> engine.server().factory().getGraph(k, GraknTxType.WRITE);
+    private final Function<String, GraknTx> engineFactoryGraphProvider = (k) -> engine.server().factory().tx(k, GraknTxType.WRITE);
     private final Function<String, GraknTx> externalFactoryGraphProvider = (k) -> Grakn.session(engine.uri(), k).open(GraknTxType.WRITE);
 
     @ClassRule
@@ -40,7 +40,7 @@ public class SystemKeyspaceTest {
 
     @After
     public void cleanSystemKeySpaceGraph(){
-        try (GraknTx graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
+        try (GraknTx graph = engine.server().factory().tx(SYSTEM_KB_NAME, GraknTxType.WRITE)){
             graph.getEntityType("keyspace").instances().forEach(Concept::delete);
             graph.commit();
         }
@@ -97,7 +97,7 @@ public class SystemKeyspaceTest {
 
     @Test
     public void whenConnectingToSystemGraph_EnsureUserSchemaIsLoaded(){
-        try(GraknTx graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try(GraknTx graph = engine.server().factory().tx(SYSTEM_KB_NAME, GraknTxType.WRITE)) {
 
             EntityType user = graph.getEntityType("user");
             AttributeType userName = graph.getAttributeType("user-name");
@@ -175,7 +175,7 @@ public class SystemKeyspaceTest {
         String versionResourceType = "system-version";
 
         //Insert fake version number
-        try(GraknTx graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)){
+        try(GraknTx graph = engine.server().factory().tx(SYSTEM_KB_NAME, GraknTxType.WRITE)){
             //Delete old version number
             graph.getAttributeType(versionResourceType).instances().forEach(Concept::delete);
             //Add Fake Version
@@ -191,7 +191,7 @@ public class SystemKeyspaceTest {
     }
 
     private Set<String> getSystemKeyspaces(){
-        try(GraknTx graph = engine.server().factory().getGraph(SYSTEM_GRAPH_NAME, GraknTxType.READ)){
+        try(GraknTx graph = engine.server().factory().tx(SYSTEM_KB_NAME, GraknTxType.READ)){
             AttributeType<String> keyspaceName = graph.getAttributeType("keyspace-name");
             return graph.getEntityType("keyspace").instances().
                     map(e -> e.attributes(keyspaceName).iterator().next().getValue().toString()).

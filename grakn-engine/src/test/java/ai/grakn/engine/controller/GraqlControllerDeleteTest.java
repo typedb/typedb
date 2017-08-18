@@ -59,7 +59,7 @@ public class GraqlControllerDeleteTest {
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -73,14 +73,14 @@ public class GraqlControllerDeleteTest {
         when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.parse(any()))
-                .thenAnswer(invocation -> graphContext.tx().graql().parse(invocation.getArgument(0)));
+                .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
 
         mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
         when(mockGraph.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
+        when(mockFactory.tx(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
     }
 
     @Test
@@ -142,20 +142,20 @@ public class GraqlControllerDeleteTest {
     @Test
     public void DELETEGraqlDelete_DeleteWasExecutedOnGraph(){
         doAnswer(answer -> {
-            graphContext.tx().commit();
+            sampleKB.tx().commit();
             return null;
         }).when(mockGraph).commit();
 
         String query = "match $x has title \"Godfather\"; delete $x;";
 
-        long movieCountBefore = graphContext.tx().getEntityType("movie").instances().count();
+        long movieCountBefore = sampleKB.tx().getEntityType("movie").instances().count();
 
         sendRequest(query);
 
         // refresh graph
-        graphContext.tx().close();
+        sampleKB.tx().close();
 
-        long movieCountAfter = graphContext.tx().getEntityType("movie").instances().count();
+        long movieCountAfter = sampleKB.tx().getEntityType("movie").instances().count();
 
         assertEquals(movieCountBefore - 1, movieCountAfter);
     }

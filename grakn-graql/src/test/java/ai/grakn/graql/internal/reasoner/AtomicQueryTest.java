@@ -59,7 +59,7 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicQueryTest {
 
     @ClassRule
-    public static final SampleKBContext geoGraph = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
     public static final SampleKBContext unificationWithTypesSet = SampleKBContext.preLoad("unificationWithTypesTest.gql").assumeTrue(GraknTestSetup.usingTinker());
@@ -74,7 +74,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenConstructingNonAtomicQuery_ExceptionIsThrown() {
-        GraknTx graph = geoGraph.tx();
+        GraknTx graph = geoKB.tx();
         String patternString = "{$x isa university;$y isa country;($x, $y) isa is-located-in;($y, $z) isa is-located-in;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         exception.expect(GraqlQueryException.class);
@@ -83,7 +83,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenMaterialising_MaterialisedInformationIsPresentInGraph(){
-        GraknTx graph = geoGraph.tx();
+        GraknTx graph = geoKB.tx();
         QueryBuilder qb = graph.graql().infer(false);
         String explicitQuery = "match (geo-entity: $x, entity-location: $y) isa is-located-in;$x has name 'Warsaw';$y has name 'Poland';";
         assertTrue(!qb.<MatchQuery>parse(explicitQuery).iterator().hasNext());
@@ -114,7 +114,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenCopying_TheCopyIsAlphaEquivalent(){
-        GraknTx graph = geoGraph.tx();
+        GraknTx graph = geoKB.tx();
         String patternString = "{($x, $y) isa is-located-in;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, graph);
@@ -125,7 +125,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenRoleTypesAreAmbiguous_answersArePermutedCorrectly(){
-        GraknTx graph = geoGraph.tx();
+        GraknTx graph = geoKB.tx();
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
 
@@ -153,7 +153,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenReifyingRelation_ExtraAtomIsCreatedWithUserDefinedName(){
-        GraknTx graph = geoGraph.tx();
+        GraknTx graph = geoKB.tx();
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{($x, $y) relates geo-entity;}";
 
@@ -169,7 +169,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenUnifiyingAtomWithItself_UnifierIsTrivial(){
-        GraknTx graph = geoGraph.tx();
+        GraknTx graph = geoKB.tx();
         String patternString = "{$x isa city;($x, $y) isa is-located-in;$y isa country;}";
 
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);

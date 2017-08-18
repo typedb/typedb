@@ -44,65 +44,65 @@ import java.util.Optional;
 
 public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
 
-    private Optional<GraknTx> graph;
+    private Optional<GraknTx> tx;
 
-    public ComputeQueryBuilderImpl(Optional<GraknTx> graph) {
-        this.graph = graph;
+    public ComputeQueryBuilderImpl(Optional<GraknTx> tx) {
+        this.tx = tx;
     }
 
     @Override
     public ComputeQueryBuilder withTx(GraknTx tx) {
-        this.graph = Optional.of(tx);
+        this.tx = Optional.of(tx);
         return this;
     }
 
     @Override
     public CountQuery count() {
-        return new CountQueryImpl(graph);
+        return new CountQueryImpl(tx);
     }
 
     @Override
     public MinQuery min() {
-        return new MinQueryImpl(graph);
+        return new MinQueryImpl(tx);
     }
 
     @Override
     public MaxQuery max() {
-        return new MaxQueryImpl(graph);
+        return new MaxQueryImpl(tx);
     }
 
     @Override
     public SumQuery sum() {
-        return new SumQueryImpl(graph);
+        return new SumQueryImpl(tx);
     }
 
     @Override
     public MeanQuery mean() {
-        return new MeanQueryImpl(graph);
+        return new MeanQueryImpl(tx);
     }
 
     @Override
     public StdQuery std() {
-        return new StdQueryImpl(graph);
+        return new StdQueryImpl(tx);
     }
 
     @Override
     public MedianQuery median() {
-        return new MedianQueryImpl(graph);
+        return new MedianQueryImpl(tx);
     }
 
     @Override
     public PathQuery path() {
-        return new PathQueryImpl(graph);
+        return new PathQueryImpl(tx);
     }
 
     @Override
     public ClusterQuery<Map<String, Long>> cluster() {
-        return new ClusterQueryImpl<>(graph);
+        return new ClusterQueryImpl<>(tx);
     }
 
     @Override
     public DegreeQuery degree() {
-        return new DegreeQueryImpl(graph);
+        return new DegreeQueryImpl(tx);
     }
 }

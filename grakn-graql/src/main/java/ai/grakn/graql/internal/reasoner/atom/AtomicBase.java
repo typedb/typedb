@@ -91,6 +91,6 @@ public abstract class AtomicBase implements Atomic {
     /**
      * @return GraknTx this atomic is defined in
      */
-    protected GraknTx graph(){ return getParentQuery().tx();}
+    protected GraknTx tx(){ return getParentQuery().tx();}
 }
 

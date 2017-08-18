@@ -39,7 +39,7 @@ public class HasAttributePropertyTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final SampleKBContext graph = SampleKBContext.empty();
+    public static final SampleKBContext sampleKB = SampleKBContext.empty();
 
     @Test
     public void whenCallingCheckValidPropertyAndLabelRefersToARole_Throw() {
@@ -49,6 +49,6 @@ public class HasAttributePropertyTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.mustBeResourceType(label).getMessage());
 
-        property.checkValidProperty(graph.tx(), var("y").admin());
+        property.checkValidProperty(sampleKB.tx(), var("y").admin());
     }
 }

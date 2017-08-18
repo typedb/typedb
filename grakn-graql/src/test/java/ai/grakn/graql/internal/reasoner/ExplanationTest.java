@@ -50,13 +50,13 @@ public class ExplanationTest {
 
 
     @ClassRule
-    public static final SampleKBContext geoGraph = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final SampleKBContext genealogyGraph = SampleKBContext.preLoad(GenealogyKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final SampleKBContext explanationGraph = SampleKBContext.preLoad("explanationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext explanationKB = SampleKBContext.preLoad("explanationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     private static Concept polibuda, uw;
     private static Concept warsaw;
@@ -68,14 +68,14 @@ public class ExplanationTest {
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(GraknTestSetup.usingTinker());
-        GraknTx graph = geoGraph.tx();
-        iqb = graph.graql().infer(true).materialise(false);
-        polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
-        uw = getConcept(graph, "name", "University-of-Warsaw");
-        warsaw = getConcept(graph, "name", "Warsaw");
-        masovia = getConcept(graph, "name", "Masovia");
-        poland = getConcept(graph, "name", "Poland");
-        europe = getConcept(graph, "name", "Europe");
+        GraknTx tx = geoKB.tx();
+        iqb = tx.graql().infer(true).materialise(false);
+        polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
+        uw = getConcept(tx, "name", "University-of-Warsaw");
+        warsaw = getConcept(tx, "name", "Warsaw");
+        masovia = getConcept(tx, "name", "Masovia");
+        poland = getConcept(tx, "name", "Poland");
+        europe = getConcept(tx, "name", "Europe");
     }
 
     @Test
@@ -214,7 +214,7 @@ public class ExplanationTest {
 
     @Test
     public void testExplainingQueryContainingContradiction2(){
-        GraknTx expGraph = explanationGraph.tx();
+        GraknTx expGraph = explanationKB.tx();
         QueryBuilder eiqb = expGraph.graql().infer(true);
 
         Concept a1 = getConcept(expGraph, "name", "a1");
@@ -231,7 +231,7 @@ public class ExplanationTest {
 
     @Test
     public void testExplainingConjunctions(){
-        GraknTx expGraph = explanationGraph.tx();
+        GraknTx expGraph = explanationKB.tx();
         QueryBuilder eiqb = expGraph.graql().infer(true);
 
         String queryString = "match " +

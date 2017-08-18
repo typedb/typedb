@@ -32,11 +32,11 @@ import java.util.stream.Stream;
  */
 class MatchQueryTx extends MatchQueryModifier {
 
-    private final GraknTx graph;
+    private final GraknTx tx;
 
-    MatchQueryTx(GraknTx graph, AbstractMatchQuery inner) {
+    MatchQueryTx(GraknTx tx, AbstractMatchQuery inner) {
         super(inner);
-        this.graph = graph;
+        this.tx = tx;
     }
 
     @Override
@@ -45,17 +45,17 @@ class MatchQueryTx extends MatchQueryModifier {
             throw GraqlQueryException.multipleTxs();
         }
 
-        return inner.stream(Optional.of(this.graph));
+        return inner.stream(Optional.of(this.tx));
     }
 
     @Override
     public Optional<GraknTx> tx() {
-        return Optional.of(graph);
+        return Optional.of(tx);
     }
 
     @Override
     public Set<SchemaConcept> getSchemaConcepts() {
-        return inner.getSchemaConcepts(graph);
+        return inner.getSchemaConcepts(tx);
     }
 
     @Override
@@ -71,13 +71,13 @@ class MatchQueryTx extends MatchQueryModifier {
 
         MatchQueryTx maps = (MatchQueryTx) o;
 
-        return graph.equals(maps.graph);
+        return tx.equals(maps.tx);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + graph.hashCode();
+        result = 31 * result + tx.hashCode();
         return result;
     }
 }

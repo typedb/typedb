@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Properties;
 
 import static ai.grakn.util.EngineCommunicator.contactEngine;
-import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
+import static ai.grakn.util.REST.Request.CONFIG_PARAM;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.WebPath.System.INITIALISE;
 import static mjson.Json.read;
@@ -105,7 +105,7 @@ public class GraknSessionImpl implements GraknSession {
     public void close() throws GraknTxOperationException {
         int openTransactions = openTransactions(tx) + openTransactions(txBatch);
         if(openTransactions > 0){
-            LOG.warn(ErrorMessage.TRANSACTIONS_OPEN.getMessage(this.keyspace, openTransactions));
+            LOG.warn(ErrorMessage.TXS_OPEN.getMessage(this.keyspace, openTransactions));
         }
 
         //Close the main tx connections
@@ -140,7 +140,7 @@ public class GraknSessionImpl implements GraknSession {
      * @return A new or existing grakn tx factory with the defined name connecting to the specified remote location
      */
     private static TxFactory<?> configureGraphFactoryRemote(String keyspace, String engineUrl, String graphType){
-        String restFactoryUri = engineUrl + INITIALISE + "?" + GRAPH_CONFIG_PARAM + "=" + graphType + "&" + KEYSPACE_PARAM + "=" + keyspace;
+        String restFactoryUri = engineUrl + INITIALISE + "?" + CONFIG_PARAM + "=" + graphType + "&" + KEYSPACE_PARAM + "=" + keyspace;
 
         Properties properties = new Properties();
         properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());

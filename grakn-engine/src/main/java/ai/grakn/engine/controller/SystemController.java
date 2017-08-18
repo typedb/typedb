@@ -67,7 +67,7 @@ import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
 import static ai.grakn.util.REST.KBConfig.COMPUTER;
 import static ai.grakn.util.REST.KBConfig.DEFAULT;
 import static ai.grakn.util.REST.Request.FORMAT;
-import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
+import static ai.grakn.util.REST.Request.CONFIG_PARAM;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
@@ -171,7 +171,7 @@ public class SystemController {
     @ApiOperation(value = "Get config which is used to build graphs")
     @ApiImplicitParam(name = "graphConfig", value = "The type of graph config to return", required = true, dataType = "string", paramType = "path")
     private String getConfiguration(Request request, Response response) {
-        String graphConfig = request.queryParams(GRAPH_CONFIG_PARAM);
+        String graphConfig = request.queryParams(CONFIG_PARAM);
 
         // Make a copy of the properties object
         Properties properties = new Properties();
@@ -210,7 +210,7 @@ public class SystemController {
     @Path("/keyspaces")
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) {
-        try (GraknTx graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.WRITE)) {
 
             AttributeType<String> keyspaceName = graph.getSchemaConcept(SystemKeyspace.KEYSPACE_RESOURCE);
             Json result = Json.array();

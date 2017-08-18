@@ -42,7 +42,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.ErrorMessage.GRAPH_CLOSED_ON_ACTION;
+import static ai.grakn.util.ErrorMessage.TX_CLOSED_ON_ACTION;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -107,7 +107,7 @@ public class GraknTxJanusTest extends JanusTestBase {
         graknTx.abort();
         assertTrue("Aborting transaction did not close the graph", graknTx.isClosed());
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graknTx.getKeyspace()));
+        expectedException.expectMessage(TX_CLOSED_ON_ACTION.getMessage("closed", graknTx.getKeyspace()));
         graknTx.putEntityType("This should fail");
     }
 
@@ -133,7 +133,7 @@ public class GraknTxJanusTest extends JanusTestBase {
         graph.close();
 
         expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
+        expectedException.expectMessage(TX_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
 
         //noinspection ResultOfMethodCallIgnored
         graph.getEntityType(entityTypeLabel);

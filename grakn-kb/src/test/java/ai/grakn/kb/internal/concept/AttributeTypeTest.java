@@ -43,7 +43,7 @@ public class AttributeTypeTest extends TxTestBase {
 
 
     @Before
-    public void buildGraph() {
+    public void setup() {
         attributeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
     }
 

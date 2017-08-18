@@ -38,7 +38,7 @@ import java.util.Set;
 class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements StdQuery {
 
     StdQueryImpl(Optional<GraknTx> graph) {
-        this.graph = graph;
+        this.tx = graph;
     }
 
     @Override

@@ -48,7 +48,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     private Set<Label> ofLabels = new HashSet<>();
 
     DegreeQueryImpl(Optional<GraknTx> graph) {
-        this.graph = graph;
+        this.tx = graph;
     }
 
     @Override
@@ -63,7 +63,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
         } else {
             ofLabels = ofLabels.stream()
                     .flatMap(typeLabel -> {
-                        Type type = graph.get().getSchemaConcept(typeLabel);
+                        Type type = tx.get().getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
                         return type.subs();
                     })

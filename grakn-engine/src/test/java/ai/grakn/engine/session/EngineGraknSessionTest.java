@@ -32,7 +32,7 @@ public class EngineGraknSessionTest {
 
     @BeforeClass
     public static void beforeClass() {
-        EngineTestHelper.engineWithGraphs();
+        EngineTestHelper.engineWithKBs();
         graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(EngineTestHelper.config().getProperties());
     }
 
@@ -47,7 +47,7 @@ public class EngineGraknSessionTest {
 
         GraknTx graph1 = Grakn.session(factoryUri, keyspace).open(GraknTxType.WRITE);
         graph1.close();
-        GraknTx graph2 = graknFactory.getGraph(keyspace, GraknTxType.WRITE);
+        GraknTx graph2 = graknFactory.tx(keyspace, GraknTxType.WRITE);
 
         assertEquals(graph1, graph2);
         graph2.close();
@@ -56,9 +56,9 @@ public class EngineGraknSessionTest {
     @Test
     public void testBatchLoadingGraphsInitialisedCorrectly(){
         String keyspace = "mykeyspace";
-        GraknTx graph1 = graknFactory.getGraph(keyspace, GraknTxType.WRITE);
+        GraknTx graph1 = graknFactory.tx(keyspace, GraknTxType.WRITE);
         graph1.close();
-        GraknTx graph2 = graknFactory.getGraph(keyspace, GraknTxType.BATCH);
+        GraknTx graph2 = graknFactory.tx(keyspace, GraknTxType.BATCH);
 
         assertFalse(graph1.admin().isBatchTx());
         assertTrue(graph2.admin().isBatchTx());

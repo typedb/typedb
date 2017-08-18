@@ -55,7 +55,7 @@ import static org.junit.Assert.assertTrue;
 public class EntityTypeTest extends TxTestBase {
 
     @Before
-    public void buildGraph(){
+    public void setup(){
         EntityType top = tx.putEntityType("top");
         EntityType middle1 = tx.putEntityType("mid1");
         EntityType middle2 = tx.putEntityType("mid2");

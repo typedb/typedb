@@ -42,7 +42,7 @@ public class Labels extends FromTxGenerator<Label> {
 
     public Labels() {
         super(Label.class);
-        this.fromLastGeneratedGraph();
+        this.fromLastGeneratedTx();
     }
 
     @Override

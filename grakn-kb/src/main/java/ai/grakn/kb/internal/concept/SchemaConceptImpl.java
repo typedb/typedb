@@ -82,13 +82,13 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     public T setLabel(Label label){
         try {
-            vertex().graph().txCache().remove(this);
+            vertex().tx().txCache().remove(this);
             vertex().propertyUnique(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
             cachedLabel.set(label);
-            vertex().graph().txCache().cacheConcept(this);
+            vertex().tx().txCache().cacheConcept(this);
             return getThis();
         } catch (PropertyNotUniqueException exception){
-            vertex().graph().txCache().cacheConcept(this);
+            vertex().tx().txCache().cacheConcept(this);
             throw GraknTxOperationException.labelTaken(label);
         }
     }
@@ -182,7 +182,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             txCacheClear();
 
             //Clear Global Cache
-            vertex().graph().txCache().remove(this);
+            vertex().tx().txCache().remove(this);
         } else {
             throw GraknTxOperationException.cannotBeDeleted(this);
         }
@@ -228,7 +228,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * 2. The graph is not batch loading
      */
     void checkSchemaMutationAllowed(){
-        vertex().graph().checkSchemaMutationAllowed();
+        vertex().tx().checkSchemaMutationAllowed();
         if(Schema.MetaSchema.isMetaLabel(getLabel())){
             throw GraknTxOperationException.metaTypeImmutable(getLabel());
         }

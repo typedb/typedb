@@ -81,12 +81,12 @@ public class RecursiveInferenceTest {
     public static final SampleKBContext reachabilitySymmetricContext = SampleKBContext.preLoad("reachability-test-symmetric.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @Rule
-    public final SampleKBContext graphContext = SampleKBContext.empty();
+    public final SampleKBContext emptyKB = SampleKBContext.empty();
 
     @Before
     public void onStartup() throws Exception {
         assumeTrue(GraknTestSetup.usingTinker());
-        graphContext.tx().close();
+        emptyKB.tx().close();
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/
@@ -293,9 +293,9 @@ public class RecursiveInferenceTest {
     @Test
     public void testMatrix(){
         final int N = 5;
-        graphContext.load(MatrixKB.get(N, N));
-        QueryBuilder qb = graphContext.tx().graql().infer(false);
-        QueryBuilder iqb = graphContext.tx().graql().infer(true);
+        emptyKB.load(MatrixKB.get(N, N));
+        QueryBuilder qb = emptyKB.tx().graql().infer(false);
+        QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
         String queryString = "match (Q1-from: $x, Q1-to: $y) isa Q1; $x has index 'a0'; select $y;";
         String explicitQuery = "match $y isa a-entity or $y isa end;";
@@ -310,9 +310,9 @@ public class RecursiveInferenceTest {
     public void testTailRecursion(){
         final int N = 10;
         final int M = 5;
-        graphContext.load(TailRecursionKB.get(N, M));
-        QueryBuilder qb = graphContext.tx().graql().infer(false);
-        QueryBuilder iqb = graphContext.tx().graql().infer(true);
+        emptyKB.load(TailRecursionKB.get(N, M));
+        QueryBuilder qb = emptyKB.tx().graql().infer(false);
+        QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
         String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a0'; select $y;";
         String explicitQuery = "match $y isa b-entity;";
@@ -343,9 +343,9 @@ public class RecursiveInferenceTest {
     @Test
     public void testNguyen(){
         final int N = 9;
-        graphContext.load(NguyenKB.get(N));
-        QueryBuilder qb = graphContext.tx().graql().infer(false);
-        QueryBuilder iqb = graphContext.tx().graql().infer(true);
+        emptyKB.load(NguyenKB.get(N));
+        QueryBuilder qb = emptyKB.tx().graql().infer(false);
+        QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
         String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; select $y;";
         String explicitQuery = "match $y isa a-entity;";
@@ -376,9 +376,9 @@ public class RecursiveInferenceTest {
     public void testMatrixII(){
         final int N = 5;
         final int M = 5;
-        graphContext.load(MatrixKBII.get(N, M));
-        QueryBuilder qb = graphContext.tx().graql().infer(false);
-        QueryBuilder iqb = graphContext.tx().graql().infer(true);
+        emptyKB.load(MatrixKBII.get(N, M));
+        QueryBuilder qb = emptyKB.tx().graql().infer(false);
+        QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
         String queryString = "match (P-from: $x, P-to: $y) isa P;$x has index 'a'; select $y;";
         String explicitQuery = "match $y isa a-entity;";
@@ -391,8 +391,8 @@ public class RecursiveInferenceTest {
     @Test
     public void testPathTree(){
         final int N = 3;
-        graphContext.load(PathKB.get(N, 3));
-        GraknTx graph = graphContext.tx();
+        emptyKB.load(PathKB.get(N, 3));
+        GraknTx graph = emptyKB.tx();
         QueryBuilder qb = graph.graql().infer(false);
         QueryBuilder iqb = graph.graql().infer(true);
 
@@ -419,9 +419,9 @@ public class RecursiveInferenceTest {
     @Test
     public void testPathTreePrime(){
         final int N = 3;
-        graphContext.load(PathKB.get(N, 3));
-        QueryBuilder qb = graphContext.tx().graql().infer(false);
-        QueryBuilder iqb = graphContext.tx().graql().infer(true);
+        emptyKB.load(PathKB.get(N, 3));
+        QueryBuilder qb = emptyKB.tx().graql().infer(false);
+        QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
         String explicitQuery = "match $y isa vertex;";
@@ -434,9 +434,9 @@ public class RecursiveInferenceTest {
     @Test
     public void testPathSymmetric(){
         final int N = 3;
-        graphContext.load(PathKBSymmetric.get(N, 3));
-        QueryBuilder qb = graphContext.tx().graql().infer(false);
-        QueryBuilder iqb = graphContext.tx().graql().infer(true);
+        emptyKB.load(PathKBSymmetric.get(N, 3));
+        QueryBuilder qb = emptyKB.tx().graql().infer(false);
+        QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
         String explicitQuery = "match $y isa vertex;";
@@ -449,9 +449,9 @@ public class RecursiveInferenceTest {
     /*modified test 6.10 from Cao p. 82*/
     public void testPathII(){
         final int N = 3;
-        graphContext.load(PathKBII.get(N, N));
-        QueryBuilder qb = graphContext.tx().graql().infer(false);
-        QueryBuilder iqb = graphContext.tx().graql().infer(true);
+        emptyKB.load(PathKBII.get(N, N));
+        QueryBuilder qb = emptyKB.tx().graql().infer(false);
+        QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; select $y;";
         String explicitQuery = "match $y isa vertex;";
@@ -464,9 +464,9 @@ public class RecursiveInferenceTest {
     /*modified test 6.10 from Cao p. 82*/
     public void testPathIIPrime(){
         final int N = 3;
-        graphContext.load(PathKBII.get(N, N));
-        QueryBuilder qb = graphContext.tx().graql().infer(false);
-        QueryBuilder iqb = graphContext.tx().graql().infer(true);
+        emptyKB.load(PathKBII.get(N, N));
+        QueryBuilder qb = emptyKB.tx().graql().infer(false);
+        QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; $y has index $ind;select $y, $ind;";
         String explicitQuery = "match $y isa vertex;$y has index $ind;";
@@ -509,9 +509,9 @@ public class RecursiveInferenceTest {
     @Test
     public void testTransitiveChain(){
         final int N = 10;
-        graphContext.load(TransitivityChainKB.get(N));
-        QueryBuilder qb = graphContext.tx().graql().infer(false);
-        QueryBuilder iqb = graphContext.tx().graql().infer(true);
+        emptyKB.load(TransitivityChainKB.get(N));
+        QueryBuilder qb = emptyKB.tx().graql().infer(false);
+        QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; select $y;";
         String explicitQuery = "match $y isa a-entity;";
@@ -523,9 +523,9 @@ public class RecursiveInferenceTest {
     @Test
     public void testTransitiveMatrix(){
         final int N = 5;
-        graphContext.load(TransitivityMatrixKB.get(N, N));
-        QueryBuilder qb = graphContext.tx().graql().infer(false);
-        QueryBuilder iqb = graphContext.tx().graql().infer(true);
+        emptyKB.load(TransitivityMatrixKB.get(N, N));
+        QueryBuilder qb = emptyKB.tx().graql().infer(false);
+        QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; select $y;";
         String explicitQuery = "match $y isa a-entity;";
@@ -537,8 +537,8 @@ public class RecursiveInferenceTest {
     @Test
     public void testDiagonal(){
         final int N = 10;
-        graphContext.load(DiagonalKB.get(N, N));
-        QueryBuilder iqb = graphContext.tx().graql().infer(true);
+        emptyKB.load(DiagonalKB.get(N, N));
+        QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal;";
 
