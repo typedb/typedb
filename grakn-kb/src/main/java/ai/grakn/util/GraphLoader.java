@@ -26,7 +26,7 @@ import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.factory.FactoryBuilder;
 import ai.grakn.factory.TxFactory;
-import ai.grakn.graph.internal.GraknTxTinker;
+import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.graql.Query;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.io.Files;
