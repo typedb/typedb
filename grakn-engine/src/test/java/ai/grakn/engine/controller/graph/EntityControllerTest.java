@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
  * @author Ganeshwara Herawan Hananda
  */
 
-public class EntityTypeControllerTest {
+public class EntityControllerTest {
     private static GraknGraph mockGraph;
     private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
 
@@ -68,7 +68,7 @@ public class EntityTypeControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
 
-        new EntityTypeController(mockFactory, spark, metricRegistry);
+        new EntityController(mockFactory, spark, metricRegistry);
     });
 
     @Before
@@ -77,8 +77,6 @@ public class EntityTypeControllerTest {
 
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
 
-        when(mockGraph.putEntityType(anyString())).thenAnswer(invocation ->
-            graphContext.graph().putEntityType((String) invocation.getArgument(0)));
         when(mockGraph.getEntityType(anyString())).thenAnswer(invocation ->
             graphContext.graph().getEntityType(invocation.getArgument(0)));
 
@@ -87,70 +85,14 @@ public class EntityTypeControllerTest {
     }
 
     @Test
-    public void getEntityTypeFromMovieGraphShouldExecuteSuccessfully() {
+    public void postEntityShouldExecuteSuccessfully() {
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .get("/graph/entityType/production");
-
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
-
-        assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("entityTypeLabel"), equalTo("production"));
-    }
-
-    @Test
-    public void postEntityTypeShouldExecuteSuccessfully() {
-        Json body = Json.object("entityTypeLabel", "newEntityType");
-
-        Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .body(body.toString())
-            .post("/graph/entityType");
+            .post("/graph/entityType/production/entity");
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("entityTypeLabel"), equalTo("newEntityType"));
     }
-
-//    @Test // TODO
-//    public void deleteEntityTypeShouldExecuteSuccessfully() {
-//
-//    }
-
-//    @Test // TODO
-//    public void assignResourceToEntityTypeShouldExecuteSuccessfully() {
-//        Json body = Json.object(
-//            "entityTypeLabel", "production",
-//            "resourceTypeLabel", "runtime"
-//            );
-//
-////        will fail with:
-////          java.lang.NullPointerException: Null value
-////            at ai.grakn.concept.AutoValue_Label.<init>(AutoValue_Label.java:14)
-//
-//        Response response = with()
-//            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-//            .put("/graph/entityType/production/resource/runtime");
-//
-////        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
-//        System.out.println("/// + " + response.body().asString());
-//
-//    }
-
-//    @Test // TODO
-//    public void deleteResourceTypeToEntitiyTypeAssignmentShouldExecuteSuccessfully() {
-//
-//    }
-
-//    @Test // TODO
-//    public void assignRoleToEntityTypeShouldExecuteSuccessfully() {
-//
-//    }
-
-//    @Test // TODO
-//    public void deleteRoleToEntityTypeShouldExecuteSuccessfully() {
-//
-//    }
 }
