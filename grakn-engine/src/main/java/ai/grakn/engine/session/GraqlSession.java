@@ -66,7 +66,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
- * A Graql shell session for a single client, running on one tx in one thread
+ * A Graql shell session for a single client, running on one knowledge base in one thread
  */
 class GraqlSession {
     private final Session session;
