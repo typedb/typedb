@@ -4,6 +4,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -25,7 +26,7 @@ public class PhilosophersExampleIT {
     public static void setUp() throws IOException {
         GraknTx graph = Grakn.session("in-memory", "my-graph").open(GraknTxType.WRITE);
         qb = graph.graql();
-        runInsertQuery("src/examples/philosophers.gql");
+        runQueries("src/examples/philosophers.gql");
     }
 
 
@@ -67,9 +68,9 @@ public class PhilosophersExampleIT {
         );
     }
 
-    private static void runInsertQuery(String path) throws IOException {
+    private static void runQueries(String path) throws IOException {
         String query = Files.readAllLines(Paths.get(path)).stream().collect(joining("\n"));
-        qb.parse(query).execute();
+        qb.parseList(query).forEach(Query::execute);
     }
 
 }
