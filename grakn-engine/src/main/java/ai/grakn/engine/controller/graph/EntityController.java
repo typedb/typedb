@@ -20,8 +20,10 @@ package ai.grakn.engine.controller.graph;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Resource;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
@@ -54,6 +56,7 @@ public class EntityController {
                                 MetricRegistry metricRegistry) {
         this.factory = factory;
         spark.post("/graph/entityType/:entityTypeLabel/entity", this::postEntity);
+        spark.put("/graph/entity/:entityConceptId/resource/:resourceConceptId", this::assignResourceToEntity);
     }
 
     private Json postEntity(Request request, Response response) {
@@ -77,5 +80,37 @@ public class EntityController {
                 return Json.nil();
             }
         }
+    }
+
+    private Json assignResourceToEntity(Request request, Response response) {
+        LOG.info("assignResourceToEntity - request received.");
+        String entityConceptId = mandatoryPathParameter(request, "entityConceptId");
+        String resourceConceptId = mandatoryPathParameter(request, "resourceConceptId");
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
+            LOG.info("assignResourceToEntity - attempting to find resourceConceptId " + resourceConceptId + " and entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
+            Optional<Entity> entityOptional = Optional.ofNullable(graph.getConcept(ConceptId.of(entityConceptId)));
+            Optional<Resource> resourceOptional = Optional.ofNullable(graph.getConcept(ConceptId.of(resourceConceptId)));
+
+            if (entityOptional.isPresent() && resourceOptional.isPresent()) {
+                LOG.info("assignResourceToEntity - entity and resource found. attempting to assign resourceConceptId " + resourceConceptId + " to entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
+                Entity entity = entityOptional.get();
+                Resource resource = resourceOptional.get();
+                Entity entityType1 = entity.resource(resource);
+                graph.commit();
+                LOG.info("assignResourceToEntity - assignment succeeded. request processed.");
+                Json responseBody = Json.object();
+                response.status(HttpStatus.SC_OK);
+                return responseBody;
+            } else {
+                LOG.info("assignResourceToEntity - either entity or resource not found. request processed.");
+                response.status(HttpStatus.SC_BAD_REQUEST);
+                return Json.nil();
+            }
+        }
+    }
+
+    private Json deleteResourceToEntityAssignment(Request request, Response response) {
+        throw new UnsupportedOperationException("Unsupported operation: DELETE /graph/entity/:conceptId/resource/:conceptId");
     }
 }
