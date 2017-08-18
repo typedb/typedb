@@ -212,7 +212,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testInsertOntology() {
+    public void testInsertSchema() {
         qb.insert(
                 label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
                 label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
@@ -482,7 +482,7 @@ public class InsertQueryTest {
         VarPattern hasResourceOwner = Graql.label(HAS_OWNER.getLabel(resourceType));
         VarPattern hasResourceValue = Graql.label(HAS_VALUE.getLabel(resourceType));
 
-        // Make sure the expected ontology elements are created
+        // Make sure the expected schema elements are created
         assertExists(qb, hasResource.sub(RELATIONSHIP.getLabel().getValue()));
         assertExists(qb, hasResourceOwner.sub(ROLE.getLabel().getValue()));
         assertExists(qb, hasResourceValue.sub(ROLE.getLabel().getValue()));
@@ -511,7 +511,7 @@ public class InsertQueryTest {
         VarPattern keyOwner = Graql.label(KEY_OWNER.getLabel(resourceType));
         VarPattern keyValue = Graql.label(KEY_VALUE.getLabel(resourceType));
 
-        // Make sure the expected ontology elements are created
+        // Make sure the expected schema elements are created
         assertExists(qb, key.sub(RELATIONSHIP.getLabel().getValue()));
         assertExists(qb, keyOwner.sub(ROLE.getLabel().getValue()));
         assertExists(qb, keyValue.sub(ROLE.getLabel().getValue()));
@@ -648,7 +648,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void whenInsertingAnOntologyConceptWithoutALabel_Throw() {
+    public void whenInsertingAnSchemaConceptWithoutALabel_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("entity"), containsString("label")));
         qb.insert(var().sub("entity")).execute();

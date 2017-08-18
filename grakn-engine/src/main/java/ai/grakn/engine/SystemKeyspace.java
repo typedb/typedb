@@ -32,9 +32,10 @@ import ai.grakn.exception.InvalidGraphException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.Stopwatch;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p>
@@ -42,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  * 
  * <p>
- * Used to populate the system ontology the first time the system keyspace
+ * Used to populate the system schema the first time the system keyspace
  * is created.
  * </p>
  * 
@@ -81,11 +82,11 @@ public class SystemKeyspace {
         this(factory, true);
     }
 
-    public SystemKeyspace(EngineGraknGraphFactory factory, boolean loadSystemOntology){
+    public SystemKeyspace(EngineGraknGraphFactory factory, boolean loadSystemSchema){
         this.factory = factory;
         this.openSpaces = new ConcurrentHashMap<>();
-        if (loadSystemOntology) {
-            loadSystemOntology();
+        if (loadSystemSchema) {
+            loadSystemSchema();
         }
     }
 
@@ -156,24 +157,24 @@ public class SystemKeyspace {
     }
 
     /**
-     * Load the system ontology into a newly created system keyspace. Because the ontology
+     * Load the system schema into a newly created system keyspace. Because the schema
      * only consists of types, the inserts are idempotent and it is safe to load it
      * multiple times.
      */
-    public void loadSystemOntology() {
+    public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
         try (GraknTx graph = factory.getGraph(SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             if (graph.getSchemaConcept(KEYSPACE_ENTITY) != null) {
                 checkVersion(graph);
                 return;
             }
-            LOG.info("No other version found, loading ontology for version {}", GraknVersion.VERSION);
-            loadSystemOntology(graph);
+            LOG.info("No other version found, loading schema for version {}", GraknVersion.VERSION);
+            loadSystemSchema(graph);
             graph.getAttributeType(SYSTEM_VERSION).putAttribute(GraknVersion.VERSION);
             graph.admin().commitNoLogs();
-            LOG.info("Loaded system ontology to system keyspace. Took: {}", timer.stop());
+            LOG.info("Loaded system schema to system keyspace. Took: {}", timer.stop());
         } catch (Exception e) {
-            LOG.error("Error while loading system ontology in {}. The error was: {}", timer.stop(), e.getMessage(), e);
+            LOG.error("Error while loading system schema in {}. The error was: {}", timer.stop(), e.getMessage(), e);
             throw e;
         }
     }
@@ -194,11 +195,11 @@ public class SystemKeyspace {
     }
 
     /**
-     * Loads the system ontology inside the provided grakn graph.
+     * Loads the system schema inside the provided grakn graph.
      *
-     * @param graph The graph to contain the system ontology
+     * @param graph The graph to contain the system schema
      */
-    private void loadSystemOntology(GraknTx graph){
+    private void loadSystemSchema(GraknTx graph){
         //Keyspace data
         AttributeType<String> keyspaceName = graph.putAttributeType("keyspace-name", AttributeType.DataType.STRING);
         graph.putEntityType("keyspace").key(keyspaceName);

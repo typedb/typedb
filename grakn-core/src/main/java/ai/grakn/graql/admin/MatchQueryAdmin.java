@@ -39,13 +39,13 @@ public interface MatchQueryAdmin extends MatchQuery {
      * @return all concept types referred to explicitly in the query
      */
     @CheckReturnValue
-    Set<SchemaConcept> getOntologyConcepts(GraknTx graph);
+    Set<SchemaConcept> getSchemaConcepts(GraknTx graph);
 
     /**
      * @return all concept types referred to explicitly in the query
      */
     @CheckReturnValue
-    Set<SchemaConcept> getOntologyConcepts();
+    Set<SchemaConcept> getSchemaConcepts();
 
     /**
      * @return the pattern to match in the graph

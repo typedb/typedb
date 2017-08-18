@@ -30,11 +30,11 @@ Grakn is a hyper-relational database, that provides an [Enhanced-Entity-Relation
 
 > Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained in it.
 
-Grakn’s schema/ontology modelling constructs include, but are not limited to, data type hierarchy, relationship type hierarchy, bi-directional relationships, multi-type relationships, N-ary relationships, relationships in relationships, conditional relationships, virtual relationships, dynamic relationships, and so on. In other words, Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained within it.
+Grakn’s schema modelling constructs include, but are not limited to, data type hierarchy, relationship type hierarchy, bi-directional relationships, multi-type relationships, N-ary relationships, relationships in relationships, conditional relationships, virtual relationships, dynamic relationships, and so on. In other words, Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained within it.
 
-> Grakn’s ontology functions as a data schema constraint that guarantees information consistency.
+> Grakn’s schema functions as a data schema constraint that guarantees information consistency.
 
-Grakn’s ontology is flexible, allowing a data model to evolve. Later in the year, we will show how you can have a machine learning system adapt and grow your Grakn ontology. Our ontology is a key feature in maintaining data quality, as it functions as a data schema constraint that guarantees information consistency.
+Grakn’s schema is flexible, allowing a data model to evolve. Later in the year, we will show how you can have a machine learning system adapt and grow your Grakn schema. Our schema is a key feature in maintaining data quality, as it functions as a data schema constraint that guarantees information consistency.
 
 Grakn is built using several distributed computing platforms, such as Apache Cassandra, [Apache TinkerPop](https://tinkerpop.apache.org/), [Apache Spark](http://spark.apache.org/), and Apache Hadoop. Grakn is designed to be sharded and replicated over a network of distributed machines.
 

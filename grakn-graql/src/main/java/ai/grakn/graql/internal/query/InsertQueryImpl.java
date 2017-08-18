@@ -126,7 +126,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Set<SchemaConcept> getOntologyConcepts() {
+    public Set<SchemaConcept> getSchemaConcepts() {
         GraknTx theGraph = getGraph().orElseThrow(GraqlQueryException::noGraph);
 
         Set<SchemaConcept> types = vars.stream()
@@ -136,7 +136,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
                 .map(theGraph::<Type>getSchemaConcept)
                 .collect(Collectors.toSet());
 
-        matchQuery.ifPresent(mq -> types.addAll(mq.getOntologyConcepts()));
+        matchQuery.ifPresent(mq -> types.addAll(mq.getSchemaConcepts()));
 
         return types;
     }

@@ -43,8 +43,8 @@ abstract class MatchQueryModifier extends AbstractMatchQuery {
     }
 
     @Override
-    public final Set<SchemaConcept> getOntologyConcepts(GraknTx graph) {
-        return inner.getOntologyConcepts(graph);
+    public final Set<SchemaConcept> getSchemaConcepts(GraknTx graph) {
+        return inner.getSchemaConcepts(graph);
     }
 
     @Override
@@ -58,8 +58,8 @@ abstract class MatchQueryModifier extends AbstractMatchQuery {
     }
 
     @Override
-    public Set<SchemaConcept> getOntologyConcepts() {
-        return inner.getOntologyConcepts();
+    public Set<SchemaConcept> getSchemaConcepts() {
+        return inner.getSchemaConcepts();
     }
 
     @Override

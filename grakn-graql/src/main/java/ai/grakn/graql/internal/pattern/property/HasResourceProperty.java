@@ -121,8 +121,8 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
     @Override
     void checkValidProperty(GraknTx graph, VarPatternAdmin var) {
-        SchemaConcept ontologyConcept = graph.getSchemaConcept(type());
-        if(ontologyConcept == null || !ontologyConcept.isAttributeType()) {
+        SchemaConcept schemaConcept = graph.getSchemaConcept(type());
+        if(schemaConcept == null || !schemaConcept.isAttributeType()) {
             throw GraqlQueryException.mustBeResourceType(type());
         }
     }
@@ -147,7 +147,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         Role owner = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(type()));
         Role value = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(type()));
 
-        concept.asThing().relations(owner)
+        concept.asThing().relationships(owner)
                 .filter(relation -> testPredicate(predicate, relation, value))
                 .forEach(Concept::delete);
     }

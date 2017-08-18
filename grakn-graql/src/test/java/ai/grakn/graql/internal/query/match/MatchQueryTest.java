@@ -313,7 +313,7 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testOntologyQuery() {
+    public void testSchemaQuery() {
         MatchQuery query = qb.match(
                 var("type").plays("character-being-played")
         );

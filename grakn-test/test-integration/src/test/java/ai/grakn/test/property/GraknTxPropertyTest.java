@@ -60,7 +60,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
-import static ai.grakn.generator.GraknGraphs.allOntologyElementsFrom;
+import static ai.grakn.generator.GraknGraphs.allSchemaElementsFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static java.util.stream.Collectors.toSet;
@@ -131,23 +131,23 @@ public class GraknTxPropertyTest {
     }
 
     @Property
-    public void whenCallingGetOntologyConceptWithAnExistingLabel_ItReturnsThatConcept(
+    public void whenCallingGetSchemaConceptWithAnExistingLabel_ItReturnsThatConcept(
             @Open GraknTx graph, @FromGraph SchemaConcept concept) {
         Label label = concept.getLabel();
         assertEquals(concept, graph.getSchemaConcept(label));
     }
 
     @Property
-    public void whenCallingGetOntologyConceptWithANonExistingTypeLabel_ItReturnsNull(
+    public void whenCallingGetSchemaConceptWithANonExistingTypeLabel_ItReturnsNull(
             @Open GraknTx graph, Label label) {
-        Set<Label> allTypes = allOntologyElementsFrom(graph).stream().map(SchemaConcept::getLabel).collect(toSet());
+        Set<Label> allTypes = allSchemaElementsFrom(graph).stream().map(SchemaConcept::getLabel).collect(toSet());
         assumeThat(allTypes, not(hasItem(label)));
 
         assertNull(graph.getSchemaConcept(label));
     }
 
     @Property
-    public void whenCallingGetOntologyConceptWithAnIncorrectGeneric_ItThrows(
+    public void whenCallingGetSchemaConceptWithAnIncorrectGeneric_ItThrows(
             @Open GraknTx graph, @FromGraph Type type) {
         assumeFalse(type.isRole());
         Label label = type.getLabel();
@@ -208,35 +208,35 @@ public class GraknTxPropertyTest {
     }
 
     @Property
-    public void whenCallingGetEntityType_TheResultIsTheSameAsGetOntologyConcept(
+    public void whenCallingGetEntityType_TheResultIsTheSameAsGetSchemaConcept(
             @Open GraknTx graph, @FromGraph EntityType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getEntityType(label.getValue()));
     }
 
     @Property
-    public void whenCallingGetRelationType_TheResultIsTheSameAsGetOntologyConcept(
+    public void whenCallingGetRelationType_TheResultIsTheSameAsGetSchemaConcept(
             @Open GraknTx graph, @FromGraph RelationshipType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRelationshipType(label.getValue()));
     }
 
     @Property
-    public void whenCallingGetResourceType_TheResultIsTheSameAsGetOntologyConcept(
+    public void whenCallingGetResourceType_TheResultIsTheSameAsGetSchemaConcept(
             @Open GraknTx graph, @FromGraph AttributeType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getAttributeType(label.getValue()));
     }
 
     @Property
-    public void whenCallingGetRole_TheResultIsTheSameAsGetOntologyConcept(
+    public void whenCallingGetRole_TheResultIsTheSameAsGetSchemaConcept(
             @Open GraknTx graph, @FromGraph Role role) {
         Label label = role.getLabel();
         assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRole(label.getValue()));
     }
 
     @Property
-    public void whenCallingGetRuleType_TheResultIsTheSameAsGetOntologyConcept(
+    public void whenCallingGetRuleType_TheResultIsTheSameAsGetSchemaConcept(
             @Open GraknTx graph, @FromGraph RuleType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRuleType(label.getValue()));

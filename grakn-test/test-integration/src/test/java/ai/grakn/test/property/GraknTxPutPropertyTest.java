@@ -65,20 +65,20 @@ public class GraknTxPutPropertyTest {
     public ExpectedException exception = ExpectedException.none();
 
     @Property
-    public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyConceptWithTheGivenLabel(
+    public void whenCallingAnyPutSchemaConceptMethod_CreateAnOntologyConceptWithTheGivenLabel(
             @Open GraknTx graph, @Unused Label label,
-            @From(PutSchemaConceptFunctions.class) BiFunction<GraknTx, Label, SchemaConcept> putOntologyConcept
+            @From(PutSchemaConceptFunctions.class) BiFunction<GraknTx, Label, SchemaConcept> putSchemaConcept
     ) {
-        SchemaConcept type = putOntologyConcept.apply(graph, label);
+        SchemaConcept type = putSchemaConcept.apply(graph, label);
         assertEquals(label, type.getLabel());
     }
 
     @Property
-    public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyConceptWithDefaultProperties(
+    public void whenCallingAnyPutSchemaConceptMethod_CreateAnOntologyConceptWithDefaultProperties(
             @Open GraknTx graph, @Unused Label label,
-            @From(PutSchemaConceptFunctions.class) BiFunction<GraknTx, Label, SchemaConcept> putOntologyConcept
+            @From(PutSchemaConceptFunctions.class) BiFunction<GraknTx, Label, SchemaConcept> putSchemaConcept
     ) {
-        SchemaConcept concept = putOntologyConcept.apply(graph, label);
+        SchemaConcept concept = putSchemaConcept.apply(graph, label);
 
         assertThat("Concept should only have one sub-type: itself", concept.subs().collect(toSet()), contains(concept));
         assertFalse("Concept should not be implicit", concept.isImplicit());

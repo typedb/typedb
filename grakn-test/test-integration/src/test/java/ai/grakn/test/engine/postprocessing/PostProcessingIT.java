@@ -79,7 +79,7 @@ public class PostProcessingIT {
         Set<Future> futures = new HashSet<>();
 
         try (GraknTx graph = session.open(GraknTxType.WRITE)) {
-            //Create Simple Ontology
+            //Create Simple Schema
             for (int i = 0; i < numEntTypes; i++) {
                 EntityType entityType = graph.putEntityType("ent" + i);
                 for (int j = 0; j < numEntVar; j++) {

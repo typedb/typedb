@@ -48,7 +48,7 @@ At the moment we have a simple algorithm for determining
 Graql analytics functionality is accessed via the `compute` query in the Graql language. In order to fully understand the
 syntax, an in-depth understanding of the graph is needed, so we will dive into some details here.
 
-Analytics only "sees" the instances of types, but is aware of the ontology. Therefore, if your graph has a type `person`
+Analytics only "sees" the instances of types, but is aware of the schema. Therefore, if your graph has a type `person`
 then the instances of this: `Jacob Young`, `Hermione Newman` and `Barbara Herchelroth` can be counted using analytics.
 Often you are not interested in the whole knowledge graph when performing calculations, and it is possible to specify a subgraph (a subset of your data to work on) to Graql.
 For example, a knowledge graph may contain groups, people and the relationships between them, but these can be excluded by specifying a subgraph using the `in` keyword.

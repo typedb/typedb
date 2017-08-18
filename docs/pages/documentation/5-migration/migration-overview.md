@@ -13,8 +13,8 @@ comment_issue_id: 32
 ## Introduction
 This page introduces the concept of data migration into a Grakn knowledge base. We currently support migration of CSV, JSON, OWL, XML and SQL data. For each type of data, the steps to migrate to GRAKN.AI are:
 
-- define an ontology for the data in Graql
-- create templated Graql to map the data to the ontology
+- define a schema for the data in Graql
+- create templated Graql to map the data to the schema
 - invoke the Grakn migrator through the shell script or Java API.
 
 If you have not yet set up the Grakn environment, please see the [setup guide](../get-started/setup-guide.html).
@@ -37,16 +37,16 @@ Check the [Developing With Java](../developing-with-java/migration-api.html) sec
 It is also possible to export data from Grakn using the migration shell script. Usage is as follows:
 
 ```bash
-usage: migration.sh export -data -ontology [-help] [-no] [-batch <arg>] [-uri <arg>] [-keyspace <arg>]
+usage: migration.sh export -data -schema [-help] [-no] [-batch <arg>] [-uri <arg>] [-keyspace <arg>]
  -data                 export data
- -ontology             export ontology
+ -schema             export schema
  -h,--help             print usage message
  -k,--keyspace <arg>   keyspace to use
  -n,--no               dry run- write to standard out
  -u,--uri <arg>        uri to engine endpoint
 ```
 
-Exporting data or the ontology from Grakn, into Graql, will always redirect to standard out. 
+Exporting data or the schema from Grakn, into Graql, will always redirect to standard out. 
 
 ## Where Next?
 You can find further documentation about migration in our API reference documentation (which is in the */docs* directory of the distribution zip file, and also online [here](https://grakn.ai/javadocs.html).

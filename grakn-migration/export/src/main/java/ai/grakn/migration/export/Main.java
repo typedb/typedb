@@ -42,15 +42,15 @@ public class Main {
     }
 
     private static void runExport(GraphWriterOptions options) {
-        if(!options.exportOntology() && !options.exportData()) {
-            throw new IllegalArgumentException("Missing arguments -ontology and/or -data");
+        if(!options.exportSchema() && !options.exportData()) {
+            throw new IllegalArgumentException("Missing arguments -schema and/or -data");
         }
 
         try(GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.READ)) {
             GraphWriter graphWriter = new GraphWriter(graph);
 
-            if (options.exportOntology()) {
-                System.out.println(graphWriter.dumpOntology());
+            if (options.exportSchema()) {
+                System.out.println(graphWriter.dumpSchema());
             }
 
             if (options.exportData()) {

@@ -272,7 +272,7 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testOntologyQuery() {
+    public void testSchemaQuery() {
         MatchQuery expected = match(var("x").plays("actor")).orderBy("x");
         MatchQuery parsed = parse("match $x plays actor; order by $x asc;");
         assertEquals(expected, parsed);
@@ -353,7 +353,7 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testInsertOntologyQuery() {
+    public void testInsertSchemaQuery() {
         InsertQuery expected = insert(
                 label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
                 label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),

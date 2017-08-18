@@ -22,29 +22,30 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.engine.GraknEngineStatus;
-import static ai.grakn.engine.controller.Utilities.exception;
-import static ai.grakn.engine.controller.Utilities.stringResponse;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.graphs.MovieGraph;
-import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import ai.grakn.util.REST;
-import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
-import static ai.grakn.util.REST.Request.KEYSPACE;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
-import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
 import com.codahale.metrics.MetricRegistry;
-import static com.jayway.restassured.RestAssured.with;
 import com.jayway.restassured.response.Response;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static ai.grakn.engine.controller.Utilities.exception;
+import static ai.grakn.engine.controller.Utilities.stringResponse;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
+import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
+import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
+import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
+import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
+import static com.jayway.restassured.RestAssured.with;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -133,7 +134,7 @@ public class ConceptControllerTest {
 
     @Test
     @Ignore //TODO Figure out how to properly check the Json objects
-    public void gettingOntologyElementById_ConceptIdIsReturnedWithCorrectHAL(){
+    public void gettingSchemaConceptById_ConceptIdIsReturnedWithCorrectHAL(){
         Concept concept = graphContext.graph().getEntityType("movie");
 
         Response response = sendRequest(concept, 1);

@@ -101,7 +101,7 @@ public class QueryAnswerStream {
         if (types.isEmpty()) return true;
         for (TypeAtom type : types){
             Var var = type.getVarName();
-            SchemaConcept t = type.getOntologyConcept();
+            SchemaConcept t = type.getSchemaConcept();
             if (t.subs().noneMatch(sub -> sub.equals(answer.get(var).asThing().type()))) {
                 return false;
             }

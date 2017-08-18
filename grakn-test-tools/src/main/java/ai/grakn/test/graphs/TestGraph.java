@@ -37,7 +37,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class TestGraph {
 
-    protected void buildOntology(GraknTx graph){};
+    protected void buildSchema(GraknTx graph){};
 
     protected void buildInstances(GraknTx graph){};
 
@@ -47,7 +47,7 @@ public abstract class TestGraph {
 
     public Consumer<GraknTx> build() {
         return (GraknTx graph) -> {
-            buildOntology(graph);
+            buildSchema(graph);
             buildInstances(graph);
             buildRelations(graph);
             buildRules(graph);

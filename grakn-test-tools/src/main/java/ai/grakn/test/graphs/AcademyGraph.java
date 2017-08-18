@@ -30,7 +30,7 @@ import java.util.function.Consumer;
  */
 public class AcademyGraph extends TestGraph {
 
-    final private static String ontologyFile = "academy/ontology.gql";
+    final private static String schemaFile = "academy/schema.gql";
     final private static String dataFile = "academy/data.gql";
     final private static String rulesFile = "academy/rules.gql";
 
@@ -41,7 +41,7 @@ public class AcademyGraph extends TestGraph {
     @Override
     public Consumer<GraknTx> build() {
         return (GraknTx graph) -> {
-            GraphContext.loadFromFile(graph, ontologyFile);
+            GraphContext.loadFromFile(graph, schemaFile);
             GraphContext.loadFromFile(graph, dataFile);
             GraphContext.loadFromFile(graph, rulesFile);
         };

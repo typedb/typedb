@@ -47,7 +47,7 @@ public class EngineGraknGraphFactory {
     private final String engineURI;
     private final SystemKeyspace systemKeyspace;
 
-    public static EngineGraknGraphFactory createAndLoadSystemOntology(Properties properties) {
+    public static EngineGraknGraphFactory createAndLoadSystemSchema(Properties properties) {
         return new EngineGraknGraphFactory(properties, true);
     }
 
@@ -55,11 +55,11 @@ public class EngineGraknGraphFactory {
         return new EngineGraknGraphFactory(properties, false);
     }
 
-    private EngineGraknGraphFactory(Properties properties, boolean loadOntology) {
+    private EngineGraknGraphFactory(Properties properties, boolean loadSchema) {
         this.properties = new Properties();
         this.properties.putAll(properties);
         this.engineURI = properties.getProperty(GraknEngineConfig.SERVER_HOST_NAME) + ":" + properties.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER);
-        this.systemKeyspace = new SystemKeyspace(this, loadOntology);
+        this.systemKeyspace = new SystemKeyspace(this, loadSchema);
     }
 
     public synchronized void refreshConnections(){

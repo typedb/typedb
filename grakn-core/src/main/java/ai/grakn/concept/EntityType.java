@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     Ontology element used to represent categories.
+ *     {@link SchemaConcept} used to represent categories.
  * </p>
  *
  * <p>

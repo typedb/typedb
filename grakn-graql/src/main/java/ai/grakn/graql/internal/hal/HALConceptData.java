@@ -209,7 +209,7 @@ public class HALConceptData {
 
 
     private void generateEntityEmbedded(Representation halResource, Entity entity, int separationDegree) {
-        Stream<Relationship> relationStream = entity.relations();
+        Stream<Relationship> relationStream = entity.relationships();
 
         relationStream = relationStream.skip(offset);
         if (limit >= 0) relationStream = relationStream.limit(limit);
@@ -266,7 +266,7 @@ public class HALConceptData {
 
     private void embedRelationsPlays(Representation halResource, Relationship rel) {
         rel.plays().forEach(roleTypeRel -> {
-            rel.relations(roleTypeRel).forEach(relation -> {
+            rel.relationships(roleTypeRel).forEach(relation -> {
                 embedRelationsNotConnectedToResources(halResource, rel, relation, 1);
             });
         });
@@ -284,7 +284,7 @@ public class HALConceptData {
             });
         }
         // We only limit the number of instances and not subtypes.
-        // TODO: This `asOntologyElement` is a hack because `thing.subTypes()` will contain `Role`, which is not `Type`
+        // TODO: This `asSchemaConcept` is a hack because `thing.subTypes()` will contain `Role`, which is not `Type`
         type.asSchemaConcept().subs().filter(sub -> (!sub.getLabel().equals(type.getLabel()))).forEach(sub -> {
             Representation subResource = factory.newRepresentation(resourceLinkPrefix + sub.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);

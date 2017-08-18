@@ -32,7 +32,7 @@ GraknSession session = Grakn.session(uri, "MyGraph");
 Set<Future> futures = new HashSet<>();
 ExecutorService pool = Executors.newFixedThreadPool(10);
 
-//Create sample ontology
+//Create sample schema
 GraknTx tx = session.open(GraknTxType.WRITE);
 EntityType entityType = tx.putEntityType("Some Entity Type");
 graph.commit();

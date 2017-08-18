@@ -62,7 +62,7 @@ class HALExploreType extends HALExploreConcept{
             relationTypeRoles(halResource, type.asRelationshipType());
         } else if (type.isRole()) {
             // Types that can play this role && Relationship types this role can take part in.
-            roleTypeOntology(halResource, type.asRole());
+            roleTypeSchema(halResource, type.asRole());
         }
 
     }
@@ -80,7 +80,7 @@ class HALExploreType extends HALExploreConcept{
     }
 
 
-    private void roleTypeOntology(Representation halResource, Role role) {
+    private void roleTypeSchema(Representation halResource, Role role) {
         role.playedByTypes().forEach(type -> {
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + type.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
@@ -102,7 +102,7 @@ class HALExploreType extends HALExploreConcept{
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, role);
             //We always return roles with in embedded the entities that play that role.
-            roleTypeOntology(roleRepresentation, role);
+            roleTypeSchema(roleRepresentation, role);
             halResource.withRepresentation(RELATES_EDGE, roleRepresentation);
         });
     }
@@ -124,7 +124,7 @@ class HALExploreType extends HALExploreConcept{
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, role);
             //We always return roles with in embedded the relations they play in.
-            roleTypeOntology(roleRepresentation, role);
+            roleTypeSchema(roleRepresentation, role);
 
             halResource.withRepresentation(PLAYS_EDGE, roleRepresentation);
         });

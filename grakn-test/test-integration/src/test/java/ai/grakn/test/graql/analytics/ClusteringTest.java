@@ -97,7 +97,7 @@ public class ClusteringTest {
         Map<String, Long> sizeMapPersist;
         Map<String, Set<String>> memberMapPersist;
 
-        addOntologyAndEntities();
+        addSchemaAndEntities();
 
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             sizeMap = Graql.compute().withGraph(graph).cluster().clusterSize(1L).execute();
@@ -130,7 +130,7 @@ public class ClusteringTest {
     public void testConnectedComponentImplicitType() throws Exception {
         String aResourceTypeLabel = "aResourceTypeLabel";
 
-        addOntologyAndEntities();
+        addSchemaAndEntities();
         addResourceRelations();
 
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
@@ -161,7 +161,7 @@ public class ClusteringTest {
         Map<String, Set<String>> memberMap;
 
         // add something, test again
-        addOntologyAndEntities();
+        addSchemaAndEntities();
 
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             sizeMap = Graql.compute().withGraph(graph).cluster().execute();
@@ -216,7 +216,7 @@ public class ClusteringTest {
 
     @Test
     public void testConnectedComponentConcurrency() throws Exception {
-        addOntologyAndEntities();
+        addSchemaAndEntities();
 
         List<Long> list = new ArrayList<>(4);
         long workerNumber = 4L;
@@ -236,7 +236,7 @@ public class ClusteringTest {
         });
     }
 
-    private void addOntologyAndEntities() throws InvalidGraphException {
+    private void addSchemaAndEntities() throws InvalidGraphException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
 
             EntityType entityType1 = graph.putEntityType(thing);
