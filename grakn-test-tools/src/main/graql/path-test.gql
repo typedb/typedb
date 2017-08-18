@@ -1,4 +1,4 @@
-insert
+define
 
 ###################################################
 ####################Ontology######################
@@ -23,6 +23,8 @@ vertex plays path-from, plays path-to;
 start-vertex plays path-from;
 
 "index" sub attribute, datatype string;
+
+insert
 
 ####################################################
 ##################RULES#############################

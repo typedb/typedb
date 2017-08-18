@@ -1,4 +1,4 @@
-insert
+define
 
 #Roles
 
@@ -27,6 +27,8 @@ message-succession sub relationship
     relates successor;
 
 creation-date sub attribute datatype long;
+
+insert
 
 #Rules
 

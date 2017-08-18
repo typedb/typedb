@@ -1,4 +1,4 @@
-insert
+define
 
 #Roles
 
@@ -19,6 +19,8 @@ relation1 sub relationship
 	relates role2
 	plays role1
 	plays role2;
+
+insert
 
 #Rules
 

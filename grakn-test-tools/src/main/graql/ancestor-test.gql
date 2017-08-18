@@ -1,4 +1,4 @@
-insert
+define
 
 
 ###################################################
@@ -19,6 +19,8 @@ Person plays parent, plays child;
 Person plays ancestor, plays descendant;
 
 "name" sub attribute, datatype string;
+
+insert
 
 ####################################################
 ##################DATA#############################

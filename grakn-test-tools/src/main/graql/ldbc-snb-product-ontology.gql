@@ -1,4 +1,4 @@
-insert 
+define
 
 entity2 sub entity, is-abstract;
 product sub recommendable

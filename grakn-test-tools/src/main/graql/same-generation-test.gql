@@ -1,4 +1,4 @@
-insert
+define
 
 ###################################################
 ####################Ontology######################
@@ -23,6 +23,8 @@ person plays sibA, plays sibB;
 person plays SG-role-A, plays SG-role-B;
 
 "name" sub attribute, datatype string;
+
+insert
 
 ####################################################
 ##################DATA#############################

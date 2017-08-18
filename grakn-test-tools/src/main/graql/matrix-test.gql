@@ -1,4 +1,4 @@
-insert
+define
 
 ###################################################
 ####################Ontology######################
@@ -38,6 +38,8 @@ insert
 "P" sub relationship, relates P-from, relates P-to;
 
 "index" sub attribute, datatype string;
+
+insert
 
 ####################################################
 ##################DATA#############################

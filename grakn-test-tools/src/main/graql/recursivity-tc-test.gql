@@ -1,4 +1,4 @@
-insert
+define
 
 ###################################################
 ####################Ontology######################
@@ -24,6 +24,8 @@ entity2 plays TC-roleA, plays TC-roleB;
 entity2 plays P-roleA, plays P-roleB;
 
 "index" sub attribute, datatype string;
+
+insert
 
 ####################################################
 ##################DATA#############################
