@@ -50,7 +50,7 @@ public class GraqlControllerTest {
                                boolean materialise,
                                int limitEmbedded) {
         return RestAssured.with()
-            .queryParam(KEYSPACE, graphContext.tx().getKeyspace())
+            .queryParam(KEYSPACE, sampleKB.tx().getKeyspace())
             .body(query)
             .queryParam(INFER, reasonser)
             .queryParam(MATERIALISE, materialise)
@@ -60,7 +60,7 @@ public class GraqlControllerTest {
     }
 
     @ClassRule
-    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -72,7 +72,7 @@ public class GraqlControllerTest {
     public void setUp() {
         jsonPrinter = Printers.json();
         graqlPrinter = Printers.graql(false);
-        halPrinter = Printers.hal(graphContext.tx().getKeyspace(), -1);
+        halPrinter = Printers.hal(sampleKB.tx().getKeyspace(), -1);
     }
 
     @Test
@@ -98,8 +98,8 @@ public class GraqlControllerTest {
             Assert.assertFalse(resp.jsonPath().getList(".").isEmpty());
         } finally {
             ConceptId id = ConceptId.of(resp.jsonPath().getList("x.id").get(0).toString());
-            graphContext.rollback();
-            graphContext.tx().graql().match(var("x").id(id)).delete("x").execute();
+            sampleKB.rollback();
+            sampleKB.tx().graql().match(var("x").id(id)).delete("x").execute();
         }
     }
 
@@ -163,7 +163,7 @@ public class GraqlControllerTest {
         String queryString = "match $x isa movie;";
         int limitEmbedded = 42;
         Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded);
-        Printer printer = Printers.hal(graphContext.tx().getKeyspace(), limitEmbedded);
+        Printer printer = Printers.hal(sampleKB.tx().getKeyspace(), limitEmbedded);
         assertResponseSameAsJavaGraql(resp, queryString, printer, APPLICATION_HAL);
     }
 
@@ -185,8 +185,8 @@ public class GraqlControllerTest {
     private void assertResponseSameAsJavaGraql(Response resp, String queryString, Printer<?> printer, String acceptType) {
         resp.then().statusCode(200);
 
-        graphContext.rollback();
-        Query<?> query = graphContext.tx().graql().parse(queryString);
+        sampleKB.rollback();
+        Query<?> query = sampleKB.tx().graql().parse(queryString);
 
         String expectedString = printer.graqlString(query.execute());
 

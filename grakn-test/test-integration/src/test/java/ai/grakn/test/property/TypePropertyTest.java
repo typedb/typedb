@@ -26,7 +26,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
-import ai.grakn.generator.FromTxGenerator.FromGraph;
+import ai.grakn.generator.FromTxGenerator.FromTx;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
@@ -137,13 +137,13 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void ATypePlayingARoleIsEquivalentToARoleBeingPlayed(Type type, @FromGraph Role role) {
+    public void ATypePlayingARoleIsEquivalentToARoleBeingPlayed(Type type, @FromTx Role role) {
         assertEquals(type.plays().anyMatch(r -> r.equals(role)), role.playedByTypes().collect(toSet()).contains(type));
     }
 
     @Property
     public void whenAddingAPlays_TheTypePlaysThatRoleAndNoOtherNewRoles(
-            @NonMeta Type type, @FromGraph Role role) {
+            @NonMeta Type type, @FromTx Role role) {
         Set<Role> previousPlays = type.plays().collect(toSet());
         type.plays(role);
         Set<Role> newPlays = type.plays().collect(toSet());
@@ -153,7 +153,7 @@ public class TypePropertyTest {
 
     @Property
     public void whenAddingAPlaysToATypesIndirectSuperType_TheTypePlaysThatRole(
-            Type type, @FromGraph Role role, long seed) {
+            Type type, @FromTx Role role, long seed) {
         SchemaConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(type), seed);
         assumeTrue(superConcept.isType());
         assumeFalse(isMetaLabel(superConcept.getLabel()));
@@ -169,7 +169,7 @@ public class TypePropertyTest {
 
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypeDoesNotPlaysThatRole_TheTypeNoLongerPlaysThatRole(
-            @NonMeta Type type, @FromGraph Role role) {
+            @NonMeta Type type, @FromTx Role role) {
         assumeThat(type.sup().plays().collect(toSet()), not(hasItem(role)));
         type.deletePlays(role);
         assertThat(type.plays().collect(toSet()), not(hasItem(role)));

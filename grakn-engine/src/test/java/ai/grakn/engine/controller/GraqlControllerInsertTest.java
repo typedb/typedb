@@ -57,7 +57,7 @@ import static org.mockito.Mockito.when;
 
 public class GraqlControllerInsertTest {
 
-    private static GraknTx mockGraph;
+    private static GraknTx mockTx;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
@@ -78,12 +78,12 @@ public class GraqlControllerInsertTest {
         when(mockQueryBuilder.parse(any()))
                 .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
 
-        mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
-        when(mockGraph.graql()).thenReturn(mockQueryBuilder);
+        when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.tx(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
+        when(mockFactory.tx(eq(mockTx.getKeyspace()), any())).thenReturn(mockTx);
     }
 
     @Test
@@ -91,7 +91,7 @@ public class GraqlControllerInsertTest {
         doAnswer(answer -> {
             sampleKB.tx().commit();
             return null;
-        }).when(mockGraph).commit();
+        }).when(mockTx).commit();
 
         String query = "insert $x isa movie;";
 
@@ -198,11 +198,11 @@ public class GraqlControllerInsertTest {
     public void POSTGraqlInsertWithSchema_GraphCommitIsCalled(){
         String query = "insert thingy sub entity;";
 
-        verify(mockGraph, times(0)).commit();
+        verify(mockTx, times(0)).commit();
 
         sendRequest(query);
 
-        verify(mockGraph, times(1)).commit();
+        verify(mockTx, times(1)).commit();
     }
 
     private Response sendRequest(String query){
@@ -212,7 +212,7 @@ public class GraqlControllerInsertTest {
     private Response sendRequest(String query, String acceptType){
         return RestAssured.with()
                 .accept(acceptType)
-                .queryParam(KEYSPACE, mockGraph.getKeyspace())
+                .queryParam(KEYSPACE, mockTx.getKeyspace())
                 .queryParam(INFER, false)
                 .queryParam(MATERIALISE, false)
                 .body(query)

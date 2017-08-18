@@ -50,12 +50,12 @@ public class GenealogyTest {
     private static QueryBuilder iqb;
 
     @ClassRule
-    public static final SampleKBContext genealogyGraph = SampleKBContext.preLoad(GenealogyKB.get());
+    public static final SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get());
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        qb = genealogyGraph.tx().graql().infer(false);
-        iqb = genealogyGraph.tx().graql().infer(true).materialise(true);
+        qb = genealogyKB.tx().graql().infer(false);
+        iqb = genealogyKB.tx().graql().infer(true).materialise(true);
     }
 
     /*
@@ -83,7 +83,7 @@ public class GenealogyTest {
 
     @Test
     public void testSpecificPerson(){
-        Concept concept = Sets.newHashSet(genealogyGraph.tx().graql().infer(false).<MatchQuery>parse("match $x isa person;"))
+        Concept concept = Sets.newHashSet(genealogyKB.tx().graql().infer(false).<MatchQuery>parse("match $x isa person;"))
                 .iterator().next()
                 .entrySet().iterator().next().getValue();
         String queryString = "match $x id '" + concept.getId() + "' has gender $g;";
@@ -462,7 +462,7 @@ public class GenealogyTest {
         String queryString = "match (father: $x) isa parentship; $x has gender $g; $g val 'female';";
         MatchQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
-        QueryAnswers answers2 =  queryAnswers(genealogyGraph.tx().graql().infer(true).materialise(true).parse(queryString));
+        QueryAnswers answers2 =  queryAnswers(genealogyKB.tx().graql().infer(true).materialise(true).parse(queryString));
         assertTrue(answers.isEmpty());
         assertEquals(answers, answers2);
     }

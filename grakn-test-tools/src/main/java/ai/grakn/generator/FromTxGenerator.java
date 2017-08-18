@@ -67,7 +67,7 @@ public abstract class FromTxGenerator<T> extends AbstractGenerator<T> {
         return generator;
     }
 
-    public final void configure(FromGraph fromGraph) {
+    public final void configure(FromTx fromTx) {
         fromLastGeneratedTx();
     }
 
@@ -87,6 +87,6 @@ public abstract class FromTxGenerator<T> extends AbstractGenerator<T> {
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
-    public @interface FromGraph {
+    public @interface FromTx {
     }
 }

@@ -58,7 +58,7 @@ public class DeleteQueryTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final SampleKBContext movieGraph = SampleKBContext.preLoad(MovieKB.get());
+    public static final SampleKBContext movieKB = SampleKBContext.preLoad(MovieKB.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -70,7 +70,7 @@ public class DeleteQueryTest {
 
     @Before
     public void setUp() {
-        qb = movieGraph.tx().graql();
+        qb = movieKB.tx().graql();
 
         kurtz = qb.match(x.has("name", "Colonel Walter E. Kurtz"));
         marlonBrando = qb.match(x.has("name", "Marlon Brando"));
@@ -81,7 +81,7 @@ public class DeleteQueryTest {
 
     @After
     public void cleanUp(){
-        movieGraph.rollback();
+        movieKB.rollback();
     }
 
     @Test
@@ -264,17 +264,17 @@ public class DeleteQueryTest {
     public void testDeleteEntityTypeAfterInstances() {
         MatchQuery movie = qb.match(x.isa("movie"));
 
-        assertNotNull(movieGraph.tx().getEntityType("movie"));
+        assertNotNull(movieKB.tx().getEntityType("movie"));
         assertExists(movie);
 
         movie.delete(x).execute();
 
-        assertNotNull(movieGraph.tx().getEntityType("movie"));
+        assertNotNull(movieKB.tx().getEntityType("movie"));
         assertNotExists(movie);
 
         qb.match(x.label("movie").sub("entity")).delete(x).execute();
 
-        assertNull(movieGraph.tx().getEntityType("movie"));
+        assertNull(movieKB.tx().getEntityType("movie"));
     }
 
     @Test
@@ -328,24 +328,24 @@ public class DeleteQueryTest {
     public void whenDeletingAVariableNotInTheQuery_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y));
-        movieGraph.tx().graql().match(x.isa("movie")).delete(y).execute();
+        movieKB.tx().graql().match(x.isa("movie")).delete(y).execute();
     }
 
     @Test
     public void whenDeletingAnEmptyPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
-        movieGraph.tx().graql().match(var()).delete(Collections.EMPTY_SET).execute();
+        movieKB.tx().graql().match(var()).delete(Collections.EMPTY_SET).execute();
     }
 
     @Test(expected = Exception.class)
     public void deleteVarNameNullSet() {
-        movieGraph.tx().graql().match(var()).delete((Set<VarPattern>) null).execute();
+        movieKB.tx().graql().match(var()).delete((Set<VarPattern>) null).execute();
     }
 
     @Test(expected = Exception.class)
     public void whenDeleteIsPassedNull_Throw() {
-        movieGraph.tx().graql().match(var()).delete((String) null).execute();
+        movieKB.tx().graql().match(var()).delete((String) null).execute();
     }
 
 }

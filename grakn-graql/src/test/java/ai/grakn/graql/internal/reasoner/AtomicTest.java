@@ -77,7 +77,7 @@ import static org.junit.Assume.assumeTrue;
 public class AtomicTest {
 
     @ClassRule
-    public static final SampleKBContext cwGraph = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext cwKB = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
     public static final SampleKBContext typeInferenceSet = SampleKBContext.preLoad("typeInferenceTest.gql").assumeTrue(GraknTestSetup.usingTinker());
@@ -370,7 +370,7 @@ public class AtomicTest {
 
     @Test //each type can only play a specific role in the relation hence mapping unambiguous
     public void testRoleInference_BasedOnPresentTypes_AllVarsHaveType(){
-        GraknTx graph = cwGraph.tx();
+        GraknTx graph = cwKB.tx();
         String patternString = "{($z, $y) isa owns; $z isa country; $y isa rocket;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();
@@ -384,7 +384,7 @@ public class AtomicTest {
 
     @Test //Without cardinality constraints $y variable can be mapped either to item-owner or owned-item so meta role is inserted
     public void testRoleInference_BasedOnPresentTypes_SomeVarsHaveType(){
-        GraknTx graph = cwGraph.tx();
+        GraknTx graph = cwKB.tx();
         String patternString2 = "{isa owns, ($z, $y); $z isa country;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString2, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();
@@ -398,7 +398,7 @@ public class AtomicTest {
 
     @Test //each type maps to a specific role
     public void testRoleInference_WithWildcardRelationPlayer(){
-        GraknTx graph = cwGraph.tx();
+        GraknTx graph = cwKB.tx();
         String patternString = "{($z, $y, seller: $x) isa transaction;$z isa country;$y isa rocket;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom2 = (RelationAtom) query.getAtom();
@@ -413,7 +413,7 @@ public class AtomicTest {
 
     @Test //without cardinality constraints the $y variable can be mapped to any of the three roles hence metarole is assigned
     public void testRoleInference_WithWildcardRelationPlayer_NoExplicitRoles(){
-        GraknTx graph = cwGraph.tx();
+        GraknTx graph = cwKB.tx();
         String patternString = "{($z, $y, $x) isa transaction;$z isa country;$x isa person;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();
@@ -428,7 +428,7 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference_RepeatingRolePlayers_NonRepeatingRoleAbsent(){
-        GraknTx graph = cwGraph.tx();
+        GraknTx graph = cwKB.tx();
         String patternString = "{(buyer: $y, seller: $y, $x), isa transaction;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();
@@ -443,7 +443,7 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference_RepeatingRolePlayers_RepeatingRoleAbsent(){
-        GraknTx graph = cwGraph.tx();
+        GraknTx graph = cwKB.tx();
         String patternString = "{(buyer: $y, $y, transaction-item: $x), isa transaction;}";
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
         RelationAtom atom = (RelationAtom) query.getAtom();

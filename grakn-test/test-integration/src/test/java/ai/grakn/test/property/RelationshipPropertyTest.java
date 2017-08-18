@@ -22,7 +22,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
-import ai.grakn.generator.FromTxGenerator.FromGraph;
+import ai.grakn.generator.FromTxGenerator.FromTx;
 import ai.grakn.generator.GraknTxs;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -50,7 +50,7 @@ public class RelationshipPropertyTest {
 
     @Property
     public void whenAddingARolePlayer_ItIsAddedToTheCollectionOfRolePlayers(
-            Relationship relationship, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
+            Relationship relationship, @NonMeta @FromTx Role role, @FromTx Thing rolePlayer) {
 
         relationship.addRolePlayer(role, rolePlayer);
 
@@ -59,7 +59,7 @@ public class RelationshipPropertyTest {
 
     @Property(onMinimalCounterexample = GraknTxs.class)
     public void whenAddingARolePlayerPlayingARole_TheRolePlayerIsAddedToTheCollectionOfRolePlayersForThatRole(
-            Relationship relationship, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
+            Relationship relationship, @NonMeta @FromTx Role role, @FromTx Thing rolePlayer) {
 
         relationship.addRolePlayer(role, rolePlayer);
 
@@ -68,7 +68,7 @@ public class RelationshipPropertyTest {
 
     @Property
     public void whenAddingARolePlayer_NoRolePlayersAreRemoved(
-            Relationship relationship, @NonMeta @FromGraph Role role, @FromGraph Thing rolePlayer) {
+            Relationship relationship, @NonMeta @FromTx Role role, @FromTx Thing rolePlayer) {
 
         Thing[] rolePlayers = relationship.rolePlayers(role).toArray(Thing[]::new);
 
@@ -78,7 +78,7 @@ public class RelationshipPropertyTest {
     }
 
     @Property
-    public void whenCallingRolePlayers_TheResultIsASet(Relationship relationship, @FromGraph Role[] roles) {
+    public void whenCallingRolePlayers_TheResultIsASet(Relationship relationship, @FromTx Role[] roles) {
         Collection<Thing> rolePlayers = relationship.rolePlayers(roles).collect(toSet());
         Set<Thing> rolePlayersSet = newHashSet(rolePlayers);
         assertEquals(rolePlayers.size(), rolePlayersSet.size());
@@ -94,7 +94,7 @@ public class RelationshipPropertyTest {
 
     @Property
     public void whenCallingRolePlayersWithXandY_IsTheSameAsCallingRolePlayersXAndRolePlayersY(
-            Relationship relationship, @FromGraph Role[] rolesX, @FromGraph Role[] rolesY) {
+            Relationship relationship, @FromTx Role[] rolesX, @FromTx Role[] rolesY) {
 
         Role[] rolesXY = (Role[]) addAll(rolesX, rolesY);
 

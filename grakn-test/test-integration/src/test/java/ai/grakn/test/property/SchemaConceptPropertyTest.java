@@ -24,7 +24,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
-import ai.grakn.generator.FromTxGenerator.FromGraph;
+import ai.grakn.generator.FromTxGenerator.FromTx;
 import ai.grakn.generator.GraknTxs.Open;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -82,14 +82,14 @@ public class SchemaConceptPropertyTest {
     }
 
     @Property
-    public void whenCallingGetLabel_TheResultIsUnique(SchemaConcept concept1, @FromGraph SchemaConcept concept2) {
+    public void whenCallingGetLabel_TheResultIsUnique(SchemaConcept concept1, @FromTx SchemaConcept concept2) {
         assumeThat(concept1, not(is(concept2)));
         assertNotEquals(concept1.getLabel(), concept2.getLabel());
     }
 
     @Property
     public void whenCallingGetLabel_TheResultCanBeUsedToRetrieveTheSameConcept(
-            @Open GraknTx graph, @FromGraph SchemaConcept concept) {
+            @Open GraknTx graph, @FromTx SchemaConcept concept) {
         Label label = concept.getLabel();
         assertEquals(concept, graph.getSchemaConcept(label));
     }
@@ -122,7 +122,7 @@ public class SchemaConceptPropertyTest {
     }
 
     @Property
-    public void whenGettingIndirectSub_ReturnSelfAndIndirectSubsOfDirectSub(@FromGraph SchemaConcept concept) {
+    public void whenGettingIndirectSub_ReturnSelfAndIndirectSubsOfDirectSub(@FromTx SchemaConcept concept) {
         Collection<SchemaConcept> directSubs = PropertyUtil.directSubs(concept);
         SchemaConcept[] expected = Stream.concat(
                 Stream.of(concept),
@@ -139,7 +139,7 @@ public class SchemaConceptPropertyTest {
 
     @Property
     public void whenSettingTheDirectSuperOfAMetaConcept_Throw(
-            @Meta SchemaConcept subConcept, @FromGraph SchemaConcept superConcept) {
+            @Meta SchemaConcept subConcept, @FromTx SchemaConcept superConcept) {
         assumeTrue(sameSchemaConcept(subConcept, superConcept));
 
         exception.expect(GraknTxOperationException.class);
@@ -159,7 +159,7 @@ public class SchemaConceptPropertyTest {
 
     @Property
     public void whenSettingTheDirectSuper_TheDirectSuperIsSet(
-            @NonMeta SchemaConcept subConcept, @FromGraph SchemaConcept superConcept) {
+            @NonMeta SchemaConcept subConcept, @FromTx SchemaConcept superConcept) {
         assumeTrue(sameSchemaConcept(subConcept, superConcept));
         assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
@@ -173,7 +173,7 @@ public class SchemaConceptPropertyTest {
 
     @Property
     public void whenAddingADirectSubThatIsAMetaConcept_Throw(
-            SchemaConcept superConcept, @Meta @FromGraph SchemaConcept subConcept) {
+            SchemaConcept superConcept, @Meta @FromTx SchemaConcept subConcept) {
         assumeTrue(sameSchemaConcept(subConcept, superConcept));
 
         exception.expect(GraknTxOperationException.class);
@@ -193,7 +193,7 @@ public class SchemaConceptPropertyTest {
 
     @Property
     public void whenAddingADirectSub_TheDirectSubIsAdded(
-            SchemaConcept superConcept, @NonMeta @FromGraph SchemaConcept subConcept) {
+            SchemaConcept superConcept, @NonMeta @FromTx SchemaConcept subConcept) {
         assumeTrue(sameSchemaConcept(subConcept, superConcept));
         assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 

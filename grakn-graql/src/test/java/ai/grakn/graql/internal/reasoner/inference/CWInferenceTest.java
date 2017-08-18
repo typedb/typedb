@@ -42,16 +42,16 @@ public class CWInferenceTest {
     private static QueryBuilder iqb;
 
     @ClassRule
-    public static SampleKBContext cwGraph = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static SampleKBContext cwKB = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static SampleKBContext cwGraph2 = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static SampleKBContext cwKB2 = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(GraknTestSetup.usingTinker());
-        qb = cwGraph.tx().graql().infer(false);
-        iqb = cwGraph.tx().graql().infer(true).materialise(false);
+        qb = cwKB.tx().graql().infer(false);
+        iqb = cwKB.tx().graql().infer(true).materialise(false);
     }
 
     @Test
@@ -73,7 +73,7 @@ public class CWInferenceTest {
 
     @Test
     public void testTransactionQuery() {
-        QueryBuilder qb = cwGraph2.tx().graql().infer(false);
+        QueryBuilder qb = cwKB2.tx().graql().infer(false);
                 String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction;";
         String explicitQuery = "match " +
                 "$x isa person;" +
@@ -206,7 +206,7 @@ public class CWInferenceTest {
 
     @Test
     public void testGraphCase() {
-        GraknTx localGraph = cwGraph2.tx();
+        GraknTx localGraph = cwKB2.tx();
         QueryBuilder lqb = localGraph.graql().infer(false);
         QueryBuilder ilqb = localGraph.graql().infer(true);
         RuleType inferenceRule = localGraph.getRuleType("inference-rule");
@@ -238,7 +238,7 @@ public class CWInferenceTest {
                 "};" +
                 "}; select $x;";
 
-        cwGraph2.tx(); //Reopen transaction
+        cwKB2.tx(); //Reopen transaction
         assertQueriesEqual(ilqb.parse(queryString), lqb.parse(explicitQuery));
     }
 

@@ -39,11 +39,11 @@ import static org.junit.Assert.assertEquals;
 public class BenchmarkTests {
 
     @Rule
-    public final SampleKBContext graphContext = SampleKBContext.empty();
+    public final SampleKBContext sampleKB = SampleKBContext.empty();
 
     @Before
     public void setUpGraph(){
-        graphContext.tx().close();
+        sampleKB.tx().close();
     }
 
     /**
@@ -81,10 +81,10 @@ public class BenchmarkTests {
         //results @N = 30 216225  132s    65 s
 
         long startTime = System.currentTimeMillis();
-        graphContext.load(MatrixKBII.get(N, N));
+        sampleKB.load(MatrixKBII.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknTx graph = graphContext.tx();
+        GraknTx graph = sampleKB.tx();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         String queryString = "match (P-from: $x, P-to: $y) isa P;";
@@ -120,10 +120,10 @@ public class BenchmarkTests {
     public void testTransitiveChain()  {
         final int N = 20;
         long startTime = System.currentTimeMillis();
-        graphContext.load(TransitivityChainKB.get(N));
+        sampleKB.load(TransitivityChainKB.get(N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknTx graph = graphContext.tx();
+        GraknTx graph = sampleKB.tx();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
 
@@ -187,10 +187,10 @@ public class BenchmarkTests {
         //results @N = 35 396900   ?        ?      ?     76 s
 
         long startTime = System.currentTimeMillis();
-        graphContext.load(TransitivityMatrixKB.get(N, N));
+        sampleKB.load(TransitivityMatrixKB.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknTx graph = graphContext.tx();
+        GraknTx graph = sampleKB.tx();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
 
@@ -259,10 +259,10 @@ public class BenchmarkTests {
         //results @N = 100 9604  loading takes ages
 
         long startTime = System.currentTimeMillis();
-        graphContext.load(DiagonalKB.get(N, N));
+        sampleKB.load(DiagonalKB.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-        GraknTx graph = graphContext.tx();
+        GraknTx graph = sampleKB.tx();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal;";

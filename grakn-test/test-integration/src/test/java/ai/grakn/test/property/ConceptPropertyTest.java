@@ -27,7 +27,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
-import ai.grakn.generator.FromTxGenerator.FromGraph;
+import ai.grakn.generator.FromTxGenerator.FromTx;
 import ai.grakn.generator.GraknTxs.Open;
 import ai.grakn.generator.Methods.MethodOf;
 import ai.grakn.util.ErrorMessage;
@@ -83,7 +83,7 @@ public class ConceptPropertyTest {
     @Ignore // TODO: Either fix this, remove test or add exceptions to this rule
     @Property
     public void whenCallingAnyMethodsOnAConceptFromAClosedGraph_Throw(
-            @Open GraknTx graph, @FromGraph Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
+            @Open GraknTx graph, @FromTx Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
         graph.close();
 
         Object[] params = mockParamsOf(method);
@@ -97,28 +97,28 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenCallingToStringOnADeletedConcept_TheStringContainsTheId(
-            @Open GraknTx graph, @FromGraph @NonMeta Concept concept) {
+            @Open GraknTx graph, @FromTx @NonMeta Concept concept) {
         assumeDeletable(graph, concept);
         concept.delete();
         assertThat(concept.toString(), containsString(concept.getId().getValue()));
     }
 
     @Property
-    public void whenCallingGetId_TheResultIsUnique(Concept concept1, @FromGraph Concept concept2) {
+    public void whenCallingGetId_TheResultIsUnique(Concept concept1, @FromTx Concept concept2) {
         assumeThat(concept1, not(is(concept2)));
         assertNotEquals(concept1.getId(), concept2.getId());
     }
 
     @Property
     public void whenCallingGetId_TheResultCanBeUsedToRetrieveTheSameConcept(
-            @Open GraknTx graph, @FromGraph Concept concept) {
+            @Open GraknTx graph, @FromTx Concept concept) {
         ConceptId id = concept.getId();
         assertEquals(concept, graph.getConcept(id));
     }
 
     @Property
     public void whenCallingDelete_TheConceptIsNoLongerInTheGraph(
-            @Open GraknTx graph, @NonMeta @FromGraph Concept concept) {
+            @Open GraknTx graph, @NonMeta @FromTx Concept concept) {
         assumeDeletable(graph, concept);
 
         assertThat(allConceptsFrom(graph), hasItem(concept));

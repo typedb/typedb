@@ -54,7 +54,7 @@ import static org.mockito.Mockito.when;
 
 public class GraqlControllerDeleteTest {
 
-    private static GraknTx mockGraph;
+    private static GraknTx tx;
     private static QueryBuilder mockQueryBuilder;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
@@ -75,23 +75,23 @@ public class GraqlControllerDeleteTest {
         when(mockQueryBuilder.parse(any()))
                 .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
 
-        mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+        tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
-        when(mockGraph.graql()).thenReturn(mockQueryBuilder);
+        when(tx.getKeyspace()).thenReturn("randomKeyspace");
+        when(tx.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.tx(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
+        when(mockFactory.tx(eq(tx.getKeyspace()), any())).thenReturn(tx);
     }
 
     @Test
     public void DELETEGraqlDelete_GraphCommitCalled(){
         String query = "match $x isa person; limit 1; delete $x;";
 
-        verify(mockGraph, times(0)).commit();
+        verify(tx, times(0)).commit();
 
         sendRequest(query);
 
-        verify(mockGraph, times(1)).commit();
+        verify(tx, times(1)).commit();
     }
 
     @Test
@@ -140,11 +140,11 @@ public class GraqlControllerDeleteTest {
     }
 
     @Test
-    public void DELETEGraqlDelete_DeleteWasExecutedOnGraph(){
+    public void DELETEGraqlDelete_DeleteWasExecutedOnTx(){
         doAnswer(answer -> {
             sampleKB.tx().commit();
             return null;
-        }).when(mockGraph).commit();
+        }).when(tx).commit();
 
         String query = "match $x has title \"Godfather\"; delete $x;";
 
@@ -185,7 +185,7 @@ public class GraqlControllerDeleteTest {
 
     private Response sendRequest(String query){
         return RestAssured.with()
-                .queryParam(KEYSPACE, mockGraph.getKeyspace())
+                .queryParam(KEYSPACE, tx.getKeyspace())
                 .queryParam(INFER, false)
                 .queryParam(MATERIALISE, false)
                 .accept(APPLICATION_TEXT)

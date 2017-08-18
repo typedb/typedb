@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 
 public class ConceptControllerTest {
 
-    private static GraknTx mockGraph;
+    private static GraknTx mockTx;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
@@ -68,13 +68,13 @@ public class ConceptControllerTest {
 
     @Before
     public void setupMock(){
-        mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
-        when(mockGraph.getConcept(any())).thenAnswer(invocation ->
+        when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockTx.getConcept(any())).thenAnswer(invocation ->
                 sampleKB.tx().getConcept(invocation.getArgument(0)));
 
-        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
+        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
     }
 
 
@@ -90,7 +90,7 @@ public class ConceptControllerTest {
         Concept concept = sampleKB.tx().getEntityType("movie");
 
         Response response = with()
-                .queryParam(KEYSPACE, mockGraph.getKeyspace())
+                .queryParam(KEYSPACE, mockTx.getKeyspace())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
@@ -101,7 +101,7 @@ public class ConceptControllerTest {
     public void gettingConceptByIdWithHAlAcceptType_ResponseContentTypeIsHAL(){
         Concept concept = sampleKB.tx().getEntityType("movie");
 
-        Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
+        Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace())
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
@@ -112,7 +112,7 @@ public class ConceptControllerTest {
     public void gettingConceptByIdWithInvalidAcceptType_ResponseStatusIs406(){
         Concept concept = sampleKB.tx().getEntityType("movie");
 
-        Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
+        Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
                 .accept("invalid")
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId());
@@ -157,7 +157,7 @@ public class ConceptControllerTest {
 
     @Test
     public void gettingNonExistingElementById_ResponseStatusIs404(){
-        Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
+        Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace())
                 .queryParam(IDENTIFIER, "invalid")
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Concept.CONCEPT + "blah");
@@ -166,7 +166,7 @@ public class ConceptControllerTest {
     }
 
     private Response sendRequest(Concept concept, int numberEmbeddedComponents){
-        return with().queryParam(KEYSPACE, mockGraph.getKeyspace())
+        return with().queryParam(KEYSPACE, mockTx.getKeyspace())
                 .queryParam(LIMIT_EMBEDDED, numberEmbeddedComponents)
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId().getValue());

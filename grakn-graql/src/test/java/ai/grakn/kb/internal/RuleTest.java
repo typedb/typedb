@@ -315,7 +315,7 @@ public class RuleTest {
     }
 
     private void validateOntologicallyIllegalRule(Pattern when, Pattern then, String message){
-        initGraph(graknTx);
+        initTx(graknTx);
         graknTx.admin().getMetaRuleInference().putRule(when, then);
 
         expectedException.expect(InvalidKBException.class);
@@ -325,7 +325,7 @@ public class RuleTest {
     }
     
     private void validateIllegalRule(Pattern when, Pattern then, ErrorMessage message){
-        initGraph(graknTx);
+        initTx(graknTx);
         Rule rule = graknTx.admin().getMetaRuleInference().putRule(when, then);
 
         expectedException.expect(InvalidKBException.class);
@@ -335,7 +335,7 @@ public class RuleTest {
         graknTx.commit();
     }
     
-    private void initGraph(GraknTx graph){
+    private void initTx(GraknTx graph){
         AttributeType<Integer> res1 = graph.putAttributeType("res1", AttributeType.DataType.INTEGER);
         Role role1 = graph.putRole("role1");
         Role role2 = graph.putRole("role2");
