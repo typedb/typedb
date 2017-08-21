@@ -70,6 +70,8 @@ public class ResourceController {
                 LOG.info("postResource - resourceType " + resourceTypeLabel + " found.");
                 ResourceType resourceType = resourceTypeOptional.get();
                 Resource resource = resourceType.putResource(resourceValue);
+                graph.commit();
+
                 String jsonConceptId = resource.getId().getValue();
                 Object jsonResourceValue = resource.getValue();
                 LOG.info("postResource - resource " + jsonConceptId + " of resourceType " + resourceTypeLabel + " added. request processed");

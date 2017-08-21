@@ -72,7 +72,7 @@ public class ResourceTypeController {
             graph.commit();
             String jsonConceptId = resourceType.getId().getValue();
             String jsonResourceTypeLabel = resourceType.getLabel().getValue();
-            String jsonResourceTypeDataType = resourceType.getDataType().getName();
+            String jsonResourceTypeDataType = toString(resourceType.getDataType());
             LOG.info("postResourceType - resource type " + jsonResourceTypeLabel +
                 " of type " + jsonResourceTypeDataType + " with id " + jsonConceptId + " added successfully. request processed.");
             response.status(HttpStatus.SC_OK);

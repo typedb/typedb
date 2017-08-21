@@ -72,6 +72,7 @@ public class EntityController {
                 LOG.info("postEntity - entityType " + entityTypeLabel + " found.");
                 EntityType entityType = entityTypeOptional.get();
                 Entity entity = entityType.addEntity();
+                graph.commit();
                 String jsonConceptId = entity.getId().getValue();
                 LOG.info("postEntity - entity " + jsonConceptId + " of entityType " + entityTypeLabel + " added. request processed");
                 response.status(HttpStatus.SC_OK);
