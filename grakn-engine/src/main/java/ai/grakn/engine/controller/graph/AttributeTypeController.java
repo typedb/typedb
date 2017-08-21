@@ -18,10 +18,10 @@
 
 package ai.grakn.engine.controller.graph;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
@@ -49,92 +49,92 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
  */
 
 public class AttributeTypeController {
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private static final Logger LOG = LoggerFactory.getLogger(AttributeTypeController.class);
 
-    public AttributeTypeController(EngineGraknGraphFactory factory, Service spark,
+    public AttributeTypeController(EngineGraknTxFactory factory, Service spark,
                                    MetricRegistry metricRegistry) {
         this.factory = factory;
-        spark.post("/graph/resourceType", this::postResourceType);
-        spark.get("/graph/resourceType/:resourceTypeLabel", this::getResourceType);
+        spark.post("/graph/attributeType", this::postAttributeType);
+        spark.get("/graph/attributeType/:attributeTypeLabel", this::getAttributeType);
     }
 
-    private Json postResourceType(Request request, Response response) {
-        LOG.info("postResourceType - request received.");
+    private Json postAttributeType(Request request, Response response) {
+        LOG.info("postAttributeType - request received.");
         Map<String, Object> requestBody = Json.read(mandatoryBody(request)).asMap();
-        String resourceTypeLabel = (String) requestBody.get("resourceTypeLabel");
-        String resourceTypeDataTypeRaw = (String) requestBody.get("resourceTypeDataType");
-        ResourceType.DataType<?> resourceTypeDataType = fromString(resourceTypeDataTypeRaw);
+        String attributeTypeLabel = (String) requestBody.get("attributeTypeLabel");
+        String attributeTypeDataTypeRaw = (String) requestBody.get("attributeTypeDataType");
+        AttributeType.DataType<?> attributeTypeDataType = fromString(attributeTypeDataTypeRaw);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("postResourceType - attempting to add new resourceType " + resourceTypeLabel + " of type " + resourceTypeDataTypeRaw);
-        try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
-            ResourceType resourceType = graph.putResourceType(resourceTypeLabel, resourceTypeDataType);
+        LOG.info("postAttributeType - attempting to add new attributeType " + attributeTypeLabel + " of type " + attributeTypeDataTypeRaw);
+        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
+            AttributeType attributeType = graph.putAttributeType(attributeTypeLabel, attributeTypeDataType);
             graph.commit();
-            String jsonConceptId = resourceType.getId().getValue();
-            String jsonResourceTypeLabel = resourceType.getLabel().getValue();
-            String jsonResourceTypeDataType = toString(resourceType.getDataType());
-            LOG.info("postResourceType - resource type " + jsonResourceTypeLabel +
-                " of type " + jsonResourceTypeDataType + " with id " + jsonConceptId + " added successfully. request processed.");
+            String jsonConceptId = attributeType.getId().getValue();
+            String jsonAttributeTypeLabel = attributeType.getLabel().getValue();
+            String jsonAttributeTypeDataType = toString(attributeType.getDataType());
+            LOG.info("postAttributeType - attribute type " + jsonAttributeTypeLabel +
+                " of type " + jsonAttributeTypeDataType + " with id " + jsonConceptId + " added successfully. request processed.");
             response.status(HttpStatus.SC_OK);
             Json responseBody = Json.object(
                 "conceptId", jsonConceptId,
-                "resourceTypeLabel", jsonResourceTypeLabel,
-                "resourceTypeDataType", jsonResourceTypeDataType
+                "attributeTypeLabel", jsonAttributeTypeLabel,
+                "attributeTypeDataType", jsonAttributeTypeDataType
             );
             return responseBody;
         }
     }
 
-    private Json getResourceType(Request request, Response response) {
-        LOG.info("getResourceType - request received.");
-        String resourceTypeLabel = mandatoryPathParameter(request, "resourceTypeLabel");
+    private Json getAttributeType(Request request, Response response) {
+        LOG.info("getAttributeType - request received.");
+        String attributeTypeLabel = mandatoryPathParameter(request, "attributeTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("getResourceType - attempting to find resourceType " + resourceTypeLabel + " in keyspace " + keyspace);
-        try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.READ)) {
-            Optional<ResourceType> resourceType = Optional.ofNullable(graph.getResourceType(resourceTypeLabel));
-            if (resourceType.isPresent()) {
-                String jsonConceptId = resourceType.get().getId().getValue();
-                String jsonResourceTypeLabel = resourceType.get().getLabel().getValue();
-                String jsonResourceTypeDataType = toString(resourceType.get().getDataType());
+        LOG.info("getAttributeType - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
+        try (GraknTx graph = factory.tx(keyspace, GraknTxType.READ)) {
+            Optional<AttributeType> attributeType = Optional.ofNullable(graph.getAttributeType(attributeTypeLabel));
+            if (attributeType.isPresent()) {
+                String jsonConceptId = attributeType.get().getId().getValue();
+                String jsonAttributeTypeLabel = attributeType.get().getLabel().getValue();
+                String jsonAttributeTypeDataType = toString(attributeType.get().getDataType());
                 response.status(HttpStatus.SC_OK);
                 Json responseBody = Json.object(
                     "conceptId", jsonConceptId,
-                    "resourceTypeLabel", jsonResourceTypeLabel,
-                    "resourceTypeDataType", jsonResourceTypeDataType
+                    "attributeTypeLabel", jsonAttributeTypeLabel,
+                    "attributeTypeDataType", jsonAttributeTypeDataType
                 );
-                LOG.info("getResourceType - resourceType found - " + jsonConceptId + ", " +
-                    jsonResourceTypeLabel + ", " + jsonResourceTypeDataType + ". request processed.");
+                LOG.info("getAttributeType - attributeType found - " + jsonConceptId + ", " +
+                    jsonAttributeTypeLabel + ", " + jsonAttributeTypeDataType + ". request processed.");
                 return responseBody;
             } else {
                 response.status(HttpStatus.SC_BAD_REQUEST);
-                LOG.info("getResourceType - resourceType NOT found. request processed.");
+                LOG.info("getAttributeType - attributeType NOT found. request processed.");
                 return Json.nil();
             }
         }
     }
 
-    private ResourceType.DataType<?> fromString(String dataType) {
+    private AttributeType.DataType<?> fromString(String dataType) {
         if (dataType.equals("string")) {
-            return ResourceType.DataType.STRING;
+            return AttributeType.DataType.STRING;
         } else if (dataType.equals("double")) {
-            return ResourceType.DataType.DOUBLE;
+            return AttributeType.DataType.DOUBLE;
         } else if (dataType.equals("long")) {
-            return ResourceType.DataType.LONG;
+            return AttributeType.DataType.LONG;
         } else if (dataType.equals("boolean")) {
-            return ResourceType.DataType.BOOLEAN;
+            return AttributeType.DataType.BOOLEAN;
         } else {
             throw GraknServerException.invalidQueryExplaination("invalid datatype supplied: '" + dataType + "'");
         }
     }
 
-    private String toString(ResourceType.DataType<?> dataType) {
-        if (dataType.equals(ResourceType.DataType.STRING)) {
+    private String toString(AttributeType.DataType<?> dataType) {
+        if (dataType.equals(AttributeType.DataType.STRING)) {
             return "string";
-        } else if (dataType.equals(ResourceType.DataType.DOUBLE)) {
+        } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
             return "double";
-        } else if (dataType.equals(ResourceType.DataType.LONG)) {
+        } else if (dataType.equals(AttributeType.DataType.LONG)) {
             return "long";
-        } else if (dataType.equals(ResourceType.DataType.BOOLEAN)) {
+        } else if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
             return "boolean";
         } else {
             throw GraknServerException.invalidQueryExplaination("invalid datatype supplied: '" + dataType + "'");
