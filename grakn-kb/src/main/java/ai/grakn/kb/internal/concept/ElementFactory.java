@@ -25,7 +25,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.structure.AbstractElement;
 import ai.grakn.kb.internal.structure.Casting;
@@ -209,7 +209,7 @@ public final class ElementFactory {
                     concept = new RuleTypeImpl(vertexElement);
                     break;
                 default:
-                    throw GraphOperationException.unknownConcept(type.name());
+                    throw GraknTxOperationException.unknownConcept(type.name());
             }
             graknGraph.txCache().cacheConcept(concept);
         }
@@ -248,7 +248,7 @@ public final class ElementFactory {
                     concept = new RelationshipImpl(new RelationshipEdge(edgeElement));
                     break;
                 default:
-                    throw GraphOperationException.unknownConcept(label.name());
+                    throw GraknTxOperationException.unknownConcept(label.name());
             }
             graknGraph.txCache().cacheConcept(concept);
         }

@@ -30,7 +30,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraphLoader;
+import ai.grakn.util.SampleKBLoader;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -68,7 +68,7 @@ public class JsonMigratorMainTest {
 
     @Before
     public void setup() {
-        keyspace = GraphLoader.randomKeyspace();
+        keyspace = SampleKBLoader.randomKeyspace();
         session = Grakn.session(engine.uri(), keyspace);
 
         load(session, getFile("json", "simple-schema/schema.gql"));

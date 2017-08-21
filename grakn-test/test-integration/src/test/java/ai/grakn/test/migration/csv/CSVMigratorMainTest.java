@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraphLoader;
+import ai.grakn.util.SampleKBLoader;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -55,7 +55,7 @@ public class CSVMigratorMainTest {
 
     @Before
     public void setup(){
-        keyspace = GraphLoader.randomKeyspace();
+        keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
 
         load(factory, getFile("csv", "pets/schema.gql"));

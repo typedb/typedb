@@ -187,12 +187,12 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(VARIABLE_NOT_IN_QUERY.getMessage(var));
     }
 
-    public static GraqlQueryException noGraph() {
-        return new GraqlQueryException(ErrorMessage.NO_GRAPH.getMessage());
+    public static GraqlQueryException noTx() {
+        return new GraqlQueryException(ErrorMessage.NO_TX.getMessage());
     }
 
-    public static GraqlQueryException multipleGraphs() {
-        return new GraqlQueryException(ErrorMessage.MULTIPLE_GRAPH.getMessage());
+    public static GraqlQueryException multipleTxs() {
+        return new GraqlQueryException(ErrorMessage.MULTIPLE_TX.getMessage());
     }
 
     public static GraqlQueryException nonPositiveLimit(long limit) {

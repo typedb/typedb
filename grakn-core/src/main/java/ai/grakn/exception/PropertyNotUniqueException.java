@@ -41,7 +41,7 @@ import static ai.grakn.util.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
  *
  * @author fppt
  */
-public class PropertyNotUniqueException extends GraphOperationException{
+public class PropertyNotUniqueException extends GraknTxOperationException {
     private PropertyNotUniqueException(String error) {
         super(error);
     }

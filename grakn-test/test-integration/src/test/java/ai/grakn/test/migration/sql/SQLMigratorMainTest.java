@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraphLoader;
+import ai.grakn.util.SampleKBLoader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -60,7 +60,7 @@ public class SQLMigratorMainTest {
 
     @Before
     public void setup() throws SQLException {
-        keyspace = GraphLoader.randomKeyspace();
+        keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
         connection = setupExample(factory, "pets");
     }

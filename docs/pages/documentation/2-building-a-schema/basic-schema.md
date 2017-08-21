@@ -18,7 +18,7 @@ comment_issue_id: 22
 
 In this section we are going to run through the construction of a basic schema. We recommend that you refer to the [Knowledge Model](../the-fundamentals/grakn-knowledge-model.html) documentation before reading this page. The process we will follow is a general guideline as to how you may start designing a schema.
 
-The schema we will be building will be used for a genealogy knowledge base used for mapping out a family tree. You can find the complete schema, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
+The schema we will be building will be used for a genealogy knowledge base used for mapping out a family tree. You can find the complete schema, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-knowledge-base).
 
 
 ## Identifying Entity Types

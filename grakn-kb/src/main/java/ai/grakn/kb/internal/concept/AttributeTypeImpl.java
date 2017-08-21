@@ -20,7 +20,7 @@ package ai.grakn.kb.internal.concept;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 
@@ -75,7 +75,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Override
     public AttributeType<D> setRegex(String regex) {
         if(getDataType() == null || !getDataType().equals(DataType.STRING)) {
-            throw GraphOperationException.cannotSetRegex(this);
+            throw GraknTxOperationException.cannotSetRegex(this);
         }
 
         checkInstancesMatchRegex(regex);
@@ -86,7 +86,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     /**
      * Checks that existing instances match the provided regex.
      *
-     * @throws GraphOperationException when an instance does not match the provided regex
+     * @throws GraknTxOperationException when an instance does not match the provided regex
      * @param regex The regex to check against
      */
     private void checkInstancesMatchRegex(@Nullable String regex){
@@ -96,7 +96,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
                 String value = (String) resource.getValue();
                 Matcher matcher = pattern.matcher(value);
                 if(!matcher.matches()){
-                    throw GraphOperationException.regexFailure(this, value, regex);
+                    throw GraknTxOperationException.regexFailure(this, value, regex);
                 }
             });
         }
@@ -110,7 +110,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
             if(getDataType().equals(DataType.STRING)) checkConformsToRegexes(value);
             Object persistenceValue = castValue(value);
-            AttributeImpl<D> resource = vertex().graph().factory().buildResource(vertex, type, persistenceValue);
+            AttributeImpl<D> resource = vertex().tx().factory().buildResource(vertex, type, persistenceValue);
             resource.vertex().propertyUnique(Schema.VertexProperty.INDEX, Schema.generateAttributeIndex(getLabel(), value.toString()));
             return resource;
         };
@@ -138,14 +138,14 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
                 return dataType.getPersistenceValue(value);
             }
         } catch (ClassCastException e) {
-            throw GraphOperationException.invalidResourceValue(value, dataType);
+            throw GraknTxOperationException.invalidResourceValue(value, dataType);
         }
     }
 
     /**
      * Checks if all the regex's of the types of this resource conforms to the value provided.
      *
-     * @throws GraphOperationException when the value does not conform to the regex of its types
+     * @throws GraknTxOperationException when the value does not conform to the regex of its types
      * @param value The value to check the regexes against.
      */
     private void checkConformsToRegexes(D value){
@@ -153,7 +153,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         superSet().forEach(sup -> {
             String regex = sup.getRegex();
             if (regex != null && !Pattern.matches(regex, (String) value)) {
-                throw GraphOperationException.regexFailure(this, (String) value, regex);
+                throw GraknTxOperationException.regexFailure(this, (String) value, regex);
             }
         });
     }
@@ -161,7 +161,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Override
     public Attribute<D> getAttribute(D value) {
         String index = Schema.generateAttributeIndex(getLabel(), value.toString());
-        return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
+        return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
     }
 
     /**

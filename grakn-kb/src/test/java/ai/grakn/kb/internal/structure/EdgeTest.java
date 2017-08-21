@@ -19,7 +19,7 @@
 package ai.grakn.kb.internal.structure;
 
 import ai.grakn.concept.Entity;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.kb.internal.concept.EntityImpl;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
 import ai.grakn.util.Schema;
@@ -30,7 +30,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-public class EdgeTest extends GraphTestBase {
+public class EdgeTest extends TxTestBase {
 
     private EntityTypeImpl entityType;
     private EntityImpl entity;
@@ -38,17 +38,17 @@ public class EdgeTest extends GraphTestBase {
 
     @Before
     public void createEdge(){
-        entityType = (EntityTypeImpl) graknGraph.putEntityType("My Entity Type");
+        entityType = (EntityTypeImpl) tx.putEntityType("My Entity Type");
         entity = (EntityImpl) entityType.addEntity();
-        Edge tinkerEdge = graknGraph.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity.getId().getValue()).outE().next();
-        edge = new EdgeElement(graknGraph, tinkerEdge);
+        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity.getId().getValue()).outE().next();
+        edge = new EdgeElement(tx, tinkerEdge);
     }
 
     @Test
     public void checkEqualityBetweenEdgesBasedOnID(){
         Entity entity2 = entityType.addEntity();
-        Edge tinkerEdge = graknGraph.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity2.getId().getValue()).outE().next();
-        EdgeElement edge2 = new EdgeElement(graknGraph, tinkerEdge);
+        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity2.getId().getValue()).outE().next();
+        EdgeElement edge2 = new EdgeElement(tx, tinkerEdge);
 
         assertEquals(edge, edge);
         assertNotEquals(edge, edge2);

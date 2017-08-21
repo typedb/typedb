@@ -235,7 +235,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
             VarPatternAdmin isaVar = isaProp.type();
             Label label = isaVar.getTypeLabel().orElse(null);
             if (label != null) {
-                VarPatternAdmin idVar = typeVariable.id(parent.graph().getSchemaConcept(label).getId()).admin();
+                VarPatternAdmin idVar = typeVariable.id(parent.tx().getSchemaConcept(label).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
             } else {
                 typeVariable = isaVar.var();

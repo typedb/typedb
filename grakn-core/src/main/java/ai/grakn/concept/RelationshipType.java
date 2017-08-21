@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
@@ -52,7 +52,7 @@ public interface RelationshipType extends Type {
      *
      * @return a new empty relation.
      *
-     * @throws GraphOperationException if this is a meta type
+     * @throws GraknTxOperationException if this is a meta type
      */
     Relationship addRelationship();
 

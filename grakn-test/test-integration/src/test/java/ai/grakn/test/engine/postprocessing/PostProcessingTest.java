@@ -26,7 +26,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.REST;
@@ -73,11 +73,11 @@ public class PostProcessingTest {
     }
 
     @Test
-    public void whenCreatingDuplicateResources_EnsureTheyAreMergedInPost() throws InvalidGraphException, InterruptedException {
+    public void whenCreatingDuplicateResources_EnsureTheyAreMergedInPost() throws InvalidKBException, InterruptedException {
         String value = "1";
         String sample = "Sample";
 
-        //Create Graph With Duplicate Resources
+        //Create GraknTx With Duplicate Resources
         GraknTx graph = session.open(GraknTxType.WRITE);
         AttributeType<String> attributeType = graph.putAttributeType(sample, AttributeType.DataType.STRING);
 

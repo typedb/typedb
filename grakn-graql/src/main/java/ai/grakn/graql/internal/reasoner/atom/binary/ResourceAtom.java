@@ -228,7 +228,7 @@ public class ResourceAtom extends Binary{
     public boolean requiresMaterialisation(){ return true;}
 
     private boolean isSuperNode(){
-        return graph().graql().match(getCombinedPattern()).admin().stream()
+        return tx().graql().match(getCombinedPattern()).admin().stream()
                 .skip(ResolutionPlan.RESOURCE_SUPERNODE_SIZE)
                 .findFirst().isPresent();
     }
