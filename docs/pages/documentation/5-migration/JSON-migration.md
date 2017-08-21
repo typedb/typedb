@@ -27,7 +27,7 @@ OPTIONS
  -c,--config <arg>     Configuration file.
  -h,--help             Print usage message.
  -i,--input <arg>      Input json data file or directory.
- -k,--keyspace <arg>   Grakn graph. Required.
+ -k,--keyspace <arg>   Grakn knowledge base. Required.
  -n,--no               Write to standard out.
  -r,--retry <arg>      Retry sending tasks if engine is not available
  -t,--template <arg>   Graql template to apply to the data.
@@ -41,8 +41,8 @@ OPTIONS
 
 The steps to migrate the CSV to GRAKN.AI are:
 
-* define an ontology for the data to derive the full benefit of a knowledge graph
-* create templated Graql to map the data to the ontology. Approach each JSON file as though you were inserting a single query, taking care that there are not more than one `match` or `insert` commands in your template. 
+* define a schema for the data to derive the full benefit of a knowledge base
+* create templated Graql to map the data to the schema. Approach each JSON file as though you were inserting a single query, taking care that there are not more than one `match` or `insert` commands in your template. 
 * invoke the Grakn migrator through the shell script or Java API. 
 
 {% include note.html content="JSON Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [templating documentation](../graql/graql-templating.html) to find out more." %}
@@ -135,7 +135,7 @@ Once the above types are migrated, we can move on to the pokemon JSON file:
 }
 ```
 
-This template is rather complicated. The first `match` portion is necessary to look up all of the already migrated pokemon types in the graph. You can then refer to these variables in your `insert` statement while creating the relationships.   
+This template is rather complicated. The first `match` portion is necessary to look up all of the already migrated pokemon types in the knowledge base. You can then refer to these variables in your `insert` statement while creating the relationships.   
 
 ```graql-template
 match

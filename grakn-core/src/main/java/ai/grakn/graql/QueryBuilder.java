@@ -18,6 +18,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.macro.Macro;
 
 import javax.annotation.CheckReturnValue;
@@ -61,6 +62,20 @@ public interface QueryBuilder {
      */
     @CheckReturnValue
     InsertQuery insert(Collection<? extends VarPattern> vars);
+
+    /**
+     * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
+     */
+    @CheckReturnValue
+    DefineQuery define(VarPattern... varPatterns);
+
+    /**
+     * @param varPatterns a collection of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
+     */
+    @CheckReturnValue
+    DefineQuery define(Collection<? extends VarPattern> varPatterns);
 
     /**
      * @return a compute query builder for building analytics query

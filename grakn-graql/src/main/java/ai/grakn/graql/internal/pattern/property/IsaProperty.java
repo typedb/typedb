@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -78,7 +78,7 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.isa(this, start, type().getVarName()));
+        return ImmutableSet.of(EquivalentFragmentSets.isa(this, start, type().var()));
     }
 
     @Override
@@ -87,19 +87,19 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.of(type());
     }
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Type type = executor.get(this.type().getVarName()).asType();
+        Type type = executor.get(this.type().var()).asType();
         executor.builder(var).isa(type);
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(type().getVarName());
+        return ImmutableSet.of(type().var());
     }
 
     @Override
@@ -108,10 +108,10 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
     }
 
     @Override
-    public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
+    public void checkValidProperty(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException {
         type().getTypeLabel().ifPresent(typeLabel -> {
-            OntologyConcept theOntologyConcept = graph.getOntologyConcept(typeLabel);
-            if (theOntologyConcept != null && theOntologyConcept.isRole()) {
+            SchemaConcept theSchemaConcept = graph.getSchemaConcept(typeLabel);
+            if (theSchemaConcept != null && theSchemaConcept.isRole()) {
                 throw GraqlQueryException.queryInstanceOfRoleType(typeLabel);
             }
         });
@@ -123,9 +123,9 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
         //IsaProperty is unique within a var, so skip if this is a relation
         if (var.hasProperty(RelationProperty.class)) return null;
 
-        Var varName = var.getVarName().asUserDefined();
+        Var varName = var.var().asUserDefined();
         VarPatternAdmin typeVar = this.type();
-        Var typeVariable = typeVar.getVarName().asUserDefined();
+        Var typeVariable = typeVar.var().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         //isa part

@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
@@ -80,7 +80,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     private Atom atom;
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
-    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
+    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, GraknTx graph) {
         super(pattern, graph);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
@@ -217,7 +217,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * execute insert on the query and return inserted answers
      */
     private Stream<Answer> insert() {
-        return Graql.insert(getPattern().getVars()).withGraph(graph()).stream();
+        return Graql.insert(getPattern().varPatterns()).withTx(tx()).stream();
     }
 
     public Stream<Answer> materialise(Answer answer) {
@@ -354,10 +354,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         Atom atom = getAtom();
-        if (atom.isRelation() && atom.getOntologyConcept() == null){
-            List<RelationType> relationTypes = ((RelationAtom) atom).inferPossibleRelationTypes(sub);
-            LOG.trace("AQ: " + this + ": inferred rel types for: " + relationTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
-            return relationTypes.stream()
+        if (atom.isRelation() && atom.getSchemaConcept() == null){
+            List<RelationshipType> relationshipTypes = ((RelationAtom) atom).inferPossibleRelationTypes(sub);
+            LOG.trace("AQ: " + this + ": inferred rel types for: " + relationshipTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
+            return relationshipTypes.stream()
                     .map(((RelationAtom) atom)::addType)
                     .sorted(Comparator.comparing(Atom::isRuleResolvable))
                     .map(ReasonerAtomicQuery::new);

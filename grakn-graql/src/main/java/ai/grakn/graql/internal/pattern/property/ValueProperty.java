@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -37,7 +38,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Represents the {@code value} property on a {@link ai.grakn.concept.Resource}.
+ * Represents the {@code value} property on a {@link Attribute}.
  *
  * This property can be queried or inserted.
  *
@@ -94,12 +95,12 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
         return CommonUtil.optionalToStream(predicate().getInnerVar());
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new ValuePredicate(var.getVarName(), this.predicate(), parent);
+        return new ValuePredicate(var.var(), this.predicate(), parent);
     }
 }

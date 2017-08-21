@@ -236,5 +236,7 @@ $deepPurple isa tag, has name "Deep Purple";
 $queen isa tag, has name "Queen";
 (grouped-tag: $queen, tag-group: $band) isa grouping;
 
+define
+
 tag plays recommended-product;
 

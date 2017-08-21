@@ -18,15 +18,15 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
-import ai.grakn.generator.FromGraphGenerator.FromGraph;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
+import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
+import ai.grakn.generator.FromTxGenerator.FromTx;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
@@ -63,30 +63,30 @@ public class TypePropertyTest {
 
     @Property
     public void whenSettingAMetaTypeAsAbstract_Throw(@Meta Type type, boolean isAbstract) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.setAbstract(isAbstract);
     }
 
     @Property
     public void whenMakingAMetaTypePlayRole_Throw(@Meta Type type, Role role) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.plays(role);
     }
 
     @Property
-    public void whenGivingAMetaTypeAKey_Throw(@Meta Type type, ResourceType resourceType) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
-        type.key(resourceType);
+    public void whenGivingAMetaTypeAKey_Throw(@Meta Type type, AttributeType attributeType) {
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+        type.key(attributeType);
     }
 
     @Property
-    public void whenGivingAMetaTypeAResource_Throw(@Meta Type type, ResourceType resourceType) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
-        type.resource(resourceType);
+    public void whenGivingAMetaTypeAResource_Throw(@Meta Type type, AttributeType attributeType) {
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+        type.attribute(attributeType);
     }
 
     @Ignore // TODO: Fails very rarely and only remotely
@@ -94,8 +94,8 @@ public class TypePropertyTest {
     public void whenDeletingATypeWithIndirectInstances_Throw(@NonMeta Type type) {
         assumeThat(type.instances().collect(toSet()), not(empty()));
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.cannotBeDeleted(type).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.cannotBeDeleted(type).getMessage());
         type.delete();
     }
 
@@ -104,7 +104,7 @@ public class TypePropertyTest {
     public void whenATypeWithDirectInstancesIsSetToAbstract_Throw(Type type) {
         assumeThat(PropertyUtil.directInstances(type), not(empty()));
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         exception.expectMessage(IS_ABSTRACT.getMessage(type.getLabel()));
 
         type.setAbstract(true);
@@ -137,13 +137,13 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void ATypePlayingARoleIsEquivalentToARoleBeingPlayed(Type type, @FromGraph Role role) {
+    public void ATypePlayingARoleIsEquivalentToARoleBeingPlayed(Type type, @FromTx Role role) {
         assertEquals(type.plays().anyMatch(r -> r.equals(role)), role.playedByTypes().collect(toSet()).contains(type));
     }
 
     @Property
     public void whenAddingAPlays_TheTypePlaysThatRoleAndNoOtherNewRoles(
-            @NonMeta Type type, @FromGraph Role role) {
+            @NonMeta Type type, @FromTx Role role) {
         Set<Role> previousPlays = type.plays().collect(toSet());
         type.plays(role);
         Set<Role> newPlays = type.plays().collect(toSet());
@@ -153,8 +153,8 @@ public class TypePropertyTest {
 
     @Property
     public void whenAddingAPlaysToATypesIndirectSuperType_TheTypePlaysThatRole(
-            Type type, @FromGraph Role role, long seed) {
-        OntologyConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(type), seed);
+            Type type, @FromTx Role role, long seed) {
+        SchemaConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(type), seed);
         assumeTrue(superConcept.isType());
         assumeFalse(isMetaLabel(superConcept.getLabel()));
 
@@ -169,7 +169,7 @@ public class TypePropertyTest {
 
     @Property
     public void whenDeletingAPlaysAndTheDirectSuperTypeDoesNotPlaysThatRole_TheTypeNoLongerPlaysThatRole(
-            @NonMeta Type type, @FromGraph Role role) {
+            @NonMeta Type type, @FromTx Role role) {
         assumeThat(type.sup().plays().collect(toSet()), not(hasItem(role)));
         type.deletePlays(role);
         assertThat(type.plays().collect(toSet()), not(hasItem(role)));

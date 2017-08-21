@@ -10,9 +10,9 @@ folder: documentation
 comment_issue_id: 27
 ---
 
-This example uses the pokemon ontology and dataset, which is available from [github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/pokemon.gql) and is also in the *examples* folder in the Grakn distribution zip. You can use it as a primer to work out if you're building a Graql query correctly, to revise your knowledge or just walk through it as you learn Graql.
+This example uses the pokemon schema and dataset, which is available from [github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/pokemon.gql) and is also in the *examples* folder in the Grakn distribution zip. You can use it as a primer to work out if you're building a Graql query correctly, to revise your knowledge or just walk through it as you learn Graql.
 
-First up, you need to load the ontology and dataset (which are all in one file) as follows. Here we will use the default keyspace, so will clean it before we start Grakn engine and open the Graql shell.
+First up, you need to load the schema and dataset (which are all in one file) as follows. Here we will use the default keyspace, so will clean it before we start Grakn engine and open the Graql shell.
 
 ```bash
 <relative-path-to-Grakn>/bin/grakn.sh clean
@@ -33,10 +33,10 @@ match $x has pokedex-no < 20;
 match $x isa pokemon;{ $x has name "Mew";} or {($x, $y); $y isa pokemon-type, has name "water"; };
 
 match $x sub concept; # List all concepts
-match $x sub resource; # List all resources
+match $x sub attribute; # List all resources
 match $x sub entity; # List all entities
 match $x sub role; # List all roles
-match $x sub relation; # List all relations
+match $x sub relationship; # List all relationships
 
 match $x isa pokemon; (ancestor: $x, $y); $x has name $xn; $y has name $yn;
 match evolution relates $x;
@@ -62,7 +62,7 @@ insert has name "Totodile" isa pokemon;
 insert val "Ash" isa name;
 insert isa pokemon, has name "Pichu" has height 30;
 insert gen2-pokemon sub pokemon;
-insert trained-by sub relation, relates trainer, relates pokemon-trained;
+insert trained-by sub relationship, relates trainer, relates pokemon-trained;
 insert pokemon plays pokemon-trained;
 insert pokemon has pokedex-no;
 

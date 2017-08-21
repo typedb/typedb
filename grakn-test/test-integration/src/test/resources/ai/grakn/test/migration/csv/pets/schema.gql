@@ -1,4 +1,4 @@
-insert
+define
 
 pet sub entity
     has name
@@ -14,8 +14,8 @@ snake sub pet;
 hamster sub pet;
 bird sub pet;
 
-name sub resource datatype string;
-owner sub resource datatype string;
-sex sub resource datatype string;
-birth sub resource datatype date;
-death sub resource datatype date;
+name sub attribute datatype string;
+owner sub attribute datatype string;
+sex sub attribute datatype string;
+birth sub attribute datatype date;
+death sub attribute datatype date;

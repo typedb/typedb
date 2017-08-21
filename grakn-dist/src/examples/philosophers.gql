@@ -1,4 +1,4 @@
-insert
+define
 
 
 # Concept types
@@ -21,33 +21,35 @@ fact sub entity
     has name
     has description;
 
-name sub resource datatype string;
-title sub resource datatype string;
-epithet sub resource datatype string;
-description sub resource datatype string;
+name sub attribute datatype string;
+title sub attribute datatype string;
+epithet sub attribute datatype string;
+description sub attribute datatype string;
 
 
 # Relation types
 
-practice sub relation
+practice sub relationship
     relates philosopher
     relates philosophy;
 philosopher sub role;
 philosophy sub role;
 
-education sub relation
+education sub relationship
     relates teacher
     relates student;
 teacher sub role;
 student sub role;
 
-knowledge sub relation
+knowledge sub relationship
     relates thinker
     relates thought
     plays thought;
 thinker sub role;
 thought sub role;
 
+
+insert
 
 # Instances
 

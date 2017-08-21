@@ -72,6 +72,12 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        // This is supported in insert queries in order to allow looking up schema concepts by label
+        define(var, executor);
+    }
+
+    @Override
+    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         executor.builder(var).label(label());
     }
 
@@ -92,6 +98,6 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new IdPredicate(var.getVarName(), this, parent);
+        return new IdPredicate(var.var(), this, parent);
     }
 }

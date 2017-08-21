@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.printer;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Printer;
 import mjson.Json;
 
@@ -33,8 +33,8 @@ public class Printers {
 
     private Printers() {}
 
-    public static Printer<Function<StringBuilder, StringBuilder>> graql(boolean colorize, ResourceType... resourceTypes) {
-        return new GraqlPrinter(colorize, resourceTypes);
+    public static Printer<Function<StringBuilder, StringBuilder>> graql(boolean colorize, AttributeType... attributeTypes) {
+        return new GraqlPrinter(colorize, attributeTypes);
     }
 
     public static Printer<Json> json() {

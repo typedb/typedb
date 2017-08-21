@@ -18,9 +18,9 @@
 
 package ai.grakn.engine.loader;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.postprocessing.GraphMutators;
+import ai.grakn.engine.postprocessing.GraknTxMutators;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -60,7 +60,7 @@ public class MutatorTask extends BackgroundTask {
         String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
         int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
-        GraphMutators.runBatchMutationWithRetry(factory(), keyspace, maxRetry, (graph) ->
+        GraknTxMutators.runBatchMutationWithRetry(factory(), keyspace, maxRetry, (graph) ->
                 insertQueriesInOneTransaction(graph, inserts)
         );
 
@@ -73,7 +73,7 @@ public class MutatorTask extends BackgroundTask {
      * @param inserts graql queries to insert into the graph
      * @return true if the data was inserted, false otherwise
      */
-    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<Query> inserts) {
+    private boolean insertQueriesInOneTransaction(GraknTx graph, Collection<Query> inserts) {
         try(Context context = metricRegistry().timer(name(MutatorTask.class, "execution")).time()) {
             if (inserts.isEmpty()) {
                 metricRegistry().meter(name(MutatorTask.class, "empty")).mark();
@@ -81,7 +81,7 @@ public class MutatorTask extends BackgroundTask {
             } else {
                 inserts.forEach(q -> {
                     try(Context contextSingle = metricRegistry().timer(name(MutatorTask.class, "execution-single")).time()){
-                        q.withGraph(graph).execute();
+                        q.withTx(graph).execute();
                     }
                 });
 

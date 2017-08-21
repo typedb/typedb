@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -74,7 +74,7 @@ public abstract class SubProperty extends AbstractVarProperty implements NamedPr
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType().getVarName()));
+        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType().var()));
     }
 
     @Override
@@ -83,26 +83,26 @@ public abstract class SubProperty extends AbstractVarProperty implements NamedPr
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.of(superType());
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        OntologyConcept superConcept = executor.get(superType().getVarName()).asOntologyConcept();
+    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        SchemaConcept superConcept = executor.get(superType().var()).asSchemaConcept();
 
         Optional<ConceptBuilder> builder = executor.tryBuilder(var);
 
         if (builder.isPresent()) {
             builder.get().sub(superConcept);
         } else {
-            ConceptBuilder.setSuper(executor.get(var).asOntologyConcept(), superConcept);
+            ConceptBuilder.setSuper(executor.get(var).asSchemaConcept(), superConcept);
         }
     }
 
     @Override
     public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(superType().getVarName());
+        return ImmutableSet.of(superType().var());
     }
 
     @Override
@@ -112,9 +112,9 @@ public abstract class SubProperty extends AbstractVarProperty implements NamedPr
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName().asUserDefined();
+        Var varName = var.var().asUserDefined();
         VarPatternAdmin typeVar = this.superType();
-        Var typeVariable = typeVar.getVarName().asUserDefined();
+        Var typeVariable = typeVar.var().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarPatternAdmin resVar = varName.sub(typeVariable).admin();

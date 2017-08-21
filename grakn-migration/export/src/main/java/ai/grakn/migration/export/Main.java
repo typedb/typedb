@@ -18,7 +18,7 @@
 package ai.grakn.migration.export;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.migration.base.MigrationCLI;
 
@@ -32,7 +32,7 @@ public class Main {
 
     public static void main(String[] args){
         try{
-            MigrationCLI.init(args, GraphWriterOptions::new).stream()
+            MigrationCLI.init(args, KBWriterOptions::new).stream()
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .forEach(Main::runExport);
@@ -41,16 +41,16 @@ public class Main {
         }
     }
 
-    private static void runExport(GraphWriterOptions options) {
-        if(!options.exportOntology() && !options.exportData()) {
-            throw new IllegalArgumentException("Missing arguments -ontology and/or -data");
+    private static void runExport(KBWriterOptions options) {
+        if(!options.exportSchema() && !options.exportData()) {
+            throw new IllegalArgumentException("Missing arguments -schema and/or -data");
         }
 
-        try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.READ)) {
-            GraphWriter graphWriter = new GraphWriter(graph);
+        try(GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.READ)) {
+            KBWriter graphWriter = new KBWriter(graph);
 
-            if (options.exportOntology()) {
-                System.out.println(graphWriter.dumpOntology());
+            if (options.exportSchema()) {
+                System.out.println(graphWriter.dumpSchema());
             }
 
             if (options.exportData()) {

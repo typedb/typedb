@@ -53,6 +53,13 @@ public class Aggregates {
     }
 
     /**
+     * Aggregate that checks if there are any results
+     */
+    public static Aggregate<Object,Boolean> ask() {
+        return AskAggregate.get();
+    }
+
+    /**
      * Aggregate that groups results of a match query by variable name
      * @param varName the variable name to group results by
      */

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -37,11 +37,11 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Represents the {@code regex} property on a {@link ResourceType}.
+ * Represents the {@code regex} property on a {@link AttributeType}.
  *
  * This property can be queried and inserted.
  *
- * This property introduces a validation constraint on instances of this {@link ResourceType}, stating that their
+ * This property introduces a validation constraint on instances of this {@link AttributeType}, stating that their
  * values must conform to the given regular expression.
  *
  * @author Felix Chapman
@@ -71,8 +71,8 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.get(var).asResourceType().setRegex(regex());
+    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        executor.get(var).asAttributeType().setRegex(regex());
     }
 
     @Override
@@ -82,6 +82,6 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new RegexAtom(var.getVarName(), this, parent);
+        return new RegexAtom(var.var(), this, parent);
     }
 }

@@ -22,7 +22,7 @@ usage: migration.sh owl -input <arg> -keyspace <arg> [-help] [-uri <arg>] [-verb
  -c,--config <arg>     Configuration file.
  -h,--help             Print usage message.
  -i,--input <arg>      input csv file
- -k,--keyspace <arg>   Grakn graph. Required.
+ -k,--keyspace <arg>   Grakn knowledge base. Required.
  -u,--uri <arg>        Location of Grakn Engine.
  -v,--verbose          Print counts of migrated data.
 ```
@@ -70,7 +70,7 @@ Consider the following OWL ontology:
 <\rdf:RDF>
 ```
 
-The ontology defines a single class (type) `Person` as well as two instances of the class - individuals `Witold` and `Stefan`. The ontology defines properties `hasAncestor` and its inverse `isAncestorOf` as well as `hasParent` and `isParentOf` properties. The `hasAncestor` property is defined as transitive and additionally defines a property chain which corresponds to the rule:
+The schema defines a single class (type) `Person` as well as two instances of the class - individuals `Witold` and `Stefan`. The schema defines properties `hasAncestor` and its inverse `isAncestorOf` as well as `hasParent` and `isParentOf` properties. The `hasAncestor` property is defined as transitive and additionally defines a property chain which corresponds to the rule:
 
 ```
 hasAncestor(X, Y) :- hasParent(X, Z), hasAncestor(Z, Y);
@@ -79,32 +79,32 @@ hasAncestor(X, Y) :- hasParent(X, Z), hasAncestor(Z, Y);
 Upon migration, the OWL ontology will be mapped to Grakn. The resulting Graql statement, if printed out, looks as follows:
 
 ```graql
-insert
-
+define
 "tPerson" sub entity;
-$eWitold isa tPerson;
-$eStefan isa tPerson;
 
 "owl-subject-op-isAncestorOf" sub role;
 "owl-object-op-isAncestorOf" sub role;
-"op-isAncestorOf" sub relation, relates owl-subject-op-isAncestorOf, relates owl-object-op-isAncestorOf;
+"op-isAncestorOf" sub relationship, relates owl-subject-op-isAncestorOf, relates owl-object-op-isAncestorOf;
 tPerson plays owl-subject-op-isAncestorOf, plays owl-object-op-isAncestorOf;
 
 "owl-subject-op-hasAncestor" sub role;
 "owl-object-op-hasAncestor" sub role;
-"op-hasAncestor" sub relation, relates owl-subject-op-hasAncestor, relates owl-object-op-hasAncestor;
+"op-hasAncestor" sub relationship, relates owl-subject-op-hasAncestor, relates owl-object-op-hasAncestor;
 tPerson plays owl-subject-op-hasAncestor, plays owl-object-op-hasAncestor;
 
 "owl-subject-op-isParentOf" sub role;
 "owl-object-op-isParentOf" sub role;
-"op-isParentOf" sub relation, relates owl-subject-op-isParentOf, relates owl-object-op-isParentOf;
+"op-isParentOf" sub relationship, relates owl-subject-op-isParentOf, relates owl-object-op-isParentOf;
 tPerson plays owl-subject-op-isParentOf, plays owl-object-op-isParentOf;
 
 "owl-subject-op-hasParent" sub role;
 "owl-object-op-hasParent" sub role;
-"op-hasParent" sub relation, relates owl-subject-op-hasParent, relates owl-object-op-hasParent;
+"op-hasParent" sub relationship, relates owl-subject-op-hasParent, relates owl-object-op-hasParent;
 tPerson plays owl-subject-op-hasParent, plays owl-object-op-hasParent;
 
+insert
+$eWitold isa tPerson;
+$eStefan isa tPerson;
 (owl-subject-op-isParentOf: $eStefan, owl-object-op-isParentOf: $eWitold) isa op-isParentOf;
 
 $inv-op-hasAncestor isa inference-rule,

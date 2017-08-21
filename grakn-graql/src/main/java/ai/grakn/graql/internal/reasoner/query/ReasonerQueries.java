@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -35,7 +35,7 @@ import java.util.Set;
  */
 public class ReasonerQueries {
 
-    public static ReasonerQueryImpl create(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
+    public static ReasonerQueryImpl create(Conjunction<VarPatternAdmin> pattern, GraknTx graph) {
         ReasonerQueryImpl query = new ReasonerQueryImpl(pattern, graph);
         return query.isAtomic()? new ReasonerAtomicQuery(pattern, graph) : query;
     }
@@ -44,11 +44,11 @@ public class ReasonerQueries {
         return q.isAtomic()? new ReasonerAtomicQuery(q) : new ReasonerQueryImpl(q);
     }
 
-    public static ReasonerQueryImpl create(Set<Atom> atoms, GraknGraph graph){
+    public static ReasonerQueryImpl create(Set<Atom> atoms, GraknTx graph){
         return atoms.size() == 1? new ReasonerAtomicQuery(atoms.iterator().next()) : new ReasonerQueryImpl(atoms, graph);
     }
 
-    public static ReasonerAtomicQuery atomic(Conjunction<VarPatternAdmin> pattern, GraknGraph graph){
+    public static ReasonerAtomicQuery atomic(Conjunction<VarPatternAdmin> pattern, GraknTx graph){
         return new ReasonerAtomicQuery(pattern, graph);
     }
 

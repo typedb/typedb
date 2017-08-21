@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
@@ -44,22 +44,21 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import java.util.LinkedList;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -85,23 +84,23 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEquals
  */
 public class ReasonerQueryImpl implements ReasonerQuery {
 
-    private final GraknGraph graph;
+    private final GraknTx tx;
     private final Set<Atomic> atomSet = new HashSet<>();
     private int priority = Integer.MAX_VALUE;
 
-    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
-        this.graph = graph;
+    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
+        this.tx = tx;
         atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
         inferTypes();
     }
 
     ReasonerQueryImpl(ReasonerQueryImpl q) {
-        this.graph = q.graph;
+        this.tx = q.tx;
         q.getAtoms().forEach(at -> addAtomic(AtomicFactory.create(at, this)));
     }
 
-    ReasonerQueryImpl(Set<Atom> atoms, GraknGraph graph){
-        this.graph = graph;
+    ReasonerQueryImpl(Set<Atom> atoms, GraknTx tx){
+        this.tx = tx;
 
         atoms.stream()
                 .map(at -> AtomicFactory.create(at, this))
@@ -116,7 +115,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     ReasonerQueryImpl(Atom atom) {
-        this(Collections.singleton(atom), atom.getParentQuery().graph());
+        this(Collections.singleton(atom), atom.getParentQuery().tx());
     }
 
     @Override
@@ -175,8 +174,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public GraknGraph graph() {
-        return graph;
+    public GraknTx tx() {
+        return tx;
     }
 
     @Override
@@ -184,7 +183,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<PatternAdmin> patterns = new HashSet<>();
         atomSet.stream()
                 .map(Atomic::getCombinedPattern)
-                .flatMap(p -> p.getVars().stream())
+                .flatMap(p -> p.varPatterns().stream())
                 .forEach(patterns::add);
         return Patterns.conjunction(patterns);
     }
@@ -255,18 +254,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     @Override
     public MatchQuery getMatchQuery() {
-        return graph.graql().infer(false).match(getPattern());
+        return tx.graql().infer(false).match(getPattern());
     }
 
     /**
      * @return map of variable name - type pairs
      */
     @Override
-    public Map<Var, OntologyConcept> getVarOntologyConceptMap() {
-        Map<Var, OntologyConcept> typeMap = new HashMap<>();
+    public Map<Var, SchemaConcept> getVarSchemaConceptMap() {
+        Map<Var, SchemaConcept> typeMap = new HashMap<>();
         getAtoms(TypeAtom.class)
-                .filter(at -> Objects.nonNull(at.getOntologyConcept()))
-                .forEach(atom -> typeMap.putIfAbsent(atom.getVarName(), atom.getOntologyConcept()));
+                .filter(at -> Objects.nonNull(at.getSchemaConcept()))
+                .forEach(atom -> typeMap.putIfAbsent(atom.getVarName(), atom.getSchemaConcept()));
         return typeMap;
     }
 
@@ -371,7 +370,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         getAtoms(IdPredicate.class).forEach(predicates::add);
 
         // the mapping function is declared separately to please the Eclipse compiler
-        Function<IdPredicate, Concept> f = p -> graph().getConcept(p.getPredicate());
+        Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
 
         return new QueryAnswer(predicates.stream()
                 .collect(Collectors.toMap(IdPredicate::getVarName, f))
@@ -532,7 +531,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         List<Set<Atom>> atomOptions = getAtoms(Atom.class)
                 .map(at -> {
-                    if (at.isRelation() && at.getOntologyConcept() == null) {
+                    if (at.isRelation() && at.getSchemaConcept() == null) {
                         RelationAtom rel = (RelationAtom) at;
                         Set<Atom> possibleRels = new HashSet<>();
                         rel.inferPossibleRelationTypes(sub).stream()
@@ -550,7 +549,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
 
         return Sets.cartesianProduct(atomOptions).stream()
-                .map(atomList -> ReasonerQueries.create(new HashSet<>(atomList), graph()));
+                .map(atomList -> ReasonerQueries.create(new HashSet<>(atomList), tx()));
     }
 
     /**
@@ -560,8 +559,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public boolean requiresReiteration() {
 
-        Set<InferenceRule> dependentRules = RuleGraph.getDependentRules(this).collect(Collectors.toSet());
-        return RuleGraph.subGraphHasLoopsWithNegativeFlux(dependentRules, graph())
-                || RuleGraph.subGraphHasRulesWithHeadSatisfyingBody(dependentRules, graph());
+        Set<InferenceRule> dependentRules = RuleUtil.getDependentRules(this).collect(Collectors.toSet());
+        return RuleUtil.subGraphHasLoopsWithNegativeFlux(dependentRules, tx())
+                || RuleUtil.subGraphHasRulesWithHeadSatisfyingBody(dependentRules, tx());
     }
 }

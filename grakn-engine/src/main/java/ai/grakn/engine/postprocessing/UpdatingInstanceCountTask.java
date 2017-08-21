@@ -20,13 +20,13 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.REST;
 import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer.Context;
@@ -55,7 +55,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
 
     @Override
     public boolean start() {
-        final long shardingThreshold = engineConfiguration().getPropertyAsLong(AbstractGraknGraph.SHARDING_THRESHOLD);
+        final long shardingThreshold = engineConfiguration().getPropertyAsLong(GraknTxAbstract.SHARDING_THRESHOLD);
         final int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
         try (Context context = metricRegistry()
                 .timer(name(UpdatingInstanceCountTask.class, "execution")).time()) {
@@ -141,7 +141,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @param keyspace The graph containing the type to shard
      * @param conceptId The id of the concept to shard
      */
-    private void shardConcept(RedisCountStorage redis, EngineGraknGraphFactory factory,
+    private void shardConcept(RedisCountStorage redis, EngineGraknTxFactory factory,
             String keyspace, ConceptId conceptId, int maxRetry, long shardingThreshold){
         Lock engineLock = this.getLockProvider().getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
@@ -151,7 +151,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
             if (updateShardCounts(redis, keyspace, conceptId, 0, shardingThreshold)) {
 
                 //Shard
-                GraphMutators.runGraphMutationWithRetry(factory, keyspace, maxRetry, graph -> {
+                GraknTxMutators.runMutationWithRetry(factory, keyspace, maxRetry, graph -> {
                     graph.admin().shard(conceptId);
                     graph.admin().commitNoLogs();
                 });

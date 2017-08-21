@@ -18,13 +18,13 @@
 
 package ai.grakn.graql.internal.query.pattern;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import com.google.common.collect.Sets;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -40,16 +40,17 @@ import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class PatternTest {
 
-    private GraknGraph graph = rule.graph();
+    private GraknTx tx = rule.tx();
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -58,18 +59,18 @@ public class PatternTest {
     public void testVarPattern() {
         Pattern x = var("x");
 
-        assertTrue(x.admin().isVar());
+        assertTrue(x.admin().isVarPattern());
         assertFalse(x.admin().isDisjunction());
         assertFalse(x.admin().isConjunction());
 
-        assertEquals(x.admin(), x.admin().asVar());
+        assertEquals(x.admin(), x.admin().asVarPattern());
     }
 
     @Test
     public void testSimpleDisjunction() {
         Pattern disjunction = or();
 
-        assertFalse(disjunction.admin().isVar());
+        assertFalse(disjunction.admin().isVarPattern());
         assertTrue(disjunction.admin().isDisjunction());
         assertFalse(disjunction.admin().isConjunction());
 
@@ -81,7 +82,7 @@ public class PatternTest {
     public void testSimpleConjunction() {
         Pattern conjunction = and();
 
-        assertFalse(conjunction.admin().isVar());
+        assertFalse(conjunction.admin().isVarPattern());
         assertFalse(conjunction.admin().isDisjunction());
         assertTrue(conjunction.admin().isConjunction());
 
@@ -92,7 +93,7 @@ public class PatternTest {
     @Test(expected = UnsupportedOperationException.class)
     public void testConjunctionAsVar() {
         //noinspection ResultOfMethodCallIgnored
-        Graql.and(var("x").isa("movie"), var("x").isa("person")).admin().asVar();
+        Graql.and(var("x").isa("movie"), var("x").isa("person")).admin().asVarPattern();
     }
 
     @Test(expected = UnsupportedOperationException.class)
@@ -163,7 +164,7 @@ public class PatternTest {
                 var("x").isa("movie"),
                 var("y1").isa("genre").has("name", "crime"),
                 var().isa("has-genre").rel(var("x")).rel(var("y1")));
-        Set<Concept> resultSet1 = graph.graql().match(varSet1).select("x").execute()
+        Set<Concept> resultSet1 = tx.graql().match(varSet1).select("x").execute()
                 .stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
                 .collect(Collectors.toSet());
@@ -171,14 +172,14 @@ public class PatternTest {
 
         Set<VarPattern> varSet11 = Sets.newHashSet(var("x"));
         varSet11.addAll(varSet1);
-        Set<Concept> resultSet11 = graph.graql().match(varSet11).select("x").execute()
+        Set<Concept> resultSet11 = tx.graql().match(varSet11).select("x").execute()
                 .stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
                 .collect(Collectors.toSet());
         assertEquals(resultSet11, resultSet1);
 
         varSet11.add(var("z"));
-        resultSet11 = graph.graql().match(varSet11).execute()
+        resultSet11 = tx.graql().match(varSet11).execute()
                 .stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
                 .collect(Collectors.toSet());
@@ -188,7 +189,7 @@ public class PatternTest {
                 var("x").isa("movie"),
                 var("y2").isa("person").has("name", "Marlon Brando"),
                 var().isa("has-cast").rel(var("x")).rel(var("y2")));
-        Set<Concept> resultSet2 = graph.graql().match(varSet2).select("x").execute()
+        Set<Concept> resultSet2 = tx.graql().match(varSet2).select("x").execute()
                 .stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
                 .collect(Collectors.toSet());
@@ -200,7 +201,7 @@ public class PatternTest {
                 var().isa("has-genre").rel(var("x")).rel(var("y")),
                 var("y2").isa("person").has("name", "Marlon Brando"),
                 var().isa("has-cast").rel(var("x")).rel(var("y2")));
-        Set<Concept> conj = graph.graql().match(varSet3).select("x").execute()
+        Set<Concept> conj = tx.graql().match(varSet3).select("x").execute()
                 .stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
                 .collect(Collectors.toSet());
@@ -209,12 +210,12 @@ public class PatternTest {
         resultSet2.retainAll(resultSet1);
         assertEquals(resultSet2, conj);
 
-        conj = graph.graql().match(and(varSet3)).execute().stream()
+        conj = tx.graql().match(and(varSet3)).execute().stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
                 .collect(Collectors.toSet());
         assertEquals(resultSet2, conj);
 
-        conj = graph.graql().match(or(var("x"), var("x"))).select("x").execute()
+        conj = tx.graql().match(or(var("x"), var("x"))).select("x").execute()
                 .stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
                 .collect(Collectors.toSet());
@@ -241,7 +242,7 @@ public class PatternTest {
                 var("x").isa("movie"),
                 var("y1").isa("genre").has("name", "crime"),
                 var().isa("has-genre").rel(var("x")).rel(var("y1")));
-        Set<Concept> resultSet1 = graph.graql().match(varSet1).select("x").execute()
+        Set<Concept> resultSet1 = tx.graql().match(varSet1).select("x").execute()
                 .stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
                 .collect(Collectors.toSet());
@@ -251,7 +252,7 @@ public class PatternTest {
                 var("x").isa("movie"),
                 var("y2").isa("person").has("name", "Marlon Brando"),
                 var().isa("has-cast").rel(var("x")).rel(var("y2")));
-        Set<Concept> resultSet2 = graph.graql().match(varSet2).select("x").execute()
+        Set<Concept> resultSet2 = tx.graql().match(varSet2).select("x").execute()
                 .stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
                 .collect(Collectors.toSet());
@@ -262,7 +263,7 @@ public class PatternTest {
                 or(var("y").isa("genre").has("name", "crime"),
                         var("y").isa("person").has("name", "Marlon Brando")),
                 var().rel(var("x")).rel(var("y")));
-        Set<Concept> conj = graph.graql().match(varSet3).select("x").execute()
+        Set<Concept> conj = tx.graql().match(varSet3).select("x").execute()
                 .stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
                 .collect(Collectors.toSet());
@@ -271,7 +272,7 @@ public class PatternTest {
         resultSet2.addAll(resultSet1);
         assertEquals(resultSet2, conj);
 
-        conj = graph.graql().match(or(var("x"), var("x"))).select("x").execute()
+        conj = tx.graql().match(or(var("x"), var("x"))).select("x").execute()
                 .stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
                 .collect(Collectors.toSet());
@@ -294,8 +295,8 @@ public class PatternTest {
 
     @Test
     public void testNegation() {
-        assertTrue(graph.graql().match(var().isa("movie").has("title", "Godfather")).ask().execute());
-        Set<Concept> result1 = graph.graql().match(
+        assertExists(tx.graql(), var().isa("movie").has("title", "Godfather"));
+        Set<Concept> result1 = tx.graql().match(
                 var("x").isa("movie").has("title", var("y")),
                 var("y").val(neq("Godfather"))).select("x").execute()
                 .stream()
@@ -303,7 +304,7 @@ public class PatternTest {
                 .collect(Collectors.toSet());
         assertFalse(result1.isEmpty());
 
-        Set<Concept> result2 = graph.graql().match(
+        Set<Concept> result2 = tx.graql().match(
                 var("x").isa("movie").has("title", var("y")),
                 var("y")).select("x").execute()
                 .stream()

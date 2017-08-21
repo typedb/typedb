@@ -27,7 +27,7 @@ OPTIONS
  -c,--config <arg>      Configuration file.
  -h,--help              Print usage message.
  -i,--input <arg>       Input csv file.
- -k,--keyspace <arg>    Grakn graph. Required.
+ -k,--keyspace <arg>    Grakn knowledge base. Required.
  -l,--null <arg>        String that will be evaluated as null.
  -n,--no                Write to standard out.
  -q,--quote <arg>       Character used to encapsulate values containing
@@ -43,8 +43,8 @@ OPTIONS
 
 The steps to migrate the CSV to GRAKN.AI are:
 
-* define an ontology for the data to derive the full benefit of a knowledge graph
-* create templated Graql to map the data to the ontology
+* define a schema for the data to derive the full benefit of a knowledge base
+* create templated Graql to map the data to the schema
 * invoke the Grakn migrator through the shell script or Java API. The CSV migrator will apply the template to each row of data in the CSV file, replacing the sections indicated in the template with provided data: the column header is the key and the content of each row at that column the value.
 
 {% include note.html content="CSV Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [templating documentation](../graql/graql-templating.html) to find out more." %}
@@ -61,10 +61,10 @@ Year,Make,Model,Description,Price
 1996,Jeep,Grand Cherokee,"MUST SELL! air, moon roof, loaded",4799.00
 ```
 
-Here is the ontology for the example:   
+Here is the schema for the example:   
 
 ```graql
-insert
+define
 
 car sub entity
   has name
@@ -72,17 +72,17 @@ car sub entity
   has description
   has price;
 
-name sub resource datatype string;
-year sub resource datatype string;
-description sub resource datatype string;
-price sub resource datatype double;
+name sub attribute datatype string;
+year sub attribute datatype string;
+description sub attribute datatype string;
+price sub attribute datatype double;
 
 ```
 
-Make sure to load your ontology into the graph:
+Make sure to load your schema into the knowledge base:
 
 ```bash
-./<grakn-install-location>/bin/graql.sh -f ./ontology.gql -k grakn
+./<grakn-install-location>/bin/graql.sh -f ./schema.gql -k grakn
 ```
 
 And the Graql template, *car-migrator.gql*:   
@@ -97,7 +97,7 @@ $x isa car
   if (<Description> != "") do { has description <Description>};  
 ```
 
-The template will create a `car` entity for each row. It will attach `year` and `price` resources to each of these entities. If the `description` resource is present in the data, it will attach the appropriate `description` to the `car`.
+The template will create a `car` entity for each row. It will attach `year` and `price` resources to each of these entities. If the `description` attribute is present in the data, it will attach the appropriate `description` to the `car`.
 
 The template is applied to each row by calling the migration script:
 
@@ -113,7 +113,7 @@ insert $x0 isa car has name "Chevy-Venture" has year "1999" has price 4900.0;
 insert $x0 isa car has name "Jeep-Grand Cherokee" has year "1996" has price 4799.0 has description "MUST SELL! air, moon roof, loaded";
 ```
 
-You will note that the second Graql insert is missing the `description` resource. This is because that value is not present in the data and the template uses an `if` statement to check if it exists.
+You will note that the second Graql insert is missing the `description` attribute. This is because that value is not present in the data and the template uses an `if` statement to check if it exists.
 
 ### Separator
 

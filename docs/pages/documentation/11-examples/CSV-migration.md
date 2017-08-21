@@ -13,7 +13,7 @@ comment_issue_id: 27
 
 ## Introduction
 
-This example looks at the migration of genealogy data in CSV format to build a graph in GRAKN.AI. The data is used as the basis of a [blog post](https://blog.grakn.ai/family-matters-1bb639396a24#.2e6h72y0m) that illustrates the fundamentals of the Grakn visualiser, reasoner and analytics components. 
+This example looks at the migration of genealogy data in CSV format to build a knowledge base in GRAKN.AI. The data is used as the basis of a [blog post](https://blog.grakn.ai/family-matters-1bb639396a24#.2e6h72y0m) that illustrates the fundamentals of the Grakn visualiser, reasoner and analytics components. 
 
 As the blog post explains, the original data was a [document](http://www.lenzenresearch.com/titusnarrlineage.pdf) from [Lenzen Research](http://www.lenzenresearch.com/) that described the family history of Catherine Niesz Titus for three generations of her maternal lineage.
 
@@ -32,17 +32,17 @@ Let's take a look at the *raw-data* directory in the example project, which cont
 |[*births.csv*](https://github.com/graknlabs/sample-projects/blob/master/example-csv-migration-genealogy/raw-data/births.csv)| This CSV lists the person IDs of a child and each of its parents|
 |[*weddings.csv*](https://github.com/graknlabs/sample-projects/blob/master/example-csv-migration-genealogy/raw-data/weddings.csv)| This CSV comprises a row for each marriage, identifying each by a wedding ID (wid). The rows contain the person IDs of each spouse and the date of their wedding, where it is known.|
 
-### Ontology
+### Schema
 
-The ontology is a way to describe the entities and their relationships, so the underlying graph can store them as nodes and edges. You can find out more in our guide to the Grakn Knowledge Model. The ontology allows Grakn to perform:
+The schema is a way to describe the entities and their relationships, so the underlying knowledge base can store them according to the Grakn model. You can find out more in our guide to the Grakn Knowledge Model. The schema allows Grakn to perform:
 
 * logical reasoning over the represented knowledge, such as the extraction of implicit information from explicit data (inference)
 * discovery of inconsistencies in the data (validation).
 
-The ontology is shown below. There is a single entity, `person`, which has a number of resources and can play various roles (`parent`, `child`, `spouse1` and `spouse2`) in two possible relations (`parentship` and `marriage`).
+The schema is shown below. There is a single entity, `person`, which has a number of resources and can play various roles (`parent`, `child`, `spouse1` and `spouse2`) in two possible relationships (`parentship` and `marriage`).
 
 ```graql
-insert
+define
 
 # Entities
 
@@ -64,7 +64,7 @@ person sub entity
 
 # Roles and Relations
 
-marriage sub relation
+marriage sub relationship
   relates spouse1
   relates spouse2
   has picture;
@@ -72,7 +72,7 @@ marriage sub relation
 spouse1 sub role;
 spouse2 sub role;
 
-parentship sub relation
+parentship sub relationship
   relates parent
   relates child;
 
@@ -81,31 +81,31 @@ child sub role;
 
 # Resources
 
-identifier sub resource datatype string;
-name sub resource datatype string;
+identifier sub attribute datatype string;
+name sub attribute datatype string;
 firstname sub name datatype string;
 surname sub name datatype string;
 middlename sub name datatype string;
-picture sub resource datatype string;
-age sub resource datatype long;
-"date" sub resource datatype string;
+picture sub attribute datatype string;
+age sub attribute datatype long;
+"date" sub attribute datatype string;
 birth-date sub "date" datatype string;
 death-date sub "date" datatype string;
-gender sub resource datatype string;
+gender sub attribute datatype string;
 ``` 
 
-To load *ontology.gql* into Grakn, make sure the engine is running and choose a clean keyspace in which to work (here we use the default keyspace, so we are cleaning it before we get started). 
+To load *schema.gql* into Grakn, make sure the engine is running and choose a clean keyspace in which to work (here we use the default keyspace, so we are cleaning it before we get started). 
 
 ```bash
 <relative-path-to-Grakn>/bin/grakn.sh clean
 <relative-path-to-Grakn>/bin/grakn.sh start
-<relative-path-to-Grakn>/bin/graql.sh -f ./ontology.gql
+<relative-path-to-Grakn>/bin/graql.sh -f ./schema.gql
 ```
 		
 
 ### Data Migration
 
-Having loaded the ontology, the next steps are to populate the graph by migrating data into Grakn from CSV. 
+Having loaded the schema, the next steps are to populate the knowledge base by migrating data into Grakn from CSV. 
 
 We will consider three CSV files that contain data to migrate into Grakn. 
 
@@ -129,7 +129,7 @@ Mary,Melissa,Titus,female,1847-08-12,10/05/1946,Mary Melissa Titus,98,
 ...
 ```
 
-The migrator is a set of template Graql statements that instruct the Grakn migrator on how the CSV data can be mapped to the ontology. The Grakn migrator applies the template to each row of data in a CSV file, replacing the indicated sections in the template with the value from a specific cell, identified by the column header (the key). This sounds complicated, but isn't really, as we will show.
+The migrator is a set of template Graql statements that instruct the Grakn migrator on how the CSV data can be mapped to the schema. The Grakn migrator applies the template to each row of data in a CSV file, replacing the indicated sections in the template with the value from a specific cell, identified by the column header (the key). This sounds complicated, but isn't really, as we will show.
 
 The Graql template code for the people migrator is as follows:
 
@@ -220,9 +220,9 @@ insert
 
 ```
 
-For each row in the CSV file, the template matches the child and parent cells to their corresponding `person` entities, and then inserts a `parentship` relation, placing the entities it has matched into the `child` and `parent` roles.
+For each row in the CSV file, the template matches the child and parent cells to their corresponding `person` entities, and then inserts a `parentship` relationship, placing the entities it has matched into the `child` and `parent` roles.
 
-{% include note.html content="You must ensure that all entities exist in a graph before inserting relations." %}
+{% include note.html content="You must ensure that all entities exist in a knowledge base before inserting relationships." %}
 
 Calling the Grakn migrator on the *births.csv* file using the above template (named `births-migrator.gql`) is performed as follows:
 
@@ -274,7 +274,7 @@ insert
 		};
 ```
 
-For each row in the CSV file, the template matches the two spouse cells to their corresponding `person` entities, and then inserts a `marriage` relation, placing the entities it has matched into the `spouse1` and `spouse2` roles. If there is data in the picture cell, a `picture` resource is also created for the `marriage` relation.
+For each row in the CSV file, the template matches the two spouse cells to their corresponding `person` entities, and then inserts a `marriage` relationship, placing the entities it has matched into the `spouse1` and `spouse2` roles. If there is data in the picture cell, a `picture` attribute is also created for the `marriage` relationship.
 
 Calling the Grakn migrator on the *weddings.csv* file using the above template (named `weddings-migrator.gql`) is performed as follows:
 
@@ -307,7 +307,7 @@ The migration will take a minute or two, and the terminal will report which file
 
 ![Person query](/images/match-$x-isa-person.png)
 
-We have completed the data import, and the graph can now be queried. For example, from the Graql shell:
+We have completed the data import, and the knowledge base can now be queried. For example, from the Graql shell:
 
 ```graql
 match $x isa person, has identifier $i; aggregate count;
@@ -317,19 +317,19 @@ There should be 60 people in the dataset.
 
 ## Data Export
 
-In this example, we have imported a dataset stored in three separate CSV files into Grakn to build a simple graph. We have discussed the ontology and migration templates, and shown how to apply the templates to the CSV data using the shell migrator, using a script file *loader.sh* to automate calling the migrator on each file It is possible to export the data from Grakn, in *.gql* format, so that it can easily be loaded to a graph again without the need to migrate from CSV.  
+In this example, we have imported a dataset stored in three separate CSV files into Grakn to build a simple knowledge base. We have discussed the schema and migration templates, and shown how to apply the templates to the CSV data using the shell migrator, using a script file *loader.sh* to automate calling the migrator on each file It is possible to export the data from Grakn, in *.gql* format, so that it can easily be loaded to a knowledge base again without the need to migrate from CSV.  
 
 To export the data, we use the Grakn *migration.sh* shell script again, as described in the [migration documentation](../migration/migration-overview.html#export-from-grakn):
 
 ```bash
-# Export the ontology
-<relative-path-to-Grakn>/migration.sh export -ontology > ontology-export.gql
+# Export the schema
+<relative-path-to-Grakn>/migration.sh export -schema > schema-export.gql
 
 # Export the data
 <relative-path-to-Grakn>/migration.sh export -data > data-export.gql
 ```
 
-Exporting data or the ontology from Grakn, into Graql, will always redirect to standard out, so above we are sending the output to an appropriately named file.
+Exporting data or the schema from Grakn, into Graql, will always redirect to standard out, so above we are sending the output to an appropriately named file.
 
 ## Where Next?
 

@@ -1,8 +1,0 @@
-insert
-
-thingy sub entity
-    has name
-    has price;
-
-name sub resource datatype string;
-price sub resource datatype string;

@@ -19,17 +19,18 @@
 package ai.grakn.test.migration.json;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Thing;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraphLoader;
+import ai.grakn.util.SampleKBLoader;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -67,7 +68,7 @@ public class JsonMigratorMainTest {
 
     @Before
     public void setup() {
-        keyspace = GraphLoader.randomKeyspace();
+        keyspace = SampleKBLoader.randomKeyspace();
         session = Grakn.session(engine.uri(), keyspace);
 
         load(session, getFile("json", "simple-schema/schema.gql"));
@@ -108,6 +109,13 @@ public class JsonMigratorMainTest {
         assertThat(sysErr.getLog(), containsString("Cannot find file:"));
     }
 
+    @Test
+    public void whenMigrationFailsOnTheServer_ErrorIsPrintedToSystemErr(){
+        run("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", "wrong-keyspace");
+        String expectedMessage = GraknBackendException.noSuchKeyspace("wrong-keyspace").getMessage();
+        assertThat(sysErr.getLog(), containsString(expectedMessage));
+    }
+
     private void run(String... args){
         JsonMigrator.main(args);
     }
@@ -115,7 +123,7 @@ public class JsonMigratorMainTest {
     private void runAndAssertDataCorrect(String... args){
         run(args);
 
-        try(GraknGraph graph = session.open(GraknTxType.READ)) {
+        try(GraknTx graph = session.open(GraknTxType.READ)) {
             EntityType personType = graph.getEntityType("person");
             assertEquals(1, personType.instances().count());
 
@@ -123,7 +131,7 @@ public class JsonMigratorMainTest {
             Entity address = getProperty(graph, person, "has-address").asEntity();
             Entity streetAddress = getProperty(graph, address, "address-has-street").asEntity();
 
-            Resource number = getResource(graph, streetAddress, Label.of("number"));
+            Attribute number = getResource(graph, streetAddress, Label.of("number"));
             assertEquals(21L, number.getValue());
 
             Collection<Thing> phoneNumbers = getProperties(graph, person, "has-phone");

@@ -17,7 +17,6 @@
  */
 package ai.grakn.engine;
 
-import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
@@ -36,7 +35,7 @@ import ai.grakn.engine.controller.graph.RoleController;
 import ai.grakn.engine.controller.graph.RuleTypeController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.data.RedisWrapper.Builder;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
@@ -53,7 +52,6 @@ import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.google.common.base.Stopwatch;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
@@ -77,9 +75,11 @@ import java.util.concurrent.locks.Lock;
 
 import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
 import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
+import static com.codahale.metrics.MetricRegistry.name;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -89,7 +89,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  */
 public class GraknEngineServer implements AutoCloseable {
 
-    private static final String LOAD_SYSTEM_ONTOLOGY_LOCK_NAME = "load-system-ontology";
+    private static final String LOAD_SYSTEM_SCHEMA_LOCK_NAME = "load-system-schema";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
             REST.WebPath.NEW_SESSION_URI,
@@ -101,7 +101,7 @@ public class GraknEngineServer implements AutoCloseable {
     private final EngineID engineId = EngineID.me();
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private final MetricRegistry metricRegistry;
     private final LockProvider lockProvider;
     private final GraknEngineStatus graknEngineStatus = new GraknEngineStatus();
@@ -118,8 +118,7 @@ public class GraknEngineServer implements AutoCloseable {
         boolean inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
         this.lockProvider = inMemoryQueue ? new ProcessWideLockProvider()
                 : new JedisLockProvider(redisWrapper.getJedisPool());
-        // Graph
-        this.factory = EngineGraknGraphFactory.create(prop.getProperties());
+        this.factory = EngineGraknTxFactory.create(prop.getProperties());
         // Task manager
         this.taskManager = startTaskManager(inMemoryQueue, redisWrapper.getJedisPool(), lockProvider);
     }
@@ -140,7 +139,7 @@ public class GraknEngineServer implements AutoCloseable {
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
         synchronized (this){
-            lockAndInitializeSystemOntology();
+            lockAndInitializeSystemSchema();
             startHTTP();
         }
         graknEngineStatus.setReady(true);
@@ -156,23 +155,23 @@ public class GraknEngineServer implements AutoCloseable {
         }
     }
 
-    private void lockAndInitializeSystemOntology() {
+    private void lockAndInitializeSystemSchema() {
         try {
-            Lock lock = lockProvider.getLock(LOAD_SYSTEM_ONTOLOGY_LOCK_NAME);
+            Lock lock = lockProvider.getLock(LOAD_SYSTEM_SCHEMA_LOCK_NAME);
             if (lock.tryLock(60, TimeUnit.SECONDS)) {
                 loadAndUnlock(lock);
             } else {
-                LOG.info("{} found system ontology lock already acquired by other engine", this.engineId);
+                LOG.info("{} found system schema lock already acquired by other engine", this.engineId);
             }
         } catch (InterruptedException e) {
-            LOG.warn("{} was interrupted while initializing system ontology", this.engineId);
+            LOG.warn("{} was interrupted while initializing system schema", this.engineId);
         }
     }
 
     private void loadAndUnlock(Lock lock) {
         try {
-            LOG.info("{} is checking the system ontology", this.engineId);
-            factory.systemKeyspace().loadSystemOntology();
+            LOG.info("{} is checking the system schema", this.engineId);
+            factory.systemKeyspace().loadSystemSchema();
         } finally {
             lock.unlock();
         }
@@ -313,7 +312,7 @@ public class GraknEngineServer implements AutoCloseable {
         return taskManager;
     }
 
-    public EngineGraknGraphFactory factory() {
+    public EngineGraknTxFactory factory() {
         return factory;
     }
 

@@ -27,7 +27,7 @@ import org.apache.http.impl.client.HttpClients;
 
 import java.net.URI;
 
-import static ai.grakn.util.REST.WebPath.Graph.ANY_GRAQL;
+import static ai.grakn.util.REST.WebPath.KB.ANY_GRAQL;
 import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
 import static org.apache.http.HttpStatus.SC_OK;
 

@@ -1,4 +1,4 @@
-insert
+define
 
 pokemon sub entity
     plays ancestor
@@ -16,30 +16,31 @@ pokemon-type sub entity
     plays defending-type
     plays attacking-type;
 
-name sub resource datatype string;
-pokedex-no sub resource datatype long;
-description sub resource datatype string;
-height sub resource datatype double;
-weight sub resource datatype double;
+name sub attribute datatype string;
+pokedex-no sub attribute datatype long;
+description sub attribute datatype string;
+height sub attribute datatype double;
+weight sub attribute datatype double;
 
-evolution sub relation
+evolution sub relationship
     relates ancestor
     relates descendant;
 ancestor sub role;
 descendant sub role;
 
-has-type sub relation
+has-type sub relationship
     relates pokemon-with-type
     relates type-of-pokemon;
 pokemon-with-type sub role;
 type-of-pokemon sub role;
 
-super-effective sub relation
+super-effective sub relationship
     relates defending-type
     relates attacking-type;
 defending-type sub role;
 attacking-type sub role;
 
+insert
 
 # Data retrieved from Pokeapi: $https://pokeapi.co/
 

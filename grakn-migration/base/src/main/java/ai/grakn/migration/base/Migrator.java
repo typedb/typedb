@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
 import static java.lang.String.format;
 
 /**
@@ -124,6 +125,11 @@ public class Migrator {
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
         loader.setRetryPolicy(retry);
+        loader.setTaskCompletionConsumer(json -> {
+            if (json.has(STACK_TRACE) && json.at(STACK_TRACE).isString()) {
+                System.err.println(json.at(STACK_TRACE).asString());
+            }
+        });
 
         converter
                 .flatMap(d -> template(template, d))

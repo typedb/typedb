@@ -63,7 +63,7 @@ abstract class VarImpl extends AbstractVarPattern implements Var {
     }
 
     @Override
-    public Var getVarName() {
+    public Var var() {
         return this;
     }
 

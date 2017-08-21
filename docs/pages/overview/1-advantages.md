@@ -12,32 +12,32 @@ toc: false
 
 GRAKN.AI  working with complex data easymakes by providing:
 
-* an ontology that allows you to model the world and all the type hierarchies and hyper-relationships contained within it.
+* a schema that allows you to model the world and all the type hierarchies and hyper-relationships contained within it.
 * a query language that uses machine reasoning for retrieving explicitly stored data and implicitly derived knowledge.
 
 ## Expressive data model
 
 > Grakn allows you to model the real world.
 
-Grakn is a hyper-relational database, that provides an [Enhanced-Entity-Relational (EER)](https://en.wikipedia.org/wiki/Enhanced_entity–relationship_model) schema to model extremely complex datasets. Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained within it. The schema/ontology modelling constructs include but are not limited to data type hierarchy, relation type hierarchy, bi-directional relationships, multi-type relationships, N-ary relationships, relationships in relationships, conditional relationships, virtual relationships, dynamic relationships, and so on.
+Grakn is a hyper-relational database, that provides an [Enhanced-Entity-Relational (EER)](https://en.wikipedia.org/wiki/Enhanced_entity–relationship_model) schema to model extremely complex datasets. Grakn allows you to model the real world and all the hierarchies and hyper-relationships contained within it. The schema modelling constructs include but are not limited to data type hierarchy, relationship type hierarchy, bi-directional relationships, multi-type relationships, N-ary relationships, relationships in relationships, conditional relationships, virtual relationships, dynamic relationships, and so on.
 
 ## Logical integrity of information
 
 > Grakn maintains higher data quality with stronger information consistency than any other database.
 
-Grakn’s ontology functions as a data schema constraint that guarantees the logical integrity of information stored in the database in real time. In consequence, data is maintained at a higher quality with much stronger information consistency than for any other database. Grakn allows your team to catch all data errors as soon as the data arrives in your system. In Grakn’s Enterprise solution, you can also have real-time alerts of violations of advanced business rules.
+Grakn’s schema functions as a data schema constraint that guarantees the logical integrity of information stored in the database in real time. In consequence, data is maintained at a higher quality with much stronger information consistency than for any other database. Grakn allows your team to catch all data errors as soon as the data arrives in your system. In Grakn’s Enterprise solution, you can also have real-time alerts of violations of advanced business rules.
 
 ## Flexible data model
 
 > Grakn allows your database model to constantly evolve.
 
-Grakn’s schema/ontology is flexible. You can add new data and relation types, update type names, delete unused types, all while storing and retrieving data to and from the database. This allows your database model to constantly even when you have lots of data, building a lasting advantage as your business “learns”. In Grakn’s Enterprise solution, you can have a machine learning system to automatically adapt and grow your Grakn ontology.
+Grakn’s schema is flexible. You can add new data and relationship types, update type names, delete unused types, all while storing and retrieving data to and from the database. This allows your database model to constantly even when you have lots of data, building a lasting advantage as your business “learns”. In Grakn’s Enterprise solution, you can have a machine learning system to automatically adapt and grow your Grakn schema.
 
 ##  Machine reasoning query language
 
 > Graql provides an intelligent higher level abstraction over complex relationships.
 
-Graql is a polymorphic, knowledge-oriented query language. It allows you to query many different types simultaneously through a common supertype, and it takes into account deep contextualisation of data. Graql uses machine reasoning to perform inference over data types, relation types, context disambiguation, implicit relationships and dynamic relationships. This allows you to discover deeply hidden and implicit association between data instances through short and concise statements, as Graql provides an intelligent higher level abstraction over complex relationships.
+Graql is a polymorphic, knowledge-oriented query language. It allows you to query many different types simultaneously through a common supertype, and it takes into account deep contextualisation of data. Graql uses machine reasoning to perform inference over data types, relationship types, context disambiguation, implicit relationships and dynamic relationships. This allows you to discover deeply hidden and implicit association between data instances through short and concise statements, as Graql provides an intelligent higher level abstraction over complex relationships.
 
 ## Optimised query execution
 
