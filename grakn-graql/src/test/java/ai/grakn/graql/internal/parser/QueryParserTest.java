@@ -348,8 +348,11 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testDeleteQuery() {
-        DeleteQuery expected = match(var("x").isa("movie").has("title", "The Title")).delete("x");
+    public void whenParsingDeleteQuery_ResultIsSameAsJavaGraql() {
+        Var x = var("x");
+        Var y = var("y");
+
+        DeleteQuery expected = match(x.isa("movie").has("title", "The Title"), y.isa("movie")).delete(x, y);
         DeleteQuery parsed = parse("match $x isa movie has title 'The Title'; delete $x;");
         assertEquals(expected, parsed);
     }

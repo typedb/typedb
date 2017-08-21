@@ -121,8 +121,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public MatchQuery visitMatchSelect(GraqlParser.MatchSelectContext ctx) {
-        Set<Var> names = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
-        return visitMatchQuery(ctx.matchQuery()).select(names);
+        return visitMatchQuery(ctx.matchQuery()).select(visitVariables(ctx.variables()));
     }
 
     @Override
@@ -178,13 +177,17 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
-        Collection<VarPattern> getters = visitVarPatterns(ctx.varPatterns());
-        return visitMatchQuery(ctx.matchQuery()).delete(getters);
+        return visitMatchQuery(ctx.matchQuery()).delete(visitVariables(ctx.variables()));
     }
 
     @Override
     public ComputeQuery<?> visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
         return visitComputeMethod(ctx.computeMethod());
+    }
+
+    @Override
+    public Set<Var> visitVariables(GraqlParser.VariablesContext ctx) {
+        return ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
     }
 
     @Override

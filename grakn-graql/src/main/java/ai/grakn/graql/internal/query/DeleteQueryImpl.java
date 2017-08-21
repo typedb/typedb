@@ -19,16 +19,14 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
-import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 
@@ -41,19 +39,19 @@ import java.util.stream.Stream;
  * A DeleteQuery that will execute deletions for every result of a MatchQuery
  */
 class DeleteQueryImpl implements DeleteQueryAdmin {
-    private final ImmutableCollection<VarPatternAdmin> deleters;
+    private final ImmutableCollection<Var> vars;
     private final MatchQueryAdmin matchQuery;
 
     /**
-     * @param deleters a collection of variable patterns to delete
+     * @param vars a collection of variables to delete
      * @param matchQuery a pattern to match and delete for each result
      */
-    DeleteQueryImpl(Collection<VarPatternAdmin> deleters, MatchQuery matchQuery) {
-        if (deleters.isEmpty()) {
+    DeleteQueryImpl(Collection<? extends Var> vars, MatchQuery matchQuery) {
+        if (vars.isEmpty()) {
             throw GraqlQueryException.noPatterns();
         }
 
-        this.deleters = ImmutableSet.copyOf(deleters);
+        this.vars = ImmutableSet.copyOf(vars);
         this.matchQuery = matchQuery.admin();
     }
 
@@ -77,7 +75,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
     @Override
     public DeleteQuery withTx(GraknTx tx) {
-        return Queries.delete(deleters, matchQuery.withTx(tx));
+        return Queries.delete(vars, matchQuery.withTx(tx));
     }
 
     @Override
@@ -86,41 +84,9 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     private void deleteResult(Answer result) {
-        for (VarPatternAdmin deleter : deleters) {
-            Concept concept = result.get(deleter.var());
-
-            if (concept == null) {
-                throw GraqlQueryException.varNotInQuery(deleter.var());
-            }
-
-            deletePattern(concept, deleter);
+        for (Var var : vars) {
+            result.get(var).delete();
         }
-    }
-
-    /**
-     * Delete a result from a query. This may involve deleting the whole concept or specific edges, depending
-     * on what deleters were provided.
-     * @param result the concept that matches the variable in the graph
-     * @param deleter the pattern to delete on the concept
-     */
-    private void deletePattern(Concept result, VarPatternAdmin deleter) {
-        if (!deleter.getProperties().findAny().isPresent()) {
-            // Delete whole concept if nothing specified to delete
-            result.delete();
-        } else {
-            deleter.getProperties().forEach(property ->
-                    ((VarPropertyInternal) property).delete(tx(), result)
-            );
-        }
-    }
-
-    private GraknTx tx() {
-        return matchQuery.tx().orElseThrow(GraqlQueryException::noTx);
-    }
-
-    @Override
-    public Collection<VarPatternAdmin> getDeleters() {
-        return deleters;
     }
 
     @Override
@@ -130,7 +96,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
     @Override
     public String toString() {
-        return matchQuery + " delete " + deleters.stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+        return matchQuery + " delete " + vars.stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 
     @Override
@@ -140,13 +106,13 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
         DeleteQueryImpl that = (DeleteQueryImpl) o;
 
-        if (!deleters.equals(that.deleters)) return false;
+        if (!vars.equals(that.vars)) return false;
         return matchQuery.equals(that.matchQuery);
     }
 
     @Override
     public int hashCode() {
-        int result = deleters.hashCode();
+        int result = vars.hashCode();
         result = 31 * result + matchQuery.hashCode();
         return result;
     }

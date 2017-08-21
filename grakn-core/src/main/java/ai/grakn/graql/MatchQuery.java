@@ -77,25 +77,25 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
     InsertQuery insert(Collection<? extends VarPattern> vars);
 
     /**
-     * @param names an array of variable names to delete for each result of this match query
-     * @return a delete query that will delete the given variable names for each result of this match query
+     * @param vars an array of variables to delete for each result of this match query
+     * @return a delete query that will delete the given variables for each result of this match query
      */
     @CheckReturnValue
-    DeleteQuery delete(String... names);
+    DeleteQuery delete(String... vars);
 
     /**
-     * @param deleters an array of variables stating what properties to delete for each result of this match query
-     * @return a delete query that will delete the given properties for each result of this match query
+     * @param vars an array of variables to delete for each result of this match query
+     * @return a delete query that will delete the given variables for each result of this match query
      */
     @CheckReturnValue
-    DeleteQuery delete(VarPattern... deleters);
+    DeleteQuery delete(Var... vars);
 
     /**
-     * @param deleters a collection of variables stating what properties to delete for each result of this match query
-     * @return a delete query that will delete the given properties for each result of this match query
+     * @param vars a collection of variables to delete for each result of this match query
+     * @return a delete query that will delete the given variables for each result of this match query
      */
     @CheckReturnValue
-    DeleteQuery delete(Collection<? extends VarPattern> deleters);
+    DeleteQuery delete(Collection<? extends Var> vars);
 
     /**
      * Order the results by degree in ascending order

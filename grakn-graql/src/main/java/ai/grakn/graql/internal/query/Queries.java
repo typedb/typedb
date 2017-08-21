@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.InsertQueryAdmin;
@@ -49,8 +50,8 @@ public class Queries {
         return new InsertQueryImpl(vars, Optional.of(matchQuery), Optional.empty());
     }
 
-    public static DeleteQueryAdmin delete(Collection<VarPatternAdmin> deleters, MatchQuery matchQuery) {
-        return new DeleteQueryImpl(deleters, matchQuery);
+    public static DeleteQueryAdmin delete(Collection<? extends Var> vars, MatchQuery matchQuery) {
+        return new DeleteQueryImpl(vars, matchQuery);
     }
 
     public static <T> AggregateQuery<T> aggregate(MatchQueryAdmin matchQuery, Aggregate<? super Answer, T> aggregate) {

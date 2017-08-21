@@ -12,7 +12,7 @@ query          : matchQuery | insertQuery | simpleQuery ;
 simpleQuery    : defineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
 matchQuery     : MATCH patterns                                   # matchBase
-               | matchQuery 'select' VARIABLE (',' VARIABLE)* ';' # matchSelect
+               | matchQuery 'select' variables                ';' # matchSelect
                | matchQuery 'limit' INTEGER                   ';' # matchLimit
                | matchQuery 'offset' INTEGER                  ';' # matchOffset
                | matchQuery 'distinct'                        ';' # matchDistinct
@@ -23,9 +23,11 @@ insertQuery    : matchInsert | insertOnly ;
 insertOnly     : INSERT varPatterns ;
 matchInsert    : matchQuery INSERT varPatterns ;
 defineQuery    : DEFINE varPatterns ;
-deleteQuery    : matchQuery 'delete' varPatterns ;
+deleteQuery    : matchQuery 'delete' variables ';' ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
+
+variables      : VARIABLE (',' VARIABLE)* ;
 
 computeMethod  : min | max | median | mean | std | sum | count | path | cluster | degrees ;
 

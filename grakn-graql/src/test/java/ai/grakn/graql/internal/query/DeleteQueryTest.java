@@ -24,7 +24,6 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPattern;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.Schema;
@@ -94,77 +93,6 @@ public class DeleteQueryTest {
         qb.match(x.isa("fake-type")).delete(x).execute();
 
         assertNotExists(qb, var().isa("fake-type"));
-    }
-
-    @Test
-    public void testDeleteName() {
-        qb.insert(
-                var().isa("person")
-                        .has("real-name", "Bob")
-                        .has("real-name", "Robert")
-                        .has("gender", "male")
-        ).execute();
-
-        assertExists(qb, var().isa("person").has("real-name", "Bob"));
-        assertExists(qb, var().isa("person").has("real-name", "Robert"));
-        assertExists(qb, var().isa("person").has("gender", "male"));
-
-        qb.match(x.has("real-name", "Bob")).delete(x.has("real-name", y)).execute();
-
-        assertNotExists(qb, var().isa("person").has("real-name", "Bob"));
-        assertNotExists(qb, var().isa("person").has("real-name", "Robert"));
-        assertExists(qb, var().isa("person").has("gender", "male"));
-
-        qb.match(x.has("gender", "male")).delete(x).execute();
-        assertNotExists(qb, var().has("gender", "male"));
-
-        assertExists(qb, var().isa("real-name").val("Bob"));
-        assertExists(qb, var().isa("real-name").val("Robert"));
-        assertExists(qb, var().isa("gender").val("male"));
-    }
-
-    @Test
-    public void testDeleteSpecificEdge() {
-        VarPattern actor = label("has-cast").relates("actor");
-        VarPattern productionWithCast = label("has-cast").relates("production-with-cast");
-
-        assertExists(qb, actor);
-        assertExists(qb, productionWithCast);
-
-        qb.match(x.label("has-cast")).delete(x.relates("actor")).execute();
-        assertExists(qb, label("has-cast"));
-        assertNotExists(qb, actor);
-        assertExists(qb, productionWithCast);
-
-        qb.define(actor).execute();
-        assertExists(qb, actor);
-    }
-
-    @Test
-    public void testDeleteSpecificName() {
-        qb.insert(
-                var().isa("person")
-                        .has("real-name", "Bob")
-                        .has("real-name", "Robert")
-                        .has("gender", "male")
-        ).execute();
-
-        assertExists(qb, var().isa("person").has("real-name", "Bob"));
-        assertExists(qb, var().isa("person").has("real-name", "Robert"));
-        assertExists(qb, var().isa("person").has("gender", "male"));
-
-        qb.match(x.has("real-name", "Bob")).delete(x.has("real-name", "Robert")).execute();
-
-        assertExists(qb, var().isa("person").has("real-name", "Bob"));
-        assertNotExists(qb, var().isa("person").has("real-name", "Robert"));
-        assertExists(qb, var().isa("person").has("gender", "male"));
-
-        qb.match(x.has("real-name", "Bob")).delete(x).execute();
-        assertNotExists(qb, var().has("real-name", "Bob").isa("person"));
-
-        assertExists(qb, var().isa("real-name").val("Bob"));
-        assertExists(qb, var().isa("real-name").val("Robert"));
-        assertExists(qb, var().isa("gender").val("male"));
     }
 
     @Test
@@ -318,13 +246,6 @@ public class DeleteQueryTest {
     }
 
     @Test
-    public void testErrorWhenDeleteValue() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("delet"), containsString("val")));
-        qb.match(x.isa("movie")).delete(x.val("hello")).execute();
-    }
-
-    @Test
     public void whenDeletingAVariableNotInTheQuery_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y));
@@ -340,7 +261,7 @@ public class DeleteQueryTest {
 
     @Test(expected = Exception.class)
     public void deleteVarNameNullSet() {
-        movieKB.tx().graql().match(var()).delete((Set<VarPattern>) null).execute();
+        movieKB.tx().graql().match(var()).delete((Set<Var>) null).execute();
     }
 
     @Test(expected = Exception.class)
