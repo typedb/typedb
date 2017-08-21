@@ -26,6 +26,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.pattern.property.PropertyExecutor;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.util.Partition;
 import com.google.auto.value.AutoValue;
@@ -48,8 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
@@ -82,17 +82,17 @@ public class InsertQueryExecutor {
     private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
 
     // The method that is applied on every `VarProperty`
-    private final Consumer<VarAndProperty> insertFunction;
+    private final Function<VarAndProperty, PropertyExecutor> executorFunction;
 
     private InsertQueryExecutor(GraknTx tx, ImmutableSet<VarAndProperty> properties,
                                 Partition<Var> equivalentVars,
                                 ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies,
-                                BiConsumer<VarAndProperty, InsertQueryExecutor> insertFunction) {
+                                Function<VarAndProperty, PropertyExecutor> executorFunction) {
         this.tx = tx;
         this.properties = properties;
         this.equivalentVars = equivalentVars;
         this.dependencies = dependencies;
-        this.insertFunction = property -> insertFunction.accept(property, this);
+        this.executorFunction = executorFunction;
     }
 
     /**
@@ -116,7 +116,7 @@ public class InsertQueryExecutor {
 
     private static InsertQueryExecutor create(
             Collection<VarPatternAdmin> patterns, GraknTx graph,
-            BiConsumer<VarAndProperty, InsertQueryExecutor> insertFunction
+            Function<VarAndProperty, PropertyExecutor> executorFunction
     ) {
         ImmutableSet<VarAndProperty> properties =
                 patterns.stream().flatMap(VarAndProperty::fromPattern).collect(toImmutableSet());
@@ -133,7 +133,7 @@ public class InsertQueryExecutor {
         Multimap<VarAndProperty, Var> propDependencies = HashMultimap.create();
 
         for (VarAndProperty property : properties) {
-            for (Var requiredVar : property.requiredVars()) {
+            for (Var requiredVar : executorFunction.apply(property).requiredVars()) {
                 propDependencies.put(property, requiredVar);
             }
         }
@@ -147,7 +147,7 @@ public class InsertQueryExecutor {
         Multimap<Var, VarAndProperty> varDependencies = HashMultimap.create();
 
         for (VarAndProperty property : properties) {
-            for (Var producedVar : property.producedVars()) {
+            for (Var producedVar : executorFunction.apply(property).producedVars()) {
                 varDependencies.put(producedVar, property);
             }
         }
@@ -209,7 +209,7 @@ public class InsertQueryExecutor {
         Multimap<VarAndProperty, VarAndProperty> dependencies = composeMultimaps(propDependencies, varDependencies);
 
         return new InsertQueryExecutor(
-                graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies), insertFunction
+                graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies), executorFunction
         );
     }
 
@@ -247,7 +247,7 @@ public class InsertQueryExecutor {
     private Answer insertAll(Answer results) {
         concepts.putAll(results.map());
 
-        sortProperties().forEach(insertFunction);
+        sortProperties().forEach(property -> executorFunction.apply(property).execute(this));
 
         conceptBuilders.forEach((var, builder) -> concepts.put(var, builder.build()));
 
@@ -318,7 +318,7 @@ public class InsertQueryExecutor {
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarPropertyInternal#insert(Var, InsertQueryExecutor)}, provided they return the given {@link Var} in the
+     * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
      * response to {@link VarPropertyInternal#producedVars(Var)}.
      * </p>
      * <p>
@@ -340,7 +340,7 @@ public class InsertQueryExecutor {
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarPropertyInternal#insert(Var, InsertQueryExecutor)}, provided they return the given {@link Var} in the
+     * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
      * response to {@link VarPropertyInternal#producedVars(Var)}.
      * </p>
      * <p>
@@ -373,7 +373,7 @@ public class InsertQueryExecutor {
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarPropertyInternal#insert(Var, InsertQueryExecutor)}, provided they return the given {@link Var} in the
+     * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
      * response to {@link VarPropertyInternal#requiredVars(Var)}.
      * </p>
      */
@@ -435,20 +435,12 @@ public class InsertQueryExecutor {
             return pattern.getProperties().map(prop -> VarAndProperty.of(pattern.var(), prop));
         }
 
-        void insert(InsertQueryExecutor executor) {
-            property().insert(var()).execute(executor);
+        PropertyExecutor insert() {
+            return property().insert(var());
         }
 
-        void define(InsertQueryExecutor executor) {
-            property().define(var()).execute(executor);
-        }
-
-        Set<Var> requiredVars() {
-            return property().requiredVars(var());
-        }
-
-        Set<Var> producedVars() {
-            return property().producedVars(var());
+        PropertyExecutor define() {
+            return property().define(var());
         }
 
         boolean uniquelyIdentifiesConcept() {

@@ -42,9 +42,9 @@ public abstract class PropertyExecutor {
         executeMethod().accept(executor);
     }
 
-    abstract ImmutableSet<Var> requiredVars();
+    public abstract ImmutableSet<Var> requiredVars();
 
-    abstract ImmutableSet<Var> producedVars();
+    public abstract ImmutableSet<Var> producedVars();
 
     @AutoValue.Builder
     abstract static class Builder {
