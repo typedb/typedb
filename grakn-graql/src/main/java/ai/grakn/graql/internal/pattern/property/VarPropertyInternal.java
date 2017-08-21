@@ -27,7 +27,6 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 
 import java.util.Collection;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
