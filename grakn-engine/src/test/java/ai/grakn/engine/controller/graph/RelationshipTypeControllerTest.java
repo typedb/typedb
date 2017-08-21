@@ -18,12 +18,12 @@
 
 package ai.grakn.engine.controller.graph;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.controller.SparkContext;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -51,12 +51,12 @@ import static org.mockito.Mockito.when;
  * @author Ganeshwara Herawan Hananda
  */
 
-public class RelationTypeControllerTest {
-    private static GraknGraph mockGraph;
-    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
+public class RelationshipTypeControllerTest {
+    private static GraknTx mockGraph;
+    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
+    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -67,45 +67,54 @@ public class RelationTypeControllerTest {
 
     @Before
     public void setupMock(){
-        mockGraph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
 
-        when(mockGraph.putRelationType(anyString())).thenAnswer(invocation ->
-            graphContext.graph().putRelationType((String) invocation.getArgument(0)));
-        when(mockGraph.getRelationType(anyString())).thenAnswer(invocation ->
-            graphContext.graph().getRelationType(invocation.getArgument(0)));
+        when(mockGraph.putRelationshipType(anyString())).thenAnswer(invocation ->
+            graphContext.tx().putRelationshipType((String) invocation.getArgument(0)));
+        when(mockGraph.getRelationshipType(anyString())).thenAnswer(invocation ->
+            graphContext.tx().getRelationshipType(invocation.getArgument(0)));
 
-        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
-        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
+        when(mockGraph.putRole(anyString())).thenAnswer(invocation ->
+            graphContext.tx().putRole((String) invocation.getArgument(0)));
+        when(mockGraph.getRole(anyString())).thenAnswer(invocation ->
+            graphContext.tx().getRole(invocation.getArgument(0)));
+
+
+        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
+        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
     }
 
     @Test
-    public void postRelationType() {
-        Json body = Json.object("relationTypeLabel", "newRelationType");
+    public void postRelationshipType() {
+        Json body = Json.object(
+            "relationshipTypeLabel", "newRelationshipType",
+            "roleLabels", Json.array("role1", "role2")
+        );
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
             .body(body.toString())
-            .post("/graph/relationType");
+            .post("/graph/relationshipType");
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("relationTypeLabel"), equalTo("newRelationType"));
+        assertThat(responseBody.get("relationshipTypeLabel"), equalTo("newRelationshipType"));
 
     }
 
     @Test
-    public void getRelationTypeFromMovieGraphShouldExecuteSuccessfully() {
+    public void getRelationshipTypeFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .get("/graph/relationType/has-genre");
+            .get("/graph/relationshipType/has-genre");
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("relationTypeLabel"), equalTo("has-genre"));
+        assertThat(responseBody.get("relationshipTypeLabel"), equalTo("has-genre"));
     }
 }

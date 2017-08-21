@@ -20,8 +20,6 @@ package ai.grakn.engine.controller.graph;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import com.codahale.metrics.MetricRegistry;
@@ -33,10 +31,8 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
-import java.util.Map;
 import java.util.Optional;
 
-import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.util.REST.Request.KEYSPACE;

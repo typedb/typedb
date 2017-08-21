@@ -18,16 +18,12 @@
 
 package ai.grakn.engine.controller.graph;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.GraknEngineStatus;
-import ai.grakn.engine.controller.ConceptController;
 import ai.grakn.engine.controller.SparkContext;
-import ai.grakn.engine.controller.SystemController;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -42,9 +38,7 @@ import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -58,11 +52,11 @@ import static org.mockito.Mockito.when;
  */
 
 public class EntityTypeControllerTest {
-    private static GraknGraph mockGraph;
-    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
+    private static GraknTx mockGraph;
+    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
+    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -73,17 +67,17 @@ public class EntityTypeControllerTest {
 
     @Before
     public void setupMock(){
-        mockGraph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
 
         when(mockGraph.putEntityType(anyString())).thenAnswer(invocation ->
-            graphContext.graph().putEntityType((String) invocation.getArgument(0)));
+            graphContext.tx().putEntityType((String) invocation.getArgument(0)));
         when(mockGraph.getEntityType(anyString())).thenAnswer(invocation ->
-            graphContext.graph().getEntityType(invocation.getArgument(0)));
+            graphContext.tx().getEntityType(invocation.getArgument(0)));
 
-        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
-        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
+        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
+        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
     }
 
     @Test
