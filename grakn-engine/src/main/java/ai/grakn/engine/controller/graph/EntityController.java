@@ -18,13 +18,13 @@
 
 package ai.grakn.engine.controller.graph;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Resource;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.concept.Attribute;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
@@ -49,16 +49,16 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
  */
 
 public class EntityController {
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private static final Logger LOG = LoggerFactory.getLogger(EntityTypeController.class);
 
-    public EntityController(EngineGraknGraphFactory factory, Service spark,
+    public EntityController(EngineGraknTxFactory factory, Service spark,
                                 MetricRegistry metricRegistry) {
         this.factory = factory;
 
         spark.post("/graph/entityType/:entityTypeLabel/entity", this::postEntity);
-        spark.put("/graph/entity/:entityConceptId/resource/:resourceConceptId", this::assignResourceToEntity);
-        spark.delete("/graph/entity/:entityConceptId/resource/:resourceConceptId", this::deleteResourceToEntityAssignment);
+        spark.put("/graph/entity/:entityConceptId/attribute/:attributeConceptId", this::assignAttributeToEntity);
+        spark.delete("/graph/entity/:entityConceptId/attribute/:attributeConceptId", this::deleteAttributeToEntityAssignment);
     }
 
     private Json postEntity(Request request, Response response) {
@@ -66,7 +66,7 @@ public class EntityController {
         String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postEntity - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
-        try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
             Optional<EntityType> entityTypeOptional = Optional.ofNullable(graph.getEntityType(entityTypeLabel));
             if (entityTypeOptional.isPresent()) {
                 LOG.info("postEntity - entityType " + entityTypeLabel + " found.");
@@ -85,35 +85,35 @@ public class EntityController {
         }
     }
 
-    private Json assignResourceToEntity(Request request, Response response) {
-        LOG.info("assignResourceToEntity - request received.");
+    private Json assignAttributeToEntity(Request request, Response response) {
+        LOG.info("assignAttributeToEntity - request received.");
         String entityConceptId = mandatoryPathParameter(request, "entityConceptId");
-        String resourceConceptId = mandatoryPathParameter(request, "resourceConceptId");
+        String attributeConceptId = mandatoryPathParameter(request, "attributeConceptId");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
-            LOG.info("assignResourceToEntity - attempting to find resourceConceptId " + resourceConceptId + " and entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
+        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
+            LOG.info("assignAttributeToEntity - attempting to find attributeConceptId " + attributeConceptId + " and entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
             Optional<Entity> entityOptional = Optional.ofNullable(graph.getConcept(ConceptId.of(entityConceptId)));
-            Optional<Resource> resourceOptional = Optional.ofNullable(graph.getConcept(ConceptId.of(resourceConceptId)));
+            Optional<Attribute> attributeOptional = Optional.ofNullable(graph.getConcept(ConceptId.of(attributeConceptId)));
 
-            if (entityOptional.isPresent() && resourceOptional.isPresent()) {
-                LOG.info("assignResourceToEntity - entity and resource found. attempting to assign resourceConceptId " + resourceConceptId + " to entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
+            if (entityOptional.isPresent() && attributeOptional.isPresent()) {
+                LOG.info("assignAttributeToEntity - entity and attribute found. attempting to assign attributeConceptId " + attributeConceptId + " to entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
                 Entity entity = entityOptional.get();
-                Resource resource = resourceOptional.get();
-                Entity entityType1 = entity.resource(resource);
+                Attribute attribute = attributeOptional.get();
+                Entity entityType1 = entity.attribute(attribute);
                 graph.commit();
-                LOG.info("assignResourceToEntity - assignment succeeded. request processed.");
+                LOG.info("assignAttributeToEntity - assignment succeeded. request processed.");
                 Json responseBody = Json.object();
                 response.status(HttpStatus.SC_OK);
                 return responseBody;
             } else {
-                LOG.info("assignResourceToEntity - either entity or resource not found. request processed.");
+                LOG.info("assignAttributeToEntity - either entity or attribute not found. request processed.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
                 return Json.nil();
             }
         }
     }
 
-    private Json deleteResourceToEntityAssignment(Request request, Response response) {
-        throw new UnsupportedOperationException("Unsupported operation: DELETE /graph/entity/:conceptId/resource/:conceptId");
+    private Json deleteAttributeToEntityAssignment(Request request, Response response) {
+        throw new UnsupportedOperationException("Unsupported operation: DELETE /graph/entity/:conceptId/attribute/:conceptId");
     }
 }

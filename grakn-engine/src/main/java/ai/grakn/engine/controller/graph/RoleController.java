@@ -18,12 +18,12 @@
 
 package ai.grakn.engine.controller.graph;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
@@ -50,10 +50,10 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
  */
 
 public class RoleController {
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private static final Logger LOG = LoggerFactory.getLogger(EntityTypeController.class);
 
-    public RoleController(EngineGraknGraphFactory factory, Service spark,
+    public RoleController(EngineGraknTxFactory factory, Service spark,
                           MetricRegistry metricRegistry) {
         this.factory = factory;
 
@@ -65,7 +65,7 @@ public class RoleController {
         String roleLabel = mandatoryPathParameter(request, "roleLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getRole - attempting to find role " + roleLabel + " in keyspace " + keyspace);
-        try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.READ)) {
+        try (GraknTx graph = factory.tx(keyspace, GraknTxType.READ)) {
             Optional<Role> role = Optional.ofNullable(graph.getRole(roleLabel));
             if (role.isPresent()) {
                 String jsonConceptId = role.get().getId().getValue();
