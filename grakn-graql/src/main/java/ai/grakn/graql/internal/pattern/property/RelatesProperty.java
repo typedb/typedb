@@ -30,7 +30,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.RelatesAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
@@ -88,9 +87,11 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     }
 
     @Override
-    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Role role = executor.get(this.role().var()).asRole();
-        executor.get(var).asRelationshipType().relates(role);
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        return PropertyExecutor.builder(executor -> {
+            Role role = executor.get(this.role().var()).asRole();
+            executor.get(var).asRelationshipType().relates(role);
+        }).requires(var, role().var()).build();
     }
 
     @Override

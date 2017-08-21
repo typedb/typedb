@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
@@ -32,7 +32,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.HasAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.Schema;
@@ -140,15 +139,17 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
     }
 
     @Override
-    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Type entityTypeConcept = executor.get(var).asType();
-        AttributeType attributeTypeConcept = executor.get(resourceType().var()).asAttributeType();
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        return PropertyExecutor.builder(executor -> {
+            Type entityTypeConcept = executor.get(var).asType();
+            AttributeType attributeTypeConcept = executor.get(resourceType().var()).asAttributeType();
 
-        if (required()) {
-            entityTypeConcept.key(attributeTypeConcept);
-        } else {
-            entityTypeConcept.attribute(attributeTypeConcept);
-        }
+            if (required()) {
+                entityTypeConcept.key(attributeTypeConcept);
+            } else {
+                entityTypeConcept.attribute(attributeTypeConcept);
+            }
+        }).requires(var, resourceType().var()).build();
     }
 
     @Override

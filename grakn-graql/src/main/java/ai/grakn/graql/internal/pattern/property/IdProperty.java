@@ -27,7 +27,6 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.auto.value.AutoValue;
@@ -78,9 +77,9 @@ public abstract class IdProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
         // This property works in both insert and define queries, because it is only for look-ups
-        insert(var).execute(executor);
+        return insert(var);
     }
 
     @Override

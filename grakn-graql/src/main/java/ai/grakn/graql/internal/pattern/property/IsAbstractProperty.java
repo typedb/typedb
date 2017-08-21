@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.IsAbstractAtom;
 import com.google.common.collect.ImmutableSet;
 
@@ -74,13 +73,15 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
-    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Concept concept = executor.get(var);
-        if(concept.isType()){
-            concept.asType().setAbstract(true);
-        } else {
-            throw GraqlQueryException.insertAbstractOnNonType(concept.asSchemaConcept());
-        }
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        return PropertyExecutor.builder(executor -> {
+            Concept concept = executor.get(var);
+            if(concept.isType()){
+                concept.asType().setAbstract(true);
+            } else {
+                throw GraqlQueryException.insertAbstractOnNonType(concept.asSchemaConcept());
+            }
+        }).requires(var).build();
     }
 
     @Override

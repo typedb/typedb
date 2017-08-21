@@ -440,7 +440,7 @@ public class InsertQueryExecutor {
         }
 
         void define(InsertQueryExecutor executor) {
-            property().define(var(), executor);
+            property().define(var()).execute(executor);
         }
 
         Set<Var> requiredVars() {

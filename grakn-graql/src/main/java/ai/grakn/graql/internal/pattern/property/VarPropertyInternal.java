@@ -68,7 +68,7 @@ public interface VarPropertyInternal extends VarProperty {
      */
     PropertyExecutor insert(Var var) throws GraqlQueryException;
 
-    void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException;
+    PropertyExecutor define(Var var) throws GraqlQueryException;
 
     /**
      * Get all {@link Var}s whose {@link Concept} must exist for the subject {@link Var} to be created.
