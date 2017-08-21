@@ -48,6 +48,12 @@ import java.util.stream.Stream;
  *
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxCache {
+    //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
+    private final Cache<Shard> currentShard = new Cache<>(Cacheable.shard(), () -> {
+        String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
+        Vertex shardVertex = vertex().tx().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
+        return vertex().tx().factory().buildShard(shardVertex);
+    });
     private final Cache<ConceptId> conceptId = new Cache<>(Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
 
@@ -192,6 +198,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         VertexElement shardVertex = vertex().tx().addVertex(Schema.BaseType.SHARD);
         Shard shard = vertex().tx().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
+        currentShard.set(shard);
     }
 
     public Stream<Shard> shards(){
@@ -200,9 +207,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     }
 
     public Shard currentShard(){
-        String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
-        Vertex shardVertex = vertex().tx().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
-        return vertex().tx().factory().buildShard(shardVertex);
+        return currentShard.get();
     }
 
     public long getShardCount(){
