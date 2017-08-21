@@ -66,7 +66,7 @@ public interface VarPropertyInternal extends VarProperty {
      *                 from {@link #producedVars(Var)}.
      *                 </p>
      */
-    void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException;
+    PropertyExecutor insert(Var var) throws GraqlQueryException;
 
     void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException;
 

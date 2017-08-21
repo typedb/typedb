@@ -71,14 +71,16 @@ public abstract class IdProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.builder(var).id(id());
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        return PropertyExecutor.builder(executor -> {
+            executor.builder(var).id(id());
+        }).produces(var).build();
     }
 
     @Override
     public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         // This property works in both insert and define queries, because it is only for look-ups
-        insert(var, executor);
+        insert(var).execute(executor);
     }
 
     @Override

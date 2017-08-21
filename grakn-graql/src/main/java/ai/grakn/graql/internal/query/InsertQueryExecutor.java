@@ -436,7 +436,7 @@ public class InsertQueryExecutor {
         }
 
         void insert(InsertQueryExecutor executor) {
-            property().insert(var(), executor);
+            property().insert(var()).execute(executor);
         }
 
         void define(InsertQueryExecutor executor) {

@@ -184,9 +184,11 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Relationship relationship = executor.get(var).asRelationship();
-        relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relationship, relationPlayer));
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        return PropertyExecutor.builder(executor -> {
+            Relationship relationship = executor.get(var).asRelationship();
+            relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relationship, relationPlayer));
+        }).requires(requiredVars(var)).build();
     }
 
     /**

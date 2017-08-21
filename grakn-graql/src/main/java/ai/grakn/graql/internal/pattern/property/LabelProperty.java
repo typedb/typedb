@@ -71,9 +71,9 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
         // This is supported in insert queries in order to allow looking up schema concepts by label
-        define(var, executor);
+        return PropertyExecutor.builder(executor -> define(var, executor)).produces(var).build();
     }
 
     @Override

@@ -27,7 +27,6 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
@@ -73,8 +72,10 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.builder(var).value(predicate().equalsValue().get()); // TODO
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        return PropertyExecutor.builder(executor -> {
+            executor.builder(var).value(predicate().equalsValue().get()); // TODO
+        }).produces(var).build();
     }
 
     @Override
