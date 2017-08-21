@@ -22,8 +22,11 @@ import com.ldbc.driver.DbConnectionState;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.control.LoggingService;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery1PersonProfile;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery2PersonPosts;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery3PersonFriends;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery4MessageContent;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery5MessageCreator;
+import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery6MessageForum;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcShortQuery7MessageReplies;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate1AddPerson;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate2AddPostLike;
@@ -33,7 +36,6 @@ import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate5AddForumMembers
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate6AddPost;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate7AddComment;
 import com.ldbc.driver.workloads.ldbc.snb.interactive.LdbcUpdate8AddFriendship;
-
 import java.io.IOException;
 import java.util.Map;
 
@@ -52,11 +54,11 @@ public class GraknDb extends Db {
 
         // TODO: disabling a lot because they are slow
         registerOperationHandler(LdbcShortQuery1PersonProfile.class, GraknShortQueryHandlers.LdbcShortQuery1PersonProfileHandler.class);
-//        registerOperationHandler(LdbcShortQuery2PersonPosts.class, GraknShortQueryHandlers.LdbcShortQuery2PersonPostsHandler.class);
-//        registerOperationHandler(LdbcShortQuery3PersonFriends.class, GraknShortQueryHandlers.LdbcShortQuery3PersonFriendsHandler.class);
+        registerOperationHandler(LdbcShortQuery2PersonPosts.class, GraknShortQueryHandlers.LdbcShortQuery2PersonPostsHandler.class);
+        registerOperationHandler(LdbcShortQuery3PersonFriends.class, GraknShortQueryHandlers.LdbcShortQuery3PersonFriendsHandler.class);
         registerOperationHandler(LdbcShortQuery4MessageContent.class, GraknShortQueryHandlers.LdbcShortQuery4MessageContentHandler.class);
         registerOperationHandler(LdbcShortQuery5MessageCreator.class, GraknShortQueryHandlers.LdbcShortQuery5MessageCreatorHandler.class);
-//        registerOperationHandler(LdbcShortQuery6MessageForum.class, GraknShortQueryHandlers.LdbcShortQuery6MessageForumHandler.class);
+        registerOperationHandler(LdbcShortQuery6MessageForum.class, GraknShortQueryHandlers.LdbcShortQuery6MessageForumHandler.class);
         registerOperationHandler(LdbcShortQuery7MessageReplies.class, GraknShortQueryHandlers.LdbcShortQuery7MessageRepliesHandler.class);
 
         registerOperationHandler(LdbcUpdate1AddPerson.class, GraknUpdateQueryHandlers.LdbcUpdate1AddPersonHandler.class);

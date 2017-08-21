@@ -38,29 +38,29 @@ node {
              'LDBC_DRIVER=' + workspace + '/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar',
              'LDBC_CONNECTOR=' + workspace + "/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar",
              'LDBC_VALIDATION_CONFIG=' + workspace + '/grakn-test/test-snb/src/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
-//      timeout(180) {
-//        dir('generate-SNB') {
-//          stage('Load Validation Data') {
-//            sh 'wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz'
-//            sh '../grakn-test/test-snb/src/generate-SNB/load-SNB.sh arch validate'
-//          }
-//        }
-//        stage('Measure Size') {
-//          sh 'nodetool flush'
-//          sh 'du -hd 0 grakn-package/db/cassandra/data'
-//        }
-//      }
+      timeout(180) {
+        dir('generate-SNB') {
+          stage('Load Validation Data') {
+            sh 'wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz'
+            sh '../grakn-test/test-snb/src/generate-SNB/load-SNB.sh arch validate'
+          }
+        }
+        stage('Measure Size') {
+          sh 'nodetool flush'
+          sh 'du -hd 0 grakn-package/db/cassandra/data'
+        }
+      }
       timeout(360) {
         dir('grakn-test/test-snb/') {
           stage('Build the SNB connectors') {
             sh 'mvn clean package assembly:single -Dmaven.repo.local=' + workspace + '/maven -DskipTests -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
           }
         }
-//        dir('validate-snb') {
-//          stage('Validate Queries') {
-//            sh '../grakn-test/test-snb/src/validate-snb/validate.sh'
-//          }
-//        }
+        dir('validate-snb') {
+          stage('Validate Queries') {
+            sh '../grakn-test/test-snb/src/validate-snb/validate.sh'
+          }
+        }
       }
     }
     slackSend channel: "#github", message: "Periodic Build Success on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"

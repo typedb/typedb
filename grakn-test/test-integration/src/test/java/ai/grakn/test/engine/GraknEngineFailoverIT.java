@@ -101,6 +101,7 @@ public class GraknEngineFailoverIT {
 
 
     @Property
+    @Ignore
     public void whenSubmittingTasksToTwoEngines_TheyComplete(
             List<TaskState> tasks1, List<TaskState> tasks2) throws Exception {
         // Create & Send tasks to rest api
