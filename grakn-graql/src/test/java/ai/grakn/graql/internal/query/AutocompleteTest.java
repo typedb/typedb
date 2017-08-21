@@ -70,9 +70,8 @@ public class AutocompleteTest {
     @Test
     public void whenAutocompletingWithinWord_AppropriateCandidatesAreFound() {
         String queryString = "match $x rela actor";
-        //                   index 9 --^ ^--------------------------- index 11
+        //                   index 9 --^ ^--index 11
         Autocomplete autocomplete = Autocomplete.create(types, queryString, 11);
-        System.out.println(autocomplete.getCandidates());
         assertThat(autocomplete.getCandidates(), hasItem("relates"));
         assertThat(autocomplete.getCandidates(), not(hasItem("delete")));
         assertEquals(9, autocomplete.getCursorPosition());
