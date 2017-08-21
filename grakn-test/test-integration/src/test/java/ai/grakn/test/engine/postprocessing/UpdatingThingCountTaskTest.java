@@ -14,13 +14,11 @@ import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.test.EngineContext;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
-import ai.grakn.util.MockRedis;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_CONCEPT_ID;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_SHARDING_COUNT;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import ai.grakn.util.Schema;
-import ai.grakn.util.TestResourceUtil;
 import static java.util.Collections.singleton;
 import java.util.UUID;
 import mjson.Json;
@@ -33,8 +31,6 @@ public class UpdatingThingCountTaskTest {
     @ClassRule
     public static final EngineContext engine = EngineContext.startSingleQueueServer();
 
-    @ClassRule
-    public static final MockRedis mockRedisRule = new MockRedis(TestResourceUtil.getEphemeralPort());
 
     @Test
     public void whenUpdatingInstanceCounts_EnsureRedisIsUpdated() throws InterruptedException {

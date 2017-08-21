@@ -88,4 +88,8 @@ public class EmbeddedRedis extends ExternalResource {
         redisServer.stop();
         LOG.info("Redis stopped.");
     }
+
+    public int getPort() {
+        return port;
+    }
 }

@@ -56,9 +56,7 @@ public class GraknEngineServerTest {
     }
 
     @Test
-    public void whenEnginePropertiesIndicatesSingleQueueTM_SingleQueueTmIsStarted() {
-        // Should start engine with distributed server, which means we will get a cannot
-        // connect to Zookeeper exception (that has not been started)
+    public void whenEnginePropertiesIndicatesRedisTM_RedisTmIsStarted() {
         GraknEngineConfig conf = GraknEngineConfig.create();
         conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
 

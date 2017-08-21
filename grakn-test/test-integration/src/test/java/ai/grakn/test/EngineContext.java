@@ -33,10 +33,10 @@ import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import ai.grakn.engine.util.SimpleURI;
 import static ai.grakn.test.GraknTestEngineSetup.startEngine;
 import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
-import ai.grakn.util.MockRedis;
+import ai.grakn.util.EmbeddedRedis;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
-import com.jayway.restassured.RestAssured;
 import com.codahale.metrics.MetricRegistry;
+import com.jayway.restassured.RestAssured;
 import javax.annotation.Nullable;
 import org.junit.rules.ExternalResource;
 import redis.clients.jedis.JedisPool;
@@ -52,7 +52,7 @@ import redis.clients.jedis.JedisPoolConfig;
  */
 public class EngineContext extends ExternalResource {
 
-    private final MockRedis redis;
+    private final EmbeddedRedis redis;
     private GraknEngineServer server;
 
     private final boolean startSingleQueueEngine;
@@ -64,7 +64,7 @@ public class EngineContext extends ExternalResource {
         this.startSingleQueueEngine = startSingleQueueEngine;
         this.startStandaloneEngine = startStandaloneEngine;
         SimpleURI redisURI = new SimpleURI(config.getProperty(REDIS_HOST));
-        this.redis = new MockRedis(redisURI.getPort());
+        this.redis = new EmbeddedRedis(redisURI.getPort());
     }
 
     public static EngineContext startNoQueue(){
@@ -128,7 +128,7 @@ public class EngineContext extends ExternalResource {
 
         try {
             redis.start();
-            jedisPool = new JedisPool(redis.getServer().getHost(), redis.getServer().getBindPort());
+            jedisPool = new JedisPool("localhost", redis.getPort());
 
             @Nullable Class<? extends TaskManager> taskManagerClass = null;
 
@@ -145,7 +145,7 @@ public class EngineContext extends ExternalResource {
                 server = startEngine(config);
             }
         } catch (Exception e) {
-            redis.stop();
+            redis.after();
             throw e;
         }
 
@@ -163,7 +163,7 @@ public class EngineContext extends ExternalResource {
                 noThrow(() -> stopEngine(server), "Error closing engine");
             }
             getJedisPool().close();
-            redis.stop();
+            redis.after();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }
