@@ -20,6 +20,8 @@ package ai.grakn.engine.controller.graph;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import com.codahale.metrics.MetricRegistry;
@@ -84,19 +86,30 @@ public class RoleController {
     private Json postRole(Request request, Response response) {
         LOG.info("postRole - request received.");
         Map<String, Object> requestBody = Json.read(mandatoryBody(request)).asMap();
+        String relationTypeLabel = (String) requestBody.get("relationTypeLabel");
         String roleLabel = (String) requestBody.get("roleLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("postRole - attempting to add a new role " + roleLabel + " on keyspace " + keyspace);
         try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
-            Role role = graph.putRole(roleLabel);
-            graph.commit();
-            String jsonConceptId = role.getId().getValue();
-            String jsonRoleLabel = role.getLabel().getValue();
-            LOG.info("postRole - role " + jsonRoleLabel + " with id " + jsonConceptId + " added. request processed.");
-            response.status(HttpStatus.SC_OK);
-            Json responseBody = Json.object("conceptId", jsonConceptId, "roleLabel", jsonRoleLabel);
+            LOG.info("postRole - attempting to find relationType " + relationTypeLabel + " on keyspace " + keyspace);
+            Optional<RelationType> relationTypeOptional = Optional.ofNullable(graph.getRelationType(relationTypeLabel));
+            if (relationTypeOptional.isPresent()) {
+                RelationType relationType = relationTypeOptional.get();
+                LOG.info("postRole - attempting to add a new role " + roleLabel + " on keyspace " + keyspace);
+                Role role = graph.putRole(roleLabel);
+                relationType.relates(role);
+                graph.commit();
+                String jsonConceptId = role.getId().getValue();
+                String jsonRoleLabel = role.getLabel().getValue();
+                LOG.info("postRole - role " + jsonRoleLabel + " with id " + jsonConceptId + " added and related to relationType " + relationType.getLabel().getValue()  + ". request processed.");
+                response.status(HttpStatus.SC_OK);
+                Json responseBody = Json.object("conceptId", jsonConceptId, "roleLabel", jsonRoleLabel);
 
-            return responseBody;
+                return responseBody;
+            } else {
+                response.status(HttpStatus.SC_BAD_REQUEST);
+                LOG.info("postRole - role could NOT be added as relationType was not found. request processed.");
+                return Json.nil();
+            }
         }
     }
 }

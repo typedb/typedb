@@ -21,6 +21,7 @@ package ai.grakn.engine.controller.graph;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
@@ -31,8 +32,12 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
 import static ai.grakn.engine.controller.util.Requests.mandatoryPathParameter;
@@ -83,12 +88,31 @@ public class RelationTypeController {
 
     private Json postRelationType(Request request, Response response) {
         LOG.info("postRelationType - request received.");
-        Map<String, Object> requestBody = Json.read(mandatoryBody(request)).asMap();
+        Json requestBodyJson = Json.read(mandatoryBody(request));
+        Map<String, Object> requestBody = requestBodyJson.asMap();
         String relationTypeLabel = (String) requestBody.get("relationTypeLabel");
+        List<String> roleLabels = requestBodyJson.at("roleLabels").asList().stream().map(e -> (String) e)
+            .collect(Collectors.toList());
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+
         LOG.info("postRelationType - attempting to add a new relationType " + relationTypeLabel + " on keyspace " + keyspace);
         try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
             RelationType relationType = graph.putRelationType(relationTypeLabel);
+
+            ArrayList<Role> roles = new ArrayList<>();
+            for (String roleLabel : roleLabels) {
+                Optional<Role> roleOptional = Optional.ofNullable(graph.getRole(roleLabel));
+                if (roleOptional.isPresent()) {
+                    roles.add(roleOptional.get());
+                } else {
+                    LOG.info("getRelationType - role " + roleLabel + " NOT found. request processed.");
+                    response.status(HttpStatus.SC_BAD_REQUEST);
+                    return Json.nil();
+                }
+            }
+
+            roles.forEach(relationType::relates);
+
             graph.commit();
             String jsonConceptId = relationType.getId().getValue();
             String jsonRelationTypeLabel = relationType.getLabel().getValue();
