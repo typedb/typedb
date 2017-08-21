@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
@@ -38,7 +37,6 @@ import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -139,19 +137,6 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     @Override
     public Set<Var> requiredVars(Var var) {
         return ImmutableSet.of(var, resource().var());
-    }
-
-    @Override
-    public void delete(GraknTx graph, Concept concept) {
-        Optional<ValuePredicateAdmin> predicate =
-                resource().getProperties(ValueProperty.class).map(ValueProperty::predicate).findAny();
-
-        Role owner = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(type()));
-        Role value = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(type()));
-
-        concept.asThing().relationships(owner)
-                .filter(relation -> testPredicate(predicate, relation, value))
-                .forEach(Concept::delete);
     }
 
     private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relationship relationship, Role resourceRole) {
