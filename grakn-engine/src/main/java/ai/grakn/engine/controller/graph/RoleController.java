@@ -58,7 +58,6 @@ public class RoleController {
         this.factory = factory;
 
         spark.get("/graph/role/:roleLabel", this::getRole);
-        spark.post("/graph/role", this::postRole);
     }
 
     private Json getRole(Request request, Response response) {
@@ -78,36 +77,6 @@ public class RoleController {
             } else {
                 response.status(HttpStatus.SC_BAD_REQUEST);
                 LOG.info("getRole - role NOT found. request processed.");
-                return Json.nil();
-            }
-        }
-    }
-
-    private Json postRole(Request request, Response response) {
-        LOG.info("postRole - request received.");
-        Map<String, Object> requestBody = Json.read(mandatoryBody(request)).asMap();
-        String relationTypeLabel = (String) requestBody.get("relationTypeLabel");
-        String roleLabel = (String) requestBody.get("roleLabel");
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
-            LOG.info("postRole - attempting to find relationType " + relationTypeLabel + " on keyspace " + keyspace);
-            Optional<RelationType> relationTypeOptional = Optional.ofNullable(graph.getRelationType(relationTypeLabel));
-            if (relationTypeOptional.isPresent()) {
-                RelationType relationType = relationTypeOptional.get();
-                LOG.info("postRole - attempting to add a new role " + roleLabel + " on keyspace " + keyspace);
-                Role role = graph.putRole(roleLabel);
-                relationType.relates(role);
-                graph.commit();
-                String jsonConceptId = role.getId().getValue();
-                String jsonRoleLabel = role.getLabel().getValue();
-                LOG.info("postRole - role " + jsonRoleLabel + " with id " + jsonConceptId + " added and related to relationType " + relationType.getLabel().getValue()  + ". request processed.");
-                response.status(HttpStatus.SC_OK);
-                Json responseBody = Json.object("conceptId", jsonConceptId, "roleLabel", jsonRoleLabel);
-
-                return responseBody;
-            } else {
-                response.status(HttpStatus.SC_BAD_REQUEST);
-                LOG.info("postRole - role could NOT be added as relationType was not found. request processed.");
                 return Json.nil();
             }
         }

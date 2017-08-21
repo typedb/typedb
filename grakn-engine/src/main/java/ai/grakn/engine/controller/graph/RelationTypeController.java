@@ -91,27 +91,17 @@ public class RelationTypeController {
         Json requestBodyJson = Json.read(mandatoryBody(request));
         Map<String, Object> requestBody = requestBodyJson.asMap();
         String relationTypeLabel = (String) requestBody.get("relationTypeLabel");
-        List<String> roleLabels = requestBodyJson.at("roleLabels").asList().stream().map(e -> (String) e)
-            .collect(Collectors.toList());
+        Stream<String> roleLabels = requestBodyJson.at("roleLabels").asList().stream().map(e -> (String) e);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
 
         LOG.info("postRelationType - attempting to add a new relationType " + relationTypeLabel + " on keyspace " + keyspace);
         try (GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)) {
             RelationType relationType = graph.putRelationType(relationTypeLabel);
 
-            ArrayList<Role> roles = new ArrayList<>();
-            for (String roleLabel : roleLabels) {
-                Optional<Role> roleOptional = Optional.ofNullable(graph.getRole(roleLabel));
-                if (roleOptional.isPresent()) {
-                    roles.add(roleOptional.get());
-                } else {
-                    LOG.info("getRelationType - role " + roleLabel + " NOT found. request processed.");
-                    response.status(HttpStatus.SC_BAD_REQUEST);
-                    return Json.nil();
-                }
-            }
-
-            roles.forEach(relationType::relates);
+            roleLabels.forEach(roleLabel -> {
+                Role role = graph.putRole(roleLabel);
+                relationType.relates(role);
+            });
 
             graph.commit();
             String jsonConceptId = relationType.getId().getValue();
