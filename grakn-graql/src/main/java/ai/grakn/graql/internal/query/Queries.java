@@ -51,7 +51,7 @@ public class Queries {
     }
 
     public static DeleteQueryAdmin delete(Collection<? extends Var> vars, MatchQuery matchQuery) {
-        return new DeleteQueryImpl(vars, matchQuery);
+        return DeleteQueryImpl.of(vars, matchQuery);
     }
 
     public static <T> AggregateQuery<T> aggregate(MatchQueryAdmin matchQuery, Aggregate<? super Answer, T> aggregate) {

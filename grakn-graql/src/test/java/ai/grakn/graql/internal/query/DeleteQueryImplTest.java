@@ -42,8 +42,8 @@ public class DeleteQueryImplTest {
 
     @Test
     public void deleteQueriesWithTheSameMatchQueryAndVarsAreEqual() {
-        DeleteQuery query1 = new DeleteQueryImpl(vars1, match1);
-        DeleteQuery query2 = new DeleteQueryImpl(vars1, match1);
+        DeleteQuery query1 = DeleteQueryImpl.of(vars1, match1);
+        DeleteQuery query2 = DeleteQueryImpl.of(vars1, match1);
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
@@ -51,16 +51,16 @@ public class DeleteQueryImplTest {
 
     @Test
     public void deleteQueriesWithDifferentMatchQueriesAreDifferent() {
-        DeleteQuery query1 = new DeleteQueryImpl(vars1, match1);
-        DeleteQuery query2 = new DeleteQueryImpl(vars1, match2);
+        DeleteQuery query1 = DeleteQueryImpl.of(vars1, match1);
+        DeleteQuery query2 = DeleteQueryImpl.of(vars1, match2);
 
         assertNotEquals(query1, query2);
     }
 
     @Test
     public void deleteQueriesWithDifferentVarsAreDifferent() {
-        DeleteQuery query1 = new DeleteQueryImpl(vars1, match1);
-        DeleteQuery query2 = new DeleteQueryImpl(vars2, match1);
+        DeleteQuery query1 = DeleteQueryImpl.of(vars1, match1);
+        DeleteQuery query2 = DeleteQueryImpl.of(vars2, match1);
 
         assertNotEquals(query1, query2);
     }

@@ -27,6 +27,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 
@@ -38,26 +39,26 @@ import java.util.stream.Stream;
 /**
  * A DeleteQuery that will execute deletions for every result of a MatchQuery
  */
-class DeleteQueryImpl implements DeleteQueryAdmin {
-    private final ImmutableCollection<Var> vars;
-    private final MatchQueryAdmin matchQuery;
+@AutoValue
+abstract class DeleteQueryImpl implements DeleteQueryAdmin {
+    abstract ImmutableCollection<Var> vars();
+    abstract MatchQueryAdmin matchQuery();
 
     /**
      * @param vars a collection of variables to delete
      * @param matchQuery a pattern to match and delete for each result
      */
-    DeleteQueryImpl(Collection<? extends Var> vars, MatchQuery matchQuery) {
+    static DeleteQueryImpl of(Collection<? extends Var> vars, MatchQuery matchQuery) {
         if (vars.isEmpty()) {
             throw GraqlQueryException.noPatterns();
         }
 
-        this.vars = ImmutableSet.copyOf(vars);
-        this.matchQuery = matchQuery.admin();
+        return new AutoValue_DeleteQueryImpl(ImmutableSet.copyOf(vars), matchQuery.admin());
     }
 
     @Override
     public Void execute() {
-        List<Answer> results = matchQuery.execute();
+        List<Answer> results = matchQuery().execute();
         results.forEach(this::deleteResult);
         return null;
     }
@@ -75,7 +76,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
     @Override
     public DeleteQuery withTx(GraknTx tx) {
-        return Queries.delete(vars, matchQuery.withTx(tx));
+        return Queries.delete(vars(), matchQuery().withTx(tx));
     }
 
     @Override
@@ -84,36 +85,18 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     private void deleteResult(Answer result) {
-        for (Var var : vars) {
+        for (Var var : vars()) {
             result.get(var).delete();
         }
     }
 
     @Override
     public MatchQuery getMatchQuery() {
-        return matchQuery;
+        return matchQuery();
     }
 
     @Override
     public String toString() {
-        return matchQuery + " delete " + vars.stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        DeleteQueryImpl that = (DeleteQueryImpl) o;
-
-        if (!vars.equals(that.vars)) return false;
-        return matchQuery.equals(that.matchQuery);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = vars.hashCode();
-        result = 31 * result + matchQuery.hashCode();
-        return result;
+        return matchQuery() + " delete " + vars().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 }
