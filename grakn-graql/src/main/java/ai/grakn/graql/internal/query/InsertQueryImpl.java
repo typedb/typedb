@@ -109,9 +109,9 @@ class InsertQueryImpl implements InsertQueryAdmin {
         GraknTx theGraph = getTx().orElseThrow(GraqlQueryException::noTx);
 
         return matchQuery.map(
-                query -> query.stream().map(answer -> InsertQueryExecutor.insertAll(vars, theGraph, answer))
+                query -> query.stream().map(answer -> QueryOperationExecutor.insertAll(vars, theGraph, answer))
         ).orElseGet(
-                () -> Stream.of(InsertQueryExecutor.insertAll(vars, theGraph))
+                () -> Stream.of(QueryOperationExecutor.insertAll(vars, theGraph))
         );
     }
 

@@ -21,23 +21,45 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.query.QueryOperationExecutor;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.function.Consumer;
 
+// TODO: Add an example of 'undefine' to this description
 /**
+ * A class describing an operation to perform using a {@link VarProperty}.
+ *
+ * <p>
+ *     The behaviour is executed via a {@link QueryOperationExecutor} using {@link #execute}. The class also
+ *     report its {@link #requiredVars} before it can run and its {@link #producedVars()}, that will be available to
+ *     other {@link PropertyExecutor}s after it has run.
+ * </p>
+ * <p>
+ *     For example:
+ *     <pre>
+ *         SubProperty property = SubProperty.of(y);
+ *         PropertyExecutor executor = property.execute(x);
+ *         executor.requiredVars(); // returns `{y}`
+ *         executor.producedVars(); // returns `{x}`
+ *
+ *         // apply the `sub` property between `x` and `y`
+ *         // because it requires `y`, it will call `queryOperationExecutor.get(y)`
+ *         // because it produces `x`, it will call `queryOperationExecutor.builder(x)`
+ *         executor.execute(queryOperationExecutor);
+ *     </pre>
+ * </p>
+ *
  * @author Felix Chapman
  */
 @AutoValue
 public abstract class PropertyExecutor {
 
-    public static PropertyExecutor.Builder builder(Consumer<InsertQueryExecutor> executeMethod) {
+    public static PropertyExecutor.Builder builder(Consumer<QueryOperationExecutor> executeMethod) {
         return new AutoValue_PropertyExecutor.Builder().executeMethod(executeMethod);
     }
-
-    abstract Consumer<InsertQueryExecutor> executeMethod();
 
     /**
      * Apply the given property, if possible.
@@ -49,7 +71,7 @@ public abstract class PropertyExecutor {
      *                 from {@link #producedVars()}.
      *                 </p>
      */
-    public void execute(InsertQueryExecutor executor) {
+    public void execute(QueryOperationExecutor executor) {
         executeMethod().accept(executor);
     }
 
@@ -59,7 +81,7 @@ public abstract class PropertyExecutor {
      *
      * <p>
      *     When calling {@link #execute}, the method can expect any {@link Var} returned here to be available by calling
-     *     {@link InsertQueryExecutor#get}.
+     *     {@link QueryOperationExecutor#get}.
      * </p>
      */
     public abstract ImmutableSet<Var> requiredVars();
@@ -69,14 +91,16 @@ public abstract class PropertyExecutor {
      *
      * <p>
      *     When calling {@link #execute}, the method must help build a {@link Concept} for every {@link Var} returned
-     *     from this method, using {@link InsertQueryExecutor#builder}.
+     *     from this method, using {@link QueryOperationExecutor#builder}.
      * </p>
      */
     public abstract ImmutableSet<Var> producedVars();
 
+    abstract Consumer<QueryOperationExecutor> executeMethod();
+
     @AutoValue.Builder
     abstract static class Builder {
-        abstract Builder executeMethod(Consumer<InsertQueryExecutor> value);
+        abstract Builder executeMethod(Consumer<QueryOperationExecutor> value);
 
         abstract ImmutableSet.Builder<Var> requiredVarsBuilder();
 

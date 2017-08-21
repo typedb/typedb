@@ -21,6 +21,9 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.DefineQuery;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -56,13 +59,15 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 
 /**
- * A class for executing insert queries.
+ * A class for executing {@link PropertyExecutor}s on {@link VarProperty}s within {@link Query}s.
  *
- * This behaviour is moved to its own class to allow InsertQueryImpl to have fewer mutable fields.
+ * <p>
+ *     Multiple query types share this class, such as {@link InsertQuery} and {@link DefineQuery}.
+ * </p>
  *
  * @author Felix Chapman
  */
-public class InsertQueryExecutor {
+public class QueryOperationExecutor {
 
     private final GraknTx tx;
 
@@ -84,10 +89,10 @@ public class InsertQueryExecutor {
     // The method that is applied on every `VarProperty`
     private final Function<VarAndProperty, PropertyExecutor> executorFunction;
 
-    private InsertQueryExecutor(GraknTx tx, ImmutableSet<VarAndProperty> properties,
-                                Partition<Var> equivalentVars,
-                                ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies,
-                                Function<VarAndProperty, PropertyExecutor> executorFunction) {
+    private QueryOperationExecutor(GraknTx tx, ImmutableSet<VarAndProperty> properties,
+                                   Partition<Var> equivalentVars,
+                                   ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies,
+                                   Function<VarAndProperty, PropertyExecutor> executorFunction) {
         this.tx = tx;
         this.properties = properties;
         this.equivalentVars = equivalentVars;
@@ -114,7 +119,7 @@ public class InsertQueryExecutor {
         return create(patterns, graph, VarAndProperty::define).insertAll(new QueryAnswer());
     }
 
-    private static InsertQueryExecutor create(
+    private static QueryOperationExecutor create(
             Collection<VarPatternAdmin> patterns, GraknTx graph,
             Function<VarAndProperty, PropertyExecutor> executorFunction
     ) {
@@ -208,7 +213,7 @@ public class InsertQueryExecutor {
          */
         Multimap<VarAndProperty, VarAndProperty> dependencies = composeMultimaps(propDependencies, varDependencies);
 
-        return new InsertQueryExecutor(
+        return new QueryOperationExecutor(
                 graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies), executorFunction
         );
     }
@@ -428,7 +433,7 @@ public class InsertQueryExecutor {
         abstract VarPropertyInternal property();
 
         static VarAndProperty of(Var var, VarProperty property) {
-            return new AutoValue_InsertQueryExecutor_VarAndProperty(var, VarPropertyInternal.from(property));
+            return new AutoValue_QueryOperationExecutor_VarAndProperty(var, VarPropertyInternal.from(property));
         }
 
         static Stream<VarAndProperty> fromPattern(VarPatternAdmin pattern) {

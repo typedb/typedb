@@ -35,7 +35,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.query.QueryOperationExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.CommonUtil;
@@ -196,7 +196,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
      * @param relationship the concept representing the {@link Relationship}
      * @param relationPlayer a casting between a role type and role player
      */
-    private void addRoleplayer(InsertQueryExecutor executor, Relationship relationship, RelationPlayer relationPlayer) {
+    private void addRoleplayer(QueryOperationExecutor executor, Relationship relationship, RelationPlayer relationPlayer) {
         VarPatternAdmin roleVar = getRole(relationPlayer);
 
         Role role = executor.get(roleVar.var()).asRole();
