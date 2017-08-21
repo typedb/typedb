@@ -18,12 +18,12 @@
 
 package ai.grakn.engine.controller.graph;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.controller.SparkContext;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -51,12 +51,12 @@ import static org.mockito.Mockito.when;
  * @author Ganeshwara Herawan Hananda
  */
 
-public class ResourceControllerTest {
-    private static GraknGraph mockGraph;
-    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
+public class AttributeControllerTest {
+    private static GraknTx mockTx;
+    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
+    public static SampleKBContext sampleKBContext = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -67,30 +67,30 @@ public class ResourceControllerTest {
 
     @Before
     public void setupMock(){
-        mockGraph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
 
-        when(mockGraph.getResourceType(anyString())).thenAnswer(invocation ->
-            graphContext.graph().getResourceType(invocation.getArgument(0)));
+        when(mockTx.getAttributeType(anyString())).thenAnswer(invocation ->
+            sampleKBContext.tx().getAttributeType(invocation.getArgument(0)));
 
-        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
-        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
+        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
-    public void postResourceShouldExecuteSuccessfully() {
-        Json requestBody = Json.object("resourceValue", "resourceValue");
+    public void postAttributeShouldExecuteSuccessfully() {
+        Json requestBody = Json.object("attributeValue", "attributeValue");
         Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace())
             .body(requestBody.toString())
-            .post("/graph/resourceType/real-name/resource");
+            .post("/graph/attributeType/real-name/attribute");
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("resourceValue"), equalTo("resourceValue"));
+        assertThat(responseBody.get("attributeValue"), equalTo("attributeValue"));
     }
 
 }

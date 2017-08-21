@@ -18,13 +18,13 @@
 
 package ai.grakn.engine.controller.graph;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.controller.SparkContext;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -53,12 +53,12 @@ import static org.mockito.Mockito.when;
  * @author Ganeshwara Herawan Hananda
  */
 
-public class ResourceTypeControllerTest {
-    private static GraknGraph mockGraph;
-    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
+public class AttributeTypeControllerTest {
+    private static GraknTx mockTx;
+    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
+    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -69,51 +69,51 @@ public class ResourceTypeControllerTest {
 
     @Before
     public void setupMock(){
-        mockGraph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
 
-        when(mockGraph.putResourceType(anyString(), any())).thenAnswer(invocation -> {
+        when(mockTx.putAttributeType(anyString(), any())).thenAnswer(invocation -> {
             String label = invocation.getArgument(0);
-            ResourceType.DataType<?> dataType = invocation.getArgument(1);
-            return graphContext.graph().putResourceType(label, dataType);
+            AttributeType.DataType<?> dataType = invocation.getArgument(1);
+            return sampleKB.tx().putAttributeType(label, dataType);
         });
-        when(mockGraph.getResourceType(anyString())).thenAnswer(invocation ->
-            graphContext.graph().getResourceType(invocation.getArgument(0)));
+        when(mockTx.getAttributeType(anyString())).thenAnswer(invocation ->
+            sampleKB.tx().getAttributeType(invocation.getArgument(0)));
 
-        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
-        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
+        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
-    public void postResourceTypeShouldExecuteSuccessfully() {
+    public void postAttributeTypeShouldExecuteSuccessfully() {
         Json body = Json.object(
-            "resourceTypeLabel", "newResourceType",
-            "resourceTypeDataType", "string"
+            "attributeTypeLabel", "newAttributeType",
+            "attributeTypeDataType", "string"
             );
         Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace())
             .body(body.toString())
-            .post("/graph/resourceType");
+            .post("/graph/attributeType");
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("resourceTypeLabel"), equalTo("newResourceType"));
+        assertThat(responseBody.get("attributeTypeLabel"), equalTo("newAttributeType"));
     }
 
     @Test
-    public void getResourceTypeFromMovieGraphShouldExecuteSuccessfully() {
+    public void getAttributeTypeFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .get("/graph/resourceType/tmdb-vote-count");
+            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .get("/graph/attributeType/tmdb-vote-count");
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("resourceTypeLabel"), equalTo("tmdb-vote-count"));
-        assertThat(responseBody.get("resourceTypeDataType"), equalTo("long"));
+        assertThat(responseBody.get("attributeTypeLabel"), equalTo("tmdb-vote-count"));
+        assertThat(responseBody.get("attributeTypeDataType"), equalTo("long"));
     }
 }
