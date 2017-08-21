@@ -36,7 +36,6 @@ import ai.grakn.graql.internal.reasoner.atom.binary.type.HasAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -150,11 +149,6 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
                 entityTypeConcept.attribute(attributeTypeConcept);
             }
         }).requires(var, resourceType().var()).build();
-    }
-
-    @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, resourceType().var());
     }
 
     @Override

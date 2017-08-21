@@ -102,16 +102,6 @@ public abstract class SubProperty extends AbstractVarProperty implements NamedPr
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(superType().var());
-    }
-
-    @Override
-    public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
-    }
-
-    @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.var().asUserDefined();
         VarPatternAdmin typeVar = this.superType();

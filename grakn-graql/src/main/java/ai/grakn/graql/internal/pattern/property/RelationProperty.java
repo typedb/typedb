@@ -204,8 +204,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
         relationship.addRolePlayer(role, roleplayer);
     }
 
-    @Override
-    public Set<Var> requiredVars(Var var) {
+    private Set<Var> requiredVars(Var var) {
         Stream<Var> relationPlayers = this.relationPlayers().stream()
                 .flatMap(relationPlayer -> Stream.of(relationPlayer.getRolePlayer(), getRole(relationPlayer)))
                 .map(VarPatternAdmin::var);

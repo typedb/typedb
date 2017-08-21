@@ -138,11 +138,6 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, resource().var());
-    }
-
-    @Override
     public void delete(GraknTx graph, Concept concept) {
         Optional<ValuePredicateAdmin> predicate =
                 resource().getProperties(ValueProperty.class).map(ValueProperty::predicate).findAny();

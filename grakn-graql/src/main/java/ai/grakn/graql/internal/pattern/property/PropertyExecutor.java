@@ -19,6 +19,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import com.google.auto.value.AutoValue;
@@ -38,12 +39,39 @@ public abstract class PropertyExecutor {
 
     abstract Consumer<InsertQueryExecutor> executeMethod();
 
+    /**
+     * Apply the given property, if possible.
+     *
+     * @param executor a class providing a map of concepts that are accessible and methods to build new concepts.
+     *                 <p>
+     *                 This method can expect any key to be here that is returned from
+     *                 {@link #requiredVars()}. The method may also build a concept provided that key is returned
+     *                 from {@link #producedVars()}.
+     *                 </p>
+     */
     public void execute(InsertQueryExecutor executor) {
         executeMethod().accept(executor);
     }
 
+    /**
+     * Get all {@link Var}s whose {@link Concept} must exist for the subject {@link Var} to be applied.
+     * For example, for {@link IsaProperty} the type must already be present before an instance can be created.
+     *
+     * <p>
+     *     When calling {@link #execute}, the method can expect any {@link Var} returned here to be available by calling
+     *     {@link InsertQueryExecutor#get}.
+     * </p>
+     */
     public abstract ImmutableSet<Var> requiredVars();
 
+    /**
+     * Get all {@link Var}s whose {@link Concept} can only be created after this property is applied.
+     *
+     * <p>
+     *     When calling {@link #execute}, the method must help build a {@link Concept} for every {@link Var} returned
+     *     from this method, using {@link InsertQueryExecutor#builder}.
+     * </p>
+     */
     public abstract ImmutableSet<Var> producedVars();
 
     @AutoValue.Builder

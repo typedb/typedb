@@ -25,8 +25,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Set;
@@ -56,47 +54,13 @@ public interface VarPropertyInternal extends VarProperty {
     Collection<EquivalentFragmentSet> match(Var start);
 
     /**
-     * Insert the given property into the graph, if possible.
+     * Returns a {@link PropertyExecutor} that describes how to insert the given {@link VarProperty} into.
      *
-     * @param var      the subject var of the property
-     * @param executor a class providing a map of concepts already inserted and methods to build new concepts.
-     *                 <p>
-     *                 This method can expect any key to be here that is returned from
-     *                 {@link #requiredVars(Var)}. The method may also build a concept provided that key is returned
-     *                 from {@link #producedVars(Var)}.
-     *                 </p>
+     * @throws GraqlQueryException if this {@link VarProperty} cannot be inserted
      */
     PropertyExecutor insert(Var var) throws GraqlQueryException;
 
     PropertyExecutor define(Var var) throws GraqlQueryException;
-
-    /**
-     * Get all {@link Var}s whose {@link Concept} must exist for the subject {@link Var} to be created.
-     * For example, for {@link IsaProperty} the type must already be present before an instance can be created.
-     *
-     * When calling {@link #insert}, the method can expect any entry returned here to be in the
-     * map of concepts.
-     *
-     * @param var the subject var of the property.
-     */
-    Set<Var> requiredVars(Var var);
-
-    /**
-     * Get all {@link Var}s whose {@link Concept} can only be created after this property is applied.
-     *
-     * <p>
-     *     When calling {@link #insert}, the method must add an entry for every {@link Var} returned
-     *     from this method.
-     * </p>
-     * <p>
-     *     The default implementation returns an empty set.
-     * </p>
-     *
-     * @param var the subject var of the property.
-     */
-    default Set<Var> producedVars(Var var) {
-        return ImmutableSet.of();
-    }
 
     /**
      * Whether this property will uniquely identify a concept in the graph, if one exists.

@@ -70,11 +70,6 @@ public abstract class NeqProperty extends AbstractVarProperty implements NamedPr
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.of(var());
     }

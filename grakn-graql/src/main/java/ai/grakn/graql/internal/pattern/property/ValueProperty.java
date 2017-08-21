@@ -79,16 +79,6 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of();
-    }
-
-    @Override
-    public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
-    }
-
-    @Override
     public void checkInsertable(VarPatternAdmin var) {
         if (!predicate().equalsValue().isPresent()) {
             throw GraqlQueryException.insertPredicate();

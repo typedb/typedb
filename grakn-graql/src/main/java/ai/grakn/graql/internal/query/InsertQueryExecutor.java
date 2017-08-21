@@ -319,7 +319,7 @@ public class InsertQueryExecutor {
      * <p>
      * This method is expected to be called from implementations of
      * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
-     * response to {@link VarPropertyInternal#producedVars(Var)}.
+     * response to {@link PropertyExecutor#producedVars()}.
      * </p>
      * <p>
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
@@ -341,7 +341,7 @@ public class InsertQueryExecutor {
      * <p>
      * This method is expected to be called from implementations of
      * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
-     * response to {@link VarPropertyInternal#producedVars(Var)}.
+     * response to {@link PropertyExecutor#producedVars()}.
      * </p>
      * <p>
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
@@ -374,7 +374,7 @@ public class InsertQueryExecutor {
      * <p>
      * This method is expected to be called from implementations of
      * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
-     * response to {@link VarPropertyInternal#requiredVars(Var)}.
+     * response to {@link PropertyExecutor#requiredVars()}.
      * </p>
      */
     public Concept get(Var var) {

@@ -95,11 +95,6 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, this.role().var());
-    }
-
-    @Override
     public void delete(GraknTx graph, Concept concept) {
         Label roleLabel = role().getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
         concept.asRelationshipType().deleteRelates(graph.getSchemaConcept(roleLabel));

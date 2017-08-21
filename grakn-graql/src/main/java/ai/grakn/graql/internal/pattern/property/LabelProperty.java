@@ -83,16 +83,6 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of();
-    }
-
-    @Override
-    public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
-    }
-
-    @Override
     public boolean uniquelyIdentifiesConcept() {
         return true;
     }
