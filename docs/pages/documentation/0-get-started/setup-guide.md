@@ -76,7 +76,7 @@ If you see the above output then congratulations! You have set up Grakn.
 
 ## Test the Visualiser
 
-The [Grakn visualiser](../grakn-dashboard/visualiser.html) provides a graphical tool to inspect and query your graph data. You can open the visualiser by navigating to [localhost:4567](http://localhost:4567) in your web browser. The visualiser allows you to make queries or simply browse the schema within the graph. The screenshot below shows a basic query (`match $x isa person;`) typed into the form at the top of the main pane, and visualised by pressing ">" to submit the query:
+The [Grakn visualiser](../grakn-dashboard/visualiser.html) provides a graphical tool to inspect and query your data. You can open the visualiser by navigating to [localhost:4567](http://localhost:4567) in your web browser. The visualiser allows you to make queries or simply browse the schema within the graph. The screenshot below shows a basic query (`match $x isa person;`) typed into the form at the top of the main pane, and visualised by pressing ">" to submit the query:
 
 ![Person query](/images/match-$x-isa-person.png)
 

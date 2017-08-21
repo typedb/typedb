@@ -17,8 +17,9 @@
  */
 package ai.grakn.kb.internal.structure;
 
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -34,7 +35,7 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
 
 /**
  * <p>
- *     Graph AbstractElement
+ *     {@link GraknTx} AbstractElement
  * </p>
  *
  * <p>
@@ -52,10 +53,10 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
 public abstract class AbstractElement<E extends Element, P extends Enum> {
     private final String prefix;
     private final E element;
-    private final GraknTxAbstract graknGraph;
+    private final GraknTxAbstract tx;
 
-    AbstractElement(GraknTxAbstract graknGraph, E element, String prefix){
-        this.graknGraph = graknGraph;
+    AbstractElement(GraknTxAbstract tx, E element, String prefix){
+        this.tx = tx;
         this.element = element;
         this.prefix = prefix;
     }
@@ -114,8 +115,8 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
      *
      * @return The grakn graph this concept is bound to.
      */
-    public GraknTxAbstract<?> graph() {
-        return graknGraph;
+    public GraknTxAbstract<?> tx() {
+        return tx;
     }
 
     /**
@@ -144,8 +145,8 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
      * @param value The new value of the unique property
      */
     public void propertyUnique(P key, String value){
-        if(!graph().isBatchGraph()) {
-            GraphTraversal<Vertex, Vertex> traversal = graph().getTinkerTraversal().V().has(key.name(), value);
+        if(!tx().isBatchTx()) {
+            GraphTraversal<Vertex, Vertex> traversal = tx().getTinkerTraversal().V().has(key.name(), value);
             if(traversal.hasNext()) throw PropertyNotUniqueException.cannotChangeProperty(element(), traversal.next(), key, value);
         }
 
@@ -165,7 +166,7 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
 
         if(foundValue != null){
             if(!foundValue.equals(newValue)){
-                throw GraphOperationException.immutableProperty(foundValue, newValue, property);
+                throw GraknTxOperationException.immutableProperty(foundValue, newValue, property);
             }
         } else {
             property(property, converter.apply(newValue));

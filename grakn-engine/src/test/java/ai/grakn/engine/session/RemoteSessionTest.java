@@ -23,7 +23,7 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.util.EmbeddedCassandra;
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
@@ -78,7 +78,7 @@ public class RemoteSessionTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         EmbeddedCassandra.start();
         Properties properties = GraknEngineConfig.create().getProperties();
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.createAndLoadSystemSchema(properties);
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(properties);
         new SystemController(factory, spark, new GraknEngineStatus(), new MetricRegistry());
     }).port(4567);
 

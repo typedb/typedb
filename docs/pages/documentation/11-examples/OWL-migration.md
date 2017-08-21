@@ -60,7 +60,7 @@ James Whitfield
 
 ## Where next?
 
-After running this OWL migration, check out the [Graql documentation](../graql/graql-overview.html) and the [Graph API documentation](../developing-with-java/graph-api.html) for more instructions on how you can explore the family tree.
+After running this OWL migration, check out the [Graql documentation](../graql/graql-overview.html) and the [Graph API documentation](../developing-with-java/java-api.html) for more instructions on how you can explore the family tree.
 
 {% include links.html %}
 

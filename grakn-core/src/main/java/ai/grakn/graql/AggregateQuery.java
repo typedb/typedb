@@ -30,5 +30,5 @@ import ai.grakn.GraknTx;
 public interface AggregateQuery<T> extends Query<T> {
 
     @Override
-    AggregateQuery<T> withGraph(GraknTx graph);
+    AggregateQuery<T> withTx(GraknTx tx);
 }

@@ -17,7 +17,7 @@
 #
 #
 
-ai.grakn.generator.GraknGraphs
+ai.grakn.generator.GraknTxs
 ai.grakn.generator.DataTypes
 ai.grakn.generator.Labels
 ai.grakn.generator.ConceptIds

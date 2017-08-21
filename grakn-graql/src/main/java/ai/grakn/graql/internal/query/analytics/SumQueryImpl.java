@@ -38,7 +38,7 @@ import java.util.Set;
 class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements SumQuery {
 
     SumQueryImpl(Optional<GraknTx> graph) {
-        this.graph = graph;
+        this.tx = graph;
     }
 
     @Override
@@ -89,8 +89,8 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public SumQuery withGraph(GraknTx graph) {
-        return (SumQuery) super.withGraph(graph);
+    public SumQuery withTx(GraknTx tx) {
+        return (SumQuery) super.withTx(tx);
     }
 
     @Override

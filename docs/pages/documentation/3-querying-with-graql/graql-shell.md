@@ -47,10 +47,10 @@ bin/graql.sh -f ./examples/mammal-dataset.gql
 ```
 
 
-To load data into a different knowledge base, or keyspace, you can specify the graph name:
+To load data into a different knowledge base, or keyspace, you can specify the name:
 
 ```bash
-./graql.sh -k <graphname> -f ./examples/reptile-dataset.gql
+./graql.sh -k <knowledge-base-name> -f ./examples/reptile-dataset.gql
 ``` 
 
 ## Queries
@@ -75,7 +75,7 @@ While working in the shell, the following special commands can be used:
 | Query        | Description                                            |
 | -----------  | ------------------------------------------------------ |
 | `clear`      | Clears the console window. |
-| `commit`     | Commits and validates the knowledge base. If validation fails, the graph will not commit. |
+| `commit`     | Commits and validates the knowledge base. If validation fails, the transaction will not commit. |
 | `edit`       | Opens the user's default text editor, specified by the `$EDITOR` environment variable. By default this is set to `vim`. When the editor exits, any query it contains is executed in the Graql shell. This is useful for executing a large chunk of Graql without typing it all in the terminal (e.g. to cut and paste from an example). |
 | `exit`       | Exits the REPL |
 | `license`    | Prints the license. |

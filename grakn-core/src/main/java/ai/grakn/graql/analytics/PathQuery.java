@@ -70,9 +70,9 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
     Optional<List<Concept>> execute();
 
     /**
-     * @param graph the graph to execute the query on
+     * @param tx the graph to execute the query on
      * @return a PathQuery with the graph set
      */
     @Override
-    PathQuery withGraph(GraknTx graph);
+    PathQuery withTx(GraknTx tx);
 }

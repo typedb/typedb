@@ -56,7 +56,7 @@ public class TestOwlGraknBase {
     protected OWLMigrator migrator;
 
     protected GraknSession factory;
-    protected GraknTx graph;
+    protected GraknTx tx;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -67,7 +67,7 @@ public class TestOwlGraknBase {
     @Before
     public void init() {
         factory = engine.factoryWithNewKeyspace();
-        graph = factory.open(GraknTxType.WRITE);
+        tx = factory.open(GraknTxType.WRITE);
         manager = OWLManager.createOWLOntologyManager();
         migrator = new OWLMigrator();
     }
@@ -85,7 +85,7 @@ public class TestOwlGraknBase {
         }
     }
 
-    AttributeType<String> owlIriResource(){ return graph.getAttributeType(OwlModel.IRI.owlname());}
+    AttributeType<String> owlIriResource(){ return tx.getAttributeType(OwlModel.IRI.owlname());}
 
     <T> Entity getEntity(T id, AttributeType<T> rtype){
         Attribute<T> iri = rtype.getAttribute(id);

@@ -2,7 +2,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.EngineTestHelper;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.engine.util.JWTHandler;
 import com.jayway.restassured.response.Response;
@@ -29,7 +29,7 @@ public class AuthControllerTest  {
 
     private UsersHandler usersHandler = UsersHandler.create(
             EngineTestHelper.config().getProperty(GraknEngineConfig.ADMIN_PASSWORD_PROPERTY), 
-                                                  EngineGraknGraphFactory.createAndLoadSystemSchema(EngineTestHelper.config().getProperties()));
+                                                  EngineGraknTxFactory.createAndLoadSystemSchema(EngineTestHelper.config().getProperties()));
 
     @Test
     public void newSessionWithNonExistingUser() {

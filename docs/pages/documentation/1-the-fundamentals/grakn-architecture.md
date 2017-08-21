@@ -19,9 +19,9 @@ There are two parts to GRAKN.AI: Grakn (the storage), and Graql (a  declarative,
 
 ## Grakn
 
-Grakn builds upon several major industry-standard technologies such as Apache Tinkerpop, Apache Cassandra, Apache Spark and others. At its core lies a knowledge database that implements the [Apache Tinkerpop](https://tinkerpop.apache.org) APIs, making Grakn agnostic about graph data storage. Grakn’s own algorithms are scalable and capable of handling big data problems. Scalability of the system as a whole is conditioned upon the performance characteristics of the underlying database selected. 
+Grakn builds upon several major industry-standard technologies such as Apache Tinkerpop, Apache Cassandra, Apache Spark and others. At its core lies a knowledge database that implements the [Apache Tinkerpop](https://tinkerpop.apache.org) APIs, making Grakn agnostic about data storage. Grakn’s own algorithms are scalable and capable of handling big data problems. Scalability of the system as a whole is conditioned upon the performance characteristics of the underlying database selected. 
 
-Knowledge management in the GRAKN.AI follows the [knowledge representation model](../the-fundamentals/grakn-knowledge-model.html). The model is logically formalized to guarantee consistency of the data as well as soundness and completeness of the reasoning procedure. The model is defined in Java as a set of interfaces implemented on top of the Tinkerpop API. The knowledge model serves as a foundation for the knowledge-oriented language Graql, which incorporates querying, reasoning, data migration and graph analytics.
+Knowledge management in the GRAKN.AI follows the [knowledge representation model](../the-fundamentals/grakn-knowledge-model.html). The model is logically formalized to guarantee consistency of the data as well as soundness and completeness of the reasoning procedure. The model is defined in Java as a set of interfaces implemented on top of the Tinkerpop API. The knowledge model serves as a foundation for the knowledge-oriented language Graql, which incorporates querying, reasoning, data migration and analytics.
 
 ## Graql
 
@@ -33,7 +33,7 @@ The distributed analytics component employees massively parallel algorithms base
 
 ## Grakn Engine
 
-The Grakn engine is the main server component running the platform. A client always needs an engine running before it can talk to the knowledge base, even when the client is accessing the graph database in embedded mode. A Grakn engine process hosts several distinct services:
+The Grakn engine is the main server component running the platform. A client always needs an engine running before it can talk to the knowledge base, even when the client is accessing the knowledge base in embedded mode. A Grakn engine process hosts several distinct services:
 
 * REST API
 * web-based GUI for interacting with and visualizing the knowledge base
@@ -48,7 +48,7 @@ The following diagram shows how the various components stack together:
 
 As a developer, you can interact with the platform in one of several ways:
 
-* Load the GRAKN.AI components in a JVM process and use the Java APIs to manipulate the knowledge base, perform queries, kick off graph analytics jobs etc.
+* Load the GRAKN.AI components in a JVM process and use the Java APIs to manipulate the knowledge base, perform queries, kick off analytics jobs etc.
 * Visualize information through the Grakn visualiser, which is a GUI Shell.
 * Start a command line shell and run Graql queries in the terminal, including loading ontologies, rules and data.
 * Call the REST API to load data or navigate the knowledge base following [standard HAL practices](http://stateless.co/hal_specification.html).

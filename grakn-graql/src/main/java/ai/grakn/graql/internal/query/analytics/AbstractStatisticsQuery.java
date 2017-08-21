@@ -63,7 +63,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     @Override
     void initSubGraph() {
         super.initSubGraph();
-        getResourceTypes(graph.get());
+        getResourceTypes(tx.get());
     }
 
     @Override
@@ -131,7 +131,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     boolean selectedResourceTypesHaveInstance(Set<Label> statisticsResourceTypes) {
         for (Label resourceType:statisticsResourceTypes){
             for (Label type:subLabels) {
-                Boolean patternExist = graph.get().graql().infer(false).match(
+                Boolean patternExist = tx.get().graql().infer(false).match(
                         var("x").has(resourceType, var()),
                         var("x").isa(Graql.label(type))
                 ).iterator().hasNext();
@@ -145,7 +145,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 //        List<Pattern> checkSubtypes = subLabels.stream()
 //                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
 //
-//        return graph.get().graql().infer(false)
+//        return tx.get().graql().infer(false)
 //                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
     }
 

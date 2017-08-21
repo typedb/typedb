@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknTx;
 import ai.grakn.kb.internal.GraknTxJanus;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -53,7 +54,7 @@ import static java.util.Arrays.stream;
 
 /**
  * <p>
- *     A Grakn Graph on top of {@link JanusGraph}
+ *     A {@link GraknTx} on top of {@link JanusGraph}
  * </p>
  *
  * <p>

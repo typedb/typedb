@@ -19,7 +19,7 @@
 package ai.grakn.concept;
 
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 
@@ -277,7 +277,7 @@ public interface AttributeType<D> extends Type {
                 (o) -> {
                     if (o == null) return null;
                     if (!(o instanceof Long)) {
-                        throw GraphOperationException.invalidResourceValue(o, LONG);
+                        throw GraknTxOperationException.invalidResourceValue(o, LONG);
                     }
                     return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.of("Z"));
                 });

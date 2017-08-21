@@ -35,11 +35,11 @@ public class Roles extends AbstractSchemaConceptGenerator<Role> {
 
     @Override
     protected Role newSchemaConcept(Label label) {
-        return graph().putRole(label);
+        return tx().putRole(label);
     }
 
     @Override
     protected Role metaSchemaConcept() {
-        return graph().admin().getMetaRole();
+        return tx().admin().getMetaRole();
     }
 }

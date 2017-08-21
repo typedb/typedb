@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -77,12 +77,12 @@ import static java.util.stream.Collectors.toList;
 public class ConceptController {
 
     private static final int separationDegree = 1;
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private final Timer conceptIdGetTimer;
     private final Timer schemaGetTimer;
 
-    public ConceptController(EngineGraknGraphFactory factory, Service spark,
-            MetricRegistry metricRegistry){
+    public ConceptController(EngineGraknTxFactory factory, Service spark,
+                             MetricRegistry metricRegistry){
         this.factory = factory;
         this.conceptIdGetTimer = metricRegistry.timer(name(ConceptController.class, "concept-by-identifier"));
         this.schemaGetTimer = metricRegistry.timer(name(ConceptController.class, "schema"));
@@ -109,8 +109,8 @@ public class ConceptController {
         ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID_PARAMETER));
         int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
-        try(GraknTx graph = factory.getGraph(keyspace, READ); Context context = conceptIdGetTimer.time()){
-            Concept concept = retrieveExistingConcept(graph, conceptId);
+        try(GraknTx tx = factory.tx(keyspace, READ); Context context = conceptIdGetTimer.time()){
+            Concept concept = retrieveExistingConcept(tx, conceptId);
 
             response.type(APPLICATION_HAL);
             response.status(HttpStatus.SC_OK);
@@ -129,7 +129,7 @@ public class ConceptController {
     private String schema(Request request, Response response) {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         validateRequest(request, APPLICATION_ALL, APPLICATION_JSON);
-        try(GraknTx graph = factory.getGraph(keyspace, READ); Context context = schemaGetTimer.time()){
+        try(GraknTx graph = factory.tx(keyspace, READ); Context context = schemaGetTimer.time()){
             Json responseObj = Json.object();
             responseObj.set(ROLES_JSON_FIELD, subLabels(graph.admin().getMetaRole()));
             responseObj.set(ENTITIES_JSON_FIELD, subLabels(graph.admin().getMetaEntityType()));
@@ -144,11 +144,11 @@ public class ConceptController {
         }
     }
 
-    static Concept retrieveExistingConcept(GraknTx graph, ConceptId conceptId){
-        Concept concept = graph.getConcept(conceptId);
+    static Concept retrieveExistingConcept(GraknTx tx, ConceptId conceptId){
+        Concept concept = tx.getConcept(conceptId);
 
         if (notPresent(concept)) {
-            throw GraknServerException.noConceptFound(conceptId, graph.getKeyspace());
+            throw GraknServerException.noConceptFound(conceptId, tx.getKeyspace());
         }
 
         return concept;

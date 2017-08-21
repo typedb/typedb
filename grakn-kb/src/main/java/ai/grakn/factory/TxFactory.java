@@ -24,7 +24,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
  * <p>
- *     Graph Building Interface
+ *     Transaction Building Interface
  * </p>
  *
  * <p>
