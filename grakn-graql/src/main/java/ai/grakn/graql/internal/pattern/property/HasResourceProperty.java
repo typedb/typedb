@@ -21,8 +21,6 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
@@ -30,7 +28,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
@@ -137,15 +134,6 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     @Override
     public Set<Var> requiredVars(Var var) {
         return ImmutableSet.of(var, resource().var());
-    }
-
-    private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relationship relationship, Role resourceRole) {
-        Object value = relationship.rolePlayers(resourceRole).iterator().next().asAttribute().getValue();
-
-        return optPredicate
-                .flatMap(ValuePredicateAdmin::getPredicate)
-                .map(predicate -> predicate.test(value))
-                .orElse(true);
     }
 
     @Override
