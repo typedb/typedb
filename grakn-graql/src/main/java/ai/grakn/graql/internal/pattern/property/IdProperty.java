@@ -76,6 +76,12 @@ public abstract class IdProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
+    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+        // This property works in both insert and define queries, because it is only for look-ups
+        insert(var, executor);
+    }
+
+    @Override
     public Set<Var> requiredVars(Var var) {
         return ImmutableSet.of();
     }

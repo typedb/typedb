@@ -76,6 +76,11 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
     public abstract ImmutableMultiset<RelationPlayer> relationPlayers();
 
     @Override
+    String getName() {
+        return "relationship";
+    }
+
+    @Override
     public void buildString(StringBuilder builder) {
         builder.append("(").append(relationPlayers().stream().map(Object::toString).collect(joining(", "))).append(")");
     }

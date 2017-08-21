@@ -29,6 +29,7 @@ import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.Schema;
 import mjson.Json;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static ai.grakn.graql.internal.hal.HALBuilder.HALExploreConcept;
@@ -119,6 +120,7 @@ public class HALBuilderTest {
         });
     }
 
+    @Ignore("This test is very slow for some reason! 7 minutes locally") // TODO, task 16749
     @Test
     public void whenSelectInferredRelationWithSingleVar_EnsureValidExplanationHrefIsContainedInResponse(){
         Json response = getHALRepresentation(genealogyKB.tx(), "match $x isa marriage; offset 0; limit 5;");

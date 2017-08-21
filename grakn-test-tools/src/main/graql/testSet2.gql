@@ -1,9 +1,11 @@
-insert
+define
 
 #Entities
 
 entity1 sub entity;
 entity2 sub entity;
+
+insert
 
 #Rules
 

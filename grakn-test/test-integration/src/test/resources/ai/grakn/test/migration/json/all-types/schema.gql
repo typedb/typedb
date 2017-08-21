@@ -1,4 +1,4 @@
-insert
+define
   thingy sub entity
     has a-int
     has a-boolean

@@ -19,8 +19,9 @@ Graql](../developing-with-java/java-graql.html).
 There are five types of queries, which are begun with the following keywords:  
 - [match](match-queries.html) - for matching patterns in the knowledge base  
 - [ask](ask-queries.html) - for querying if certain patterns exist in the knowledge base  
-- [insert](insert-queries.html) - for inserting types and instances  
-- [delete](delete-queries.html) - for deleting types and instances    
+- [define](define-queries.html) - for defining schema concepts
+- [insert](insert-queries.html) - for inserting data
+- [delete](delete-queries.html) - for deleting schema concepts and data
 - [compute](compute-queries.html) - for computing useful information about your knowledge base
 
 ## Reserved keywords

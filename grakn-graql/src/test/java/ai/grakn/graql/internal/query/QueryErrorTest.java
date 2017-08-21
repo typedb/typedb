@@ -150,7 +150,7 @@ public class QueryErrorTest {
     public void testExceptionWhenNoHasResourceRelation() throws InvalidKBException {
         // Create a fresh graph, with no has between person and name
         QueryBuilder emptyQb = empty.tx().graql();
-        emptyQb.insert(
+        emptyQb.define(
                 label("person").sub("entity"),
                 label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
@@ -179,7 +179,7 @@ public class QueryErrorTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("id"), containsString("plays product-type")));
         qb.parse(
-                "insert " +
+                "define " +
                         "tag-group sub role; product-type sub role;" +
                         "category sub entity, plays tag-group; plays product-type;"
         ).execute();

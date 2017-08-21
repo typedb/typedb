@@ -1,4 +1,4 @@
-insert
+define
 
 #Roles
 
@@ -22,6 +22,8 @@ holds sub relationship
     relates related-state;
 
 name sub attribute datatype string;
+
+insert
 
 isa inference-rule
     when {

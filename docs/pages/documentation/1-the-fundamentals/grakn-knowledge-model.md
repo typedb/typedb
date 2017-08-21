@@ -39,7 +39,7 @@ In this section, we build up a simple schema to illustrate the concept types in 
 We define two entities, `person` and `company`, each of which have a `name` attribute.
 
 ```graql
-insert
+define
   person sub entity,
   has name;
   
@@ -57,7 +57,7 @@ insert
 We subtype the entities:
 
 ```graql
-insert
+define
   person sub entity,
   has name;
     
@@ -82,7 +82,7 @@ insert
 We introduce a relationship between a `company` and a `person`:
 
 ```graql
-insert
+define
   person sub entity,
   has name,
   plays employee;
@@ -134,7 +134,7 @@ In the simple example above, we have illustrated the four constructs that relate
 Relationships are inherently non-directional and are defined in terms of roles of entities in the relationship. Relations can have multiple attributes. Here we give the employment relationship a date attribute.
 
 ```graql
-insert
+define
   person sub entity,
   has name,
   plays employee;
@@ -161,7 +161,7 @@ insert
 N-ary relationships are also allowed by Grakn. For example, a three way `employment` relationship that has `employer`, `employee` and `office` roles:
 
 ```graql
-insert
+define
   employment sub relationship,
     relates employee,
     relates employer,
@@ -261,7 +261,7 @@ This will be our first attempt:
 
 <!-- This example is meant to fail TODO: Make this only parse, not execute -->
 ```graql-test-ignore
-insert
+define
   human is-abstract sub entity;
   human has name;
   name sub attribute datatype string;
@@ -276,7 +276,8 @@ insert
   wife sub role;
   
   woman plays wife;
-    
+
+insert
   $x has name 'Bob' isa man;
   $y has name 'Alice' isa woman;
   (husband: $x, wife: $y) isa marriage;
@@ -305,7 +306,7 @@ Lets see why:
 Let's fix these issues and try again:
 
 ```graql
-insert
+define
   human is-abstract sub entity;
   human has name;
   name sub attribute datatype string;
@@ -322,6 +323,7 @@ insert
   man plays husband; # Fix (4)
   woman plays wife;  
 
+insert
   $x has name 'Bob' isa man;
   $y has name 'Alice' isa woman;
   (husband: $x, wife: $y) isa marriage;
@@ -351,7 +353,7 @@ The rule-based inference exploits a set of user-defined datalog rules and is con
 A rule is an expression of the form `when G1 then G2`, where `G1` and `G2` are a pair of Graql patterns. Whenever the "when" pattern `G1` is found in the data, the "then" pattern `G2` can be assumed to exist and optionally materialised (inserted). For example:
 
 ```graql
-insert
+define
   location sub entity;
   
   located-in sub relationship,
@@ -360,6 +362,7 @@ insert
   located-subject sub role;
   subject-location sub role;
 
+insert
   $transitive-location isa inference-rule,
     when {
       ($x, $y) isa located-in;

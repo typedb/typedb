@@ -86,7 +86,7 @@ public class DeleteQueryTest {
 
     @Test
     public void testDeleteMultiple() {
-        qb.insert(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
+        qb.define(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
         qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
 
         assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
@@ -136,7 +136,7 @@ public class DeleteQueryTest {
         assertNotExists(qb, actor);
         assertExists(qb, productionWithCast);
 
-        qb.insert(actor).execute();
+        qb.define(actor).execute();
         assertExists(qb, actor);
     }
 
@@ -251,7 +251,7 @@ public class DeleteQueryTest {
     public void testDeleteEntityTypeWithNoInstances() {
         MatchQuery shoeType = qb.match(x.label("shoe").sub("entity"));
 
-        qb.insert(label("shoe").sub("entity")).execute();
+        qb.define(label("shoe").sub("entity")).execute();
 
         assertExists(shoeType);
 
@@ -279,7 +279,7 @@ public class DeleteQueryTest {
 
     @Test
     public void whenDeletingMultipleVariables_AllVariablesGetDeleted() {
-        qb.insert(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
+        qb.define(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
         qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
 
         assertEquals(2, qb.match(x.isa("fake-type")).stream().count());

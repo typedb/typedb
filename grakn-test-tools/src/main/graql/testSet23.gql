@@ -1,4 +1,4 @@
-insert
+define
 
 #Roles
 
@@ -19,6 +19,8 @@ knows-trans sub relationship
 knows sub knows-trans
     relates friend1
     relates friend2;
+
+insert
 
 #Rules
 

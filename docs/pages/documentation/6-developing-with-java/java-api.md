@@ -32,7 +32,7 @@ GraknTx tx = Grakn.session(Grakn.IN_MEMORY, "MyKnowlegdeBase").open(GraknTxType.
 We need to define our constructs before we can use them. We will begin by defining our attribute types since they are used everywhere. In Graql, they were defined as follows:
 
 ```graql
-insert
+define
 
 identifier sub attribute datatype string;
 name sub attribute datatype string;
@@ -64,7 +64,7 @@ AttributeType gender = tx.putAttributeType("gender", AttributeType.DataType.STRI
 Now the role and relationship types. In Graql:
 
 ```graql
-insert
+define
 
 marriage sub relationship
   relates spouse1
@@ -102,7 +102,7 @@ RelationshipType parentship = tx.putRelationshipType("parentship")
 Now the entity types. First, in Graql:
 
 ```graql
-insert
+define
 
 person sub entity
   has identifier
@@ -224,7 +224,7 @@ In the [Hierarchical Schema documentation](../building-a-schema/hierarchical-sch
 How can we create a hierarchy using the Java API? Well, this graql statement:
 
 ```graql
-insert 
+define
     event sub entity;
     wedding sub event;
 ```

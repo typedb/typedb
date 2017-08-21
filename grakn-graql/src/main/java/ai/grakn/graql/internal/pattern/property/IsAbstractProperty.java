@@ -48,6 +48,8 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
 
     private static final IsAbstractProperty INSTANCE = new IsAbstractProperty();
 
+    public static final String NAME = "is-abstract";
+
     private IsAbstractProperty() {
 
     }
@@ -58,7 +60,7 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
 
     @Override
     public void buildString(StringBuilder builder) {
-        builder.append("is-abstract");
+        builder.append(NAME);
     }
 
     @Override
@@ -67,7 +69,12 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+    String getName() {
+        return NAME;
+    }
+
+    @Override
+    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         Concept concept = executor.get(var);
         if(concept.isType()){
             concept.asType().setAbstract(true);

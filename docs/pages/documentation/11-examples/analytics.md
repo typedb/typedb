@@ -29,7 +29,7 @@ This example takes a dataset that will be familiar to students of R - [mtcars (M
 We have provided the following schema to represent the data, although many other variations are possible:
 
 ```graql
-insert
+define
 
 # Entities
 

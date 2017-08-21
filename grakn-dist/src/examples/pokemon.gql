@@ -1,4 +1,4 @@
-insert
+define
 
 pokemon sub entity
     plays ancestor
@@ -40,6 +40,7 @@ super-effective sub relationship
 defending-type sub role;
 attacking-type sub role;
 
+insert
 
 # Data retrieved from Pokeapi: $https://pokeapi.co/
 

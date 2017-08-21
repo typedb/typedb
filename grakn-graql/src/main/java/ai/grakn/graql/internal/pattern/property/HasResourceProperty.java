@@ -73,6 +73,8 @@ import static java.util.stream.Collectors.joining;
 @AutoValue
 public abstract class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
+    public static final String NAME = "has";
+
     public static HasResourceProperty of(Label resourceType, VarPatternAdmin resource) {
         resource = resource.isa(label(resourceType)).admin();
         return new AutoValue_HasResourceProperty(resourceType, resource);
@@ -84,7 +86,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
     @Override
     public String getName() {
-        return "has";
+        return NAME;
     }
 
     @Override

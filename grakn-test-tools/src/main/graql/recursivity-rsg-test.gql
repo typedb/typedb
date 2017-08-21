@@ -1,4 +1,4 @@
-insert
+define
 
 ###################################################
 ####################Schema######################
@@ -33,6 +33,8 @@ person plays down-from, plays down-to;
 person plays flat-from, plays flat-to;
 
 "name" sub attribute, datatype string;
+
+insert
 
 ####################################################
 ##################DATA#############################

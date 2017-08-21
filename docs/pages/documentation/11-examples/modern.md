@@ -50,8 +50,8 @@ The relationships between the entities are straightforward:
 Here, we add person and software entities, via the Graql shell:
 
 ```graql
-insert person sub entity;
-insert software sub entity;
+define person sub entity;
+define software sub entity;
 ```
 
 
@@ -60,14 +60,14 @@ insert software sub entity;
 To assign resources to the entities, which you can think of as attributes, we use resources. First, we define what they are (age is a number, programming language is a string that represents the language's name), then we allocate them to the entity in question:
 
 ```graql
-insert age sub attribute datatype long;
-insert name sub attribute datatype string;
-insert person has age, has name;
+define age sub attribute datatype long;
+define name sub attribute datatype string;
+define person has age, has name;
 
-insert lang sub attribute datatype string;
-insert software has lang has name;
+define lang sub attribute datatype string;
+define software has lang has name;
 
-insert weight sub attribute datatype double;
+define weight sub attribute datatype double;
 ```
 
 ### Relations
@@ -75,11 +75,11 @@ insert weight sub attribute datatype double;
 Let's first define the relationship between people. The diagram shows that marko knows vadas, but we don't have any information about whether the inverse is true (though it seems likely that vadas probably also knows marko). Let's set up a relationship called `knows`, which has two roles - `knower` (for marko) and `known-about` (for vadas):
 
 ```graql
-insert knower sub role;
-insert known-about sub role;
-insert person plays knower;
-insert person plays known-about;
-insert knows sub relationship, relates knower, relates known-about, has weight;
+define knower sub role;
+define known-about sub role;
+define person plays knower;
+define person plays known-about;
+define knows sub relationship, relates knower, relates known-about, has weight;
 ```
 
 Note that the  `knows` relationship also has an attribute, in the form of an attribute called `weight` (though it's not clear from the TinkerPop example what this represents).
@@ -87,13 +87,13 @@ Note that the  `knows` relationship also has an attribute, in the form of an att
 We can set up a similar relationship between software and the people that created it:
 
 ```graql
-insert programmer sub role;
-insert programmed sub role;
+define programmer sub role;
+define programmed sub role;
 
-insert person plays programmer;
-insert software plays programmed;
+define person plays programmer;
+define software plays programmed;
 
-insert programming sub relationship, relates programmer, relates programmed, has weight;
+define programming sub relationship, relates programmer, relates programmed, has weight;
 ```
 
 And that's it. At this point, we have defined the schema of the knowledge base.

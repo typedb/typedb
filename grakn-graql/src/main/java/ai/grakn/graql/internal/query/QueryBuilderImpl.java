@@ -22,6 +22,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.ComputeQueryBuilder;
+import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
@@ -129,6 +130,17 @@ public class QueryBuilderImpl implements QueryBuilder {
     public InsertQuery insert(Collection<? extends VarPattern> vars) {
         ImmutableList<VarPatternAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
         return new InsertQueryImpl(varAdmins, Optional.empty(), tx);
+    }
+
+    @Override
+    public DefineQuery define(VarPattern... varPatterns) {
+        return define(Arrays.asList(varPatterns));
+    }
+
+    @Override
+    public DefineQuery define(Collection<? extends VarPattern> varPatterns) {
+        ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
+        return DefineQueryImpl.of(admins, tx.orElse(null));
     }
 
     /**

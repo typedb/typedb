@@ -75,7 +75,8 @@ public class QueryParser {
             "date", AttributeType.DataType.DATE
     );
 
-    private static final Set<Integer> NEW_QUERY_TOKENS = ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT);
+    private static final Set<Integer> NEW_QUERY_TOKENS =
+            ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT, GraqlLexer.DEFINE);
 
     /**
      * Create a query parser with the specified graph

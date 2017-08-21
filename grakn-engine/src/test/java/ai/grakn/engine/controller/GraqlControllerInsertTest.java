@@ -153,15 +153,15 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlInsertNotValid_ResponseStatusCodeIs422(){
-        Response response = sendRequest("insert person plays movie;");
+    public void POSTGraqlDefineNotValid_ResponseStatusCodeIs422(){
+        Response response = sendRequest("define person plays movie;");
 
         assertThat(response.statusCode(), equalTo(422));
     }
 
     @Test
-    public void POSTGraqlInsertNotValid_ResponseExceptionContainsValidationErrorMessage(){
-        Response response = sendRequest("insert person plays movie;");
+    public void POSTGraqlDefineNotValid_ResponseExceptionContainsValidationErrorMessage(){
+        Response response = sendRequest("define person plays movie;");
 
         assertThat(exception(response), containsString("is not of type"));
     }
@@ -195,8 +195,8 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlInsertWithSchema_GraphCommitIsCalled(){
-        String query = "insert thingy sub entity;";
+    public void POSTGraqlDefine_GraphCommitIsCalled(){
+        String query = "define thingy sub entity;";
 
         verify(mockTx, times(0)).commit();
 

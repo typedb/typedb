@@ -1,4 +1,5 @@
-insert
+define
+
 name sub attribute
     datatype string;
 age sub attribute
@@ -6,6 +7,39 @@ age sub attribute
 person sub entity;
 person has name;
 person has age;
+
+weight sub attribute
+	datatype double;
+
+lang sub attribute
+	datatype string;
+software sub entity;
+software has name;
+software has lang;
+
+programmer sub role;
+programmed sub role;
+
+person plays programmer;
+software plays programmed;
+
+programming sub relationship
+	relates programmer
+	relates programmed
+	has weight;
+
+knower sub role;
+known-about sub role;
+
+person plays knower;
+person plays known-about;
+
+knows sub relationship
+	relates knower
+	relates known-about
+	has weight;
+
+insert
 
 $marko isa person;
 $vadas isa person;
@@ -20,28 +54,8 @@ $josh has age 32;
 $vadas has age 27;
 $peter has age 35;
 
-weight sub attribute
-	datatype double;
-
-knower sub role;
-known-about sub role;
-
-person plays knower;
-person plays known-about;
-
-knows sub relationship
-	relates knower
-	relates known-about
-	has weight;
-
 (knower: $marko, known-about: $josh) isa knows has weight 1.0;
 (knower: $marko, known-about: $vadas) isa knows has weight 0.5;
-
-lang sub attribute
-	datatype string;
-software sub entity;
-software has name;
-software has lang;
 
 $lop isa software;
 $ripple isa software;
@@ -51,17 +65,6 @@ $ripple has name "ripple";
 
 $lop has lang "java";
 $ripple has lang "java";
-
-programmer sub role;
-programmed sub role;
-
-person plays programmer;
-software plays programmed;
-
-programming sub relationship
-	relates programmer
-	relates programmed
-	has weight;
 
 (programmer: $marko, programmed: $lop) isa programming has weight 0.4;
 (programmer: $peter, programmed: $lop) isa programming has weight 0.2;

@@ -53,7 +53,7 @@ You can find out much more about the Grakn schema in our documentation about the
 For the purposes of this guide, the schema describes items of data and defines how they relate to one another. You need to have a basic understanding of the schema to be able to make useful queries on the data, so let's review the chunks of it that are important for our initial demonstration:
 
 ```graql
-insert
+define
 
 # Entities
 
@@ -167,7 +167,7 @@ Querying the knowledge base is more fully described in the [Graql documentation]
 
 ## Extending the Knowledge Base
 
-Besides making `match` queries, it is also possible to `insert` items [(see further documentation)](../graql/insert-queries.html) and `delete` items [(see further documentation)](../graql/delete-queries.html) through the Graql shell. To illustrate inserting a fictional person:
+Besides making `match` queries, it is also possible to `insert` data [(see further documentation)](../graql/insert-queries.html) and `delete` items [(see further documentation)](../graql/delete-queries.html) through the Graql shell. To illustrate inserting a fictional person:
 
 ```graql
 insert $g isa person has firstname "Titus" has identifier "Titus Groan" has surname "Groan" has gender "male";
@@ -212,7 +212,7 @@ We will move on to discuss the use of GRAKN.AI to infer new information about a 
 However, the `person` entity does have a gender attribute, and we can use Grakn to infer more information about each relationship by using that property. The schema accommodates the more specific roles of mother, father, daughter and son:
 
 ```graql
-insert
+define
 
 person 
   plays son

@@ -56,6 +56,9 @@ entries:
       - title: Insert Queries
         output: web
         url: /documentation/graql/insert-queries.html
+      - title: Define Queries
+        output: web
+        url: /documentation/graql/define-queries.html
       - title: Graql Rules
         output: web
         url: /documentation/graql/graql-rules.html

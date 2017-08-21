@@ -88,7 +88,7 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
         Role role = executor.get(this.role().var()).asRole();
         executor.get(var).asRelationshipType().relates(role);
     }

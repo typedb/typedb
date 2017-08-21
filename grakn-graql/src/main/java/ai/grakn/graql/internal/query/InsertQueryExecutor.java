@@ -48,6 +48,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
@@ -79,20 +81,25 @@ public class InsertQueryExecutor {
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
     private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
 
+    // The method that is applied on every `VarProperty`
+    private final Consumer<VarAndProperty> insertFunction;
+
     private InsertQueryExecutor(GraknTx tx, ImmutableSet<VarAndProperty> properties,
                                 Partition<Var> equivalentVars,
-                                ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies) {
+                                ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies,
+                                BiConsumer<VarAndProperty, InsertQueryExecutor> insertFunction) {
         this.tx = tx;
         this.properties = properties;
         this.equivalentVars = equivalentVars;
         this.dependencies = dependencies;
+        this.insertFunction = property -> insertFunction.accept(property, this);
     }
 
     /**
      * Insert all the Vars
      */
     static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
-        return create(patterns, graph).insertAll(new QueryAnswer());
+        return create(patterns, graph, VarAndProperty::insert).insertAll(new QueryAnswer());
     }
 
     /**
@@ -100,10 +107,17 @@ public class InsertQueryExecutor {
      * @param results the result of a match query
      */
     static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph, Answer results) {
-        return create(patterns, graph).insertAll(results);
+        return create(patterns, graph, VarAndProperty::insert).insertAll(results);
     }
 
-    private static InsertQueryExecutor create(Collection<VarPatternAdmin> patterns, GraknTx graph) {
+    static Answer defineAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
+        return create(patterns, graph, VarAndProperty::define).insertAll(new QueryAnswer());
+    }
+
+    private static InsertQueryExecutor create(
+            Collection<VarPatternAdmin> patterns, GraknTx graph,
+            BiConsumer<VarAndProperty, InsertQueryExecutor> insertFunction
+    ) {
         ImmutableSet<VarAndProperty> properties =
                 patterns.stream().flatMap(VarAndProperty::fromPattern).collect(toImmutableSet());
 
@@ -194,7 +208,9 @@ public class InsertQueryExecutor {
          */
         Multimap<VarAndProperty, VarAndProperty> dependencies = composeMultimaps(propDependencies, varDependencies);
 
-        return new InsertQueryExecutor(graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies));
+        return new InsertQueryExecutor(
+                graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies), insertFunction
+        );
     }
 
     private static Multimap<VarProperty, Var> equivalentProperties(Set<VarAndProperty> properties) {
@@ -231,7 +247,7 @@ public class InsertQueryExecutor {
     private Answer insertAll(Answer results) {
         concepts.putAll(results.map());
 
-        sortProperties().forEach(property -> property.insert(this));
+        sortProperties().forEach(insertFunction);
 
         conceptBuilders.forEach((var, builder) -> concepts.put(var, builder.build()));
 
@@ -421,6 +437,10 @@ public class InsertQueryExecutor {
 
         void insert(InsertQueryExecutor executor) {
             property().insert(var(), executor);
+        }
+
+        void define(InsertQueryExecutor executor) {
+            property().define(var(), executor);
         }
 
         Set<Var> requiredVars() {
