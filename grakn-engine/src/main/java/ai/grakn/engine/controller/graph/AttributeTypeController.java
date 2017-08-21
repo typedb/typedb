@@ -48,12 +48,12 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
  * @author Ganeshwara Herawan Hananda
  */
 
-public class ResourceTypeController {
+public class AttributeTypeController {
     private final EngineGraknGraphFactory factory;
-    private static final Logger LOG = LoggerFactory.getLogger(ResourceTypeController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AttributeTypeController.class);
 
-    public ResourceTypeController(EngineGraknGraphFactory factory, Service spark,
-                                MetricRegistry metricRegistry) {
+    public AttributeTypeController(EngineGraknGraphFactory factory, Service spark,
+                                   MetricRegistry metricRegistry) {
         this.factory = factory;
         spark.post("/graph/resourceType", this::postResourceType);
         spark.get("/graph/resourceType/:resourceTypeLabel", this::getResourceType);

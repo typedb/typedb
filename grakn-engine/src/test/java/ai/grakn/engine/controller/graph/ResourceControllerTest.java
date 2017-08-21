@@ -62,7 +62,7 @@ public class ResourceControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
 
-        new ResourceController(mockFactory, spark, metricRegistry);
+        new AttributeController(mockFactory, spark, metricRegistry);
     });
 
     @Before

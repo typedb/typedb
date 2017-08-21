@@ -29,8 +29,8 @@ import ai.grakn.engine.controller.graph.EntityController;
 import ai.grakn.engine.controller.graph.EntityTypeController;
 import ai.grakn.engine.controller.graph.RelationController;
 import ai.grakn.engine.controller.graph.RelationTypeController;
-import ai.grakn.engine.controller.graph.ResourceController;
-import ai.grakn.engine.controller.graph.ResourceTypeController;
+import ai.grakn.engine.controller.graph.AttributeController;
+import ai.grakn.engine.controller.graph.AttributeTypeController;
 import ai.grakn.engine.controller.graph.RoleController;
 import ai.grakn.engine.controller.graph.RuleTypeController;
 import ai.grakn.engine.data.RedisWrapper;
@@ -238,8 +238,8 @@ public class GraknEngineServer implements AutoCloseable {
         new EntityTypeController(factory, spark, metricRegistry);
         new RelationController(factory, spark, metricRegistry);
         new RelationTypeController(factory, spark, metricRegistry);
-        new ResourceController(factory, spark, metricRegistry);
-        new ResourceTypeController(factory, spark, metricRegistry);
+        new AttributeController(factory, spark, metricRegistry);
+        new AttributeTypeController(factory, spark, metricRegistry);
         new RoleController(factory, spark, metricRegistry);
         new RuleTypeController(factory, spark, metricRegistry);
 
