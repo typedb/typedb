@@ -27,7 +27,7 @@ import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.data.RedisWrapper.Builder;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.JedisLockProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
@@ -42,6 +42,7 @@ import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Stopwatch;
 import mjson.Json;
@@ -66,9 +67,11 @@ import java.util.concurrent.locks.Lock;
 
 import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
 import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
+import static com.codahale.metrics.MetricRegistry.name;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -78,7 +81,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  */
 public class GraknEngineServer implements AutoCloseable {
 
-    public static final String LOAD_SYSTEM_ONTOLOGY_LOCK_NAME = "load-system-ontology";
+    private static final String LOAD_SYSTEM_SCHEMA_LOCK_NAME = "load-system-schema";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
             REST.WebPath.NEW_SESSION_URI,
@@ -90,24 +93,24 @@ public class GraknEngineServer implements AutoCloseable {
     private final EngineID engineId = EngineID.me();
     private final Service spark = Service.ignite();
     private final TaskManager taskManager;
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private final MetricRegistry metricRegistry;
     private final LockProvider lockProvider;
     private final GraknEngineStatus graknEngineStatus = new GraknEngineStatus();
+    private final RedisWrapper redisWrapper;
 
     public GraknEngineServer(GraknEngineConfig prop) {
         this.prop = prop;
         // Metrics
         this.metricRegistry = new MetricRegistry();
         // Redis connection pool
-        RedisWrapper redisWrapper = instantiateRedis(prop);
+        this.redisWrapper = instantiateRedis(prop);
         // Lock provider
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
         boolean inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
         this.lockProvider = inMemoryQueue ? new ProcessWideLockProvider()
                 : new JedisLockProvider(redisWrapper.getJedisPool());
-        // Graph
-        this.factory = EngineGraknGraphFactory.create(prop.getProperties());
+        this.factory = EngineGraknTxFactory.create(prop.getProperties());
         // Task manager
         this.taskManager = startTaskManager(inMemoryQueue, redisWrapper.getJedisPool(), lockProvider);
     }
@@ -128,7 +131,7 @@ public class GraknEngineServer implements AutoCloseable {
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
         synchronized (this){
-            lockAndInitializeSystemOntology();
+            lockAndInitializeSystemSchema();
             startHTTP();
         }
         graknEngineStatus.setReady(true);
@@ -140,26 +143,27 @@ public class GraknEngineServer implements AutoCloseable {
         synchronized (this) {
             stopTaskManager();
             stopHTTP();
+            redisWrapper.close();
         }
     }
 
-    private void lockAndInitializeSystemOntology() {
+    private void lockAndInitializeSystemSchema() {
         try {
-            Lock lock = lockProvider.getLock(LOAD_SYSTEM_ONTOLOGY_LOCK_NAME);
+            Lock lock = lockProvider.getLock(LOAD_SYSTEM_SCHEMA_LOCK_NAME);
             if (lock.tryLock(60, TimeUnit.SECONDS)) {
                 loadAndUnlock(lock);
             } else {
-                LOG.info("{} found system ontology lock already acquired by other engine", this.engineId);
+                LOG.info("{} found system schema lock already acquired by other engine", this.engineId);
             }
         } catch (InterruptedException e) {
-            LOG.warn("{} was interrupted while initializing system ontology", this.engineId);
+            LOG.warn("{} was interrupted while initializing system schema", this.engineId);
         }
     }
 
     private void loadAndUnlock(Lock lock) {
         try {
-            LOG.info("{} is checking the system ontology", this.engineId);
-            factory.systemKeyspace().loadSystemOntology();
+            LOG.info("{} is checking the system schema", this.engineId);
+            factory.systemKeyspace().loadSystemSchema();
         } finally {
             lock.unlock();
         }
@@ -172,10 +176,16 @@ public class GraknEngineServer implements AutoCloseable {
      * @param jedisPool
      */
     private TaskManager startTaskManager(
-            boolean inMemoryQueue,
-            Pool<Jedis> jedisPool,
-            LockProvider lockProvider) {
+            final boolean inMemoryQueue,
+            final Pool<Jedis> jedisPool,
+            final LockProvider lockProvider) {
         TaskManager taskManager;
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "idle"), (Gauge<Integer>) jedisPool::getNumIdle);
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "active"), (Gauge<Integer>) jedisPool::getNumActive);
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "waiters"), (Gauge<Integer>) jedisPool::getNumWaiters);
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "max"), (Gauge<Long>) jedisPool::getMaxBorrowWaitTimeMillis);
+        metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "mean"), (Gauge<Long>) jedisPool::getMeanBorrowWaitTimeMillis);
+
         if (!inMemoryQueue) {
             Optional<String> consumers = prop.tryProperty(QUEUE_CONSUMERS);
             taskManager = consumers
@@ -183,7 +193,7 @@ public class GraknEngineServer implements AutoCloseable {
                     .orElseGet(() -> new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry));
         } else  {
             // Redis storage for counts, in the RedisTaskManager it's created in consumers
-            RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool);
+            RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool, metricRegistry);
             taskManager = new StandaloneTaskManager(engineId, prop, redisCountStorage, factory, lockProvider, metricRegistry);
         }
         taskManager.start();
@@ -286,7 +296,7 @@ public class GraknEngineServer implements AutoCloseable {
         return taskManager;
     }
 
-    public EngineGraknGraphFactory factory() {
+    public EngineGraknTxFactory factory() {
         return factory;
     }
 
@@ -355,9 +365,11 @@ public class GraknEngineServer implements AutoCloseable {
     private RedisWrapper instantiateRedis(GraknEngineConfig prop) {
         List<String> redisUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_HOST).orElse("localhost:6379"));
         List<String> sentinelUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_SENTINEL_HOST).orElse(""));
+        int poolSize = prop.tryIntProperty(REDIS_POOL_SIZE, 128);
         boolean useSentinel = !sentinelUrl.isEmpty();
         Builder builder = RedisWrapper.builder()
                 .setUseSentinel(useSentinel)
+                .setPoolSize(poolSize)
                 .setURI((useSentinel ? sentinelUrl : redisUrl));
         if (useSentinel) {
             builder.setMasterName(prop.tryProperty(REDIS_SENTINEL_MASTER).orElse("graknmaster"));

@@ -19,7 +19,7 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -32,7 +32,7 @@ import java.time.ZoneId;
  */
 public class ResourceValues extends AbstractGenerator<Object> {
 
-    private ResourceType.DataType<?> dataType = null;
+    private AttributeType.DataType<?> dataType = null;
 
     public ResourceValues() {
         super(Object.class);
@@ -42,7 +42,7 @@ public class ResourceValues extends AbstractGenerator<Object> {
     public Object generate() {
         String className;
         if (dataType == null) {
-            className = random.choose(ResourceType.DataType.SUPPORTED_TYPES.keySet());
+            className = random.choose(AttributeType.DataType.SUPPORTED_TYPES.keySet());
         } else {
             className = dataType.getName();
         }
@@ -62,7 +62,7 @@ public class ResourceValues extends AbstractGenerator<Object> {
         return gen(clazz);
     }
 
-    ResourceValues dataType(ResourceType.DataType<?> dataType) {
+    ResourceValues dataType(AttributeType.DataType<?> dataType) {
         this.dataType = dataType;
         return this;
     }

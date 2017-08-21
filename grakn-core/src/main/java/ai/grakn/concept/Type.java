@@ -18,11 +18,11 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -36,14 +36,14 @@ import java.util.Collection;
  *
  * @see EntityType
  * @see Role
- * @see RelationType
- * @see ResourceType
+ * @see RelationshipType
+ * @see AttributeType
  * @see RuleType
  *
  * @author fppt
  *
  */
-public interface Type extends OntologyConcept {
+public interface Type extends SchemaConcept {
     //------------------------------------- Modifiers ----------------------------------
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.
@@ -58,54 +58,38 @@ public interface Type extends OntologyConcept {
      * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
      * @return The concept itself
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-    Type setAbstract(Boolean isAbstract) throws GraphOperationException;
+    Type setAbstract(Boolean isAbstract) throws GraknTxOperationException;
 
     /**
      *
      * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-    Type plays(Role role) throws GraphOperationException;
+    Type plays(Role role) throws GraknTxOperationException;
 
     /**
-     * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType} to be linked in a strictly one-to-one mapping.
      *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
      * @return The Type itself.
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-    Type key(ResourceType resourceType) throws GraphOperationException;
+    Type key(AttributeType attributeType) throws GraknTxOperationException;
 
     /**
-     * Creates a RelationType which allows this type and a resource type to be linked.
+     * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType}  to be linked.
      *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The {@link AttributeType}  which instances of this type should be allowed to play.
      * @return The Type itself.
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-     Type resource(ResourceType resourceType) throws GraphOperationException;
-
-    /**
-     * Classifies the type to a specific scope. This allows you to optionally categorise types.
-     *
-     * @param scope The category of this Type
-     * @return The Type itself.
-     */
-    Type scope(Thing scope);
-
-    /**
-     * Delete the scope specified.
-     *
-     * @param scope The Instances that is currently scoping this Type.
-     * @return The Type itself
-     */
-    Type deleteScope(Thing scope);
+     Type attribute(AttributeType attributeType) throws GraknTxOperationException;
 
     //------------------------------------- Accessors ---------------------------------
 
@@ -113,21 +97,21 @@ public interface Type extends OntologyConcept {
      *
      * @return A list of Role Types which instances of this Type can indirectly play.
      */
-    Collection<Role> plays();
+    Stream<Role> plays();
 
     /**
      *
-     * @return The resource types which this type is linked with.
+     * @return The {@link AttributeType}s which this {@link Type} is linked with.
      */
     @CheckReturnValue
-    Collection<ResourceType> resources();
+    Stream<AttributeType> attributes();
 
     /**
      *
-     * @return The resource types which this type is linked with as a key.
+     * @return The {@link AttributeType}s which this {@link Type} is linked with as a key.
      */
     @CheckReturnValue
-    Collection<ResourceType> keys();
+    Stream<AttributeType> keys();
 
     /**
      *
@@ -145,7 +129,7 @@ public interface Type extends OntologyConcept {
      * @return All the indirect sub-types of this Type
      */
     @CheckReturnValue
-    Collection<? extends Type> subs();
+    Stream<? extends Type> subs();
 
     /**
      * Get all indirect instances of this type.
@@ -155,7 +139,7 @@ public interface Type extends OntologyConcept {
      * @return All the indirect instances of this type.
      */
     @CheckReturnValue
-    Collection<? extends Thing> instances();
+    Stream<? extends Thing> instances();
 
     /**
      * Return if the type is set to abstract.
@@ -173,7 +157,7 @@ public interface Type extends OntologyConcept {
      * @return A list of the Instances that scope this Type.
      */
     @CheckReturnValue
-    Collection<Thing> scopes();
+    Stream<Thing> scopes();
 
     //------------------------------------- Other ----------------------------------
     /**

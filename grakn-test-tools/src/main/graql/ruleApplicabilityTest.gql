@@ -1,4 +1,4 @@
-insert
+define
 
 #Roles
 
@@ -32,32 +32,34 @@ entity6 sub entity
 
 #Relations
 
-relation1 sub relation
+relation1 sub relationship
 	relates role1
 	relates role2
 	relates role3;
 
-relation2 sub relation
+relation2 sub relationship
     relates role1
     relates role2
     relates role3;
 
-binary sub relation
+binary sub relationship
     relates role1
     relates role2;
 
-reified-relation sub relation
+reified-relationship sub relationship
     relates role1
     relates role2
     plays role1
     plays role2;
 
-relation3 sub relation
+relation3 sub relationship
     relates role1
     relates role2;
 
 #Resources
-   res1 sub resource datatype string;
+   res1 sub attribute datatype string;
+
+insert
 
 #Rules
 
@@ -81,8 +83,8 @@ isa inference-rule
 
 isa inference-rule
     when {
-    	$r1 (role1: $x, role2: $y) isa reified-relation;
-    	$r2 (role1: $y, role2: $z) isa reified-relation;
+    	$r1 (role1: $x, role2: $y) isa reified-relationship;
+    	$r2 (role1: $y, role2: $z) isa reified-relationship;
     }
     then {
     	(role1:$r1, role2:$r2) isa relation3;

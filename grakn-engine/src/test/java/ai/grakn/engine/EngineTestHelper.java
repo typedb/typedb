@@ -15,17 +15,17 @@ import java.net.ServerSocket;
  *
  */
 public class EngineTestHelper {
-    
+
     private static volatile GraknEngineConfig config = null;
-    
+
     public static int findAvailablePort() {
         try (ServerSocket socket = new ServerSocket(0)) {
-            return socket.getLocalPort();            
+            return socket.getLocalPort();
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }        
+        }
     }
-    
+
     /**
      * Create (once only, statically) the GraknEngineConfig as per configuration file and return it.
      */
@@ -34,8 +34,10 @@ public class EngineTestHelper {
             return config;
         }
         config = GraknEngineConfig.create();
-        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(findAvailablePort()));
-        config.setConfigProperty(GraknEngineConfig.REDIS_HOST, new SimpleURI("localhost", findAvailablePort()).toString());
+        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER,
+                String.valueOf(findAvailablePort()));
+        config.setConfigProperty(GraknEngineConfig.REDIS_HOST,
+                new SimpleURI("localhost", findAvailablePort()).toString());
         return config;
     }
 }

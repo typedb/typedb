@@ -20,15 +20,15 @@ package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -61,7 +61,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
 
-    Optional<GraknGraph> graph = Optional.empty();
+    Optional<GraknTx> tx = Optional.empty();
     GraknComputer graknComputer = null;
     String keySpace;
 
@@ -71,8 +71,8 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     private String url;
 
     @Override
-    public ComputeQuery<T> withGraph(GraknGraph graph) {
-        this.graph = Optional.of(graph);
+    public ComputeQuery<T> withTx(GraknTx tx) {
+        this.tx = Optional.of(tx);
         return this;
     }
 
@@ -118,29 +118,29 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     void initSubGraph() {
-        GraknGraph theGraph = graph.orElseThrow(GraqlQueryException::noGraph);
+        GraknTx theGraph = tx.orElseThrow(GraqlQueryException::noTx);
         keySpace = theGraph.getKeyspace();
         url = theGraph.admin().getEngineUrl();
 
         getAllSubTypes(theGraph);
     }
 
-    private void getAllSubTypes(GraknGraph graph) {
+    private void getAllSubTypes(GraknTx graph) {
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         if (subLabels.isEmpty()) {
             EntityType metaEntityType = graph.admin().getMetaEntityType();
-            subTypes.addAll(metaEntityType.subs());
+            metaEntityType.subs().forEach(subTypes::add);
             subTypes.remove(metaEntityType);
-            ResourceType<?> metaResourceType = graph.admin().getMetaResourceType();
-            subTypes.addAll(metaResourceType.subs());
-            subTypes.remove(metaResourceType);
-            RelationType metaRelationType = graph.admin().getMetaRelationType();
-            subTypes.addAll(metaRelationType.subs());
-            subTypes.remove(metaRelationType);
-            subLabels = subTypes.stream().map(OntologyConcept::getLabel).collect(Collectors.toSet());
+            AttributeType<?> metaAttributeType = graph.admin().getMetaResourceType();
+            metaAttributeType.subs().forEach(subTypes::add);
+            subTypes.remove(metaAttributeType);
+            RelationshipType metaRelationshipType = graph.admin().getMetaRelationType();
+            metaRelationshipType.subs().forEach(subTypes::add);
+            subTypes.remove(metaRelationshipType);
+            subLabels = subTypes.stream().map(SchemaConcept::getLabel).collect(Collectors.toSet());
         } else {
             subTypes = subLabels.stream().map(label -> {
-                Type type = graph.getOntologyConcept(label);
+                Type type = graph.getSchemaConcept(label);
                 if (type == null) throw GraqlQueryException.labelNotFound(label);
                 return type;
             }).collect(Collectors.toSet());
@@ -162,12 +162,12 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         List<Pattern> checkSubtypes = subLabels.stream()
                 .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
-        return this.graph.get().graql().infer(false).match(or(checkSubtypes)).ask().execute();
+        return this.tx.get().graql().infer(false).match(or(checkSubtypes)).iterator().hasNext();
     }
 
     boolean verticesExistInSubgraph(ConceptId... ids) {
         for (ConceptId id : ids) {
-            Thing thing = this.graph.get().getConcept(id);
+            Thing thing = this.tx.get().getConcept(id);
             if (thing == null || !subLabels.contains(thing.type().getLabel())) return false;
         }
         return true;
@@ -187,7 +187,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     Set<Label> getHasResourceRelationTypes() {
         return subTypes.stream()
-                .filter(Concept::isResourceType)
+                .filter(Concept::isAttributeType)
                 .map(resourceType -> Schema.ImplicitType.HAS.getLabel(resourceType.getLabel()))
                 .collect(Collectors.toSet());
     }
@@ -199,19 +199,19 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         AbstractComputeQuery<?> that = (AbstractComputeQuery<?>) o;
 
-        return graph.equals(that.graph) && subLabels.equals(that.subLabels);
+        return tx.equals(that.tx) && subLabels.equals(that.subLabels);
     }
 
     @Override
     public int hashCode() {
-        int result = graph.hashCode();
+        int result = tx.hashCode();
         result = 31 * result + subLabels.hashCode();
         return result;
     }
 
     Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
         return labelSet.stream()
-                .map(graph.get().admin()::convertToId)
+                .map(tx.get().admin()::convertToId)
                 .filter(LabelId::isValid)
                 .collect(Collectors.toSet());
     }

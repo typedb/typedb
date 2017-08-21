@@ -43,7 +43,7 @@ There is an example of using the Java Migration API for JSON migration on the [s
 
 There are several examples available:
 
-* A common use-case is to migrate existing SQL data to a graph in Grakn. We walk through a simple example of using the migration script as part of the documentation about [SQL migration](../migration/SQL-migration.html)
+* A common use-case is to migrate existing SQL data to a knowledge base in Grakn. We walk through a simple example of using the migration script as part of the documentation about [SQL migration](../migration/SQL-migration.html)
 
 * There is a an additional example of [SQL migration using the Java API](../examples/SQL-migration.html). 
 
@@ -61,7 +61,7 @@ We use the genealogy dataset to illustrate how to write rules to infer new infor
 
 * The [Modern example](./modern.html) is a simple one, designed to test your knowledge of Graql. 
 * We have a [simple Pokemon example](./pokemon.html) to illustrate how to form a range of different Graql queries. 
-* The [philosophers.gql](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/philosophers.gql) file, also distributed in the Grakn release zip, contains a simple ontology and data, for use as an example.
+* The [philosophers.gql](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/philosophers.gql) file, also distributed in the Grakn release zip, contains a simple schema and data, for use as an example.
 
 ### Analytics
 
@@ -81,11 +81,11 @@ It is possible to extract data from Grakn and use it as a data science tool for 
 
 ### Java Examples
 
-* Use of the core APIs for creating an ontology, adding data and making basic queries is covered in a [blog post](https://blog.grakn.ai/working-with-grakn-ai-using-java-5f13f24f1269#.giljgrjb3), and also as a [basic example](./graph-api-example.html).
+* Use of the core APIs for creating a schema, adding data and making basic queries is covered in a [blog post](https://blog.grakn.ai/working-with-grakn-ai-using-java-5f13f24f1269#.giljgrjb3), and also as a [basic example](./java-api-example.html).
 * JSON migration: There is an example of using the [Java Migration API](../developing-with-java/migration-api.html) for JSON migration on the [sample-projects repository](https://github.com/graknlabs/sample-projects/tree/master/example-json-migration-giphy) on Github.
 * SQL migration: We have documented an example of [SQL migration using the Java API](../examples/SQL-migration.html). 
-* Pokemon: The [sample-projects](https://github.com/graknlabs/sample-projects/tree/master/example-pokemon) repo on Github contains a Java project that uses the Java Graph API on Pokemon data and an ontology. 
-* Philosophers: The [sample-projects](https://github.com/graknlabs/sample-projects/tree/master/example-philosophers) repo on Github contains a Java project that uses the Java Graph API on a Philosophers dataset and ontology. 
+* Pokemon: The [sample-projects](https://github.com/graknlabs/sample-projects/tree/master/example-pokemon) repo on Github contains a Java project that uses the Java API on Pokemon data and a schema. 
+* Philosophers: The [sample-projects](https://github.com/graknlabs/sample-projects/tree/master/example-philosophers) repo on Github contains a Java project that uses the Java API on a Philosophers dataset and schema. 
 * [Analytics using Java APIs](./java-analytics.html) uses the Java APIs to show how to calculate clusters and degrees using the familar genealogy example set.
 
 ### Moogi Movie Database

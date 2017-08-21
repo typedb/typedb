@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.reasoner;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.test.graphs.GenealogyGraph;
-import ai.grakn.test.graphs.GeoGraph;
+import ai.grakn.test.kbs.GenealogyKB;
+import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -31,7 +31,7 @@ import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -50,13 +50,13 @@ public class ExplanationTest {
 
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext explanationGraph = GraphContext.preLoad("explanationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext explanationKB = SampleKBContext.preLoad("explanationTest.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     private static Concept polibuda, uw;
     private static Concept warsaw;
@@ -68,14 +68,14 @@ public class ExplanationTest {
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(GraknTestSetup.usingTinker());
-        GraknGraph graph = geoGraph.graph();
-        iqb = graph.graql().infer(true).materialise(false);
-        polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
-        uw = getConcept(graph, "name", "University-of-Warsaw");
-        warsaw = getConcept(graph, "name", "Warsaw");
-        masovia = getConcept(graph, "name", "Masovia");
-        poland = getConcept(graph, "name", "Poland");
-        europe = getConcept(graph, "name", "Europe");
+        GraknTx tx = geoKB.tx();
+        iqb = tx.graql().infer(true).materialise(false);
+        polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
+        uw = getConcept(tx, "name", "University-of-Warsaw");
+        warsaw = getConcept(tx, "name", "Warsaw");
+        masovia = getConcept(tx, "name", "Masovia");
+        poland = getConcept(tx, "name", "Poland");
+        europe = getConcept(tx, "name", "Europe");
     }
 
     @Test
@@ -214,7 +214,7 @@ public class ExplanationTest {
 
     @Test
     public void testExplainingQueryContainingContradiction2(){
-        GraknGraph expGraph = explanationGraph.graph();
+        GraknTx expGraph = explanationKB.tx();
         QueryBuilder eiqb = expGraph.graql().infer(true);
 
         Concept a1 = getConcept(expGraph, "name", "a1");
@@ -231,7 +231,7 @@ public class ExplanationTest {
 
     @Test
     public void testExplainingConjunctions(){
-        GraknGraph expGraph = explanationGraph.graph();
+        GraknTx expGraph = explanationKB.tx();
         QueryBuilder eiqb = expGraph.graql().infer(true);
 
         String queryString = "match " +
@@ -244,7 +244,7 @@ public class ExplanationTest {
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
     }
 
-    private static Concept getConcept(GraknGraph graph, String typeLabel, Object val){
+    private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
         return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).execute().iterator().next().get("x");
     }
 

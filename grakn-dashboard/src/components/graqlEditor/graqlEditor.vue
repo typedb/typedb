@@ -28,7 +28,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             <div class="graqlEditor-wrapper">
                 <textarea ref="graqlEditor" class="form-control" rows="3" placeholder=">>"></textarea>
                 <div class="types-wrapper">
-                    <types-panel :typeInstances="typeInstances" :showTypeInstances="showTypeInstances" v-on:type-query="typeQuery" v-on:load-ontology="(type)=>state.eventHub.$emit('load-ontology',type)"></types-panel>
+                    <types-panel :typeInstances="typeInstances" :showTypeInstances="showTypeInstances" v-on:type-query="typeQuery" v-on:load-schema="(type)=>state.eventHub.$emit('load-schema',type)"></types-panel>
                 </div>
                 <message-panel :showMessagePanel="showMessagePanel" :message="message" v-on:close-message="showMessagePanel=false"></message-panel>
             </div>

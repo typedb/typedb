@@ -25,12 +25,13 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.state.ResolutionState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -52,11 +53,13 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final Stack<ResolutionState> states = new Stack<>();
 
     private Answer nextAnswer = null;
+    private final boolean reiterationRequired;
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
 
     public ResolutionIterator(ReasonerQueryImpl q){
         this.query = q;
+        this.reiterationRequired = q.requiresReiteration();
         states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
     }
 
@@ -94,13 +97,15 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         if (nextAnswer != null) return true;
 
         //iter finished
-        long dAns = answers.size() - oldAns;
-        if (dAns != 0 || iter == 0) {
-            LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
-            iter++;
-            states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
-            oldAns = answers.size();
-            return hasNext();
+        if (reiterationRequired) {
+            long dAns = answers.size() - oldAns;
+            if (dAns != 0 || iter == 0) {
+                LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
+                iter++;
+                states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
+                oldAns = answers.size();
+                return hasNext();
+            }
         }
 
         return false;

@@ -17,12 +17,12 @@
  */
 package ai.grakn.migration.export;
 
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarPattern;
@@ -30,6 +30,7 @@ import ai.grakn.util.CommonUtil;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
@@ -49,10 +50,10 @@ public class InstanceMapper {
     public static VarPattern map(Thing thing){
         if(thing.isEntity()){
             return map(thing.asEntity());
-        } else if(thing.isResource()){
-            return map(thing.asResource());
-        } else if(thing.isRelation()){
-            return map(thing.asRelation());
+        } else if(thing.isAttribute()){
+            return map(thing.asAttribute());
+        } else if(thing.isRelationship()){
+            return map(thing.asRelationship());
         } else if(thing.isRule()){
             return map(thing.asRule());
         } else {
@@ -71,34 +72,34 @@ public class InstanceMapper {
     }
 
     /**
-     * Map a relation to a var, along with all of the roleplayers
+     * Map a {@link Relationship} to a var, along with all of the roleplayers
      * Exclude any relations that are mapped to an encountered resource
-     * @param relation relation to be mapped
+     * @param relationship {@link Relationship} to be mapped
      * @return var patterns representing the given instance
      */
     //TODO resources on relations
-    private static VarPattern map(Relation relation){
-        if(relation.type().isImplicit()){
+    private static VarPattern map(Relationship relationship){
+        if(relationship.type().isImplicit()){
             return var();
         }
 
-        VarPattern var = base(relation);
-        var = roleplayers(var, relation);
+        VarPattern var = base(relationship);
+        var = roleplayers(var, relationship);
         return var;
     }
 
     /**
-     * Map a Resource to a var IF it is not attached in a has relation to another instance
-     * @param resource resource to be mapped
+     * Map a {@link Attribute} to a var IF it is not attached in a has relation to another instance
+     * @param attribute {@link Attribute} to be mapped
      * @return var patterns representing the given instance
      */
-    private static VarPattern map(Resource resource){
-        if(isHasResourceResource(resource)){
+    private static VarPattern map(Attribute attribute){
+        if(isHasResourceResource(attribute)){
             return var();
         }
 
-        VarPattern var = base(resource);
-        var = var.val(resource.getValue());
+        VarPattern var = base(attribute);
+        var = var.val(attribute.getValue());
         return var;
     }
 
@@ -122,20 +123,20 @@ public class InstanceMapper {
      * @return var pattern with resources
      */
     private static VarPattern hasResources(VarPattern var, Thing thing){
-        for(Resource resource: thing.resources()){
-           var = var.has(resource.type().getLabel(), var().val(resource.getValue()));
+        for(Attribute attribute : thing.attributes().collect(Collectors.toSet())){
+           var = var.has(attribute.type().getLabel(), var().val(attribute.getValue()));
         }
         return var;
     }
 
     /**
-     * Add the roleplayers of a relation to the relation var
-     * @param var var representing the relation
-     * @param relation relation that contains roleplayer data
+     * Add the roleplayers of a {@link Relationship} to the relationship var
+     * @param var var representing the relationship
+     * @param relationship {@link Relationship} that contains roleplayer data
      * @return var pattern with roleplayers
      */
-    private static VarPattern roleplayers(VarPattern var, Relation relation){
-        for(Map.Entry<Role, Set<Thing>> entry:relation.allRolePlayers().entrySet()){
+    private static VarPattern roleplayers(VarPattern var, Relationship relationship){
+        for(Map.Entry<Role, Set<Thing>> entry: relationship.allRolePlayers().entrySet()){
             Role role = entry.getKey();
             for (Thing thing : entry.getValue()) {
                 var = var.rel(Graql.label(role.getLabel()), thing.getId().getValue());
@@ -155,16 +156,16 @@ public class InstanceMapper {
     }
 
     /**
-     * Check if the given resource conforms to the has syntax and structural requirements
-     * @param resource resource to check
-     * @return true if the resource is target of has relation
+     * Check if the given {@link Attribute} conforms to the has syntax and structural requirements
+     * @param attribute {@link Attribute} to check
+     * @return true if the {@link Attribute} is target of has relation
      */
-    private static boolean isHasResourceResource(Resource resource){
-        ResourceType resourceType = resource.type();
+    private static boolean isHasResourceResource(Attribute attribute){
+        AttributeType attributeType = attribute.type();
 
         // TODO: Make sure this is tested
-        boolean plays = resourceType.plays().stream().map(Role::getLabel)
-                .allMatch(c -> c.equals(HAS_VALUE.getLabel(resourceType.getLabel())));
-        return !resource.ownerInstances().isEmpty() && plays;
+        boolean plays = attributeType.plays().map(Role::getLabel)
+                .allMatch(c -> c.equals(HAS_VALUE.getLabel(attributeType.getLabel())));
+        return attribute.ownerInstances().findAny().isPresent() && plays;
     }
 }

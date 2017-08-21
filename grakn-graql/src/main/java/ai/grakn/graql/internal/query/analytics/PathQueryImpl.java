@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -48,8 +48,8 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     private ConceptId sourceId = null;
     private ConceptId destinationId = null;
 
-    PathQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    PathQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
@@ -64,7 +64,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
             throw GraqlQueryException.instanceDoesNotExist();
         }
         if (sourceId.equals(destinationId)) {
-            return Optional.of(Collections.singletonList(graph.get().getConcept(sourceId)));
+            return Optional.of(Collections.singletonList(tx.get().getConcept(sourceId)));
         }
         ComputerResult result;
 
@@ -97,7 +97,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
 
         LOGGER.debug("The path found is: " + path);
         LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(path.stream().map(graph.get()::<Thing>getConcept).collect(Collectors.toList()));
+        return Optional.of(path.stream().map(tx.get()::<Thing>getConcept).collect(Collectors.toList()));
     }
 
     @Override
@@ -133,8 +133,8 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     }
 
     @Override
-    public PathQuery withGraph(GraknGraph graph) {
-        return (PathQuery) super.withGraph(graph);
+    public PathQuery withTx(GraknTx tx) {
+        return (PathQuery) super.withTx(tx);
     }
 
     @Override

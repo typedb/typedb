@@ -18,11 +18,12 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.internal.analytics.CountMapReduce;
 import ai.grakn.graql.internal.analytics.CountVertexProgram;
@@ -32,14 +33,14 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.analytics.GraknMapReduce.RESERVED_TYPE_LABEL_KEY;
+import static java.util.stream.Collectors.toSet;
 
 class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
 
-    CountQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    CountQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
@@ -55,13 +56,13 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
         }
 
         Set<LabelId> rolePlayerLabelIds = subTypes.stream()
-                .filter(Concept::isRelationType)
-                .map(relationType -> ((RelationType) relationType).relates())
+                .filter(Concept::isRelationshipType)
+                .map(relationType -> ((RelationshipType) relationType).relates().collect(toSet()))
                 .filter(roles -> roles.size() == 2)
-                .flatMap(roles -> roles.stream().flatMap(role -> role.playedByTypes().stream()))
-                .map(type -> graph.get().admin().convertToId(type.getLabel()))
+                .flatMap(roles -> roles.stream().flatMap(Role::playedByTypes))
+                .map(type -> tx.get().admin().convertToId(type.getLabel()))
                 .filter(LabelId::isValid)
-                .collect(Collectors.toSet());
+                .collect(toSet());
 
         Set<LabelId> typeLabelIds = convertLabelsToIds(subLabels);
         rolePlayerLabelIds.addAll(typeLabelIds);
@@ -109,8 +110,8 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
     }
 
     @Override
-    public CountQuery withGraph(GraknGraph graph) {
-        return (CountQuery) super.withGraph(graph);
+    public CountQuery withTx(GraknTx tx) {
+        return (CountQuery) super.withTx(tx);
     }
 
 }

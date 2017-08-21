@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.util.CommonUtil;
@@ -42,9 +42,9 @@ class JsonPrinter implements Printer<Json> {
     public Json graqlString(boolean inner, Concept concept) {
         Json json = Json.object("id", concept.getId().getValue());
 
-        if (concept.isOntologyConcept()) {
-            json.set("name", concept.asOntologyConcept().getLabel().getValue());
-            OntologyConcept superConcept = concept.asOntologyConcept().sup();
+        if (concept.isSchemaConcept()) {
+            json.set("name", concept.asSchemaConcept().getLabel().getValue());
+            SchemaConcept superConcept = concept.asSchemaConcept().sup();
             if (superConcept != null) json.set("sub", superConcept.getLabel().getValue());
         } else if (concept.isThing()) {
             json.set("isa", concept.asThing().type().getLabel().getValue());
@@ -52,8 +52,8 @@ class JsonPrinter implements Printer<Json> {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
 
-        if (concept.isResource()) {
-            json.set("value", concept.asResource().getValue());
+        if (concept.isAttribute()) {
+            json.set("value", concept.asAttribute().getValue());
         }
 
         if (concept.isRule()) {

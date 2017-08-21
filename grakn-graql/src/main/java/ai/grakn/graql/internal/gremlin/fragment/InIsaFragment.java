@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
@@ -37,13 +37,13 @@ import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.BaseType.RELATION_TYPE;
+import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 import static ai.grakn.util.Schema.EdgeLabel.RELATES;
 import static ai.grakn.util.Schema.EdgeLabel.RESOURCE;
 import static ai.grakn.util.Schema.EdgeLabel.SHARD;
-import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
+import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 import static ai.grakn.util.Schema.VertexProperty.IS_IMPLICIT;
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 
@@ -55,11 +55,11 @@ class InIsaFragment extends AbstractFragment {
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
         GraphTraversal<Element, Vertex> vertexTraversal = Fragments.inSubs(Fragments.isVertex(traversal));
 
         GraphTraversal<Vertex, Vertex> isImplicitRelationType =
-                __.<Vertex>hasLabel(RELATION_TYPE.name()).has(IS_IMPLICIT.name(), true);
+                __.<Vertex>hasLabel(RELATIONSHIP_TYPE.name()).has(IS_IMPLICIT.name(), true);
 
         GraphTraversal<Vertex, Element> toVertexAndEdgeInstances = Fragments.union(ImmutableSet.of(
                 toVertexInstances(__.identity()),
@@ -95,13 +95,13 @@ class InIsaFragment extends AbstractFragment {
         Var labelId = var();
 
         // There is no fast way to retrieve all edge instances, because edges cannot be globally indexed.
-        // This is a best-effort, that uses the ontology to limit the search space...
+        // This is a best-effort, that uses the schema to limit the search space...
 
         // First retrieve the type ID
         GraphTraversal<Vertex, Vertex> traversal =
                 __.<Vertex>as(type.getValue()).values(LABEL_ID.name()).as(labelId.getValue()).select(type.getValue());
 
-        // Next, navigate the ontology to all possible types whose instances can be in this relation
+        // Next, navigate the schema to all possible types whose instances can be in this relation
         traversal = Fragments.inSubs(traversal.out(RELATES.getLabel()).in(PLAYS.getLabel()));
 
         // Navigate to all (vertex) instances of those types
@@ -110,7 +110,7 @@ class InIsaFragment extends AbstractFragment {
 
         // Finally, navigate to all relation edges with the correct type attached to these instances
         return traversal.outE(RESOURCE.getLabel())
-                .has(RELATION_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
+                .has(RELATIONSHIP_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
     }
 
     @Override

@@ -21,10 +21,7 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.RUNNING;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
@@ -32,11 +29,12 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskState.Priority;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.test.GraphContext;
 import ai.grakn.util.EmbeddedCassandra;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import ai.grakn.util.Redis;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.util.EmbeddedRedis;
 import com.codahale.metrics.MetricRegistry;
 import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.Retryer;
@@ -44,17 +42,30 @@ import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.google.common.collect.ImmutableSet;
+import mjson.Json;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
+
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotSame;
 import static junit.framework.TestCase.fail;
-import mjson.Json;
-import org.junit.AfterClass;
 import static org.junit.Assert.assertTrue;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -81,7 +92,7 @@ public class RedisTaskManagerTest {
     private static final ProcessWideLockProvider LOCK_PROVIDER = new ProcessWideLockProvider();
 
     private static JedisPool jedisPool;
-    private static EngineGraknGraphFactory engineGraknGraphFactory;
+    private static EngineGraknTxFactory engineGraknTxFactory;
 
     private static ExecutorService executor;
     private static RedisTaskManager taskManager;
@@ -90,7 +101,7 @@ public class RedisTaskManagerTest {
     public static RuleChain chain = RuleChain
             .outerRule(new EmbeddedCassandra())
             .around(Redis.redis(PORT, false))
-            .around(GraphContext.empty());
+            .around(SampleKBContext.empty());
 
 
     @BeforeClass
@@ -99,10 +110,10 @@ public class RedisTaskManagerTest {
         poolConfig.setBlockWhenExhausted(true);
         poolConfig.setMaxTotal(MAX_TOTAL);
         jedisPool = new JedisPool(poolConfig, "localhost", PORT);
-        engineGraknGraphFactory = EngineGraknGraphFactory.createAndLoadSystemOntology(CONFIG.getProperties());
+        engineGraknTxFactory = EngineGraknTxFactory.createAndLoadSystemSchema(CONFIG.getProperties());
         int nThreads = 2;
         executor = Executors.newFixedThreadPool(nThreads);
-        taskManager = new RedisTaskManager(engineID, CONFIG, jedisPool, nThreads, engineGraknGraphFactory, LOCK_PROVIDER, metricRegistry);
+        taskManager = new RedisTaskManager(engineID, CONFIG, jedisPool, nThreads, engineGraknTxFactory, LOCK_PROVIDER, metricRegistry);
         CompletableFuture<Void> cf = taskManager.start();
         cf.join();
     }

@@ -18,14 +18,14 @@
 
 package ai.grakn.engine.session;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraknException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
@@ -66,13 +66,13 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
- * A Graql shell session for a single client, running on one graph in one thread
+ * A Graql shell session for a single client, running on one knowledge base in one thread
  */
 class GraqlSession {
     private final Session session;
     private final boolean infer;
     private final boolean materialise;
-    private GraknGraph graph;
+    private GraknTx tx;
     private final GraknSession factory;
     private final String outputFormat;
     private Printer printer;
@@ -101,7 +101,7 @@ class GraqlSession {
 
         queryExecutor.execute(() -> {
             try {
-                refreshGraph();
+                refreshTx();
                 this.printer = getPrinter();
                 sendTypes();
                 sendEnd();
@@ -120,9 +120,9 @@ class GraqlSession {
         thread.start();
     }
 
-    private void refreshGraph() {
-        if (graph != null && !graph.isClosed()) graph.close();
-        graph = factory.open(GraknTxType.WRITE);
+    private void refreshTx() {
+        if (tx != null && !tx.isClosed()) tx.close();
+        tx = factory.open(GraknTxType.WRITE);
     }
 
     void handleMessage(Json json) {
@@ -179,7 +179,7 @@ class GraqlSession {
     void close() {
         queryExecutor.execute(() -> {
             try {
-                graph.close();
+                tx.close();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -218,7 +218,7 @@ class GraqlSession {
                 String queryString = queryStringBuilder.toString();
                 queryStringBuilder = new StringBuilder();
 
-                queries = graph.graql().infer(infer).materialise(materialise).parseList(queryString).collect(toList());
+                queries = tx.graql().infer(infer).materialise(materialise).parseList(queryString).collect(toList());
 
                 // Return results unless query is cancelled
                 queries.stream().flatMap(query -> query.resultsString(printer)).forEach(this::sendQueryResult);
@@ -247,8 +247,8 @@ class GraqlSession {
     void commit() {
         queryExecutor.execute(() -> {
             try {
-                graph.commit();
-            } catch (InvalidGraphException e) {
+                tx.commit();
+            } catch (InvalidKBException e) {
                 sendError(e.getMessage());
             } finally {
                 sendEnd();
@@ -262,24 +262,24 @@ class GraqlSession {
      */
     void rollback() {
         queryExecutor.execute(() -> {
-            graph.close();
+            tx.close();
             attemptRefresh();
         });
     }
 
     /**
-     * Clean the transaction, removing everything in the graph (but not committing)
+     * Clean the transaction, removing everything in the tx (but not committing)
      */
     void clean() {
         queryExecutor.execute(() -> {
-            graph.admin().delete();
+            tx.admin().delete();
             attemptRefresh();
         });
     }
 
     private void attemptRefresh() {
         try {
-            refreshGraph();
+            refreshTx();
         } catch (Throwable e) {
             LOG.error("Error during refresh", e);
         }
@@ -287,11 +287,11 @@ class GraqlSession {
 
     void setDisplayOptions(Json json) {
         queryExecutor.execute(() -> {
-            ResourceType[] displayOptions = json.at(DISPLAY).asJsonList().stream()
+            AttributeType[] displayOptions = json.at(DISPLAY).asJsonList().stream()
                     .map(Json::asString)
-                    .map(graph::getResourceType)
+                    .map(tx::getAttributeType)
                     .filter(Objects::nonNull)
-                    .toArray(ResourceType[]::new);
+                    .toArray(AttributeType[]::new);
             printer = getPrinter(displayOptions);
         });
     }
@@ -334,12 +334,12 @@ class GraqlSession {
     }
 
     /**
-     * Send a list of all types in the ontology
+     * Send a list of all types in the schema
      */
     private void sendTypes() {
         sendJson(Json.object(
                 ACTION, ACTION_TYPES,
-                TYPES, getTypes(graph).map(Label::getValue).collect(toList())
+                TYPES, getTypes(tx).map(Label::getValue).collect(toList())
         ));
     }
 
@@ -358,20 +358,20 @@ class GraqlSession {
     }
 
     /**
-     * @param graph the graph to find types in
-     * @return all type IDs in the ontology
+     * @param graph the tx to find types in
+     * @return all type IDs in the schema
      */
-    private static Stream<Label> getTypes(GraknGraph graph) {
-        return graph.admin().getMetaConcept().subs().stream().map(OntologyConcept::getLabel);
+    private static Stream<Label> getTypes(GraknTx graph) {
+        return graph.admin().getMetaConcept().subs().map(SchemaConcept::getLabel);
     }
 
-    private Printer getPrinter(ResourceType... resources) {
+    private Printer getPrinter(AttributeType... resources) {
         switch (outputFormat) {
             case "json":
                 return Printers.json();
             case "hal":
                 // TODO: Make this parameter configurable
-                return Printers.hal(graph.getKeyspace(), 100);
+                return Printers.hal(tx.getKeyspace(), 100);
             case "graql":
             default:
                 return Printers.graql(true, resources);

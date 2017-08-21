@@ -94,12 +94,12 @@ export default {
   created() {
         // Register listened on State events
     this.state.eventHub.$on('click-submit', this.onClickSubmit);
-    this.state.eventHub.$on('load-ontology', this.onLoadOntology);
+    this.state.eventHub.$on('load-schema', this.onLoadSchema);
     this.state.eventHub.$on('clear-page', this.onClear);
   },
   beforeDestroy() {
     this.state.eventHub.$off('click-submit', this.onClickSubmit);
-    this.state.eventHub.$off('load-ontology', this.onLoadOntology);
+    this.state.eventHub.$off('load-schema', this.onLoadSchema);
     this.state.eventHub.$off('clear-page', this.onClear);
   },
 
@@ -117,7 +117,7 @@ export default {
       this.errorMessage = undefined;
       this.queryEngine(query);
     },
-    onLoadOntology(type) {
+    onLoadSchema(type) {
       const querySub = `match $x sub ${type};`;
       EngineClient.graqlShell(querySub).then(this.shellResponse, (err) => {
         this.state.eventHub.$emit('error-message', err.message);

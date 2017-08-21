@@ -23,8 +23,8 @@ import ai.grakn.concept.Label;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.ClassRule;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertEquals;
 public class ShortcutFragmentSetTest {
 
     @ClassRule
-    public static final GraphContext graph = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     private final Var a = Graql.var("a"), b = Graql.var("b"), c = Graql.var("c"), d = Graql.var("d");
 
@@ -57,7 +57,7 @@ public class ShortcutFragmentSetTest {
                 authorLabelFragmentSet
         );
 
-        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
+        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, sampleKB.tx());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
                 new ShortcutFragmentSet(null, a, b, c, Optional.empty(), Optional.of(ImmutableSet.of(author, director)), Optional.empty()),
@@ -68,21 +68,87 @@ public class ShortcutFragmentSetTest {
     }
 
     @Test
-    public void whenApplyingRoleOptimisationToMetaRole_DoNotExpandRoleToAllSubs() {
-        Label role = Label.of("role");
-        EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null,d, role);
+    public void whenRoleIsNotInGraph_DoNotApplyRoleOptimisation() {
+        Label magician = Label.of("magician");
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
-                EquivalentFragmentSets.shortcut(null,a, b, c, Optional.of(d)),
+                EquivalentFragmentSets.shortcut(null, a, b, c, Optional.of(d)),
+                EquivalentFragmentSets.label(null, d, magician)
+        );
+
+        Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
+
+        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, sampleKB.tx());
+
+        assertEquals(expected, fragmentSets);
+    }
+
+    @Test
+    public void whenLabelDoesNotReferToARole_DoNotApplyRoleOptimisation() {
+        Label movie = Label.of("movie");
+
+        Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
+                EquivalentFragmentSets.shortcut(null, a, b, c, Optional.of(d)),
+                EquivalentFragmentSets.label(null, d, movie)
+        );
+
+        Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
+
+        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, sampleKB.tx());
+
+        assertEquals(expected, fragmentSets);
+    }
+
+    @Test
+    public void whenApplyingRoleOptimisationToMetaRole_DoNotExpandRoleToAllSubs() {
+        Label role = Label.of("role");
+        EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null, d, role);
+
+        Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
+                EquivalentFragmentSets.shortcut(null, a, b, c, Optional.of(d)),
                 authorLabelFragmentSet
         );
 
-        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, graph.graph());
+        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, sampleKB.tx());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
-                new ShortcutFragmentSet(null,a, b, c, Optional.empty(), Optional.empty(), Optional.empty()),
+                new ShortcutFragmentSet(null, a, b, c, Optional.empty(), Optional.empty(), Optional.empty()),
                 authorLabelFragmentSet
         );
+
+        assertEquals(expected, fragmentSets);
+    }
+
+    @Test
+    public void whenRelationTypeIsNotInGraph_DoNotApplyRelationTypeOptimisation() {
+        Label magician = Label.of("magician");
+
+        Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
+                EquivalentFragmentSets.shortcut(null, a, b, c, Optional.empty()),
+                EquivalentFragmentSets.isa(null, a, d),
+                EquivalentFragmentSets.label(null, d, magician)
+        );
+
+        Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
+
+        ShortcutFragmentSet.applyShortcutRelationTypeOptimisation(fragmentSets, sampleKB.tx());
+
+        assertEquals(expected, fragmentSets);
+    }
+
+    @Test
+    public void whenLabelDoesNotReferToARelationType_DoNotApplyRelationTypeOptimisation() {
+        Label movie = Label.of("movie");
+
+        Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
+                EquivalentFragmentSets.shortcut(null, a, b, c, Optional.empty()),
+                EquivalentFragmentSets.isa(null, a, d),
+                EquivalentFragmentSets.label(null, d, movie)
+        );
+
+        Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
+
+        ShortcutFragmentSet.applyShortcutRelationTypeOptimisation(fragmentSets, sampleKB.tx());
 
         assertEquals(expected, fragmentSets);
     }

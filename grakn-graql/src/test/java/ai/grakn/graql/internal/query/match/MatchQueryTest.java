@@ -18,21 +18,20 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Order;
@@ -40,11 +39,10 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.pattern.property.WhenProperty;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.matcher.MatchableConcept;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -60,7 +58,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -145,6 +142,7 @@ import static ai.grakn.util.ErrorMessage.MATCH_INVALID;
 import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
 import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
 import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
+import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
@@ -184,15 +182,15 @@ public class MatchQueryTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext movieKB = SampleKBContext.preLoad(MovieKB.get());
 
     // This is a graph to contain unusual edge cases
     @ClassRule
-    public static final GraphContext weirdGraph = GraphContext.preLoad(graph -> {
-        ResourceType<String> weirdLoopType = graph.putResourceType("name", ResourceType.DataType.STRING);
-        weirdLoopType.resource(weirdLoopType);
-        Resource<String> weird = weirdLoopType.putResource("weird");
-        weird.resource(weird);
+    public static final SampleKBContext weirdKB = SampleKBContext.preLoad(graph -> {
+        AttributeType<String> weirdLoopType = graph.putAttributeType("name", AttributeType.DataType.STRING);
+        weirdLoopType.attribute(weirdLoopType);
+        Attribute<String> weird = weirdLoopType.putAttribute("weird");
+        weird.attribute(weird);
     });
 
     @Rule
@@ -200,7 +198,7 @@ public class MatchQueryTest {
 
     @Before
     public void setUp() {
-        qb = movieGraph.graph().graql();
+        qb = movieKB.tx().graql();
     }
 
     @Test
@@ -278,7 +276,7 @@ public class MatchQueryTest {
         query.forEach(result -> {
             Concept cx = result.get(x);
             Concept cy = result.get(y);
-            assertEquals(cx.asResource().getValue(), cy.asResource().getValue());
+            assertEquals(cx.asAttribute().getValue(), cy.asAttribute().getValue());
         });
     }
 
@@ -292,7 +290,7 @@ public class MatchQueryTest {
         query.forEach(result -> {
             Concept x = result.get("x");
             Concept y = result.get("y");
-            assertEquals(x.asResource().getValue(), y.asResource().getValue());
+            assertEquals(x.asAttribute().getValue(), y.asAttribute().getValue());
         });
     }
 
@@ -315,7 +313,7 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testOntologyQuery() {
+    public void testSchemaQuery() {
         MatchQuery query = qb.match(
                 var("type").plays("character-being-played")
         );
@@ -493,7 +491,7 @@ public class MatchQueryTest {
 
     @Test
     public void testIsResource() {
-        MatchQuery query = qb.match(x.isa("resource")).limit(10);
+        MatchQuery query = qb.match(x.isa(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue())).limit(10);
 
         assertThat(query.execute(), hasSize(10));
         assertThat(query, variable("x", everyItem(hasType(resource))));
@@ -579,19 +577,19 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchDataType() {
-        MatchQuery query = qb.match(x.datatype(ResourceType.DataType.DOUBLE));
+        MatchQuery query = qb.match(x.datatype(AttributeType.DataType.DOUBLE));
         assertThat(query, variable("x", contains(tmdbVoteAverage)));
 
-        query = qb.match(x.datatype(ResourceType.DataType.LONG));
+        query = qb.match(x.datatype(AttributeType.DataType.LONG));
         assertThat(query, variable("x", containsInAnyOrder(tmdbVoteCount, runtime)));
 
-        query = qb.match(x.datatype(ResourceType.DataType.BOOLEAN));
+        query = qb.match(x.datatype(AttributeType.DataType.BOOLEAN));
         assertThat(query, variable("x", empty()));
 
-        query = qb.match(x.datatype(ResourceType.DataType.STRING));
+        query = qb.match(x.datatype(AttributeType.DataType.STRING));
 
         assertThat(query, variable("x", containsInAnyOrder(title, gender, realName, name)));
-        query = qb.match(x.datatype(ResourceType.DataType.DATE));
+        query = qb.match(x.datatype(AttributeType.DataType.DATE));
         assertThat(query, variable("x", contains(releaseDate)));
     }
 
@@ -608,7 +606,7 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(x.when(qb.parsePattern("$x id 'expect-when'")).then(qb.parsePattern("$x id 'expect-then'")));
 
         expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage(MATCH_INVALID.getMessage(WhenProperty.class.getName()));
+        expectedException.expectMessage(MATCH_INVALID.getMessage("when"));
 
         query.forEach(r -> {
         });
@@ -642,7 +640,7 @@ public class MatchQueryTest {
 
     @Test
     public void testGraqlPlaysSemanticsMatchGraphAPI() {
-        GraknGraph graph = GraphContext.empty().graph(); // TODO: Try and remove this call if possible
+        GraknTx graph = SampleKBContext.empty().tx(); // TODO: Try and remove this call if possible
         QueryBuilder qb = graph.graql();
 
         Label a = Label.of("a");
@@ -652,7 +650,7 @@ public class MatchQueryTest {
         Label e = Label.of("e");
         Label f = Label.of("f");
 
-        qb.insert(
+        qb.define(
                 Graql.label(c).sub(Graql.label(b).sub(Graql.label(a).sub("entity"))),
                 Graql.label(f).sub(Graql.label(e).sub(Graql.label(d).sub("role"))),
                 Graql.label(b).plays(Graql.label(e))
@@ -662,9 +660,9 @@ public class MatchQueryTest {
             Set<Concept> graqlPlays = qb.match(Graql.label(type).plays(x)).get("x").collect(Collectors.toSet());
             Collection<Role> graphAPIPlays;
 
-            OntologyConcept ontologyConcept = graph.getOntologyConcept(type);
-            if (ontologyConcept.isType()) {
-                graphAPIPlays = new HashSet<>(ontologyConcept.asType().plays());
+            SchemaConcept schemaConcept = graph.getSchemaConcept(type);
+            if (schemaConcept.isType()) {
+                graphAPIPlays = schemaConcept.asType().plays().collect(toSet());
             } else {
                 graphAPIPlays = Collections.EMPTY_SET;
             }
@@ -674,7 +672,7 @@ public class MatchQueryTest {
 
         Stream.of(d, e, f).forEach(type -> {
             Set<Concept> graqlPlayedBy = qb.match(x.plays(Graql.label(type))).get("x").collect(toSet());
-            Collection<Type> graphAPIPlayedBy = new HashSet<>(graph.<Role>getOntologyConcept(type).playedByTypes());
+            Collection<Type> graphAPIPlayedBy = graph.<Role>getSchemaConcept(type).playedByTypes().collect(toSet());
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });
@@ -764,8 +762,8 @@ public class MatchQueryTest {
         assertThat(results, hasSize(greaterThan(10)));
 
         results.forEach(result -> {
-            Comparable x = (Comparable) result.get("x").asResource().getValue();
-            Comparable y = (Comparable) result.get("y").asResource().getValue();
+            Comparable x = (Comparable) result.get("x").asAttribute().getValue();
+            Comparable y = (Comparable) result.get("y").asAttribute().getValue();
             assertThat(x, greaterThan(y));
         });
     }
@@ -803,20 +801,20 @@ public class MatchQueryTest {
         assertThat(results, hasSize(greaterThan(5)));
 
         results.forEach(result -> {
-            Comparable x = (Comparable) result.get("x").asResource().getValue();
-            Comparable y = (Comparable) result.get("y").asResource().getValue();
+            Comparable x = (Comparable) result.get("x").asAttribute().getValue();
+            Comparable y = (Comparable) result.get("y").asAttribute().getValue();
             assertThat(x, lessThanOrEqualTo(y));
         });
     }
 
     @Test
     public void testMatchAllResourcesUsingResourceName() {
-        MatchQuery query = qb.match(var().has("title", "Godfather").has("resource", x));
+        MatchQuery query = qb.match(var().has("title", "Godfather").has(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue(), x));
 
-        Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
-        Set<Resource<?>> expected = Sets.newHashSet(godfather.resources());
+        Thing godfather = movieKB.tx().getAttributeType("title").getAttribute("Godfather").owner();
+        Set<Attribute<?>> expected = godfather.attributes().collect(toSet());
 
-        Set<Resource<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
+        Set<Attribute<?>> results = query.get("x").map(Concept::asAttribute).collect(toSet());
 
         assertEquals(expected, results);
     }
@@ -835,7 +833,7 @@ public class MatchQueryTest {
 
     @Test
     public void testLookupResourcesOnId() {
-        Thing godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
+        Thing godfather = movieKB.tx().getAttributeType("title").getAttribute("Godfather").owner();
         ConceptId id = godfather.getId();
         MatchQuery query = qb.match(var().id(id).has("title", x));
 
@@ -948,14 +946,14 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryingForSuperRelationType_ReturnResults() {
-        AskQuery query = qb.match(var().isa("relation").rel(x).rel(y)).ask();
-        assertTrue("Query had no results", query.execute());
+        MatchQuery query = qb.match(var().isa(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()).rel(x).rel(y));
+        assertExists(query);
     }
 
     @Test
     public void whenQueryingForSuperRoleType_ReturnResults() {
-        AskQuery query = qb.match(var().rel("role", x).rel(y)).ask();
-        assertTrue("Query had no results", query.execute());
+        MatchQuery query = qb.match(var().rel("role", x).rel(y));
+        assertExists(query);
     }
 
     @Test
@@ -968,7 +966,7 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryingForAResourceWhichHasItselfAsAResource_ReturnTheResource() {
-        MatchQuery query = weirdGraph.graph().graql().match(var("x").has("name", var("x")));
+        MatchQuery query = weirdKB.tx().graql().match(var("x").has("name", var("x")));
 
         // There are actually two results expected here:
         // This is because the semantics of `$x has foo $y` are "find all connected $x and $y where `$y isa foo`"
@@ -980,11 +978,11 @@ public class MatchQueryTest {
     public void whenQueryingForAnImplicitRelationById_TheRelationIsReturned() {
         MatchQuery query = qb.match(var("x").isa(label(Schema.ImplicitType.HAS.getLabel("name"))));
 
-        Relation relation = query.get("x").findAny().get().asRelation();
+        Relationship relationship = query.get("x").findAny().get().asRelationship();
 
-        MatchQuery queryById = qb.match(var("x").id(relation.getId()));
+        MatchQuery queryById = qb.match(var("x").id(relationship.getId()));
 
-        assertThat(queryById, variable("x", contains(MatchableConcept.of(relation))));
+        assertThat(queryById, variable("x", contains(MatchableConcept.of(relationship))));
     }
 
     @Test
@@ -992,7 +990,7 @@ public class MatchQueryTest {
         expectedException.expect(GraqlQueryException.class);
         expectedException.expectMessage(NON_POSITIVE_LIMIT.getMessage(Long.MIN_VALUE));
         //noinspection ResultOfMethodCallIgnored
-        movieGraph.graph().graql().match(var()).limit(Long.MIN_VALUE);
+        movieKB.tx().graql().match(var()).limit(Long.MIN_VALUE);
     }
 
     @Test
@@ -1000,7 +998,7 @@ public class MatchQueryTest {
         expectedException.expect(GraqlQueryException.class);
         expectedException.expectMessage(NON_POSITIVE_LIMIT.getMessage(0L));
         //noinspection ResultOfMethodCallIgnored
-        movieGraph.graph().graql().match(var()).limit(0L);
+        movieKB.tx().graql().match(var()).limit(0L);
     }
 
     @Test
@@ -1008,12 +1006,12 @@ public class MatchQueryTest {
         expectedException.expect(GraqlQueryException.class);
         expectedException.expectMessage(NEGATIVE_OFFSET.getMessage(Long.MIN_VALUE));
         //noinspection ResultOfMethodCallIgnored
-        movieGraph.graph().graql().match(var()).offset(Long.MIN_VALUE);
+        movieKB.tx().graql().match(var()).offset(Long.MIN_VALUE);
     }
 
     @Test
     public void testDistinctEmpty() {
-        Set<Concept> result2 = movieGraph.graph().graql().match(
+        Set<Concept> result2 = movieKB.tx().graql().match(
                 var("x").isa("movie").has("title", var("y")),
                 var("y").has("name", "xxx")).select("y").distinct().execute()
                 .stream()
@@ -1024,17 +1022,17 @@ public class MatchQueryTest {
 
     @Test
     public void testDistinctTuple() {
-        int size = movieGraph.graph().graql().match(var("x").isa("genre")).execute().size();
+        int size = movieKB.tx().graql().match(var("x").isa("genre")).execute().size();
         size *= size;
 
-        List<Answer> result1 = movieGraph.graph().graql().match(
+        List<Answer> result1 = movieKB.tx().graql().match(
                 var("x").isa("genre"),
                 var("x").isa("genre"),
                 var("x").isa("genre"),
                 var("y").isa("genre")).distinct().execute();
         assertEquals(size, result1.size());
 
-        List<Answer> result2 = movieGraph.graph().graql().match(
+        List<Answer> result2 = movieKB.tx().graql().match(
                 var().isa("genre"),
                 var().isa("genre"),
                 var().isa("genre"),
@@ -1042,12 +1040,12 @@ public class MatchQueryTest {
                 var().isa("genre")).distinct().execute();
         assertEquals(1, result2.size());
 
-        List<Answer> result3 = movieGraph.graph().graql().match(
+        List<Answer> result3 = movieKB.tx().graql().match(
                 var("x").isa("genre"),
                 var("y").isa("genre")).distinct().execute();
         assertEquals(size, result3.size());
 
-        List<Answer> result4 = movieGraph.graph().graql().match(
+        List<Answer> result4 = movieKB.tx().graql().match(
                 var().isa("genre"),
                 var("x").isa("genre"),
                 var("y").isa("genre")).distinct().execute();
@@ -1058,71 +1056,71 @@ public class MatchQueryTest {
     public void whenSelectingVarNotInQuery_Throw() {
         expectedException.expect(GraqlQueryException.class);
         expectedException.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("x")));
-        movieGraph.graph().graql().match(var()).select("x").execute();
+        movieKB.tx().graql().match(var()).select("x").execute();
     }
 
     @Test(expected = Exception.class)
     public void testVarNameEmptySet() {
-        movieGraph.graph().graql().match(var()).select(Collections.EMPTY_SET).execute();
+        movieKB.tx().graql().match(var()).select(Collections.EMPTY_SET).execute();
     }
 
     @Test(expected = Exception.class)
     public void testVarNameNullSet() {
-        movieGraph.graph().graql().match(var()).select((Set<Var>) null).execute();
+        movieKB.tx().graql().match(var()).select((Set<Var>) null).execute();
     }
 
     @Test(expected = Exception.class)
     public void testVarNameNullString() {
-        movieGraph.graph().graql().match(var()).select((String) null).execute();
+        movieKB.tx().graql().match(var()).select((String) null).execute();
     }
 
     @Test(expected = Exception.class)
     public void testOrderBy1() {
-        movieGraph.graph().graql().match(var().isa("movie")).orderBy((String) null, Order.desc).execute();
+        movieKB.tx().graql().match(var().isa("movie")).orderBy((String) null, Order.desc).execute();
     }
 
     @Test(expected = Exception.class)
     public void testOrderBy2() {
-        movieGraph.graph().graql().match(var().isa("movie")).orderBy((Var) null, Order.desc).execute();
+        movieKB.tx().graql().match(var().isa("movie")).orderBy((Var) null, Order.desc).execute();
     }
 
     @Test(expected = Exception.class)
     public void testOrderBy3() {
-        movieGraph.graph().graql().match(var("x").isa("movie")).orderBy((String) null, Order.desc).execute();
+        movieKB.tx().graql().match(var("x").isa("movie")).orderBy((String) null, Order.desc).execute();
     }
 
     @Test(expected = Exception.class)
     public void testOrderBy4() {
-        movieGraph.graph().graql().match(var("x").isa("movie")).orderBy((Var) null, Order.desc).execute();
+        movieKB.tx().graql().match(var("x").isa("movie")).orderBy((Var) null, Order.desc).execute();
     }
 
     @Test(expected = Exception.class)
     public void testOrderBy5() {
-        movieGraph.graph().graql().match(var("x").isa("movie")).orderBy("y", Order.asc).execute();
+        movieKB.tx().graql().match(var("x").isa("movie")).orderBy("y", Order.asc).execute();
     }
 
     @Test(expected = Exception.class)
     public void testOrderBy6() {
-        movieGraph.graph().graql().match(var("x").isa("movie")).orderBy("x", null).execute();
+        movieKB.tx().graql().match(var("x").isa("movie")).orderBy("x", null).execute();
     }
 
     @Test(expected = Exception.class) //TODO: error message should be more specific
     public void testOrderBy7() {
-        movieGraph.graph().graql().match(var("x").isa("movie"),
+        movieKB.tx().graql().match(var("x").isa("movie"),
                 var().rel("x").rel("y")).orderBy("y", Order.asc).execute();
     }
 
     @Test(expected = Exception.class)
     public void testOrderBy8() {
-        movieGraph.graph().graql().match(var("x").isa("movie")).orderBy("x", Order.asc).execute();
+        movieKB.tx().graql().match(var("x").isa("movie")).orderBy("x", Order.asc).execute();
     }
 
     @Test
     public void whenExecutingGraqlTraversalFromGraph_ReturnExpectedResults() {
-        EntityType type = movieGraph.graph().putEntityType("Concept Type");
+        EntityType type = movieKB.tx().putEntityType("Concept Type");
         Entity entity = type.addEntity();
 
-        Collection<Concept> results = movieGraph.graph().graql().match(var("x").isa(type.getLabel().getValue())).
+        Collection<Concept> results = movieKB.tx().graql().match(var("x").isa(type.getLabel().getValue())).
                 execute().iterator().next().values();
 
         assertThat(results, containsInAnyOrder(entity));

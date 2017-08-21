@@ -19,15 +19,16 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.Type;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
@@ -139,7 +140,7 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a resource type with a data-type.
      */
-    public static EquivalentFragmentSet dataType(VarProperty varProperty, Var resourceType, ResourceType.DataType<?> dataType) {
+    public static EquivalentFragmentSet dataType(VarProperty varProperty, Var resourceType, AttributeType.DataType<?> dataType) {
         return new DataTypeFragmentSet(varProperty, resourceType, dataType);
     }
 
@@ -159,7 +160,7 @@ public class EquivalentFragmentSets {
      * This involves substituting various {@link EquivalentFragmentSet} with other {@link EquivalentFragmentSet}.
      */
     public static void optimiseFragmentSets(
-            Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+            Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
 
         // TODO: Create a real interface for these when there are more of them
         ImmutableList<Supplier<Boolean>> optimisations = ImmutableList.of(
@@ -185,9 +186,9 @@ public class EquivalentFragmentSets {
         return fragmentSets.stream().filter(clazz::isInstance).map(clazz::cast);
     }
 
-    static boolean hasDirectSubTypes(GraknGraph graph, Label label) {
-        Type type = graph.getOntologyConcept(label);
-        return type != null && type.subs().size() != 1;
+    static boolean hasDirectSubTypes(GraknTx graph, Label label) {
+        Type type = graph.getSchemaConcept(label);
+        return type != null && !CommonUtil.containsOnly(type.subs(), 1);
     }
 
     static @Nullable LabelFragmentSet typeLabelOf(Var type, Collection<EquivalentFragmentSet> fragmentSets) {

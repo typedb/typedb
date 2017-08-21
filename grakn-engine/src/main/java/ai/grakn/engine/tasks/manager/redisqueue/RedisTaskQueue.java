@@ -20,7 +20,7 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 
 
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.CachedGauge;
@@ -29,7 +29,7 @@ import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Timer;
 import java.util.concurrent.TimeUnit;
@@ -119,11 +119,11 @@ class RedisTaskQueue {
         this.timer = new Timer();
     }
 
-    void close() {
+    void close() throws InterruptedException {
         timer.cancel();
         synchronized(this) {
             if (workerPool != null) {
-                workerPool.end(true);
+                workerPool.endAndJoin(true, 5000);
             }
         }
         redisClient.end();
@@ -145,7 +145,7 @@ class RedisTaskQueue {
             RedisTaskManager redisTaskManager,
             EngineID engineId,
             GraknEngineConfig engineConfig,
-            EngineGraknGraphFactory factory,
+            EngineGraknTxFactory factory,
             int poolSize) {
         LOG.info("Subscribing worker to jobs in queue {}", QUEUE_NAME);
         // sync to avoid close while starting
@@ -157,8 +157,8 @@ class RedisTaskQueue {
     }
 
     private Worker getWorker(RedisTaskManager redisTaskManager, EngineID engineId,
-            GraknEngineConfig engineConfig, EngineGraknGraphFactory factory) {
-        Worker worker = new WorkerPoolImpl(config, Arrays.asList(QUEUE_NAME), JOB_FACTORY, jedisPool);
+            GraknEngineConfig engineConfig, EngineGraknTxFactory factory) {
+        Worker worker = new WorkerPoolImpl(config, Collections.singletonList(QUEUE_NAME), JOB_FACTORY, jedisPool);
         // We need this since the job can only be instantiated with the
         // task coming from the queue
         worker.getWorkerEventEmitter().addListener(
@@ -168,7 +168,7 @@ class RedisTaskQueue {
                                 .setRunningState(redisTaskManager, engineId, engineConfig, jedisPool,
                                         factory, lockProvider, metricRegistry);
                     } else {
-                        LOG.error("Found unexoected job in queue of type {}", runner.getClass().getName());
+                        LOG.error("Found unexpected job in queue of type {}", runner.getClass().getName());
                     }
                 }, WorkerEvent.JOB_EXECUTE);
         worker.setExceptionHandler((jobExecutor, exception, curQueue) -> {

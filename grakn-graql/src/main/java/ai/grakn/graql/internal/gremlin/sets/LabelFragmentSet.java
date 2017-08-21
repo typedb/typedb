@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
@@ -61,7 +61,7 @@ class LabelFragmentSet extends EquivalentFragmentSet {
      * </ol>
      */
     static boolean applyRedundantLabelEliminationOptimisation(
-            Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+            Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
 
         if (fragmentSets.size() <= 1) return false;
 
@@ -73,7 +73,7 @@ class LabelFragmentSet extends EquivalentFragmentSet {
             boolean hasUserDefinedVar = labelSet.type().isUserDefinedName();
             if (hasUserDefinedVar) continue;
 
-            boolean existsInGraph = graph.getOntologyConcept(labelSet.label()) != null;
+            boolean existsInGraph = graph.getSchemaConcept(labelSet.label()) != null;
             if (!existsInGraph) continue;
 
             boolean varReferredToInOtherFragment = fragmentSets.stream()

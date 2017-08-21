@@ -18,9 +18,9 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.admin.VarPatternAdmin;
 
@@ -86,7 +86,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must have a resource of the given type with an exact matching value
      *
-     * @param type a resource type in the ontology
+     * @param type a resource type in the schema
      * @param value a value of a resource
      * @return this
      */
@@ -96,7 +96,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must have a resource of the given type that matches the given atom
      *
-     * @param type a resource type in the ontology
+     * @param type a resource type in the schema
      * @param predicate a atom on the value of a resource
      * @return this
      */
@@ -106,7 +106,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must have a resource of the given type that matches the given atom
      *
-     * @param type a resource type in the ontology
+     * @param type a resource type in the schema
      * @param varPattern a variable pattern representing a resource
      * @return this
      */
@@ -116,7 +116,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must have a resource of the given type that matches the given atom
      *
-     * @param type a resource type in the ontology
+     * @param type a resource type in the schema
      * @param varPattern a variable pattern representing a resource
      * @return this
      */
@@ -180,13 +180,6 @@ public interface VarPattern extends Pattern {
     VarPattern plays(VarPattern type);
 
     /**
-     * @param type a scope that this variable must have
-     * @return this
-     */
-    @CheckReturnValue
-    VarPattern hasScope(VarPattern type);
-
-    /**
      * @param type a resource type that this type variable can be related to
      * @return this
      */
@@ -235,7 +228,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must be a relation with the given roleplayer playing the given {@link Role}
      *
-     * @param role   a {@link Role} in the ontology
+     * @param role   a {@link Role} in the schema
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
@@ -255,7 +248,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must be a relation with the given roleplayer playing the given {@link Role}
      *
-     * @param role   a {@link Role} in the ontology
+     * @param role   a {@link Role} in the schema
      * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */
@@ -284,7 +277,7 @@ public interface VarPattern extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    VarPattern datatype(ResourceType.DataType<?> datatype);
+    VarPattern datatype(AttributeType.DataType<?> datatype);
 
     /**
      * Specify the regular expression instances of this resource type must match

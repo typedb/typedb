@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
@@ -67,9 +67,9 @@ public interface MaxQuery extends ComputeQuery<Optional<Number>> {
     Optional<Number> execute();
 
     /**
-     * @param graph the graph to execute the query on
+     * @param tx the graph to execute the query on
      * @return a MaxQuery with the graph set
      */
     @Override
-    MaxQuery withGraph(GraknGraph graph);
+    MaxQuery withTx(GraknTx tx);
 }

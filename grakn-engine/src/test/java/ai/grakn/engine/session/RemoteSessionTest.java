@@ -23,7 +23,7 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.controller.SystemController;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.util.EmbeddedCassandra;
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
@@ -78,12 +78,12 @@ public class RemoteSessionTest {
     @ClassRule
     public static RuleChain ruleChain = RuleChain
             .outerRule(new EmbeddedCassandra())
-            .around(SparkContext.withControllers(spark -> {
-                Properties properties = GraknEngineConfig.create().getProperties();
-                EngineGraknGraphFactory factory = EngineGraknGraphFactory
-                        .createAndLoadSystemOntology(properties);
-                new SystemController(factory, spark, new GraknEngineStatus(), new MetricRegistry());
-            }).port(4567));
+            .around( SparkContext.withControllers(spark -> {
+
+        Properties properties = GraknEngineConfig.create().getProperties();
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(properties);
+        new SystemController(factory, spark, new GraknEngineStatus(), new MetricRegistry());
+    }).port(4567));
 
     private final BlockingQueue<Json> responses = new LinkedBlockingDeque<>();
     private final RemoteEndpoint remoteEndpoint = mock(RemoteEndpoint.class);

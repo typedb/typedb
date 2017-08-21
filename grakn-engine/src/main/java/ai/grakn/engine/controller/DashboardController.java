@@ -18,11 +18,11 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Role;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
@@ -74,13 +74,13 @@ import static java.util.stream.Collectors.toList;
 @Path("/dashboard")
 public class DashboardController {
 
-    private static final String RELATION_TYPES = REST.WebPath.Graph.GRAQL + "?query=match $a isa %s id '%s'; ($a,$b) isa %s; limit %s;&keyspace=%s&limitEmbedded=%s&infer=true&materialise=false";
-    private static final String ENTITY_TYPES = REST.WebPath.Graph.GRAQL + "?query=match $a isa %s id '%s'; $b isa %s; ($a,$b); limit %s;&keyspace=%s&limitEmbedded=%s&infer=true&materialise=false";
-    private static final String ROLE_TYPES = REST.WebPath.Graph.GRAQL + "?query=match $a isa %s id '%s'; ($a,%s:$b); limit %s;&keyspace=%s&limitEmbedded=%s&infer=true&materialise=false";
+    private static final String RELATION_TYPES = REST.WebPath.KB.GRAQL + "?query=match $a isa %s id '%s'; ($a,$b) isa %s; limit %s;&keyspace=%s&limitEmbedded=%s&infer=true&materialise=false";
+    private static final String ENTITY_TYPES = REST.WebPath.KB.GRAQL + "?query=match $a isa %s id '%s'; $b isa %s; ($a,$b); limit %s;&keyspace=%s&limitEmbedded=%s&infer=true&materialise=false";
+    private static final String ROLE_TYPES = REST.WebPath.KB.GRAQL + "?query=match $a isa %s id '%s'; ($a,%s:$b); limit %s;&keyspace=%s&limitEmbedded=%s&infer=true&materialise=false";
 
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
 
-    public DashboardController(EngineGraknGraphFactory factory, Service spark) {
+    public DashboardController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
         spark.get(REST.WebPath.Dashboard.TYPES + ID_PARAMETER, this::typesOfConcept);
@@ -106,7 +106,7 @@ public class DashboardController {
         int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
-        try (GraknGraph graph = factory.getGraph(keyspace, READ)) {
+        try (GraknTx graph = factory.tx(keyspace, READ)) {
             Concept concept = retrieveExistingConcept(graph, conceptId);
 
             response.type(APPLICATION_HAL);
@@ -134,12 +134,12 @@ public class DashboardController {
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID_PARAMETER));
 
-        try (GraknGraph graph = factory.getGraph(keyspace, READ)) {
+        try (GraknTx graph = factory.tx(keyspace, READ)) {
             Concept concept = retrieveExistingConcept(graph, conceptId);
             Json body = Json.object();
             Json responseField = Json.object();
             if (concept.isEntity()) {
-                Collection<Role> rolesOfType = concept.asEntity().type().plays();
+                Collection<Role> rolesOfType = concept.asEntity().type().plays().collect(Collectors.toSet());
 
                 responseField = Json.object(
                         "roles", getRoleTypes(rolesOfType, concept, limit, keyspace),
@@ -168,7 +168,7 @@ public class DashboardController {
         String queryString = mandatoryQueryParameter(request, QUERY);
         Json body = Json.object();
 
-        try (GraknGraph graph = factory.getGraph(keyspace, READ)) {
+        try (GraknTx graph = factory.tx(keyspace, READ)) {
             Query<?> query = graph.graql().infer(true).parse(queryString);
             body.set(ORIGINAL_QUERY, query.toString());
 
@@ -184,16 +184,16 @@ public class DashboardController {
     }
 
     private static List<Json> getRelationTypes(Collection<Role> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
-        return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes().stream())
+        return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes())
                 .map(relationType -> relationType.getLabel().getValue()).sorted()
                 .map(relationName -> Json.object("value", relationName, "href", String.format(RELATION_TYPES, concept.asThing().type().getLabel().getValue(), concept.getId().getValue(), relationName, limit, keyspace, limit)))
                 .collect(toList());
     }
 
     private static List<Json> getEntityTypes(Collection<Role> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
-        return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes().stream())
-                .flatMap(relationType -> relationType.relates().stream().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
-                .flatMap(roleType -> roleType.playedByTypes().stream().map(entityType -> entityType.getLabel().getValue()))
+        return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes())
+                .flatMap(relationType -> relationType.relates().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
+                .flatMap(roleType -> roleType.playedByTypes().map(entityType -> entityType.getLabel().getValue()))
                 .collect(Collectors.toSet()).stream()
                 .sorted()
                 .map(entityName -> Json.object("value", entityName, "href", String.format(ENTITY_TYPES, concept.asThing().type().getLabel().getValue(), concept.getId().getValue(), entityName, limit, keyspace, limit)))
@@ -201,8 +201,8 @@ public class DashboardController {
     }
 
     private static List<Json> getRoleTypes(Collection<Role> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
-        return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes().stream())
-                .flatMap(relationType -> relationType.relates().stream().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
+        return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes())
+                .flatMap(relationType -> relationType.relates().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
                 .map(roleType -> roleType.getLabel().getValue())
                 .collect(Collectors.toSet()).stream()
                 .sorted()

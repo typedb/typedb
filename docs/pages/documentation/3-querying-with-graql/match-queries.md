@@ -9,7 +9,7 @@ permalink: /documentation/graql/match-queries.html
 folder: documentation
 ---
 
-A match query will search the graph for any subgraphs that match the given pattern, returning a result for each match found. The results of the query can be modified with various [modifiers](#modifiers). To follow along, or experiment further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
+A match query will search the knowledge base for anything that matchs the given pattern, returning a result for each match found. The results of the query can be modified with various [modifiers](#modifiers). To follow along, or experiment further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
 ```bash
 <relative-path-to-Grakn>/bin/grakn.sh start 
@@ -82,7 +82,7 @@ qb.match(var("x").val(contains("Bar")))
 
 ### has
 
-Match things that have the resource specified. If a [predicate](#predicates) is provided, the resource must also match that predicate.
+Match things that have the attribute specified. If a [predicate](#predicates) is provided, the attribute must also match that predicate.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell4" data-toggle="tab">Graql</a></li>
@@ -105,9 +105,9 @@ qb.match(var("x").has("identifier", contains("Bar")));
 </div> <!-- tab-content -->
 
 
-### relation
+### relationship
 
-Match things that have a relation with the given variable. If a role is provided, the role player must be playing that role.
+Match things that have a relationship with the given variable. If a role is provided, the role player must be playing that role.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell6" data-toggle="tab">Graql</a></li>
@@ -179,10 +179,10 @@ Match types that are a subclass of the given type.
 <div role="tabpanel" class="tab-pane active" id="shell7">
 <pre>
 match $x sub thing; # List all types
-match $x sub resource; # List all resource types
+match $x sub attribute; # List all attribute types
 match $x sub entity; # List all entity types
 match $x sub role; # List all role types
-match $x sub relation; # List all relation types
+match $x sub relationship; # List all relationship types
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java7">
@@ -194,7 +194,7 @@ qb.match(var("x").sub("thing"));
 
 
 ### relates
-Match roles to a given relation.
+Match roles to a given relationship.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell8" data-toggle="tab">Graql</a></li>
@@ -236,7 +236,7 @@ qb.match(var("x").plays("child"));
 </div> <!-- tab-content -->
 
 ### has
-Match types that can have the given resource.
+Match types that can have the given attribute.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell10" data-toggle="tab">Graql</a></li>
@@ -378,7 +378,7 @@ There are a number of modifiers that can be applied to a query:
 * `distinct` - Removes any duplicate results.
 * `limit` - Limits the number of results returned from the query.
 * `offset` - Offsets the results returned from the query by the given number of results.
-* `order` - Orders the results by the given variable's degree. If a type is provided, order by the resource of that type on that concept. Order is ascending by default.
+* `order` - Orders the results by the given variable's degree. If a type is provided, order by the attribute of that type on that concept. Order is ascending by default.
 * `select` - Indicates which variables to include in the results.
 
 

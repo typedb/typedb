@@ -42,7 +42,7 @@ You can run this example by running the `Main` class. Look at the `SqlWorldMigra
 
 We run a few queries in the example to prove that the data has been migrated. After running the example, you should be able to answer the following questions (see the bottom of the page for answers - but please don't peek until you've tried it!):
 
-+ What are the Types in the World graph in Grakn?
++ What are the Types in the World knowledge base in Grakn?
 + How many countries are in the world?
 + How may cities are in the world?
 + What are the cities in Niger?
@@ -84,7 +84,7 @@ Maradi
 
 ## Where Next?
 
-After running this SQL migration, check out the [Graql documentation](../graql/graql-overview.html) and the [Graph API documentation](../developing-with-java/graph-api.html) for more instructions on how you can explore the world.
+After running this SQL migration, check out the [Graql documentation](../graql/graql-overview.html) and the [Java API documentation](../developing-with-java/java-api.html) for more instructions on how you can explore the world.
 
 
 {% include links.html %}

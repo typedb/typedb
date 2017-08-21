@@ -18,14 +18,13 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Pair;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.util.Partition;
@@ -49,9 +48,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static java.util.stream.Collectors.toList;
 
 /**
  * A class for executing insert queries.
@@ -62,7 +64,7 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
  */
 public class InsertQueryExecutor {
 
-    private final GraknGraph graph;
+    private final GraknTx tx;
 
     // A mutable map associating each `Var` to the `Concept` in the graph it refers to.
     private final Map<Var, Concept> concepts = new HashMap<>();
@@ -79,31 +81,43 @@ public class InsertQueryExecutor {
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
     private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
 
-    private InsertQueryExecutor(GraknGraph graph, ImmutableSet<VarAndProperty> properties,
+    // The method that is applied on every `VarProperty`
+    private final Consumer<VarAndProperty> insertFunction;
+
+    private InsertQueryExecutor(GraknTx tx, ImmutableSet<VarAndProperty> properties,
                                 Partition<Var> equivalentVars,
-                                ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies) {
-        this.graph = graph;
+                                ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies,
+                                BiConsumer<VarAndProperty, InsertQueryExecutor> insertFunction) {
+        this.tx = tx;
         this.properties = properties;
         this.equivalentVars = equivalentVars;
         this.dependencies = dependencies;
+        this.insertFunction = property -> insertFunction.accept(property, this);
     }
 
     /**
      * Insert all the Vars
      */
-    static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknGraph graph) {
-        return create(patterns, graph).insertAll(new QueryAnswer());
+    static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
+        return create(patterns, graph, VarAndProperty::insert).insertAll(new QueryAnswer());
     }
 
     /**
      * Insert all the Vars
      * @param results the result of a match query
      */
-    static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknGraph graph, Answer results) {
-        return create(patterns, graph).insertAll(results);
+    static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph, Answer results) {
+        return create(patterns, graph, VarAndProperty::insert).insertAll(results);
     }
 
-    private static InsertQueryExecutor create(Collection<VarPatternAdmin> patterns, GraknGraph graph) {
+    static Answer defineAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
+        return create(patterns, graph, VarAndProperty::define).insertAll(new QueryAnswer());
+    }
+
+    private static InsertQueryExecutor create(
+            Collection<VarPatternAdmin> patterns, GraknTx graph,
+            BiConsumer<VarAndProperty, InsertQueryExecutor> insertFunction
+    ) {
         ImmutableSet<VarAndProperty> properties =
                 patterns.stream().flatMap(VarAndProperty::fromPattern).collect(toImmutableSet());
 
@@ -163,13 +177,17 @@ public class InsertQueryExecutor {
 
         Partition<Var> equivalentVars = Partition.singletons(Collections.emptyList());
 
-        equivalentProperties(properties).forEach(props -> {
-            // These properties must refer to the same concept, so share their dependencies
-            Collection<VarAndProperty> producers = varDependencies.get(props.first.var());
-            producers.addAll(varDependencies.get(props.second.var()));
-            varDependencies.replaceValues(props.second.var(), Sets.newHashSet(producers));
+        equivalentProperties(properties).asMap().values().forEach(vars -> {
+            // These vars must refer to the same concept, so share their dependencies
+            Collection<VarAndProperty> producers =
+                    vars.stream().flatMap(var -> varDependencies.get(var).stream()).collect(toList());
 
-            equivalentVars.merge(props.first.var(), props.second.var());
+            Var first = vars.iterator().next();
+
+            vars.forEach(var -> {
+                varDependencies.replaceValues(var, producers);
+                equivalentVars.merge(first, var);
+            });
         });
 
         /*
@@ -190,16 +208,21 @@ public class InsertQueryExecutor {
          */
         Multimap<VarAndProperty, VarAndProperty> dependencies = composeMultimaps(propDependencies, varDependencies);
 
-        return new InsertQueryExecutor(graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies));
+        return new InsertQueryExecutor(
+                graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies), insertFunction
+        );
     }
 
-    private static Stream<Pair<VarAndProperty, VarAndProperty>> equivalentProperties(Set<VarAndProperty> properties) {
-        Set<VarAndProperty> identifyingProperties = Sets.filter(properties, VarAndProperty::uniquelyIdentifiesConcept);
+    private static Multimap<VarProperty, Var> equivalentProperties(Set<VarAndProperty> properties) {
+        Multimap<VarProperty, Var> equivalentProperties = HashMultimap.create();
 
-        return identifyingProperties.stream()
-                .flatMap(vp1 -> identifyingProperties.stream()
-                        .filter(vp2 -> vp1.property().equals(vp2.property())).map(vp2 -> Pair.of(vp1, vp2))
-                );
+        for (VarAndProperty varAndProperty : properties) {
+            if (varAndProperty.uniquelyIdentifiesConcept()) {
+                equivalentProperties.put(varAndProperty.property(), varAndProperty.var());
+            }
+        }
+
+        return equivalentProperties;
     }
 
     /**
@@ -224,7 +247,7 @@ public class InsertQueryExecutor {
     private Answer insertAll(Answer results) {
         concepts.putAll(results.map());
 
-        sortProperties().forEach(property -> property.insert(this));
+        sortProperties().forEach(insertFunction);
 
         conceptBuilders.forEach((var, builder) -> concepts.put(var, builder.build()));
 
@@ -389,8 +412,8 @@ public class InsertQueryExecutor {
         return Patterns.varPattern(var, propertiesOfVar.build());
     }
 
-    GraknGraph graph() {
-        return graph;
+    GraknTx tx() {
+        return tx;
     }
 
     /**
@@ -409,11 +432,15 @@ public class InsertQueryExecutor {
         }
 
         static Stream<VarAndProperty> fromPattern(VarPatternAdmin pattern) {
-            return pattern.getProperties().map(prop -> VarAndProperty.of(pattern.getVarName(), prop));
+            return pattern.getProperties().map(prop -> VarAndProperty.of(pattern.var(), prop));
         }
 
         void insert(InsertQueryExecutor executor) {
             property().insert(var(), executor);
+        }
+
+        void define(InsertQueryExecutor executor) {
+            property().define(var(), executor);
         }
 
         Set<Var> requiredVars() {
