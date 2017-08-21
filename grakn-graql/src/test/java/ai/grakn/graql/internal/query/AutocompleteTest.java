@@ -69,11 +69,12 @@ public class AutocompleteTest {
 
     @Test
     public void whenAutocompletingWithinWord_AppropriateCandidatesAreFound() {
-        String queryString = "match $x has title";
+        String queryString = "match $x rela actor";
+        //                   index 9 --^ ^--index 11
         Autocomplete autocomplete = Autocomplete.create(types, queryString, 11);
-        assertThat(autocomplete.getCandidates(), hasItem(" "));//Nothing returned because only "has" was found
+        assertThat(autocomplete.getCandidates(), hasItem("relates"));
         assertThat(autocomplete.getCandidates(), not(hasItem("delete")));
-        assertEquals(11, autocomplete.getCursorPosition());
+        assertEquals(9, autocomplete.getCursorPosition());
     }
 
     @Test
