@@ -46,6 +46,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
  *
  * @author Ganeshwara Herawan Hananda
  */
+
 public class RoleController {
     private final EngineGraknGraphFactory factory;
     private static final Logger LOG = LoggerFactory.getLogger(EntityTypeController.class);
