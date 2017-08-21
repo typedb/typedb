@@ -91,11 +91,6 @@ public class QueryToStringTest {
     }
 
     @Test
-    public void testQueryWithHasScopeToString() {
-        assertEquals("match $x has-scope $y;", qb.match(var("x").hasScope(var("y"))).toString());
-    }
-
-    @Test
     public void testQueryWithDatatypeToString() {
         assertSameResults(qb.match(var("x").datatype(AttributeType.DataType.LONG)));
     }

@@ -255,23 +255,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE);
     }
 
-    /**
-     *
-     * @param thing A new thing which can scope this concept
-     * @return The concept itself
-     */
-    @Override
-    public T scope(Thing thing) {
-        putEdge(ConceptVertex.from(thing), Schema.EdgeLabel.HAS_SCOPE);
-        return getThis();
-    }
-
-    @Override
-    public T deleteScope(Thing scope) {
-        deleteEdge(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE, (Concept) scope);
-        return getThis();
-    }
-
     void trackRolePlayers(){
         instances().forEach(concept -> ((ThingImpl<?, ?>)concept).castingsInstance().forEach(
                 rolePlayer -> vertex().tx().txCache().trackForValidation(rolePlayer)));

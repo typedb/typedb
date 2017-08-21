@@ -298,12 +298,6 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testParsingQueryContainingScope(){
-        String queryString = "match $r ($p, $pr) isa recommendation;$r has-scope $s;";
-        QueryAnswers answers = queryAnswers(snbKB.tx().graql().infer(true).parse(queryString));
-    }
-
-    @Test
     public void testParsingQueryContainingIsAbstract(){
         String queryString = "match $x is-abstract;";
         QueryAnswers answers = queryAnswers(snbKB.tx().graql().infer(true).parse(queryString));

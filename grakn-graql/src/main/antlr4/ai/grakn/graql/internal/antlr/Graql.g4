@@ -68,7 +68,6 @@ property       : 'isa' variable                     # isa
                | 'sub' variable                     # sub
                | 'relates' variable                 # relates
                | 'plays' variable                   # plays
-               | 'has-scope' VARIABLE               # hasScope
                | 'id' id                            # propId
                | 'label' label                      # propLabel
                | 'val' predicate                    # propValue

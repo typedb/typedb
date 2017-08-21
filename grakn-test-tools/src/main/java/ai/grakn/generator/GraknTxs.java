@@ -272,12 +272,6 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
                 summary(thing, "resource", attribute);
             },
             () -> {
-                Type type = type();
-                Thing thing = instance();
-                type.scope(thing);
-                summary(type, "scope", thing);
-            },
-            () -> {
                 Relationship relationship = relation();
                 Role role = role();
                 Thing thing = instance();
