@@ -73,7 +73,7 @@ public class AutocompleteTest {
         Autocomplete autocomplete = Autocomplete.create(types, queryString, 11);
         assertThat(autocomplete.getCandidates(), hasItem(" "));//Nothing returned because only "has" was found
         assertThat(autocomplete.getCandidates(), not(hasItem("delete")));
-        assertEquals(9, autocomplete.getCursorPosition());
+        assertEquals(11, autocomplete.getCursorPosition());
     }
 
     @Test
