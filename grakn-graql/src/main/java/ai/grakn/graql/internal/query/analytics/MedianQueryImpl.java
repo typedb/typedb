@@ -33,7 +33,7 @@ import java.util.Set;
 class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MedianQuery {
 
     MedianQueryImpl(Optional<GraknTx> graph) {
-        this.graph = graph;
+        this.tx = graph;
     }
 
     @Override
@@ -81,8 +81,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
     }
 
     @Override
-    public MedianQuery withGraph(GraknTx graph) {
-        return (MedianQuery) super.withGraph(graph);
+    public MedianQuery withTx(GraknTx tx) {
+        return (MedianQuery) super.withTx(tx);
     }
 
     @Override

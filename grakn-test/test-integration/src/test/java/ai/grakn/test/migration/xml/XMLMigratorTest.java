@@ -11,7 +11,7 @@ import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.xml.XmlMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
-import ai.grakn.util.GraphLoader;
+import ai.grakn.util.SampleKBLoader;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -36,7 +36,7 @@ public class XMLMigratorTest {
 
     @BeforeClass
     public static void loadSchema(){
-        keyspace = GraphLoader.randomKeyspace();
+        keyspace = SampleKBLoader.randomKeyspace();
         session = Grakn.session(engine.uri(), keyspace);
     }
 

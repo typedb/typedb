@@ -22,7 +22,7 @@ package ai.grakn.engine.tasks.manager;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -82,11 +82,11 @@ public class StandaloneTaskManager implements TaskManager {
     private final Meter failedMeter;
     private final Meter stoppedMeter;
     private final Meter completedMeter;
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private LockProvider lockProvider;
     private final MetricRegistry metricRegistry;
 
-    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisCountStorage redis, EngineGraknGraphFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry) {
+    public StandaloneTaskManager(EngineID engineId, GraknEngineConfig config, RedisCountStorage redis, EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry) {
         this.engineID = engineId;
         this.config = config;
         this.redis = redis;

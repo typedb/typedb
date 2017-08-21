@@ -29,7 +29,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
 import ai.grakn.kb.internal.concept.SchemaConceptImpl;
@@ -434,7 +434,7 @@ class ValidateGlobalRules {
                                 RuleImpl.from(rule).addConclusion(schemaConcept.asType());
                             }
                         } else {
-                            throw GraphOperationException.invalidPropertyUse(rule, side);
+                            throw GraknTxOperationException.invalidPropertyUse(rule, side);
                         }
                     }
                 });

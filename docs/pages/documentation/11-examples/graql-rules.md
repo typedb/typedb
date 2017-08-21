@@ -16,7 +16,7 @@ This is an example of how to use the reasoning facilities of Graql to infer info
 
 As the blog post explained, the original data was a [document](http://www.lenzenresearch.com/titusnarrlineage.pdf) from [Lenzen Research](http://www.lenzenresearch.com/) that described the family history of Catherine Niesz Titus for three generations of her maternal lineage. Our team gathered together a set of CSV files containing basic information about the family, such as names, dates of birth, death and marriage, who was a parent of who, and who married who.
 
-The full genealogy-knowledge-base project can be found on Grakn's [sample-datasets](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph) repository on Github. However, we will use a simpler schema for this example, which is found in *basic-genealogy.gql*, located within the */examples* folder of the Grakn installation. The file can also be found [on Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
+The full genealogy-knowledge-base project can be found on Grakn's [sample-datasets](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-knowledge-base) repository on Github. However, we will use a simpler schema for this example, which is found in *basic-genealogy.gql*, located within the */examples* folder of the Grakn installation. The file can also be found [on Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
 In this example, we will explore how to use Grakn to make inferences and find information from the data that is not explicit in the dataset. You can find documentation about writing rules in Graql [here](https://grakn.ai/pages/documentation/graql/graql-rules.html).
 

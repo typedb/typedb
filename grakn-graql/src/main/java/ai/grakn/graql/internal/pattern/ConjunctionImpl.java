@@ -80,9 +80,9 @@ abstract class ConjunctionImpl<T extends PatternAdmin> extends AbstractPattern i
     }
 
     @Override
-    public ReasonerQuery toReasonerQuery(GraknTx graph){
+    public ReasonerQuery toReasonerQuery(GraknTx tx){
         Conjunction<VarPatternAdmin> pattern = Iterables.getOnlyElement(getDisjunctiveNormalForm().getPatterns());
-        return ReasonerQueries.create(pattern, graph);
+        return ReasonerQueries.create(pattern, tx);
     }
 
     private static <U extends PatternAdmin> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {

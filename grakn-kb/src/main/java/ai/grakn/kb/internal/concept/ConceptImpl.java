@@ -20,7 +20,7 @@ package ai.grakn.kb.internal.concept;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.cache.ContainsTxCache;
@@ -51,8 +51,8 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
     private final Cache<Shard> currentShard = new Cache<>(Cacheable.shard(), () -> {
         String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
-        Vertex shardVertex = vertex().graph().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
-        return vertex().graph().factory().buildShard(shardVertex);
+        Vertex shardVertex = vertex().tx().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
+        return vertex().tx().factory().buildShard(shardVertex);
     });
     private final Cache<ConceptId> conceptId = new Cache<>(Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
@@ -73,10 +73,10 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
 
     /**
      * Deletes the concept.
-     * @throws GraphOperationException Throws an exception if the node has any edges attached to it.
+     * @throws GraknTxOperationException Throws an exception if the node has any edges attached to it.
      */
     @Override
-    public void delete() throws GraphOperationException {
+    public void delete() throws GraknTxOperationException {
         deleteNode();
     }
 
@@ -84,7 +84,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
      * Deletes the node and adds it neighbours for validation
      */
     public void deleteNode(){
-        vertex().graph().txCache().remove(this);
+        vertex().tx().txCache().remove(this);
         vertex().delete();
     }
 
@@ -99,19 +99,19 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
             case BOTH:
                 return vertex().getEdgesOfType(direction, label).
                         flatMap(edge -> Stream.of(
-                                vertex().graph().factory().buildConcept(edge.source()),
-                                vertex().graph().factory().buildConcept(edge.target())
+                                vertex().tx().factory().buildConcept(edge.source()),
+                                vertex().tx().factory().buildConcept(edge.target())
                         ));
             case IN:
                 return vertex().getEdgesOfType(direction, label).map(edge ->
-                        vertex().graph().factory().buildConcept(edge.source())
+                        vertex().tx().factory().buildConcept(edge.source())
                 );
             case OUT:
                 return  vertex().getEdgesOfType(direction, label).map(edge ->
-                        vertex().graph().factory().buildConcept(edge.target())
+                        vertex().tx().factory().buildConcept(edge.target())
                 );
             default:
-                throw GraphOperationException.invalidDirection(direction);
+                throw GraknTxOperationException.invalidDirection(direction);
         }
     }
 
@@ -171,7 +171,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     @Override
     public final String toString(){
         try {
-            vertex().graph().validVertex(vertex().element());
+            vertex().tx().validVertex(vertex().element());
             return innerToString();
         } catch (RuntimeException e){
             // Vertex is broken somehow. Most likely deleted.
@@ -195,15 +195,15 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
 
     //----------------------------------- Sharding Functionality
     public void createShard(){
-        VertexElement shardVertex = vertex().graph().addVertex(Schema.BaseType.SHARD);
-        Shard shard = vertex().graph().factory().buildShard(this, shardVertex);
+        VertexElement shardVertex = vertex().tx().addVertex(Schema.BaseType.SHARD);
+        Shard shard = vertex().tx().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         currentShard.set(shard);
     }
 
     public Stream<Shard> shards(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).map(edge ->
-                vertex().graph().factory().buildShard(edge.source()));
+                vertex().tx().factory().buildShard(edge.source()));
     }
 
     public Shard currentShard(){

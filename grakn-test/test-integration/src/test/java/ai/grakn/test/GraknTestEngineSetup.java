@@ -124,7 +124,7 @@ public abstract class GraknTestEngineSetup {
     private static void clearGraphs(GraknEngineServer server) {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
-        try(GraknTx systemGraph = server.factory().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try(GraknTx systemGraph = server.factory().tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .execute()
                     .forEach(x -> x.values().forEach(y -> {
@@ -133,7 +133,7 @@ public abstract class GraknTestEngineSetup {
         }
 
         keyspaceNames.forEach(name -> {
-            GraknTx graph = server.factory().getGraph(name, GraknTxType.WRITE);
+            GraknTx graph = server.factory().tx(name, GraknTxType.WRITE);
             graph.admin().delete();
         });
         server.factory().refreshConnections();

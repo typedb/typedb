@@ -2,12 +2,12 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
@@ -50,21 +50,21 @@ public class GraqlControllerTest {
                                boolean materialise,
                                int limitEmbedded) {
         return RestAssured.with()
-            .queryParam(KEYSPACE, graphContext.graph().getKeyspace())
+            .queryParam(KEYSPACE, sampleKB.tx().getKeyspace())
             .body(query)
             .queryParam(INFER, reasonser)
             .queryParam(MATERIALISE, materialise)
             .queryParam(LIMIT_EMBEDDED, limitEmbedded)
             .accept(acceptType)
-            .post(REST.WebPath.Graph.ANY_GRAQL);
+            .post(REST.WebPath.KB.ANY_GRAQL);
     }
 
     @ClassRule
-    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
+    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.createAndLoadSystemSchema(GraknEngineConfig.create().getProperties());
+        EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(GraknEngineConfig.create().getProperties());
         new GraqlController(factory, spark, new MetricRegistry());
     });
 
@@ -72,7 +72,7 @@ public class GraqlControllerTest {
     public void setUp() {
         jsonPrinter = Printers.json();
         graqlPrinter = Printers.graql(false);
-        halPrinter = Printers.hal(graphContext.graph().getKeyspace(), -1);
+        halPrinter = Printers.hal(sampleKB.tx().getKeyspace(), -1);
     }
 
     @Test
@@ -98,8 +98,8 @@ public class GraqlControllerTest {
             Assert.assertFalse(resp.jsonPath().getList(".").isEmpty());
         } finally {
             ConceptId id = ConceptId.of(resp.jsonPath().getList("x.id").get(0).toString());
-            graphContext.rollback();
-            graphContext.graph().graql().match(var("x").id(id)).delete("x").execute();
+            sampleKB.rollback();
+            sampleKB.tx().graql().match(var("x").id(id)).delete("x").execute();
         }
     }
 
@@ -163,7 +163,7 @@ public class GraqlControllerTest {
         String queryString = "match $x isa movie;";
         int limitEmbedded = 42;
         Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded);
-        Printer printer = Printers.hal(graphContext.graph().getKeyspace(), limitEmbedded);
+        Printer printer = Printers.hal(sampleKB.tx().getKeyspace(), limitEmbedded);
         assertResponseSameAsJavaGraql(resp, queryString, printer, APPLICATION_HAL);
     }
 
@@ -185,8 +185,8 @@ public class GraqlControllerTest {
     private void assertResponseSameAsJavaGraql(Response resp, String queryString, Printer<?> printer, String acceptType) {
         resp.then().statusCode(200);
 
-        graphContext.rollback();
-        Query<?> query = graphContext.graph().graql().parse(queryString);
+        sampleKB.rollback();
+        Query<?> query = sampleKB.tx().graql().parse(queryString);
 
         String expectedString = printer.graqlString(query.execute());
 

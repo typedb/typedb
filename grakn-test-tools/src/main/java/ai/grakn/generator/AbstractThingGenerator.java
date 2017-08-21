@@ -46,7 +46,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Felix Chapman
  */
-public abstract class AbstractThingGenerator<T extends Thing, S extends Type> extends FromGraphGenerator<T> {
+public abstract class AbstractThingGenerator<T extends Thing, S extends Type> extends FromTxGenerator<T> {
     private boolean withResource = false;
     private final Class<? extends AbstractTypeGenerator<S>> generatorClass;
 
@@ -56,9 +56,9 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
     }
 
     @Override
-    protected final T generateFromGraph() {
+    protected final T generateFromTx() {
         T thing;
-        S type = genFromGraph(generatorClass).makeExcludeAbstractTypes().excludeMeta().generate(random, status);
+        S type = genFromTx(generatorClass).makeExcludeAbstractTypes().excludeMeta().generate(random, status);
 
         //noinspection unchecked
         Collection<T> instances = (Collection<T> ) type.instances().collect(toSet());
@@ -76,8 +76,8 @@ public abstract class AbstractThingGenerator<T extends Thing, S extends Type> ex
 
             //Create a new attribute type
             AttributeType.DataType<?> dataType = gen(AttributeType.DataType.class);
-            Label label = genFromGraph(Labels.class).mustBeUnused().generate(random, status);
-            AttributeType attributeType = graph().putAttributeType(label, dataType);
+            Label label = genFromTx(Labels.class).mustBeUnused().generate(random, status);
+            AttributeType attributeType = tx().putAttributeType(label, dataType);
 
             //Create new attribute
             Attribute attribute = newResource(attributeType);

@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -58,18 +58,18 @@ public interface Type extends SchemaConcept {
      * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
      * @return The concept itself
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-    Type setAbstract(Boolean isAbstract) throws GraphOperationException;
+    Type setAbstract(Boolean isAbstract) throws GraknTxOperationException;
 
     /**
      *
      * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-    Type plays(Role role) throws GraphOperationException;
+    Type plays(Role role) throws GraknTxOperationException;
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType} to be linked in a strictly one-to-one mapping.
@@ -77,9 +77,9 @@ public interface Type extends SchemaConcept {
      * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
      * @return The Type itself.
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-    Type key(AttributeType attributeType) throws GraphOperationException;
+    Type key(AttributeType attributeType) throws GraknTxOperationException;
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType}  to be linked.
@@ -87,9 +87,9 @@ public interface Type extends SchemaConcept {
      * @param attributeType The {@link AttributeType}  which instances of this type should be allowed to play.
      * @return The Type itself.
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-     Type attribute(AttributeType attributeType) throws GraphOperationException;
+     Type attribute(AttributeType attributeType) throws GraknTxOperationException;
 
     /**
      * Classifies the type to a specific scope. This allows you to optionally categorise types.

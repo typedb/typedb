@@ -54,7 +54,7 @@ You can use the drop down selector to choose previous versions of the API refere
               }
            ],
            "self":{
-              "href":"/graph/concept/401584?keyspace=grakn&offsetEmbedded=0"
+              "href":"/kb/concept/401584?keyspace=grakn&offsetEmbedded=0"
            }
         },
         "_embedded":{
@@ -70,7 +70,7 @@ You can use the drop down selector to choose previous versions of the API refere
                        }
                     ],
                     "self":{
-                       "href":"/graph/concept/16632?keyspace=grakn&offsetEmbedded=0"
+                       "href":"/kb/concept/16632?keyspace=grakn&offsetEmbedded=0"
                     }
                  },
                  "_id":"16632"
@@ -93,7 +93,7 @@ You can use the drop down selector to choose previous versions of the API refere
 
 + Content-length
 
-## `/graph/graql`
+## `/kb/graql`
 
 #### `POST /execute`
 
@@ -143,7 +143,7 @@ Graql query that should be executed on the server.
 **Request:**
 
 ```
-curl -X POST -H "Accept:application/text" "http://localhost:4567/graph/graql/execute?keyspace=grakn&infer=false&materialise=false;" --data 'match $x isa person; limit 1;'
+curl -X POST -H "Accept:application/text" "http://localhost:4567/kb/graql/execute?keyspace=grakn&infer=false&materialise=false;" --data 'match $x isa person; limit 1;'
 ```
 
 **Response:**
@@ -210,7 +210,7 @@ Query response from the knowledge base formatted as specified by the provided `A
 **Request:**
 
 ```
-curl -H "Accept:application/graql+json" -X GET "http://localhost:4567/graph/graql?keyspace=grakn&infer=false&materialise=false&query=match%20%24x%20isa%20person;%20limit%201;"
+curl -H "Accept:application/graql+json" -X GET "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&materialise=false&query=match%20%24x%20isa%20person;%20limit%201;"
 ```
 
 **Response:**
@@ -287,7 +287,7 @@ Query response from the knowledge base formatted as specified by the provided `A
 **Request:**
 
 ```
-curl -X POST -H "Accept:application/text" "http://localhost:4567/graph/graql?keyspace=grakn&infer=false&materialise=false;" --data 'insert $x isa person;' 
+curl -X POST -H "Accept:application/text" "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&materialise=false;" --data 'insert $x isa person;' 
 ```
 
 **Response:**
@@ -345,7 +345,7 @@ Graql delete query that should be executed on the server.
 **Request:**
 
 ```
-curl -X DELETE "http://localhost:4567/graph/graql?keyspace=grakn&infer=false&materialise=false;" --data 'match $x isa parentship; delete $x;'
+curl -X DELETE "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&materialise=false;" --data 'match $x isa parentship; delete $x;'
 ```
 
 **Response:**
@@ -360,7 +360,7 @@ Server: Jetty(9.3.6.v20151106)
 {}
 ```
 
-## `/graph` 
+## `/kb` 
 
 #### `GET /concept/{id}`
 
@@ -400,7 +400,7 @@ Returns the HAL representation of the specified concept.
 **Request:**
 
 ```
-curl -X DELETE "http://localhost:4567/graph/graql?keyspace=grakn&infer=false&materialise=false;" --data 'match $x isa parentship; delete $x;'
+curl -X DELETE "http://localhost:4567/kb/graql?keyspace=grakn&infer=false&materialise=false;" --data 'match $x isa parentship; delete $x;'
 ```
 
 **Response:**
@@ -421,7 +421,7 @@ Server: Jetty(9.3.6.v20151106)
          }
       ],
       "self":{
-         "href":"/graph/concept/508000?keyspace=grakn&offsetEmbedded=0"
+         "href":"/kb/concept/508000?keyspace=grakn&offsetEmbedded=0"
       }
    },
    "_embedded":{
@@ -463,7 +463,7 @@ Returns all schema concepts in the specified knowledge base in a JSON object.
 **Request:**
 
 ```
-curl -X GET "http://localhost:4567/graph/schema?keyspace=grakn"
+curl -X GET "http://localhost:4567/kb/schema?keyspace=grakn"
 ```
 
 **Response:**

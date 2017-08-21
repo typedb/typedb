@@ -62,7 +62,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class InsertQueryExecutor {
 
-    private final GraknTx graph;
+    private final GraknTx tx;
 
     // A mutable map associating each `Var` to the `Concept` in the graph it refers to.
     private final Map<Var, Concept> concepts = new HashMap<>();
@@ -79,10 +79,10 @@ public class InsertQueryExecutor {
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
     private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
 
-    private InsertQueryExecutor(GraknTx graph, ImmutableSet<VarAndProperty> properties,
+    private InsertQueryExecutor(GraknTx tx, ImmutableSet<VarAndProperty> properties,
                                 Partition<Var> equivalentVars,
                                 ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies) {
-        this.graph = graph;
+        this.tx = tx;
         this.properties = properties;
         this.equivalentVars = equivalentVars;
         this.dependencies = dependencies;
@@ -396,8 +396,8 @@ public class InsertQueryExecutor {
         return Patterns.varPattern(var, propertiesOfVar.build());
     }
 
-    GraknTx graph() {
-        return graph;
+    GraknTx tx() {
+        return tx;
     }
 
     /**

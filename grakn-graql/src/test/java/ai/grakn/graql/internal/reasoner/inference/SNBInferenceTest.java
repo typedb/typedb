@@ -26,12 +26,12 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.SNBGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.SNBKB;
 
 import ai.grakn.test.GraknTestSetup;
 import java.util.List;
-import java.util.Set;
+
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,7 +46,7 @@ import static org.junit.Assume.assumeTrue;
 public class SNBInferenceTest {
 
     @Rule
-    public final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get());
+    public final SampleKBContext snbGraph = SampleKBContext.preLoad(SNBKB.get());
 
     @BeforeClass
     public static void onStartup() throws Exception {
@@ -58,8 +58,8 @@ public class SNBInferenceTest {
      */
     @Test
     public void testTransitivity() {
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match " +
                 "$x isa university;$y isa country;(located-subject: $x, subject-location: $y) isa resides;";
         
@@ -72,8 +72,8 @@ public class SNBInferenceTest {
 
     @Test
     public void testTransitivityPrime() {
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match " +
                 "$x isa university;$y isa country;($x, $y) isa resides;";
         
@@ -89,8 +89,8 @@ public class SNBInferenceTest {
      */
     @Test
     public void testTransitivity2() {
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match $x isa company;$y isa country;" +
                 "(located-subject: $x, subject-location: $y) isa resides;";
         
@@ -104,8 +104,8 @@ public class SNBInferenceTest {
 
     @Test
     public void testTransitivity2Prime() {
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match $x isa company;$y isa country;" +
                 "($x, $y) isa resides;";
         
@@ -119,8 +119,8 @@ public class SNBInferenceTest {
 
     @Test
     public void testRecommendation() {
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match $x isa person;($x, $y) isa recommendation;";
         String limitedQueryString = "match $x isa person;($x, $y) isa recommendation; limit 1;";
         MatchQuery query = iqb.parse(queryString);
@@ -155,8 +155,8 @@ public class SNBInferenceTest {
 
     @Test
     public void testTag() {
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match " +
                 "$y isa person;$t isa tag;($y, $t) isa recommendation;";
         
@@ -175,8 +175,8 @@ public class SNBInferenceTest {
      */
     @Test
     public void testProduct() {
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match " +
                 "$y isa person;$yy isa product;($y, $yy) isa recommendation;";
         
@@ -195,8 +195,8 @@ public class SNBInferenceTest {
 
     @Test
     public void testCombinedProductTag() {
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match " +
                 "{$p isa person;$r isa product;($p, $r) isa recommendation;} or" +
                 "{$p isa person;$r isa tag;($p, $r) isa recommendation;};";
@@ -219,8 +219,8 @@ public class SNBInferenceTest {
 
     @Test
     public void testBook() {
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match $x isa person;" +
                 "($x, $y) isa recommendation;" +
                 "$c isa category;$c has name 'book';" +
@@ -238,8 +238,8 @@ public class SNBInferenceTest {
 
     @Test
     public void testBand() {
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match $x isa person;" +
                 "($x, $y) isa recommendation;" +
                 "$c isa category;$c has name 'Band';" +
@@ -259,8 +259,8 @@ public class SNBInferenceTest {
      */
     @Test
     public void testVarConsistency(){
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match $x isa person;$y isa product;" +
                 "($x, $y) isa recommendation;" +
                 "$z isa category;$z has name 'motorbike';" +
@@ -278,8 +278,8 @@ public class SNBInferenceTest {
      */
     @Test
     public void testVarConsistency2(){
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         //select people that have Chopin as a recommendation
         String queryString = "match $x isa person; $y isa tag; ($x, $y) isa tagging;" +
                 "$z isa product;$z has name 'Nocturnes'; ($x, $z) isa recommendation; select $x, $y;";
@@ -297,8 +297,8 @@ public class SNBInferenceTest {
 
     @Test
     public void testVarConsistency3(){
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match $x isa person;$pr isa product, has name 'Nocturnes';($x, $pr) isa recommendation; select $x;";
         String explicitQuery = "match {$x has name 'Frank';} or {$x has name 'Karl Fischer';};";
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
@@ -310,7 +310,7 @@ public class SNBInferenceTest {
      */
     @Test
     public void testQueryConsistency() {
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         String queryString = "match $x isa person; $y isa place; ($x, $y) isa resides;" +
                         "$z isa person;$z has name 'Miguel Gonzalez'; ($x, $z) isa knows; select $x, $y;";
         
@@ -331,8 +331,8 @@ public class SNBInferenceTest {
      */
     @Test
     public void testOrdering() {
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         //select recommendationS of Karl Fischer and their types
         String queryString = "match $p isa product;$x isa person;$x has name 'Karl Fischer';" +
                         "($x, $p) isa recommendation; ($p, $t) isa typing; select $p, $t;";
@@ -353,8 +353,8 @@ public class SNBInferenceTest {
      */
     @Test
     public void testInverseVars() {
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryBuilder qb = snbGraph.tx().graql().infer(false);
+        QueryBuilder iqb = snbGraph.tx().graql().infer(true);
         //select recommendation of Karl Fischer and their types
         String queryString = "match $p isa product;" +
                 "$x isa person;$x has name 'Karl Fischer'; ($p, $x) isa recommendation; ($p, $t) isa typing; select $p, $t;";

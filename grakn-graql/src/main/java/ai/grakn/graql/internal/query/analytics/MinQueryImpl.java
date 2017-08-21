@@ -38,7 +38,7 @@ import java.util.Set;
 class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MinQuery {
 
     MinQueryImpl(Optional<GraknTx> graph) {
-        this.graph = graph;
+        this.tx = graph;
     }
 
     @Override
@@ -87,8 +87,8 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MinQuery withGraph(GraknTx graph) {
-        return (MinQuery) super.withGraph(graph);
+    public MinQuery withTx(GraknTx tx) {
+        return (MinQuery) super.withTx(tx);
     }
 
     @Override

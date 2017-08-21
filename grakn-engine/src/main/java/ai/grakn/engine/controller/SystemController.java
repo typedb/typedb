@@ -27,7 +27,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.ErrorMessage;
 import com.codahale.metrics.MetricFilter;
@@ -64,10 +64,10 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.engine.GraknEngineConfig.FACTORY_ANALYTICS;
 import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
-import static ai.grakn.util.REST.GraphConfig.COMPUTER;
-import static ai.grakn.util.REST.GraphConfig.DEFAULT;
+import static ai.grakn.util.REST.KBConfig.COMPUTER;
+import static ai.grakn.util.REST.KBConfig.DEFAULT;
 import static ai.grakn.util.REST.Request.FORMAT;
-import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
+import static ai.grakn.util.REST.Request.CONFIG_PARAM;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
@@ -102,14 +102,14 @@ public class SystemController {
     private static final String JSON = "json";
 
     private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private final GraknEngineStatus graknEngineStatus;
     private final MetricRegistry metricRegistry;
     private final ObjectMapper mapper;
     private final CollectorRegistry prometheusRegistry;
 
-    public SystemController(EngineGraknGraphFactory factory, Service spark,
-            GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
+    public SystemController(EngineGraknTxFactory factory, Service spark,
+                            GraknEngineStatus graknEngineStatus, MetricRegistry metricRegistry) {
         this.factory = factory;
         this.graknEngineStatus = graknEngineStatus;
         this.metricRegistry = metricRegistry;
@@ -171,7 +171,7 @@ public class SystemController {
     @ApiOperation(value = "Get config which is used to build graphs")
     @ApiImplicitParam(name = "graphConfig", value = "The type of graph config to return", required = true, dataType = "string", paramType = "path")
     private String getConfiguration(Request request, Response response) {
-        String graphConfig = request.queryParams(GRAPH_CONFIG_PARAM);
+        String graphConfig = request.queryParams(CONFIG_PARAM);
 
         // Make a copy of the properties object
         Properties properties = new Properties();
@@ -210,7 +210,7 @@ public class SystemController {
     @Path("/keyspaces")
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) {
-        try (GraknTx graph = factory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.WRITE)) {
 
             AttributeType<String> keyspaceName = graph.getSchemaConcept(SystemKeyspace.KEYSPACE_RESOURCE);
             Json result = Json.array();

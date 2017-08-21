@@ -64,9 +64,9 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
     ClusterQuery<T> in(Collection<Label> subLabels);
 
     /**
-     * @param graph the graph to execute the query on
+     * @param tx the graph to execute the query on
      * @return a ClusterQuery with the graph set
      */
     @Override
-    ClusterQuery<T> withGraph(GraknTx graph);
+    ClusterQuery<T> withTx(GraknTx tx);
 }

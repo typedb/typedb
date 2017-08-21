@@ -1,7 +1,7 @@
 Migration
 =====
 
-This component provides the ability to move from various other storage format to a Grakn graph.
+This component provides the ability to move from various other storage format to a Grakn knowledge base.
 
 OWL Migration
 ----

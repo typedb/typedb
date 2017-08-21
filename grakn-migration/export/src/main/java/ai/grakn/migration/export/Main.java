@@ -32,7 +32,7 @@ public class Main {
 
     public static void main(String[] args){
         try{
-            MigrationCLI.init(args, GraphWriterOptions::new).stream()
+            MigrationCLI.init(args, KBWriterOptions::new).stream()
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .forEach(Main::runExport);
@@ -41,13 +41,13 @@ public class Main {
         }
     }
 
-    private static void runExport(GraphWriterOptions options) {
+    private static void runExport(KBWriterOptions options) {
         if(!options.exportSchema() && !options.exportData()) {
             throw new IllegalArgumentException("Missing arguments -schema and/or -data");
         }
 
         try(GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.READ)) {
-            GraphWriter graphWriter = new GraphWriter(graph);
+            KBWriter graphWriter = new KBWriter(graph);
 
             if (options.exportSchema()) {
                 System.out.println(graphWriter.dumpSchema());

@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
@@ -58,7 +58,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default SchemaConcept asSchemaConcept(){
-        throw GraphOperationException.invalidCasting(this, SchemaConcept.class);
+        throw GraknTxOperationException.invalidCasting(this, SchemaConcept.class);
     }
 
     /**
@@ -68,7 +68,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default Type asType(){
-        throw GraphOperationException.invalidCasting(this, Type.class);
+        throw GraknTxOperationException.invalidCasting(this, Type.class);
     }
 
     /**
@@ -78,7 +78,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default Thing asThing(){
-        throw GraphOperationException.invalidCasting(this, Thing.class);
+        throw GraknTxOperationException.invalidCasting(this, Thing.class);
     }
 
     /**
@@ -88,7 +88,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default EntityType asEntityType(){
-        throw GraphOperationException.invalidCasting(this, EntityType.class);
+        throw GraknTxOperationException.invalidCasting(this, EntityType.class);
     }
 
     /**
@@ -98,7 +98,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default Role asRole(){
-        throw GraphOperationException.invalidCasting(this, Role.class);
+        throw GraknTxOperationException.invalidCasting(this, Role.class);
     }
 
     /**
@@ -108,7 +108,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default RelationshipType asRelationshipType(){
-        throw GraphOperationException.invalidCasting(this, RelationshipType.class);
+        throw GraknTxOperationException.invalidCasting(this, RelationshipType.class);
     }
 
     /**
@@ -118,7 +118,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default <D> AttributeType<D> asAttributeType(){
-        throw GraphOperationException.invalidCasting(this, AttributeType.class);
+        throw GraknTxOperationException.invalidCasting(this, AttributeType.class);
     }
 
     /**
@@ -128,7 +128,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default RuleType asRuleType(){
-        throw GraphOperationException.invalidCasting(this, RuleType.class);
+        throw GraknTxOperationException.invalidCasting(this, RuleType.class);
     }
 
     /**
@@ -137,7 +137,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default Entity asEntity(){
-        throw GraphOperationException.invalidCasting(this, Entity.class);
+        throw GraknTxOperationException.invalidCasting(this, Entity.class);
     }
 
     /**
@@ -147,7 +147,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default Relationship asRelationship(){
-        throw GraphOperationException.invalidCasting(this, Relationship.class);
+        throw GraknTxOperationException.invalidCasting(this, Relationship.class);
     }
 
     /**
@@ -157,7 +157,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default <D> Attribute<D> asAttribute(){
-        throw GraphOperationException.invalidCasting(this, Attribute.class);
+        throw GraknTxOperationException.invalidCasting(this, Attribute.class);
     }
 
     /**
@@ -167,7 +167,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default Rule asRule(){
-        throw GraphOperationException.invalidCasting(this, Rule.class);
+        throw GraknTxOperationException.invalidCasting(this, Rule.class);
     }
 
     /**
@@ -293,7 +293,7 @@ public interface Concept extends Comparable<Concept>{
     /**
      * Delete the Concept.
      *
-     * @throws GraphOperationException Throws an exception if this is a type with incoming concepts.
+     * @throws GraknTxOperationException Throws an exception if this is a type with incoming concepts.
      */
-    void delete() throws GraphOperationException;
+    void delete() throws GraknTxOperationException;
 }

@@ -86,7 +86,7 @@ public class Shard {
     public <V extends Thing> Stream<V> links(){
         return  vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).
                 map(EdgeElement::source).
-                map(vertexElement ->  vertex().graph().factory().buildConcept(vertexElement));
+                map(vertexElement ->  vertex().tx().factory().buildConcept(vertexElement));
     }
 
     /**

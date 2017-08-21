@@ -54,16 +54,16 @@ public class RelationshipEdge implements RelationshipStructure {
     private final EdgeElement edgeElement;
 
     private final Cache<RelationshipType> relationType = new Cache<>(Cacheable.concept(), () ->
-            edge().graph().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
+            edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
 
-    private final Cache<Role> ownerRole = new Cache<>(Cacheable.concept(), () -> edge().graph().getSchemaConcept(LabelId.of(
+    private final Cache<Role> ownerRole = new Cache<>(Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID))));
 
-    private final Cache<Role> valueRole = new Cache<>(Cacheable.concept(), () -> edge().graph().getSchemaConcept(LabelId.of(
+    private final Cache<Role> valueRole = new Cache<>(Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID))));
 
-    private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> edge().graph().factory().buildConcept(edge().source()));
-    private final Cache<Thing> value = new Cache<>(Cacheable.concept(), () -> edge().graph().factory().buildConcept(edge().target()));
+    private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> edge().tx().factory().buildConcept(edge().source()));
+    private final Cache<Thing> value = new Cache<>(Cacheable.concept(), () -> edge().tx().factory().buildConcept(edge().target()));
 
     RelationshipEdge(EdgeElement edgeElement) {
         this.edgeElement = edgeElement;
@@ -93,8 +93,8 @@ public class RelationshipEdge implements RelationshipStructure {
     @Override
     public RelationshipReified reify() {
         //Build the Relationship Vertex
-        VertexElement relationVertex = edge().graph().addVertex(Schema.BaseType.RELATIONSHIP, getId());
-        RelationshipReified relationReified = edge().graph().factory().buildRelationReified(relationVertex, type());
+        VertexElement relationVertex = edge().tx().addVertex(Schema.BaseType.RELATIONSHIP, getId());
+        RelationshipReified relationReified = edge().tx().factory().buildRelationReified(relationVertex, type());
 
         //Delete the old edge
         delete();

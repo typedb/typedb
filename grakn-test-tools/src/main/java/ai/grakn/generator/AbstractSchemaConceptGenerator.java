@@ -45,7 +45,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Felix Chapman
  */
-public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> extends FromGraphGenerator<T> {
+public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> extends FromTxGenerator<T> {
 
     private Optional<Boolean> meta = Optional.empty();
 
@@ -54,7 +54,7 @@ public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> ex
     }
 
     @Override
-    protected final T generateFromGraph() {
+    protected final T generateFromTx() {
         Collection<T> schemaConcepts;
 
         if (!includeNonMeta()) {
@@ -72,8 +72,8 @@ public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> ex
         }
 
         if (schemaConcepts.isEmpty() && includeNonMeta()) {
-            Label label = genFromGraph(Labels.class).mustBeUnused().generate(random, status);
-            assert graph().getSchemaConcept(label) == null;
+            Label label = genFromTx(Labels.class).mustBeUnused().generate(random, status);
+            assert tx().getSchemaConcept(label) == null;
             return newSchemaConcept(label);
         } else {
             return random.choose(schemaConcepts);

@@ -61,7 +61,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
 
-    Optional<GraknTx> graph = Optional.empty();
+    Optional<GraknTx> tx = Optional.empty();
     GraknComputer graknComputer = null;
     String keySpace;
 
@@ -71,8 +71,8 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     private String url;
 
     @Override
-    public ComputeQuery<T> withGraph(GraknTx graph) {
-        this.graph = Optional.of(graph);
+    public ComputeQuery<T> withTx(GraknTx tx) {
+        this.tx = Optional.of(tx);
         return this;
     }
 
@@ -118,7 +118,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     void initSubGraph() {
-        GraknTx theGraph = graph.orElseThrow(GraqlQueryException::noGraph);
+        GraknTx theGraph = tx.orElseThrow(GraqlQueryException::noTx);
         keySpace = theGraph.getKeyspace();
         url = theGraph.admin().getEngineUrl();
 
@@ -162,12 +162,12 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         List<Pattern> checkSubtypes = subLabels.stream()
                 .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
-        return this.graph.get().graql().infer(false).match(or(checkSubtypes)).iterator().hasNext();
+        return this.tx.get().graql().infer(false).match(or(checkSubtypes)).iterator().hasNext();
     }
 
     boolean verticesExistInSubgraph(ConceptId... ids) {
         for (ConceptId id : ids) {
-            Thing thing = this.graph.get().getConcept(id);
+            Thing thing = this.tx.get().getConcept(id);
             if (thing == null || !subLabels.contains(thing.type().getLabel())) return false;
         }
         return true;
@@ -199,19 +199,19 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
         AbstractComputeQuery<?> that = (AbstractComputeQuery<?>) o;
 
-        return graph.equals(that.graph) && subLabels.equals(that.subLabels);
+        return tx.equals(that.tx) && subLabels.equals(that.subLabels);
     }
 
     @Override
     public int hashCode() {
-        int result = graph.hashCode();
+        int result = tx.hashCode();
         result = 31 * result + subLabels.hashCode();
         return result;
     }
 
     Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
         return labelSet.stream()
-                .map(graph.get().admin()::convertToId)
+                .map(tx.get().admin()::convertToId)
                 .filter(LabelId::isValid)
                 .collect(Collectors.toSet());
     }

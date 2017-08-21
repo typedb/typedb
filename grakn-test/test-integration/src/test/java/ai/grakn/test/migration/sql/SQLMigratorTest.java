@@ -27,7 +27,7 @@ import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
-import ai.grakn.util.GraphLoader;
+import ai.grakn.util.SampleKBLoader;
 import org.jooq.exception.DataAccessException;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -57,7 +57,7 @@ public class SQLMigratorTest {
 
     @Before
     public void setup(){
-        String keyspace = GraphLoader.randomKeyspace();
+        String keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
         migrator = Migrator.to(engine.uri(), keyspace);
     }

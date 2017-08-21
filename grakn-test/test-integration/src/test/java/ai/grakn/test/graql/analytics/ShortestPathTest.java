@@ -10,7 +10,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
@@ -96,7 +96,7 @@ public class ShortestPathTest {
             checkPath(correctPath, computedPath);
 
             Collections.reverse(correctPath);
-            computedPath = Graql.compute().withGraph(graph).path().to(entityId1).from(relationId12).execute()
+            computedPath = Graql.compute().withTx(graph).path().to(entityId1).from(relationId12).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
             checkPath(correctPath, computedPath);
 
@@ -114,7 +114,7 @@ public class ShortestPathTest {
             // only one path exists with given subtypes
             correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(),
                     entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
-            computedPath = Graql.compute().withGraph(graph).path().to(entityId3).from(entityId2).in(thing, related).execute()
+            computedPath = Graql.compute().withTx(graph).path().to(entityId3).from(entityId2).in(thing, related).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
             checkPath(correctPath, computedPath);
 
@@ -190,7 +190,7 @@ public class ShortestPathTest {
     }
 
     @Test
-    public void testMultipleIndependentShortestPaths() throws InvalidGraphException {
+    public void testMultipleIndependentShortestPaths() throws InvalidKBException {
         Set<List<ConceptId>> validPaths = new HashSet<>();
         ConceptId startId;
         ConceptId endId;
@@ -269,7 +269,7 @@ public class ShortestPathTest {
         }
     }
 
-    private void addSchemaAndEntities() throws InvalidGraphException {
+    private void addSchemaAndEntities() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
@@ -309,7 +309,7 @@ public class ShortestPathTest {
         }
     }
 
-    private void addSchemaAndEntities2() throws InvalidGraphException {
+    private void addSchemaAndEntities2() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 

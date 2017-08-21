@@ -6,26 +6,28 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import static ai.grakn.engine.TaskStatus.COMPLETED;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.test.EngineContext;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import ai.grakn.util.MockRedisRule;
+import ai.grakn.util.Schema;
+import mjson.Json;
+import org.junit.ClassRule;
+import org.junit.Test;
+
+import java.util.UUID;
+
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_CONCEPT_ID;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_SHARDING_COUNT;
 import static ai.grakn.util.REST.Request.KEYSPACE;
-import ai.grakn.util.Schema;
 import static java.util.Collections.singleton;
-import java.util.UUID;
-import mjson.Json;
 import static org.junit.Assert.assertEquals;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 public class UpdatingThingCountTaskTest {
 
@@ -83,7 +85,7 @@ public class UpdatingThingCountTaskTest {
         EntityType et1;
         EntityType et2;
 
-        //Create Simple Graph
+        //Create Simple GraknTx
         try(GraknTx graknTx = Grakn.session(engine.uri(), keyspace).open(GraknTxType.WRITE)){
             et1 = graknTx.putEntityType("et1");
             et2 = graknTx.putEntityType("et2");

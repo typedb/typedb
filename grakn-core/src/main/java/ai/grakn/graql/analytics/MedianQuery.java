@@ -67,9 +67,9 @@ public interface MedianQuery extends ComputeQuery<Optional<Number>> {
     Optional<Number> execute();
 
     /**
-     * @param graph the graph to execute the query on
+     * @param tx the graph to execute the query on
      * @return a MedianQuery with the graph set
      */
     @Override
-    MedianQuery withGraph(GraknTx graph);
+    MedianQuery withTx(GraknTx tx);
 }
