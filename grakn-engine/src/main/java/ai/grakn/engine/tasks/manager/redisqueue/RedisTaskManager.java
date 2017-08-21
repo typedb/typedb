@@ -22,7 +22,7 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 import ai.grakn.engine.GraknEngineConfig;
 import static ai.grakn.engine.GraknEngineConfig.TASKS_RETRY_DELAY;
 import ai.grakn.engine.TaskId;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
@@ -48,19 +48,19 @@ public class RedisTaskManager implements TaskManager {
     private final EngineID engineId;
     private final GraknEngineConfig config;
     private final RedisTaskStorage redisTaskStorage;
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private final RedisTaskQueue redisTaskQueue;
     private final int threads;
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
-            EngineGraknGraphFactory factory, LockProvider distributedLockClient,
-            MetricRegistry metricRegistry) {
+                            EngineGraknTxFactory factory, LockProvider distributedLockClient,
+                            MetricRegistry metricRegistry) {
         this(engineId, config, jedisPool, 1, factory, distributedLockClient, metricRegistry);
     }
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
-            int threads, EngineGraknGraphFactory factory, LockProvider distributedLockClient,
-            MetricRegistry metricRegistry) {
+                            int threads, EngineGraknTxFactory factory, LockProvider distributedLockClient,
+                            MetricRegistry metricRegistry) {
         this.engineId = engineId;
         this.config = config;
         this.factory = factory;

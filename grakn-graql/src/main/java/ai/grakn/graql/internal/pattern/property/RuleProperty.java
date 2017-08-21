@@ -39,40 +39,17 @@ import java.util.Set;
  * @author Felix Chapman
  */
 public abstract class RuleProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
-    protected final Pattern pattern;
 
-    RuleProperty(Pattern pattern) {
-        this.pattern = pattern;
-    }
-
-    public Pattern getPattern() {
-        return pattern;
-    }
+    public abstract Pattern pattern();
 
     @Override
     public String getProperty() {
-        return pattern.toString();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        RuleProperty that = (RuleProperty) o;
-
-        return pattern.equals(that.pattern);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return pattern.hashCode();
+        return pattern().toString();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getClass().getName()));
+        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getName()));
     }
 
     @Override

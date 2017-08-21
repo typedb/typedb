@@ -18,7 +18,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -41,11 +41,11 @@ import java.util.Map;
 public interface ComputeQueryBuilder {
 
     /**
-     * @param graph the graph to execute the compute query on
+     * @param tx the {@link GraknTx} to execute the compute query on
      * @return a compute query builder with the graph set
      */
     @CheckReturnValue
-    ComputeQueryBuilder withGraph(GraknGraph graph);
+    ComputeQueryBuilder withTx(GraknTx tx);
 
     /**
      * @return a count query that will count the number of instances

@@ -101,9 +101,6 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     }
 
     @Override
-    public boolean isValuePredicate(){ return true;}
-
-    @Override
     public String getPredicateValue() {
         return getPredicate().getPredicate().map(P::getValue).map(Object::toString).orElse("");
     }
@@ -115,14 +112,14 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
         if (properties.hasNext()) {
             throw GraqlQueryException.valuePredicateAtomWithMultiplePredicates();
         }
-        return property.getPredicate();
+        return property.predicate();
     }
 
     @Override
     public Set<Var> getVarNames(){
         Set<Var> vars = super.getVarNames();
         VarPatternAdmin innerVar = getPredicate().getInnerVar().orElse(null);
-        if(innerVar != null && innerVar.getVarName().isUserDefinedName()) vars.add(innerVar.getVarName());
+        if(innerVar != null && innerVar.var().isUserDefinedName()) vars.add(innerVar.var());
         return vars;
     }
 }

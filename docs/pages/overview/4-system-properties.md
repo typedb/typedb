@@ -27,7 +27,7 @@ Please let the [Grakn Community](https://grakn.ai/community.html) know if you ha
 | Data scheme	 | Yes | 
 | Typing	| Yes | 
 | XML support	 | Yes, for importing (in progress). | 
-| Secondary indexes	| Could resource keys count? If so then yes. | 
+| Secondary indexes	| Could attribute keys count? If so then yes. | 
 | SQL	| No | 
 | APIs and other access methods	| Graql, REST API and Java API. | 
 | Supported programming languages	 | JVM based languages (Java, Groovy, Scala etc). | 
@@ -36,7 +36,7 @@ Please let the [Grakn Community](https://grakn.ai/community.html) know if you ha
 | Partitioning methods	| Sharding | 
 | Replication methods	| Multi-master | 
 | MapReduce	| Yes | 
-| Consistency concepts	| Eventual Consistency (and Immediate Consistency for in-memory graph). | 
+| Consistency concepts	| Eventual Consistency (and Immediate Consistency for in-memory knowledge base). | 
 | Foreign keys	| Yes |  
 | Transaction concepts	| Row-level AC*ID | 
 | Concurrency	 | Yes | 

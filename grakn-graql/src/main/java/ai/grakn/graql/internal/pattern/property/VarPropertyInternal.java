@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -42,7 +42,7 @@ public interface VarPropertyInternal extends VarProperty {
     /**
      * Check if the given property can be used in a match query
      */
-    void checkValid(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException;
+    void checkValid(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException;
 
     /**
      * Check if the given property can be inserted
@@ -67,6 +67,8 @@ public interface VarPropertyInternal extends VarProperty {
      *                 </p>
      */
     void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException;
+
+    void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException;
 
     /**
      * Get all {@link Var}s whose {@link Concept} must exist for the subject {@link Var} to be created.
@@ -109,10 +111,10 @@ public interface VarPropertyInternal extends VarProperty {
      * @param graph the graph to operate on
      * @param concept the concept to delete properties of
      */
-    void delete(GraknGraph graph, Concept concept) throws GraqlQueryException;
+    void delete(GraknTx graph, Concept concept) throws GraqlQueryException;
 
     @Override
-    default Stream<VarPatternAdmin> getInnerVars() {
+    default Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.empty();
     }
 

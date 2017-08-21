@@ -18,24 +18,37 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.REST;
+import com.codahale.metrics.MetricRegistry;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.response.Response;
+import mjson.Json;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.FixMethodOrder;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runners.MethodSorters;
+
+import java.util.Collections;
+
 import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
-import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
-import ai.grakn.util.REST;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
@@ -45,12 +58,7 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.Response.EXCEPTION;
-import com.codahale.metrics.MetricRegistry;
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.response.Response;
-import java.util.Collections;
 import static junit.framework.TestCase.assertTrue;
-import mjson.Json;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -59,12 +67,6 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.junit.Assume.assumeTrue;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.FixMethodOrder;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -79,15 +81,15 @@ import static org.mockito.Mockito.when;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GraqlControllerReadOnlyTest {
 
-    private static GraknGraph mockGraph;
+    private static GraknTx mockTx;
     private static QueryBuilder mockQueryBuilder;
-    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
+    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
     private static SystemKeyspace mockSystemKeyspace = mock(SystemKeyspace.class);
 
     private static final JsonMapper jsonMapper = new JsonMapper();
 
     @ClassRule
-    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
+    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -103,16 +105,16 @@ public class GraqlControllerReadOnlyTest {
         when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.parse(any()))
-                .thenAnswer(invocation -> graphContext.graph().graql().parse(invocation.getArgument(0)));
+                .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
 
-        mockGraph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
-        when(mockGraph.graql()).thenReturn(mockQueryBuilder);
+        when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
         when(mockSystemKeyspace.ensureKeyspaceInitialised(any())).thenReturn(true);
 
-        when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
+        when(mockFactory.tx(eq(mockTx.getKeyspace()), any())).thenReturn(mockTx);
         when(mockFactory.systemKeyspace()).thenReturn(mockSystemKeyspace);
         when(mockFactory.properties()).thenReturn(sparkContext.config().getProperties());
     }
@@ -122,7 +124,7 @@ public class GraqlControllerReadOnlyTest {
         String query = "match $x isa movie;";
         sendRequest(query, APPLICATION_TEXT);
 
-        verify(mockGraph.graql().materialise(anyBoolean()).infer(anyBoolean()))
+        verify(mockTx.graql().materialise(anyBoolean()).infer(anyBoolean()))
                 .parse(argThat(argument -> argument.equals(query)));
     }
 
@@ -168,7 +170,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithNoKeyspace_ResponseStatusIs400() {
-        Response response = RestAssured.with().body("match $x isa movie;").post(REST.WebPath.Graph.ANY_GRAQL);
+        Response response = RestAssured.with().body("match $x isa movie;").post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
@@ -177,8 +179,8 @@ public class GraqlControllerReadOnlyTest {
     @Test
     public void GETGraqlMatchWithNoQuery_ResponseStatusIs400() {
         Response response = RestAssured.with()
-                .queryParam(KEYSPACE, mockGraph.getKeyspace())
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .queryParam(KEYSPACE, mockTx.getKeyspace())
+                .post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage(QUERY)));
@@ -186,11 +188,11 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchNoMaterialise_ResponseStatusIs400() {
-        Response response = RestAssured.with().queryParam(KEYSPACE, mockGraph.getKeyspace())
+        Response response = RestAssured.with().queryParam(KEYSPACE, mockTx.getKeyspace())
                 .body("match $x isa movie;")
                 .queryParam(INFER, true)
                 .accept(APPLICATION_TEXT)
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(MATERIALISE)));
@@ -212,10 +214,10 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithNoInfer_ResponseStatusIs400() {
-        Response response = RestAssured.with().queryParam(KEYSPACE, mockGraph.getKeyspace())
+        Response response = RestAssured.with().queryParam(KEYSPACE, mockTx.getKeyspace())
                 .body("match $x isa movie;")
                 .accept(APPLICATION_TEXT)
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(INFER)));
@@ -253,8 +255,8 @@ public class GraqlControllerReadOnlyTest {
         String queryString = "match $x isa movie;";
         Response response = sendRequest(queryString, APPLICATION_HAL);
 
-        Printer<?> printer = Printers.hal(mockGraph.getKeyspace(), -1);
-        Query<?> query = graphContext.graph().graql().parse(queryString);
+        Printer<?> printer = Printers.hal(mockTx.getKeyspace(), -1);
+        Query<?> query = sampleKB.tx().graql().parse(queryString);
         Json expectedResponse = Json.read(printer.graqlString(query.execute()));
         assertThat(jsonResponse(response), equalTo(expectedResponse));
 
@@ -302,7 +304,7 @@ public class GraqlControllerReadOnlyTest {
         Response response = sendRequest(APPLICATION_JSON_GRAQL);
 
         Json expectedResponse = Json.read(
-                Printers.json().graqlString(graphContext.graph().graql().parse(query).execute()));
+                Printers.json().graqlString(sampleKB.tx().graql().parse(query).execute()));
         assertThat(jsonResponse(response), equalTo(expectedResponse));
     }
 
@@ -327,9 +329,9 @@ public class GraqlControllerReadOnlyTest {
         Response response = sendRequest(query, APPLICATION_TEXT);
 
         // refresh graph
-        graphContext.graph().close();
+        sampleKB.tx().close();
 
-        long numberPeople = graphContext.graph().getEntityType("movie").instances().count();
+        long numberPeople = sampleKB.tx().getEntityType("movie").instances().count();
         assertThat(stringResponse(response), equalTo(Long.toString(numberPeople)));
     }
 
@@ -363,7 +365,7 @@ public class GraqlControllerReadOnlyTest {
         String query = "compute count in movie;";
         Response response = sendRequest(query, APPLICATION_TEXT);
 
-        Long numberPeople = graphContext.graph().getEntityType("movie").instances().count();
+        Long numberPeople = sampleKB.tx().getEntityType("movie").instances().count();
         assertThat(stringResponse(response), equalTo(Long.toString(numberPeople)));
     }
 
@@ -373,8 +375,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePathWithTextType_ResponseIsCorrect() {
         assumeTrue(GraknTestSetup.usingJanus());
 
-        String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
         Response response = sendRequest(query, APPLICATION_TEXT);
@@ -388,8 +390,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePathWithHALType_ResponseContentTypeIsHAL() {
         assumeTrue(GraknTestSetup.usingJanus());
 
-        String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
         Response response = sendRequest(query, APPLICATION_HAL);
@@ -402,8 +404,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePathWithHALType_ResponseStatusIs200() {
         assumeTrue(GraknTestSetup.usingJanus());
 
-        String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
         Response response = sendRequest(query, APPLICATION_HAL);
@@ -417,8 +419,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePathWithHALType_ResponseIsNotEmpty() {
         assumeTrue(GraknTestSetup.usingJanus());
 
-        String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
         Response response = sendRequest(query, APPLICATION_HAL);
@@ -432,8 +434,8 @@ public class GraqlControllerReadOnlyTest {
     public void ZGETGraqlComputePathWithHALType_ResponseContainsValidHALObjects() {
         assumeTrue(GraknTestSetup.usingJanus());
 
-        String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
-        String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("The Muppets").iterator().next().owner().getId().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
         Response response = sendRequest(query, APPLICATION_HAL);
@@ -448,8 +450,8 @@ public class GraqlControllerReadOnlyTest {
     //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
     public void ZGETGraqlComputePathWithHALTypeAndNoPath_ResponseIsEmptyJson() {
-        String fromId = graphContext.graph().getResourcesByValue("Apocalypse Now").iterator().next().owner().getId().getValue();
-        String toId = graphContext.graph().getResourcesByValue("comedy").iterator().next().owner().getId().getValue();
+        String fromId = sampleKB.tx().getAttributesByValue("Apocalypse Now").iterator().next().owner().getId().getValue();
+        String toId = sampleKB.tx().getAttributesByValue("comedy").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
         Response response = sendRequest(query, APPLICATION_HAL);
@@ -469,13 +471,13 @@ public class GraqlControllerReadOnlyTest {
     private Response sendRequest(String match, String acceptType, boolean reasonser,
                                  boolean materialise, int limitEmbedded) {
         return RestAssured.with()
-                .queryParam(KEYSPACE, mockGraph.getKeyspace())
+                .queryParam(KEYSPACE, mockTx.getKeyspace())
                 .body(match)
                 .queryParam(INFER, reasonser)
                 .queryParam(MATERIALISE, materialise)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .accept(acceptType)
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
     }
 
     protected static String exception(Response response) {

@@ -40,7 +40,7 @@ class StdAggregate extends AbstractAggregate<Answer, Optional<Double>> {
 
     @Override
     public Optional<Double> apply(Stream<? extends Answer> stream) {
-        Stream<Double> numStream = stream.map(result -> result.get(varName).<Number>asResource().getValue().doubleValue());
+        Stream<Double> numStream = stream.map(result -> result.get(varName).<Number>asAttribute().getValue().doubleValue());
 
         Iterable<Double> data = numStream::iterator;
 

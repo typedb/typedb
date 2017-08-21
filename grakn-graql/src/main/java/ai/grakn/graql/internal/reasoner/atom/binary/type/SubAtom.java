@@ -56,7 +56,7 @@ public class SubAtom extends TypeAtom {
     @Override
     public String toString(){
         String typeString = "sub"+ "(" + getVarName() + ", " + getPredicateVariable() +")";
-        return typeString + getPredicates().stream().map(Predicate::toString).collect(Collectors.joining(""));
+        return typeString + getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
     }
 
     @Override

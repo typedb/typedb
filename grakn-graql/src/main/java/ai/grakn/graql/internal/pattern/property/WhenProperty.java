@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
+import com.google.auto.value.AutoValue;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 
@@ -33,12 +34,13 @@ import ai.grakn.graql.internal.query.InsertQueryExecutor;
  *
  * @author Felix Chapman
  */
-public class WhenProperty extends RuleProperty {
+@AutoValue
+public abstract class WhenProperty extends RuleProperty {
 
     public static final String NAME = "when";
 
-    public WhenProperty(Pattern pattern) {
-        super(pattern);
+    public static WhenProperty of(Pattern pattern) {
+        return new AutoValue_WhenProperty(pattern);
     }
 
     @Override
@@ -48,6 +50,6 @@ public class WhenProperty extends RuleProperty {
 
     @Override
     public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.builder(var).when(pattern);
+        executor.builder(var).when(pattern());
     }
 }

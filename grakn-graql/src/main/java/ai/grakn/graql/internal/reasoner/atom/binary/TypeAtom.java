@@ -17,7 +17,7 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -80,10 +80,10 @@ public abstract class TypeAtom extends Binary{
     @Override
     public boolean isRuleApplicable(InferenceRule child) {
         Atom ruleAtom = child.getHead().getAtom();
-        return this.getOntologyConcept() != null
+        return this.getSchemaConcept() != null
                 //ensure not ontological atom query
-                && getPattern().asVar().hasProperty(IsaProperty.class)
-                && this.getOntologyConcept().subs().anyMatch(sub -> sub.equals(ruleAtom.getOntologyConcept()));
+                && getPattern().asVarPattern().hasProperty(IsaProperty.class)
+                && this.getSchemaConcept().subs().anyMatch(sub -> sub.equals(ruleAtom.getSchemaConcept()));
     }
 
     @Override
@@ -96,22 +96,22 @@ public abstract class TypeAtom extends Binary{
 
     @Override
     public boolean requiresMaterialisation() {
-        return isUserDefinedName() && getOntologyConcept() != null && getOntologyConcept().isRelationType();
+        return isUserDefinedName() && getSchemaConcept() != null && getSchemaConcept().isRelationshipType();
     }
 
     @Override
     public int computePriority(Set<Var> subbedVars){
         int priority = super.computePriority(subbedVars);
         priority += ResolutionPlan.IS_TYPE_ATOM;
-        priority += getOntologyConcept() == null && !isRelation()? ResolutionPlan.NON_SPECIFIC_TYPE_ATOM : 0;
+        priority += getSchemaConcept() == null && !isRelation()? ResolutionPlan.NON_SPECIFIC_TYPE_ATOM : 0;
         return priority;
     }
 
     @Nullable
     @Override
-    public OntologyConcept getOntologyConcept() {
+    public SchemaConcept getSchemaConcept() {
         return getPredicate() != null ?
-                getParentQuery().graph().getConcept(getPredicate().getPredicate()) : null;
+                getParentQuery().tx().getConcept(getPredicate().getPredicate()) : null;
     }
 
     /**

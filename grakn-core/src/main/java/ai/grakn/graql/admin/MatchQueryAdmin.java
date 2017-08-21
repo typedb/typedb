@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 
@@ -35,17 +35,17 @@ import java.util.Set;
 public interface MatchQueryAdmin extends MatchQuery {
 
     /**
-     * @param graph the graph to use to get types from
+     * @param tx the {@link GraknTx} to use to get types from
      * @return all concept types referred to explicitly in the query
      */
     @CheckReturnValue
-    Set<OntologyConcept> getOntologyConcepts(GraknGraph graph);
+    Set<SchemaConcept> getSchemaConcepts(GraknTx tx);
 
     /**
      * @return all concept types referred to explicitly in the query
      */
     @CheckReturnValue
-    Set<OntologyConcept> getOntologyConcepts();
+    Set<SchemaConcept> getSchemaConcepts();
 
     /**
      * @return the pattern to match in the graph
@@ -57,7 +57,7 @@ public interface MatchQueryAdmin extends MatchQuery {
      * @return the graph the query operates on, if one was provided
      */
     @CheckReturnValue
-    Optional<GraknGraph> getGraph();
+    Optional<GraknTx> tx();
 
     /**
      * @return all selected variable names in the query

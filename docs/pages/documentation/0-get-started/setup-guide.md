@@ -44,15 +44,15 @@ This will start:
 {% include note.html content="**Useful commands**  <br />
 To start Grakn, run `grakn.sh start`.   
 To stop Grakn, run `grakn.sh stop`.    
-To remove all graphs from Grakn, run `grakn.sh clean`" %}
+To remove all keyspaces from Grakn, run `grakn.sh clean`" %}
 
 Grakn Engine is configured by default to use port 4567, but this can be changed in the *grakn-engine.properties* file, found within the */conf* directory of the installation.
 
 ## Test the Graql Shell
 
-To test that the installation is working correctly, we will load a simple ontology and some data from a file and test it in the Graql shell and Grakn visualiser. The file we will use is *basic-genealogy.gql*, which is included in the */examples* folder of the Grakn installation zip.
+To test that the installation is working correctly, we will load a simple schema and some data from a file and test it in the Graql shell and Grakn visualiser. The file we will use is *basic-genealogy.gql*, which is included in the */examples* folder of the Grakn installation zip.
 
-Type in the following in the terminal to load the example graph. This starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete.
+Type in the following in the terminal to load the example knowledge base. This starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete.
 
 ```bash
 ./bin/graql.sh -f ./examples/basic-genealogy.gql
@@ -76,7 +76,7 @@ If you see the above output then congratulations! You have set up Grakn.
 
 ## Test the Visualiser
 
-The [Grakn visualiser](../grakn-dashboard/visualiser.html) provides a graphical tool to inspect and query your graph data. You can open the visualiser by navigating to [localhost:4567](http://localhost:4567) in your web browser. The visualiser allows you to make queries or simply browse the knowledge ontology within the graph. The screenshot below shows a basic query (`match $x isa person;`) typed into the form at the top of the main pane, and visualised by pressing ">" to submit the query:
+The [Grakn visualiser](../grakn-dashboard/visualiser.html) provides a graphical tool to inspect and query your data. You can open the visualiser by navigating to [localhost:4567](http://localhost:4567) in your web browser. The visualiser allows you to make queries or simply browse the schema within the graph. The screenshot below shows a basic query (`match $x isa person;`) typed into the form at the top of the main pane, and visualised by pressing ">" to submit the query:
 
 ![Person query](/images/match-$x-isa-person.png)
 

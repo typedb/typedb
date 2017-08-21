@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -45,10 +45,10 @@ public class IdPredicate extends Predicate<ConceptId>{
         super(pattern, par);
     }
     public IdPredicate(Var varName, IdProperty prop, ReasonerQuery par){
-        this(createIdVar(varName, prop.getId()), par);
+        this(createIdVar(varName, prop.id()), par);
     }
     public IdPredicate(Var varName, LabelProperty prop, ReasonerQuery par){
-        this(createIdVar(varName, prop, par.graph()), par);
+        this(createIdVar(varName, prop, par.tx()), par);
     }
     private IdPredicate(IdPredicate a) { super(a);}
 
@@ -67,21 +67,20 @@ public class IdPredicate extends Predicate<ConceptId>{
     }
 
     @Override
-    public boolean isIdPredicate(){ return true;}
-
-    @Override
     public String getPredicateValue() { return getPredicate().getValue();}
 
     @Override
-    protected ConceptId extractPredicate(VarPatternAdmin var){ return var.admin().getId().orElse(null);}
+    protected ConceptId extractPredicate(VarPatternAdmin var){
+        return var.admin().getProperty(IdProperty.class).map(IdProperty::id).orElse(null);
+    }
 
     private static VarPatternAdmin createIdVar(Var varName, ConceptId typeId){
         return varName.id(typeId).admin();
     }
 
-    private static VarPatternAdmin createIdVar(Var varName, LabelProperty prop, GraknGraph graph){
-        OntologyConcept ontologyConcept = graph.getOntologyConcept(prop.getLabelValue());
-        if (ontologyConcept == null) throw GraqlQueryException.labelNotFound(prop.getLabelValue());
-        return varName.id(ontologyConcept.getId()).admin();
+    private static VarPatternAdmin createIdVar(Var varName, LabelProperty prop, GraknTx graph){
+        SchemaConcept schemaConcept = graph.getSchemaConcept(prop.label());
+        if (schemaConcept == null) throw GraqlQueryException.labelNotFound(prop.label());
+        return varName.id(schemaConcept.getId()).admin();
     }
 }

@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
@@ -104,7 +104,7 @@ public class Fragments {
         return new OutHasScopeFragment(varProperty, start, end);
     }
 
-    public static Fragment dataType(VarProperty varProperty, Var start, ResourceType.DataType dataType) {
+    public static Fragment dataType(VarProperty varProperty, Var start, AttributeType.DataType dataType) {
         return new DataTypeFragment(varProperty, start, dataType);
     }
 
@@ -213,7 +213,7 @@ public class Fragments {
     }
 
     static void applyTypeLabelsToTraversal(
-            GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property, Optional<Set<Label>> typeLabels, GraknGraph graph) {
+            GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property, Optional<Set<Label>> typeLabels, GraknTx graph) {
         typeLabels.ifPresent(labels -> {
             Set<Integer> typeIds = labels.stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
             traversal.has(property.name(), P.within(typeIds));
@@ -231,19 +231,19 @@ public class Fragments {
         role.ifPresent(var -> {
             Var edge = Graql.var();
             traversal.as(edge.getValue());
-            Fragments.outSubs(traverseOntologyConceptFromEdge(traversal, edgeProperty));
+            Fragments.outSubs(traverseSchemaConceptFromEdge(traversal, edgeProperty));
             traversal.as(var.getValue()).select(edge.getValue());
         });
     }
 
-    static <S> GraphTraversal<S, Vertex> traverseOntologyConceptFromEdge(
+    static <S> GraphTraversal<S, Vertex> traverseSchemaConceptFromEdge(
             GraphTraversal<S, Edge> traversal, Schema.EdgeProperty edgeProperty) {
 
         // Access label ID from edge
         Var labelId = Graql.var();
         traversal.values(edgeProperty.name()).as(labelId.getValue());
 
-        // Look up ontology concept using ID
+        // Look up schema concept using ID
         return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
     }
 

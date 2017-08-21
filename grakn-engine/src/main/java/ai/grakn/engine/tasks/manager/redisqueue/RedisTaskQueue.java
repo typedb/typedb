@@ -20,7 +20,7 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 
 
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.util.EngineID;
 import com.codahale.metrics.CachedGauge;
@@ -157,7 +157,7 @@ class RedisTaskQueue {
             RedisTaskManager redisTaskManager,
             EngineID engineId,
             GraknEngineConfig engineConfig,
-            EngineGraknGraphFactory factory,
+            EngineGraknTxFactory factory,
             int poolSize) {
         LOG.info("Subscribing worker to jobs in queue {}", QUEUE_NAME);
         // sync to avoid close while starting
@@ -169,7 +169,7 @@ class RedisTaskQueue {
     }
 
     private Worker getWorker(RedisTaskManager redisTaskManager, EngineID engineId,
-            GraknEngineConfig engineConfig, EngineGraknGraphFactory factory) {
+            GraknEngineConfig engineConfig, EngineGraknTxFactory factory) {
         Worker worker = new BlockingWorker(config, QUEUE_NAME, JOB_FACTORY, jedisPool,
                 executor, metricRegistry);
         // We need this since the job can only be instantiated with the

@@ -18,11 +18,11 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.GraknTx;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
@@ -54,12 +54,12 @@ import static org.mockito.Mockito.when;
 
 public class GraqlControllerDeleteTest {
 
-    private static GraknGraph mockGraph;
+    private static GraknTx tx;
     private static QueryBuilder mockQueryBuilder;
-    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
+    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
+    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -73,25 +73,25 @@ public class GraqlControllerDeleteTest {
         when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.parse(any()))
-                .thenAnswer(invocation -> graphContext.graph().graql().parse(invocation.getArgument(0)));
+                .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
 
-        mockGraph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        tx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
-        when(mockGraph.graql()).thenReturn(mockQueryBuilder);
+        when(tx.getKeyspace()).thenReturn("randomKeyspace");
+        when(tx.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
+        when(mockFactory.tx(eq(tx.getKeyspace()), any())).thenReturn(tx);
     }
 
     @Test
     public void DELETEGraqlDelete_GraphCommitCalled(){
         String query = "match $x isa person; limit 1; delete $x;";
 
-        verify(mockGraph, times(0)).commit();
+        verify(tx, times(0)).commit();
 
         sendRequest(query);
 
-        verify(mockGraph, times(1)).commit();
+        verify(tx, times(1)).commit();
     }
 
     @Test
@@ -116,7 +116,7 @@ public class GraqlControllerDeleteTest {
 
         Response response = RestAssured.with()
                 .body(query)
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
@@ -125,7 +125,7 @@ public class GraqlControllerDeleteTest {
     @Test
     public void DELETEWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -140,22 +140,22 @@ public class GraqlControllerDeleteTest {
     }
 
     @Test
-    public void DELETEGraqlDelete_DeleteWasExecutedOnGraph(){
+    public void DELETEGraqlDelete_DeleteWasExecutedOnTx(){
         doAnswer(answer -> {
-            graphContext.graph().commit();
+            sampleKB.tx().commit();
             return null;
-        }).when(mockGraph).commit();
+        }).when(tx).commit();
 
         String query = "match $x has title \"Godfather\"; delete $x;";
 
-        long movieCountBefore = graphContext.graph().getEntityType("movie").instances().count();
+        long movieCountBefore = sampleKB.tx().getEntityType("movie").instances().count();
 
         sendRequest(query);
 
         // refresh graph
-        graphContext.graph().close();
+        sampleKB.tx().close();
 
-        long movieCountAfter = graphContext.graph().getEntityType("movie").instances().count();
+        long movieCountAfter = sampleKB.tx().getEntityType("movie").instances().count();
 
         assertEquals(movieCountBefore - 1, movieCountAfter);
     }
@@ -185,11 +185,11 @@ public class GraqlControllerDeleteTest {
 
     private Response sendRequest(String query){
         return RestAssured.with()
-                .queryParam(KEYSPACE, mockGraph.getKeyspace())
+                .queryParam(KEYSPACE, tx.getKeyspace())
                 .queryParam(INFER, false)
                 .queryParam(MATERIALISE, false)
                 .accept(APPLICATION_TEXT)
                 .body(query)
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
     }
 }

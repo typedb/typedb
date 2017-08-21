@@ -19,22 +19,22 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 
 /**
- * A generator that produces {@link Relation}s
+ * A generator that produces {@link Relationship}s
  *
  * @author Felix Chapman
  */
-public class Relations extends AbstractThingGenerator<Relation, RelationType> {
+public class Relations extends AbstractThingGenerator<Relationship, RelationshipType> {
 
     public Relations() {
-        super(Relation.class, RelationTypes.class);
+        super(Relationship.class, RelationTypes.class);
     }
 
     @Override
-    protected Relation newInstance(RelationType type) {
-        return type.addRelation();
+    protected Relationship newInstance(RelationshipType type) {
+        return type.addRelationship();
     }
 }
