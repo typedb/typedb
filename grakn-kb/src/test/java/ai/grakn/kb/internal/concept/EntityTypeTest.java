@@ -25,7 +25,6 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
@@ -74,26 +73,6 @@ public class EntityTypeTest extends GraphTestBase {
         expectedException.expect(PropertyNotUniqueException.class);
         expectedException.expectMessage(PropertyNotUniqueException.cannotCreateProperty(original, Schema.VertexProperty.SCHEMA_LABEL, original.getLabel()).getMessage());
         graknGraph.putEntityType(original.getLabel());
-    }
-
-    @Test
-    public void creatingAccessingDeletingScopes_Works() throws GraphOperationException {
-        EntityType entityType = graknGraph.putEntityType("entity type");
-        Thing scope1 = entityType.addEntity();
-        Thing scope2 = entityType.addEntity();
-        Thing scope3 = entityType.addEntity();
-        assertThat(entityType.scopes().collect(toSet()), is(empty()));
-
-        entityType.scope(scope1);
-        entityType.scope(scope2);
-        entityType.scope(scope3);
-        assertThat(entityType.scopes().collect(toSet()), containsInAnyOrder(scope1, scope2, scope3));
-
-        scope1.delete();
-        assertThat(entityType.scopes().collect(toSet()), containsInAnyOrder(scope2, scope3));
-
-        entityType.deleteScope(scope2);
-        assertThat(entityType.scopes().collect(toSet()), containsInAnyOrder(scope3));
     }
 
     @Test

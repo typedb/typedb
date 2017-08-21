@@ -516,11 +516,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<VarPattern> visitHasScope(GraqlParser.HasScopeContext ctx) {
-        return var -> var.hasScope(getVariable(ctx.VARIABLE()));
-    }
-
-    @Override
     public Label visitLabel(GraqlParser.LabelContext ctx) {
         return Label.of(visitIdentifier(ctx.identifier()));
     }

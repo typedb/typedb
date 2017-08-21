@@ -272,12 +272,6 @@ public class GraknGraphs extends AbstractGenerator<GraknTx> implements MinimalCo
                 summary(thing, "resource", attribute);
             },
             () -> {
-                Type type = type();
-                Thing thing = instance();
-                type.scope(thing);
-                summary(type, "scope", thing);
-            },
-            () -> {
                 Relationship relationship = relation();
                 Role role = role();
                 Thing thing = instance();

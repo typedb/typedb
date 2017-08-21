@@ -180,13 +180,6 @@ public interface VarPattern extends Pattern {
     VarPattern plays(VarPattern type);
 
     /**
-     * @param type a scope that this variable must have
-     * @return this
-     */
-    @CheckReturnValue
-    VarPattern hasScope(VarPattern type);
-
-    /**
      * @param type a resource type that this type variable can be related to
      * @return this
      */
