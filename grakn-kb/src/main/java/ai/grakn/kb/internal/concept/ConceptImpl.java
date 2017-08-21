@@ -198,6 +198,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         VertexElement shardVertex = vertex().graph().addVertex(Schema.BaseType.SHARD);
         Shard shard = vertex().graph().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
+        currentShard.set(shard);
     }
 
     public Stream<Shard> shards(){
