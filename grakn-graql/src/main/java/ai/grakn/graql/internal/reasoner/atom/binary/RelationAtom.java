@@ -324,7 +324,7 @@ public class RelationAtom extends IsaAtom {
     private Set<Role> getExplicitRoleTypes() {
         Set<Role> roles = new HashSet<>();
         ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-        GraknTx graph = parent.graph();
+        GraknTx graph = parent.tx();
 
         Set<VarPatternAdmin> roleVars = getRelationPlayers().stream()
                 .map(RelationPlayer::getRole)
@@ -519,7 +519,7 @@ public class RelationAtom extends IsaAtom {
     private RelationAtom inferRoleTypes(){
         if (getExplicitRoleTypes().size() == getRelationPlayers().size() || getSchemaConcept() == null) return this;
 
-        GraknTx graph = getParentQuery().graph();
+        GraknTx graph = getParentQuery().tx();
         Role metaRole = graph.admin().getMetaRole();
         RelationshipType relType = (RelationshipType) getSchemaConcept();
         Map<Var, SchemaConcept> varSchemaConceptMap = getParentQuery().getVarSchemaConceptMap();
@@ -604,7 +604,7 @@ public class RelationAtom extends IsaAtom {
         Multimap<Role, Var> roleMap = ArrayListMultimap.create();
         if (getParentQuery() == null || getSchemaConcept() == null){ return roleMap;}
 
-        GraknTx graph = getParentQuery().graph();
+        GraknTx graph = getParentQuery().tx();
         getRelationPlayers().forEach(c -> {
             Var varName = c.getRolePlayer().var();
             VarPatternAdmin role = c.getRole().orElse(null);
@@ -670,7 +670,7 @@ public class RelationAtom extends IsaAtom {
                     Label parentRoleLabel = parentRoleTypeVar.getTypeLabel().orElse(null);
 
                     //TODO take into account indirect roles
-                    Role parentRole = parentRoleLabel != null ? graph().getSchemaConcept(parentRoleLabel) : null;
+                    Role parentRole = parentRoleLabel != null ? tx().getSchemaConcept(parentRoleLabel) : null;
 
                     if (parentRole != null) {
                         boolean isMetaRole = Schema.MetaSchema.isMetaLabel(parentRole.getLabel());

@@ -32,12 +32,12 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
-import ai.grakn.generator.FromGraphGenerator.FromGraph;
-import ai.grakn.generator.GraknGraphs.Open;
+import ai.grakn.generator.FromTxGenerator.FromTx;
+import ai.grakn.generator.GraknTxs.Open;
 import ai.grakn.generator.MetaLabels;
 import ai.grakn.generator.Methods.MethodOf;
 import ai.grakn.generator.ResourceValues;
@@ -59,8 +59,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
-import static ai.grakn.generator.GraknGraphs.allSchemaElementsFrom;
+import static ai.grakn.generator.GraknTxs.allConceptsFrom;
+import static ai.grakn.generator.GraknTxs.allSchemaElementsFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
 import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static java.util.stream.Collectors.toSet;
@@ -96,15 +96,15 @@ public class GraknTxPropertyTest {
         Object[] params = mockParamsOf(method);
 
         exception.expect(InvocationTargetException.class);
-        exception.expectCause(isA(GraphOperationException.class));
-        exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
+        exception.expectCause(isA(GraknTxOperationException.class));
+        exception.expectCause(hasProperty("message", is(ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
 
         method.invoke(graph, params);
     }
 
     @Property
     public void whenCallingGetConceptWithAnExistingConceptId_ItReturnsThatConcept(
-            @Open GraknTx graph, @FromGraph Concept concept) {
+            @Open GraknTx graph, @FromTx Concept concept) {
         ConceptId id = concept.getId();
         assertEquals(concept, graph.getConcept(id));
     }
@@ -119,7 +119,7 @@ public class GraknTxPropertyTest {
 
     @Property
     public void whenCallingGetConceptWithAnIncorrectGeneric_ItThrows(
-            @Open GraknTx graph, @FromGraph Concept concept) {
+            @Open GraknTx graph, @FromTx Concept concept) {
         assumeFalse(concept.isRole());
         ConceptId id = concept.getId();
 
@@ -132,7 +132,7 @@ public class GraknTxPropertyTest {
 
     @Property
     public void whenCallingGetSchemaConceptWithAnExistingLabel_ItReturnsThatConcept(
-            @Open GraknTx graph, @FromGraph SchemaConcept concept) {
+            @Open GraknTx graph, @FromTx SchemaConcept concept) {
         Label label = concept.getLabel();
         assertEquals(concept, graph.getSchemaConcept(label));
     }
@@ -148,7 +148,7 @@ public class GraknTxPropertyTest {
 
     @Property
     public void whenCallingGetSchemaConceptWithAnIncorrectGeneric_ItThrows(
-            @Open GraknTx graph, @FromGraph Type type) {
+            @Open GraknTx graph, @FromTx Type type) {
         assumeFalse(type.isRole());
         Label label = type.getLabel();
 
@@ -162,7 +162,7 @@ public class GraknTxPropertyTest {
     @Property
     public void whenCallingGetResourcesByValueAfterAddingAResource_TheResultIncludesTheResource(
             @Open GraknTx graph,
-            @FromGraph @NonMeta @NonAbstract AttributeType attributeType, @From(ResourceValues.class) Object value) {
+            @FromTx @NonMeta @NonAbstract AttributeType attributeType, @From(ResourceValues.class) Object value) {
         assumeThat(value.getClass().getName(), is(attributeType.getDataType().getName()));
 
         Collection<Attribute<Object>> expectedAttributes = graph.getAttributesByValue(value);
@@ -176,7 +176,7 @@ public class GraknTxPropertyTest {
 
     @Property
     public void whenCallingGetResourcesByValueAfterDeletingAResource_TheResultDoesNotIncludesTheResource(
-            @Open GraknTx graph, @FromGraph Attribute<Object> attribute) {
+            @Open GraknTx graph, @FromTx Attribute<Object> attribute) {
         Object resourceValue = attribute.getValue();
 
         Collection<Attribute<Object>> expectedAttributes = graph.getAttributesByValue(resourceValue);
@@ -201,43 +201,43 @@ public class GraknTxPropertyTest {
 
     @Property
     public void whenCallingGetResourcesByValueWithAnUnsupportedDataType_Throw(@Open GraknTx graph, List value) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.unsupportedDataType(value).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.unsupportedDataType(value).getMessage());
         //noinspection ResultOfMethodCallIgnored
         graph.getAttributesByValue(value);
     }
 
     @Property
     public void whenCallingGetEntityType_TheResultIsTheSameAsGetSchemaConcept(
-            @Open GraknTx graph, @FromGraph EntityType type) {
+            @Open GraknTx graph, @FromTx EntityType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getEntityType(label.getValue()));
     }
 
     @Property
     public void whenCallingGetRelationType_TheResultIsTheSameAsGetSchemaConcept(
-            @Open GraknTx graph, @FromGraph RelationshipType type) {
+            @Open GraknTx graph, @FromTx RelationshipType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRelationshipType(label.getValue()));
     }
 
     @Property
     public void whenCallingGetResourceType_TheResultIsTheSameAsGetSchemaConcept(
-            @Open GraknTx graph, @FromGraph AttributeType type) {
+            @Open GraknTx graph, @FromTx AttributeType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getAttributeType(label.getValue()));
     }
 
     @Property
     public void whenCallingGetRole_TheResultIsTheSameAsGetSchemaConcept(
-            @Open GraknTx graph, @FromGraph Role role) {
+            @Open GraknTx graph, @FromTx Role role) {
         Label label = role.getLabel();
         assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRole(label.getValue()));
     }
 
     @Property
     public void whenCallingGetRuleType_TheResultIsTheSameAsGetSchemaConcept(
-            @Open GraknTx graph, @FromGraph RuleType type) {
+            @Open GraknTx graph, @FromTx RuleType type) {
         Label label = type.getLabel();
         assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRuleType(label.getValue()));
     }
@@ -284,7 +284,7 @@ public class GraknTxPropertyTest {
     }
 
     @Property
-    public void whenCallingClose_TheGraphIsClosed(GraknTx graph) throws InvalidGraphException {
+    public void whenCallingClose_TheGraphIsClosed(GraknTx graph) throws InvalidKBException {
         graph.close();
         assertTrue(graph.isClosed());
     }
@@ -296,8 +296,8 @@ public class GraknTxPropertyTest {
     public void whenSetRegexOnMetaResourceType_Throw(@Open GraknTx graph, String regex) {
         AttributeType resource = graph.admin().getMetaResourceType();
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.cannotSetRegex(resource).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.cannotSetRegex(resource).getMessage());
 
         resource.setRegex(regex);
     }
@@ -307,8 +307,8 @@ public class GraknTxPropertyTest {
             @Open GraknTx graph, @From(ResourceValues.class) Object value) {
         AttributeType resource = graph.admin().getMetaResourceType();
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
 
         resource.putAttribute(value);
     }
@@ -319,7 +319,7 @@ public class GraknTxPropertyTest {
         AttributeType resource = graph.admin().getMetaResourceType();
 
         // TODO: Test for a better error message
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
 
         //noinspection ResultOfMethodCallIgnored
         resource.sup();
@@ -327,14 +327,14 @@ public class GraknTxPropertyTest {
 
     @Property
     public void whenCallingHasWithMetaResourceType_ThrowMetaTypeImmutableException(
-            @Open GraknTx graph, @FromGraph Type type) {
+            @Open GraknTx graph, @FromTx Type type) {
         AttributeType resource = graph.admin().getMetaResourceType();
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())) {
-            exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+            exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         } else {
-            exception.expectMessage(GraphOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
+            exception.expectMessage(GraknTxOperationException.metaTypeImmutable(resource.getLabel()).getMessage());
         }
         type.attribute(resource);
     }

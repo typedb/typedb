@@ -30,7 +30,7 @@ import ai.grakn.concept.Thing;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraphLoader;
+import ai.grakn.util.SampleKBLoader;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -61,7 +61,7 @@ public class JsonMigratorTest {
 
     @Before
     public void setup(){
-        String keyspace = GraphLoader.randomKeyspace();
+        String keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
         migrator = Migrator.to(engine.uri(), keyspace);
     }

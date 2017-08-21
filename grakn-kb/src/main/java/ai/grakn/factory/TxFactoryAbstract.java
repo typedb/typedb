@@ -20,7 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -36,15 +36,15 @@ import static javax.annotation.meta.When.NEVER;
  * <p/>
  *
  * <p>
- *     Defines the abstract construction of Grakn graphs on top of Tinkerpop Graphs.
+ *     Defines the abstract construction of {@link GraknTx}s on top of Tinkerpop Graphs.
  *     For this factory to function a vendor specific implementation of a graph extending
  *     {@link GraknTxAbstract} must be provided. This must be provided with a matching TinkerPop {@link Graph}
- *     which is wrapped within the Grakn Graph
+ *     which is wrapped within the {@link GraknTx}
  * </p>
  *
  * @author fppt
  *
- * @param <M> A Graph Graph extending {@link GraknTxAbstract} and wrapping a Tinkerpop Graph
+ * @param <M> A {@link GraknTx} extending {@link GraknTxAbstract} and wrapping a Tinkerpop Graph
  * @param <G> A vendor implementation of a Tinkerpop {@link Graph}
  */
 abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> implements TxFactory<G> {
@@ -53,11 +53,11 @@ abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> 
     protected final String engineUrl;
     protected final Properties properties;
 
-    private M graknGraph = null;
-    private M batchLoadingGraknGraph = null;
+    private M graknTx = null;
+    private M graknTxBatchLoading = null;
     
-    G graph = null;
-    private G batchLoadingGraph = null;
+    G tx = null;
+    private G txBatchLoading = null;
 
     TxFactoryAbstract(String keyspace, String engineUrl, Properties properties){
         Objects.requireNonNull(keyspace);
@@ -74,18 +74,18 @@ abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> 
     @Override
     public synchronized M open(GraknTxType txType){
         if(GraknTxType.BATCH.equals(txType)){
-            checkOtherGraphOpen(graknGraph);
-            batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, txType);
-            return batchLoadingGraknGraph;
+            checkOtherGraphOpen(graknTx);
+            graknTxBatchLoading = getGraph(graknTxBatchLoading, txType);
+            return graknTxBatchLoading;
         } else {
-            checkOtherGraphOpen(batchLoadingGraknGraph);
-            graknGraph = getGraph(graknGraph, txType);
-            return graknGraph;
+            checkOtherGraphOpen(graknTxBatchLoading);
+            graknTx = getGraph(graknTx, txType);
+            return graknTx;
         }
     }
 
     private void checkOtherGraphOpen(GraknTx otherGraph){
-        if(otherGraph != null && !otherGraph.isClosed()) throw GraphOperationException.transactionOpen(otherGraph);
+        if(otherGraph != null && !otherGraph.isClosed()) throw GraknTxOperationException.transactionOpen(otherGraph);
     }
 
     private M getGraph(M graknGraph, GraknTxType txType){
@@ -94,7 +94,7 @@ abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> 
         if(graknGraph == null){
             graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading));
         } else {
-            if(!graknGraph.isClosed()) throw GraphOperationException.transactionOpen(graknGraph);
+            if(!graknGraph.isClosed()) throw GraknTxOperationException.transactionOpen(graknGraph);
 
             if(graknGraph.isSessionClosed()){
                 graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading));
@@ -108,11 +108,11 @@ abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> 
     @Override
     public synchronized G getTinkerPopGraph(boolean batchLoading){
         if(batchLoading){
-            batchLoadingGraph = getTinkerPopGraph(batchLoadingGraph, true);
-            return batchLoadingGraph;
+            txBatchLoading = getTinkerPopGraph(txBatchLoading, true);
+            return txBatchLoading;
         } else {
-            graph = getTinkerPopGraph(graph, false);
-            return graph;
+            tx = getTinkerPopGraph(tx, false);
+            return tx;
         }
     }
     G getTinkerPopGraph(G graph, boolean batchLoading){

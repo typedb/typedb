@@ -86,8 +86,8 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final MatchQuery withGraph(GraknTx graph) {
-        return new MatchQueryGraph(graph, this);
+    public final MatchQuery withTx(GraknTx tx) {
+        return new MatchQueryTx(tx, this);
     }
 
     @Override

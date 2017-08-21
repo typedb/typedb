@@ -9,7 +9,7 @@ permalink: /documentation/graql/graql-overview.html
 folder: documentation
 ---
 
-Graql enables users to write queries against a Grakn knowledge base leveraging the inherent semantics of the data. Concepts can be retrieved by specifying the patterns of types and relationships that identify them. Graql is declarative and therefore it handles the optimisation of the graph traversals needed to retrieve information.
+Graql enables users to write queries against a Grakn knowledge base leveraging the inherent semantics of the data. Concepts can be retrieved by specifying the patterns of types and relationships that identify them. Graql is declarative and therefore it handles the optimisation of the knowledge base queries needed to retrieve information.
 
 You can execute Graql in the [Graql Shell](graql-shell.html) or using [Java
 Graql](../developing-with-java/java-graql.html).

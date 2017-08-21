@@ -33,8 +33,8 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.hamcrest.Matchers;
@@ -78,16 +78,16 @@ public class DefineQueryTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext movies = SampleKBContext.preLoad(MovieKB.get());
 
     @Before
     public void setUp() {
-        qb = movieGraph.graph().graql();
+        qb = movies.tx().graql();
     }
 
     @After
     public void clear(){
-        movieGraph.rollback();
+        movies.rollback();
     }
 
     @Test
@@ -194,7 +194,7 @@ public class DefineQueryTest {
         //noinspection OptionalGetWithoutIsPresent
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
-        assertTrue(newType.plays().anyMatch(role -> role.equals(movieGraph.graph().getRole(roleTypeLabel))));
+        assertTrue(newType.plays().anyMatch(role -> role.equals(movies.tx().getRole(roleTypeLabel))));
 
         assertExists(qb, var().isa("new-type"));
     }
@@ -291,8 +291,8 @@ public class DefineQueryTest {
 
     @Test
     public void whenChangingTheSuperOfAnExistingConcept_ApplyTheChange() {
-        EntityType newType = movieGraph.graph().putEntityType("a-new-type");
-        EntityType movie = movieGraph.graph().getEntityType("movie");
+        EntityType newType = movies.tx().putEntityType("a-new-type");
+        EntityType movie = movies.tx().getEntityType("movie");
 
         qb.define(label("a-new-type").sub("movie")).execute();
         
@@ -338,14 +338,14 @@ public class DefineQueryTest {
 
     @Test
     public void whenSpecifyingExistingTypeWithIncorrectDataType_Throw() {
-        AttributeType name = movieGraph.graph().getAttributeType("name");
+        AttributeType name = movies.tx().getAttributeType("name");
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(
                 GraqlQueryException.insertPropertyOnExistingConcept("datatype", BOOLEAN, name).getMessage()
         );
 
-        movieGraph.graph().graql().define(label("name").datatype(BOOLEAN)).execute();
+        movies.tx().graql().define(label("name").datatype(BOOLEAN)).execute();
     }
 
     @Test
@@ -355,7 +355,7 @@ public class DefineQueryTest {
                 allOf(containsString("unexpected property"), containsString("datatype"), containsString("my-type"))
         );
 
-        movieGraph.graph().graql().define(label("my-type").sub("entity").datatype(BOOLEAN)).execute();
+        movies.tx().graql().define(label("my-type").sub("entity").datatype(BOOLEAN)).execute();
     }
 
     @Test
@@ -368,7 +368,7 @@ public class DefineQueryTest {
 
     @Test
     public void whenModifyingAThingInADefineQuery_Throw() {
-        ConceptId id = movieGraph.graph().getEntityType("movie").instances().iterator().next().getId();
+        ConceptId id = movies.tx().getEntityType("movie").instances().iterator().next().getId();
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(Matchers.anyOf(

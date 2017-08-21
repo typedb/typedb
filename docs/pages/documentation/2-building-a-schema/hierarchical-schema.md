@@ -188,7 +188,7 @@ This is quite useful because when we ask for all relatives we will be getting re
 ## Wrapping up 
 
 We could go into far more detail regarding our genealogy knowledge base but I will leave that to you.
-For the moment here is our more complex schema to get you started on making your own deeper ontologies. You can find the schema, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph):
+For the moment here is our more complex schema to get you started on making your own deeper ontologies. You can find the schema, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-knowledge-base):
 
 ```graql
 define
@@ -285,7 +285,7 @@ define
 
 We will continue to explore the development of a schema in the next section on defining a [rule-driven schema](./rule-driven-schema.html).
 
-You can find the complete schema for our genealogy knowledge base project, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
+You can find the complete schema for our genealogy knowledge base project, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-knowledge-base).
 
 ## Comments
 Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/22" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

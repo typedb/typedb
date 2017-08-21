@@ -113,7 +113,7 @@ Then continue to the `<dependencies>` section and make sure you have all the req
 
 Let's kick things off by defining a `Main` class inside the `ai.grakn.twitterexample` package. Aside from Twitter credentials, it contains a few important Grakn settings.
 
-First, we have decided to use an **in-memory knowledge base** for simplicity's sake — working with an in-memory graph frees us from having to set up a Grakn distribution in the local machine. The in-memory graph is not for storing data and will be lost once the program finishes execution. Second, the graph will be stored in a **keyspace** named `twitter-example`.
+First, we have decided to use an **in-memory knowledge base** for simplicity's sake — working with an in-memory knowledge base frees us from having to set up a Grakn distribution in the local machine. The in-memory graph is not for storing data and will be lost once the program finishes execution. Second, the graph will be stored in a **keyspace** named `twitter-example`.
 
 <!-- A lot of these examples are not valid Groovy, so they've been ignored in tests -->
 ```java-test-ignore
@@ -130,7 +130,7 @@ public class Main {
   private static final String accessTokenSecret = "...";
 
   // Grakn settings
-  private static final String graphImplementation = Grakn.IN_MEMORY;
+  private static final String implementation = Grakn.IN_MEMORY;
   private static final String keyspace = "twitter-example";
 
   public static void main(String[] args) {
@@ -143,7 +143,7 @@ We then define a `GraknSession` object in `main()`. Enclosing it in a `try-with-
 
 ```java-test-ignore
 public static void main(String[] args) {
-  try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
+  try (GraknSession session = Grakn.session(implementation, keyspace)) {
     // our code will go here
   }
 }
@@ -154,9 +154,9 @@ Following that, another equally important object for operating on the knowledge 
 ```java-test-ignore
 public class GraknTweetSchemaHelper {
   public static void withGraknTx(GraknSession session, Consumer<GraknTx> fn) {
-    GraknTx graphWriter = session.open(GraknTxType.WRITE);
-    fn.accept(graphWriter);
-    graphWriter.commit();
+    GraknTx tx = session.open(GraknTxType.WRITE);
+    fn.accept(tx);
+    tx.commit();
   }
 }
 ```
@@ -171,7 +171,7 @@ The `user` entity will hold the user's actual username in a **attribute** called
 
 Next we will define two **roles** - `posts` and `posted_by` to express that a `user` posts a `tweet`, and similarly, a `tweet` is posted by a `user`. We will tie this two roles by a **relationship** called `user-tweet-relationship`.
 
-The structure can be summarized by the following graph:
+The structure can be summarized by the following image:
 
 ![Schema](/images/working-with-tweets-schema.jpg)
 
@@ -228,7 +228,7 @@ Now invoke the method in `main` so the schema is created at the start of the app
 
 ```java-test-ignore
 public static void main(String[] args) {
-  try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
+  try (GraknSession session = Grakn.session(implememntation, keyspace)) {
     withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
   }
 }
@@ -321,7 +321,7 @@ Let's wrap up this section by adding the call to `listenToTwitterStreamAsync` in
 
 ```java-test-ignore
 public static void main(String[] args) {
-  try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
+  try (GraknSession session = Grakn.session(implementation, keyspace)) {
     withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
 
     listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
@@ -436,7 +436,7 @@ We're done with tweet insertion functionality! Next step: querying the stored da
 
 ```java-test-ignore
 public static void main(String[] args) {
-  try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
+  try (GraknSession session = Grakn.session(implementation, keyspace)) {
     withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
 
     listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
@@ -539,11 +539,11 @@ public class Main {
   private static final String accessTokenSecret = "...";
 
   // Grakn settings
-  private static final String graphImplementation = Grakn.IN_MEMORY;
+  private static final String implementation = Grakn.IN_MEMORY;
   private static final String keyspace = "twitter-example";
 
   public static void main(String[] args) {
-    try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
+    try (GraknSession session = Grakn.session(mplementation, keyspace)) {
       withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
 
       listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {

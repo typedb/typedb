@@ -19,7 +19,7 @@
 package ai.grakn.test.migration.owl;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -56,10 +56,10 @@ public class TestReasoning extends TestOwlGraknBase {
     private OWLReasoner hermit;
 
     @Before
-    public void loadOwlFiles() throws InvalidGraphException {
+    public void loadOwlFiles() throws InvalidKBException {
         OWLOntology family = loadOntologyFromResource("owl", "family.owl");
-        migrator.ontology(family).graph(graph).migrate();
-        migrator.graph().commit();
+        migrator.ontology(family).tx(tx).migrate();
+        migrator.tx().commit();
         hermit = new org.semanticweb.HermiT.Reasoner(new Configuration(), family);
     }
 
@@ -90,7 +90,7 @@ public class TestReasoning extends TestOwlGraknBase {
     }
 
     private QueryAnswers inferRelationGrakn(String relationId, String instanceId) {
-        QueryBuilder qb = migrator.graph().graql().infer(true).materialise(false);
+        QueryBuilder qb = migrator.tx().graql().infer(true).materialise(false);
         long gknStartTime = System.currentTimeMillis();
         String subjectRoleId = "owl-subject-" + relationId;
         String objectRoleId = "owl-object-" + relationId;
@@ -110,8 +110,8 @@ public class TestReasoning extends TestOwlGraknBase {
     @Ignore //TODO: Fix this test. Not sure why it is not working remotely
     @Test
     public void testFullReasoning(){
-        QueryBuilder qb = migrator.graph().graql().infer(false);
-        QueryBuilder iqb = migrator.graph().graql().infer(true).materialise(false);
+        QueryBuilder qb = migrator.tx().graql().infer(false);
+        QueryBuilder iqb = migrator.tx().graql().infer(true).materialise(false);
         String richardId = "richard_henry_steward_1897";
         String hasGreatUncleId = "op-hasGreatUncle";
         String explicitQuery = "match $x isa tPerson;" +

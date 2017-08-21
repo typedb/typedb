@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.user;
 
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import mjson.Json;
 
 import java.util.HashMap;
@@ -44,7 +44,7 @@ public class UsersHandler {
     private final Map<String, Json> usersMap = new HashMap<>();
     final String adminPassword;
 
-    public static UsersHandler create(String adminPassword, EngineGraknGraphFactory factory) {
+    public static UsersHandler create(String adminPassword, EngineGraknTxFactory factory) {
         return new SystemKeyspaceUsers(adminPassword, factory); // new UsersHandler();
     }
 

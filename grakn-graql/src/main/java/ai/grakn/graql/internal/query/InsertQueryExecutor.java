@@ -64,7 +64,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class InsertQueryExecutor {
 
-    private final GraknTx graph;
+    private final GraknTx tx;
 
     // A mutable map associating each `Var` to the `Concept` in the graph it refers to.
     private final Map<Var, Concept> concepts = new HashMap<>();
@@ -84,11 +84,11 @@ public class InsertQueryExecutor {
     // The method that is applied on every `VarProperty`
     private final Consumer<VarAndProperty> insertFunction;
 
-    private InsertQueryExecutor(GraknTx graph, ImmutableSet<VarAndProperty> properties,
+    private InsertQueryExecutor(GraknTx tx, ImmutableSet<VarAndProperty> properties,
                                 Partition<Var> equivalentVars,
                                 ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies,
                                 BiConsumer<VarAndProperty, InsertQueryExecutor> insertFunction) {
-        this.graph = graph;
+        this.tx = tx;
         this.properties = properties;
         this.equivalentVars = equivalentVars;
         this.dependencies = dependencies;
@@ -109,13 +109,13 @@ public class InsertQueryExecutor {
     static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph, Answer results) {
         return create(patterns, graph, VarAndProperty::insert).insertAll(results);
     }
-    
+
     static Answer defineAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
         return create(patterns, graph, VarAndProperty::define).insertAll(new QueryAnswer());
     }
 
     private static InsertQueryExecutor create(
-            Collection<VarPatternAdmin> patterns, GraknTx graph, 
+            Collection<VarPatternAdmin> patterns, GraknTx graph,
             BiConsumer<VarAndProperty, InsertQueryExecutor> insertFunction
     ) {
         ImmutableSet<VarAndProperty> properties =
@@ -412,8 +412,8 @@ public class InsertQueryExecutor {
         return Patterns.varPattern(var, propertiesOfVar.build());
     }
 
-    GraknTx graph() {
-        return graph;
+    GraknTx tx() {
+        return tx;
     }
 
     /**

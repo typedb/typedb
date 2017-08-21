@@ -67,9 +67,9 @@ public interface SumQuery extends ComputeQuery<Optional<Number>> {
     Optional<Number> execute();
 
     /**
-     * @param graph the graph to execute the query on
+     * @param tx the graph to execute the query on
      * @return a SumQuery with the graph set
      */
     @Override
-    SumQuery withGraph(GraknTx graph);
+    SumQuery withTx(GraknTx tx);
 }

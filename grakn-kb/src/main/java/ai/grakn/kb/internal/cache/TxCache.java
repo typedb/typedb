@@ -46,7 +46,7 @@ import java.util.Set;
 
 /**
  * <p>
- *     Tracks Graph Transaction Specific Variables
+ *     Tracks Transaction Specific Variables
  * </p>
  *
  * <p>
@@ -64,8 +64,8 @@ import java.util.Set;
  *
  */
 public class TxCache {
-    //Graph cache which is shared across multiple transactions
-    private final GraphCache graphCache;
+    //Cache which is shared across multiple transactions
+    private final GlobalCache globalCache;
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
@@ -96,8 +96,8 @@ public class TxCache {
     private GraknTxType txType;
     private String closedReason = null;
 
-    public TxCache(GraphCache graphCache) {
-        this.graphCache = graphCache;
+    public TxCache(GlobalCache globalCache) {
+        this.globalCache = globalCache;
     }
 
     /**
@@ -107,7 +107,7 @@ public class TxCache {
      */
     public void writeToGraphCache(boolean isSafe){
         //When a commit has occurred or a graph is read only all types can be overridden this is because we know they are valid.
-        if(isSafe) graphCache.readTxCache(this);
+        if(isSafe) globalCache.readTxCache(this);
 
         //When a commit has not occurred some checks are required
         //TODO: Fill our cache when not committing and when not read only graph.
@@ -128,8 +128,8 @@ public class TxCache {
      *
      */
     public void refreshSchemaCache(){
-        Map<Label, SchemaConcept> cachedSchemaSnapshot = graphCache.getCachedTypes();
-        Map<Label, LabelId> cachedLabelsSnapshot = graphCache.getCachedLabels();
+        Map<Label, SchemaConcept> cachedSchemaSnapshot = globalCache.getCachedTypes();
+        Map<Label, LabelId> cachedLabelsSnapshot = globalCache.getCachedLabels();
 
         //Read central cache into txCache cloning only base concepts. Sets clones later
         for (SchemaConcept type : cachedSchemaSnapshot.values()) {

@@ -35,11 +35,11 @@ public class EntityTypes extends AbstractTypeGenerator<EntityType> {
 
     @Override
     protected EntityType newSchemaConcept(Label label) {
-        return graph().putEntityType(label);
+        return tx().putEntityType(label);
     }
 
     @Override
     protected EntityType metaSchemaConcept() {
-        return graph().admin().getMetaEntityType();
+        return tx().admin().getMetaEntityType();
     }
 }

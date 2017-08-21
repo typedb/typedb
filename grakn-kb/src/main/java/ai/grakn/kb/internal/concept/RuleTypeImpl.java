@@ -55,12 +55,12 @@ public class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
         Objects.requireNonNull(then);
 
         return putInstance(Schema.BaseType.RULE,
-                () -> getRule(when, then), (vertex, type) -> vertex().graph().factory().buildRule(vertex, type, when, then));
+                () -> getRule(when, then), (vertex, type) -> vertex().tx().factory().buildRule(vertex, type, when, then));
     }
 
     @Nullable
     private Rule getRule(Pattern when, Pattern then) {
         String index = RuleImpl.generateRuleIndex(this, when, then);
-        return vertex().graph().getConcept(Schema.VertexProperty.INDEX, index);
+        return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
     }
 }

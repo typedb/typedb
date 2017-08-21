@@ -24,8 +24,8 @@ public class PhilosophersExampleIT {
 
     @BeforeClass
     public static void setUp() throws IOException {
-        GraknTx graph = Grakn.session("in-memory", "my-graph").open(GraknTxType.WRITE);
-        qb = graph.graql();
+        GraknTx tx = Grakn.session("in-memory", "my-graph").open(GraknTxType.WRITE);
+        qb = tx.graql();
         runQueries("src/examples/philosophers.gql");
     }
 
@@ -42,7 +42,7 @@ public class PhilosophersExampleIT {
     }
 
     @Test
-    public void testCynicismIsInTheGraph() {
+    public void testCynicismIsInTheKB() {
         assertEquals(1, qb.<MatchQuery>parse("match $x has name 'Cynicism';").stream().count());
     }
 

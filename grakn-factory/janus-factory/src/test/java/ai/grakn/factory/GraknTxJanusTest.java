@@ -25,7 +25,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Attribute;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxJanus;
 import com.google.common.collect.Iterators;
@@ -42,7 +42,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.ErrorMessage.GRAPH_CLOSED_ON_ACTION;
+import static ai.grakn.util.ErrorMessage.TX_CLOSED_ON_ACTION;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -106,8 +106,8 @@ public class GraknTxJanusTest extends JanusTestBase {
     public void whenAbortingTransaction_GraphIsClosedBecauseOfAbort(){
         graknTx.abort();
         assertTrue("Aborting transaction did not close the graph", graknTx.isClosed());
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graknTx.getKeyspace()));
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(TX_CLOSED_ON_ACTION.getMessage("closed", graknTx.getKeyspace()));
         graknTx.putEntityType("This should fail");
     }
 
@@ -132,8 +132,8 @@ public class GraknTxJanusTest extends JanusTestBase {
 
         graph.close();
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(TX_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
 
         //noinspection ResultOfMethodCallIgnored
         graph.getEntityType(entityTypeLabel);
@@ -254,7 +254,7 @@ public class GraknTxJanusTest extends JanusTestBase {
             graph.commit();
         }
 
-        expectedException.expect(GraphOperationException.class);
+        expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(IS_ABSTRACT.getMessage(label));
 
         try(GraknTx graph = factory.open(GraknTxType.WRITE)){

@@ -87,11 +87,11 @@ public class GraqlTraversalTest {
     private static final Fragment yTypeOfX = inIsa(null, y, x);
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
-    private static GraknTx graph;
+    private static GraknTx tx;
 
     @BeforeClass
     public static void setUp() {
-        graph = mock(GraknTx.class);
+        tx = mock(GraknTx.class);
 
         // We have to mock out the `subTypes` call because the shortcut edge optimisation checks it
 
@@ -102,7 +102,7 @@ public class GraqlTraversalTest {
         when(wife.subs()).thenAnswer(inv -> Stream.of(wife));
         when(wife.getLabel()).thenReturn(wifeLabel);
 
-        when(graph.getSchemaConcept(wifeLabel)).thenReturn(wife);
+        when(tx.getSchemaConcept(wifeLabel)).thenReturn(wife);
 
         Label marriageLabel = Label.of("marriage");
         RelationshipType marriage = mock(RelationshipType.class);
@@ -111,7 +111,7 @@ public class GraqlTraversalTest {
         when(marriage.subs()).thenAnswer(inv -> Stream.of(marriage));
         when(marriage.getLabel()).thenReturn(marriageLabel);
 
-        when(graph.getSchemaConcept(marriageLabel)).thenReturn(marriage);
+        when(tx.getSchemaConcept(marriageLabel)).thenReturn(marriage);
     }
 
     @Test
@@ -279,7 +279,7 @@ public class GraqlTraversalTest {
     }
 
     private static GraqlTraversal semiOptimal(Pattern pattern) {
-        return GreedyTraversalPlan.createTraversal(pattern.admin(), graph);
+        return GreedyTraversalPlan.createTraversal(pattern.admin(), tx);
     }
 
     private static GraqlTraversal traversal(Fragment... fragments) {
@@ -296,7 +296,7 @@ public class GraqlTraversalTest {
         Collection<Conjunction<VarPatternAdmin>> patterns = pattern.admin().getDisjunctiveNormalForm().getPatterns();
 
         List<Set<List<Fragment>>> collect = patterns.stream()
-                .map(conjunction -> new ConjunctionQuery(conjunction, graph))
+                .map(conjunction -> new ConjunctionQuery(conjunction, tx))
                 .map(ConjunctionQuery::allFragmentOrders)
                 .collect(toList());
 

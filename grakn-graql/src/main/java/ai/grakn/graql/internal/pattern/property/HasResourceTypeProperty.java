@@ -163,7 +163,7 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
         Label label = this.resourceType().getTypeLabel().orElse(null);
 
         Var predicateVar = var().asUserDefined();
-        SchemaConcept schemaConcept = parent.graph().getSchemaConcept(label);
+        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
         IdPredicate predicate = new IdPredicate(predicateVar, schemaConcept, parent);
         //isa part
         VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();

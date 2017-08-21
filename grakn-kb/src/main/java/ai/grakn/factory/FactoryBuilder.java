@@ -29,11 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p>
- *     Builds a Grakn Graph {@link TxFactory}
+ *     Builds a {@link TxFactory}
  * </p>
  *
  * <p>
- *     Builds a Grakn Graph Factory which is locked to a specific keyspace and engine URL.
+ *     Builds a {@link TxFactory} which is locked to a specific keyspace and engine URL.
  *     This uses refection in order to dynamically build any vendor specific factory which implements the
  *     {@link TxFactory} API.
  *

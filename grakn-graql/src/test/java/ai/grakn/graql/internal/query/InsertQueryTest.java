@@ -28,7 +28,7 @@ import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
@@ -38,8 +38,8 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -88,16 +88,16 @@ public class InsertQueryTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext movieKB = SampleKBContext.preLoad(MovieKB.get());
 
     @Before
     public void setUp() {
-        qb = movieGraph.graph().graql();
+        qb = movieKB.tx().graql();
     }
 
     @After
     public void clear(){
-        movieGraph.rollback();
+        movieKB.rollback();
     }
 
     @Test
@@ -288,7 +288,7 @@ public class InsertQueryTest {
         VarPattern vars = var("x").isa(ruleTypeId).when(when).then(then);
         qb.insert(vars).execute();
 
-        RuleType ruleType = movieGraph.graph().getRuleType(ruleTypeId);
+        RuleType ruleType = movieKB.tx().getRuleType(ruleTypeId);
         boolean found = ruleType.instances().
                 anyMatch(rule -> when.equals(rule.getWhen()) && then.equals(rule.getThen()));
 
@@ -301,7 +301,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testKeyCorrectUsage() throws InvalidGraphException {
+    public void testKeyCorrectUsage() throws InvalidKBException {
         // This should only run on tinker because it commits
         assumeTrue(GraknTestSetup.usingTinker());
 
@@ -314,7 +314,7 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidGraphException {
+    public void whenInsertingAThingWithTwoKeyResources_Throw() throws InvalidKBException {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.define(
@@ -326,13 +326,13 @@ public class InsertQueryTest {
                 var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
         ).execute();
 
-        exception.expect(InvalidGraphException.class);
-        movieGraph.graph().commit();
+        exception.expect(InvalidKBException.class);
+        movieKB.tx().commit();
     }
 
     @Ignore // TODO: Un-ignore this when constraints are designed and implemented
     @Test
-    public void testKeyUniqueValue() throws InvalidGraphException {
+    public void testKeyUniqueValue() throws InvalidKBException {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.define(
@@ -345,12 +345,12 @@ public class InsertQueryTest {
                 var("y").isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
 
-        exception.expect(InvalidGraphException.class);
-        movieGraph.graph().commit();
+        exception.expect(InvalidKBException.class);
+        movieKB.tx().commit();
     }
 
     @Test
-    public void testKeyRequiredOwner() throws InvalidGraphException {
+    public void testKeyRequiredOwner() throws InvalidKBException {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.define(
@@ -360,8 +360,8 @@ public class InsertQueryTest {
 
         qb.insert(var().isa("a-new-type")).execute();
 
-        exception.expect(InvalidGraphException.class);
-        movieGraph.graph().commit();
+        exception.expect(InvalidKBException.class);
+        movieKB.tx().commit();
     }
 
     @Test
@@ -512,8 +512,8 @@ public class InsertQueryTest {
         Thing muppets = results.get(0).get("m").asThing();
         Relationship relationship = results.get(0).get("r").asRelationship();
 
-        Role clusterOfProduction = movieGraph.graph().getRole("cluster-of-production");
-        Role productionWithCluster = movieGraph.graph().getRole("production-with-cluster");
+        Role clusterOfProduction = movieKB.tx().getRole("cluster-of-production");
+        Role productionWithCluster = movieKB.tx().getRole("production-with-cluster");
 
         assertEquals(relationship.rolePlayers().collect(toSet()), ImmutableSet.of(cluster, godfather, muppets));
         assertEquals(relationship.rolePlayers(clusterOfProduction).collect(toSet()), ImmutableSet.of(cluster));
@@ -522,42 +522,42 @@ public class InsertQueryTest {
 
     @Test(expected = Exception.class)
     public void matchInsertNullVar() {
-        movieGraph.graph().graql().match(var("x").isa("movie")).insert((VarPattern) null).execute();
+        movieKB.tx().graql().match(var("x").isa("movie")).insert((VarPattern) null).execute();
     }
 
     @Test(expected = Exception.class)
     public void matchInsertNullCollection() {
-        movieGraph.graph().graql().match(var("x").isa("movie")).insert((Collection<? extends VarPattern>) null).execute();
+        movieKB.tx().graql().match(var("x").isa("movie")).insert((Collection<? extends VarPattern>) null).execute();
     }
 
     @Test
     public void whenMatchInsertingAnEmptyPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
-        movieGraph.graph().graql().match(var()).insert(Collections.EMPTY_SET).execute();
+        movieKB.tx().graql().match(var()).insert(Collections.EMPTY_SET).execute();
     }
 
     @Test(expected = Exception.class)
     public void insertNullVar() {
-        movieGraph.graph().graql().insert((VarPattern) null).execute();
+        movieKB.tx().graql().insert((VarPattern) null).execute();
     }
 
     @Test(expected = Exception.class)
     public void insertNullCollection() {
-        movieGraph.graph().graql().insert((Collection<? extends VarPattern>) null).execute();
+        movieKB.tx().graql().insert((Collection<? extends VarPattern>) null).execute();
     }
 
     @Test
     public void whenInsertingAnEmptyPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
-        movieGraph.graph().graql().insert(Collections.EMPTY_SET).execute();
+        movieKB.tx().graql().insert(Collections.EMPTY_SET).execute();
     }
 
     @Test
     public void whenSettingTwoTypes_Throw() {
-        EntityType movie = movieGraph.graph().getEntityType("movie");
-        EntityType person = movieGraph.graph().getEntityType("person");
+        EntityType movie = movieKB.tx().getEntityType("movie");
+        EntityType person = movieKB.tx().getEntityType("person");
 
         // We don't know in what order the message will be
         exception.expect(GraqlQueryException.class);
@@ -566,20 +566,20 @@ public class InsertQueryTest {
                 GraqlQueryException.insertMultipleProperties("isa", person, movie).getMessage()
         ));
 
-        movieGraph.graph().graql().insert(var("x").isa("movie"), var("x").isa("person")).execute();
+        movieKB.tx().graql().insert(var("x").isa("movie"), var("x").isa("person")).execute();
     }
 
     @Test
     public void whenSpecifyingExistingConceptIdWithIncorrectType_Throw() {
-        EntityType movie = movieGraph.graph().getEntityType("movie");
-        EntityType person = movieGraph.graph().getEntityType("person");
+        EntityType movie = movieKB.tx().getEntityType("movie");
+        EntityType person = movieKB.tx().getEntityType("person");
 
         Concept aMovie = movie.instances().iterator().next();
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
 
-        movieGraph.graph().graql().insert(var("x").id(aMovie.getId()).isa("person")).execute();
+        movieKB.tx().graql().insert(var("x").id(aMovie.getId()).isa("person")).execute();
     }
 
     @Test

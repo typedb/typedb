@@ -50,14 +50,14 @@ abstract class DefineQueryImpl implements DefineQuery {
     }
 
     @Override
-    public Query<Answer> withGraph(GraknTx tx) {
+    public Query<Answer> withTx(GraknTx tx) {
         return DefineQueryImpl.of(varPatterns(), tx);
     }
 
     @Override
     public Answer execute() {
         GraknTx tx = tx();
-        if (tx == null) throw GraqlQueryException.noGraph();
+        if (tx == null) throw GraqlQueryException.noTx();
 
         ImmutableList<VarPatternAdmin> allPatterns =
                 varPatterns().stream().flatMap(v -> v.innerVarPatterns().stream()).collect(toImmutableList());

@@ -18,6 +18,7 @@
 
 package ai.grakn.kb.internal;
 
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -27,11 +28,11 @@ import java.util.Properties;
 
 /**
  * <p>
- *     A Grakn Graph using {@link TinkerGraph} as a vendor backend.
+ *     A {@link GraknTx} using {@link TinkerGraph} as a vendor backend.
  * </p>
  *
  * <p>
- *     Wraps up a {@link TinkerGraph} as a method of storing the Grakn Graph object Model.
+ *     Wraps up a {@link TinkerGraph} as a method of storing the {@link GraknTx} object Model.
  *     With this vendor some exceptions are in place:
  *     1. Transactions do not exists and all threads work on the same graph at the same time.
  * </p>

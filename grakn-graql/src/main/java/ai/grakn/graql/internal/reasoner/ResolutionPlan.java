@@ -138,7 +138,7 @@ public final class ResolutionPlan {
      */
     public static LinkedList<ReasonerQueryImpl> getResolutionPlanFromTraversal(ReasonerQueryImpl query){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
-        GraknTx graph = query.graph();
+        GraknTx graph = query.tx();
 
         Map<VarProperty, Atom> propertyMap = new HashMap<>();
         query.getAtoms(Atom.class)
@@ -181,7 +181,7 @@ public final class ResolutionPlan {
      */
     public static LinkedList<ReasonerQueryImpl> getResolutionPlan(ReasonerQueryImpl query){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
-        GraknTx graph = query.graph();
+        GraknTx graph = query.tx();
 
         LinkedList<Atom> atoms = query.selectAtoms().stream()
                 .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))

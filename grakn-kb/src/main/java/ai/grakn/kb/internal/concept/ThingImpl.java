@@ -29,7 +29,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.Casting;
@@ -70,7 +70,7 @@ import java.util.stream.Stream;
 public abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
     private final Cache<Label> cachedInternalType = new Cache<>(Cacheable.label(), () -> {
         int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
-        Type type = vertex().graph().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
+        Type type = vertex().tx().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
         return type.getLabel();
     });
 
@@ -79,10 +79,10 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 flatMap(edge -> edge.target().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).findAny();
 
         if(!typeEdge.isPresent()) {
-            throw GraphOperationException.noType(this);
+            throw GraknTxOperationException.noType(this);
         }
 
-        return vertex().graph().factory().buildConcept(typeEdge.get().target());
+        return vertex().tx().factory().buildConcept(typeEdge.get().target());
     });
 
     ThingImpl(VertexElement vertexElement) {
@@ -101,7 +101,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     public void delete() {
         Set<Relationship> relationships = castingsInstance().map(Casting::getRelation).collect(Collectors.toSet());
 
-        vertex().graph().txCache().removedInstance(type().getId());
+        vertex().tx().txCache().removedInstance(type().getId());
         deleteNode();
 
         relationships.forEach(relation -> {
@@ -109,7 +109,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 relation.delete();
             } else {
                 RelationshipImpl rel = (RelationshipImpl) relation;
-                vertex().graph().txCache().trackForValidation(rel);
+                vertex().tx().txCache().trackForValidation(rel);
                 rel.cleanUp();
             }
         });
@@ -165,7 +165,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     Stream<Casting> castingsInstance(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).
-                map(edge -> vertex().graph().factory().buildCasting(edge));
+                map(edge -> vertex().tx().factory().buildCasting(edge));
     }
 
     <X extends Thing> Stream<X> getShortcutNeighbours(){
@@ -179,10 +179,10 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         GraphTraversal<Object, Vertex> resourceEdgeTraversal = __.outE(Schema.EdgeLabel.RESOURCE.getLabel()).inV();
 
         //noinspection unchecked
-        return vertex().graph().getTinkerTraversal().V().
+        return vertex().tx().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
                 union(shortcutTraversal, resourceEdgeTraversal).toStream().
-                map(vertex -> vertex().graph().buildConcept(vertex));
+                map(vertex -> vertex().tx().buildConcept(vertex));
     }
 
     /**
@@ -196,7 +196,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     private Stream<Relationship> reifiedRelations(Role... roles){
-        GraphTraversal<Vertex, Vertex> traversal = vertex().graph().getTinkerTraversal().V().
+        GraphTraversal<Vertex, Vertex> traversal = vertex().tx().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue());
 
         if(roles.length == 0){
@@ -207,7 +207,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                     has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).outV();
         }
 
-        return traversal.toStream().map(vertex -> vertex().graph().buildConcept(vertex));
+        return traversal.toStream().map(vertex -> vertex().tx().buildConcept(vertex));
     }
 
     private Stream<Relationship> edgeRelations(Role... roles){
@@ -216,12 +216,12 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         if(!roleSet.isEmpty()){
             stream = stream.filter(edge -> {
-                Role roleOwner = vertex().graph().getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID)));
+                Role roleOwner = vertex().tx().getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID)));
                 return roleSet.contains(roleOwner);
             });
         }
 
-        return stream.map(edge -> vertex().graph().factory().buildRelation(edge));
+        return stream.map(edge -> vertex().tx().factory().buildRelation(edge));
     }
 
     @Override
@@ -244,16 +244,16 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
 
         Label label = attribute.type().getLabel();
-        RelationshipType hasResource = vertex().graph().getSchemaConcept(has.getLabel(label));
-        Role hasResourceOwner = vertex().graph().getSchemaConcept(hasOwner.getLabel(label));
-        Role hasResourceValue = vertex().graph().getSchemaConcept(hasValue.getLabel(label));
+        RelationshipType hasResource = vertex().tx().getSchemaConcept(has.getLabel(label));
+        Role hasResourceOwner = vertex().tx().getSchemaConcept(hasOwner.getLabel(label));
+        Role hasResourceValue = vertex().tx().getSchemaConcept(hasValue.getLabel(label));
 
         if(hasResource == null || hasResourceOwner == null || hasResourceValue == null || type().plays().noneMatch(play -> play.equals(hasResourceOwner))){
-            throw GraphOperationException.hasNotAllowed(this, attribute);
+            throw GraknTxOperationException.hasNotAllowed(this, attribute);
         }
 
         EdgeElement resourceEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.RESOURCE);
-        vertex().graph().factory().buildRelation(resourceEdge, hasResource, hasResourceOwner, hasResourceValue);
+        vertex().tx().factory().buildRelation(resourceEdge, hasResource, hasResourceOwner, hasResourceValue);
 
         return getThis();
     }

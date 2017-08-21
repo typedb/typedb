@@ -43,25 +43,25 @@ public class ExamplesTest {
     }
 
     @After
-    public void closeGraph(){
+    public void close(){
         tx.commit();
         tx.close();
     }
 
     @Test
-    public void afterLoadingModernExample_MarkoIsInTheGraph() throws IOException {
+    public void afterLoadingModernExample_MarkoIsInTheKB() throws IOException {
         runInsertQuery("src/examples/modern.gql");
         assertExists(tx, var().has("name", "marko").isa("person"));
     }
 
     @Test
-    public void afterLoadingPokemonExample_PikachuIsInTheGraph() throws IOException {
+    public void afterLoadingPokemonExample_PikachuIsInTheKB() throws IOException {
         runInsertQuery("src/examples/pokemon.gql");
         assertExists(tx, var().rel(var().has("name", "Pikachu")).rel(var().has("name", "electric")).isa("has-type"));
     }
 
     @Test
-    public void afterLoadingGenealogyExample_MaryIsInTheGraph() throws IOException {
+    public void afterLoadingGenealogyExample_MaryIsInTheKB() throws IOException {
         runInsertQuery("src/examples/basic-genealogy.gql");
         assertExists(tx, var().has("identifier", "Mary Guthrie"));
     }

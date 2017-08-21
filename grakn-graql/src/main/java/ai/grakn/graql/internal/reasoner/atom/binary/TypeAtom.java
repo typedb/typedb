@@ -111,7 +111,7 @@ public abstract class TypeAtom extends Binary{
     @Override
     public SchemaConcept getSchemaConcept() {
         return getPredicate() != null ?
-                getParentQuery().graph().getConcept(getPredicate().getPredicate()) : null;
+                getParentQuery().tx().getConcept(getPredicate().getPredicate()) : null;
     }
 
     /**
