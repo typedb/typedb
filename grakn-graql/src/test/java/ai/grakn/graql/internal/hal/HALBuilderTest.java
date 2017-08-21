@@ -120,7 +120,7 @@ public class HALBuilderTest {
         });
     }
 
-    @Ignore("This test is very slow for some reason! 7 minutes locally") // TODO
+    @Ignore("This test is very slow for some reason! 7 minutes locally") // TODO, task 16749
     @Test
     public void whenSelectInferredRelationWithSingleVar_EnsureValidExplanationHrefIsContainedInResponse(){
         Json response = getHALRepresentation(genealogyGraph.graph(), "match $x isa marriage; offset 0; limit 5;");
