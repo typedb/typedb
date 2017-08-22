@@ -5,38 +5,6 @@
 
 insert
 
-#schema extension
-
-knows sub knows-trans;
-
-knows-trans sub relation
-	relates friend;
-
-friends-sharing-interest sub friends-sharing-interest-trans
-	relates friend;
-
-friends-sharing-interest-trans sub relation
-	relates friend;
-
-predecessor sub role;
-successor sub role;
-
-message-succession sub relation
-	relates predecessor
-    relates successor;
-
-trigger sub role;
-response sub role;
-
-friends-activity-propagation sub friends-activity-propagation-trans
-	relates trigger
-	relates response;
-
-friends-activity-propagation-trans sub relation
-	relates trigger
-	relates response;
-
-
 #1) Transitive closure of "knows"
 
 $rule0 isa inference-rule
