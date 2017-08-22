@@ -124,7 +124,7 @@ public class GraqlShell {
             HAS.name().substring(0, 1) + INFERENCE_RULE.name().substring(0, 1) +
             Strings.repeat(TYPE.name().substring(2, 3), 2) + Object.class.getSimpleName().substring(0, 1);
 
-    private static final int QUERY_CHUNK_SIZE = 1000;
+    private static final int QUERY_CHUNK_SIZE = 50000;
 
     /**
      * Array of available commands in shell
