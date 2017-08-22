@@ -20,6 +20,7 @@ package ai.grakn.engine.controller.graph;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
@@ -38,6 +39,7 @@ import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -62,6 +64,7 @@ public class EntityControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
 
+        new AttributeController(mockFactory, spark, metricRegistry);
         new EntityController(mockFactory, spark, metricRegistry);
     });
 
@@ -73,6 +76,10 @@ public class EntityControllerTest {
 
         when(mockGraph.getEntityType(anyString())).thenAnswer(invocation ->
             graphContext.tx().getEntityType(invocation.getArgument(0)));
+        when(mockGraph.getAttributeType(anyString())).thenAnswer(invocation ->
+            graphContext.tx().getAttributeType(invocation.getArgument(0)));
+        when(mockGraph.getConcept(any())).thenAnswer(invocation ->
+            graphContext.tx().getConcept(invocation.getArgument(0)));
 
         when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
         when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
@@ -90,14 +97,28 @@ public class EntityControllerTest {
         assertThat(responseBody.get("conceptId"), notNullValue());
     }
 
-//    @Test // TODO
-//    public void assignResourceToEntityShouldExecuteSuccessfully() {
-//        Response response = with()
-//            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-//            .put("/graph/entity/production/resource/tmdb-vote-count");
-//
-//        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
-//
-//        assertThat(response.statusCode(), equalTo(200));
-//    }
+    @Test
+    public void assignAttributeToEntityShouldExecuteSuccessfully() {
+        // add an entity
+        Response addEntityResponse = with()
+            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+            .post("/graph/entityType/person/entity");
+
+        // add an attribute
+        Response addAttributeResponse = with()
+            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+            .body(Json.object("attributeValue", "attributeValue").toString())
+            .post("/graph/attributeType/real-name/attribute");
+
+        // get their ids
+        String entityConceptId = Json.read(addEntityResponse.body().asString()).at("conceptId").asString();
+        String attributeConceptId = Json.read(addAttributeResponse.body().asString()).at("conceptId").asString();
+
+        // assign the attribute to the entity
+        Response response = with()
+            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+            .put("/graph/entity/" + entityConceptId + "/attribute/" + attributeConceptId);
+
+        assertThat(response.statusCode(), equalTo(200));
+    }
 }
