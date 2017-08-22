@@ -61,9 +61,9 @@ public class AttributeTypeController {
 
     private Json postAttributeType(Request request, Response response) {
         LOG.info("postAttributeType - request received.");
-        Map<String, Object> requestBody = Json.read(mandatoryBody(request)).asMap();
-        String attributeTypeLabel = (String) requestBody.get("attributeTypeLabel");
-        String attributeTypeDataTypeRaw = (String) requestBody.get("attributeTypeDataType");
+        Json requestBody = Json.read(mandatoryBody(request));
+        String attributeTypeLabel = requestBody.at("attributeType").at("label").asString();
+        String attributeTypeDataTypeRaw = requestBody.at("attributeType").at("type").asString();
         AttributeType.DataType<?> attributeTypeDataType = fromString(attributeTypeDataTypeRaw);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postAttributeType - attempting to add new attributeType " + attributeTypeLabel + " of type " + attributeTypeDataTypeRaw);
@@ -76,11 +76,7 @@ public class AttributeTypeController {
             LOG.info("postAttributeType - attribute type " + jsonAttributeTypeLabel +
                 " of type " + jsonAttributeTypeDataType + " with id " + jsonConceptId + " added successfully. request processed.");
             response.status(HttpStatus.SC_OK);
-            Json responseBody = Json.object(
-                "conceptId", jsonConceptId,
-                "attributeTypeLabel", jsonAttributeTypeLabel,
-                "attributeTypeDataType", jsonAttributeTypeDataType
-            );
+            Json responseBody = attributeTypeJson(jsonConceptId, jsonAttributeTypeLabel, jsonAttributeTypeDataType);
             return responseBody;
         }
     }
@@ -97,11 +93,7 @@ public class AttributeTypeController {
                 String jsonAttributeTypeLabel = attributeType.get().getLabel().getValue();
                 String jsonAttributeTypeDataType = toString(attributeType.get().getDataType());
                 response.status(HttpStatus.SC_OK);
-                Json responseBody = Json.object(
-                    "conceptId", jsonConceptId,
-                    "attributeTypeLabel", jsonAttributeTypeLabel,
-                    "attributeTypeDataType", jsonAttributeTypeDataType
-                );
+                Json responseBody = attributeTypeJson(jsonConceptId, jsonAttributeTypeLabel, jsonAttributeTypeDataType);
                 LOG.info("getAttributeType - attributeType found - " + jsonConceptId + ", " +
                     jsonAttributeTypeLabel + ", " + jsonAttributeTypeDataType + ". request processed.");
                 return responseBody;
@@ -139,5 +131,14 @@ public class AttributeTypeController {
         } else {
             throw GraknServerException.invalidQueryExplaination("invalid datatype supplied: '" + dataType + "'");
         }
+    }
+
+    private Json attributeTypeJson(String conceptId, String label, String dataType) {
+        return Json.object("attributeType", Json.object(
+                "conceptId", conceptId,
+                "label", label,
+                "type", dataType
+            )
+        );
     }
 }

@@ -28,6 +28,7 @@ import ai.grakn.test.kbs.MovieKB;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -88,19 +89,21 @@ public class AttributeTypeControllerTest {
     @Test
     public void postAttributeTypeShouldExecuteSuccessfully() {
         Json body = Json.object(
-            "attributeTypeLabel", "newAttributeType",
-            "attributeTypeDataType", "string"
-            );
+            "attributeType", Json.object(
+                "label", "newAttributeType",
+                "type", "string"
+            )
+        );
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace())
             .body(body.toString())
             .post("/graph/attributeType");
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        Json responseBody = Json.read(response.body().asString());
 
-        assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("attributeTypeLabel"), equalTo("newAttributeType"));
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+        assertThat(responseBody.at("attributeType").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("attributeType").at("label").asString(), equalTo("newAttributeType"));
     }
 
     @Test
@@ -109,11 +112,11 @@ public class AttributeTypeControllerTest {
             .queryParam(KEYSPACE, mockTx.getKeyspace())
             .get("/graph/attributeType/tmdb-vote-count");
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        Json responseBody = Json.read(response.body().asString());
 
-        assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("attributeTypeLabel"), equalTo("tmdb-vote-count"));
-        assertThat(responseBody.get("attributeTypeDataType"), equalTo("long"));
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+        assertThat(responseBody.at("attributeType").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("attributeType").at("label").asString(), equalTo("tmdb-vote-count"));
+        assertThat(responseBody.at("attributeType").at("type").asString(), equalTo("long"));
     }
 }

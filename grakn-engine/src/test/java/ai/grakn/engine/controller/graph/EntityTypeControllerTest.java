@@ -89,26 +89,27 @@ public class EntityTypeControllerTest {
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
             .get("/graph/entityType/production");
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.get("entityTypeLabel"), equalTo("production"));
+        assertThat(responseBody.at("entityType").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("entityType").at("label").asString(), equalTo("production"));
     }
 
     @Test
     public void postEntityTypeShouldExecuteSuccessfully() {
-        Json body = Json.object("entityTypeLabel", "newEntityType");
+        Json body = Json.object("entityType", Json.object("label", "newEntityType"));
 
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
             .body(body.toString())
             .post("/graph/entityType");
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("entityTypeLabel"), equalTo("newEntityType"));
+        assertThat(responseBody.at("entityType").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("entityType").at("label").asString(), equalTo("newEntityType"));
     }
 
 //    @Test // TODO: create a test once an implementation is made
@@ -127,7 +128,6 @@ public class EntityTypeControllerTest {
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
             .put("/graph/entityType/production/attribute/runtime");
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }
 

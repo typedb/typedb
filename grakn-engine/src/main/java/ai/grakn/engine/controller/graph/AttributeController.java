@@ -61,7 +61,7 @@ public class AttributeController {
         LOG.info("postAttribute - request received.");
         String attributeTypeLabel = mandatoryPathParameter(request, "attributeTypeLabel");
         Json requestBody = Json.read(mandatoryBody(request));
-        String attributeValue = (String) requestBody.asMap().get("attributeValue");
+        String attributeValue = requestBody.at("attribute").at("value").asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postAttribute - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
         try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {

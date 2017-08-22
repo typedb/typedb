@@ -76,7 +76,7 @@ public class EntityTypeController {
                 String jsonConceptId = entityType.get().getId().getValue();
                 String jsonEntityTypeLabel = entityType.get().getLabel().getValue();
                 response.status(HttpStatus.SC_OK);
-                Json responseBody = Json.object("conceptId", jsonConceptId, "entityTypeLabel", jsonEntityTypeLabel);
+                Json responseBody = entityTypeJson(jsonConceptId, jsonEntityTypeLabel);
                 LOG.info("getEntityType - entityType found - " + jsonConceptId + ", " + jsonEntityTypeLabel + ". request processed.");
                 return responseBody;
             } else {
@@ -90,7 +90,7 @@ public class EntityTypeController {
     private Json postEntityType(Request request, Response response) {
         LOG.info("postEntityType - request received");
         Json requestBody = Json.read(mandatoryBody(request));
-        String entityTypeLabel = (String) requestBody.asMap().get("entityTypeLabel");
+        String entityTypeLabel = requestBody.at("entityType").at("label").asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postEntityType - attempting to add entityType " + entityTypeLabel + " in keyspace " + keyspace);
         try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
@@ -99,7 +99,7 @@ public class EntityTypeController {
             response.status(HttpStatus.SC_OK);
             String jsonConceptId = entityType.getId().getValue();
             String jsonEntityTypeLabel = entityType.getLabel().getValue();
-            Json responseBody = Json.object("conceptId", jsonConceptId, "entityTypeLabel", jsonEntityTypeLabel);
+            Json responseBody = entityTypeJson(jsonConceptId, jsonEntityTypeLabel);
             LOG.info("postEntityType - entityType added - " + jsonConceptId + ", " + jsonEntityTypeLabel + ". request processed.");
             return responseBody;
         }
@@ -122,15 +122,11 @@ public class EntityTypeController {
 
                 EntityType entityType = entityTypeOptional.get();
                 AttributeType attributeType = attributeTypeOptional.get();
-                EntityType entityType1 = entityType.attribute(attributeType);
+                entityType.attribute(attributeType);
                 graph.commit();
-                Json responseBody = Json.object(
-                    "conceptId", entityType1.getId().getValue(),
-                    "entityTypeLabel", entityType1.getLabel().getValue()
-                );
                 LOG.info("assignAttributeTypeToEntityType - attributeType " + attributeTypeLabel  + " assigned to entityType " + entityTypeLabel + ". request processed.");
                 response.status(HttpStatus.SC_OK);
-                return responseBody;
+                return Json.nil();
             } else {
                 LOG.info("assignAttributeTypeToEntityType - either entityType or attributeType not found. request processed.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
@@ -156,15 +152,11 @@ public class EntityTypeController {
             if (entityTypeOptional.isPresent() && roleOptional.isPresent()) {
                 EntityType entityType = entityTypeOptional.get();
                 Role role = roleOptional.get();
-                EntityType entityType1 = entityType.plays(role);
+                entityType.plays(role);
                 graph.commit();
-                Json responseBody = Json.object(
-                    "conceptId", entityType1.getId().getValue(),
-                    "entityTypeLabel", entityType1.getLabel().getValue(),
-                    "roleLabel", role.getLabel()
-                );
+
                 response.status(HttpStatus.SC_OK);
-                return responseBody;
+                return Json.nil();
             } else {
                 LOG.info("assignAttributeTypeToEntityType - either entityType or role not found. request processed.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
@@ -175,5 +167,10 @@ public class EntityTypeController {
 
     private Json deleteRoleToEntitiyTypeAssignment(Request request, Response response) {
         throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId/attribute/:attributeTypeId");
+    }
+
+
+    private Json entityTypeJson(String conceptId, String label) {
+        return Json.object("entityType", Json.object("conceptId", conceptId, "label", label));
     }
 }
