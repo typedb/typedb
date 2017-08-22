@@ -89,7 +89,7 @@ public abstract class SubProperty extends AbstractVarProperty implements NamedPr
     @Override
     public PropertyExecutor define(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
-            SchemaConcept superConcept = executor.get(SubProperty.this.superType().var()).asSchemaConcept();
+            SchemaConcept superConcept = executor.get(superType().var()).asSchemaConcept();
 
             Optional<ConceptBuilder> builder = executor.tryBuilder(var);
 
