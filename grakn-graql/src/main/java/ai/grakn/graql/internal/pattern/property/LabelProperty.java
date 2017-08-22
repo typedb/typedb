@@ -77,9 +77,11 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
 
     @Override
     public PropertyExecutor define(Var var) throws GraqlQueryException {
-        return PropertyExecutor.builder(executor -> {
+        PropertyExecutor.Method method = executor -> {
             executor.builder(var).label(label());
-        }).produces(var).build();
+        };
+
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 
     @Override

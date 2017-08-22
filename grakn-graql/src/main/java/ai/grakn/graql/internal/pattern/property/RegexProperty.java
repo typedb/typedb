@@ -71,9 +71,11 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
 
     @Override
     public PropertyExecutor define(Var var) throws GraqlQueryException {
-        return PropertyExecutor.builder(executor -> {
+        PropertyExecutor.Method method = executor -> {
             executor.get(var).asAttributeType().setRegex(regex());
-        }).requires(var).build();
+        };
+
+        return PropertyExecutor.builder(method).requires(var).build();
     }
 
     @Override

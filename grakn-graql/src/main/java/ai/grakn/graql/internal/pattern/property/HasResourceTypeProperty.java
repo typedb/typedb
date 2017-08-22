@@ -139,7 +139,7 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
 
     @Override
     public PropertyExecutor define(Var var) throws GraqlQueryException {
-        return PropertyExecutor.builder(executor -> {
+        PropertyExecutor.Method method = executor -> {
             Type entityTypeConcept = executor.get(var).asType();
             AttributeType attributeTypeConcept = executor.get(resourceType().var()).asAttributeType();
 
@@ -148,7 +148,9 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
             } else {
                 entityTypeConcept.attribute(attributeTypeConcept);
             }
-        }).requires(var, resourceType().var()).build();
+        };
+
+        return PropertyExecutor.builder(method).requires(var, resourceType().var()).build();
     }
 
     @Override

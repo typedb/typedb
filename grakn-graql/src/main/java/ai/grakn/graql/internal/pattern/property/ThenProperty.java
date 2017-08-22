@@ -50,8 +50,10 @@ public abstract class ThenProperty extends RuleProperty {
 
     @Override
     public PropertyExecutor insert(Var var) throws GraqlQueryException {
-        return PropertyExecutor.builder(executor -> {
+        PropertyExecutor.Method method = executor -> {
             executor.builder(var).then(pattern());
-        }).produces(var).build();
+        };
+
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 }

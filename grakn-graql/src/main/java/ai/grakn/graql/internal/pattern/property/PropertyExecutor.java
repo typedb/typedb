@@ -26,8 +26,6 @@ import ai.grakn.graql.internal.query.QueryOperationExecutor;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.function.Consumer;
-
 // TODO: Add an example of 'undefine' to this description
 /**
  * A class describing an operation to perform using a {@link VarProperty}.
@@ -57,7 +55,7 @@ import java.util.function.Consumer;
 @AutoValue
 public abstract class PropertyExecutor {
 
-    public static PropertyExecutor.Builder builder(Consumer<QueryOperationExecutor> executeMethod) {
+    public static PropertyExecutor.Builder builder(Method executeMethod) {
         return new AutoValue_PropertyExecutor.Builder().executeMethod(executeMethod);
     }
 
@@ -72,7 +70,7 @@ public abstract class PropertyExecutor {
      *                 </p>
      */
     public void execute(QueryOperationExecutor executor) {
-        executeMethod().accept(executor);
+        executeMethod().execute(executor);
     }
 
     /**
@@ -96,11 +94,11 @@ public abstract class PropertyExecutor {
      */
     public abstract ImmutableSet<Var> producedVars();
 
-    abstract Consumer<QueryOperationExecutor> executeMethod();
+    abstract Method executeMethod();
 
     @AutoValue.Builder
     abstract static class Builder {
-        abstract Builder executeMethod(Consumer<QueryOperationExecutor> value);
+        abstract Builder executeMethod(Method value);
 
         abstract ImmutableSet.Builder<Var> requiredVarsBuilder();
 
@@ -127,5 +125,10 @@ public abstract class PropertyExecutor {
         }
 
         abstract PropertyExecutor build();
+    }
+
+    @FunctionalInterface
+    interface Method {
+        void execute(QueryOperationExecutor queryOperationExecutor);
     }
 }

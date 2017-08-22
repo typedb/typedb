@@ -90,10 +90,12 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
 
     @Override
     public PropertyExecutor define(Var var) throws GraqlQueryException {
-        return PropertyExecutor.builder(executor -> {
+        PropertyExecutor.Method method = executor -> {
             Role role = executor.get(this.role().var()).asRole();
             executor.get(var).asType().plays(role);
-        }).requires(var, role().var()).build();
+        };
+
+        return PropertyExecutor.builder(method).requires(var, role().var()).build();
     }
 
     @Override

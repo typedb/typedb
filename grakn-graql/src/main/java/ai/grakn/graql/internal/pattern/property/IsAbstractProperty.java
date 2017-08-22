@@ -74,14 +74,16 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
 
     @Override
     public PropertyExecutor define(Var var) throws GraqlQueryException {
-        return PropertyExecutor.builder(executor -> {
+        PropertyExecutor.Method method = executor -> {
             Concept concept = executor.get(var);
-            if(concept.isType()){
+            if (concept.isType()) {
                 concept.asType().setAbstract(true);
             } else {
                 throw GraqlQueryException.insertAbstractOnNonType(concept.asSchemaConcept());
             }
-        }).requires(var).build();
+        };
+
+        return PropertyExecutor.builder(method).requires(var).build();
     }
 
     @Override

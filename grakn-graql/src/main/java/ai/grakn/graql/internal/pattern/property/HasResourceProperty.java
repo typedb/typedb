@@ -130,11 +130,13 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
     @Override
     public PropertyExecutor insert(Var var) throws GraqlQueryException {
-        return PropertyExecutor.builder(executor -> {
+        PropertyExecutor.Method method = executor -> {
             Attribute attributeConcept = executor.get(resource().var()).asAttribute();
             Thing thing = executor.get(var).asThing();
             thing.attribute(attributeConcept);
-        }).requires(var, resource().var()).build();
+        };
+
+        return PropertyExecutor.builder(method).requires(var, resource().var()).build();
     }
 
     @Override

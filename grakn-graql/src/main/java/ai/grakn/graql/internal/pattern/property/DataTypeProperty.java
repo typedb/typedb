@@ -70,9 +70,11 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
 
     @Override
     public PropertyExecutor define(Var var) throws GraqlQueryException {
-        return PropertyExecutor.builder(executor -> {
+        PropertyExecutor.Method method = executor -> {
             executor.builder(var).dataType(dataType());
-        }).produces(var).build();
+        };
+
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 
     @Override

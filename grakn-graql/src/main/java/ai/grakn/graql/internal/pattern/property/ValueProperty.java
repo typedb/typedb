@@ -73,9 +73,11 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
 
     @Override
     public PropertyExecutor insert(Var var) throws GraqlQueryException {
-        return PropertyExecutor.builder(executor -> {
+        PropertyExecutor.Method method = executor -> {
             executor.builder(var).value(predicate().equalsValue().get()); // TODO
-        }).produces(var).build();
+        };
+
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 
     @Override
