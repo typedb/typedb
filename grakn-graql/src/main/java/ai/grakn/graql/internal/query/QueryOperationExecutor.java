@@ -32,6 +32,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.PropertyExecutor;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.util.Partition;
+import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -52,7 +53,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
@@ -87,24 +87,24 @@ public class QueryOperationExecutor {
     private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
 
     // The method that is applied on every `VarProperty`
-    private final Function<VarAndProperty, PropertyExecutor> executorFunction;
+    private final ExecutionType executionType;
 
     private QueryOperationExecutor(GraknTx tx, ImmutableSet<VarAndProperty> properties,
                                    Partition<Var> equivalentVars,
                                    ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies,
-                                   Function<VarAndProperty, PropertyExecutor> executorFunction) {
+                                   ExecutionType executionType) {
         this.tx = tx;
         this.properties = properties;
         this.equivalentVars = equivalentVars;
         this.dependencies = dependencies;
-        this.executorFunction = executorFunction;
+        this.executionType = executionType;
     }
 
     /**
      * Insert all the Vars
      */
     static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
-        return create(patterns, graph, VarAndProperty::insert).insertAll(new QueryAnswer());
+        return create(patterns, graph, ExecutionType.INSERT).insertAll(new QueryAnswer());
     }
 
     /**
@@ -112,16 +112,15 @@ public class QueryOperationExecutor {
      * @param results the result of a match query
      */
     static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph, Answer results) {
-        return create(patterns, graph, VarAndProperty::insert).insertAll(results);
+        return create(patterns, graph, ExecutionType.INSERT).insertAll(results);
     }
 
     static Answer defineAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
-        return create(patterns, graph, VarAndProperty::define).insertAll(new QueryAnswer());
+        return create(patterns, graph, ExecutionType.DEFINE).insertAll(new QueryAnswer());
     }
 
     private static QueryOperationExecutor create(
-            Collection<VarPatternAdmin> patterns, GraknTx graph,
-            Function<VarAndProperty, PropertyExecutor> executorFunction
+            Collection<VarPatternAdmin> patterns, GraknTx graph, ExecutionType executionType
     ) {
         ImmutableSet<VarAndProperty> properties =
                 patterns.stream().flatMap(VarAndProperty::fromPattern).collect(toImmutableSet());
@@ -138,7 +137,7 @@ public class QueryOperationExecutor {
         Multimap<VarAndProperty, Var> propDependencies = HashMultimap.create();
 
         for (VarAndProperty property : properties) {
-            for (Var requiredVar : executorFunction.apply(property).requiredVars()) {
+            for (Var requiredVar : property.executor(executionType).requiredVars()) {
                 propDependencies.put(property, requiredVar);
             }
         }
@@ -152,7 +151,7 @@ public class QueryOperationExecutor {
         Multimap<Var, VarAndProperty> varDependencies = HashMultimap.create();
 
         for (VarAndProperty property : properties) {
-            for (Var producedVar : executorFunction.apply(property).producedVars()) {
+            for (Var producedVar : property.executor(executionType).producedVars()) {
                 varDependencies.put(producedVar, property);
             }
         }
@@ -214,7 +213,7 @@ public class QueryOperationExecutor {
         Multimap<VarAndProperty, VarAndProperty> dependencies = composeMultimaps(propDependencies, varDependencies);
 
         return new QueryOperationExecutor(
-                graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies), executorFunction
+                graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies), executionType
         );
     }
 
@@ -252,7 +251,7 @@ public class QueryOperationExecutor {
     private Answer insertAll(Answer results) {
         concepts.putAll(results.map());
 
-        sortProperties().forEach(property -> executorFunction.apply(property).execute(this));
+        sortProperties().forEach(property -> property.executor(executionType).execute(this));
 
         conceptBuilders.forEach((var, builder) -> concepts.put(var, builder.build()));
 
@@ -429,6 +428,7 @@ public class QueryOperationExecutor {
      */
     @AutoValue
     static abstract class VarAndProperty {
+
         abstract Var var();
         abstract VarPropertyInternal property();
 
@@ -440,16 +440,23 @@ public class QueryOperationExecutor {
             return pattern.getProperties().map(prop -> VarAndProperty.of(pattern.var(), prop));
         }
 
-        PropertyExecutor insert() {
-            return property().insert(var());
-        }
-
-        PropertyExecutor define() {
-            return property().define(var());
+        private PropertyExecutor executor(ExecutionType executionType) {
+            switch (executionType) {
+                case INSERT:
+                    return property().insert(var());
+                case DEFINE:
+                    return property().define(var());
+                default:
+                    throw CommonUtil.unreachableStatement("enum switch statement");
+            }
         }
 
         boolean uniquelyIdentifiesConcept() {
             return property().uniquelyIdentifiesConcept();
         }
+    }
+
+    private enum ExecutionType {
+        INSERT, DEFINE
     }
 }
