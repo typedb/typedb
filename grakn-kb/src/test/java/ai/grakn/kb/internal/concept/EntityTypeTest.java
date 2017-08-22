@@ -428,4 +428,14 @@ public class EntityTypeTest extends TxTestBase {
         tx.putEntityType(reservedWord);
     }
 
+    @Test
+    public void whenRemovingAttributesFromAType_EnsureTheTypeNoLongerHasThoseAttributes(){
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.DataType.INTEGER);
+        EntityType person = tx.putEntityType("person").attribute(name).attribute(age);
+        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
+        person.deleteAttribute(name);
+        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(age));
+    }
+
 }

@@ -21,8 +21,8 @@ package ai.grakn.kb.internal.concept;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -321,11 +321,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return changingSuperAllowed;
     }
 
-    /**
-     *
-     * @param role The Role Type which the instances of this Type should no longer be allowed to play.
-     * @return The Type itself.
-     */
     @Override
     public T deletePlays(Role role) {
         checkSchemaMutationAllowed();
@@ -336,6 +331,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         trackRolePlayers();
 
         return getThis();
+    }
+
+    @Override
+    public T deleteAttribute(AttributeType attributeType){
+        return null;
     }
 
     /**

@@ -88,13 +88,22 @@ public interface EntityType extends Type{
     EntityType plays(Role role);
 
     /**
-     * Removes the Role to prevent instances of this EntityType from playing it.
+     * Removes the ability of this {@link EntityType} to play a specific {@link Role}
      *
-     * @param role The Role Type which the instances of this EntityType should no longer be allowed to play.
-     * @return The EntityType itself
+     * @param role The {@link Role} which the {@link Thing}s of this {@link EntityType} should no longer be allowed to play.
+     * @return The {@link EntityType} itself.
      */
     @Override
     EntityType deletePlays(Role role);
+
+    /**
+     * Removes the ability for {@link Thing}s of this {@link EntityType} to have {@link Attribute}s of type {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link EntityType} can no longer have
+     * @return The {@link EntityType} itself.
+     */
+    @Override
+    EntityType deleteAttribute(AttributeType attributeType);
 
     /**
      * Creates and returns a new Entity instance, whose direct type will be this type.
