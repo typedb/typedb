@@ -23,6 +23,7 @@ import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.test.DistributionContext;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import com.google.common.base.StandardSystemProperty;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -106,12 +107,12 @@ public class GraqlShellIT {
     @Test
     public void testStartAndExitShell() throws Exception {
         // Assert simply that the shell starts and terminates without errors
-        assertTrue(testShell("exit\n").matches("[\\s\\S]*>>> exit(\r\n?|\n)"));
+        assertTrue(runShellWithoutErrors("exit\n").matches("[\\s\\S]*>>> exit(\r\n?|\n)"));
     }
 
     @Test
     public void testHelpOption() throws Exception {
-        String result = testShell("", "--help");
+        String result = runShellWithoutErrors("", "--help");
 
         // Check for a few expected usage messages
         assertThat(
@@ -125,13 +126,13 @@ public class GraqlShellIT {
 
     @Test
     public void testVersionOption() throws Exception {
-        String result = testShell("", "--version");
+        String result = runShellWithoutErrors("", "--version");
         assertThat(result, containsString(expectedVersion));
     }
 
     @Test
     public void testExecuteOption() throws Exception {
-        String result = testShell("", "-e", "match $x isa entity; aggregate ask;");
+        String result = runShellWithoutErrors("", "-e", "match $x isa entity; aggregate ask;");
 
         // When using '-e', only results should be printed, no prompt or query
         assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
@@ -139,19 +140,18 @@ public class GraqlShellIT {
 
     @Test
     public void whenUsingExecuteOptionAndPassingQueriesWithoutVariables_PrintWarning() throws Exception {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        String result = testShell("", err, "-e", "match sub entity;");
+        ShellResponse response = runShell("", "-e", "match sub entity;");
 
         // There should still be a result...
-        assertThat(result, containsString("{}"));
+        assertThat(response.out(), containsString("{}"));
 
         // ...but also a warning
-        assertThat(err.toString(), containsString(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage()));
+        assertThat(response.err(), containsString(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage()));
     }
 
     @Test
     public void testDefaultKeyspace() throws Exception {
-        testShell("define im-in-the-default-keyspace sub entity;\ncommit\n");
+        runShellWithoutErrors("define im-in-the-default-keyspace sub entity;\ncommit\n");
 
         assertShellMatches(ImmutableList.of("-k", "grakn"),
                 "match im-in-the-default-keyspace sub entity; aggregate ask;",
@@ -161,13 +161,13 @@ public class GraqlShellIT {
 
     @Test
     public void testSpecificKeyspace() throws Exception {
-        testShell("define foo-foo sub entity;\ncommit\n", "-k", "foo");
-        testShell("define bar-bar sub entity;\ncommit\n", "-k", "bar");
+        runShellWithoutErrors("define foo-foo sub entity;\ncommit\n", "-k", "foo");
+        runShellWithoutErrors("define bar-bar sub entity;\ncommit\n", "-k", "bar");
 
-        String fooFooinFoo = testShell("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
-        String fooFooInBar = testShell("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
-        String barBarInFoo = testShell("match bar-bar sub entity; aggregate ask;\n", "-k", "foo");
-        String barBarInBar = testShell("match bar-bar sub entity; aggregate ask;\n", "-k", "bar");
+        String fooFooinFoo = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
+        String fooFooInBar = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
+        String barBarInFoo = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "foo");
+        String barBarInBar = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "bar");
         assertThat(fooFooinFoo, containsString("True"));
         assertThat(fooFooInBar, containsString("False"));
         assertThat(barBarInFoo, containsString("False"));
@@ -176,9 +176,8 @@ public class GraqlShellIT {
 
     @Test
     public void testFileOption() throws Exception {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        testShell("", err, "-f", "src/test/graql/shell test(weird name).gql");
-        assertEquals("", err.toString());
+        ShellResponse response = runShell("", "-f", "src/test/graql/shell test(weird name).gql");
+        assertEquals("", response.err());
     }
 
     @Test
@@ -203,7 +202,9 @@ public class GraqlShellIT {
 
     @Test
     public void testMatchQuery() throws Exception {
-        String[] result = testShell("match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";\nexit").split("\r\n?|\n");
+        String[] result = runShellWithoutErrors(
+                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";\nexit"
+        ).split("\r\n?|\n");
 
         // Make sure we find a few results (don't be too fussy about the output here)
         assertEquals(">>> match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", result[4]);
@@ -251,7 +252,7 @@ public class GraqlShellIT {
 
     @Test
     public void testAutocomplete() throws Exception {
-        String result = testShell("match $x isa \t");
+        String result = runShellWithoutErrors("match $x isa \t");
 
         // Make sure all the autocompleters are working (except shell commands because we are writing a query)
         assertThat(
@@ -265,7 +266,7 @@ public class GraqlShellIT {
 
     @Test
     public void testAutocompleteShellCommand() throws Exception {
-        String result = testShell("\t");
+        String result = runShellWithoutErrors("\t");
 
         // Make sure all the autocompleters are working (including shell commands because we are not writing a query)
         assertThat(result, allOf(containsString("type"), containsString("match"), containsString("exit")));
@@ -273,7 +274,7 @@ public class GraqlShellIT {
 
     @Test
     public void testAutocompleteFill() throws Exception {
-        String result = testShell("match $x sub thin\t;\n");
+        String result = runShellWithoutErrors("match $x sub thin\t;\n");
         assertThat(result, containsString(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()));
     }
 
@@ -315,10 +316,11 @@ public class GraqlShellIT {
 
     @Test
     public void testInvalidQuery() throws Exception {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        testShell("define movie sub entity; insert $moon isa movie; $europa isa $moon;\n", err);
+        ShellResponse response = runShell(
+                "define movie sub entity; insert $moon isa movie; $europa isa $moon;\n"
+        );
 
-        assertThat(err.toString(), allOf(containsString("not"), containsString("type")));
+        assertThat(response.err(), allOf(containsString("not"), containsString("type")));
     }
 
     @Test
@@ -338,7 +340,7 @@ public class GraqlShellIT {
         // Tinker graph doesn't support rollback
         assumeFalse(GraknTestSetup.usingTinker());
 
-        String[] result = testShell("insert E sub entity;\nrollback\nmatch $x label E;\n").split("\n");
+        String[] result = runShellWithoutErrors("insert E sub entity;\nrollback\nmatch $x label E;\n").split("\n");
 
         // Make sure there are no results for match query
         assertEquals(">>> match $x label E;", result[result.length-2]);
@@ -355,13 +357,17 @@ public class GraqlShellIT {
 
     @Test
     public void testGraqlOutput() throws Exception {
-        String result = testShell("", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "graql");
+        String result = runShellWithoutErrors(
+                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "graql"
+        );
         assertThat(result, allOf(containsString("$x"), containsString(Schema.MetaSchema.ENTITY.getLabel().getValue())));
     }
 
     @Test
     public void testJsonOutput() throws Exception {
-        String[] result = testShell("", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "json").split("\n");
+        String[] result = runShellWithoutErrors(
+                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "json"
+        ).split("\n");
         assertTrue("expected more than 5 results: " + Arrays.toString(result), result.length > 5);
         Json json = Json.read(result[0]);
         Json x = json.at("x");
@@ -371,7 +377,9 @@ public class GraqlShellIT {
 
     @Test
     public void testHALOutput() throws Exception {
-        String[] result = testShell("", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "hal").split("\n");
+        String[] result = runShellWithoutErrors(
+                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "hal"
+        ).split("\n");
         assertTrue("expected more than 5 results: " + Arrays.toString(result), result.length > 5);
         Json json = Json.read(result[0]);
         Json x = json.at("x");
@@ -384,7 +392,9 @@ public class GraqlShellIT {
         // Tinker graph doesn't support rollback
         assumeFalse(GraknTestSetup.usingTinker());
 
-        String result = testShell("insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity;\n");
+        String result = runShellWithoutErrors(
+                "insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity;\n"
+        );
         String[] lines = result.split("\n");
 
         // Make sure there are no results for match query
@@ -394,10 +404,9 @@ public class GraqlShellIT {
 
     @Test
     public void whenEngineIsNotRunning_ShowAnError() throws Exception {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        testShell("", err, "-r", "localhost:7654");
+        ShellResponse response = runShell("", "-r", "localhost:7654");
 
-        assertThat(err.toString(), containsString(ErrorMessage.COULD_NOT_CONNECT.getMessage()));
+        assertThat(response.err(), containsString(ErrorMessage.COULD_NOT_CONNECT.getMessage()));
     }
 
     @Test
@@ -411,7 +420,7 @@ public class GraqlShellIT {
         for (int i = 0; i < repeats; i ++) {
             String input = randomString(i);
             try {
-                testShellAllowErrors(input);
+                runShell(input);
             } catch (Throwable e) {
                 // We catch all exceptions so we can report exactly what input caused the error
                 throw new RuntimeException("Error when providing the following input to shell: [" + input + "]", e);
@@ -447,12 +456,12 @@ public class GraqlShellIT {
         try {
             String value = Strings.repeat("really-", 100000) + "long-value";
 
-            ByteArrayOutputStream err = new ByteArrayOutputStream();
-
             // Query has a syntax error
-            testShell("insert X sub resource datatype string; value '" + value + "' isa X;\n", err);
+            ShellResponse response = runShell(
+                    "insert X sub resource datatype string; value '" + value + "' isa X;\n"
+            );
 
-            assertThat(err.toString(), allOf(containsString("syntax error"), containsString(value)));
+            assertThat(response.err(), allOf(containsString("syntax error"), containsString(value)));
         } finally {
             showStdOutAndErr = true;
         }
@@ -460,16 +469,14 @@ public class GraqlShellIT {
 
     @Test
     public void testCommitError() throws Exception {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        String out = testShell("insert bob sub relation;\ncommit;\nmatch $x sub relation;\n", err);
-        assertFalse(out, err.toString().isEmpty());
+        ShellResponse response = runShell("insert bob sub relation;\ncommit;\nmatch $x sub relation;\n");
+        assertFalse(response.out(), response.err().isEmpty());
     }
 
     @Test
     public void testCommitErrorExecuteOption() throws Exception {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        String out = testShell("", err, "-e", "insert bob sub relation;");
-        assertFalse(out, err.toString().isEmpty());
+        ShellResponse response = runShell("", "-e", "insert bob sub relation;");
+        assertFalse(response.out(), response.err().isEmpty());
     }
 
     @Test
@@ -559,8 +566,8 @@ public class GraqlShellIT {
     @Test
     @Ignore("Causes Travis build to halt")
     public void whenRunningBatchLoad_LoadCompletes() throws Exception {
-        testShell("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
-        testShell("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
+        runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
+        runShellWithoutErrors("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
 
         assertShellMatches(ImmutableList.of("-k", "batch"),
                 "match $x isa movie; aggregate ask;",
@@ -571,7 +578,7 @@ public class GraqlShellIT {
     @Test
     @Ignore("Causes Travis build to halt")
     public void whenRunningBatchLoadAndAnErrorOccurs_PrintStatus() throws Exception {
-        testShell("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
+        runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
 
         assertShellMatches(ImmutableList.of("-k", "batch", "-b", "src/test/graql/batch-test-bad.gql"),
                 is("Status of batch: FAILED"),
@@ -583,42 +590,37 @@ public class GraqlShellIT {
 
     @Test
     public void whenUserMakesAMistake_SubsequentQueriesStillWork() throws Exception {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        String out = testShell(
+        ShellResponse response = runShell(
                 "match $x sub concet; aggregate count;\n" +
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate ask;\n",
-                err);
+                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate ask;\n"
+        );
 
-        assertThat(err.toString(), not(containsString("error")));
-        assertThat(out, containsString("True"));
+        assertThat(response.err(), not(containsString("error")));
+        assertThat(response.out(), containsString("True"));
     }
 
     @Test
     public void whenUserMakesAMistake_SubsequentErrorsAreTheSame() throws Exception {
         String query = "insert r sub resource datatype string; e sub entity has r has nothing;";
 
-        ByteArrayOutputStream err1 = new ByteArrayOutputStream();
-        testShell("", err1, "-e", query);
-        assertThat(err1.toString(), not(isEmptyString()));
+        String err1 = runShell("", "-e", query).err();
+        assertThat(err1, not(isEmptyString()));
 
-        ByteArrayOutputStream err2 = new ByteArrayOutputStream();
-        testShell("", err2, "-e", query);
-        assertEquals(err1.toString(), err2.toString());
+        String err2 = runShell("", "-e", query).err();
+        assertEquals(err1, err2);
     }
 
     @Test
     public void testDuplicateRelation() throws Exception {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        testShell(
+        String err = runShell(
                 "define R sub " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue() + ", relates R1, relates R2; R1 sub role; R2 sub role;\n" +
                         "define X sub entity, plays R1, plays R2;\n" +
                         "insert $x isa X; (R1: $x, R2: $x) isa R;\n" +
                         "match $x isa X; insert (R1: $x, R2: $x) isa R;\n" +
-                        "commit\n",
-                err
-        );
+                        "commit\n"
+        ).err();
 
-        assertThat(err.toString().toLowerCase(), allOf(
+        assertThat(err.toLowerCase(), allOf(
                 anyOf(containsString("exists"), containsString("one or more")),
                 containsString("relationships")
         ));
@@ -626,11 +628,10 @@ public class GraqlShellIT {
 
     @Test
     public void whenErrorOccurs_DoNotShowStackTrace() throws Exception {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        String out = testShell("match fofobjiojasd\n", err);
+        ShellResponse response = runShell("match fofobjiojasd\n");
 
-        assertFalse(out, err.toString().isEmpty());
-        assertThat(err.toString(), not(containsString(".java")));
+        assertFalse(response.out(), response.err().isEmpty());
+        assertThat(response.err(), not(containsString(".java")));
     }
 
     private static String randomString(int length) {
@@ -657,7 +658,7 @@ public class GraqlShellIT {
                 .map(obj -> (obj instanceof Matcher) ? (Matcher<String>) obj : is(">>> " + obj))
                 .collect(toList());
 
-        String output = testShell(input, arguments.toArray(new String[arguments.size()]));
+        String output = runShellWithoutErrors(input, arguments.toArray(new String[arguments.size()]));
 
         List<String> outputLines = Lists.newArrayList(output.replace(" \r", "").split("\n"));
 
@@ -670,25 +671,20 @@ public class GraqlShellIT {
         assertThat(outputLines, contains(matcherList));
     }
 
-    private String testShell(String input, String... args) throws Exception {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        String result = testShell(input, err, args);
-        String errMessage = err.toString();
+    private String runShellWithoutErrors(String input, String... args) throws Exception {
+        ShellResponse response = runShell(input, args);
+        String errMessage = response.err();
         assertTrue("Error: \"" + errMessage + "\"", errMessage.isEmpty());
-        return result;
+        return response.out();
     }
 
-    private String testShellAllowErrors(String input, String... args) throws Exception {
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        return testShell(input, err, args);
-    }
-
-    private String testShell(String input, OutputStream berr, String... args) throws Exception {
+    private ShellResponse runShell(String input, String... args) throws Exception {
         args = specifyUniqueKeyspace(args);
 
         InputStream in = new ByteArrayInputStream(input.getBytes());
 
         OutputStream bout = new ByteArrayOutputStream();
+        OutputStream berr = new ByteArrayOutputStream();
 
         OutputStream tout = bout;
         OutputStream terr = berr;
@@ -723,7 +719,7 @@ public class GraqlShellIT {
         err.flush();
 
 
-        return bout.toString();
+        return ShellResponse.of(bout.toString(), berr.toString());
     }
 
     // TODO: Remove this when we can clear graphs properly (TP #13745)
@@ -740,6 +736,16 @@ public class GraqlShellIT {
         argList.set(keyspaceIndex, argList.get(keyspaceIndex) + keyspaceSuffix);
 
         return argList.toArray(new String[argList.size()]);
+    }
+
+    @AutoValue
+    static abstract class ShellResponse {
+        abstract String out();
+        abstract String err();
+
+        static ShellResponse of(String out, String err) {
+            return new AutoValue_GraqlShellIT_ShellResponse(out, err);
+        }
     }
 }
 
