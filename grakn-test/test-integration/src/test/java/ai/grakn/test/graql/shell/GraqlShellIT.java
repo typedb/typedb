@@ -63,6 +63,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -70,7 +71,7 @@ import static org.junit.Assume.assumeFalse;
 public class GraqlShellIT {
 
     @ClassRule
-    public static final DistributionContext dist = DistributionContext.startInMemoryEngineProcess().inheritIO(false);
+    public static final DistributionContext dist = DistributionContext.startInMemoryEngineProcess().inheritIO(true);
 
     private static InputStream trueIn;
     private static PrintStream trueOut;
@@ -87,7 +88,7 @@ public class GraqlShellIT {
         trueIn = System.in;
         trueOut = System.out;
         trueErr = System.err;
-        
+
         // TODO: Get these tests working consistently on Jenkins - causes timeouts
         assumeFalse(GraknTestSetup.usingJanus());
     }
@@ -634,6 +635,18 @@ public class GraqlShellIT {
         assertThat(response.err(), not(containsString(".java")));
     }
 
+    @Test
+    public void whenErrorDoesNotOccurs_Return0() throws Exception {
+        ShellResponse response = runShell("match $x sub entity;\n");
+        assertEquals(0, response.exitCode());
+    }
+
+    @Test
+    public void whenErrorOccurs_Return1() throws Exception {
+        ShellResponse response = runShell("match fofobjiojasd\n");
+        assertEquals(1, response.exitCode());
+    }
+
     private static String randomString(int length) {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
@@ -698,6 +711,8 @@ public class GraqlShellIT {
         PrintStream out = new PrintStream(tout);
         PrintStream err = new PrintStream(terr);
 
+        Integer exitCode = null;
+
         try {
             System.out.flush();
             System.err.flush();
@@ -705,7 +720,7 @@ public class GraqlShellIT {
             System.setOut(out);
             System.setErr(err);
 
-            GraqlShell.runShell(args, expectedVersion, historyFile);
+            exitCode = GraqlShell.runShell(args, expectedVersion, historyFile);
         } catch (Exception e) {
             System.setErr(trueErr);
             e.printStackTrace();
@@ -718,8 +733,9 @@ public class GraqlShellIT {
         out.flush();
         err.flush();
 
+        assertNotNull(exitCode);
 
-        return ShellResponse.of(bout.toString(), berr.toString());
+        return ShellResponse.of(bout.toString(), berr.toString(), exitCode);
     }
 
     // TODO: Remove this when we can clear graphs properly (TP #13745)
@@ -742,9 +758,10 @@ public class GraqlShellIT {
     static abstract class ShellResponse {
         abstract String out();
         abstract String err();
+        abstract int exitCode();
 
-        static ShellResponse of(String out, String err) {
-            return new AutoValue_GraqlShellIT_ShellResponse(out, err);
+        static ShellResponse of(String out, String err, int exitCode) {
+            return new AutoValue_GraqlShellIT_ShellResponse(out, err, exitCode);
         }
     }
 }
