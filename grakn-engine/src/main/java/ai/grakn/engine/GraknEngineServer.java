@@ -131,7 +131,7 @@ public class GraknEngineServer implements AutoCloseable {
         logStartMessage(
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER),
-                prop.getProperty(GraknEngineConfig.REDIS_HOST));
+                prop.getProperty(REDIS_HOST));
         synchronized (this){
             lockAndInitializeSystemSchema();
             startHTTP();
@@ -389,6 +389,5 @@ public class GraknEngineServer implements AutoCloseable {
         LOG.info("\n" + String.format(GraknEngineConfig.GRAKN_ASCII, address));
         LOG.info("\n==================================================");
         LOG.info("\nTasks handled in {}", redisHost);
-
     }
 }

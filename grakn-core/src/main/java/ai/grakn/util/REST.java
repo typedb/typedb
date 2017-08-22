@@ -200,15 +200,8 @@ public class REST {
          */
         public static class Task {
             public static final String STACK_TRACE = "stackTrace";
-            public static final String EXCEPTION = "exception";
-            public static final String RECURRING = "recurring";
-            public static final String INTERVAL = "interval";
-            public static final String ENGINE_ID = "engineID";
             public static final String ID = "id";
             public static final String STATUS = "status";
-            public static final String CREATOR = "creator";
-            public static final String CLASS_NAME = "className";
-            public static final String RUN_AT = "runAt";
         }
     }
 

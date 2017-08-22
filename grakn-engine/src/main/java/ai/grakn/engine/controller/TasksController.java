@@ -21,37 +21,35 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
+import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
+import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.util.ConcurrencyUtil;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.Task.ID;
+import static ai.grakn.util.REST.Response.Task.STATUS;
+import static ai.grakn.util.REST.WebPath.Tasks.GET;
+import static ai.grakn.util.REST.WebPath.Tasks.STOP;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import mjson.Json;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.http.entity.ContentType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import spark.Request;
-import spark.Response;
-import spark.Service;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
+import static java.lang.Long.parseLong;
 import java.time.Duration;
 import java.time.Instant;
+import static java.time.Instant.ofEpochMilli;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -61,27 +59,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
-
-import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
-import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static ai.grakn.util.REST.Response.Task.CLASS_NAME;
-import static ai.grakn.util.REST.Response.Task.CREATOR;
-import static ai.grakn.util.REST.Response.Task.ENGINE_ID;
-import static ai.grakn.util.REST.Response.Task.EXCEPTION;
-import static ai.grakn.util.REST.Response.Task.ID;
-import static ai.grakn.util.REST.Response.Task.INTERVAL;
-import static ai.grakn.util.REST.Response.Task.RECURRING;
-import static ai.grakn.util.REST.Response.Task.RUN_AT;
-import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
-import static ai.grakn.util.REST.Response.Task.STATUS;
-import static ai.grakn.util.REST.WebPath.Tasks.GET;
-import static ai.grakn.util.REST.WebPath.Tasks.STOP;
-import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import static com.codahale.metrics.MetricRegistry.name;
-import static java.lang.Long.parseLong;
-import static java.time.Instant.ofEpochMilli;
 import static java.util.stream.Collectors.toList;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.entity.ContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import spark.Request;
+import spark.Response;
+import spark.Service;
 
 /**
  * <p>
@@ -183,7 +173,7 @@ public class TasksController {
         try {
             response.status(200);
             response.type(APPLICATION_JSON);
-            return serialiseStateFull(manager.storage().getState(TaskId.of(id)));
+            return serialiseStateSubset(manager.storage().getState(TaskId.of(id)));
         } finally {
             context.stop();
         }
@@ -421,19 +411,7 @@ public class TasksController {
     private Json serialiseStateSubset(TaskState state) {
         return Json.object()
                 .set(ID, state.getId().getValue())
-                .set(STATUS, state.status().name())
-                .set(CREATOR, state.creator())
-                .set(CLASS_NAME, state.taskClass().getName())
-                .set(RUN_AT, state.schedule().runAt().toEpochMilli())
-                .set(RECURRING, state.schedule().isRecurring());
-    }
-
-    private Json serialiseStateFull(TaskState state) {
-        return serialiseStateSubset(state)
-                .set(INTERVAL, state.schedule().interval().map(Duration::toMillis).orElse(null))
-                .set(EXCEPTION, state.exception())
-                .set(STACK_TRACE, state.stackTrace())
-                .set(ENGINE_ID, state.engineID() != null ? state.engineID().value() : null);
+                .set(STATUS, state.status().name());
     }
 
     private static class TaskStateWithConfiguration {
