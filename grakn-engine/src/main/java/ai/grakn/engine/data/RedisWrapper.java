@@ -65,6 +65,8 @@ public class RedisWrapper {
         private boolean useSentinel = false;
         private Set<String> uriSet = new HashSet<>();
         private String masterName = null;
+
+        // This is the number of simultaneous connections to Jedis
         private int poolSize = 32;
 
         public Builder setUseSentinel(boolean useSentinel) {

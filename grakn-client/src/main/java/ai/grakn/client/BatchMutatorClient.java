@@ -265,7 +265,7 @@ public class BatchMutatorClient {
 
         TaskId taskId;
 
-        Retryer<TaskId> sendRetryer = RetryerBuilder.<TaskId>newBuilder()
+        Retryer<TaskId> sendQueryRetry = RetryerBuilder.<TaskId>newBuilder()
                 .retryIfExceptionOfType(IOException.class)
                 .retryIfRuntimeException()
                 .withStopStrategy(StopStrategies.stopAfterAttempt(retry ? MAX_RETRIES : 1))
@@ -273,7 +273,7 @@ public class BatchMutatorClient {
                 .build();
 
         try {
-            taskId = sendRetryer.call(callable);
+            taskId = sendQueryRetry.call(callable);
         } catch (Exception e) {
             LOG.error("Error while executing queries:\n{}", queries);
             throw new RuntimeException(e);
