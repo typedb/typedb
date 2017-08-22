@@ -19,12 +19,15 @@
 package ai.grakn.test.engine;
 
 import ai.grakn.engine.GraknEngineConfig;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
+import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.util.EmbeddedRedis;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -61,7 +64,7 @@ public class GraknEngineServerTest {
         // connect to Zookeeper exception (that has not been started)
         GraknEngineConfig conf = GraknEngineConfig.create();
         conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
-
+        EmbeddedRedis.start(new SimpleURI(conf.getProperty(REDIS_HOST)).getPort());
         // Start Engine
         try (GraknEngineServer server = new GraknEngineServer(conf)) {
             server.start();

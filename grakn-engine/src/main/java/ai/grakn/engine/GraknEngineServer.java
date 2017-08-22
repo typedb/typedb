@@ -130,7 +130,8 @@ public class GraknEngineServer implements AutoCloseable {
         Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
-                prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
+                prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER),
+                prop.getProperty(GraknEngineConfig.REDIS_HOST));
         synchronized (this){
             lockAndInitializeSystemSchema();
             startHTTP();
@@ -382,10 +383,12 @@ public class GraknEngineServer implements AutoCloseable {
         return builder.build();
     }
 
-    private void logStartMessage(String host, String port) {
+    private void logStartMessage(String host, String port, String redisHost) {
         String address = "http://" + host + ":" + port;
         LOG.info("\n==================================================");
         LOG.info("\n" + String.format(GraknEngineConfig.GRAKN_ASCII, address));
         LOG.info("\n==================================================");
+        LOG.info("\nTasks handled in {}", redisHost);
+
     }
 }

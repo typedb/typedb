@@ -25,24 +25,18 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.redisq.Redisq;
+import ai.grakn.redisq.State;
+import ai.grakn.redisq.StateInfo;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
-import com.codahale.metrics.Timer;
-import com.codahale.metrics.Timer.Context;
-import java.util.Base64;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
-import static java.util.stream.Collectors.toSet;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
-import org.apache.commons.io.Charsets;
-import org.apache.commons.lang.SerializationUtils;
-import static org.apache.commons.lang.SerializationUtils.deserialize;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
 
 
 /**
@@ -53,133 +47,138 @@ import redis.clients.util.Pool;
 public class RedisTaskStorage implements TaskStateStorage {
 
     private static final Logger LOG = LoggerFactory.getLogger(RedisTaskStorage.class);
-    public static final int EXPIRE_TIME_S = 15 * 60;
-    private final Timer updateTimer;
-    private final Timer getTimer;
+    private final EngineID engineID;
     private final Meter writeError;
 
-    private Pool<Jedis> redis;
+    private Redisq<Task> redis;
 
-    private static final String PREFIX = "state:";
-    private static final Function<String, String> encodeKey = o -> PREFIX + o;
-
-    private RedisTaskStorage(Pool<Jedis> redis, MetricRegistry metricRegistry) {
+    private RedisTaskStorage(Redisq<Task> redis, EngineID engineID, MetricRegistry metricRegistry) {
         this.redis = redis;
-        this.updateTimer = metricRegistry.timer(name(RedisTaskStorage.class, "update"));
-        this.getTimer = metricRegistry.timer(name(RedisTaskStorage.class, "get"));
+        this.engineID = engineID;
         this.writeError = metricRegistry.meter(name(RedisTaskStorage.class, "write", "error"));
     }
 
-    public static RedisTaskStorage create(Pool<Jedis> jedisPool, MetricRegistry metricRegistry) {
-        return new RedisTaskStorage(jedisPool, metricRegistry);
+    public static RedisTaskStorage create(Redisq<Task> redisq, EngineID engineID, MetricRegistry metricRegistry) {
+        return new RedisTaskStorage(redisq, engineID, metricRegistry);
     }
 
-    @Override
-    public TaskId newState(TaskState state) throws GraknBackendException {
-        try(Jedis jedis = redis.getResource(); Context ignore = updateTimer.time()){
-            String key = encodeKey.apply(state.getId().getValue());
-            LOG.debug("New state {}", key);
-            String value = new String(Base64.getEncoder().encode(SerializationUtils.serialize(state)),
-                    Charsets.UTF_8);
-            String status = jedis.set(key, value, "nx", "ex", EXPIRE_TIME_S);
-            if (status != null && status.equalsIgnoreCase("OK")) {
-                return state.getId();
-            } else {
-                writeError.mark();
-                LOG.error("Could not write state {} to redis. Returned: {}", key, status);
-                throw GraknBackendException.stateStorage();
-            }
+    public static RedisTaskStorage create(Redisq<Task> redisq, MetricRegistry metricRegistry) {
+        return new RedisTaskStorage(redisq, EngineID.me(), metricRegistry);
+    }
+
+    private State mapStatus(TaskStatus status) {
+        switch (status) {
+            case CREATED:
+                return State.NEW;
+            case SCHEDULED:
+                return State.NEW;
+            case RUNNING:
+                return State.PROCESSING;
+            case COMPLETED:
+                return State.DONE;
+            case STOPPED:
+                return State.NEW;
+            case FAILED:
+                return State.FAILED;
+            default:
+                return State.NEW;
         }
     }
 
     @Override
+    public TaskId newState(TaskState state) throws GraknBackendException {
+        updateState(state);
+        return state.getId();
+    }
+
+
+    @Override
     public Boolean updateState(TaskState state) {
-        try(Jedis jedis = redis.getResource(); Context ignore = updateTimer.time()){
-            String key = encodeKey.apply(state.getId().getValue());
-            LOG.debug("Updating state {}", key);
-            String value = new String(Base64.getEncoder().encode(SerializationUtils.serialize(state)),
-                    Charsets.UTF_8);
-            String status = jedis.setex(key, 15*60, value);
-            return status.equalsIgnoreCase("OK");
+        try {
+            redis.setState(state.getId().getValue(), mapStatus(state.status()));
+            return true;
+        } catch (RuntimeException e) {
+            writeError.mark();
+            LOG.error("Could not update state", e);
+            return false;
         }
     }
 
     @Override
     @Nullable
     public TaskState getState(TaskId id) throws GraknBackendException {
-        try(Jedis jedis = redis.getResource(); Context ignore = getTimer.time()){
-            String value = jedis.get(encodeKey.apply(id.getValue()));
-            if (value != null) {
-                return (TaskState) deserialize(Base64.getDecoder().decode(value));
-            } else {
-                // TODO Don't use exceptions for an expected return like this
-                throw GraknBackendException.stateStorageMissingId(id);
-            }
+        // TODO this is a temporary wrap
+        Optional<StateInfo> state = redis.getState(id.getValue());
+        if (!state.isPresent()) {
+            // TODO return optional
+            throw GraknBackendException.stateStorage();
         }
+        TaskState ts = TaskState.of(id);
+        switch(state.get().getState()) {
+            case NEW:
+                break;
+            case FAILED:
+                // TODO just a generic exception here. Consider adding this in Redisq.
+                ts.markFailed(new RuntimeException());
+                break;
+            case PROCESSING:
+                ts.markRunning(engineID);
+                break;
+            case DONE:
+                ts.markCompleted();
+                break;
+            default:
+        }
+        return ts;
     }
 
     @Override
     public boolean containsTask(TaskId id) {
-        try(Jedis jedis = redis.getResource()){
-            String value = jedis.get(encodeKey.apply(id.getValue()));
-            return value != null;
-        }
+        return redis.getState(id.getValue()).isPresent();
     }
 
     @Override
     public Set<TaskState> getTasks(@Nullable TaskStatus taskStatus, @Nullable String taskClassName,
             @Nullable String createdBy, @Nullable EngineID runningOnEngine, int limit, int offset) {
-        try (Jedis jedis = redis.getResource()) {
-            Stream<TaskState> stream = jedis.keys(PREFIX + "*").stream().map(key -> {
-                String v = jedis.get(key);
-                try {
-                    return (TaskState) deserialize(Base64.getDecoder().decode(v));
-                } catch (IllegalArgumentException e) {
-                    LOG.error("Could not decode key:value {}:{}", key, v);
-                    throw e;
-                }
-            });
-            if (taskStatus != null) {
-                stream = stream.filter(t -> t.status().equals(taskStatus));
-            }
-            if (taskClassName != null) {
-                stream = stream.filter(t -> t.taskClass().getName().equals(taskClassName));
-            }
-            if (createdBy != null) {
-                stream = stream.filter(t -> t.creator().equals(createdBy));
-            }
-            if (runningOnEngine != null) {
-                stream = stream
-                        .filter(t -> t.engineID() != null && t.engineID().equals(runningOnEngine));
-            }
-            stream = stream.skip(offset);
-            if (limit > 0) {
-                stream = stream.limit(limit);
-            }
-            Set<TaskState> results = stream.collect(toSet());
-            LOG.debug("getTasks returning {} results", results.size());
-            return results;
-        } catch (Exception e) {
-            throw GraknBackendException.stateStorageTaskRetrievalFailure(e);
-        }
+//        try (Jedis jedis = redis.getResource()) {
+//            Stream<TaskState> stream = jedis.keys(PREFIX + "*").stream().map(key -> {
+//                String v = jedis.get(key);
+//                try {
+//                    return (TaskState) deserialize(Base64.getDecoder().decode(v));
+//                } catch (IllegalArgumentException e) {
+//                    LOG.error("Could not decode key:value {}:{}", key, v);
+//                    throw e;
+//                }
+//            });
+//            if (taskStatus != null) {
+//                stream = stream.filter(t -> t.status().equals(taskStatus));
+//            }
+//            if (taskClassName != null) {
+//                stream = stream.filter(t -> t.taskClass().getName().equals(taskClassName));
+//            }
+//            if (createdBy != null) {
+//                stream = stream.filter(t -> t.creator().equals(createdBy));
+//            }
+//            if (runningOnEngine != null) {
+//                stream = stream
+//                        .filter(t -> t.engineID() != null && t.engineID().equals(runningOnEngine));
+//            }
+//            stream = stream.skip(offset);
+//            if (limit > 0) {
+//                stream = stream.limit(limit);
+//            }
+//            Set<TaskState> results = stream.collect(toSet());
+//            LOG.debug("getTasks returning {} results", results.size());
+//            return results;
+//        } catch (Exception e) {
+//            throw GraknBackendException.stateStorageTaskRetrievalFailure(e);
+//        }
+        // TODO
+        return Collections.emptySet();
     }
 
     @Override
     public void clear() {
-        try (Jedis jedis = redis.getResource()) {
-            Set<String> keys = jedis.keys(PREFIX + "*");
-            for (String key : keys) {
-                jedis.del(key);
-            }
-        }
-    }
-
-    boolean isTaskMarkedStopped(TaskId id) {
-        try {
-            TaskState state = getState(id);
-            return state != null && state.getStatus().equals(TaskStatus.STOPPED);
-        } catch (GraknBackendException e) {
-            return false;
-        }
+        // TODO
     }
 }

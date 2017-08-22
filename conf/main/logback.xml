@@ -72,7 +72,7 @@
         </rollingPolicy>
     </appender>
 
-    <root level="INFO"/>
+    <root level="DEBUG"/>
 
     <logger name="org.eclipse.jetty" level="${jetty.log.level:-ERROR}">
         <appender-ref ref="${jetty.log.appender:-MAIN}"/>

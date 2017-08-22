@@ -96,7 +96,6 @@
         <cassandra-driver-core.version>3.1.2</cassandra-driver-core.version>
         <jackson.version>2.8.5</jackson.version>
         <prometheus.version>0.0.13</prometheus.version>
-        <jesque.version>2.1.2</jesque.version>
         <auto-value.version>1.4.1</auto-value.version>
         <main.basedir>${project.basedir}</main.basedir>
         <spark-gremlin.version>3.2.5</spark-gremlin.version>
@@ -195,6 +194,11 @@
     </scm>
 
     <dependencies>
+        <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>redisq</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>

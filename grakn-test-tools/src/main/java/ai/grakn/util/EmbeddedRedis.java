@@ -91,4 +91,19 @@ public class EmbeddedRedis {
             LOG.warn("Called stop while {} redis instances are running", REDIS_COUNTER);
         }
     }
+
+    public static void forceStart(int redisPort) {
+        redisServer = RedisServer.builder()
+                .port(redisPort)
+                // We have short running tests and sometimes we kill the connections
+                .setting("timeout 360")
+                .build();
+        try {
+            redisServer.start();
+        } catch (EmbeddedRedisException e) {
+            LOG.warn("Unexpected Redis instance already running on port {}", redisPort, e);
+        } catch (Exception e) {
+            LOG.warn("Exception while trying to start Redis on port {}. Will attempt to continue.", redisPort, e);
+        }
+    }
 }

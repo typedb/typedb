@@ -20,6 +20,8 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.redisq.Document;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -34,7 +36,7 @@ import java.io.Serializable;
 @AutoValue
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonDeserialize(builder = AutoValue_Task.Builder.class)
-abstract class Task implements Serializable {
+abstract public class Task implements Serializable, Document {
     protected static final long serialVersionUID = 42L;
     @JsonProperty("taskState")
     public abstract TaskState getTaskState();
@@ -45,6 +47,17 @@ abstract class Task implements Serializable {
         return new AutoValue_Task.Builder();
     }
 
+    @Override
+    @JsonIgnore
+    public String getIdAsString() {
+        return getTaskState().getId().getValue();
+    }
+
+    /**
+     * Builder
+     *
+     * @author Domenico Corapi
+     */
     @AutoValue.Builder
     public abstract static class Builder {
         @JsonProperty("taskState")

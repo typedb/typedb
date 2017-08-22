@@ -42,7 +42,7 @@ insert
 "email" sub "Long String";
 "speaks" sub String;
 "place-id" sub ID;
-"language" sub String;
+"language" sub String;insertUndefinedVariable
 "image-file" sub String;
 "tag-id" sub ID;
 "tag-class-id" sub ID;

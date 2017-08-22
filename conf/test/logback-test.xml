@@ -32,12 +32,12 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <logger name="ai.grakn.engine.GraknEngineServer" level="WARN">
+    <logger name="ai.grakn.engine.GraknEngineServer" level="DEBUG">
         <appender-ref ref="STDOUT"/>
     </logger>
 
     <!--Set the SingleQueueTaskRunner log level to WARN so it does not overwhelm travis and jenkins-->
-    <logger name="ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner" level="WARN">
+    <logger name="ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner" level="DEBUG">
         <appender-ref ref="STDOUT"/>
     </logger>
 </configuration>

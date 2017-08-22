@@ -21,6 +21,9 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
@@ -29,8 +32,12 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskState.Priority;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
+import static ai.grakn.redisq.State.DONE;
+import ai.grakn.redisq.exceptions.StateFutureInitializationException;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.util.EmbeddedRedis;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import com.codahale.metrics.MetricRegistry;
 import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.Retryer;
@@ -38,32 +45,25 @@ import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.google.common.collect.ImmutableSet;
-import mjson.Json;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
-
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
-import static ai.grakn.util.REST.Request.KEYSPACE;
+import java.util.concurrent.TimeoutException;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertNotSame;
 import static junit.framework.TestCase.fail;
+import mjson.Json;
+import org.junit.AfterClass;
 import static org.junit.Assert.assertTrue;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 
 public class RedisTaskManagerTest {
 
@@ -123,19 +123,19 @@ public class RedisTaskManagerTest {
         assertEquals(COMPLETED, taskManager.storage().getState(state.getId()).status());
     }
 
-    @Test(expected = RetryException.class)
-    public void whenNotAddingTask_TastStateIsNotRetrievable() throws ExecutionException, RetryException {
+    @Test(expected = TimeoutException.class)
+    public void whenNotAddingTask_TastStateIsNotRetrievable()
+            throws ExecutionException, RetryException, StateFutureInitializationException, InterruptedException, TimeoutException {
         TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), TaskSchedule.now(), Priority.LOW);
-        RETRY_STRATEGY.call(() -> taskManager.storage().getState(state.getId()) != null);
-        assertNotSame(COMPLETED, taskManager.storage().getState(state.getId()).status());
+        taskManager.waitForTask(DONE, state.getId(), 3, TimeUnit.SECONDS);
     }
 
     @Test
-    @Ignore
-    public void whenConfigurationEmpty_TaskEventuallyFailed() throws ExecutionException, RetryException {
+    public void whenConfigurationEmpty_TaskEventuallyFailed()
+            throws ExecutionException, RetryException, InterruptedException, StateFutureInitializationException, TimeoutException {
         TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), TaskSchedule.now(), Priority.LOW);
         taskManager.addTask(state, TaskConfiguration.of(Json.object()));
-        RETRY_STRATEGY.call(() -> taskManager.storage().getState(state.getId()).status() == FAILED);
+        taskManager.waitForTask(ai.grakn.redisq.State.FAILED, state.getId(), 3, TimeUnit.SECONDS);
         assertEquals(FAILED, taskManager.storage().getState(state.getId()).status());
     }
 
@@ -150,11 +150,12 @@ public class RedisTaskManagerTest {
         }
         states.forEach(state -> {
             try {
-                RETRY_STRATEGY.call(() -> taskManager.storage().getState(state.getId()) != null);
+                System.out.println("Waiting for " + state.getId());
+                taskManager.waitForTask(state.getId());
             } catch (Exception e) {
                 fail("Failed to retrieve task in time");
             }
-            assertTrue("Task retrieved but with unexpected state", ImmutableSet.of(COMPLETED, RUNNING).contains(taskManager.storage().getState(state.getId()).status()));
+            assertTrue("Task retrieved but with unexpected state " + taskManager.storage().getState(state.getId()).status(), ImmutableSet.of(COMPLETED, RUNNING).contains(taskManager.storage().getState(state.getId()).status()));
         });
     }
 

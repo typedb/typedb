@@ -20,16 +20,26 @@
 package ai.grakn.engine.tasks.manager.redisqueue;
 
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.TASKS_RETRY_DELAY;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.redisq.Redisq;
+import ai.grakn.redisq.RedisqBuilder;
+import ai.grakn.redisq.State;
+import static ai.grakn.redisq.State.DONE;
+import ai.grakn.redisq.exceptions.StateFutureInitializationException;
 import com.codahale.metrics.MetricRegistry;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -45,12 +55,8 @@ import redis.clients.util.Pool;
 public class RedisTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(RedisTaskManager.class);
-    private final EngineID engineId;
-    private final GraknEngineConfig config;
-    private final RedisTaskStorage redisTaskStorage;
-    private final EngineGraknTxFactory factory;
-    private final RedisTaskQueue redisTaskQueue;
-    private final int threads;
+    private final Redisq<Task> redisq;
+    private final RedisTaskStorage taskStorage;
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
                             EngineGraknTxFactory factory, LockProvider distributedLockClient,
@@ -61,20 +67,24 @@ public class RedisTaskManager implements TaskManager {
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
                             int threads, EngineGraknTxFactory factory, LockProvider distributedLockClient,
                             MetricRegistry metricRegistry) {
-        this.engineId = engineId;
-        this.config = config;
-        this.factory = factory;
-        this.redisTaskStorage = RedisTaskStorage.create(jedisPool, metricRegistry);
-        this.redisTaskQueue = new RedisTaskQueue(jedisPool, distributedLockClient, metricRegistry,
-                config.tryIntProperty(TASKS_RETRY_DELAY, 15));
-        this.threads = threads;
+        Consumer<Task> consumer = new RedisTaskQueueConsumer(this, engineId, config, RedisCountStorage
+                .create(jedisPool, metricRegistry), metricRegistry, factory, distributedLockClient);
+
+        this.redisq = new RedisqBuilder<Task>()
+                .setJedisPool(jedisPool)
+                .setName("grakn")
+                .setConsumer(consumer)
+                .setThreadPool(Executors.newFixedThreadPool(threads))
+                .setDocumentClass(Task.class)
+                .createRedisq();
+        this.taskStorage = RedisTaskStorage.create(redisq, engineId, metricRegistry);
     }
 
     @Override
     public void close() {
         LOG.info("Closing task manager");
         try {
-            this.redisTaskQueue.close();
+            redisq.close();
         } catch (InterruptedException e) {
             LOG.error("Interrupted while closing queue", e);
         }
@@ -83,40 +93,23 @@ public class RedisTaskManager implements TaskManager {
     @Override
     public CompletableFuture<Void> start() {
         return CompletableFuture
-                .runAsync(this::startBlocking)
+                .runAsync(redisq::startConsumer)
                 .exceptionally(e -> {
                     close();
                     throw new RuntimeException("Failed to intitialize subscription");
                 });
     }
 
-    private void startBlocking() {
-        redisTaskQueue.runInFlightProcessor();
-        redisTaskQueue.subscribe(this, engineId, config, factory, threads);
-        LOG.info("Redis task manager started with {} subscriptions", threads);
-    }
 
     @Override
     public void stopTask(TaskId id) {
-        // TODO Just a prototype, make sure this work in all scenarios
-        TaskState task = redisTaskStorage.getState(id);
-        if (task == null) {
-            // TODO make sure other parts of the code can handle a partially defined task state
-            // TODO also fix the Java representation of a task state
-            task = TaskState.of(id);
-        }
-        try {
-            task.markStopped();
-            redisTaskStorage.updateState(task);
-        } catch (Exception e) {
-            LOG.error("Unexpected error while stopping {}", id);
-            throw e;
-        }
+        // NOOP
+        // TODO Implement this
     }
 
     @Override
     public RedisTaskStorage storage() {
-        return redisTaskStorage;
+        return taskStorage;
     }
 
     @Override
@@ -124,10 +117,20 @@ public class RedisTaskManager implements TaskManager {
         Task task = Task.builder()
                 .setTaskConfiguration(configuration)
                 .setTaskState(taskState).build();
-        redisTaskQueue.putJob(task);
+        redisq.push(task);
     }
 
-    public RedisTaskQueue getQueue() {
-        return redisTaskQueue;
+    public void waitForTask(TaskId taskId)
+            throws StateFutureInitializationException, ExecutionException, InterruptedException {
+        redisq.getFutureForDocumentStateWait(DONE, taskId.getValue(), 1, TimeUnit.SECONDS).get();
+    }
+
+    public void waitForTask(State state, TaskId taskId, long timeout, TimeUnit timeUnit)
+            throws StateFutureInitializationException, ExecutionException, InterruptedException, TimeoutException {
+        redisq.getFutureForDocumentStateWait(state, taskId.getValue(), 1, TimeUnit.SECONDS).get(timeout, timeUnit);
+    }
+
+    public Redisq getQueue() {
+        return redisq;
     }
 }
