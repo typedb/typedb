@@ -277,6 +277,12 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return getThis();
     }
 
+    /**
+     * Returns a stream computed from a <code>streamProvider</code> which takes in as input an array or {@link Role}s
+     * which cannot contain any nulls.
+     *
+     * This helper exists to filter away the nulls
+     */
     private <X> Stream<X> validStreamOf(Function<Role[], Stream<X>> streamProvider, Role ... roles){
         if(roles.length == 0) return Stream.empty();
         Role[] filteredRoles = Arrays.stream(roles).filter(Objects::nonNull).toArray(Role[]::new);
