@@ -2,24 +2,24 @@
 define
 
 # this is a proxy for the ID datatype that is unique per entity type
-"ID" sub resource is-abstract datatype long;
+"ID" sub attribute is-abstract datatype long;
 
 # proxies for the character datatypes
-"String" sub resource is-abstract regex /^(.{1,40})$/ datatype string;
-"Long String" sub resource is-abstract regex /^(.{1,256})$/ datatype string;
-"Text" sub resource is-abstract regex /^(.{1,2000})$/ datatype string;
+"String" sub attribute is-abstract regex /^(.{1,40})$/ datatype string;
+"Long String" sub attribute is-abstract regex /^(.{1,256})$/ datatype string;
+"Text" sub attribute is-abstract regex /^(.{1,2000})$/ datatype string;
 
 # proxies for the date datatypes
 # currently using epoch time not string + regex
 # yyyy-mm-dd
-#""Date"" sub resource is-abstract regex /^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/ datatype string;
-"Date" sub resource is-abstract datatype date;
+#""Date"" sub attribute is-abstract regex /^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$/ datatype string;
+"Date" sub attribute is-abstract datatype date;
 # yyyy-mm-ddTHH:MM:ss.sss+0000
-#""Date"Time" sub resource is-abstract regex /^(19|20)\d\d-(0[1-9]|1[012])-([012]\d|3[01])T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)\+[0]{4}$/ datatype string;
-"DateTime" sub resource is-abstract datatype date;
+#""Date"Time" sub attribute is-abstract regex /^(19|20)\d\d-(0[1-9]|1[012])-([012]\d|3[01])T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)\+[0]{4}$/ datatype string;
+"DateTime" sub attribute is-abstract datatype date;
 
 # proxy for all integers
-"Integer" sub resource is-abstract datatype long;
+"Integer" sub attribute is-abstract datatype long;
 "integer-32" sub Integer;
 "integer-64" sub Integer;
 

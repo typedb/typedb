@@ -9,19 +9,19 @@ define
 
 knows sub knows-trans;
 
-knows-trans sub relation
+knows-trans sub relationship
 	relates friend;
 
 friends-sharing-interest sub friends-sharing-interest-trans
 	relates friend;
 
-friends-sharing-interest-trans sub relation
+friends-sharing-interest-trans sub relationship
 	relates friend;
 
 predecessor sub role;
 successor sub role;
 
-message-succession sub relation
+message-succession sub relationship
 	relates predecessor
     relates successor;
 
@@ -32,7 +32,7 @@ friends-activity-propagation sub friends-activity-propagation-trans
 	relates trigger
 	relates response;
 
-friends-activity-propagation-trans sub relation
+friends-activity-propagation-trans sub relationship
 	relates trigger
 	relates response;
 

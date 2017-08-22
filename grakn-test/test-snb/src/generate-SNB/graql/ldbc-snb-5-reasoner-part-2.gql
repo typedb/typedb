@@ -102,7 +102,7 @@ rhs
 (trigger:$p, response:$s) isa friends-activity-propagation;
 };
 
-#the following two rules compute the transitive closure of the relation inferred by the previous rule
+#the following two rules compute the transitive closure of the relationship inferred by the previous rule
 
 $rule65 isa inference-rule
 lhs
