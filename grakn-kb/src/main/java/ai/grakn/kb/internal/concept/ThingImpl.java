@@ -258,6 +258,11 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return getThis();
     }
 
+    @Override
+    public T deleteAttribute(Attribute attribute){
+        return getThis();
+    }
+
     /**
      *
      * @return The type of the concept casted to the correct interface
