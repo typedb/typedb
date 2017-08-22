@@ -57,7 +57,7 @@ public class RelationshipController {
                             MetricRegistry metricRegistry) {
         this.factory = factory;
 
-        spark.post("/graph/relationshipType/:relationshipTypeLabel/relationship", this::postRelationship);
+        spark.post("/graph/relationshipType/:relationshipTypeLabel", this::postRelationship);
         spark.put("/graph/relationship/:relationshipConceptId/role/:roleConceptId", this::assignEntityAndRoleToRelationship);
         spark.delete("/graph/relationship/:relationshipConceptId/role/:roleConceptId/entity/:entityConceptId", this::deleteEntityAndRoleToRelationshipAssignment);
     }
@@ -76,7 +76,7 @@ public class RelationshipController {
                 String jsonConceptId = relationship.getId().getValue();
                 LOG.info("postRelationship - relationship " + jsonConceptId + " of relationshipType " + relationshipTypeLabel + " added. request processed");
                 response.status(HttpStatus.SC_OK);
-                return Json.object("conceptId", jsonConceptId);
+                return relationshipJson(jsonConceptId);
             } else {
                 LOG.info("postRelationship - relationshipType " + relationshipTypeLabel + " NOT found.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
@@ -102,7 +102,7 @@ public class RelationshipController {
                 Relationship relationship = relationshipOptional.get();
                 Role role = roleOptional.get();
                 Entity entity = entityOptional.get();
-                Relationship entityType1 = relationship.addRolePlayer(role, entity);
+                relationship.addRolePlayer(role, entity);
                 graph.commit();
                 LOG.info("assignEntityAndRoleToRelationship - assignment succeeded. request processed.");
                 Json responseBody = Json.object();
@@ -118,5 +118,9 @@ public class RelationshipController {
 
     private Json deleteEntityAndRoleToRelationshipAssignment(Request request, Response response) {
         throw new UnsupportedOperationException("Unsupported operation: DELETE /graph/entity/:conceptId/resource/:conceptId");
+    }
+
+    private Json relationshipJson(String conceptId) {
+        return Json.object("relationship", Json.object("conceptId", conceptId));
     }
 }

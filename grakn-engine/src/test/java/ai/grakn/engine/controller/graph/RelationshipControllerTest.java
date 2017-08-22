@@ -9,6 +9,7 @@ import ai.grakn.test.kbs.MovieKB;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -56,11 +57,11 @@ public class RelationshipControllerTest {
     public void postRelationshipShouldExecuteSuccessfully() {
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .post("/graph/relationshipType/directed-by/relationship");
+            .post("/graph/relationshipType/directed-by");
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        Json responseBody = Json.read(response.body().asString());
 
-        assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("conceptId"), notNullValue());
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+        assertThat(responseBody.at("relationship").at("conceptId").asString(), notNullValue());
     }
 }
