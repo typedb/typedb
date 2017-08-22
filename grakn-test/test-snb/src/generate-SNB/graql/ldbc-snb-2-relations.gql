@@ -1,5 +1,5 @@
 # The relationships defined in the ldbc-snb benchmark
-insert
+define
 
 "contained" sub role;
 "container" sub role;

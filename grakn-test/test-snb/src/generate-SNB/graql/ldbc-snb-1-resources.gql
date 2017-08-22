@@ -1,5 +1,5 @@
 # The resources as defined in the ldbc-snb benchmark
-insert
+define
 
 # this is a proxy for the ID datatype that is unique per entity type
 "ID" sub resource is-abstract datatype long;
