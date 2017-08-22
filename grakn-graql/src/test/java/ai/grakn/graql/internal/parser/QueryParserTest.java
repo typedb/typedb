@@ -353,7 +353,7 @@ public class QueryParserTest {
         Var y = var("y");
 
         DeleteQuery expected = match(x.isa("movie").has("title", "The Title"), y.isa("movie")).delete(x, y);
-        DeleteQuery parsed = parse("match $x isa movie has title 'The Title'; delete $x;");
+        DeleteQuery parsed = parse("match $x isa movie has title 'The Title'; $y isa movie; delete $x, $y;");
         assertEquals(expected, parsed);
     }
 
