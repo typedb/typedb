@@ -177,6 +177,12 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public Object visitUndefineQuery(GraqlParser.UndefineQueryContext ctx) {
+        Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
+        return queryBuilder.undefine(vars);
+    }
+
+    @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
         Collection<VarPattern> getters = visitVarPatterns(ctx.varPatterns());
         return visitMatchQuery(ctx.matchQuery()).delete(getters);
