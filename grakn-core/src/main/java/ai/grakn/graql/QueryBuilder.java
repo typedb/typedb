@@ -78,6 +78,13 @@ public interface QueryBuilder {
     DefineQuery define(Collection<? extends VarPattern> varPatterns);
 
     /**
+     * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s to undefine
+     * @return an {@link UndefineQuery} that will remove the changes described in the {@code varPatterns}
+     */
+    @CheckReturnValue
+    Query<Void> undefine(VarPattern... varPatterns);
+
+    /**
      * @return a compute query builder for building analytics query
      */
     @CheckReturnValue

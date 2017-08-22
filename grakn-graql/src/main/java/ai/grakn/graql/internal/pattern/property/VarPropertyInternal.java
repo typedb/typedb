@@ -61,6 +61,8 @@ public interface VarPropertyInternal extends VarProperty {
 
     PropertyExecutor define(Var var) throws GraqlQueryException;
 
+    PropertyExecutor undefine(Var var) throws GraqlQueryException;
+
     /**
      * Whether this property will uniquely identify a concept in the graph, if one exists.
      * This is used for recognising equivalent variables in insert queries.

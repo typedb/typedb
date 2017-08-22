@@ -57,6 +57,11 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     }
 
     @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        throw new RuntimeException();
+    }
+
+    @Override
     public void delete(GraknTx graph, Concept concept) {
         throw GraqlQueryException.failDelete(this);
     }
