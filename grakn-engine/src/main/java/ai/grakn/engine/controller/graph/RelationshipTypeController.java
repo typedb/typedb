@@ -72,7 +72,7 @@ public class RelationshipTypeController {
                 String jsonConceptId = relationshipType.get().getId().getValue();
                 String jsonRelationshipTypeLabel = relationshipType.get().getLabel().getValue();
                 response.status(HttpStatus.SC_OK);
-                Json responseBody = Json.object("conceptId", jsonConceptId, "relationshipTypeLabel", jsonRelationshipTypeLabel);
+                Json responseBody = relationshipTypeJson(jsonConceptId, jsonRelationshipTypeLabel);
                 LOG.info("getRelationshipType - relationshipType found - " + jsonConceptId + ", " + jsonRelationshipTypeLabel + ". request processed.");
                 return responseBody;
             } else {
@@ -85,10 +85,9 @@ public class RelationshipTypeController {
 
     private Json postRelationshipType(Request request, Response response) {
         LOG.info("postRelationshipType - request received.");
-        Json requestBodyJson = Json.read(mandatoryBody(request));
-        Map<String, Object> requestBody = requestBodyJson.asMap();
-        String relationshipTypeLabel = (String) requestBody.get("relationshipTypeLabel");
-        Stream<String> roleLabels = requestBodyJson.at("roleLabels").asList().stream().map(e -> (String) e);
+        Json requestBody = Json.read(mandatoryBody(request));
+        String relationshipTypeLabel = requestBody.at("relationshipType").at("label").asString();
+        Stream<String> roleLabels = requestBody.at("relationshipType").at("roles").asList().stream().map(e -> (String) e);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
 
         LOG.info("postRelationshipType - attempting to add a new relationshipType " + relationshipTypeLabel + " on keyspace " + keyspace);
@@ -105,7 +104,7 @@ public class RelationshipTypeController {
             String jsonRelationshipTypeLabel = relationshipType.getLabel().getValue();
             LOG.info("postRelationshipType - relationshipType " + jsonRelationshipTypeLabel + " with id " + jsonConceptId + " added. request processed.");
             response.status(HttpStatus.SC_OK);
-            Json responseBody = Json.object("conceptId", jsonConceptId, "relationshipTypeLabel", jsonRelationshipTypeLabel);
+            Json responseBody = relationshipTypeJson(jsonConceptId, jsonRelationshipTypeLabel);
 
             return responseBody;
         }
@@ -113,5 +112,12 @@ public class RelationshipTypeController {
 
     private Json assignRoleToRelationshipType(Request request, Response response) {
         return Json.nil();
+    }
+
+    private Json relationshipTypeJson(String conceptId, String label) {
+        return Json.object("relationshipType", Json.object(
+            "conceptId", conceptId, "label", label
+            )
+        );
     }
 }

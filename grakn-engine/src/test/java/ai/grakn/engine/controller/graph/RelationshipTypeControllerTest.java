@@ -27,6 +27,7 @@ import ai.grakn.test.kbs.MovieKB;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -89,19 +90,21 @@ public class RelationshipTypeControllerTest {
     @Test
     public void postRelationshipTypeShouldExecuteSuccessfully() {
         Json body = Json.object(
-            "relationshipTypeLabel", "newRelationshipType",
-            "roleLabels", Json.array("role1", "role2")
+            "relationshipType", Json.object(
+                "label", "newRelationshipType",
+                "roles", Json.array("role1", "role2")
+            )
         );
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
             .body(body.toString())
             .post("/graph/relationshipType");
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        Json responseBody = Json.read(response.body().asString());
 
-        assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("relationshipTypeLabel"), equalTo("newRelationshipType"));
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+        assertThat(responseBody.at("relationshipType").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("relationshipType").at("label").asString(), equalTo("newRelationshipType"));
 
     }
 
@@ -111,10 +114,10 @@ public class RelationshipTypeControllerTest {
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
             .get("/graph/relationshipType/has-genre");
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        Json responseBody = Json.read(response.body().asString());
 
-        assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("relationshipTypeLabel"), equalTo("has-genre"));
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+        assertThat(responseBody.at("relationshipType").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("relationshipType").at("label").asString(), equalTo("has-genre"));
     }
 }
