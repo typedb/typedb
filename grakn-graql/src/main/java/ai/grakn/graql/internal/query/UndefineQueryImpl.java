@@ -22,6 +22,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
+import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -35,7 +36,7 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
  * @author Felix Chapman
  */
 @AutoValue
-abstract class UndefineQueryImpl implements Query<Void> {
+abstract class UndefineQueryImpl implements UndefineQuery {
 
     abstract ImmutableList<VarPatternAdmin> varPatterns();
     abstract @Nullable GraknTx tx();

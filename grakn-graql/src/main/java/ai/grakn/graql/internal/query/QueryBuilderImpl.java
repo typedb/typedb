@@ -28,6 +28,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -144,12 +145,12 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     @Override
-    public Query<Void> undefine(VarPattern... varPatterns) {
+    public UndefineQuery undefine(VarPattern... varPatterns) {
         return undefine(Arrays.asList(varPatterns));
     }
 
     @Override
-    public Query<Void> undefine(Collection<? extends VarPattern> varPatterns) {
+    public UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
         ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
         return UndefineQueryImpl.of(admins, tx.orElse(null));
     }
