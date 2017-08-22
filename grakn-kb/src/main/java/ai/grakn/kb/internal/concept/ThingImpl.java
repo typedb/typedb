@@ -19,13 +19,13 @@
 package ai.grakn.kb.internal.concept;
 
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -44,8 +44,10 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -260,7 +262,25 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     @Override
     public T deleteAttribute(Attribute attribute){
+        Role roleHasOwner = vertex().tx().getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(attribute.type().getLabel()));
+        Role roleKeyOwner = vertex().tx().getSchemaConcept(Schema.ImplicitType.KEY_OWNER.getLabel(attribute.type().getLabel()));
+
+        Role roleHasValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().getLabel()));
+        Role roleKeyValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.KEY_VALUE.getLabel(attribute.type().getLabel()));
+
+        Stream<Relationship> relationships = validStreamOf(this::relationships, roleHasOwner, roleKeyOwner);
+        relationships.filter(relationship -> {
+                    Stream<Thing> rolePlayers = validStreamOf(relationship::rolePlayers, roleHasValue, roleKeyValue);
+                    return rolePlayers.anyMatch(rolePlayer -> rolePlayer.equals(attribute));
+                }).forEach(Concept::delete);
+
         return getThis();
+    }
+
+    private <X> Stream<X> validStreamOf(Function<Role[], Stream<X>> streamProvider, Role ... roles){
+        if(roles.length == 0) return Stream.empty();
+        Role[] filteredRoles = Arrays.stream(roles).filter(Objects::nonNull).toArray(Role[]::new);
+        return streamProvider.apply(filteredRoles);
     }
 
     /**
