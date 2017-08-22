@@ -335,12 +335,33 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     @Override
     public T deleteAttribute(AttributeType attributeType){
-        return null;
+        return deleteAttribute(Schema.ImplicitType.HAS_OWNER, attributes(), attributeType);
     }
 
     @Override
     public T deleteKey(AttributeType attributeType){
-        return null;
+        return deleteAttribute(Schema.ImplicitType.KEY_OWNER, keys(), attributeType);
+    }
+
+
+    /**
+     * Helper method to delete a {@link AttributeType} which is possible linked to this {@link Type}.
+     * The link to {@link AttributeType} is removed if <code>attributeToRemove</code> is in the candidate list
+     * <code>attributeTypes</code>
+     *
+     * @param implicitType the {@link Schema.ImplicitType} which specifies which implicit {@link Role} should be removed
+     * @param attributeTypes The list of candidate which potentially contains the {@link AttributeType} to remove
+     * @param attributeToRemove the {@link AttributeType} to remove
+     * @return the {@link Type} itself
+     */
+    private T deleteAttribute(Schema.ImplicitType implicitType,  Stream<AttributeType> attributeTypes, AttributeType attributeToRemove){
+        if(attributeTypes.anyMatch(a ->  a.equals(attributeToRemove))){
+            Label label = implicitType.getLabel(attributeToRemove.getLabel());
+            Role role = vertex().tx().getSchemaConcept(label);
+            if(role != null) deletePlays(role);
+        }
+
+        return getThis();
     }
 
     /**

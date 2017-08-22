@@ -445,12 +445,12 @@ public class EntityTypeTest extends TxTestBase {
         AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.DataType.INTEGER);
         EntityType person = tx.putEntityType("person").attribute(name).attribute(age).key(id);
 
-        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
+        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
         assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
 
         //Nothing changes
         person.deleteAttribute(id);
-        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
+        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
         assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
 
         //Key is removed
