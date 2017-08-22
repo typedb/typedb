@@ -131,6 +131,7 @@ public class RedisTaskManagerTest {
     }
 
     @Test
+    @Ignore
     public void whenConfigurationEmpty_TaskEventuallyFailed() throws ExecutionException, RetryException {
         TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), TaskSchedule.now(), Priority.LOW);
         taskManager.addTask(state, TaskConfiguration.of(Json.object()));

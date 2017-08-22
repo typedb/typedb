@@ -27,7 +27,10 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import com.github.rholder.retry.WaitStrategies;
 import static java.lang.String.format;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import static java.util.stream.Collectors.toList;
 
 import ai.grakn.engine.TaskId;
@@ -86,6 +89,7 @@ public class BatchMutatorClient {
     private final String keyspace;
     private final String uri;
     private final TaskClient taskClient;
+    private final Retryer<Json> getStatusRetrier;
 
     private Consumer<Json> onCompletionOfTask;
     private AtomicInteger batchNumber;
@@ -119,6 +123,14 @@ public class BatchMutatorClient {
         } else {
             throw new RuntimeException("Invalid uri " + uri);
         }
+
+        getStatusRetrier = RetryerBuilder.<Json>newBuilder()
+                .retryIfExceptionOfType(IOException.class)
+                .retryIfRuntimeException()
+                .retryIfResult(Objects::isNull)
+                .withStopStrategy(StopStrategies.stopAfterAttempt(MAX_RETRIES/10))
+                .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
+                .build();
 
         setBatchSize(25);
         setNumberActiveTasks(25);
@@ -251,15 +263,17 @@ public class BatchMutatorClient {
                         BatchMutatorClient.class.getName(),
                         Instant.ofEpochMilli(new Date().getTime()), null, configuration, 10000);
 
-        Retryer<TaskId> retryer = RetryerBuilder.<TaskId>newBuilder()
+        TaskId taskId;
+
+        Retryer<TaskId> sendQueryRetry = RetryerBuilder.<TaskId>newBuilder()
                 .retryIfExceptionOfType(IOException.class)
                 .retryIfRuntimeException()
                 .withStopStrategy(StopStrategies.stopAfterAttempt(retry ? MAX_RETRIES : 1))
+                .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
                 .build();
 
-        TaskId taskId;
         try {
-            taskId = retryer.call(callable);
+            taskId = sendQueryRetry.call(callable);
         } catch (Exception e) {
             LOG.error("Error while executing queries:\n{}", queries);
             throw new RuntimeException(e);
@@ -339,32 +353,28 @@ public class BatchMutatorClient {
      */
     private CompletableFuture<Json> makeTaskCompletionFuture(TaskId id){
         return CompletableFuture.supplyAsync(() -> {
-            while (true) {
-                try {
-                    Json taskState = getStatus(id);
-                    TaskStatus status = TaskStatus.valueOf(taskState.at(TASK_STATUS_PARAMETER).asString());
-                    if (status == COMPLETED || status == FAILED || status == STOPPED) {
-                        return taskState;
+            try {
+                return getStatusRetrier.call(() -> {
+                    try {
+                        Json taskState = getStatus(id);
+                        TaskStatus status = TaskStatus.valueOf(taskState.at(TASK_STATUS_PARAMETER).asString());
+                        if (status == COMPLETED || status == FAILED || status == STOPPED) {
+                            return taskState;
+                        } else {
+                            return null;
+                        }
+                    } catch (IllegalArgumentException e) {
+                        // Means the task has not yet been stored: we want to log the error, but continue looping
+                        LOG.warn(format("Task [%s] not found on server. Attempting to get status again.", id));
+                        throw e;
+                    } catch (HttpRetryException e){
+                        LOG.warn(format("Could not communicate with host %s for task [%s] ", uri, id));
+                        throw e;
                     }
-                } catch (IllegalArgumentException e) {
-                    // Means the task has not yet been stored: we want to log the error, but continue looping
-                    LOG.warn(format("Task [%s] not found on server. Attempting to get status again.", id));
-                } catch (HttpRetryException e){
-                    LOG.warn(format("Could not communicate with host %s for task [%s] ", uri, id));
-                    if(retry){
-                        LOG.warn(format("Attempting communication again with host %s for task [%s]", uri, id));
-                    } else {
-                        throw new RuntimeException(e);
-                    }
-                } catch (Throwable t) {
-                    throw new RuntimeException(t);
-                }
-                
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+                });
+            } catch (Exception e) {
+                LOG.error("Error while executing queries:\n{}", queries);
+                throw new RuntimeException(e);
             }
         });
     }
