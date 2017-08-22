@@ -32,7 +32,6 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.PropertyExecutor;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.util.Partition;
-import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
@@ -441,14 +440,7 @@ public class QueryOperationExecutor {
         }
 
         private PropertyExecutor executor(ExecutionType executionType) {
-            switch (executionType) {
-                case INSERT:
-                    return property().insert(var());
-                case DEFINE:
-                    return property().define(var());
-                default:
-                    throw CommonUtil.unreachableStatement("enum switch statement");
-            }
+            return executionType.executor(property(), var());
         }
 
         boolean uniquelyIdentifiesConcept() {
@@ -457,6 +449,17 @@ public class QueryOperationExecutor {
     }
 
     private enum ExecutionType {
-        INSERT, DEFINE
+        INSERT {
+            PropertyExecutor executor(VarPropertyInternal property, Var var) {
+                return property.insert(var);
+            }
+        },
+        DEFINE {
+            PropertyExecutor executor(VarPropertyInternal property, Var var) {
+                return property.define(var);
+            }
+        };
+
+        abstract PropertyExecutor executor(VarPropertyInternal property, Var var);
     }
 }
