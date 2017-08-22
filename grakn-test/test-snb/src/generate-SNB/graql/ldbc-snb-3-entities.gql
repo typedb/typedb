@@ -1,5 +1,5 @@
 # The entities defined in the ldbc-snb benchmark
-insert
+define
 
 # geographic entities
 "place" sub entity

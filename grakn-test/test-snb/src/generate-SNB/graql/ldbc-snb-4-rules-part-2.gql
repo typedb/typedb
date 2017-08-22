@@ -1,21 +1,5 @@
 insert
 
-original-post sub relation
-  relates parent-message
-  relates child-message;
-parent-message sub role;
-child-message sub role;
-message plays child-message;
-post plays parent-message;
-
-forum-member sub relation
-  relates member-message
-  relates group-forum;
-member-message sub role;
-group-forum sub role;
-forum plays group-forum;
-message plays member-message;
-
 $rootPost isa inference-rule
 when {
   $p isa post;
