@@ -79,6 +79,18 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
     }
 
     @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            AttributeType<Object> attributeType = executor.get(var).asAttributeType();
+            if (regex().equals(attributeType.getRegex())) {
+                attributeType.setRegex(null);
+            }
+        };
+
+        return PropertyExecutor.builder(method).requires(var).build();
+    }
+
+    @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         return new RegexAtom(var.var(), this, parent);
     }

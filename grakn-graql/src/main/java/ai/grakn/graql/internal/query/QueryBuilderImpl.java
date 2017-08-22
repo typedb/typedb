@@ -145,7 +145,12 @@ public class QueryBuilderImpl implements QueryBuilder {
 
     @Override
     public Query<Void> undefine(VarPattern... varPatterns) {
-        ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(Arrays.asList(varPatterns)));
+        return undefine(Arrays.asList(varPatterns));
+    }
+
+    @Override
+    public Query<Void> undefine(Collection<? extends VarPattern> varPatterns) {
+        ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
         return UndefineQueryImpl.of(admins, tx.orElse(null));
     }
 

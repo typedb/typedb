@@ -104,6 +104,20 @@ public abstract class SubProperty extends AbstractVarProperty implements NamedPr
     }
 
     @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        return PropertyExecutor.builder(executor -> {
+            SchemaConcept concept = executor.get(var).asSchemaConcept();
+
+            SchemaConcept expectedSuperConcept = executor.get(superType().var()).asSchemaConcept();
+            SchemaConcept actualSuperConcept = concept.sup();
+
+            if (expectedSuperConcept.equals(actualSuperConcept)) {
+                concept.delete();
+            }
+        }).requires(var, superType().var()).build();
+    }
+
+    @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.var().asUserDefined();
         VarPatternAdmin typeVar = this.superType();

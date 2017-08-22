@@ -39,10 +39,12 @@ import com.google.auto.value.AutoValue;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.KEY;
 import static ai.grakn.util.Schema.ImplicitType.KEY_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
@@ -151,6 +153,18 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
         };
 
         return PropertyExecutor.builder(method).requires(var, resourceType().var()).build();
+    }
+
+    @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        return PropertyExecutor.builder(executor -> {
+            Type type = executor.get(var).asType();
+            AttributeType<?> attributeType = executor.get(resourceType().var()).asAttributeType();
+            Label hasOwner = HAS_OWNER.getLabel(attributeType.getLabel());
+            // type.deleteAttribute(); TODO
+            Optional<Role> role = type.plays().filter(r -> r.getLabel().equals(hasOwner)).findAny();
+            role.ifPresent(type::deletePlays);
+        }).requires(var, resourceType().var()).build();
     }
 
     @Override

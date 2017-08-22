@@ -85,6 +85,12 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
     }
 
     @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        // This is supported in undefine queries in order to allow looking up schema concepts by label
+        return define(var);
+    }
+
+    @Override
     public boolean uniquelyIdentifiesConcept() {
         return true;
     }

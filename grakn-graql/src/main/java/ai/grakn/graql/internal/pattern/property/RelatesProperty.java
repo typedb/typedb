@@ -97,6 +97,16 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     }
 
     @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Role role = executor.get(this.role().var()).asRole();
+            executor.get(var).asRelationshipType().deleteRelates(role);
+        };
+
+        return PropertyExecutor.builder(method).requires(var, role().var()).build();
+    }
+
+    @Override
     public void delete(GraknTx graph, Concept concept) {
         Label roleLabel = role().getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
         concept.asRelationshipType().deleteRelates(graph.getSchemaConcept(roleLabel));

@@ -78,6 +78,22 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
     }
 
     @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        // TODO: resolve the below issue correctly
+        // undefine for datatype must be supported, because it is supported in define.
+        // However, making it do the right thing is difficult. Ideally we want the same as define:
+        //
+        //    undefine name datatype string, sub attribute; <- Remove `name`
+        //    undefine first-name sub name;                 <- Remove `first-name`
+        //    undefine name datatype string;                <- FAIL
+        //    undefine name sub attribute;                  <- FAIL
+        //
+        // Doing this is tough because it means the `datatype` property needs to be aware of the context somehow.
+        // As a compromise, we make all the cases succeed (where some do nothing)
+        return PropertyExecutor.builder(executor -> {}).build();
+    }
+
+    @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         return new DataTypeAtom(var.var(), this, parent);
     }
