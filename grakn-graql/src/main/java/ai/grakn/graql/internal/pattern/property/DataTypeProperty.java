@@ -28,7 +28,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.parser.QueryParser;
-import ai.grakn.graql.internal.query.QueryOperationExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -40,9 +39,6 @@ import java.util.Set;
  * Represents the {@code datatype} property on a {@link AttributeType}.
  *
  * This property can be queried or inserted.
- *
- * The insertion behaviour is not implemented here, but instead in
- * {@link QueryOperationExecutor}.
  *
  * @author Felix Chapman
  */
