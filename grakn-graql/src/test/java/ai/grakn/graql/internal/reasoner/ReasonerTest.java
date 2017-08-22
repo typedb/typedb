@@ -42,7 +42,7 @@ import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.test.kbs.SNBKB;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
-import javafx.util.Pair;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
