@@ -87,7 +87,7 @@ public class RelationshipTypeControllerTest {
     }
 
     @Test
-    public void postRelationshipType() {
+    public void postRelationshipTypeShouldExecuteSuccessfully() {
         Json body = Json.object(
             "relationshipTypeLabel", "newRelationshipType",
             "roleLabels", Json.array("role1", "role2")
