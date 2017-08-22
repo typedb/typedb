@@ -85,7 +85,7 @@ public class AttributeControllerTest {
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace())
             .body(requestBody.toString())
-            .post("/graph/attributeType/real-name/attribute");
+            .post("/graph/attributeType/real-name");
 
         Json responseBody = Json.read(response.body().asString());
 

@@ -92,19 +92,4 @@ public class RoleControllerTest {
         assertThat(responseBody.get("conceptId"), notNullValue());
         assertThat(responseBody.get("roleLabel"), equalTo("production-with-cluster"));
     }
-
-    @Test
-    public void postRoleTypeShouldExecuteSuccessfully() {
-        Json body = Json.object("roleLabel", "newRole");
-        Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .body(body.toString())
-            .post("/graph/role");
-
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
-
-        assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("roleLabel"), equalTo("newRole"));
-    }
 }
