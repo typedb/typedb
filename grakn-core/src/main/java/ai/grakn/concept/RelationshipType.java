@@ -176,6 +176,15 @@ public interface RelationshipType extends Type {
     RelationshipType deleteAttribute(AttributeType attributeType);
 
     /**
+     * Removes {@link AttributeType} as a key to this {@link RelationshipType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link RelationshipType} can no longer have as a key
+     * @return The {@link RelationshipType} itself.
+     */
+    @Override
+    RelationshipType deleteKey(AttributeType attributeType);
+
+    /**
      * Retrieve all the {@link Relationship} instances of this {@link RelationshipType}
      * @see Relationship
      *

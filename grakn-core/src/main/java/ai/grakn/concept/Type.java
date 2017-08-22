@@ -176,6 +176,14 @@ public interface Type extends SchemaConcept {
      */
     Type deleteAttribute(AttributeType attributeType);
 
+    /**
+     * Removes {@link AttributeType} as a key to this {@link Type}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link Type} can no longer have as a key
+     * @return The {@link Type} itself.
+     */
+    Type deleteKey(AttributeType attributeType);
+
     @Deprecated
     @CheckReturnValue
     @Override

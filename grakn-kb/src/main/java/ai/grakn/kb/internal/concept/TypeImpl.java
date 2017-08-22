@@ -338,6 +338,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return null;
     }
 
+    @Override
+    public T deleteKey(AttributeType attributeType){
+        return null;
+    }
+
     /**
      *
      * @param isAbstract  Specifies if the concept is abstract (true) or not (false).

@@ -113,6 +113,15 @@ public interface AttributeType<D> extends Type {
     AttributeType<D> deleteAttribute(AttributeType attributeType);
 
     /**
+     * Removes {@link AttributeType} as a key to this {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link AttributeType} can no longer have as a key
+     * @return The {@link AttributeType} itself.
+     */
+    @Override
+    AttributeType<D> deleteKey(AttributeType attributeType);
+
+    /**
      * Set the regular expression that instances of the {@link AttributeType} must conform to.
      *
      * @param regex The regular expression that instances of this {@link AttributeType} must conform to.

@@ -106,6 +106,15 @@ public interface EntityType extends Type{
     EntityType deleteAttribute(AttributeType attributeType);
 
     /**
+     * Removes {@link AttributeType} as a key to this {@link EntityType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link EntityType} can no longer have as a key
+     * @return The {@link EntityType} itself.
+     */
+    @Override
+    EntityType deleteKey(AttributeType attributeType);
+
+    /**
      * Creates and returns a new Entity instance, whose direct type will be this type.
      * @see Entity
      *

@@ -142,6 +142,15 @@ public interface RuleType extends Type {
     RuleType deleteAttribute(AttributeType attributeType);
 
     /**
+     * Removes {@link AttributeType} as a key to this {@link RuleType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link RuleType} can no longer have as a key
+     * @return The {@link RuleType} itself.
+     */
+    @Override
+    RuleType deleteKey(AttributeType attributeType);
+
+    /**
      *
      * @return All the rule instances of this Rule Type.
      */
