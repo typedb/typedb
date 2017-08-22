@@ -49,7 +49,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 
 public class AttributeController {
     private final EngineGraknTxFactory factory;
-    private static final Logger LOG = LoggerFactory.getLogger(AttributeTypeController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AttributeController.class);
 
     public AttributeController(EngineGraknTxFactory factory, Service spark,
                                MetricRegistry metricRegistry) {

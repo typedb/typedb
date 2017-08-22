@@ -48,7 +48,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 
 public class RuleTypeController {
     private final EngineGraknTxFactory factory;
-    private static final Logger LOG = LoggerFactory.getLogger(EntityTypeController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RuleTypeController.class);
 
     public RuleTypeController(EngineGraknTxFactory factory, Service spark,
                               MetricRegistry metricRegistry) {

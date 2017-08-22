@@ -50,7 +50,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
  */
 public class RelationshipTypeController {
     private final EngineGraknTxFactory factory;
-    private static final Logger LOG = LoggerFactory.getLogger(EntityTypeController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RelationshipTypeController.class);
 
     public RelationshipTypeController(EngineGraknTxFactory factory, Service spark,
                                       MetricRegistry metricRegistry) {
