@@ -27,6 +27,7 @@ import ai.grakn.test.kbs.MovieKB;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -80,17 +81,17 @@ public class AttributeControllerTest {
 
     @Test
     public void postAttributeShouldExecuteSuccessfully() {
-        Json requestBody = Json.object("attributeValue", "attributeValue");
+        Json requestBody = Json.object("attribute", Json.object("value", "attributeValue"));
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace())
             .body(requestBody.toString())
             .post("/graph/attributeType/real-name/attribute");
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        Json responseBody = Json.read(response.body().asString());
 
-        assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("attributeValue"), equalTo("attributeValue"));
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+        assertThat(responseBody.at("attribute").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("attribute").at("value").asString(), equalTo("attributeValue"));
     }
 
 }

@@ -54,6 +54,7 @@ public class AttributeController {
     public AttributeController(EngineGraknTxFactory factory, Service spark,
                                MetricRegistry metricRegistry) {
         this.factory = factory;
+
         spark.post("/graph/attributeType/:attributeTypeLabel/attribute", this::postAttribute);
     }
 
@@ -76,12 +77,19 @@ public class AttributeController {
                 Object jsonAttributeValue = attribute.getValue();
                 LOG.info("postAttribute - attribute " + jsonConceptId + " of attributeType " + attributeTypeLabel + " added. request processed");
                 response.status(HttpStatus.SC_OK);
-                return Json.object("conceptId", jsonConceptId, "attributeValue", jsonAttributeValue);
+                return attributeJson(jsonConceptId, jsonAttributeValue);
             } else {
                 LOG.info("postAttribute - attributeType " + attributeTypeLabel + " NOT found.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
                 return Json.nil();
             }
         }
+    }
+
+    private Json attributeJson(String conceptId, Object value) {
+        return Json.object("attribute", Json.object(
+                "conceptId", conceptId, "value", value
+            )
+        );
     }
 }
