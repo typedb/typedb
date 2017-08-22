@@ -58,7 +58,7 @@ public class EntityController {
 
         spark.post("/graph/entityType/:entityTypeLabel/entity", this::postEntity);
         spark.put("/graph/entity/:entityConceptId/attribute/:attributeConceptId", this::assignAttributeToEntity);
-        spark.delete("/graph/entity/:entityConceptId/attribute/:attributeConceptId", this::deleteAttributeToEntityAssignment);
+        spark.delete("/graph/entity/:entityConceptId/attribute/:attributeConceptId", this::deleteAttributeToEntityAssignment); // TODO: implement
     }
 
     private Json postEntity(Request request, Response response) {

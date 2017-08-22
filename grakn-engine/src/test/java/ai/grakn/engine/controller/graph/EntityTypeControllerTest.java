@@ -27,6 +27,7 @@ import ai.grakn.test.kbs.MovieKB;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -75,6 +76,8 @@ public class EntityTypeControllerTest {
             graphContext.tx().putEntityType((String) invocation.getArgument(0)));
         when(mockGraph.getEntityType(anyString())).thenAnswer(invocation ->
             graphContext.tx().getEntityType(invocation.getArgument(0)));
+        when(mockGraph.getAttributeType(anyString())).thenAnswer(invocation ->
+            graphContext.tx().getAttributeType(invocation.getArgument(0)));
 
         when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
         when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
@@ -88,7 +91,7 @@ public class EntityTypeControllerTest {
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
-        assertThat(response.statusCode(), equalTo(200));
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
         assertThat(responseBody.get("entityTypeLabel"), equalTo("production"));
     }
 
@@ -103,38 +106,33 @@ public class EntityTypeControllerTest {
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
 
-        assertThat(response.statusCode(), equalTo(200));
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
         assertThat(responseBody.get("conceptId"), notNullValue());
         assertThat(responseBody.get("entityTypeLabel"), equalTo("newEntityType"));
     }
 
-//    @Test // TODO
+//    @Test // TODO: create a test once an implementation is made
 //    public void deleteEntityTypeShouldExecuteSuccessfully() {
 //
 //    }
 
-//    @Test // TODO
-//    public void assignResourceToEntityTypeShouldExecuteSuccessfully() {
-//        Json body = Json.object(
-//            "entityTypeLabel", "production",
-//            "resourceTypeLabel", "runtime"
-//            );
-//
-////        will fail with:
-////          java.lang.NullPointerException: Null value
-////            at ai.grakn.concept.AutoValue_Label.<init>(AutoValue_Label.java:14)
-//
-//        Response response = with()
-//            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-//            .put("/graph/entityType/production/resource/runtime");
-//
-////        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
-//        System.out.println("/// + " + response.body().asString());
-//
-//    }
+    @Test
+    public void assignAttributeToEntityTypeShouldExecuteSuccessfully() {
+        Json body = Json.object(
+            "entityTypeLabel", "production",
+            "attributeTypeLabel", "runtime"
+            );
 
-//    @Test // TODO
-//    public void deleteResourceTypeToEntitiyTypeAssignmentShouldExecuteSuccessfully() {
+        Response response = with()
+            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+            .put("/graph/entityType/production/attribute/runtime");
+
+        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+    }
+
+//    @Test // TODO: create a test once an implementation is made
+//    public void deleteAttributeTypeToEntityTypeAssignmentShouldExecuteSuccessfully() {
 //
 //    }
 
@@ -143,7 +141,7 @@ public class EntityTypeControllerTest {
 //
 //    }
 
-//    @Test // TODO
+//    @Test // TODO: create a test once an implementation is made
 //    public void deleteRoleToEntityTypeShouldExecuteSuccessfully() {
 //
 //    }

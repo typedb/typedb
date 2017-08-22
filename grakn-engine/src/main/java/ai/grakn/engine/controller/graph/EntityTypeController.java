@@ -58,11 +58,11 @@ public class EntityTypeController {
 
         spark.get("/graph/entityType/:entityTypeLabel", this::getEntityType);
         spark.post("/graph/entityType", this::postEntityType);
-        spark.delete("/graph/entityType/:entityTypeLabel", this::deleteEntityType); // TODO:
+        spark.delete("/graph/entityType/:entityTypeLabel", this::deleteEntityType); // TODO: implement
         spark.put("/graph/entityType/:entityTypeLabel/attribute/:attributeTypeLabel", this::assignAttributeTypeToEntityType);
-        spark.delete("/graph/entityType/:entityTypeId/attribute/:attributeTypeId", this::deleteAttributeTypeToEntitiyTypeAssignment); // TODO
+        spark.delete("/graph/entityType/:entityTypeId/attribute/:attributeTypeId", this::deleteAttributeTypeToEntitiyTypeAssignment); // TODO: implement
         spark.put("/graph/entityType/:entityTypeId/plays/:roleTypeId", this::assignRoleToEntityType);
-        spark.delete("/graph/entityType/:entityTypeId/plays/:roleTypeId", this::deleteRoleToEntitiyTypeAssignment);
+        spark.delete("/graph/entityType/:entityTypeId/plays/:roleTypeId", this::deleteRoleToEntitiyTypeAssignment); // TODO: implement
     }
 
     private Json getEntityType(Request request, Response response) {
