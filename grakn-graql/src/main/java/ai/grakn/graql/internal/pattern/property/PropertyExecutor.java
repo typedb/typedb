@@ -41,7 +41,7 @@ import java.util.function.Consumer;
  *     For example:
  *     <pre>
  *         SubProperty property = SubProperty.of(y);
- *         PropertyExecutor executor = property.execute(x);
+ *         PropertyExecutor executor = property.define(x);
  *         executor.requiredVars(); // returns `{y}`
  *         executor.producedVars(); // returns `{x}`
  *
