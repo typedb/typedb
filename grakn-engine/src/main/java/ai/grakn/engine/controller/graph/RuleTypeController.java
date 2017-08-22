@@ -68,7 +68,7 @@ public class RuleTypeController {
                 String jsonConceptId = ruleType.get().getId().getValue();
                 String jsonRuleTypeLabel = ruleType.get().getLabel().getValue();
                 response.status(HttpStatus.SC_OK);
-                Json responseBody = Json.object("conceptId", jsonConceptId, "ruleTypeLabel", jsonRuleTypeLabel);
+                Json responseBody = ruleTypeJson(jsonConceptId, jsonRuleTypeLabel);
                 LOG.info("getRuleType - ruleType found - " + jsonConceptId + ", " + jsonRuleTypeLabel + ". request processed.");
                 return responseBody;
             } else {
@@ -81,8 +81,8 @@ public class RuleTypeController {
 
     private Json postRuleType(Request request, Response response) {
         LOG.info("postRuleType - request received.");
-        Map<String, Object> requestBody = Json.read(mandatoryBody(request)).asMap();
-        String ruleTypeLabel = (String) requestBody.get("ruleTypeLabel");
+        Json requestBody = Json.read(mandatoryBody(request));
+        String ruleTypeLabel = requestBody.at("ruleType").at("label").asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postRuleType - attempting to add a new ruleType " + ruleTypeLabel + " on keyspace " + keyspace);
         try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
@@ -92,9 +92,17 @@ public class RuleTypeController {
             String jsonRuleTypeLabel = ruleType.getLabel().getValue();
             LOG.info("postRuleType - ruleType " + jsonRuleTypeLabel + " with id " + jsonConceptId + " added. request processed.");
             response.status(HttpStatus.SC_OK);
-            Json responseBody = Json.object("conceptId", jsonConceptId, "ruleTypeLabel", jsonRuleTypeLabel);
+            Json responseBody = ruleTypeJson(jsonConceptId, ruleTypeLabel);
 
             return responseBody;
         }
+    }
+
+    private Json ruleTypeJson(String conceptId, String label) {
+        return Json.object(
+            "ruleType", Json.object(
+                "conceptId", conceptId, "label", label
+            )
+        );
     }
 }

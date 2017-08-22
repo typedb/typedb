@@ -78,25 +78,25 @@ public class RuleTypeControllerTest {
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
             .get("/graph/ruleType/a-rule-type");
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("ruleTypeLabel"), equalTo("a-rule-type"));
+        assertThat(responseBody.at("ruleType").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("ruleType").at("label").asString(), equalTo("a-rule-type"));
     }
 
     @Test
     public void postRuleTypeShouldExecuteSuccessfully() {
-        Json body = Json.object("ruleTypeLabel", "newRuleType");
+        Json body = Json.object("ruleType", Json.object("label", "newRuleType"));
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
             .body(body.toString())
             .post("/graph/ruleType");
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("ruleTypeLabel"), equalTo("newRuleType"));
+        assertThat(responseBody.at("ruleType").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("ruleType").at("label").asString(), equalTo("newRuleType"));
     }
 }
