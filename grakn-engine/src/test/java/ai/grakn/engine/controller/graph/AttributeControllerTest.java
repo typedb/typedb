@@ -81,7 +81,7 @@ public class AttributeControllerTest {
 
     @Test
     public void postAttributeShouldExecuteSuccessfully() {
-        Json requestBody = Json.object("attribute", Json.object("value", "attributeValue"));
+        Json requestBody = Json.object("value", "attributeValue");
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace())
             .body(requestBody.toString())

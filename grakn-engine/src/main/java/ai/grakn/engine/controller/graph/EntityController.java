@@ -56,7 +56,7 @@ public class EntityController {
                                 MetricRegistry metricRegistry) {
         this.factory = factory;
 
-        spark.post("/graph/entityType/:entityTypeLabel/entity", this::postEntity);
+        spark.post("/graph/entityType/:entityTypeLabel", this::postEntity);
         spark.put("/graph/entity/:entityConceptId/attribute/:attributeConceptId", this::assignAttributeToEntity);
         spark.delete("/graph/entity/:entityConceptId/attribute/:attributeConceptId", this::deleteAttributeToEntityAssignment); // TODO: implement
     }
@@ -76,7 +76,7 @@ public class EntityController {
                 String jsonConceptId = entity.getId().getValue();
                 LOG.info("postEntity - entity " + jsonConceptId + " of entityType " + entityTypeLabel + " added. request processed");
                 response.status(HttpStatus.SC_OK);
-                return Json.object("conceptId", jsonConceptId);
+                return entityJson(jsonConceptId);
             } else {
                 LOG.info("postEntity - entityType " + entityTypeLabel + " NOT found.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
@@ -115,5 +115,9 @@ public class EntityController {
 
     private Json deleteAttributeToEntityAssignment(Request request, Response response) {
         throw new UnsupportedOperationException("Unsupported operation: DELETE /graph/entity/:conceptId/attribute/:conceptId");
+    }
+
+    private Json entityJson(String conceptId) {
+        return Json.object("entity", Json.object("conceptId", conceptId));
     }
 }

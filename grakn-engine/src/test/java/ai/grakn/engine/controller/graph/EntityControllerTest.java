@@ -28,6 +28,7 @@ import ai.grakn.test.kbs.MovieKB;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -89,12 +90,12 @@ public class EntityControllerTest {
     public void postEntityShouldExecuteSuccessfully() {
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .post("/graph/entityType/production/entity");
+            .post("/graph/entityType/production");
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        Json responseBody = Json.read(response.body().asString());
 
-        assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("conceptId"), notNullValue());
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+        assertThat(responseBody.at("entity").at("conceptId").asString(), notNullValue());
     }
 
     @Test
@@ -102,23 +103,23 @@ public class EntityControllerTest {
         // add an entity
         Response addEntityResponse = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .post("/graph/entityType/person/entity");
+            .post("/graph/entityType/person");
 
         // add an attribute
         Response addAttributeResponse = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .body(Json.object("attributeValue", "attributeValue").toString())
-            .post("/graph/attributeType/real-name/attribute");
+            .body(Json.object("value", "attributeValue").toString())
+            .post("/graph/attributeType/real-name");
 
         // get their ids
-        String entityConceptId = Json.read(addEntityResponse.body().asString()).at("conceptId").asString();
-        String attributeConceptId = Json.read(addAttributeResponse.body().asString()).at("conceptId").asString();
+        String entityConceptId = Json.read(addEntityResponse.body().asString()).at("entity").at("conceptId").asString();
+        String attributeConceptId = Json.read(addAttributeResponse.body().asString()).at("attribute").at("conceptId").asString();
 
         // assign the attribute to the entity
         Response response = with()
             .queryParam(KEYSPACE, mockGraph.getKeyspace())
             .put("/graph/entity/" + entityConceptId + "/attribute/" + attributeConceptId);
 
-        assertThat(response.statusCode(), equalTo(200));
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }
 }
