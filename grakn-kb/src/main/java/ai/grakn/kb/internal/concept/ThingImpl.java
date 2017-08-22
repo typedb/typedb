@@ -47,7 +47,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -268,9 +267,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Role roleHasValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().getLabel()));
         Role roleKeyValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.KEY_VALUE.getLabel(attribute.type().getLabel()));
 
-        Stream<Relationship> relationships = validStreamOf(this::relationships, roleHasOwner, roleKeyOwner);
+        Stream<Relationship> relationships = relationships(filterNulls(roleHasOwner, roleKeyOwner));
         relationships.filter(relationship -> {
-                    Stream<Thing> rolePlayers = validStreamOf(relationship::rolePlayers, roleHasValue, roleKeyValue);
+                    Stream<Thing> rolePlayers = relationship.rolePlayers(filterNulls(roleHasValue, roleKeyValue));
                     return rolePlayers.anyMatch(rolePlayer -> rolePlayer.equals(attribute));
                 }).forEach(Concept::delete);
 
@@ -278,15 +277,10 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     /**
-     * Returns a stream computed from a <code>streamProvider</code> which takes in as input an array or {@link Role}s
-     * which cannot contain any nulls.
-     *
-     * This helper exists to filter away the nulls
+     * Returns an array with all the nulls filtered out.
      */
-    private <X> Stream<X> validStreamOf(Function<Role[], Stream<X>> streamProvider, Role ... roles){
-        if(roles.length == 0) return Stream.empty();
-        Role[] filteredRoles = Arrays.stream(roles).filter(Objects::nonNull).toArray(Role[]::new);
-        return streamProvider.apply(filteredRoles);
+    private Role[] filterNulls(Role ... roles){
+        return Arrays.stream(roles).filter(Objects::nonNull).toArray(Role[]::new);
     }
 
     /**
