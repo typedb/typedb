@@ -42,7 +42,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 
 /**
  * <p>
- *     Endpoints for Graph API
+ *     AttributeType endpoints
  * </p>
  *
  * @author Ganeshwara Herawan Hananda

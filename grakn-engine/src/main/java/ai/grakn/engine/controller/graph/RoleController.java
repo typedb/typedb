@@ -39,7 +39,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 
 /**
  * <p>
- *     Endpoints for Graph API
+ *     Role endpoints
  * </p>
  *
  * @author Ganeshwara Herawan Hananda

@@ -41,7 +41,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 
 /**
  * <p>
- *     Endpoint tests for Graph API
+ *     Attribute endpoints
  * </p>
  *
  * @author Ganeshwara Herawan Hananda
