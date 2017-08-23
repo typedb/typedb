@@ -109,7 +109,7 @@ public class JsonMigratorMainTest {
     }
 
     @Test
-    @Ignore("This requires execption for failure to be saved")
+    @Ignore
     public void whenMigrationFailsOnTheServer_ErrorIsPrintedToSystemErr(){
         run("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", "wrong-keyspace");
         String expectedMessage = GraknBackendException.noSuchKeyspace("wrong-keyspace").getMessage();

@@ -197,7 +197,7 @@
         <dependency>
             <groupId>ai.grakn</groupId>
             <artifactId>redisq</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -289,6 +289,10 @@
         <repository>
             <id>development-snapshots</id>
             <url>https://maven.grakn.ai/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+            <id>releases</id>
+            <url>https://maven.grakn.ai/content/repositories/releases/</url>
         </repository>
     </repositories>
 

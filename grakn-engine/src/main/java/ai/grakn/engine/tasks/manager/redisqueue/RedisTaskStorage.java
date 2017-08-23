@@ -31,9 +31,10 @@ import ai.grakn.redisq.StateInfo;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,22 +68,7 @@ public class RedisTaskStorage implements TaskStateStorage {
     }
 
     private State mapStatus(TaskStatus status) {
-        switch (status) {
-            case CREATED:
-                return State.NEW;
-            case SCHEDULED:
-                return State.NEW;
-            case RUNNING:
-                return State.PROCESSING;
-            case COMPLETED:
-                return State.DONE;
-            case STOPPED:
-                return State.NEW;
-            case FAILED:
-                return State.FAILED;
-            default:
-                return State.NEW;
-        }
+        return status.asStateInfo();
     }
 
     @Override
@@ -118,8 +104,7 @@ public class RedisTaskStorage implements TaskStateStorage {
             case NEW:
                 break;
             case FAILED:
-                // TODO just a generic exception here. Consider adding this in Redisq.
-                ts.markFailed(new RuntimeException());
+                ts.markFailed(state.get().getInfo());
                 break;
             case PROCESSING:
                 ts.markRunning(engineID);
@@ -140,41 +125,30 @@ public class RedisTaskStorage implements TaskStateStorage {
     @Override
     public Set<TaskState> getTasks(@Nullable TaskStatus taskStatus, @Nullable String taskClassName,
             @Nullable String createdBy, @Nullable EngineID runningOnEngine, int limit, int offset) {
-//        try (Jedis jedis = redis.getResource()) {
-//            Stream<TaskState> stream = jedis.keys(PREFIX + "*").stream().map(key -> {
-//                String v = jedis.get(key);
-//                try {
-//                    return (TaskState) deserialize(Base64.getDecoder().decode(v));
-//                } catch (IllegalArgumentException e) {
-//                    LOG.error("Could not decode key:value {}:{}", key, v);
-//                    throw e;
-//                }
-//            });
-//            if (taskStatus != null) {
-//                stream = stream.filter(t -> t.status().equals(taskStatus));
-//            }
-//            if (taskClassName != null) {
-//                stream = stream.filter(t -> t.taskClass().getName().equals(taskClassName));
-//            }
-//            if (createdBy != null) {
-//                stream = stream.filter(t -> t.creator().equals(createdBy));
-//            }
-//            if (runningOnEngine != null) {
-//                stream = stream
-//                        .filter(t -> t.engineID() != null && t.engineID().equals(runningOnEngine));
-//            }
-//            stream = stream.skip(offset);
-//            if (limit > 0) {
-//                stream = stream.limit(limit);
-//            }
-//            Set<TaskState> results = stream.collect(toSet());
-//            LOG.debug("getTasks returning {} results", results.size());
-//            return results;
-//        } catch (Exception e) {
-//            throw GraknBackendException.stateStorageTaskRetrievalFailure(e);
-//        }
-        // TODO
-        return Collections.emptySet();
+        Stream<TaskState> stream = redis.getStates().filter(Optional::isPresent).map(Optional::get)
+                .map(s -> {
+                    return TaskState.of(TaskId.of(s.getId()), TaskStatus.fromState(s.getStateInfo().getState()));
+                });
+
+        if (taskStatus != null) {
+            stream = stream.filter(t -> t.status().equals(taskStatus));
+        }
+        if (taskClassName != null) {
+            LOG.warn("Asked for taskClassName filter but not implemented");
+        }
+        if (createdBy != null) {
+            LOG.warn("Asked for createdBy filter but not implemented");
+        }
+        if (runningOnEngine != null) {
+            LOG.warn("Asked for runningOnEngine filter but not implemented");
+        }
+        stream = stream.skip(offset);
+        if (limit > 0) {
+            stream = stream.limit(limit);
+        }
+        Set<TaskState> results = stream.collect(Collectors.toSet());
+        LOG.debug("getTasks returning {} results", results.size());
+        return results;
     }
 
     @Override

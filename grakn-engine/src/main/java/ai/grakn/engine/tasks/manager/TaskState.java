@@ -112,19 +112,32 @@ public class TaskState implements Serializable {
         return new TaskState(null, null, null, id, null);
     }
 
+    public static TaskState of(TaskId id, TaskStatus taskStatus) {
+        return new TaskState(null, null, null, id, null, taskStatus);
+    }
+
     @JsonCreator
     public TaskState(@JsonProperty("taskClass") Class<?> taskClass,
             @JsonProperty("creator") String creator,
             @JsonProperty("schedule") TaskSchedule schedule,
             @JsonProperty("id") TaskId id,
-            @JsonProperty("priority") Priority priority) {
-        this.status = CREATED;
+            @JsonProperty("priority") Priority priority,
+            @JsonProperty("status") TaskStatus status) {
+        this.status = status;
         this.statusChangeTime = now();
         this.taskClassName = taskClass != null ? taskClass.getName() : null;
         this.creator = creator;
         this.schedule = schedule;
         this.taskId = id.getValue();
         this.priority = priority;
+    }
+
+    public TaskState(Class<?> taskClass,
+            String creator,
+            TaskSchedule schedule,
+            TaskId id,
+            Priority priority) {
+        this(taskClass, creator, schedule, id, priority, CREATED);
     }
 
     private TaskState(TaskState taskState) {
@@ -183,10 +196,13 @@ public class TaskState implements Serializable {
         this.exception = exception.getClass().getName();
         this.stackTrace = getFullStackTrace(exception);
         this.statusChangeTime = now();
+        return this;
+    }
 
-        // We want to keep the configuration and checkpoint here
-        // It's useful to debug failed states
-
+    public TaskState markFailed(String reason){
+        this.status = FAILED;
+        this.exception = reason;
+        this.statusChangeTime = now();
         return this;
     }
 

@@ -33,6 +33,7 @@ import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.Task.EXCEPTION;
 import static ai.grakn.util.REST.Response.Task.ID;
 import static ai.grakn.util.REST.Response.Task.STATUS;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
@@ -411,7 +412,8 @@ public class TasksController {
     private Json serialiseStateSubset(TaskState state) {
         return Json.object()
                 .set(ID, state.getId().getValue())
-                .set(STATUS, state.status().name());
+                .set(STATUS, state.status().name())
+                .set(EXCEPTION, state.exception());
     }
 
     private static class TaskStateWithConfiguration {
