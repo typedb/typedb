@@ -99,7 +99,7 @@ public class EntityController {
                 LOG.info("assignAttributeToEntity - entity and attribute found. attempting to assign attributeConceptId " + attributeConceptId + " to entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
                 Entity entity = entityOptional.get();
                 Attribute attribute = attributeOptional.get();
-                Entity entityType1 = entity.attribute(attribute);
+                entity.attribute(attribute);
                 graph.commit();
                 LOG.info("assignAttributeToEntity - assignment succeeded. request processed.");
                 Json responseBody = Json.object();

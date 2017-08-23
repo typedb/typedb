@@ -109,11 +109,7 @@ public class RelationshipTypeController {
             return responseBody;
         }
     }
-
-    private Json assignRoleToRelationshipType(Request request, Response response) {
-        return Json.nil();
-    }
-
+    
     private Json relationshipTypeJson(String conceptId, String label) {
         return Json.object("relationshipType", Json.object(
             "conceptId", conceptId, "label", label
