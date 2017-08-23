@@ -117,6 +117,28 @@ public class UndefineQueryTest {
     }
 
     @Test
+    public void whenUndefiningKey_TheKeyLinkIsDeleted() {
+        qb.define(label(NEW_TYPE).sub(ENTITY).key("name")).execute();
+
+        assertThat(tx.getType(NEW_TYPE).keys().toArray(), hasItemInArray(tx.getAttributeType("name")));
+
+        qb.undefine(label(NEW_TYPE).key("name")).execute();
+
+        assertThat(tx.getType(NEW_TYPE).keys().toArray(), not(hasItemInArray(tx.getAttributeType("name"))));
+    }
+
+    @Test
+    public void whenUndefiningKeyWhichDoesntExist_DoNothing() {
+        qb.define(label(NEW_TYPE).sub(ENTITY).key("name")).execute();
+
+        assertThat(tx.getType(NEW_TYPE).keys().toArray(), hasItemInArray(tx.getAttributeType("name")));
+
+        qb.undefine(label(NEW_TYPE).key("title")).execute();
+
+        assertThat(tx.getType(NEW_TYPE).keys().toArray(), hasItemInArray(tx.getAttributeType("name")));
+    }
+
+    @Test
     public void whenUndefiningById_TheSchemaConceptIsDeleted() {
         Type newType = qb.define(x.label(NEW_TYPE).sub(ENTITY)).execute().get(x).asType();
 

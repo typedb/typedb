@@ -160,7 +160,7 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
         return PropertyExecutor.builder(executor -> {
             Type type = executor.get(var).asType();
             AttributeType<?> attributeType = executor.get(resourceType().var()).asAttributeType();
-            Label hasOwner = HAS_OWNER.getLabel(attributeType.getLabel());
+            Label hasOwner = (required() ? KEY_OWNER : HAS_OWNER).getLabel(attributeType.getLabel());
             // type.deleteAttribute(); TODO
             Optional<Role> role = type.plays().filter(r -> r.getLabel().equals(hasOwner)).findAny();
             role.ifPresent(type::deletePlays);
