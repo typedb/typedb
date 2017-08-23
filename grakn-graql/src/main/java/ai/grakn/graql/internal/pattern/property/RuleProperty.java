@@ -27,7 +27,6 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -39,50 +38,17 @@ import java.util.Set;
  * @author Felix Chapman
  */
 public abstract class RuleProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
-    protected final Pattern pattern;
 
-    RuleProperty(Pattern pattern) {
-        this.pattern = pattern;
-    }
-
-    public Pattern getPattern() {
-        return pattern;
-    }
+    public abstract Pattern pattern();
 
     @Override
     public String getProperty() {
-        return pattern.toString();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        RuleProperty that = (RuleProperty) o;
-
-        return pattern.equals(that.pattern);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return pattern.hashCode();
+        return pattern().toString();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getClass().getName()));
-    }
-
-    @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of();
-    }
-
-    @Override
-    public final Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
+        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getName()));
     }
 
     @Nullable

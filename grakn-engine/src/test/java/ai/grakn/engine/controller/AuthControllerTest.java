@@ -1,21 +1,19 @@
 package ai.grakn.engine.controller;
 
-import static com.jayway.restassured.RestAssured.given;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
+import ai.grakn.engine.EngineTestHelper;
+import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.engine.user.UsersHandler;
+import ai.grakn.engine.util.JWTHandler;
+import com.jayway.restassured.response.Response;
+import mjson.Json;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.jayway.restassured.response.Response;
-
-import ai.grakn.engine.EngineTestHelper;
-import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.engine.util.JWTHandler;
-import mjson.Json;
+import static com.jayway.restassured.RestAssured.given;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * 
@@ -31,7 +29,7 @@ public class AuthControllerTest  {
 
     private UsersHandler usersHandler = UsersHandler.create(
             EngineTestHelper.config().getProperty(GraknEngineConfig.ADMIN_PASSWORD_PROPERTY), 
-                                                  EngineGraknGraphFactory.createAndLoadSystemOntology(EngineTestHelper.config().getProperties()));
+                                                  EngineGraknTxFactory.createAndLoadSystemSchema(EngineTestHelper.config().getProperties()));
 
     @Test
     public void newSessionWithNonExistingUser() {
@@ -89,13 +87,13 @@ public class AuthControllerTest  {
         Response dataResponseNonAuthenticated = given().
                 header("Authorization", "Bearer aaaaaaaaaa.bbbbbbbbbbb.cccccccccccc").
                 body(body.toString()).when().
-                get("/graph/ontology");
+                get("/graph/schema");
         dataResponseNonAuthenticated.then().statusCode(401);
 
         //Try to execute query with token in request
         Response dataResponseAuthenticated = given().
                 header("Authorization", "Bearer " + token).
-                body(body.toString()).get("/graph/ontology");
+                body(body.toString()).get("/graph/schema");
         dataResponseAuthenticated.then().statusCode(200);
 
     }
@@ -108,7 +106,7 @@ public class AuthControllerTest  {
 
         //Try to execute query without token in request, malformed request
         Response dataResponseMalformed = given().
-                body(body.toString()).get("/graph/ontology");
+                body(body.toString()).get("/graph/schema");
         dataResponseMalformed.then().statusCode(400);
     }
 

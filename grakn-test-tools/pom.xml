@@ -34,7 +34,7 @@
         <!-- Needed to be able to create graphs in a rule context -->
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-graph</artifactId>
+            <artifactId>grakn-kb</artifactId>
             <version>${project.version}</version>
         </dependency>
 

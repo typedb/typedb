@@ -18,15 +18,15 @@
 
 package ai.grakn.test.property;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.NonMeta;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
+import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
 import ai.grakn.generator.AbstractTypeGenerator.NonAbstract;
-import ai.grakn.generator.FromGraphGenerator.FromGraph;
-import ai.grakn.generator.GraknGraphs.Open;
+import ai.grakn.generator.FromTxGenerator.FromTx;
+import ai.grakn.generator.GraknTxs.Open;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.Rule;
@@ -52,7 +52,7 @@ public class EntityTypePropertyTest {
 
     @Property
     public void whenANonMetaEntityTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
-            @Open GraknGraph graph, @FromGraph @NonMeta EntityType type) {
+            @Open GraknTx graph, @FromTx @NonMeta EntityType type) {
         assumeThat(type.instances().collect(toSet()), empty());
         assumeThat(type.subs().collect(toSet()), contains(type));
         assumeThat(type.getRulesOfHypothesis().collect(toSet()), empty());
@@ -60,13 +60,13 @@ public class EntityTypePropertyTest {
 
         type.delete();
 
-        assertNull(graph.getOntologyConcept(type.getLabel()));
+        assertNull(graph.getSchemaConcept(type.getLabel()));
     }
 
     @Property
     public void whenAddingAnEntityOfTheMetaEntityType_Throw(@Meta EntityType type) {
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(type.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(type.getLabel()).getMessage());
         type.addEntity();
     }
 
@@ -82,13 +82,13 @@ public class EntityTypePropertyTest {
     public void whenAddingAnEntity_TheEntityIsInNoRelations(@NonMeta @NonAbstract EntityType type) {
         Entity entity = type.addEntity();
 
-        assertThat(entity.relations().collect(toSet()), empty());
+        assertThat(entity.relationships().collect(toSet()), empty());
     }
 
     @Property
     public void whenAddingAnEntity_TheEntityHasNoResources(@NonMeta @NonAbstract EntityType type) {
         Entity entity = type.addEntity();
 
-        assertThat(entity.resources().collect(toSet()), empty());
+        assertThat(entity.attributes().collect(toSet()), empty());
     }
 }

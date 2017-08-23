@@ -18,7 +18,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 
 import javax.annotation.CheckReturnValue;
@@ -38,11 +38,11 @@ import javax.annotation.CheckReturnValue;
 public interface DeleteQuery extends Query<Void> {
 
     /**
-     * @param graph the graph to execute the query on
+     * @param tx the graph to execute the query on
      * @return a new DeleteQuery with the graph set
      */
     @Override
-    DeleteQuery withGraph(GraknGraph graph);
+    DeleteQuery withTx(GraknTx tx);
 
     /**
      * @return admin instance for inspecting and manipulating this query

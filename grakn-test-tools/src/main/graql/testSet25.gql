@@ -1,4 +1,4 @@
-insert
+define
 
 #Roles
 
@@ -18,15 +18,17 @@ post sub entity
 
 #Relations
 
-reply-of sub relation
+reply-of sub relationship
     relates original
     relates reply;
 
-message-succession sub relation
+message-succession sub relationship
     relates predecessor
     relates successor;
 
-creation-date sub resource datatype long;
+creation-date sub attribute datatype long;
+
+insert
 
 #Rules
 

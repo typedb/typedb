@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -26,39 +26,32 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.parser.QueryParser;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.dataType;
-
 /**
- * Represents the {@code datatype} property on a {@link ResourceType}.
+ * Represents the {@code datatype} property on a {@link AttributeType}.
  *
  * This property can be queried or inserted.
  *
- * The insertion behaviour is not implemented here, but instead in
- * {@link ai.grakn.graql.internal.query.InsertQueryExecutor}.
- *
  * @author Felix Chapman
  */
-public class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+@AutoValue
+public abstract class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
     public static final String NAME = "datatype";
 
-    private final ResourceType.DataType<?> datatype;
-
-    public DataTypeProperty(ResourceType.DataType<?> datatype) {
-        this.datatype = datatype;
+    public static DataTypeProperty of(AttributeType.DataType<?> datatype) {
+        return new AutoValue_DataTypeProperty(datatype);
     }
 
-    public ResourceType.DataType<?> getDataType() {
-        return datatype;
-    }
+    public abstract AttributeType.DataType<?> dataType();
 
     @Override
     public String getName() {
@@ -67,47 +60,25 @@ public class DataTypeProperty extends AbstractVarProperty implements NamedProper
 
     @Override
     public String getProperty() {
-        return QueryParser.DATA_TYPES.inverse().get(datatype);
+        return QueryParser.DATA_TYPES.inverse().get(dataType());
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(dataType(this, start, datatype));
+        return ImmutableSet.of(EquivalentFragmentSets.dataType(this, start, dataType()));
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.builder(var).dataType(datatype);
-    }
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).dataType(dataType());
+        };
 
-    @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of();
-    }
-
-    @Override
-    public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        DataTypeProperty that = (DataTypeProperty) o;
-
-        return datatype.equals(that.datatype);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return datatype.hashCode();
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new DataTypeAtom(var.getVarName(), this, parent);
+        return new DataTypeAtom(var.var(), this, parent);
     }
 }

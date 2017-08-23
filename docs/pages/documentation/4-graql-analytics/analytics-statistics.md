@@ -10,7 +10,7 @@ comment_issue_id: 71
 ---
 
 Computing simple statistics, such as the mean and standard deviations of datasets, is an easy task when considering a few
-isolated instances. What happens when your graph becomes so large that it is distributed across many machines? What
+isolated instances. What happens when your knowledge base becomes so large that it is distributed across many machines? What
 if the values you are calculating correspond to many different types of things? 
 
 Graql analytics can perform the necessary computations through the `compute` query.  The available algorithms
@@ -24,7 +24,7 @@ are:
 *  `std (standard deviation)`
 *  `sum`
 
-For example, the following query executes a distributed computation to determine the mean age of all of the people in the graph.
+For example, the following query executes a distributed computation to determine the mean age of all of the people in the knowledge base.
 
 ```graql
 compute mean of age in person;

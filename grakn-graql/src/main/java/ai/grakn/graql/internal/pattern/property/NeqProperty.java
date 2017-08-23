@@ -18,15 +18,14 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
@@ -42,17 +41,14 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public class NeqProperty extends AbstractVarProperty implements NamedProperty {
+@AutoValue
+public abstract class NeqProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final VarPatternAdmin var;
-
-    public NeqProperty(VarPatternAdmin var) {
-        this.var = var;
+    public static NeqProperty of(VarPatternAdmin var) {
+        return new AutoValue_NeqProperty(var);
     }
 
-    public VarPatternAdmin getVar() {
-        return var;
-    }
+    public abstract VarPatternAdmin var();
 
     @Override
     public String getName() {
@@ -61,50 +57,25 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
 
     @Override
     public String getProperty() {
-        return var.getPrintableName();
+        return var().getPrintableName();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         return Sets.newHashSet(
                 EquivalentFragmentSets.notInternalFragmentSet(this, start),
-                EquivalentFragmentSets.notInternalFragmentSet(this, var.getVarName()),
-                EquivalentFragmentSets.neq(this, start, var.getVarName())
+                EquivalentFragmentSets.notInternalFragmentSet(this, var().var()),
+                EquivalentFragmentSets.neq(this, start, var().var())
         );
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        // TODO: Throw
-    }
-
-    @Override
-    public Set<Var> requiredVars(Var var) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
-        return Stream.of(var);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        NeqProperty that = (NeqProperty) o;
-
-        return var.equals(that.var);
-    }
-
-    @Override
-    public int hashCode() {
-        return var.hashCode();
+    public Stream<VarPatternAdmin> innerVarPatterns() {
+        return Stream.of(var());
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new NeqPredicate(var.getVarName(), this, parent);
+        return new NeqPredicate(var.var(), this, parent);
     }
 }

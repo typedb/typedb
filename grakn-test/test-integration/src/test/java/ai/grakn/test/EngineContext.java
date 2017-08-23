@@ -35,7 +35,7 @@ import static ai.grakn.test.GraknTestEngineSetup.startEngine;
 import static ai.grakn.test.GraknTestEngineSetup.startRedis;
 import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
 import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
-import static ai.grakn.util.GraphLoader.randomKeyspace;
+import static ai.grakn.util.SampleKBLoader.randomKeyspace;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import org.junit.rules.ExternalResource;

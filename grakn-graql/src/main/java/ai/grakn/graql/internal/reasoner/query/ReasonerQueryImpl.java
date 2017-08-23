@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
@@ -44,20 +44,21 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import java.util.LinkedList;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -83,23 +84,28 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEquals
  */
 public class ReasonerQueryImpl implements ReasonerQuery {
 
-    private final GraknGraph graph;
+    private final GraknTx tx;
     private final Set<Atomic> atomSet = new HashSet<>();
     private int priority = Integer.MAX_VALUE;
 
-    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
-        this.graph = graph;
+    ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
+        this.tx = tx;
         atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
         inferTypes();
     }
 
     ReasonerQueryImpl(ReasonerQueryImpl q) {
-        this.graph = q.graph;
+        this.tx = q.tx;
         q.getAtoms().forEach(at -> addAtomic(AtomicFactory.create(at, this)));
     }
 
+<<<<<<< HEAD
     ReasonerQueryImpl(Set<Atomic> atoms, GraknGraph graph){
         this.graph = graph;
+=======
+    ReasonerQueryImpl(Set<Atom> atoms, GraknTx tx){
+        this.tx = tx;
+>>>>>>> af2276f104a6e1cf059ff5cdba6152b2211e523d
 
         atoms.stream()
                 .map(at -> AtomicFactory.create(at, this))
@@ -115,7 +121,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     ReasonerQueryImpl(Atom atom) {
-        this(Collections.singleton(atom), atom.getParentQuery().graph());
+        this(Collections.singleton(atom), atom.getParentQuery().tx());
     }
 
     /**
@@ -174,8 +180,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public GraknGraph graph() {
-        return graph;
+    public GraknTx tx() {
+        return tx;
     }
 
     @Override
@@ -183,7 +189,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<PatternAdmin> patterns = new HashSet<>();
         atomSet.stream()
                 .map(Atomic::getCombinedPattern)
-                .flatMap(p -> p.getVars().stream())
+                .flatMap(p -> p.varPatterns().stream())
                 .forEach(patterns::add);
         return Patterns.conjunction(patterns);
     }
@@ -212,18 +218,23 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getAtoms(Atom.class).filter(this::containsEquivalentAtom).count() == 2;
     }
 
+    /**
+     * @return true if this query is atomic
+     */
     boolean isAtomic() {
         return atomSet.stream().filter(Atomic::isSelectable).count() == 1;
     }
 
     /**
-     * @return atom set constituting this query
+     * @return atom set defining this reasoner query
      */
     @Override
     public Set<Atomic> getAtoms() { return atomSet;}
 
     /**
-     * @return atom set constituting this query
+     * @param type the class of {@link Atomic} to return
+     * @param <T> the type of {@link Atomic} to return
+     * @return stream of atoms of specified type defined in this query
      */
     @Override
     public <T extends Atomic> Stream<T> getAtoms(Class<T> type) {
@@ -249,18 +260,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     @Override
     public MatchQuery getMatchQuery() {
-        return graph.graql().infer(false).match(getPattern());
+        return tx.graql().infer(false).match(getPattern());
     }
 
     /**
      * @return map of variable name - type pairs
      */
     @Override
-    public Map<Var, OntologyConcept> getVarOntologyConceptMap() {
-        Map<Var, OntologyConcept> typeMap = new HashMap<>();
+    public Map<Var, SchemaConcept> getVarSchemaConceptMap() {
+        Map<Var, SchemaConcept> typeMap = new HashMap<>();
         getAtoms(TypeAtom.class)
-                .filter(at -> Objects.nonNull(at.getOntologyConcept()))
-                .forEach(atom -> typeMap.putIfAbsent(atom.getVarName(), atom.getOntologyConcept()));
+                .filter(at -> Objects.nonNull(at.getSchemaConcept()))
+                .forEach(atom -> typeMap.putIfAbsent(atom.getVarName(), atom.getSchemaConcept()));
         return typeMap;
     }
 
@@ -365,13 +376,17 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         getAtoms(IdPredicate.class).forEach(predicates::add);
 
         // the mapping function is declared separately to please the Eclipse compiler
-        Function<IdPredicate, Concept> f = p -> graph().getConcept(p.getPredicate());
+        Function<IdPredicate, Concept> f = p -> tx().getConcept(p.getPredicate());
 
         return new QueryAnswer(predicates.stream()
                 .collect(Collectors.toMap(IdPredicate::getVarName, f))
         );
     }
 
+    /**
+     * @param sub substitution to be added
+     * @return incorporate the substitution into this query by converting it to id predicates
+     */
     public ReasonerQueryImpl addSubstitution(Answer sub){
         Set<Var> varNames = getVarNames();
 
@@ -522,7 +537,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         List<Set<Atom>> atomOptions = getAtoms(Atom.class)
                 .map(at -> {
-                    if (at.isRelation() && at.getOntologyConcept() == null) {
+                    if (at.isRelation() && at.getSchemaConcept() == null) {
                         RelationAtom rel = (RelationAtom) at;
                         Set<Atom> possibleRels = new HashSet<>();
                         rel.inferPossibleRelationTypes(sub).stream()
@@ -540,6 +555,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
 
         return Sets.cartesianProduct(atomOptions).stream()
-                .map(atomList -> ReasonerQueries.create(new HashSet<>(atomList), graph()));
+                .map(atomList -> ReasonerQueries.create(new HashSet<>(atomList), tx()));
+    }
+
+    /**
+     * reiteration might be required if rule graph contains loops with negative flux
+     * or there exists a rule which head satisfies body
+     * @return true if because of the rule graph form, the resolution of this query may require reiteration
+     */
+    public boolean requiresReiteration() {
+
+        Set<InferenceRule> dependentRules = RuleUtil.getDependentRules(this).collect(Collectors.toSet());
+        return RuleUtil.subGraphHasLoopsWithNegativeFlux(dependentRules, tx())
+                || RuleUtil.subGraphHasRulesWithHeadSatisfyingBody(dependentRules, tx());
     }
 }

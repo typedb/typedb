@@ -1,4 +1,4 @@
-insert
+define
 
 #Roles
 
@@ -34,15 +34,15 @@ entity4 sub entity
 
 #Relations
 
-relation1 sub relation
+relation1 sub relationship
 	relates role1
 	relates role2;
 
-relation2 sub relation
+relation2 sub relationship
     relates role2
     relates role3;
 
-relation3 sub relation
+relation3 sub relationship
     relates subRole2
     relates role3
     relates role4;

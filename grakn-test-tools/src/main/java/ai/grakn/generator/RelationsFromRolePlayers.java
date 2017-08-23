@@ -19,8 +19,8 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 
@@ -28,30 +28,30 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * A generator that produces {@link Relation}s from existing role-players.
+ * A generator that produces {@link Relationship}s from existing role-players.
  *
  * This means the relation is navigated to from another {@link Thing} attached to it. This will find relations even
- * if they are not returned by {@link RelationType#instances}.
+ * if they are not returned by {@link RelationshipType#instances}.
  *
  * @author Felix Chapman
  */
-public class RelationsFromRolePlayers extends FromGraphGenerator<Relation> {
+public class RelationsFromRolePlayers extends FromTxGenerator<Relationship> {
 
     public RelationsFromRolePlayers() {
-        super(Relation.class);
+        super(Relationship.class);
     }
 
     @Override
-    protected Relation generateFromGraph() {
-        Stream<? extends Thing> things = ((Type) graph().admin().getMetaConcept()).instances();
+    protected Relationship generateFromTx() {
+        Stream<? extends Thing> things = ((Type) tx().admin().getMetaConcept()).instances();
 
-        Optional<Relation> relation = things.flatMap(thing -> thing.relations()).findAny();
+        Optional<Relationship> relation = things.flatMap(thing -> thing.relationships()).findAny();
 
         if (relation.isPresent()) {
             return relation.get();
         } else {
             // Give up and fall back to normal generator
-            return genFromGraph(Relations.class).generate(random, status);
+            return genFromTx(Relations.class).generate(random, status);
         }
     }
 }

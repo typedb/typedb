@@ -17,7 +17,7 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -85,7 +85,7 @@ public class ResourceAtom extends Binary{
         String multiPredicateString = getMultiPredicate().isEmpty()?
                 getPredicateVariable().toString() :
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
-        return getVarName() + " has " + getOntologyConcept().getLabel() + " " +
+        return getVarName() + " has " + getSchemaConcept().getLabel() + " " +
                 multiPredicateString +
                 getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
     }
@@ -151,9 +151,9 @@ public class ResourceAtom extends Binary{
     public PatternAdmin getCombinedPattern() {
         Set<VarPatternAdmin> vars = getMultiPredicate().stream()
                 .map(Atomic::getPattern)
-                .map(PatternAdmin::asVar)
+                .map(PatternAdmin::asVarPattern)
                 .collect(Collectors.toSet());
-        vars.add(super.getPattern().asVar());
+        vars.add(super.getPattern().asVarPattern());
         return Patterns.conjunction(vars);
     }
 
@@ -168,8 +168,8 @@ public class ResourceAtom extends Binary{
         TypeAtom parentTypeConstraint = this.getTypeConstraints().findFirst().orElse(null);
         TypeAtom childTypeConstraint = childAtom.getTypeConstraints().findFirst().orElse(null);
 
-        OntologyConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getOntologyConcept() : null;
-        OntologyConcept childType = childTypeConstraint != null? childTypeConstraint.getOntologyConcept() : null;
+        SchemaConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getSchemaConcept() : null;
+        SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getSchemaConcept() : null;
         if (parentType != null && childType != null && checkDisjoint(parentType, childType)) return false;
 
         //check predicates
@@ -197,7 +197,7 @@ public class ResourceAtom extends Binary{
 
     @Override
     public boolean isAllowedToFormRuleHead(){
-        if (getOntologyConcept() == null || getMultiPredicate().size() > 1) return false;
+        if (getSchemaConcept() == null || getMultiPredicate().size() > 1) return false;
         if (getMultiPredicate().isEmpty()) return true;
 
         ValuePredicate predicate = getMultiPredicate().iterator().next();
@@ -206,22 +206,22 @@ public class ResourceAtom extends Binary{
 
     @Override
     public Set<String> validateOntologically() {
-        OntologyConcept type = getOntologyConcept();
+        SchemaConcept type = getSchemaConcept();
         if (type == null) {
             return new HashSet<>();
         }
 
         Set<String> errors = new HashSet<>();
-        if (!type.isResourceType()){
+        if (!type.isAttributeType()){
             errors.add(ErrorMessage.VALIDATION_RULE_INVALID_RESOURCE_TYPE.getMessage(type.getLabel()));
             return errors;
         }
 
-        OntologyConcept ownerType = getParentQuery().getVarOntologyConceptMap().get(getVarName());
+        SchemaConcept ownerType = getParentQuery().getVarSchemaConceptMap().get(getVarName());
 
         if (ownerType != null
                 && ownerType.isType()
-                && ownerType.asType().resources().noneMatch(rt -> rt.equals(type.asResourceType()))){
+                && ownerType.asType().attributes().noneMatch(rt -> rt.equals(type.asAttributeType()))){
             errors.add(ErrorMessage.VALIDATION_RULE_RESOURCE_OWNER_CANNOT_HAVE_RESOURCE.getMessage(type.getLabel(), ownerType.getLabel()));
         }
         return errors;
@@ -231,7 +231,7 @@ public class ResourceAtom extends Binary{
     public boolean requiresMaterialisation(){ return true;}
 
     private boolean isSuperNode(){
-        return graph().graql().match(getCombinedPattern()).admin().stream()
+        return tx().graql().match(getCombinedPattern()).admin().stream()
                 .skip(ResolutionPlan.RESOURCE_SUPERNODE_SIZE)
                 .findFirst().isPresent();
     }
@@ -260,7 +260,7 @@ public class ResourceAtom extends Binary{
                     VarPatternAdmin inner = vp.getInnerVar().orElse(null);
                     //variable mapped inside the query
                     if (subbedVars.contains(getVarName())
-                        || subbedVars.contains(inner.getVarName())
+                        || subbedVars.contains(inner.var())
                             && !isSuperNode()) {
                         vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;
                     } //variable equality
@@ -324,7 +324,7 @@ public class ResourceAtom extends Binary{
     public Set<TypeAtom> getSpecificTypeConstraints() {
         return getTypeConstraints()
                 .filter(t -> t.getVarName().equals(getVarName()))
-                .filter(t -> Objects.nonNull(t.getOntologyConcept()))
+                .filter(t -> Objects.nonNull(t.getSchemaConcept()))
                 .collect(Collectors.toSet());
     }
 

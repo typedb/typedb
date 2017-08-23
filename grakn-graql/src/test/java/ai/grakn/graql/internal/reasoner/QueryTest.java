@@ -18,9 +18,12 @@
 
 package ai.grakn.graql.internal.reasoner;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+<<<<<<< HEAD
 import ai.grakn.test.graphs.GeoGraph;
+=======
+>>>>>>> af2276f104a6e1cf059ff5cdba6152b2211e523d
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.Conjunction;
@@ -28,9 +31,14 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+<<<<<<< HEAD
 import ai.grakn.test.GraphContext;
 
+=======
+>>>>>>> af2276f104a6e1cf059ff5cdba6152b2211e523d
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.GeoKB;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -46,10 +54,10 @@ import static org.junit.Assume.assumeTrue;
 public class QueryTest {
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogyOntology = GraphContext.preLoad("genealogy/ontology.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext genealogySchema = SampleKBContext.preLoad("genealogy/schema.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -58,7 +66,7 @@ public class QueryTest {
 
     @Test //simple equality tests between original and a copy of a query
     public void testAlphaEquivalence_QueryCopyIsAlphaEquivalent(){
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         String patternString = "{$x isa city;$y isa country;($x, $y) isa is-located-in;}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
         queryEquivalence(query, (ReasonerQueryImpl) query.copy(), true);
@@ -66,7 +74,7 @@ public class QueryTest {
 
     @Test //check two queries are alpha-equivalent - equal up to the choice of free variables
     public void testAlphaEquivalence() {
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         String patternString = "{" +
                 "$x isa city, has name 'Warsaw';" +
                 "$y isa region;" +
@@ -90,7 +98,7 @@ public class QueryTest {
     @Ignore
     @Test
     public void testAlphaEquivalence_chainTreeAndLoopStructure() {
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         String chainString = "{" +
                 "($x, $y) isa is-located-in;" +
                 "($y, $z) isa is-located-in;" +
@@ -119,7 +127,7 @@ public class QueryTest {
 
     @Test //tests various configurations of alpha-equivalence with extra type atoms present
     public void testAlphaEquivalence_nonMatchingTypes() {
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         String polandId = getConcept(graph, "name", "Poland").getId().getValue();
         String patternString = "{$y id '" + polandId + "'; $y isa country; (geo-entity: $y1, entity-location: $y), isa is-located-in;}";
         String patternString2 = "{$x1 id '" + polandId + "'; $y isa country; (geo-entity: $x1, entity-location: $x2), isa is-located-in;}";
@@ -145,7 +153,7 @@ public class QueryTest {
 
     @Test //tests alpha-equivalence of queries with indirect types
     public void testAlphaEquivalence_indirectTypes(){
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         String patternString = "{(entity-location: $x2, geo-entity: $x1) isa is-located-in;" +
                 "$x1 isa $t1; $t1 sub geoObject;}";
         String patternString2 = "{(geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
@@ -159,7 +167,7 @@ public class QueryTest {
     //Bug #11150 Relations with resources as single VarPatternAdmin
     @Test //tests whether directly and indirectly reified relations are equivalent
     public void testAlphaEquivalence_reifiedRelation(){
-        GraknGraph graph = genealogyOntology.graph();
+        GraknTx graph = genealogySchema.tx();
         String patternString = "{$rel (happening: $b, protagonist: $p) isa event-protagonist has event-role 'parent';}";
         String patternString2 = "{$rel (happening: $c, protagonist: $r) isa event-protagonist; $rel has event-role 'parent';}";
 
@@ -176,14 +184,14 @@ public class QueryTest {
         }
     }
 
-    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknGraph graph){
+    private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){
         Set<VarPatternAdmin> vars = graph.graql().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);
     }
 
-    private static Concept getConcept(GraknGraph graph, String typeLabel, Object val){
+    private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
         return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).execute().iterator().next().get("x");
     }
 

@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.reasoner.rule;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -64,9 +64,14 @@ public class InferenceRule {
 
     private int priority = Integer.MAX_VALUE;
 
+<<<<<<< HEAD
     public InferenceRule(Rule rule, GraknGraph graph){
         this.graph = graph;
         this.ruleId = rule.getId();
+=======
+    public InferenceRule(Rule rule, GraknTx graph){
+        ruleId = rule.getId();
+>>>>>>> af2276f104a6e1cf059ff5cdba6152b2211e523d
         //TODO simplify once changes propagated to rule objects
         this.body = ReasonerQueries.create(conjunction(rule.getWhen().admin()), graph);
         this.head = ReasonerQueries.atomic(conjunction(rule.getThen().admin()), graph);
@@ -126,11 +131,24 @@ public class InferenceRule {
 
     public ConceptId getRuleId(){ return ruleId;}
 
+
     /**
-     * @return true if head and body do not share any variables
+     * @return true if the rule has disconnected head, i.e. head and body do not share any variables
      */
     public boolean hasDisconnectedHead(){
         return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
+    }
+
+    /**
+     * @return true if head satisfies the pattern specified in the body of the rule
+     */
+    boolean headSatisfiesBody(){
+        ReasonerQueryImpl extendedHead = ReasonerQueries.create(getHead());
+        getBody().getAtoms(TypeAtom.class)
+                .filter(t -> !t.isRelation())
+                .map(at -> AtomicFactory.create(at, extendedHead))
+                .forEach(extendedHead::addAtomic);
+        return getBody().isEquivalent(extendedHead);
     }
 
     /**
@@ -199,12 +217,13 @@ public class InferenceRule {
         Set<TypeAtom> allTypes = Sets.union(unifiedTypes, ruleTypes);
         allTypes.stream()
                 .filter(ta -> {
-                    OntologyConcept ontologyConcept = ta.getOntologyConcept();
-                    OntologyConcept subType = allTypes.stream()
-                            .map(Atom::getOntologyConcept)
+                    SchemaConcept schemaConcept = ta.getSchemaConcept();
+                    SchemaConcept subType = allTypes.stream()
+                            .map(Atom::getSchemaConcept)
                             .filter(Objects::nonNull)
-                            .filter(t -> ReasonerUtils.getSupers(t).contains(ontologyConcept))
+                            .filter(t -> ReasonerUtils.getSupers(t).contains(schemaConcept))
                             .findFirst().orElse(null);
+<<<<<<< HEAD
                     return ontologyConcept == null || subType == null;
                 }).forEach(t -> bodyAtoms.add(AtomicFactory.create(t, body)));
         return new InferenceRule(
@@ -213,6 +232,12 @@ public class InferenceRule {
                 ruleId,
                 graph
         );
+=======
+                    return schemaConcept == null || subType == null;
+                }).forEach(t -> body.addAtomic(AtomicFactory.create(t, body)));
+
+        return this;
+>>>>>>> af2276f104a6e1cf059ff5cdba6152b2211e523d
     }
 
     private InferenceRule rewrite(){
@@ -220,6 +245,7 @@ public class InferenceRule {
 
         Set<Atomic> bodyRewrites = new HashSet<>();
         body.getAtoms(Atom.class)
+<<<<<<< HEAD
                 .map(at -> {
                     if (at.isRelation()
                             && !at.isUserDefinedName()
@@ -232,6 +258,17 @@ public class InferenceRule {
 
         ReasonerQueryImpl rewrittenBody = ReasonerQueries.create(bodyRewrites, graph);
         return new InferenceRule(rewrittenHead, rewrittenBody, ruleId, graph);
+=======
+                .filter(Atom::isRelation)
+                .filter(at -> !at.isUserDefinedName())
+                .filter(at -> Objects.nonNull(at.getSchemaConcept()))
+                .filter(at -> at.getSchemaConcept().equals(head.getAtom().getSchemaConcept()))
+                .peek(toRemove::add)
+                .forEach(at -> rewrites.add(at.rewriteToUserDefined()));
+        toRemove.forEach(body::removeAtomic);
+        rewrites.forEach(body::addAtomic);
+        return this;
+>>>>>>> af2276f104a6e1cf059ff5cdba6152b2211e523d
     }
 
     /**
@@ -249,13 +286,13 @@ public class InferenceRule {
      */
     public Unifier getUnifier(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
-        if (parentAtom.getOntologyConcept() != null){
+        if (parentAtom.getSchemaConcept() != null){
             return childAtom.getUnifier(parentAtom);
         }
         //case of match all relation atom
         else{
             Atom extendedParent = ((RelationAtom) parentAtom)
-                    .addType(childAtom.getOntologyConcept())
+                    .addType(childAtom.getSchemaConcept())
                     .inferTypes();
             return childAtom.getUnifier(extendedParent);
         }
