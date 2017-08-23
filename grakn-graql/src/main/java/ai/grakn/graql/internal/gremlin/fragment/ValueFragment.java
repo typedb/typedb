@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -33,9 +33,9 @@ import static java.util.stream.Collectors.toSet;
 
 class ValueFragment extends AbstractFragment {
 
-    private final ValuePredicateAdmin predicate;
+    private final ValuePredicate predicate;
 
-    ValueFragment(VarProperty varProperty, Var start, ValuePredicateAdmin predicate) {
+    ValueFragment(VarProperty varProperty, Var start, ValuePredicate predicate) {
         super(varProperty, start);
         this.predicate = predicate;
     }

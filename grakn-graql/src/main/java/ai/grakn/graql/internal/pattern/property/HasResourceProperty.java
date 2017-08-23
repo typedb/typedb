@@ -31,7 +31,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
@@ -141,7 +140,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
     @Override
     public void delete(GraknTx graph, Concept concept) {
-        Optional<ValuePredicateAdmin> predicate =
+        Optional<ai.grakn.graql.ValuePredicate> predicate =
                 resource().getProperties(ValueProperty.class).map(ValueProperty::predicate).findAny();
 
         Role owner = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(type()));
@@ -152,11 +151,11 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
                 .forEach(Concept::delete);
     }
 
-    private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relationship relationship, Role resourceRole) {
+    private boolean testPredicate(Optional<ai.grakn.graql.ValuePredicate> optPredicate, Relationship relationship, Role resourceRole) {
         Object value = relationship.rolePlayers(resourceRole).iterator().next().asAttribute().getValue();
 
         return optPredicate
-                .flatMap(ValuePredicateAdmin::getPredicate)
+                .flatMap(ai.grakn.graql.ValuePredicate::getPredicate)
                 .map(predicate -> predicate.test(value))
                 .orElse(true);
     }

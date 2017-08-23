@@ -23,29 +23,27 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint;
 
@@ -236,7 +234,7 @@ public class ResourceAtom extends Binary{
     @Override
     public int computePriority(Set<Var> subbedVars){
         int priority = super.computePriority(subbedVars);
-        Set<ValuePredicateAdmin> vps = getPredicates(ValuePredicate.class).map(ValuePredicate::getPredicate).collect(Collectors.toSet());
+        Set<ai.grakn.graql.ValuePredicate> vps = getPredicates(ValuePredicate.class).map(ValuePredicate::getPredicate).collect(Collectors.toSet());
         priority += ResolutionPlan.IS_RESOURCE_ATOM;
 
         if (vps.isEmpty()) {
@@ -248,7 +246,7 @@ public class ResourceAtom extends Binary{
             }
         } else {
             int vpsPriority = 0;
-            for (ValuePredicateAdmin vp : vps) {
+            for (ai.grakn.graql.ValuePredicate vp : vps) {
                 //vp with a value
                 if (vp.isSpecific() && !isSuperNode()) {
                     vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;

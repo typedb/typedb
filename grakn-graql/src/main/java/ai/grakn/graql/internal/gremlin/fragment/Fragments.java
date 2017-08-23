@@ -19,12 +19,12 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
@@ -124,7 +124,7 @@ public class Fragments {
         return new LabelFragment(varProperty, start, label);
     }
 
-    public static Fragment value(VarProperty varProperty, Var start, ValuePredicateAdmin predicate) {
+    public static Fragment value(VarProperty varProperty, Var start, ValuePredicate predicate) {
         return new ValueFragment(varProperty, start, predicate);
     }
 
