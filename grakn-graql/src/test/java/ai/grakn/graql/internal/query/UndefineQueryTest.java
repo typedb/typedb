@@ -27,10 +27,12 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.Schema;
@@ -259,7 +261,9 @@ public class UndefineQueryTest {
     public void whenUndefiningAnInstanceProperty_Throw() {
         Concept movie = qb.insert(x.isa("movie")).execute().get(0).get(x);
 
-        exception.expect(RuntimeException.class); // TODO
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(IsaProperty.NAME).getMessage());
+
         qb.undefine(var().id(movie.getId()).isa("movie")).execute();
     }
 }
