@@ -157,14 +157,16 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
 
     @Override
     public PropertyExecutor undefine(Var var) throws GraqlQueryException {
-        return PropertyExecutor.builder(executor -> {
+        PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();
             AttributeType<?> attributeType = executor.get(resourceType().var()).asAttributeType();
             Label hasOwner = (required() ? KEY_OWNER : HAS_OWNER).getLabel(attributeType.getLabel());
             // type.deleteAttribute(); TODO
             Optional<Role> role = type.plays().filter(r -> r.getLabel().equals(hasOwner)).findAny();
             role.ifPresent(type::deletePlays);
-        }).requires(var, resourceType().var()).build();
+        };
+
+        return PropertyExecutor.builder(method).requires(var, resourceType().var()).build();
     }
 
     @Override
