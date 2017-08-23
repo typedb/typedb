@@ -18,13 +18,14 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import com.google.common.collect.Sets;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -47,9 +48,12 @@ public class ReasonerQueries {
     }
 
     public static ReasonerQueryImpl create(Set<Atomic> as, GraknTx tx){
-        Set<Atom> atoms = as.stream().filter(Atomic::isAtom).map(at -> (Atom) at).collect(Collectors.toSet());
-        return atoms.size() == 1?
-                new ReasonerAtomicQuery(atoms.iterator().next()) : new ReasonerQueryImpl(as, tx);
+        boolean isAtomic = as.stream().filter(Atomic::isAtom).map(at -> (Atom) at).count() == 1;
+        return isAtomic? new ReasonerAtomicQuery(as, tx) : new ReasonerQueryImpl(as, tx);
+    }
+
+    public static ReasonerQueryImpl create(ReasonerQueryImpl q, Answer sub){
+        return create(Sets.union(q.getAtoms(), sub.toPredicates(q)), q.tx());
     }
 
     public static ReasonerAtomicQuery atomic(Conjunction<VarPatternAdmin> pattern, GraknTx graph){
@@ -60,7 +64,11 @@ public class ReasonerQueries {
         return new ReasonerAtomicQuery(atom);
     }
 
-    public static ReasonerAtomicQuery atomic(ReasonerQueryImpl q){
+    public static ReasonerAtomicQuery atomic(ReasonerAtomicQuery q){
         return new ReasonerAtomicQuery(q);
+    }
+
+    public static ReasonerAtomicQuery atomic(ReasonerAtomicQuery q, Answer sub){
+        return new ReasonerAtomicQuery(Sets.union(q.getAtoms(), sub.toPredicates(q)), q.tx());
     }
 }

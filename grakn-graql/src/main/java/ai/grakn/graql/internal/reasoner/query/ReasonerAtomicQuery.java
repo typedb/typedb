@@ -80,8 +80,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     private Atom atom;
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
-    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, GraknTx graph) {
-        super(pattern, graph);
+    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
+        super(pattern, tx);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
@@ -92,6 +92,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     ReasonerAtomicQuery(Atom at) {
         super(at);
+        atom = selectAtoms().stream().findFirst().orElse(null);
+    }
+
+    ReasonerAtomicQuery(Set<Atomic> atoms, GraknTx tx){
+        super(atoms, tx);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
@@ -191,7 +196,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             if (!answer.isEmpty()) return answer;
         }
 
-        List<Answer> match = new ReasonerAtomicQuery(this).addSubstitution(sub).getMatchQuery().execute();
+        List<Answer> match = ReasonerQueries.atomic(this, sub).getMatchQuery().execute();
         return match.isEmpty()? new QueryAnswer() : match.iterator().next();
     }
 
@@ -220,9 +225,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     public Stream<Answer> materialise(Answer answer) {
-        ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
-        queryToMaterialise.addSubstitution(answer);
-        return queryToMaterialise.insert()
+        return ReasonerQueries.atomic(this, answer)
+                .insert()
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
 
@@ -317,13 +321,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             Iterator<RuleTuple> ruleIterator = getRuleIterator();
             while(ruleIterator.hasNext()) {
                 RuleTuple ruleContext = ruleIterator.next();
-                InferenceRule rule = ruleContext.getRule();
                 Unifier u = ruleContext.getRuleUnifier();
                 Unifier pu = ruleContext.getPermutationUnifier();
 
                 Answer sub = this.getSubstitution().unify(u.inverse());
-                rule.getHead().addSubstitution(sub);
-                rule.getBody().addSubstitution(sub);
+                InferenceRule rule = ruleContext.getRule().withSubstitution(sub);
 
                 Stream<Answer> localStream = resolveViaRule(rule, u, pu, subGoals, cache, dCache, differentialJoin);
                 answerStream = Stream.concat(answerStream, localStream);

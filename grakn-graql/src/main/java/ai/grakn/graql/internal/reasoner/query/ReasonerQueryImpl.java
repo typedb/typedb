@@ -36,7 +36,6 @@ import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ResolutionIterator;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -379,25 +378,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @param sub substitution to be added
-     * @return incorporate the substitution into this query by converting it to id predicates
+     * @return true if this query is a ground query
      */
-    public ReasonerQueryImpl addSubstitution(Answer sub){
-        Set<Var> varNames = getVarNames();
-
-        //skip predicates from types
-        getAtoms(TypeAtom.class).map(Binary::getPredicateVariable).forEach(varNames::remove);
-
-        Set<IdPredicate> predicates = sub.entrySet().stream()
-                .filter(e -> varNames.contains(e.getKey()))
-                .map(e -> new IdPredicate(e.getKey(), e.getValue(), this))
-                .collect(Collectors.toSet());
-        atomSet.addAll(predicates);
-
-        return this;
-    }
-
-    public boolean hasFullSubstitution(){
+    public boolean isGround(){
         return getSubstitution().keySet().containsAll(getVarNames());
     }
 

@@ -58,9 +58,7 @@ public class AtomicState extends QueryState{
                        QueryCache<ReasonerAtomicQuery> cache) {
 
         super(sub, u, parent, subGoals, cache);
-
-        this.query = ReasonerQueries.atomic(q);
-        query.addSubstitution(sub);
+        this.query = ReasonerQueries.atomic(q, sub);
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
         this.dbIterator = streamUnifierPair.getKey()
@@ -70,7 +68,7 @@ public class AtomicState extends QueryState{
 
         //if this already has full substitution and exists in the db then do not resolve further
         //NB: the queryIterator check is purely because we may want to ask for an explanation
-        boolean hasFullSubstitution = query.hasFullSubstitution();
+        boolean hasFullSubstitution = query.isGround();
         if(subGoals.contains(query)
                 || (hasFullSubstitution && dbIterator.hasNext() ) ){
             this.ruleIterator = Collections.emptyIterator();

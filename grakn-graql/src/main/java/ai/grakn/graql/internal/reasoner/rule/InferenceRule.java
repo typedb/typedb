@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -164,6 +165,19 @@ public class InferenceRule {
      * @return head of the rule of the form head :- body
      */
     public ReasonerAtomicQuery getHead(){ return head;}
+
+    /**
+     * @param sub substitution to be added to the rule
+     * @return inference rule with added substitution
+     */
+    public InferenceRule withSubstitution(Answer sub){
+        return new InferenceRule(
+                ReasonerQueries.atomic(getHead(), sub),
+                ReasonerQueries.create(getBody(), sub),
+                ruleId,
+                tx
+        );
+    }
 
     /**
      * @return reasoner query formed of combining head and body queries
