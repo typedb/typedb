@@ -224,8 +224,15 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return Graql.insert(getPattern().varPatterns()).withTx(tx()).stream();
     }
 
+    /**
+     * materialise  this query with the accompanying answer - persist to kb
+     * @param answer to be materialised
+     * @return stream of materialised answers
+     */
     public Stream<Answer> materialise(Answer answer) {
-        return ReasonerQueries.atomic(this, answer)
+        //declaring a local variable cause otherwise PMD doesn't recognise the use of insert() and complains
+        ReasonerAtomicQuery queryToMaterialise = ReasonerQueries.atomic(this, answer);
+        return queryToMaterialise
                 .insert()
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
