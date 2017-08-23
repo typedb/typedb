@@ -1,4 +1,160 @@
-Version 0.15.0
+Version 0.16.0
+- Add `clean` shell command to docs (#2008)
+- Enable all of the SNB short queries to test stack further (#1988)
+- More verbose slack (#1985)
+- [Stable] Get rid of javafx pair (#1981)
+- Enable periodic QA tests and configure travis to split tests (#1982)
+- Add snb validation to QA tests (#1967)
+- Add integration tests to Grakn stable branch. (#1953)
+- Fix issue where shell printed whole stacktrace (#1954)
+- adding link of a working example in sample-projects repo (#1952)
+- fix problems with equal relation players (#1941)
+- Fix silly casting exception when post processing relation edges (#1937)
+- Add basic Jenkinsfile. (#1932)
+- Bug #16264: When merging resources account for resource edges (#1935)
+- Update 0-index.md
+- Update 1-advantages.md
+- Update 0-index.md
+- Update 1-advantages.md
+- Update 0-index.md
+- updated advantages page
+- Updated advantages page to present Grakn as a hyper-relation
+- added schema/ontology terminology
+- udpated overview page to present grakn as a hyper-relational database
+- Bug #16214: Odd validation errors caused by nasty cache leak (#1922)
+- do not infer types in conjunction if type present (#1921)
+- Changelog from stable
+- Ignore some failing tests
+- Fix compilation issue
+- Make certain tests with large queries not print output (#1908)
+- Add deprecated support for keywords `lhs` and `rhs` (#1903)
+- Fix analytics to not always use default URI (#1892)
+- Bug #16191: Fix randomly failing test (#1910)
+- Cleaning up exceptions a little.  (#1911)
+- Ignore randomly failing test
+- Ignore randomly failing tests
+- Remove tests for castings in results (#1905)
+- Bug #16183: Resources with null value would still create the resource (#1904)
+- When a tests breaks I then fix it
+- Ignore randomly failing test
+- Ignore test (#1906)
+- Role no longer subs thing in meta ontology (#1900)
+- Resource Edges and Automatic Reification (#1857)
+- Fixed conflicts with master
+- Remove The Implicit Type Filter (#1896)
+- Get rid of custom null checks (#1899)
+- Fix bug in `SparkContext` where it ignored port (#1894)
+- Disable running the docs tests on Titan (#1897)
+- Fixed concurrent start problem (#1886)
+- Fix issues with tests against new twitter docs (#1890)
+- Re-enable tests for docs (#1882)
+- removing dead link (#1887)
+- documentation for the 'example-twitter-streaming-public-tweets' sampl… (#1881)
+- Validate rules ontologically (#1877)
+- Change Labels On Ontology Concepts (#1869)
+- Fix degree query not throwing error when ofType is invalid (#1879)
+- Change `lhs` and `rhs` to `when` and `then` (#1880)
+- Added CAS to inflight task processing. Now it only restore a task from a dead letter queue if nothing modified the queue between read and write. Also sped up failover test (#1873)
+- New graql planner with min spanning tree (#1789)
+- Squashed Redis store changes (#1865)
+- Check whether rules are valid Horn clauses on commit (#1868)
+- Quickcheck refactors (#1862)
+- Include README.md (#1867)
+- Removed test-tools module which was not being used by anything (#1856)
+- Revert "[WIP] Redis store" (#1863)
+- Pom excluding Jackson from grakn-graph. It conflicts in more than one place
+- Reverting pom changes
+- Ignored test that makes build stop
+- Reverting previous test
+- Tweaking build option to check effect on Travis
+- Trying to fix conflict in pom
+- Unused static variable
+- Addressed code review
+- Docker profile should not skip tests outside of grakn-test. (#1849)
+- Add `@Nullable` annotations to many methods (#1842)
+- Unignore some tests (#1853)
+- Introducing Reified Relations as part of the work to allowing resource edges and automatic reification (#1844)
+- Accidantally removed essential variables in test
+- Use graql planner when determining resolution order (#1828)
+- Fix Failing Tests On Jenkins (#1851)
+- Restored tests that were previosly ignored
+- Missing Refactor on API (#1850)
+- Clarify system requirements. (#1840)
+- Fixing build error
+- Change Graql endpoint to return results formatted like the shell (#1826)
+- Something now reads from the inflight queue if jobs are old
+- Move Concept Casting Utilities To Interfaces  (#1841)
+- Ignored test temporarily
+- Don't allow floating roles when deleting relation types (#1839)
+- Making code consistent with comment and intention
+- Refactor lhs and rhs to when and then (#1837)
+- Trying out shutdown hook
+- Trying to get redis embedded to close reliably
+- Updated Engine responses and Dashboard requests (#1829)
+- Revert "Simplify atom structure (#1823)" (#1834)
+- Simplify atom structure (#1823)
+- Ignore some repeatedly failing tests (#1830)
+- Upgrade pom to 0.16.0-SNAPSHOT (#1833)
+- Simplifying changes for code review
+- Cleaned up task manager subscriber startup and fixed tests
+- Simplifying chenges for ease of merge
+- Enabled aof in redis
+- Instrumented queue size and postprocessing tasks
+- Logging on keyspaces
+- Stubbed getTasks implementation
+- Added more metrics
+- Issues in tests, renaming
+- Major refactoring. Locks are now passed from the main EngineServer class.
+- Cleaned up a bit
+- Missing comments
+- Fixed issue with task get state
+- Returning appropriate status if state not found
+- Dirty fix for logging so we can run validation and check what's wrong
+- Added logging reason of mutator client failure
+- Added logging for scripts
+- Changed startup script
+- Using new task manager in Jenkinsfile
+- Static code analysis errors
+- Fixes after merge
+- Fixed some tests
+- Added redis task manager
+- Added metric on record size
+- Removed obsolete backoff code
+- Simplified config properties read
+- Name uniformity and deleted redundant metrics
+- Using embedded Kafka now
+- Edited Jenkins file so it runs with Kafka
+- Added metrics to counter and postprocess task
+- Added more metrics in tasks
+- Solving problem with unitialized metric registry
+- Restored previous behaviour of batch mutator client
+- Added line to test failure hypothesis
+- Added metrics to standalone queue
+- Added metrics for task consumer
+- Trying to fix dependencies
+- Fixed merge leftover, added metrics to task
+- Documented endpoint
+- Fixed test
+- Unused imports
+- Restored old less temperamental version
+- Fixed inconsistent tests
+- Added Jenkinsfile
+- Fixed metrics response type
+- Adding metrics library
+- Reintroduced retry flag check
+- pom guava retrying version fix
+- Changed Mutator and Task client so they conform to the new endpoint. Now the mutator client uses the task client
+- Added test, used constants more consistently in task endpoint, fixed error logic
+- Configuration on single tasks. Removed previous task endpoint, now it's always bulk
+- Fixed merge conflicts
+- Fixed deserialisation bug
+- Constants refactoring
+- Little code simplification
+- Added endpoint for bulk creation of tasks
+
+
+Version v0.15.0
+- 0.15.0 release
 - [Stable] Apply inferred relation types to conjunctive queries (#1902)
 - Hal inferred relation (#1893)
 - Fix docs again (#1891)
