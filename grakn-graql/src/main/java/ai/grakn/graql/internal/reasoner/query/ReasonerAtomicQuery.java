@@ -104,6 +104,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
 
     @Override
+    public ReasonerAtomicQuery inferTypes() {
+        return new ReasonerAtomicQuery(getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()), tx());
+    }
+
+    @Override
     public boolean equals(Object obj) {
         return !(obj == null || this.getClass() != obj.getClass()) && super.equals(obj);
     }
@@ -127,22 +132,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     public Atom getAtom() {
         return atom;
-    }
-
-    @Override
-    protected boolean addAtomic(Atomic at) {
-        if (super.addAtomic(at)) {
-            if (atom == null && at.isSelectable()) atom = (Atom) at;
-            return true;
-        } else return false;
-    }
-
-    @Override
-    protected boolean removeAtomic(Atomic at) {
-        if (super.removeAtomic(at)) {
-            if (at.equals(atom)) atom = null;
-            return true;
-        } else return false;
     }
 
     @Override

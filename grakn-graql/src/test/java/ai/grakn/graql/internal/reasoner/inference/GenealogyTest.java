@@ -44,6 +44,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class GenealogyTest {
 
     private static QueryBuilder qb;

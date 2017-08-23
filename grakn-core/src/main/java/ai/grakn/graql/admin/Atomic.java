@@ -155,4 +155,6 @@ public interface Atomic {
      */
     @CheckReturnValue
     Set<Var> getVarNames();
+
+    Atomic inferTypes();
 }
