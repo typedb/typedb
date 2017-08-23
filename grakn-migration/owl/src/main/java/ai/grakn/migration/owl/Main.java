@@ -18,7 +18,7 @@
 package ai.grakn.migration.owl;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.migration.base.MigrationCLI;
 import org.semanticweb.owlapi.apibinding.OWLManager;
@@ -35,7 +35,7 @@ import static ai.grakn.migration.base.MigrationCLI.printWholeCompletionMessage;
  * arguments are an OWL file and a Grakn Engine URL. At a minimum an OWL file must be provided.
  * Note that the OWLAPI is not very good at intelligently resolving imports, such as looking in the
  * same folder etc. To import a large ontology made up of multiple imports scattered around in files, 
- * the easiest thing is to use protege to "merge" them into a single ontology file with all axioms 
+ * the easiest thing is to use protege to "merge" them into a single ontology file with all axioms
  * inside it.
  * </p>
  * 
@@ -64,8 +64,8 @@ public class Main {
         printInitMessage(options);
 
         OWLMigrator migrator = new OWLMigrator();
-        try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE)) {
-            migrator.graph(graph)
+        try(GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE)) {
+            migrator.tx(graph)
                     .ontology(OWLManager.createOWLOntologyManager().loadOntologyFromOntologyDocument(owlfile))
                     .migrate();
 

@@ -18,6 +18,8 @@
 
 package ai.grakn.graql.admin;
 
+import com.google.auto.value.AutoValue;
+
 import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 
@@ -26,27 +28,15 @@ import java.util.Optional;
  *
  * @author Felix Chapman
  */
-public class RelationPlayer {
-    private final int hashCode;
-    private final Optional<VarPatternAdmin> role;
-    private final VarPatternAdmin rolePlayer;
-
-    /**
-     * @param role the role of the role - role player pair
-     * @param rolePlayer the role player of the  role - role player pair
-     */
-    private RelationPlayer(Optional<VarPatternAdmin> role, VarPatternAdmin rolePlayer) {
-        this.role = role;
-        this.rolePlayer = rolePlayer;
-        hashCode = 31 * this.role.hashCode() + rolePlayer.hashCode();
-    }
+@AutoValue
+public abstract class RelationPlayer {
 
     /**
      * A role - role player pair without a role specified
      * @param rolePlayer the role player of the role - role player pair
      */
     public static RelationPlayer of(VarPatternAdmin rolePlayer) {
-        return new RelationPlayer(Optional.empty(), rolePlayer);
+        return new AutoValue_RelationPlayer(Optional.empty(), rolePlayer);
     }
 
     /**
@@ -54,43 +44,23 @@ public class RelationPlayer {
      * @param rolePlayer the role player of the role - role player pair
      */
     public static RelationPlayer of(VarPatternAdmin role, VarPatternAdmin rolePlayer) {
-        return new RelationPlayer(Optional.of(role), rolePlayer);
+        return new AutoValue_RelationPlayer(Optional.of(role), rolePlayer);
     }
 
     /**
      * @return the role, if specified
      */
     @CheckReturnValue
-    public Optional<VarPatternAdmin> getRole() {
-        return role;
-    }
+    public abstract Optional<VarPatternAdmin> getRole();
 
     /**
      * @return the role player
      */
     @CheckReturnValue
-    public VarPatternAdmin getRolePlayer() {
-        return rolePlayer;
-    }
+    public abstract VarPatternAdmin getRolePlayer();
 
     @Override
     public String toString() {
         return getRole().map(r -> r.getPrintableName() + ": ").orElse("") + getRolePlayer().getPrintableName();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        RelationPlayer casting = (RelationPlayer) o;
-
-        return role.equals(casting.role) && rolePlayer.equals(casting.rolePlayer);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return hashCode;
     }
 }

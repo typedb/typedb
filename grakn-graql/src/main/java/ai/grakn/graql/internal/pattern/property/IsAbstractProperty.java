@@ -26,7 +26,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.IsAbstractAtom;
 import com.google.common.collect.ImmutableSet;
 
@@ -46,9 +45,21 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbst
  */
 public class IsAbstractProperty extends AbstractVarProperty implements UniqueVarProperty {
 
+    private static final IsAbstractProperty INSTANCE = new IsAbstractProperty();
+
+    public static final String NAME = "is-abstract";
+
+    private IsAbstractProperty() {
+
+    }
+
+    public static IsAbstractProperty get() {
+        return INSTANCE;
+    }
+
     @Override
     public void buildString(StringBuilder builder) {
-        builder.append("is-abstract");
+        builder.append(NAME);
     }
 
     @Override
@@ -57,27 +68,26 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        if(concept.isType()){
-            concept.asType().setAbstract(true);
-        } else {
-            throw GraqlQueryException.insertAbstractOnNonType(concept.asOntologyConcept());
-        }
+    String getName() {
+        return NAME;
     }
 
     @Override
-    public boolean equals(Object o) {
-        return this == o || !(o == null || getClass() != o.getClass());
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Concept concept = executor.get(var);
+            if (concept.isType()) {
+                concept.asType().setAbstract(true);
+            } else {
+                throw GraqlQueryException.insertAbstractOnNonType(concept.asSchemaConcept());
+            }
+        };
 
-    }
-
-    @Override
-    public int hashCode() {
-        return 31;
+        return PropertyExecutor.builder(method).requires(var).build();
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new IsAbstractAtom(var.getVarName(), parent);
+        return new IsAbstractAtom(var.var(), parent);
     }
 }

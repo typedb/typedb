@@ -20,17 +20,20 @@ package ai.grakn.engine.tasks.manager.redisqueue;
 
 
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.util.EngineID;
-import com.codahale.metrics.Histogram;
+import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Timer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import net.greghaines.jesque.Config;
 import net.greghaines.jesque.ConfigBuilder;
 import net.greghaines.jesque.Job;
@@ -43,7 +46,6 @@ import net.greghaines.jesque.worker.RecoveryStrategy;
 import net.greghaines.jesque.worker.Worker;
 import net.greghaines.jesque.worker.WorkerEvent;
 import net.greghaines.jesque.worker.WorkerPool;
-import net.greghaines.jesque.worker.WorkerPoolImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
@@ -61,26 +63,30 @@ class RedisTaskQueue {
 
     private static final String QUEUE_NAME = "grakn_engine_queue";
     private static final String SUBSCRIPTION_CLASS_NAME = Task.class.getName();
-    static final MapBasedJobFactory JOB_FACTORY = new MapBasedJobFactory(
+
+    // Jesque configuration class for how jobs are mapped
+    private static final MapBasedJobFactory JOB_FACTORY = new MapBasedJobFactory(
             map(entry(
                     // Assign elements with this class
                     SUBSCRIPTION_CLASS_NAME,
                     // To be run by this class
                     RedisTaskQueueConsumer.class)));
+    public static final int GAUGE_CACHING_INTERVAL = 15;
 
     private final Client redisClient;
     private final Config config;
-    private final Histogram queueSize;
     private final Meter failures;
     private final int processingDelay;
     private final Timer timer;
+    private final Meter jobExecute;
+    private final ExecutorService executor;
     private Pool<Jedis> jedisPool;
     private LockProvider lockProvider;
     private final MetricRegistry metricRegistry;
-
     private final Meter putJobMeter;
     private WorkerPool workerPool;
 
+    @SuppressFBWarnings(value = "SIC_INNER_SHOULD_BE_STATIC_ANON", justification = "No harm in inner classes for gauges here.")
     RedisTaskQueue(
             Pool<Jedis> jedisPool,
             LockProvider lockProvider,
@@ -92,17 +98,44 @@ class RedisTaskQueue {
         this.config = new ConfigBuilder().build();
         this.redisClient = new ClientPoolImpl(config, jedisPool);
         this.processingDelay = processingDelay;
+        this.executor = Executors.newFixedThreadPool(1);
+        metricRegistry.register(MetricRegistry.name(RedisTaskQueue.class, "job-queue", "size"),
+                new CachedGauge<Long>(GAUGE_CACHING_INTERVAL, TimeUnit.SECONDS) {
+                    @Override
+                    public Long loadValue() {
+                        try (Jedis resource = jedisPool.getResource()) {
+                            return resource.llen(String.format("*:queue:%s", QUEUE_NAME));
+                        }
+                    }
+                });
+        metricRegistry.register(MetricRegistry.name(RedisTaskQueue.class, "workers", "active"),
+                new CachedGauge<Long>(GAUGE_CACHING_INTERVAL, TimeUnit.SECONDS) {
+                    @Override
+                    public Long loadValue() {
+                        return (workerPool == null) ?
+                                0L : (long) workerPool.getActiveWorkerCount();
+                    }
+                });
+        metricRegistry.register(MetricRegistry.name(RedisTaskQueue.class, "workers", "idle"),
+                new CachedGauge<Long>(GAUGE_CACHING_INTERVAL, TimeUnit.SECONDS) {
+                    @Override
+                    public Long loadValue() {
+                        return (workerPool == null) ?
+                                0L : (long) workerPool.getIdleWorkerCount();
+                    }
+                });
         this.putJobMeter = metricRegistry.meter(name(RedisTaskQueue.class, "put-job"));
-        this.queueSize = metricRegistry.histogram(name(RedisTaskQueue.class, "queue-size"));
         this.failures = metricRegistry.meter(name(RedisTaskQueue.class, "failures"));
+        this.jobExecute = metricRegistry.meter(name(RedisTaskQueue.class, "job", "execute"));
         this.timer = new Timer();
     }
 
-    void close() {
+    void close() throws InterruptedException {
         timer.cancel();
+        timer.purge();
         synchronized(this) {
             if (workerPool != null) {
-                workerPool.end(false);
+                workerPool.endAndJoin(false, 60000);
             }
         }
         redisClient.end();
@@ -117,14 +150,14 @@ class RedisTaskQueue {
 
     void runInFlightProcessor() {
         timer.scheduleAtFixedRate(new RedisInflightTaskConsumer(jedisPool, Duration.ofSeconds(
-                processingDelay), config, QUEUE_NAME), new Date(), 2000);
+                processingDelay), config, QUEUE_NAME, metricRegistry), new Date(), 1000);
     }
 
     void subscribe(
             RedisTaskManager redisTaskManager,
             EngineID engineId,
             GraknEngineConfig engineConfig,
-            EngineGraknGraphFactory factory,
+            EngineGraknTxFactory factory,
             int poolSize) {
         LOG.info("Subscribing worker to jobs in queue {}", QUEUE_NAME);
         // sync to avoid close while starting
@@ -136,19 +169,20 @@ class RedisTaskQueue {
     }
 
     private Worker getWorker(RedisTaskManager redisTaskManager, EngineID engineId,
-            GraknEngineConfig engineConfig, EngineGraknGraphFactory factory) {
-        Worker worker = new WorkerPoolImpl(config, Arrays.asList(QUEUE_NAME), JOB_FACTORY, jedisPool);
+            GraknEngineConfig engineConfig, EngineGraknTxFactory factory) {
+        Worker worker = new BlockingWorker(config, QUEUE_NAME, JOB_FACTORY, jedisPool,
+                executor, metricRegistry);
         // We need this since the job can only be instantiated with the
         // task coming from the queue
         worker.getWorkerEventEmitter().addListener(
                 (event, worker1, queue, job, runner, result, t) -> {
-                    queueSize.update(queue.length());
                     if (runner instanceof RedisTaskQueueConsumer) {
                         ((RedisTaskQueueConsumer) runner)
                                 .setRunningState(redisTaskManager, engineId, engineConfig, jedisPool,
                                         factory, lockProvider, metricRegistry);
+                        jobExecute.mark();
                     } else {
-                        LOG.error("Found unexoected job in queue of type {}", runner.getClass().getName());
+                        LOG.error("Found unexpected job in queue of type {}", runner.getClass().getName());
                     }
                 }, WorkerEvent.JOB_EXECUTE);
         worker.setExceptionHandler((jobExecutor, exception, curQueue) -> {

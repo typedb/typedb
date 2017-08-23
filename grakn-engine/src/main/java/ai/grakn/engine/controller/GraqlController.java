@@ -18,27 +18,47 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknGraph;
-import static ai.grakn.GraknTxType.WRITE;
-import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
-import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
-import static ai.grakn.engine.controller.util.Requests.queryParameter;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.GraknTx;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.analytics.PathQuery;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import mjson.Json;
+import org.apache.http.entity.ContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import spark.Request;
+import spark.Response;
+import spark.Service;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import java.util.ArrayList;
+
+import static ai.grakn.GraknTxType.WRITE;
+import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
+import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
+import static ai.grakn.engine.controller.util.Requests.queryParameter;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
@@ -47,26 +67,8 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
-import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
-import com.codahale.metrics.Timer;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
 import static java.lang.Boolean.parseBoolean;
-import java.util.ArrayList;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import mjson.Json;
-import org.apache.http.entity.ContentType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import spark.Request;
-import spark.Response;
-import spark.Service;
 
 
 /**
@@ -82,27 +84,27 @@ import spark.Service;
 public class GraqlController {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraqlController.class);
-    private final EngineGraknGraphFactory factory;
+    private final EngineGraknTxFactory factory;
     private final Timer executeGraqlGetTimer;
     private final Timer executeGraqlPostTimer;
 
-    public GraqlController(EngineGraknGraphFactory factory, Service spark,
-            MetricRegistry metricRegistry) {
+    public GraqlController(EngineGraknTxFactory factory, Service spark,
+                           MetricRegistry metricRegistry) {
         this.factory = factory;
         this.executeGraqlGetTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-get"));
         this.executeGraqlPostTimer = metricRegistry.timer(name(GraqlController.class, "execute-graql-post"));
 
-        spark.post(REST.WebPath.Graph.ANY_GRAQL, this::executeGraql);
-        spark.get(REST.WebPath.Graph.GRAQL,    this::executeGraqlGET);
+        spark.post(REST.WebPath.KB.ANY_GRAQL, this::executeGraql);
+        spark.get(REST.WebPath.KB.GRAQL,    this::executeGraqlGET);
 
         //TODO The below exceptions are very broad. They should be revised after we improve exception
-        //TODO hierarchies in Graql and Graph
+        //TODO hierarchies in Graql and GraknTx
         spark.exception(GraqlQueryException.class, (e, req, res) -> handleError(400, e, res));
         spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
 
         // Handle invalid type castings and invalid insertions
-        spark.exception(GraphOperationException.class, (e, req, res) -> handleError(422, e, res));
-        spark.exception(InvalidGraphException.class, (e, req, res) -> handleError(422, e, res));
+        spark.exception(GraknTxOperationException.class, (e, req, res) -> handleError(422, e, res));
+        spark.exception(InvalidKBException.class, (e, req, res) -> handleError(422, e, res));
     }
 
     @POST
@@ -116,7 +118,7 @@ public class GraqlController {
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = getAcceptType(request);
 
-        try(GraknGraph graph = factory.getGraph(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
+        try(GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlPostTimer.time()) {
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
             Object resp = respond(response, acceptType, executeQuery(keyspace, limitEmbedded, query, acceptType));
             graph.commit();
@@ -143,7 +145,7 @@ public class GraqlController {
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         String acceptType = getAcceptType(request);
 
-        try(GraknGraph graph = factory.getGraph(keyspace, WRITE); Timer.Context context = executeGraqlGetTimer.time()) {
+        try(GraknTx graph = factory.tx(keyspace, WRITE); Timer.Context context = executeGraqlGetTimer.time()) {
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
 
             if(!query.isReadOnly()) throw GraknServerException.invalidQuery("\"read-only\"");

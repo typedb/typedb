@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -37,8 +37,8 @@ import java.util.Set;
 
 class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements MeanQuery {
 
-    MeanQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    MeanQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
@@ -47,7 +47,7 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
         Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
         Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
@@ -55,8 +55,10 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         String randomId = getRandomJobId();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubLabelIds, statisticsResourceLabelIds, randomId),
-                new MeanMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE + randomId));
+                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds, randomId),
+                new MeanMapReduce(statisticsResourceLabelIds, dataType,
+                        DegreeVertexProgram.DEGREE + randomId),
+                allSubLabelIds);
         Map<Serializable, Map<String, Double>> mean = result.memory().get(MeanMapReduce.class.getName());
         Map<String, Double> meanPair = mean.get(MapReduce.NullObject.instance());
 
@@ -88,8 +90,8 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
     }
 
     @Override
-    public MeanQuery withGraph(GraknGraph graph) {
-        return (MeanQuery) super.withGraph(graph);
+    public MeanQuery withTx(GraknTx tx) {
+        return (MeanQuery) super.withTx(tx);
     }
 
     @Override

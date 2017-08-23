@@ -19,7 +19,7 @@
 
 package ai.grakn.engine.session;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.graql.QueryBuilder;
@@ -45,7 +45,7 @@ public class GraqlSessionTest {
         Session jettySesssion = mock(Session.class, RETURNS_DEEP_STUBS);
 
         GraknSession factory = mock(GraknSession.class);
-        GraknGraph graph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        GraknTx graph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
         QueryBuilder qb = mock(QueryBuilder.class);
         CountQuery count = mock(CountQuery.class);
 

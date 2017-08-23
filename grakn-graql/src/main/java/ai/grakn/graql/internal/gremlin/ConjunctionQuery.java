@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -63,7 +63,7 @@ class ConjunctionQuery {
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(Conjunction<VarPatternAdmin> patternConjunction, GraknGraph graph) {
+    ConjunctionQuery(Conjunction<VarPatternAdmin> patternConjunction, GraknTx graph) {
         vars = patternConjunction.getPatterns();
 
         if (vars.size() == 0) {
@@ -126,18 +126,18 @@ class ConjunctionQuery {
      */
     Stream<Label> getTypes() {
         return vars.stream()
-                .flatMap(v -> v.getInnerVars().stream())
+                .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream());
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarPatternAdmin var) {
-        return var.getImplicitInnerVars().stream().flatMap(ConjunctionQuery::equivalentFragmentSetsOfVar);
+        return var.implicitInnerVarPatterns().stream().flatMap(ConjunctionQuery::equivalentFragmentSetsOfVar);
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(VarPatternAdmin var) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
-        Var start = var.getVarName();
+        Var start = var.var();
 
         var.getProperties().forEach(property -> {
             VarPropertyInternal propertyInternal = (VarPropertyInternal) property;

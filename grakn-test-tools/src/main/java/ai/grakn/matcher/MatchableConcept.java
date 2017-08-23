@@ -20,14 +20,14 @@ package ai.grakn.matcher;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.Resource;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Thing;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableSet;
 
-import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static ai.grakn.util.StringUtil.valueToString;
 
@@ -57,14 +57,14 @@ public class MatchableConcept {
 
     @Override
     public String toString() {
-        if (concept.isResource()) {
-            return "hasValue(" + valueToString(concept.asResource().getValue()) + ")";
+        if (concept.isAttribute()) {
+            return "hasValue(" + valueToString(concept.asAttribute().getValue()) + ")";
         } else if (concept.isThing()) {
             Thing thing = concept.asThing();
-            Collection<Resource<?>> resources = thing.resources();
-            Optional<?> value = resources.stream()
+            Stream<Attribute<?>> resources = thing.attributes();
+            Optional<?> value = resources
                     .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
-                    .map(Resource::getValue).findFirst();
+                    .map(Attribute::getValue).findFirst();
 
             return "instance(" + value.map(StringUtil::valueToString).orElse("") + ") isa " + thing.type().getLabel();
         } else if (concept.isType()) {

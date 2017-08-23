@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.util.CommonUtil;
 
@@ -30,26 +30,34 @@ import java.util.stream.Stream;
 abstract class AbstractVarProperty implements VarPropertyInternal {
 
     @Override
-    public final void checkValid(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
+    public final void checkValid(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException {
         checkValidProperty(graph, var);
 
-        getInnerVars().map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
-            if (graph.getOntologyConcept(label) == null) {
+        innerVarPatterns().map(VarPatternAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream).forEach(label -> {
+            if (graph.getSchemaConcept(label) == null) {
                 throw GraqlQueryException.labelNotFound(label);
             }
         });
     }
 
-    void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
+    void checkValidProperty(GraknTx graph, VarPatternAdmin var) {
 
     }
 
+    abstract String getName();
+
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        throw GraqlQueryException.insertUnsupportedProperty(getName());
     }
 
     @Override
-    public void delete(GraknGraph graph, Concept concept) {
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        throw GraqlQueryException.defineUnsupportedProperty(getName());
+    }
+
+    @Override
+    public void delete(GraknTx graph, Concept concept) {
         throw GraqlQueryException.failDelete(this);
     }
 
@@ -59,8 +67,8 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     }
 
     @Override
-    public Stream<VarPatternAdmin> getImplicitInnerVars() {
-        return getInnerVars();
+    public Stream<VarPatternAdmin> implicitInnerVarPatterns() {
+        return innerVarPatterns();
     }
 
     @Override

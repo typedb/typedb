@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -47,8 +47,8 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     private boolean ofTypeLabelsSet = false;
     private Set<Label> ofLabels = new HashSet<>();
 
-    DegreeQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    DegreeQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
@@ -63,11 +63,11 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
         } else {
             ofLabels = ofLabels.stream()
                     .flatMap(typeLabel -> {
-                        Type type = graph.get().getOntologyConcept(typeLabel);
+                        Type type = tx.get().getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
-                        return type.subs().stream();
+                        return type.subs();
                     })
-                    .map(OntologyConcept::getLabel)
+                    .map(SchemaConcept::getLabel)
                     .collect(Collectors.toSet());
             subLabels.addAll(ofLabels);
         }
@@ -82,8 +82,10 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
 
         String randomId = getRandomJobId();
 
-        ComputerResult result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationLabelIds, ofLabelIds, randomId),
-                new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE + randomId));
+        ComputerResult result = getGraphComputer().compute(
+                new DegreeVertexProgram(ofLabelIds, randomId),
+                new DegreeDistributionMapReduce(ofLabelIds, DegreeVertexProgram.DEGREE + randomId),
+                withResourceRelationLabelIds);
 
         LOGGER.info("DegreeVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(DegreeDistributionMapReduce.class.getName());
@@ -135,8 +137,8 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     }
 
     @Override
-    public DegreeQuery withGraph(GraknGraph graph) {
-        return (DegreeQuery) super.withGraph(graph);
+    public DegreeQuery withTx(GraknTx tx) {
+        return (DegreeQuery) super.withTx(tx);
     }
 
     @Override

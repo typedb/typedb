@@ -18,35 +18,37 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
 import ai.grakn.util.REST;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import ai.grakn.util.Schema;
-import static ai.grakn.util.Schema.VertexProperty.INDEX;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Sets;
-import java.util.Set;
-import static java.util.stream.Collectors.toSet;
 import mjson.Json;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.Set;
+
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
+import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.Schema.VertexProperty.INDEX;
+import static java.util.stream.Collectors.toSet;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 public class PostProcessingTest {
 
@@ -71,30 +73,30 @@ public class PostProcessingTest {
     }
 
     @Test
-    public void whenCreatingDuplicateResources_EnsureTheyAreMergedInPost() throws InvalidGraphException, InterruptedException {
+    public void whenCreatingDuplicateResources_EnsureTheyAreMergedInPost() throws InvalidKBException, InterruptedException {
         String value = "1";
         String sample = "Sample";
 
-        //Create Graph With Duplicate Resources
-        GraknGraph graph = session.open(GraknTxType.WRITE);
-        ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
+        //Create GraknTx With Duplicate Resources
+        GraknTx graph = session.open(GraknTxType.WRITE);
+        AttributeType<String> attributeType = graph.putAttributeType(sample, AttributeType.DataType.STRING);
 
-        Resource<String> resource = resourceType.putResource(value);
+        Attribute<String> attribute = attributeType.putAttribute(value);
         graph.admin().commitNoLogs();
         graph = session.open(GraknTxType.WRITE);
 
-        assertEquals(1, resourceType.instances().size());
+        assertEquals(1, attributeType.instances().count());
         //Check duplicates have been created
-        Set<Vertex> resource1 = createDuplicateResource(graph, resourceType, resource);
-        Set<Vertex> resource2 = createDuplicateResource(graph, resourceType, resource);
-        Set<Vertex> resource3 = createDuplicateResource(graph, resourceType, resource);
-        Set<Vertex> resource4 = createDuplicateResource(graph, resourceType, resource);
-        assertEquals(5, resourceType.instances().size());
+        Set<Vertex> resource1 = createDuplicateResource(graph, attributeType, attribute);
+        Set<Vertex> resource2 = createDuplicateResource(graph, attributeType, attribute);
+        Set<Vertex> resource3 = createDuplicateResource(graph, attributeType, attribute);
+        Set<Vertex> resource4 = createDuplicateResource(graph, attributeType, attribute);
+        assertEquals(5, attributeType.instances().count());
 
-        // Resource vertex index
+        // Attribute vertex index
         String resourceIndex = resource1.iterator().next().value(INDEX.name()).toString();
 
-        // Merge the resource sets
+        // Merge the attribute sets
         Set<Vertex> merged = Sets.newHashSet();
         merged.addAll(resource1);
         merged.addAll(resource2);
@@ -114,7 +116,7 @@ public class PostProcessingTest {
                 Json.object(
                         KEYSPACE, graph.getKeyspace(),
                         REST.Request.COMMIT_LOG_FIXING, Json.object(
-                                Schema.BaseType.RESOURCE.name(), Json.object(resourceIndex, resourceConcepts)
+                                Schema.BaseType.ATTRIBUTE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );
         task.initialize(null, configuration, (x, y) -> {}, engine.config(), null, engine.server().factory(),
@@ -125,7 +127,7 @@ public class PostProcessingTest {
         graph = session.open(GraknTxType.READ);
 
         //Check it's fixed
-        assertEquals(1, graph.getResourceType(sample).instances().size());
+        assertEquals(1, graph.getAttributeType(sample).instances().count());
 
         graph.close();
     }

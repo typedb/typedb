@@ -18,14 +18,20 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.graph.internal.computer.GraknSparkComputer;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.util.Schema;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -36,7 +42,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.junit.Assume.assumeFalse;
+import static org.junit.Assert.assertEquals;
 
 public class CountTest {
 
@@ -47,9 +53,6 @@ public class CountTest {
 
     @Before
     public void setUp() {
-        // TODO: Make orientdb support analytics
-        assumeFalse(GraknTestSetup.usingOrientDB());
-
         factory = rule.factoryWithNewKeyspace();
     }
 
@@ -59,43 +62,42 @@ public class CountTest {
         String nameAnotherThing = "another";
 
         // assert the graph is empty
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
-            Assert.assertEquals(0L, Graql.compute().count().withGraph(graph).execute().longValue());
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            Assert.assertEquals(0L, Graql.compute().count().withTx(graph).execute().longValue());
             Assert.assertEquals(0L, graph.graql().compute().count().execute().longValue());
         }
 
         // add 2 instances
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType thingy = graph.putEntityType(nameThing);
-            thingy.addEntity().getId();
-            thingy.addEntity().getId();
+            thingy.addEntity();
+            thingy.addEntity();
             graph.commit();
         }
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Assert.assertEquals(2L,
-                    Graql.compute().withGraph(graph).count().in(nameThing).execute().longValue());
+                    Graql.compute().withTx(graph).count().in(nameThing).execute().longValue());
         }
 
         // create 1 more, rdd is refreshed
-        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType anotherThing = graph.putEntityType(nameAnotherThing);
-            anotherThing.addEntity().getId();
+            anotherThing.addEntity();
             graph.commit();
         }
 
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             // assert computer returns the correct count of instances
             Assert.assertEquals(2L,
-                    Graql.compute().withGraph(graph).count().in(nameThing).execute().longValue());
+                    Graql.compute().withTx(graph).count().in(nameThing).execute().longValue());
             Assert.assertEquals(3L, graph.graql().compute().count().execute().longValue());
-            GraknSparkComputer.clear();
-            Assert.assertEquals(3L, Graql.compute().count().withGraph(graph).execute().longValue());
         }
 
-        GraknSparkComputer.clear();
         List<Long> list = new ArrayList<>(4);
-        for (long i = 0L; i < 4L; i++) {
+        long workerNumber = 6L;
+        if (GraknTestSetup.usingTinker()) workerNumber = 1L;
+        for (long i = 0L; i < workerNumber; i++) {
             list.add(i);
         }
 
@@ -116,8 +118,74 @@ public class CountTest {
 
     }
 
+    @Test
+    public void testDegreeWithHasResourceEdges() {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+            EntityType person = graph.putEntityType("person");
+            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+            person.attribute(name);
+            Entity aPerson = person.addEntity();
+            aPerson.attribute(name.putAttribute("jason"));
+            graph.commit();
+        }
+
+        long count;
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            count = graph.graql().compute().count().execute();
+            assertEquals(count, 3L);
+
+            count = graph.graql().compute().count().in("name").execute();
+            assertEquals(count, 1L);
+
+            count = graph.graql().compute().count().in("has-name").execute();
+            assertEquals(count, 1L);
+
+            count = graph.graql().compute().count().in("has-name", "name").execute();
+            assertEquals(count, 2L);
+        }
+    }
+
+    @Test
+    public void testDegreeWithHasResourceVertices() {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+
+            // manually construct the relation type and instance
+            EntityType person = graph.putEntityType("person");
+            Entity aPerson = person.addEntity();
+            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+            Attribute jason = name.putAttribute("jason");
+
+            Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("name")));
+            person.plays(resourceOwner);
+            Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("name")));
+            name.plays(resourceValue);
+
+            RelationshipType relationshipType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("name")))
+                    .relates(resourceOwner).relates(resourceValue);
+            relationshipType.addRelationship()
+                    .addRolePlayer(resourceOwner, aPerson)
+                    .addRolePlayer(resourceValue, jason);
+            graph.commit();
+        }
+
+        long count;
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            count = graph.graql().compute().count().execute();
+            assertEquals(count, 3L);
+
+            count = graph.graql().compute().count().in("name").execute();
+            assertEquals(count, 1L);
+
+            count = graph.graql().compute().count().in("has-name").execute();
+            assertEquals(count, 1L);
+
+            count = graph.graql().compute().count().in("has-name", "name").execute();
+            assertEquals(count, 2L);
+        }
+    }
+
     private Long executeCount(GraknSession factory) {
-        try (GraknGraph graph = factory.open(GraknTxType.READ)) {
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
             return graph.graql().compute().count().execute();
         }
     }

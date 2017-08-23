@@ -18,9 +18,8 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.concept.Concept;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -31,9 +30,9 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
@@ -55,76 +54,60 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  *
  * @author Felix Chapman
  */
-public class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
+@AutoValue
+public abstract class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
-    private final VarPatternAdmin type;
+    public static final String NAME = "isa";
 
-    public IsaProperty(VarPatternAdmin type) {
-        this.type = type;
+    public static IsaProperty of(VarPatternAdmin type) {
+        return new AutoValue_IsaProperty(type);
     }
 
-    public VarPatternAdmin getType() {
-        return type;
-    }
+    public abstract VarPatternAdmin type();
 
     @Override
     public String getName() {
-        return "isa";
+        return NAME;
     }
 
     @Override
     public String getProperty() {
-        return type.getPrintableName();
+        return type().getPrintableName();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.isa(this, start, type.getVarName()));
+        return ImmutableSet.of(EquivalentFragmentSets.isa(this, start, type().var()));
     }
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return Stream.of(type);
+        return Stream.of(type());
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
-        return Stream.of(type);
+    public Stream<VarPatternAdmin> innerVarPatterns() {
+        return Stream.of(type());
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Type type = insertQueryExecutor.getConcept(this.type).asType();
-        Thing thing = concept.asThing();
-        if (!thing.type().equals(type)) {
-            throw GraqlQueryException.insertNewType(thing, type);
-        }
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Type type = executor.get(this.type().var()).asType();
+            executor.builder(var).isa(type);
+        };
+
+        return PropertyExecutor.builder(method).requires(type().var()).produces(var).build();
     }
 
     @Override
-    public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws GraqlQueryException {
-        type.getTypeLabel().ifPresent(typeLabel -> {
-            OntologyConcept theOntologyConcept = graph.getOntologyConcept(typeLabel);
-            if (theOntologyConcept != null && theOntologyConcept.isRole()) {
+    public void checkValidProperty(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException {
+        type().getTypeLabel().ifPresent(typeLabel -> {
+            SchemaConcept theSchemaConcept = graph.getSchemaConcept(typeLabel);
+            if (theSchemaConcept != null && theSchemaConcept.isRole()) {
                 throw GraqlQueryException.queryInstanceOfRoleType(typeLabel);
             }
         });
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        IsaProperty that = (IsaProperty) o;
-
-        return type.equals(that.type);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return type.hashCode();
     }
 
     @Nullable
@@ -133,9 +116,9 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
         //IsaProperty is unique within a var, so skip if this is a relation
         if (var.hasProperty(RelationProperty.class)) return null;
 
-        Var varName = var.getVarName().asUserDefined();
-        VarPatternAdmin typeVar = this.getType();
-        Var typeVariable = typeVar.getVarName().asUserDefined();
+        Var varName = var.var().asUserDefined();
+        VarPatternAdmin typeVar = this.type();
+        Var typeVariable = typeVar.var().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         //isa part

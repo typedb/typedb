@@ -1,18 +1,17 @@
 package ai.grakn.test.migration.xml;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.xml.XmlMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
-import ai.grakn.util.GraphLoader;
+import ai.grakn.util.SampleKBLoader;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -36,15 +35,15 @@ public class XMLMigratorTest {
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @BeforeClass
-    public static void loadOntology(){
-        keyspace = GraphLoader.randomKeyspace();
+    public static void loadSchema(){
+        keyspace = SampleKBLoader.randomKeyspace();
         session = Grakn.session(engine.uri(), keyspace);
     }
 
     @After
     public void clearGraph(){
-        try(GraknGraph graph = session.open(GraknTxType.WRITE)){
-            ResourceType<String> nameType = graph.getResourceType("name");
+        try(GraknTx graph = session.open(GraknTxType.WRITE)){
+            AttributeType<String> nameType = graph.getAttributeType("name");
             nameType.instances().forEach(Concept::delete);
 
             EntityType thingType = graph.getEntityType("thingy");
@@ -87,22 +86,22 @@ public class XMLMigratorTest {
     }
 
     private static void assertThingHasName(String name){
-        try(GraknGraph graph = session.open(GraknTxType.READ)){
+        try(GraknTx graph = session.open(GraknTxType.READ)){
 
             EntityType thingType = graph.getEntityType("thingy");
-            ResourceType nameType = graph.getResourceType("name");
+            AttributeType nameType = graph.getAttributeType("name");
 
-            assertEquals(1, thingType.instances().size());
-            for(Entity thing:thingType.instances()){
-                assertEquals(1, thing.resources(nameType).size());
-                assertEquals(name, thing.resources(nameType).iterator().next().getValue());
-            }
+            assertEquals(1, thingType.instances().count());
+            thingType.instances().forEach(thing ->{
+                assertEquals(1, thing.attributes(nameType).count());
+                assertEquals(name, thing.attributes(nameType).iterator().next().getValue());
+            });
         }
     }
 
     private static void migrateXMLWithElement(String element, String template){
-        // load the ontology
-        MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "ontology.gql"));
+        // load the schema
+        MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "schema.gql"));
 
         // load the data
         Migrator migrator = Migrator.to(engine.uri(), keyspace);

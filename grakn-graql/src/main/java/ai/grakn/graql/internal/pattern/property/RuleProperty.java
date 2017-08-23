@@ -19,8 +19,6 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -28,14 +26,11 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.util.ErrorMessage;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
-
-import static ai.grakn.util.Schema.MetaSchema.RULE;
 
 /**
  * Abstract property for the patterns within rules.
@@ -43,47 +38,17 @@ import static ai.grakn.util.Schema.MetaSchema.RULE;
  * @author Felix Chapman
  */
 public abstract class RuleProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
-    protected final Pattern pattern;
 
-    RuleProperty(Pattern pattern) {
-        this.pattern = pattern;
-    }
-
-    public Pattern getPattern() {
-        return pattern;
-    }
+    public abstract Pattern pattern();
 
     @Override
     public String getProperty() {
-        return pattern.toString();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        RuleProperty that = (RuleProperty) o;
-
-        return pattern.equals(that.pattern);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return pattern.hashCode();
+        return pattern().toString();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getClass().getName()));
-    }
-
-    @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        if (!concept.isRule()) {
-            throw GraqlQueryException.insertUnsupportedProperty(this.getName(), RULE);
-        }
+        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getName()));
     }
 
     @Nullable

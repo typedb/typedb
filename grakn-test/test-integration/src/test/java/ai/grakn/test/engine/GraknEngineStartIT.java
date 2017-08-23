@@ -21,14 +21,13 @@ package ai.grakn.test.engine;
 
 import ai.grakn.GraknSystemProperty;
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
+import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.GraknTestSetup;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
-import ai.grakn.util.EmbeddedCassandra;
 import ai.grakn.util.EmbeddedRedis;
 import com.google.common.base.StandardSystemProperty;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -36,9 +35,6 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import org.junit.AfterClass;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.junit.BeforeClass;
@@ -69,24 +65,53 @@ public class GraknEngineStartIT {
         for(int port : PORTS) {
             cfs
                     .add(CompletableFuture.supplyAsync(() -> {
-                        GraknEngineConfig graknEngineConfig = GraknEngineConfig.create();
-                        Properties properties = graknEngineConfig.getProperties();
-                        properties.setProperty(SERVER_PORT_NUMBER, String.valueOf(port));
-                        properties.setProperty(REDIS_SERVER_PORT, String.valueOf(REDIS_PORT));
-                        properties.setProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
-                        GraknEngineServer engine = new GraknEngineServer(graknEngineConfig);
+                        GraknEngineServer engine = makeEngine(String.valueOf(port));
                         engine.start();
                         return engine;
                     })
                     .thenAccept(GraknEngineServer::close)
-                    .handle((result, exception) -> {
-                        if (exception != null) {
-                            exception.printStackTrace();
-                            fail("Could not initialize engine successfully");
-                        }
-                        return null;
-                    }));
+                    .handle((result, exception) -> handleException(exception)));
         }
         CompletableFuture.allOf(cfs.toArray(new CompletableFuture[cfs.size()])).join();
+    }
+
+    @Test
+    public void whenStartingAndCreatingKeyspace_InitializationSucceeds() throws InterruptedException {
+        HashSet<CompletableFuture<Void>> cfs = new HashSet<>();
+        final GraknEngineServer engine = makeEngine(String.valueOf(PORTS[0]));
+        cfs
+                .add(CompletableFuture.runAsync(engine::start));
+        cfs
+                .add(CompletableFuture.runAsync(() -> {
+                    while(!engine.getGraknEngineStatus().isReady()) {
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                            fail();
+                        }
+                    }
+                    boolean success = engine.factory().systemKeyspace().ensureKeyspaceInitialised("grakn");
+                    assertTrue(success);
+                }));
+        CompletableFuture.allOf(cfs.toArray(new CompletableFuture[cfs.size()])).join();
+        engine.close();
+    }
+
+    private Void handleException(Throwable exception) {
+        if (exception != null) {
+            exception.printStackTrace();
+            fail("Could not initialize engine successfully");
+        }
+        return null;
+    }
+
+    private GraknEngineServer makeEngine(String port) {
+        GraknEngineConfig graknEngineConfig = GraknEngineConfig.create();
+        Properties properties = graknEngineConfig.getProperties();
+        properties.setProperty(SERVER_PORT_NUMBER, port);
+        properties.setProperty(REDIS_HOST, new SimpleURI("localhost", REDIS_PORT).toString());
+        properties.setProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
+        return new GraknEngineServer(graknEngineConfig);
     }
 }

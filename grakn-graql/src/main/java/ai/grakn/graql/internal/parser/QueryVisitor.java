@@ -18,14 +18,14 @@
 
 package ai.grakn.graql.internal.parser;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -154,25 +154,26 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public AskQuery visitAskQuery(GraqlParser.AskQueryContext ctx) {
-        return visitMatchQuery(ctx.matchQuery()).ask();
-    }
-
-    @Override
     public InsertQuery visitInsertQuery(GraqlParser.InsertQueryContext ctx) {
         return (InsertQuery) super.visitInsertQuery(ctx);
     }
 
     @Override
-    public Object visitInsertOnly(GraqlParser.InsertOnlyContext ctx) {
+    public InsertQuery visitInsertOnly(GraqlParser.InsertOnlyContext ctx) {
         Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
         return queryBuilder.insert(vars);
     }
 
     @Override
-    public Object visitMatchInsert(GraqlParser.MatchInsertContext ctx) {
+    public InsertQuery visitMatchInsert(GraqlParser.MatchInsertContext ctx) {
         Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
         return visitMatchQuery(ctx.matchQuery()).insert(vars);
+    }
+
+    @Override
+    public DefineQuery visitDefineQuery(GraqlParser.DefineQueryContext ctx) {
+        Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
+        return queryBuilder.define(vars);
     }
 
     @Override
@@ -442,20 +443,6 @@ class QueryVisitor extends GraqlBaseVisitor {
         return var -> var.then(and(visitVarPatterns(ctx.varPatterns())));
     }
 
-    @Deprecated // will be removed in 0.17.0
-    @Override
-    public UnaryOperator<VarPattern> visitPropLhs(GraqlParser.PropLhsContext ctx) {
-        LOG.warn("Support for keyword `lhs` will be removed in the next release. Please use `when`.");
-        return var -> var.when(and(visitPatterns(ctx.patterns())));
-    }
-
-    @Deprecated // will be removed in 0.17.0
-    @Override
-    public UnaryOperator<VarPattern> visitPropRhs(GraqlParser.PropRhsContext ctx) {
-        LOG.warn("Support for keyword `rhs` will be removed in the next release. Please use `then`.");
-        return var -> var.then(and(visitVarPatterns(ctx.varPatterns())));
-    }
-
     @Override
     public UnaryOperator<VarPattern> visitPropHas(GraqlParser.PropHasContext ctx) {
         Label type = visitLabel(ctx.label());
@@ -533,11 +520,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public UnaryOperator<VarPattern> visitPlays(GraqlParser.PlaysContext ctx) {
         return var -> var.plays(visitVariable(ctx.variable()));
-    }
-
-    @Override
-    public UnaryOperator<VarPattern> visitHasScope(GraqlParser.HasScopeContext ctx) {
-        return var -> var.hasScope(getVariable(ctx.VARIABLE()));
     }
 
     @Override
@@ -646,7 +628,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Object visitValueDateTime(GraqlParser.ValueDateTimeContext ctx) {
+    public LocalDateTime visitValueDateTime(GraqlParser.ValueDateTimeContext ctx) {
         return LocalDateTime.parse(ctx.DATETIME().getText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 
@@ -730,7 +712,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         }
     }
 
-    private ResourceType.DataType getDatatype(TerminalNode datatype) {
+    private AttributeType.DataType getDatatype(TerminalNode datatype) {
         return QueryParser.DATA_TYPES.get(datatype.getText());
     }
 }

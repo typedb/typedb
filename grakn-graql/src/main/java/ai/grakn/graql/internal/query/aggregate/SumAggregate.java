@@ -36,7 +36,7 @@ class SumAggregate extends AbstractAggregate<Answer, Number> {
 
     @Override
     public Number apply(Stream<? extends Answer> stream) {
-        return stream.map(result -> (Number) result.get(varName).asResource().getValue()).reduce(0, this::add);
+        return stream.map(result -> (Number) result.get(varName).asAttribute().getValue()).reduce(0, this::add);
     }
 
     private Number add(Number x, Number y) {

@@ -31,7 +31,7 @@ on the graph below we expect the degrees of the people to be:
 * **John Newman**: 1 - a marriage
 
 We do not count the edges labelled isa, because they are connected to the types and are not considered by analytics.
-Don't forget that the relations themselves will also have degrees.
+Don't forget that the relationships themselves will also have degrees.
 
 ![A simple social network.](/images/analytics_degree_full.png)
 

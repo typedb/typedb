@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
@@ -42,7 +42,7 @@ class IdFragment extends AbstractFragment {
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
         if (canOperateOnEdges()) {
             // Handle both edges and vertices
             return traversal.or(

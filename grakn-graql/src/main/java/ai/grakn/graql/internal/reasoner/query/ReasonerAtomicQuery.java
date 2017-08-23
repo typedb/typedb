@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
@@ -45,7 +45,8 @@ import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
-import com.google.common.collect.Iterators;
+import ai.grakn.graql.internal.reasoner.state.AtomicState;
+import ai.grakn.graql.internal.reasoner.state.QueryState;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import org.slf4j.Logger;
@@ -79,7 +80,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     private Atom atom;
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
-    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, GraknGraph graph) {
+    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, GraknTx graph) {
         super(pattern, graph);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
@@ -104,8 +105,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public String toString(){
-        return getAtoms().stream()
-                .filter(Atomic::isAtom)
+        return getAtoms(Atom.class)
                 .map(Atomic::toString).collect(Collectors.joining(", "));
     }
 
@@ -185,7 +185,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @param sub specific answer
      * @return found answer if any, otherwise empty answer
      */
-    Answer lookupAnswer(QueryCache<ReasonerAtomicQuery> cache, Answer sub) {
+    public Answer lookupAnswer(QueryCache<ReasonerAtomicQuery> cache, Answer sub) {
         boolean queryVisited = cache.contains(this);
         if (queryVisited){
             Answer answer = cache.getAnswer(this, sub);
@@ -196,14 +196,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return match.isEmpty()? new QueryAnswer() : match.iterator().next();
     }
 
-    Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
+    public Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
         boolean queryVisited = cache.contains(this);
         return queryVisited ? cache.getAnswerStreamWithUnifier(this) : new Pair<>(DBlookup(), new UnifierImpl());
     }
 
     private Stream<Answer> DBlookup() {
         return getMatchQuery().admin().stream()
-                .map(QueryAnswer::new)
                 .map(a -> a.explain(new LookupExplanation(this)));
     }
 
@@ -218,7 +217,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * execute insert on the query and return inserted answers
      */
     private Stream<Answer> insert() {
-        return Graql.insert(getPattern().getVars()).withGraph(graph()).stream();
+        return Graql.insert(getPattern().varPatterns()).withTx(tx()).stream();
     }
 
     public Stream<Answer> materialise(Answer answer) {
@@ -345,27 +344,20 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Iterator<Answer> iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return extendedIterator(sub, subGoals, cache);
-    }
-
-    @Override
-    public Iterator<Answer> extendedIterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        Iterator<ReasonerAtomicQueryIterator> qIterator = getQueryStream(sub)
-                .map(q -> new ReasonerAtomicQueryIterator(q, sub, subGoals, cache))
-                .iterator();
-        return Iterators.concat(qIterator);
+    public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return new AtomicState(this, sub, u, parent, subGoals, cache);
     }
 
     /**
      * @return stream of atomic query obtained by inserting all inferred possible types (if ambiguous)
      */
-    private Stream<ReasonerAtomicQuery> getQueryStream(Answer sub){
+    @Override
+    protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         Atom atom = getAtom();
-        if (atom.isRelation() && atom.getOntologyConcept() == null){
-            List<RelationType> relationTypes = ((RelationAtom) atom).inferPossibleRelationTypes(sub);
-            LOG.trace("AQ: " + this + ": inferred rel types for: " + relationTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
-            return relationTypes.stream()
+        if (atom.isRelation() && atom.getSchemaConcept() == null){
+            List<RelationshipType> relationshipTypes = ((RelationAtom) atom).inferPossibleRelationTypes(sub);
+            LOG.trace("AQ: " + this + ": inferred rel types for: " + relationshipTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
+            return relationshipTypes.stream()
                     .map(((RelationAtom) atom)::addType)
                     .sorted(Comparator.comparing(Atom::isRuleResolvable))
                     .map(ReasonerAtomicQuery::new);
@@ -378,10 +370,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * @return iterator of all rules applicable to this atomic query including permuted cases when the role types are meta roles
      */
-    Iterator<RuleTuple> getRuleIterator(){
-        return getAtom().getApplicableRules().stream()
+    public Iterator<RuleTuple> getRuleIterator(){
+        return getAtom().getApplicableRules()
                 .flatMap(r -> {
-                    r.rewriteToUserDefined(getAtom());
                     Unifier ruleUnifier = r.getUnifier(getAtom());
                     Unifier ruleUnifierInv = ruleUnifier.inverse();
                     return getAtom().getPermutationUnifiers(r.getHead().getAtom()).stream()

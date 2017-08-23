@@ -8,8 +8,8 @@ This is a list of items that need to be created or extended in the GRAKN.AI docu
 - Graql cheatsheet for Cypher developers
 - Benchmarking data
 - Consolidate and revise Java API documentation (present as a single API?). 
-    - Extend the example - show some example errors (e.g. trying to modify the ontology without being allowed to, validation errors)
-    - add more query builder queries and extend the ontology using Graph API.
+    - Extend the example - show some example errors (e.g. trying to modify the schema without being allowed to, validation errors)
+    - add more query builder queries and extend the schema using GraknTx API.
 - Configuration files and deployment guide
 - JSON migration: needs a better example and documentation (when Graql changes permit)
 - Betta consulting review - go through and make a roadmap

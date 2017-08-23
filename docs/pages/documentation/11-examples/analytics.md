@@ -22,14 +22,14 @@ For a detailed overview of calculating statistics using Graql, we recommend that
 
 ## Data
 
-This example takes a dataset that will be familiar to students of R - [mtcars (Motor Trend Car Road Tests) data](https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/mtcars.html).  The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 other aspects of automobile design and performance for 32 automobiles (1973–74 models). We have created a csv file of the data and added two columns to indicate the car maker's name and region that the car was made in (Europe, Japan or North America). The readme file in the repository gives further information for anyone who wishes to migrate the mtcars data directly into a graph, but for the purposes of this example we provide a [single data file that you can load](#data-migration) to populate a graph.
+This example takes a dataset that will be familiar to students of R - [mtcars (Motor Trend Car Road Tests) data](https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/mtcars.html).  The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 other aspects of automobile design and performance for 32 automobiles (1973–74 models). We have created a csv file of the data and added two columns to indicate the car maker's name and region that the car was made in (Europe, Japan or North America). The readme file in the repository gives further information for anyone who wishes to migrate the mtcars data directly, but for the purposes of this example we provide a [single data file that you can load](#data-migration) to populate a graph.
 
-## Ontology
+## Schema
 
-We have provided the following ontology to represent the data, although many other variations are possible:
+We have provided the following schema to represent the data, although many other variations are possible:
 
 ```graql
-insert
+define
 
 # Entities
 
@@ -63,21 +63,21 @@ european-maker sub carmaker;
 
 # Resources
 
-model sub resource datatype string;
-maker-name sub resource datatype string;
-mpg sub resource datatype double;
-cyl sub resource datatype long;
-disp sub resource datatype double;
-hp sub resource datatype long;
-wt sub resource datatype double;
-gear sub resource datatype long;
-carb sub resource datatype long;
-powerful sub resource datatype string;
-economical sub resource datatype string;
+model sub attribute datatype string;
+maker-name sub attribute datatype string;
+mpg sub attribute datatype double;
+cyl sub attribute datatype long;
+disp sub attribute datatype double;
+hp sub attribute datatype long;
+wt sub attribute datatype double;
+gear sub attribute datatype long;
+carb sub attribute datatype long;
+powerful sub attribute datatype string;
+economical sub attribute datatype string;
 
 # Roles and Relations
 
-manufactured sub relation
+manufactured sub relationship
 	relates maker
 	relates made;
 
@@ -85,17 +85,17 @@ maker sub role;
 made sub role;
 ``` 
 
-To load *ontology.gql* into Grakn, make sure the engine is running and choose a clean keyspace in which to work (here we use the default keyspace, so we are cleaning it before we get started). 
+To load *schema.gql* into Grakn, make sure the engine is running and choose a clean keyspace in which to work (here we use the default keyspace, so we are cleaning it before we get started). 
 
 ```bash
 <relative-path-to-Grakn>/bin/grakn.sh clean
 <relative-path-to-Grakn>/bin/grakn.sh start
-<relative-path-to-Grakn>/bin/graql.sh -f ./ontology.gql
+<relative-path-to-Grakn>/bin/graql.sh -f ./schema.gql
 ```		
 
 ## Data Migration
 
-We migrated the CSV data using template Graql files, but for ease of use, we provide a single data file that you can load to populate a graph.
+We migrated the CSV data using template Graql files, but for ease of use, we provide a single data file that you can load to populate a knowledge base.
 
 ```bash
 <relative-path-to-Grakn>/bin/graql.sh -b ./data.gql
@@ -124,7 +124,7 @@ At this point, you are ready to start investigating statistics within the data u
 
 ## `aggregate`
 
-You cannot make [`aggregate`](../graql/aggregate-queries.html) queries from within the **Graph** view in the Grakn visualiser, so you will need to switch views using the left hand navigation pane, from **Graph** to **Console**. This shows a read-write view on Grakn, and you can now submit queries in the usual way, via the form. Alternatively, from your terminal, you can start the Graql shell in its interactive (REPL) mode by typing `graql.sh` at the terminal, from within the *bin* directory of the Grakn installation.
+You cannot make [`aggregate`](../graql/aggregate-queries.html) queries from within the **knowledge base** view in the Grakn visualiser, so you will need to switch views using the left hand navigation pane, from **Graph** to **Console**. This shows a read-write view on Grakn, and you can now submit queries in the usual way, via the form. Alternatively, from your terminal, you can start the Graql shell in its interactive (REPL) mode by typing `graql.sh` at the terminal, from within the *bin* directory of the Grakn installation.
 
 Here are some example `aggregate` queries to try:
 
@@ -161,7 +161,7 @@ match $x isa car, has gear $g; aggregate min $g; # 3
 
 ## `compute`
 
-Graql also provides [compute queries](../graql/compute-queries.html) that can be used to determine values such as mean, minimum and maximum. These can be submitted using the **Graph** view on the Visualiser. For example, type each of the following into the form and submit:
+Graql also provides [compute queries](../graql/compute-queries.html) that can be used to determine values such as mean, minimum and maximum. These can be submitted using the **graph** view on the Visualiser. For example, type each of the following into the form and submit:
 
 ```graql
 # Number of automatic and manual cars
@@ -197,13 +197,13 @@ compute mean of mpg in manual-car; # 24.39
 
 ## When to Use `aggregate` and When to Use `compute`?
 
-Aggregate queries are computationally light and run single-threaded on a single machine, and are more flexible than the equivalent compute query (for example, you can use an aggregate query to filter results by resource). 
+Aggregate queries are computationally light and run single-threaded on a single machine, and are more flexible than the equivalent compute query (for example, you can use an aggregate query to filter results by attribute). 
 
 ```graql
 match $x isa car has model contains "Merc"; aggregate count; # 7
 ```
 
-Compute queries are computationally intensive and run in parallel on a cluster, so are good for big data and can be used to calculate results very fast. However, you can't filter the results by resource in the same way as you can for an `aggregate` query.
+Compute queries are computationally intensive and run in parallel on a cluster, so are good for big data and can be used to calculate results very fast. However, you can't filter the results by attribute in the same way as you can for an `aggregate` query.
 
 
 ## Inference

@@ -18,14 +18,15 @@
 
 package ai.grakn.graql.internal.reasoner.inference;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.test.graphs.GeoGraph;
+import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 
 import ai.grakn.test.GraknTestSetup;
 import org.junit.BeforeClass;
@@ -40,7 +41,7 @@ import static org.junit.Assume.assumeTrue;
 public class GeoInferenceTest {
 
     @Rule
-    public final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+    public final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get());
 
     @BeforeClass
     public static void onStartup() throws Exception {
@@ -49,7 +50,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testEntitiesLocatedInThemselves(){
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match (geo-entity: $x, entity-location: $x) isa is-located-in;";
 
         MatchQuery query = iqb.materialise(false).parse(queryString);
@@ -59,8 +60,8 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveQueryWithTypes() {
-        QueryBuilder qb = geoGraph.graph().graql().infer(false);
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder qb = geoKB.tx().graql().infer(false);
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match $x isa city;"+
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                         "$y isa country;$y has name 'Poland'; select $x;";
@@ -74,8 +75,8 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveQueryWithTypes_NoRoles() {
-        QueryBuilder qb = geoGraph.graph().graql().infer(false);
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder qb = geoKB.tx().graql().infer(false);
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match " +
                 "$z1 isa city;$z1 has name $name;" +
                 "($z1, $z2) isa is-located-in;" +
@@ -104,8 +105,8 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveQueryWithTypes2() {
-        QueryBuilder qb = geoGraph.graph().graql().infer(false);
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder qb = geoKB.tx().graql().infer(false);
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match " +
                 "$x isa university;$x has name $name;"+
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
@@ -125,8 +126,8 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveQueryWithTypes2_NoRoles() {
-        QueryBuilder qb = geoGraph.graph().graql().infer(false);
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder qb = geoKB.tx().graql().infer(false);
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match " +
                 "$z1 isa university;$z1 has name $name;"+
                 "($z1, $z2) isa is-located-in;" +
@@ -151,7 +152,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testSpecificTransitiveQuery() {
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         QueryBuilder iqb = graph.graql().infer(true);
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$y has name 'Poland';";
@@ -175,7 +176,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testSpecificTransitiveQueryWithIds() {
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         QueryBuilder iqb = graph.graql().infer(true);
         Concept poland = getConcept(graph, "name", "Poland");
         Concept europe = getConcept(graph, "name", "Europe");
@@ -192,6 +193,7 @@ public class GeoInferenceTest {
         answers.forEach(ans -> assertEquals(ans.get(Graql.var("y")).getId().getValue(), poland.getId().getValue()));
         assertEquals(answers.size(), 6);
 
+
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
         answers2.forEach(ans -> assertEquals(ans.size(), 2));
         answers2.forEach(ans -> assertEquals(ans.get(Graql.var("y")).getId().getValue(), europe.getId().getValue()));
@@ -200,7 +202,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testSpecificTransitiveQuery_NoRoles() {
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         QueryBuilder iqb = graph.graql().infer(true);
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
@@ -221,7 +223,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testSpecificTransitiveQueryWithIds_NoRoles() {
-        GraknGraph graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         QueryBuilder iqb = graph.graql().infer(true);
         Concept masovia = getConcept(graph, "name", "Masovia");
         String queryString = "match " +
@@ -243,7 +245,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveClosureQuery() {
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
@@ -254,7 +256,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveClosureQuery_NoRoles() {
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match ($x, $y) isa is-located-in;";
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
@@ -265,7 +267,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testTransitiveClosureQueryWithRelationVar() {
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in;";
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
@@ -276,7 +278,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testRelationVarQuery_WithAndWithoutRelationPlayers() {
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match $x isa is-located-in;";
         String queryString2 = "match $x ($x1, $x2) isa is-located-in;select $x;";
 
@@ -292,7 +294,7 @@ public class GeoInferenceTest {
 
     @Test
     public void testLazy() {
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; limit 1;";
         String queryString2 = "match (geo-entity: $x, entity-location: $y) isa is-located-in; limit 22;";
         String queryString3 = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
@@ -304,12 +306,12 @@ public class GeoInferenceTest {
         assertTrue(answers3.containsAll(answers2));
     }
 
-    private Concept getConcept(GraknGraph graph, String typeName, Object val){
+    private Concept getConcept(GraknTx graph, String typeName, Object val){
         return graph.graql().match(Graql.var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().stream().collect(toSet()));
+        return new QueryAnswers(query.admin().stream().map(QueryAnswer::new).collect(toSet()));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

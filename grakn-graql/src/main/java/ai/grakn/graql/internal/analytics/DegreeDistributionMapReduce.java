@@ -56,7 +56,7 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<String>> emitter) {
-        if (vertexHasSelectedTypeId(vertex, selectedTypes)) {
+        if (selectedTypes.isEmpty() || vertexHasSelectedTypeId(vertex, selectedTypes)) {
             emitter.emit(vertex.value((String) persistentProperties.get(DegreeVertexProgram.DEGREE)),
                     Collections.singleton(vertex.value(Schema.VertexProperty.ID.name())));
         } else {

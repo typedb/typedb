@@ -30,24 +30,24 @@ import java.util.Collection;
  *
  * @author Felix Chapman
  */
-public class RuleTypes extends AbstractOntologyConceptGenerator<RuleType> {
+public class RuleTypes extends AbstractTypeGenerator<RuleType> {
 
     public RuleTypes() {
         super(RuleType.class);
     }
 
     @Override
-    protected RuleType newOntologyConcept(Label label) {
-        return graph().putRuleType(label);
+    protected RuleType newSchemaConcept(Label label) {
+        return tx().putRuleType(label);
     }
 
     @Override
-    protected RuleType metaOntologyConcept() {
-        return graph().admin().getMetaRuleType();
+    protected RuleType metaSchemaConcept() {
+        return tx().admin().getMetaRuleType();
     }
 
     @Override
-    protected Collection<RuleType> otherMetaOntologyConcepts() {
-        return ImmutableSet.of(graph().admin().getMetaRuleInference(), graph().admin().getMetaRuleConstraint());
+    protected Collection<RuleType> otherMetaSchemaConcepts() {
+        return ImmutableSet.of(tx().admin().getMetaRuleInference(), tx().admin().getMetaRuleConstraint());
     }
 }

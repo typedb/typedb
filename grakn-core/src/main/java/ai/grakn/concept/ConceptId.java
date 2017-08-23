@@ -18,7 +18,8 @@
 
 package ai.grakn.concept;
 
-import com.google.common.base.Preconditions;
+import ai.grakn.GraknTx;
+import com.google.auto.value.AutoValue;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
@@ -29,55 +30,26 @@ import java.io.Serializable;
  * </p>
  *
  * <p>
- *     A class which represents an id of any {@link Concept} in the {@link ai.grakn.GraknGraph}.
+ *     A class which represents an id of any {@link Concept} in the {@link GraknTx}.
  *     Also contains a static method for producing concept IDs from Strings.
  * </p>
  *
  * @author fppt
  */
-public class ConceptId implements Comparable<ConceptId>, Serializable {
+@AutoValue
+public abstract class ConceptId implements Comparable<ConceptId>, Serializable {
     private static final long serialVersionUID = -1723590529071614152L;
-
-    private String conceptId;
-    private int hashCode = 0;
-
-    private ConceptId(String conceptId){
-        this.conceptId = conceptId;
-    }
 
     /**
      *
      * @return Used for indexing purposes and for graql traversals
      */
     @CheckReturnValue
-    public String getValue(){
-        return conceptId;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ConceptId cast = (ConceptId) o;
-        return conceptId.equals(cast.conceptId);
-    }
-
-    @Override
-    public int hashCode() {
-        if (hashCode == 0 ){
-            hashCode = conceptId.hashCode();
-        }
-        return hashCode;
-    }
+    public abstract String getValue();
 
     @Override
     public int compareTo(ConceptId o) {
         return getValue().compareTo(o.getValue());
-    }
-
-    @Override
-    public String toString(){
-        return getValue();
     }
 
     /**
@@ -87,7 +59,12 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
      */
     @CheckReturnValue
     public static ConceptId of(String value){
-        Preconditions.checkNotNull(value);
-        return new ConceptId(value);
+        return new AutoValue_ConceptId(value);
+    }
+
+    @Override
+    public final String toString() {
+        // TODO: Consider using @AutoValue toString
+        return getValue();
     }
 }

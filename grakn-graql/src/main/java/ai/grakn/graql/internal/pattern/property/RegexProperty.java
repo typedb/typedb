@@ -18,8 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -28,36 +27,32 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
 import ai.grakn.util.StringUtil;
-
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Set;
 
 /**
- * Represents the {@code regex} property on a {@link ResourceType}.
+ * Represents the {@code regex} property on a {@link AttributeType}.
  *
  * This property can be queried and inserted.
  *
- * This property introduces a validation constraint on instances of this {@link ResourceType}, stating that their
+ * This property introduces a validation constraint on instances of this {@link AttributeType}, stating that their
  * values must conform to the given regular expression.
  *
  * @author Felix Chapman
  */
-public class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
+@AutoValue
+public abstract class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
-    private final String regex;
-
-    public RegexProperty(String regex) {
-        this.regex = regex;
+    public static RegexProperty of(String regex) {
+        return new AutoValue_RegexProperty(regex);
     }
 
-    public String getRegex() {
-        return regex;
-    }
+    public abstract String regex();
 
     @Override
     public String getName() {
@@ -66,37 +61,25 @@ public class RegexProperty extends AbstractVarProperty implements UniqueVarPrope
 
     @Override
     public String getProperty() {
-        return StringUtil.valueToString(regex);
+        return StringUtil.valueToString(regex());
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.regex(this, start, regex));
+        return ImmutableSet.of(EquivalentFragmentSets.regex(this, start, regex()));
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        concept.asResourceType().setRegex(regex);
-    }
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.get(var).asAttributeType().setRegex(regex());
+        };
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        RegexProperty that = (RegexProperty) o;
-
-        return regex.equals(that.regex);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return regex.hashCode();
+        return PropertyExecutor.builder(method).requires(var).build();
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new RegexAtom(var.getVarName(), this, parent);
+        return new RegexAtom(var.var(), this, parent);
     }
 }

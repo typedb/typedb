@@ -56,9 +56,9 @@ public class AtomicFactory {
      */
     public static Set<Atomic> createAtomSet(Conjunction<VarPatternAdmin> pattern, ReasonerQuery parent) {
         Set<Atomic> atoms = new HashSet<>();
-        pattern.getVars().stream()
+        pattern.varPatterns().stream()
                 .flatMap(var -> var.getProperties()
-                        .map(vp -> vp.mapToAtom(var, pattern.getVars(), parent))
+                        .map(vp -> vp.mapToAtom(var, pattern.varPatterns(), parent))
                         .filter(Objects::nonNull))
                 .forEach(atoms::add);
         return atoms;

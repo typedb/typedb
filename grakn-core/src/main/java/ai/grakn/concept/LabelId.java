@@ -18,8 +18,10 @@
 
 package ai.grakn.concept;
 
-import com.google.common.base.Preconditions;
+import ai.grakn.GraknTx;
+import com.google.auto.value.AutoValue;
 
+import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 
 /**
@@ -28,55 +30,30 @@ import java.io.Serializable;
  * </p>
  *
  * <p>
- *     A class which represents an id of any {@link OntologyConcept} in the {@link ai.grakn.GraknGraph}.
+ *     A class which represents an id of any {@link SchemaConcept} in the {@link GraknTx}.
  *     Also contains a static method for producing IDs from Integers.
  * </p>
  *
  * @author fppt
  */
-public class LabelId implements Comparable<LabelId>, Serializable {
-    private static final long serialVersionUID = 3181633335040468179L;
-
-    private Integer typeId;
-
-    private LabelId(Integer typeId){
-        Preconditions.checkNotNull(typeId);
-        this.typeId = typeId;
-    }
+@AutoValue
+public abstract class LabelId implements Comparable<LabelId>, Serializable {
+    private static final long serialVersionUID = -1676610785035926909L;
 
     /**
      *
      * @return Used for indexing purposes and for graql traversals
      */
-    public Integer getValue(){
-        return typeId;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        LabelId cast = (LabelId) o;
-        return typeId.equals(cast.getValue());
-    }
-
-    @Override
-    public int hashCode() {
-       return typeId;
-    }
+    @CheckReturnValue
+    public abstract Integer getValue();
 
     @Override
     public int compareTo(LabelId o) {
         return getValue().compareTo(o.getValue());
     }
 
-    @Override
-    public String toString(){
-        return getValue().toString();
-    }
-
     public boolean isValid(){
-        return typeId != -1;
+        return getValue() != -1;
     }
 
     /**
@@ -85,13 +62,13 @@ public class LabelId implements Comparable<LabelId>, Serializable {
      * @return The matching type ID
      */
     public static LabelId of(Integer value){
-        return new LabelId(value);
+        return new AutoValue_LabelId(value);
     }
 
     /**
      * @return a type id which does not match any type
      */
     public static LabelId invalid(){
-        return new LabelId(-1);
+        return new AutoValue_LabelId(-1);
     }
 }

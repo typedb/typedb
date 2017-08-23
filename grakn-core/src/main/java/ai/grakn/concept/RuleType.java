@@ -18,12 +18,12 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.graph.admin.GraknAdmin;
+import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.graql.Pattern;
 
-import javax.annotation.Nonnull;
 import javax.annotation.CheckReturnValue;
-import java.util.Collection;
+import javax.annotation.Nonnull;
+import java.util.stream.Stream;
 
 /**
  * <p>
@@ -58,40 +58,22 @@ public interface RuleType extends Type {
     Rule putRule(Pattern when, Pattern then);
 
     /**
-     * Classifies the type to a specific scope. This allows you to optionally categorise types.
+     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
-     * @param scope The category of this Type
+     * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    RuleType scope(Thing scope);
+    RuleType key(AttributeType attributeType);
 
     /**
-     * Delete the scope specified.
+     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked.
      *
-     * @param scope The Instances that is currently scoping this Type.
-     * @return The Type itself
-     */
-    @Override
-    RuleType deleteScope(Thing scope);
-
-    /**
-     * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
-     *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    RuleType key(ResourceType resourceType);
-
-    /**
-     * Creates a RelationType which allows this type and a resource type to be linked.
-     *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
-     * @return The Type itself.
-     */
-    @Override
-    RuleType resource(ResourceType resourceType);
+    RuleType attribute(AttributeType attributeType);
 
     //---- Inherited Methods
     /**
@@ -131,7 +113,7 @@ public interface RuleType extends Type {
      * @return All the sub types of this rule type
      */
     @Override
-    Collection<RuleType> subs();
+    Stream<RuleType> subs();
 
     /**
      *
@@ -154,7 +136,7 @@ public interface RuleType extends Type {
      * @return All the rule instances of this Rule Type.
      */
     @Override
-    Collection<Rule> instances();
+    Stream<Rule> instances();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

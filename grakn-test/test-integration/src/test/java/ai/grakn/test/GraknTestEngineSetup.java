@@ -17,26 +17,24 @@
  */
 package ai.grakn.test;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
+import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
 import ai.grakn.engine.GraknEngineServer;
+import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.util.JWTHandler;
+import static ai.grakn.graql.Graql.var;
 import ai.grakn.util.EmbeddedRedis;
 import com.jayway.restassured.RestAssured;
-import org.slf4j.LoggerFactory;
-import spark.Service;
-
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
-
-import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SERVER_PORT;
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
-import static ai.grakn.graql.Graql.var;
+import org.slf4j.LoggerFactory;
+import spark.Service;
 
 /**
  * <p>
@@ -68,18 +66,18 @@ public abstract class GraknTestEngineSetup {
     }
 
     /**
-     * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
+     * To run engine we must ensure Cassandra and the Grakn HTTP endpoint are running
      */
     static GraknEngineServer startEngine(GraknEngineConfig config) throws Exception {
-        // To ensure consistency b/w test profiles and configuration files, when not using Titan
+        // To ensure consistency b/w test profiles and configuration files, when not using Janus
         // for a unit tests in an IDE, add the following option:
         // -Dgrakn.conf=../conf/test/tinker/grakn.properties
         //
-        // When using titan, add -Dgrakn.test-profile=titan
+        // When using janus, add -Dgrakn.test-profile=janus
         //
-        // The reason is that the default configuration of Grakn uses the Titan factory while the default
+        // The reason is that the default configuration of Grakn uses the Janus factory while the default
         // test profile is tinker: so when running a unit test within an IDE without any extra parameters,
-        // we end up wanting to use the TitanFactory but without starting Cassandra first.
+        // we end up wanting to use the JanusFactory but without starting Cassandra first.
         LOG.info("starting engine...");
 
         GraknTestSetup.startCassandraIfNeeded();
@@ -94,8 +92,8 @@ public abstract class GraknTestEngineSetup {
         return server;
     }
 
-    static void startRedis(GraknEngineConfig config){
-        EmbeddedRedis.start(config.getPropertyAsInt(REDIS_SERVER_PORT));
+    static void startRedis(int port) throws URISyntaxException {
+        EmbeddedRedis.start(port);
     }
 
     static void stopRedis(){
@@ -126,16 +124,16 @@ public abstract class GraknTestEngineSetup {
     private static void clearGraphs(GraknEngineServer server) {
         // Drop all keyspaces
         final Set<String> keyspaceNames = new HashSet<String>();
-        try(GraknGraph systemGraph = server.factory().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
+        try(GraknTx systemGraph = server.factory().tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.WRITE)) {
             systemGraph.graql().match(var("x").isa("keyspace-name"))
                     .execute()
                     .forEach(x -> x.values().forEach(y -> {
-                        keyspaceNames.add(y.asResource().getValue().toString());
+                        keyspaceNames.add(y.asAttribute().getValue().toString());
                     }));
         }
 
         keyspaceNames.forEach(name -> {
-            GraknGraph graph = server.factory().getGraph(name, GraknTxType.WRITE);
+            GraknTx graph = server.factory().tx(name, GraknTxType.WRITE);
             graph.admin().delete();
         });
         server.factory().refreshConnections();

@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
@@ -37,8 +37,8 @@ import java.util.Set;
 
 class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements StdQuery {
 
-    StdQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    StdQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
@@ -47,7 +47,7 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
 
         Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
@@ -56,8 +56,10 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
         String randomId = getRandomJobId();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubLabelIds, statisticsResourceLabelIds, randomId),
-                new StdMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE + randomId));
+                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds, randomId),
+                new StdMapReduce(statisticsResourceLabelIds, dataType,
+                        DegreeVertexProgram.DEGREE + randomId),
+                allSubLabelIds);
         Map<Serializable, Map<String, Double>> std = result.memory().get(StdMapReduce.class.getName());
         Map<String, Double> stdTuple = std.get(MapReduce.NullObject.instance());
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
@@ -92,8 +94,8 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
     }
 
     @Override
-    public StdQuery withGraph(GraknGraph graph) {
-        return (StdQuery) super.withGraph(graph);
+    public StdQuery withTx(GraknTx tx) {
+        return (StdQuery) super.withTx(tx);
     }
 
     @Override

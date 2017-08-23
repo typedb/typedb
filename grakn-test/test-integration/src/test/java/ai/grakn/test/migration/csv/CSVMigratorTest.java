@@ -19,16 +19,16 @@
 package ai.grakn.test.migration.csv;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.GraphLoader;
+import ai.grakn.util.SampleKBLoader;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -37,7 +37,7 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
 
 import java.io.IOException;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
@@ -62,7 +62,7 @@ public class CSVMigratorTest {
 
     @Before
     public void setup() {
-        String keyspace = GraphLoader.randomKeyspace();
+        String keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
         migrator = Migrator.to(engine.uri(), keyspace);
     }
@@ -115,19 +115,19 @@ public class CSVMigratorTest {
             migrator.load(template, m.setNullString("").convert());
         }
 
-        try(GraknGraph graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
+        try(GraknTx graph = factory.open(GraknTxType.WRITE)) {//Re Open Transaction
 
-            Collection<Entity> pets = graph.getEntityType("pet").instances();
-            assertEquals(1, pets.size());
+            Stream<Entity> pets = graph.getEntityType("pet").instances();
+            assertEquals(1, pets.count());
 
-            Collection<Entity> cats = graph.getEntityType("cat").instances();
-            assertEquals(1, cats.size());
+            Stream<Entity> cats = graph.getEntityType("cat").instances();
+            assertEquals(1, cats.count());
 
-            ResourceType<String> name = graph.getResourceType("name");
-            ResourceType<String> death = graph.getResourceType("death");
+            AttributeType<String> name = graph.getAttributeType("name");
+            AttributeType<String> death = graph.getAttributeType("death");
 
-            Entity fluffy = name.getResource("Fluffy").ownerInstances().iterator().next().asEntity();
-            assertEquals(1, fluffy.resources(death).size());
+            Entity fluffy = name.getAttribute("Fluffy").ownerInstances().iterator().next().asEntity();
+            assertEquals(1, fluffy.attributes(death).count());
         }
     }
 
@@ -139,8 +139,8 @@ public class CSVMigratorTest {
         String template = "if (<name> != \"Puffball\") do { insert $x isa cat; }";
         declareAndLoad(template, "pets/data/pets.quotes");
 
-        GraknGraph graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
-        assertEquals(8, graph.getEntityType("pet").instances().size());
+        GraknTx graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
+        assertEquals(8, graph.getEntityType("pet").instances().count());
     }
 
     @Ignore //Ignored because this feature is not yet supported
@@ -148,27 +148,27 @@ public class CSVMigratorTest {
     public void multipleEntitiesInOneFileTest() throws IOException {
         load(factory, getFile("csv", "single-file/schema.gql"));
 
-        GraknGraph graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
+        GraknTx graph = factory.open(GraknTxType.WRITE);//Re Open Transaction
         assertNotNull(graph.getEntityType("make"));
 
         String template = getFileAsString("csv", "single-file/template.gql");
         declareAndLoad(template, "single-file/data/cars.csv");
 
         // test
-        Collection<Entity> makes = graph.getEntityType("make").instances();
-        assertEquals(3, makes.size());
+        Stream<Entity> makes = graph.getEntityType("make").instances();
+        assertEquals(3, makes.count());
 
-        Collection<Entity> models = graph.getEntityType("model").instances();
-        assertEquals(4, models.size());
+        Stream<Entity> models = graph.getEntityType("model").instances();
+        assertEquals(4, models.count());
 
         // test empty value not created
-        ResourceType description = graph.getResourceType("description");
+        AttributeType description = graph.getAttributeType("description");
 
         Entity venture = graph.getConcept(ConceptId.of("Venture"));
-        assertEquals(1, venture.resources(description).size());
+        assertEquals(1, venture.attributes(description).count());
 
         Entity ventureLarge = graph.getConcept(ConceptId.of("Venture Large"));
-        assertEquals(0, ventureLarge.resources(description).size());
+        assertEquals(0, ventureLarge.attributes(description).count());
     }
 
     @Test
@@ -192,8 +192,8 @@ public class CSVMigratorTest {
 
         declareAndLoad(template, "pets/data/pets.csv");
 
-        try(GraknGraph graph = factory.open(GraknTxType.READ)){
-            assertEquals(0, graph.admin().getMetaEntityType().instances().size());
+        try(GraknTx graph = factory.open(GraknTxType.READ)){
+            assertEquals(0, graph.admin().getMetaEntityType().instances().count());
         }
     }
 

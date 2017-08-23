@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -46,13 +46,13 @@ public abstract class AtomicBase implements Atomic {
 
     protected AtomicBase(VarPatternAdmin pattern, ReasonerQuery par) {
         this.atomPattern = pattern;
-        this.varName = pattern.getVarName();
+        this.varName = pattern.var();
         this.parent = par;
     }
 
     protected AtomicBase(AtomicBase a) {
         this.atomPattern = a.atomPattern;
-        this.varName = atomPattern.asVar().getVarName();
+        this.varName = atomPattern.asVarPattern().var();
         this.parent = a.getParentQuery();
     }
 
@@ -66,7 +66,7 @@ public abstract class AtomicBase implements Atomic {
     public boolean containsVar(Var name){ return getVarNames().contains(name);}
 
     @Override
-    public boolean isUserDefinedName(){ return atomPattern.asVar().getVarName().isUserDefinedName();}
+    public boolean isUserDefinedName(){ return atomPattern.asVarPattern().var().isUserDefinedName();}
     
     @Override
     public Var getVarName(){ return varName;}
@@ -76,21 +76,21 @@ public abstract class AtomicBase implements Atomic {
         return Sets.newHashSet(varName);
     }
 
-    /**
-     * @return pattern corresponding to this atom
-     */
+    @Override
     public PatternAdmin getPattern(){ return atomPattern;}
+
+    @Override
     public PatternAdmin getCombinedPattern(){ return getPattern();}
 
-    /**
-     * @return the query the atom is contained in
-     */
+    @Override
     public ReasonerQuery getParentQuery(){ return parent;}
 
-    /**
-     * @param q query this atom is supposed to belong to
-     */
+    @Override
     public void setParentQuery(ReasonerQuery q){ parent = q;}
-    protected GraknGraph graph(){ return getParentQuery().graph();}
+
+    /**
+     * @return GraknTx this atomic is defined in
+     */
+    protected GraknTx tx(){ return getParentQuery().tx();}
 }
 

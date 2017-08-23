@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
@@ -31,10 +31,11 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import com.google.common.collect.ImmutableList;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.eq;
@@ -45,7 +46,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -55,24 +56,24 @@ public class ConjunctionQueryTest {
     private VarPattern resourceTypeWithoutSubTypes = Graql.label(resourceTypeWithoutSubTypesLabel);
     private VarPattern resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";
-    private GraknGraph graph;
+    private GraknTx tx;
     private Var x = Graql.var("x");
     private Var y = Graql.var("y");
 
     @SuppressWarnings("ResultOfMethodCallIgnored") // Mockito confuses IntelliJ
     @Before
     public void setUp() {
-        graph = mock(GraknGraph.class);
+        tx = mock(GraknTx.class);
 
         Type resourceTypeWithoutSubTypesMock = mock(Type.class);
-        doReturn(ImmutableList.of(resourceTypeWithoutSubTypesMock)).when(resourceTypeWithoutSubTypesMock).subs();
+        doAnswer((answer) -> Stream.of(resourceTypeWithoutSubTypesMock)).when(resourceTypeWithoutSubTypesMock).subs();
 
         Type resourceTypeWithSubTypesMock = mock(Type.class);
-        doReturn(ImmutableList.of(resourceTypeWithoutSubTypesMock, resourceTypeWithSubTypesMock))
+        doAnswer((answer) -> Stream.of(resourceTypeWithoutSubTypesMock, resourceTypeWithSubTypesMock))
                 .when(resourceTypeWithSubTypesMock).subs();
 
-        when(graph.getOntologyConcept(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
-        when(graph.getOntologyConcept(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
+        when(tx.getSchemaConcept(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
+        when(tx.getSchemaConcept(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
     }
 
     @Test
@@ -158,7 +159,7 @@ public class ConjunctionQueryTest {
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
             Conjunction<VarPatternAdmin> conjunction = pattern.admin().getDisjunctiveNormalForm().getPatterns().iterator().next();
-            return new ConjunctionQuery(conjunction, graph).getEquivalentFragmentSets();
+            return new ConjunctionQuery(conjunction, tx).getEquivalentFragmentSets();
         });
     }
 }

@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
@@ -37,8 +37,8 @@ import java.util.Set;
 
 class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements SumQuery {
 
-    SumQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    SumQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
@@ -47,7 +47,7 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
         Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
         Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
@@ -55,8 +55,10 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         String randomId = getRandomJobId();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubLabelIds, statisticsResourceLabelIds, randomId),
-                new SumMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE + randomId));
+                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds, randomId),
+                new SumMapReduce(statisticsResourceLabelIds, dataType,
+                        DegreeVertexProgram.DEGREE + randomId),
+                allSubLabelIds);
         Map<Serializable, Number> sum = result.memory().get(SumMapReduce.class.getName());
 
         Number finalResult = sum.get(MapReduce.NullObject.instance());
@@ -87,8 +89,8 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public SumQuery withGraph(GraknGraph graph) {
-        return (SumQuery) super.withGraph(graph);
+    public SumQuery withTx(GraknTx tx) {
+        return (SumQuery) super.withTx(tx);
     }
 
     @Override

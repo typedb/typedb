@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
@@ -46,11 +46,16 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
 
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
 
+    // In MapReduce, vertex emits type label id, but has-resource edge can not. Instead, a message is sent via the edge,
+    // and a vertex property is added. So the resource vertex can emit an extra key value pair, key being this constant.
+    // Here, -10 is just a number that is not used as a type id.
+    public static final int RESERVED_TYPE_LABEL_KEY = -10;
+
     GraknMapReduce(Set<LabelId> selectedTypes) {
         this.selectedTypes = selectedTypes;
     }
 
-    GraknMapReduce(Set<LabelId> selectedTypes, ResourceType.DataType resourceDataType) {
+    GraknMapReduce(Set<LabelId> selectedTypes, AttributeType.DataType resourceDataType) {
         this(selectedTypes);
         persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType.getName());
     }
@@ -135,6 +140,6 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
     }
 
     final boolean usingLong() {
-        return persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName());
+        return persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(AttributeType.DataType.LONG.getName());
     }
 }

@@ -24,6 +24,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
+import com.google.auto.value.AutoValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,61 +34,51 @@ import java.util.Set;
 /**
  * Implementation of {@link VarPattern} interface
  */
-class VarPatternImpl extends AbstractVarPattern {
+@AutoValue
+abstract class VarPatternImpl extends AbstractVarPattern {
 
     protected final Logger LOG = LoggerFactory.getLogger(VarPatternImpl.class);
 
-    private final Var name;
-
-    private final Set<VarProperty> properties;
-
-    VarPatternImpl(Var name, Set<VarProperty> properties) {
-        this.name = name;
-        this.properties = properties;
-    }
+    @Override
+    public abstract Var var();
 
     @Override
-    public Var getVarName() {
-        return name;
-    }
-
-    @Override
-    protected Set<VarProperty> properties() {
-        return properties;
-    }
+    protected abstract Set<VarProperty> properties();
 
     @Override
     public final boolean equals(Object o) {
+        // This equals implementation is special: it considers all non-user-defined vars as equivalent
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
         AbstractVarPattern var = (AbstractVarPattern) o;
 
-        if (getVarName().isUserDefinedName() != var.getVarName().isUserDefinedName()) return false;
+        if (var().isUserDefinedName() != var.var().isUserDefinedName()) return false;
 
         // "simplifying" this makes it harder to read
         //noinspection SimplifiableIfStatement
         if (!properties().equals(var.properties())) return false;
 
-        return !getVarName().isUserDefinedName() || getVarName().equals(var.getVarName());
+        return !var().isUserDefinedName() || var().equals(var.var());
 
     }
 
     @Override
     public final int hashCode() {
+        // This hashCode implementation is special: it considers all non-user-defined vars as equivalent
         int result = properties().hashCode();
-        if (getVarName().isUserDefinedName()) result = 31 * result + getVarName().hashCode();
-        result = 31 * result + (getVarName().isUserDefinedName() ? 1 : 0);
+        if (var().isUserDefinedName()) result = 31 * result + var().hashCode();
+        result = 31 * result + (var().isUserDefinedName() ? 1 : 0);
         return result;
     }
 
     @Override
     public final String toString() {
-        Collection<VarPatternAdmin> innerVars = getInnerVars();
+        Collection<VarPatternAdmin> innerVars = innerVarPatterns();
         innerVars.remove(this);
         getProperties(HasResourceProperty.class)
-                .map(HasResourceProperty::getResource)
-                .flatMap(r -> r.getInnerVars().stream())
+                .map(HasResourceProperty::resource)
+                .flatMap(r -> r.innerVarPatterns().stream())
                 .forEach(innerVars::remove);
 
         if (innerVars.stream().anyMatch(VarPatternImpl::invalidInnerVariable)) {
@@ -96,11 +87,11 @@ class VarPatternImpl extends AbstractVarPattern {
 
         StringBuilder builder = new StringBuilder();
 
-        String name = getVarName().isUserDefinedName() ? getVarName().toString() : "";
+        String name = var().isUserDefinedName() ? var().toString() : "";
 
         builder.append(name);
 
-        if (getVarName().isUserDefinedName() && !properties().isEmpty()) {
+        if (var().isUserDefinedName() && !properties().isEmpty()) {
             // Add a space after the var name
             builder.append(" ");
         }

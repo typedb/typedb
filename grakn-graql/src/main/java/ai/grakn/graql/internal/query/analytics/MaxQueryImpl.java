@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
@@ -37,8 +37,8 @@ import java.util.Set;
 
 class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MaxQuery {
 
-    MaxQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    MaxQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
@@ -47,7 +47,7 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
         Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
         Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
@@ -55,8 +55,10 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         String randomId = getRandomJobId();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubLabelIds, statisticsResourceLabelIds, randomId),
-                new MaxMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE + randomId));
+                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds, randomId),
+                new MaxMapReduce(statisticsResourceLabelIds, dataType,
+                        DegreeVertexProgram.DEGREE + randomId),
+                allSubLabelIds);
         Map<Serializable, Number> max = result.memory().get(MaxMapReduce.class.getName());
 
         LOGGER.debug("Max = " + max.get(MapReduce.NullObject.instance()));
@@ -85,8 +87,8 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MaxQuery withGraph(GraknGraph graph) {
-        return (MaxQuery) super.withGraph(graph);
+    public MaxQuery withTx(GraknTx tx) {
+        return (MaxQuery) super.withTx(tx);
     }
 
     @Override

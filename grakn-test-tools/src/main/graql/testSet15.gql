@@ -5,7 +5,7 @@ entity1 sub entity
 	has res2;
 
 #Resources
-res1 sub resource datatype string;
+res1 sub attribute datatype string;
 res2 sub res1;
 
 #Rules

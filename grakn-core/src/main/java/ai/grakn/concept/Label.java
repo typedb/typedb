@@ -18,6 +18,9 @@
 
 package ai.grakn.concept;
 
+import ai.grakn.GraknTx;
+import com.google.auto.value.AutoValue;
+
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
 import java.util.function.Function;
@@ -28,24 +31,17 @@ import java.util.function.Function;
  * </p>
  *
  * <p>
- *     A class which represents the unique label of any {@link OntologyConcept} in the {@link ai.grakn.GraknGraph}.
+ *     A class which represents the unique label of any {@link SchemaConcept} in the {@link GraknTx}.
  *     Also contains a static method for producing {@link Label}s from Strings.
  * </p>
  *
  * @author fppt
  */
-public class Label implements Comparable<Label>, Serializable {
+@AutoValue
+public abstract class Label implements Comparable<Label>, Serializable {
     private static final long serialVersionUID = 2051578406740868932L;
 
-    private String label;
-    private Label(String label){
-        this.label = label;
-    }
-
-    @CheckReturnValue
-    public String getValue(){
-        return label;
-    }
+    public abstract String getValue();
 
     /**
      * Rename a {@link Label} (does not modify the original {@link Label})
@@ -54,32 +50,12 @@ public class Label implements Comparable<Label>, Serializable {
      */
     @CheckReturnValue
     public Label map(Function<String, String> mapper) {
-        return Label.of(mapper.apply(label));
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Label label = (Label) o;
-
-        return this.label.equals(label.label);
-    }
-
-    @Override
-    public int hashCode() {
-        return label.hashCode();
+        return Label.of(mapper.apply(getValue()));
     }
 
     @Override
     public int compareTo(Label o) {
         return getValue().compareTo(o.getValue());
-    }
-
-    @Override
-    public String toString(){
-        return label;
     }
 
     /**
@@ -89,6 +65,12 @@ public class Label implements Comparable<Label>, Serializable {
      */
     @CheckReturnValue
     public static Label of(String value){
-        return new Label(value);
+        return new AutoValue_Label(value);
+    }
+
+    @Override
+    public final String toString() {
+        // TODO: Consider using @AutoValue toString
+        return getValue();
     }
 }

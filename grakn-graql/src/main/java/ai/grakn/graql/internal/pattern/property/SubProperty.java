@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.Concept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -27,13 +27,14 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.query.ConceptBuilder;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.SubAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.util.CommonUtil;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -49,83 +50,64 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicat
  *
  * @author Felix Chapman
  */
-public class SubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+@AutoValue
+public abstract class SubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
-    private final VarPatternAdmin superType;
+    public static final String NAME = "sub";
 
-    public SubProperty(VarPatternAdmin superType) {
-        this.superType = superType;
+    public static SubProperty of(VarPatternAdmin superType) {
+        return new AutoValue_SubProperty(superType);
     }
 
-    public VarPatternAdmin getSuperType() {
-        return superType;
-    }
+    public abstract VarPatternAdmin superType();
 
     @Override
     public String getName() {
-        return "sub";
+        return NAME;
     }
 
     @Override
     public String getProperty() {
-        return superType.getPrintableName();
+        return superType().getPrintableName();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType.getVarName()));
+        return ImmutableSet.of(EquivalentFragmentSets.sub(this, start, superType().var()));
     }
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return Stream.of(superType);
+        return Stream.of(superType());
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
-        return Stream.of(superType);
+    public Stream<VarPatternAdmin> innerVarPatterns() {
+        return Stream.of(superType());
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws GraqlQueryException {
-        Concept superConcept = insertQueryExecutor.getConcept(superType);
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            SchemaConcept superConcept = executor.get(superType().var()).asSchemaConcept();
 
-        if (concept.isEntityType()) {
-            concept.asEntityType().sup(superConcept.asEntityType());
-        } else if (concept.isRelationType()) {
-            concept.asRelationType().sup(superConcept.asRelationType());
-        } else if (concept.isRole()) {
-            concept.asRole().sup(superConcept.asRole());
-        } else if (concept.isResourceType()) {
-            concept.asResourceType().sup(superConcept.asResourceType());
-        } else if (concept.isRuleType()) {
-            concept.asRuleType().sup(superConcept.asRuleType());
-        } else {
-            throw CommonUtil.unreachableStatement("Can't recognize type " + concept);
-        }
-    }
+            Optional<ConceptBuilder> builder = executor.tryBuilder(var);
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+            if (builder.isPresent()) {
+                builder.get().sub(superConcept);
+            } else {
+                ConceptBuilder.setSuper(executor.get(var).asSchemaConcept(), superConcept);
+            }
+        };
 
-        SubProperty that = (SubProperty) o;
-
-        return superType.equals(that.superType);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return superType.hashCode();
+        return PropertyExecutor.builder(method).requires(superType().var()).produces(var).build();
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName().asUserDefined();
-        VarPatternAdmin typeVar = this.getSuperType();
-        Var typeVariable = typeVar.getVarName().asUserDefined();
+        Var varName = var.var().asUserDefined();
+        VarPatternAdmin typeVar = this.superType();
+        Var typeVariable = typeVar.var().asUserDefined();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
         VarPatternAdmin resVar = varName.sub(typeVariable).admin();

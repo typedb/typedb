@@ -9,7 +9,7 @@ queryListElem : matchQuery | insertOnly | simpleQuery ;
 
 queryEOF       : query EOF ;
 query          : matchQuery | insertQuery | simpleQuery ;
-simpleQuery    : askQuery | deleteQuery | aggregateQuery | computeQuery ;
+simpleQuery    : defineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
 matchQuery     : MATCH patterns                                   # matchBase
                | matchQuery 'select' VARIABLE (',' VARIABLE)* ';' # matchSelect
@@ -19,10 +19,10 @@ matchQuery     : MATCH patterns                                   # matchBase
                | matchQuery 'order' 'by' VARIABLE ORDER?      ';' # matchOrderBy
                ;
 
-askQuery       : matchQuery 'ask' ';' ;
 insertQuery    : matchInsert | insertOnly ;
 insertOnly     : INSERT varPatterns ;
 matchInsert    : matchQuery INSERT varPatterns ;
+defineQuery    : DEFINE varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
@@ -69,7 +69,6 @@ property       : 'isa' variable                     # isa
                | 'sub' variable                     # sub
                | 'relates' variable                 # relates
                | 'plays' variable                   # plays
-               | 'has-scope' VARIABLE               # hasScope
                | 'id' id                            # propId
                | 'label' label                      # propLabel
                | 'val' predicate                    # propValue
@@ -83,8 +82,6 @@ property       : 'isa' variable                     # isa
                | 'datatype' DATATYPE                # propDatatype
                | 'regex' REGEX                      # propRegex
                | '!=' variable                      # propNeq
-               | 'lhs' '{' patterns '}'             # propLhs  // deprecated, will be removed in 0.17.0
-               | 'rhs' '{' varPatterns '}'          # propRhs  // deprecated, will be removed in 0.17.0
                ;
 
 casting        : variable (':' VARIABLE)?
@@ -137,6 +134,7 @@ MEMBERS        : 'members' ;
 SIZE           : 'size' ;
 MATCH          : 'match' ;
 INSERT         : 'insert' ;
+DEFINE         : 'define' ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
 ORDER          : 'asc' | 'desc' ;

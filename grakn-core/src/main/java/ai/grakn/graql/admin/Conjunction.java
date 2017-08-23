@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
@@ -43,5 +43,5 @@ public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
      * @return the corresponding reasoner query
      */
     @CheckReturnValue
-    ReasonerQuery toReasonerQuery(GraknGraph graph);
+    ReasonerQuery toReasonerQuery(GraknTx tx);
 }

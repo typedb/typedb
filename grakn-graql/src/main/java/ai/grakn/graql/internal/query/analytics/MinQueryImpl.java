@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.LabelId;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -37,8 +37,8 @@ import java.util.Set;
 
 class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MinQuery {
 
-    MinQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    MinQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
@@ -47,7 +47,7 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
         if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
         Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
         Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
@@ -55,8 +55,10 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         String randomId = getRandomJobId();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubLabelIds, statisticsResourceLabelIds, randomId),
-                new MinMapReduce(statisticsResourceLabelIds, dataType, DegreeVertexProgram.DEGREE + randomId));
+                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds, randomId),
+                new MinMapReduce(statisticsResourceLabelIds, dataType,
+                        DegreeVertexProgram.DEGREE + randomId),
+                allSubLabelIds);
         Map<Serializable, Number> min = result.memory().get(MinMapReduce.class.getName());
 
         LOGGER.debug("Min = " + min.get(MapReduce.NullObject.instance()));
@@ -85,8 +87,8 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MinQuery withGraph(GraknGraph graph) {
-        return (MinQuery) super.withGraph(graph);
+    public MinQuery withTx(GraknTx tx) {
+        return (MinQuery) super.withTx(tx);
     }
 
     @Override

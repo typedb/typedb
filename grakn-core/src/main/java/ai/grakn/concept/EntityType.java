@@ -18,15 +18,15 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 
-import javax.annotation.Nonnull;
 import javax.annotation.CheckReturnValue;
-import java.util.Collection;
+import javax.annotation.Nonnull;
+import java.util.stream.Stream;
 
 /**
  * <p>
- *     Ontology element used to represent categories.
+ *     {@link SchemaConcept} used to represent categories.
  * </p>
  *
  * <p>
@@ -62,8 +62,8 @@ public interface EntityType extends Type{
      * @param type The supertype of this EntityType
      * @return The EntityType itself
      *
-     * @throws GraphOperationException if this is a meta type
-     * @throws GraphOperationException if the given supertype is already an indirect subtype of this type
+     * @throws GraknTxOperationException if this is a meta type
+     * @throws GraknTxOperationException if the given supertype is already an indirect subtype of this type
      */
     EntityType sup(EntityType type);
 
@@ -73,8 +73,8 @@ public interface EntityType extends Type{
      * @param type The sub type of this entity type
      * @return The EntityType itself
      *
-     * @throws GraphOperationException if the sub type is a meta type
-     * @throws GraphOperationException if the given subtype is already an indirect supertype of this type
+     * @throws GraknTxOperationException if the sub type is a meta type
+     * @throws GraknTxOperationException if the given subtype is already an indirect supertype of this type
      */
     EntityType sub(EntityType type);
 
@@ -102,45 +102,27 @@ public interface EntityType extends Type{
      *
      * @return a new empty entity.
      *
-     * @throws GraphOperationException if this is a meta type
+     * @throws GraknTxOperationException if this is a meta type
      */
     Entity addEntity();
 
     /**
-     * Classifies the type to a specific scope. This allows you to optionally categorise types.
+     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
-     * @param scope The category of this Type
+     * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    EntityType scope(Thing scope);
+    EntityType key(AttributeType attributeType);
 
     /**
-     * Delete the scope specified.
+     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked.
      *
-     * @param scope The Instances that is currently scoping this Type.
-     * @return The Type itself
-     */
-    @Override
-    EntityType deleteScope(Thing scope);
-
-    /**
-     * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
-     *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    EntityType key(ResourceType resourceType);
-
-    /**
-     * Creates a RelationType which allows this type and a resource type to be linked.
-     *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
-     * @return The Type itself.
-     */
-    @Override
-    EntityType resource(ResourceType resourceType);
+    EntityType attribute(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
     /**
@@ -158,7 +140,7 @@ public interface EntityType extends Type{
      * @return All the sub classes of this EntityType
      */
     @Override
-    Collection<EntityType> subs();
+    Stream<EntityType> subs();
 
     /**
      * Returns a collection of all Entity instances for this EntityType.
@@ -168,7 +150,7 @@ public interface EntityType extends Type{
      * @return All the instances of this EntityType.
      */
     @Override
-    Collection<Entity> instances();
+    Stream<Entity> instances();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

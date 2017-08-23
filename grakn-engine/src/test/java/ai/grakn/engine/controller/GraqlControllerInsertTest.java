@@ -18,11 +18,11 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.GraknTx;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
@@ -57,12 +57,12 @@ import static org.mockito.Mockito.when;
 
 public class GraqlControllerInsertTest {
 
-    private static GraknGraph mockGraph;
+    private static GraknTx mockTx;
     private static QueryBuilder mockQueryBuilder;
-    private static EngineGraknGraphFactory mockFactory = mock(EngineGraknGraphFactory.class);
+    private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static GraphContext graphContext = GraphContext.preLoad(MovieGraph.get());
+    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
@@ -76,33 +76,33 @@ public class GraqlControllerInsertTest {
         when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
         when(mockQueryBuilder.parse(any()))
-                .thenAnswer(invocation -> graphContext.graph().graql().parse(invocation.getArgument(0)));
+                .thenAnswer(invocation -> sampleKB.tx().graql().parse(invocation.getArgument(0)));
 
-        mockGraph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
-        when(mockGraph.graql()).thenReturn(mockQueryBuilder);
+        when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
+        when(mockFactory.tx(eq(mockTx.getKeyspace()), any())).thenReturn(mockTx);
     }
 
     @Test
     public void POSTGraqlInsert_InsertWasExecutedOnGraph(){
         doAnswer(answer -> {
-            graphContext.graph().commit();
+            sampleKB.tx().commit();
             return null;
-        }).when(mockGraph).commit();
+        }).when(mockTx).commit();
 
         String query = "insert $x isa movie;";
 
-        int genreCountBefore = graphContext.graph().getEntityType("movie").instances().size();
+        long genreCountBefore = sampleKB.tx().getEntityType("movie").instances().count();
 
         sendRequest(query);
 
         // refresh graph
-        graphContext.graph().close();
+        sampleKB.tx().close();
 
-        int genreCountAfter = graphContext.graph().getEntityType("movie").instances().size();
+        long genreCountAfter = sampleKB.tx().getEntityType("movie").instances().count();
 
         assertEquals(genreCountBefore + 1, genreCountAfter);
     }
@@ -129,7 +129,7 @@ public class GraqlControllerInsertTest {
 
         Response response = RestAssured.with()
                 .body(query)
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_MANDATORY_REQUEST_PARAMETERS.getMessage(KEYSPACE)));
@@ -138,7 +138,7 @@ public class GraqlControllerInsertTest {
     @Test
     public void POSTWithNoQueryInBody_ResponseIs400(){
         Response response = RestAssured.with()
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
 
         assertThat(response.statusCode(), equalTo(400));
         assertThat(exception(response), containsString(MISSING_REQUEST_BODY.getMessage()));
@@ -153,15 +153,15 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlInsertNotValid_ResponseStatusCodeIs422(){
-        Response response = sendRequest("insert person plays movie;");
+    public void POSTGraqlDefineNotValid_ResponseStatusCodeIs422(){
+        Response response = sendRequest("define person plays movie;");
 
         assertThat(response.statusCode(), equalTo(422));
     }
 
     @Test
-    public void POSTGraqlInsertNotValid_ResponseExceptionContainsValidationErrorMessage(){
-        Response response = sendRequest("insert person plays movie;");
+    public void POSTGraqlDefineNotValid_ResponseExceptionContainsValidationErrorMessage(){
+        Response response = sendRequest("define person plays movie;");
 
         assertThat(exception(response), containsString("is not of type"));
     }
@@ -195,14 +195,14 @@ public class GraqlControllerInsertTest {
     }
 
     @Test
-    public void POSTGraqlInsertWithOntology_GraphCommitIsCalled(){
-        String query = "insert thingy sub entity;";
+    public void POSTGraqlDefine_GraphCommitIsCalled(){
+        String query = "define thingy sub entity;";
 
-        verify(mockGraph, times(0)).commit();
+        verify(mockTx, times(0)).commit();
 
         sendRequest(query);
 
-        verify(mockGraph, times(1)).commit();
+        verify(mockTx, times(1)).commit();
     }
 
     private Response sendRequest(String query){
@@ -212,10 +212,10 @@ public class GraqlControllerInsertTest {
     private Response sendRequest(String query, String acceptType){
         return RestAssured.with()
                 .accept(acceptType)
-                .queryParam(KEYSPACE, mockGraph.getKeyspace())
+                .queryParam(KEYSPACE, mockTx.getKeyspace())
                 .queryParam(INFER, false)
                 .queryParam(MATERIALISE, false)
                 .body(query)
-                .post(REST.WebPath.Graph.ANY_GRAQL);
+                .post(REST.WebPath.KB.ANY_GRAQL);
     }
 }
