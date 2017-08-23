@@ -61,10 +61,10 @@ public class EngineTestHelper {
     }
 
     /**
-     * Similarly to {@link EngineTestHelper#engine()} it creates a test engine with the ability to write graphs to a
+     * Similarly to {@link EngineTestHelper#engine()} it creates a test engine with the ability to write {@link ai.grakn.GraknTx} to a
      * persistent backend if needed
      */
-    public static synchronized void engineWithGraphs() {
+    public static synchronized void engineWithKBs() {
         GraknTestSetup.startCassandraIfNeeded();
         engine();
     }

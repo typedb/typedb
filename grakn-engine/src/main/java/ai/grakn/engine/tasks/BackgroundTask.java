@@ -19,7 +19,7 @@
 package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.connection.RedisCountStorage;
 import ai.grakn.engine.tasks.manager.TaskCheckpoint;
@@ -44,7 +44,8 @@ public abstract class BackgroundTask {
     TaskConfiguration configuration = null;
     private @Nullable Consumer<TaskCheckpoint> saveCheckpoint = null;
     private @Nullable GraknEngineConfig engineConfig = null;
-    private @Nullable EngineGraknGraphFactory factory = null;
+    private @Nullable
+    EngineGraknTxFactory factory = null;
     private @Nullable RedisCountStorage redis = null;
     private @Nullable MetricRegistry metricRegistry = null;
     private @Nullable LockProvider lockProvider = null;
@@ -61,7 +62,7 @@ public abstract class BackgroundTask {
     public final void initialize(
             Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration,
             TaskSubmitter taskSubmitter, GraknEngineConfig engineConfig, RedisCountStorage redis,
-            EngineGraknGraphFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry)  {
+            EngineGraknTxFactory factory, LockProvider lockProvider, MetricRegistry metricRegistry)  {
         this.configuration = configuration;
         this.taskSubmitter = taskSubmitter;
         this.saveCheckpoint = saveCheckpoint;
@@ -152,7 +153,7 @@ public abstract class BackgroundTask {
         return redis;
     }
 
-    public final EngineGraknGraphFactory factory(){
+    public final EngineGraknTxFactory factory(){
         Preconditions.checkNotNull(factory, "BackgroundTask#initialise must be called before retrieving the engine factory");
         return factory;
     }

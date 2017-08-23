@@ -68,7 +68,7 @@ export default class Style {
      */
   getDefaultNodeColour(type, baseType) {
     let colourObject;
-        // User defined ontology & instances
+        // User defined schema & instances
     switch (baseType) {
       case API.GENERATED_RELATION_TYPE:
       case API.INFERRED_RELATION_TYPE:

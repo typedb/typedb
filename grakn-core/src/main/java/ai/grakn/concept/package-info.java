@@ -17,7 +17,7 @@
  */
 
 /**
- *  Provides the  meta-ontology interfaces and definitions.
+ *  Provides the  meta-schema interfaces and definitions.
  */
 
 package ai.grakn.concept;

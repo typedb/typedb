@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 
@@ -43,10 +43,10 @@ public interface ReasonerQuery{
     ReasonerQuery copy();
 
     /**
-     * @return GraknGraph associated with this reasoner query
+     * @return {@link GraknTx} associated with this reasoner query
      */
     @CheckReturnValue
-    GraknGraph graph();
+    GraknTx tx();
 
     /**
      * @return conjunctive pattern corresponding to this reasoner query
@@ -111,5 +111,5 @@ public interface ReasonerQuery{
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    Map<Var, OntologyConcept> getVarOntologyConceptMap();
+    Map<Var, SchemaConcept> getVarSchemaConceptMap();
 }

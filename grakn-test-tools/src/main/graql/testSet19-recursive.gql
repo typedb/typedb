@@ -1,4 +1,4 @@
-insert
+define
 
 #Roles
 
@@ -16,15 +16,17 @@ subEntity1 sub entity1;
 
 #Relations
 
-relation1 sub relation
+relation1 sub relationship
 	relates role1
 	relates role2;
 
-relation2 sub relation
+relation2 sub relationship
 	relates role1
 	relates role2;
 
-name sub resource datatype string;
+name sub attribute datatype string;
+
+insert
 
 #Rules
 

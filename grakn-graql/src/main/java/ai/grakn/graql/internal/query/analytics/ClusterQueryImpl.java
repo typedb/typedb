@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.ClusterQuery;
@@ -39,8 +39,8 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     private boolean anySize = true;
     private long clusterSize = -1L;
 
-    ClusterQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    ClusterQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
@@ -136,8 +136,8 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     }
 
     @Override
-    public ClusterQuery<T> withGraph(GraknGraph graph) {
-        return (ClusterQuery<T>) super.withGraph(graph);
+    public ClusterQuery<T> withTx(GraknTx tx) {
+        return (ClusterQuery<T>) super.withTx(tx);
     }
 
     @Override

@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
@@ -35,12 +35,12 @@ class ResourceIndexFragment extends AbstractFragment {
 
     ResourceIndexFragment(VarProperty varProperty, Var start, Label label, Object value) {
         super(varProperty, start);
-        this.resourceIndex = Schema.generateResourceIndex(label, value.toString());
+        this.resourceIndex = Schema.generateAttributeIndex(label, value.toString());
     }
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
 
         return traversal.has(INDEX.name(), resourceIndex);
     }

@@ -27,9 +27,9 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.StringConverter;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -43,19 +43,16 @@ import java.util.Set;
  *
  * @author Felix Chapman
  */
-public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+@AutoValue
+public abstract class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
     public static final String NAME = "id";
 
-    private final ConceptId id;
-
-    public IdProperty(ConceptId id) {
-        this.id = id;
+    public static IdProperty of(ConceptId id) {
+        return new AutoValue_IdProperty(id);
     }
 
-    public ConceptId getId() {
-        return id;
-    }
+    public abstract ConceptId id();
 
     @Override
     public String getName() {
@@ -64,27 +61,27 @@ public class IdProperty extends AbstractVarProperty implements NamedProperty, Un
 
     @Override
     public String getProperty() {
-        return StringConverter.idToString(id);
+        return StringConverter.idToString(id());
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.id(this, start, id));
+        return ImmutableSet.of(EquivalentFragmentSets.id(this, start, id()));
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.builder(var).id(id);
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).id(id());
+        };
+
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of();
-    }
-
-    @Override
-    public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        // This property works in both insert and define queries, because it is only for look-ups
+        return insert(var);
     }
 
     @Override
@@ -93,23 +90,7 @@ public class IdProperty extends AbstractVarProperty implements NamedProperty, Un
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        IdProperty that = (IdProperty) o;
-
-        return id.equals(that.id);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return id.hashCode();
-    }
-
-    @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new IdPredicate(var.getVarName(), this, parent);
+        return new IdPredicate(var.var(), this, parent);
     }
 }

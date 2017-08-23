@@ -18,7 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -29,7 +29,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -72,17 +72,17 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public boolean isRuleResolvable() {
-        return !getApplicableRules().isEmpty();
+        return getApplicableRules().findFirst().isPresent();
     }
 
     @Override
     public boolean isRecursive(){
-        if (isResource() || getOntologyConcept() == null) return false;
-        OntologyConcept ontologyConcept = getOntologyConcept();
-        return getApplicableRules().stream()
+        if (isResource() || getSchemaConcept() == null) return false;
+        SchemaConcept schemaConcept = getSchemaConcept();
+        return getApplicableRules()
                 .filter(rule -> rule.getBody().selectAtoms().stream()
-                        .filter(at -> Objects.nonNull(at.getOntologyConcept()))
-                        .filter(at -> checkCompatible(ontologyConcept, at.getOntologyConcept())).findFirst().isPresent())
+                        .filter(at -> Objects.nonNull(at.getSchemaConcept()))
+                        .filter(at -> checkCompatible(schemaConcept, at.getSchemaConcept())).findFirst().isPresent())
                 .filter(this::isRuleApplicable)
                 .findFirst().isPresent();
     }
@@ -91,7 +91,7 @@ public abstract class Atom extends AtomicBase {
      * @return var properties this atom (its pattern) contains
      */
     public Set<VarProperty> getVarProperties() {
-        return getPattern().asVar().getProperties().collect(Collectors.toSet());
+        return getPattern().asVarPattern().getProperties().collect(Collectors.toSet());
     }
 
     /**
@@ -147,24 +147,23 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
-    private Set<Rule> getPotentialRules(){
-        OntologyConcept ontologyConcept = getOntologyConcept();
-        return ontologyConcept != null ?
-                ontologyConcept.subs().flatMap(OntologyConcept::getRulesOfConclusion).collect(Collectors.toSet()) :
-                ReasonerUtils.getRules(graph());
+    private Stream<Rule> getPotentialRules(){
+        return RuleUtil.getRulesWithType(getSchemaConcept(), tx());
     }
 
     /**
      * @return set of applicable rules - does detailed (slow) check for applicability
      */
-    public Set<InferenceRule> getApplicableRules() {
+    public Stream<InferenceRule> getApplicableRules() {
         if (applicableRules == null) {
-            applicableRules = getPotentialRules().stream()
-                    .map(rule -> new InferenceRule(rule, graph()))
+            applicableRules = new HashSet<>();
+            return getPotentialRules()
+                    .map(rule -> new InferenceRule(rule, tx()))
                     .filter(this::isRuleApplicable)
-                    .collect(Collectors.toSet());
+                    .map(r -> r.rewriteToUserDefined(this))
+                    .peek(applicableRules::add);
         }
-        return applicableRules;
+        return applicableRules.stream();
     }
 
     /**
@@ -175,7 +174,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return corresponding type if any
      */
-    public abstract OntologyConcept getOntologyConcept();
+    public abstract SchemaConcept getSchemaConcept();
 
     /**
      * @return type id of the corresponding type if any

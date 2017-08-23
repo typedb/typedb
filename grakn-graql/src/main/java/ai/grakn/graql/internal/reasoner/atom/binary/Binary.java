@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
@@ -44,7 +44,7 @@ import java.util.Set;
 /**
  *
  * <p>
- * Implementation for binary atoms with single id predicate for an ontology concept. Binary atoms take the form:
+ * Implementation for binary atoms with single id predicate for a schema concept. Binary atoms take the form:
  *
  * <>($varName, $predicateVariable), type($predicateVariable)
  *
@@ -79,9 +79,9 @@ public abstract class Binary extends Atom {
 
     @Nullable
     @Override
-    public OntologyConcept getOntologyConcept(){
+    public SchemaConcept getSchemaConcept(){
         if (type == null && typeId != null) {
-            type = getParentQuery().graph().getConcept(typeId).asType();
+            type = getParentQuery().tx().getConcept(typeId).asType();
         }
         return type;
     }
@@ -115,8 +115,8 @@ public abstract class Binary extends Atom {
 
     @Override
     public PatternAdmin getCombinedPattern() {
-        Set<VarPatternAdmin> vars = Sets.newHashSet(super.getPattern().asVar());
-        if (getPredicate() != null) vars.add(getPredicate().getPattern().asVar());
+        Set<VarPatternAdmin> vars = Sets.newHashSet(super.getPattern().asVarPattern());
+        if (getPredicate() != null) vars.add(getPredicate().getPattern().asVarPattern());
         return Patterns.conjunction(vars);
     }
 

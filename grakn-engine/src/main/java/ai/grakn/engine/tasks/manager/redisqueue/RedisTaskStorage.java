@@ -53,6 +53,7 @@ import redis.clients.util.Pool;
 public class RedisTaskStorage implements TaskStateStorage {
 
     private static final Logger LOG = LoggerFactory.getLogger(RedisTaskStorage.class);
+    public static final int EXPIRE_TIME_S = 15 * 60;
     private final Timer updateTimer;
     private final Timer getTimer;
     private final Meter writeError;
@@ -80,7 +81,7 @@ public class RedisTaskStorage implements TaskStateStorage {
             LOG.debug("New state {}", key);
             String value = new String(Base64.getEncoder().encode(SerializationUtils.serialize(state)),
                     Charsets.UTF_8);
-            String status = jedis.set(key, value, "nx", "ex", 60*60/*expire time in seconds*/);
+            String status = jedis.set(key, value, "nx", "ex", EXPIRE_TIME_S);
             if (status != null && status.equalsIgnoreCase("OK")) {
                 return state.getId();
             } else {
@@ -98,7 +99,7 @@ public class RedisTaskStorage implements TaskStateStorage {
             LOG.debug("Updating state {}", key);
             String value = new String(Base64.getEncoder().encode(SerializationUtils.serialize(state)),
                     Charsets.UTF_8);
-            String status = jedis.setex(key, 60*60/*expire time in seconds*/, value);
+            String status = jedis.setex(key, 15*60, value);
             return status.equalsIgnoreCase("OK");
         }
     }
@@ -111,7 +112,6 @@ public class RedisTaskStorage implements TaskStateStorage {
             if (value != null) {
                 return (TaskState) deserialize(Base64.getDecoder().decode(value));
             } else {
-                LOG.info("Requested state {} was not found", id.getValue());
                 // TODO Don't use exceptions for an expected return like this
                 throw GraknBackendException.stateStorageMissingId(id);
             }

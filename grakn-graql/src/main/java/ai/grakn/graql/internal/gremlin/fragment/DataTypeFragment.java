@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -29,16 +29,16 @@ import static ai.grakn.util.Schema.VertexProperty.DATA_TYPE;
 
 class DataTypeFragment extends AbstractFragment {
 
-    private final ResourceType.DataType dataType;
+    private final AttributeType.DataType dataType;
 
-    DataTypeFragment(VarProperty varProperty, Var start, ResourceType.DataType dataType) {
+    DataTypeFragment(VarProperty varProperty, Var start, AttributeType.DataType dataType) {
         super(varProperty, start);
         this.dataType = dataType;
     }
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknGraph graph) {
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
         return traversal.has(DATA_TYPE.name(), dataType.getName());
     }
 
