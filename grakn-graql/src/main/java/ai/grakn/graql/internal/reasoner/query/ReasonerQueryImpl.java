@@ -99,13 +99,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         q.getAtoms().forEach(at -> addAtomic(AtomicFactory.create(at, this)));
     }
 
-<<<<<<< HEAD
-    ReasonerQueryImpl(Set<Atomic> atoms, GraknGraph graph){
-        this.graph = graph;
-=======
-    ReasonerQueryImpl(Set<Atom> atoms, GraknTx tx){
+    ReasonerQueryImpl(Set<Atomic> atoms, GraknTx tx){
         this.tx = tx;
->>>>>>> af2276f104a6e1cf059ff5cdba6152b2211e523d
 
         atoms.stream()
                 .map(at -> AtomicFactory.create(at, this))

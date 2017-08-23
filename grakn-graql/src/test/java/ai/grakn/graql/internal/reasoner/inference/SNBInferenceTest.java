@@ -31,10 +31,7 @@ import ai.grakn.test.kbs.SNBKB;
 
 import ai.grakn.test.GraknTestSetup;
 import java.util.List;
-<<<<<<< HEAD
-=======
 
->>>>>>> af2276f104a6e1cf059ff5cdba6152b2211e523d
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;

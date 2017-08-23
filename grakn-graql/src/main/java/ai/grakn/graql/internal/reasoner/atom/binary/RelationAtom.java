@@ -117,22 +117,11 @@ public class RelationAtom extends IsaAtom {
     }
 
     private List<RelationPlayer> getRelationPlayers() {
-<<<<<<< HEAD
         List<RelationPlayer> rps = new ArrayList<>();
-        getPattern().asVar()
+        getPattern().asVarPattern()
                 .getProperty(RelationProperty.class)
-                .ifPresent(prop -> prop.getRelationPlayers().forEach(rps::add));
+                .ifPresent(prop -> prop.relationPlayers().forEach(rps::add));
         return rps;
-=======
-        if (relationPlayers == null) {
-            relationPlayers = new ArrayList<>();
-            getPattern().asVarPattern()
-                    .getProperty(RelationProperty.class)
-                    .ifPresent(prop -> prop.relationPlayers()
-                            .forEach(relationPlayers::add));
-        }
-        return relationPlayers;
->>>>>>> af2276f104a6e1cf059ff5cdba6152b2211e523d
     }
 
     @Override

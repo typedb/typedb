@@ -20,10 +20,6 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-<<<<<<< HEAD
-import ai.grakn.test.graphs.GeoGraph;
-=======
->>>>>>> af2276f104a6e1cf059ff5cdba6152b2211e523d
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.Conjunction;
@@ -31,11 +27,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-<<<<<<< HEAD
-import ai.grakn.test.GraphContext;
 
-=======
->>>>>>> af2276f104a6e1cf059ff5cdba6152b2211e523d
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GeoKB;
