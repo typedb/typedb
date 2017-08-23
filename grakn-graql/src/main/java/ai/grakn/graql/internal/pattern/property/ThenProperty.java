@@ -20,9 +20,8 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Pattern;
-import com.google.auto.value.AutoValue;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import com.google.auto.value.AutoValue;
 
 
 /**
@@ -50,7 +49,11 @@ public abstract class ThenProperty extends RuleProperty {
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.builder(var).then(pattern());
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).then(pattern());
+        };
+
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 }

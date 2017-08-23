@@ -27,7 +27,6 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
@@ -73,18 +72,12 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.builder(var).value(predicate().equalsValue().get()); // TODO
-    }
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).value(predicate().equalsValue().get()); // TODO
+        };
 
-    @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of();
-    }
-
-    @Override
-    public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 
     @Override
