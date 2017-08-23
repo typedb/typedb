@@ -25,7 +25,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
-import javafx.util.Pair;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 import java.util.Collections;
 import java.util.Iterator;

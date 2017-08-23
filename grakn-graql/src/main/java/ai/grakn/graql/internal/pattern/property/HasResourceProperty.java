@@ -30,7 +30,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -125,15 +124,14 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Attribute attributeConcept = executor.get(resource().var()).asAttribute();
-        Thing thing = executor.get(var).asThing();
-        thing.attribute(attributeConcept);
-    }
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Attribute attributeConcept = executor.get(resource().var()).asAttribute();
+            Thing thing = executor.get(var).asThing();
+            thing.attribute(attributeConcept);
+        };
 
-    @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, resource().var());
+        return PropertyExecutor.builder(method).requires(var, resource().var()).build();
     }
 
     @Override

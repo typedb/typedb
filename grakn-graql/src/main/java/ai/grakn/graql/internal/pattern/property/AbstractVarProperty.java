@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.util.CommonUtil;
 
 import java.util.stream.Stream;
@@ -47,12 +46,12 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     abstract String getName();
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
         throw GraqlQueryException.insertUnsupportedProperty(getName());
     }
 
     @Override
-    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
         throw GraqlQueryException.defineUnsupportedProperty(getName());
     }
 

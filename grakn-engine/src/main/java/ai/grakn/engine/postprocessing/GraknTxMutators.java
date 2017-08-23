@@ -90,7 +90,6 @@ public abstract class GraknTxMutators {
 
             performRetry(retry);
         }
-
         throw new RuntimeException(ErrorMessage.UNABLE_TO_MUTATE.getMessage(keyspace));
     }
 
@@ -98,7 +97,7 @@ public abstract class GraknTxMutators {
      * Sleep the current thread for a random amount of time
      * @param retry Seed with which to calculate sleep time
      */
-    private static void performRetry(int retry){
+    private static void performRetry(int retry) {
         double seed = 1.0 + (Math.random() * 5.0);
         double waitTime = (retry * 2.0)  + seed;
         LOG.debug(ErrorMessage.BACK_OFF_RETRY.getMessage(waitTime));

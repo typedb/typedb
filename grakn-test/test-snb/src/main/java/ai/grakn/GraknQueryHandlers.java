@@ -22,6 +22,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
@@ -96,22 +97,22 @@ public class GraknQueryHandlers {
     static Var aFriendLastName = var("aFriendLastName");
 
     /**
-     * Retrieves the value of a resource and infers the type.
+     * Retrieves the value of an {@link Attribute} and infers the {@link Type}.
      *
      * @param result a single result of a graql query
-     * @param resource a var representing the resource
-     * @param <T> the data type of the resource value
-     * @return the resource value
+     * @param attribute a var representing the {@link Attribute}
+     * @param <T> the data type of the {@link Attribute} value
+     * @return the {@link Attribute} value
      */
-    private static <T> T resource(Answer result, Var resource) {
-        return result.get(resource).<T>asAttribute().getValue();
+    private static <T> T resource(Answer result, Var attribute) {
+        return result.get(attribute).<T>asAttribute().getValue();
     }
 
     /**
-     * Retrieves the LocalDateTime value of a resource and returns the epoch milli using UTC time.
+     * Retrieves the LocalDateTime value of an {@link Attribute} and returns the epoch milli using UTC time.
      *
      * @param result a single result of a graql query
-     * @param resource a var representing the resource
+     * @param resource a var representing the {@link Attribute}
      * @return the time as an epoch milli
      */
     private static long timeResource(Answer result, Var resource) {
