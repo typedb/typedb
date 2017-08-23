@@ -23,7 +23,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
-import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
@@ -32,7 +31,6 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
-import java.util.Map;
 import java.util.Optional;
 
 import static ai.grakn.engine.controller.util.Requests.mandatoryBody;
@@ -52,8 +50,7 @@ public class AttributeTypeController {
     private final EngineGraknTxFactory factory;
     private static final Logger LOG = LoggerFactory.getLogger(AttributeTypeController.class);
 
-    public AttributeTypeController(EngineGraknTxFactory factory, Service spark,
-                                   MetricRegistry metricRegistry) {
+    public AttributeTypeController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
         spark.post("/graph/attributeType", this::postAttributeType);
         spark.get("/graph/attributeType/:attributeTypeLabel", this::getAttributeType);

@@ -25,7 +25,6 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
@@ -52,13 +51,14 @@ public class EntityController {
     private final EngineGraknTxFactory factory;
     private static final Logger LOG = LoggerFactory.getLogger(EntityController.class);
 
-    public EntityController(EngineGraknTxFactory factory, Service spark,
-                                MetricRegistry metricRegistry) {
+    public EntityController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
         spark.post("/graph/entityType/:entityTypeLabel", this::postEntity);
         spark.put("/graph/entity/:entityConceptId/attribute/:attributeConceptId", this::assignAttributeToEntity);
-        spark.delete("/graph/entity/:entityConceptId/attribute/:attributeConceptId", this::deleteAttributeToEntityAssignment); // TODO: implement
+
+        // TODO: implement it after operation has been supported in the Graph API
+//        spark.delete("/graph/entity/:entityConceptId/attribute/:attributeConceptId", this::deleteAttributeToEntityAssignment);
     }
 
     private Json postEntity(Request request, Response response) {
@@ -113,9 +113,10 @@ public class EntityController {
         }
     }
 
-    private Json deleteAttributeToEntityAssignment(Request request, Response response) {
-        throw new UnsupportedOperationException("Unsupported operation: DELETE /graph/entity/:conceptId/attribute/:conceptId");
-    }
+    // TODO: implement it after operation has been supported in the Graph API
+//    private Json deleteAttributeToEntityAssignment(Request request, Response response) {
+//        throw new UnsupportedOperationException("Unsupported operation: DELETE /graph/entity/:conceptId/attribute/:conceptId");
+//    }
 
     private Json entityJson(String conceptId) {
         return Json.object("entity", Json.object("conceptId", conceptId));

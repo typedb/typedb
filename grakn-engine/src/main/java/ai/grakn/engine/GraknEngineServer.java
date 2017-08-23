@@ -234,14 +234,14 @@ public class GraknEngineServer implements AutoCloseable {
         new UserController(spark, usersHandler);
         new CommitLogController(spark, defaultKeyspace, postProcessingDelay, taskManager);
         new TasksController(spark, taskManager, metricRegistry);
-        new EntityController(factory, spark, metricRegistry);
-        new EntityTypeController(factory, spark, metricRegistry);
-        new RelationshipController(factory, spark, metricRegistry);
-        new RelationshipTypeController(factory, spark, metricRegistry);
-        new AttributeController(factory, spark, metricRegistry);
-        new AttributeTypeController(factory, spark, metricRegistry);
-        new RoleController(factory, spark, metricRegistry);
-        new RuleTypeController(factory, spark, metricRegistry);
+        new EntityController(factory, spark);
+        new EntityTypeController(factory, spark);
+        new RelationshipController(factory, spark);
+        new RelationshipTypeController(factory, spark);
+        new AttributeController(factory, spark);
+        new AttributeTypeController(factory, spark);
+        new RoleController(factory, spark);
+        new RuleTypeController(factory, spark);
 
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();

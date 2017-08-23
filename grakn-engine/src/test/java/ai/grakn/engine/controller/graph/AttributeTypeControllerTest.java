@@ -65,7 +65,7 @@ public class AttributeTypeControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
 
-        new AttributeTypeController(mockFactory, spark, metricRegistry);
+        new AttributeTypeController(mockFactory, spark);
     });
 
     @Before

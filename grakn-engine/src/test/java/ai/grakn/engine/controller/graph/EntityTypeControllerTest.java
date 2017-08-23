@@ -63,7 +63,7 @@ public class EntityTypeControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
 
-        new EntityTypeController(mockFactory, spark, metricRegistry);
+        new EntityTypeController(mockFactory, spark);
     });
 
     @Before

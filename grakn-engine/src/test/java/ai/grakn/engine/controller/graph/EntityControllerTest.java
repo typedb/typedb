@@ -65,8 +65,8 @@ public class EntityControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
 
-        new AttributeController(mockFactory, spark, metricRegistry);
-        new EntityController(mockFactory, spark, metricRegistry);
+        new AttributeController(mockFactory, spark);
+        new EntityController(mockFactory, spark);
     });
 
     @Before

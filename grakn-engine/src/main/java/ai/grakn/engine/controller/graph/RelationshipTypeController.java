@@ -23,7 +23,6 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
@@ -32,7 +31,6 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -52,8 +50,7 @@ public class RelationshipTypeController {
     private final EngineGraknTxFactory factory;
     private static final Logger LOG = LoggerFactory.getLogger(RelationshipTypeController.class);
 
-    public RelationshipTypeController(EngineGraknTxFactory factory, Service spark,
-                                      MetricRegistry metricRegistry) {
+    public RelationshipTypeController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
         spark.get("/graph/relationshipType/:relationshipTypeLabel", this::getRelationshipType);
@@ -109,7 +106,7 @@ public class RelationshipTypeController {
             return responseBody;
         }
     }
-    
+
     private Json relationshipTypeJson(String conceptId, String label) {
         return Json.object("relationshipType", Json.object(
             "conceptId", conceptId, "label", label

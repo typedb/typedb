@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
@@ -49,8 +48,7 @@ public class RoleController {
     private final EngineGraknTxFactory factory;
     private static final Logger LOG = LoggerFactory.getLogger(RoleController.class);
 
-    public RoleController(EngineGraknTxFactory factory, Service spark,
-                          MetricRegistry metricRegistry) {
+    public RoleController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
         spark.get("/graph/role/:roleLabel", this::getRole);

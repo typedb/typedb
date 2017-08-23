@@ -54,7 +54,7 @@ public class RuleTypeControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
 
-        new RuleTypeController(mockFactory, spark, metricRegistry);
+        new RuleTypeController(mockFactory, spark);
     });
 
     @Before

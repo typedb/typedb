@@ -26,7 +26,6 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
@@ -53,13 +52,13 @@ public class RelationshipController {
     private final EngineGraknTxFactory factory;
     private static final Logger LOG = LoggerFactory.getLogger(RelationshipController.class);
 
-    public RelationshipController(EngineGraknTxFactory factory, Service spark,
-                            MetricRegistry metricRegistry) {
+    public RelationshipController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
         spark.post("/graph/relationshipType/:relationshipTypeLabel", this::postRelationship);
         spark.put("/graph/relationship/:relationshipConceptId/role/:roleConceptId", this::assignEntityAndRoleToRelationship);
-        spark.delete("/graph/relationship/:relationshipConceptId/role/:roleConceptId/entity/:entityConceptId", this::deleteEntityAndRoleToRelationshipAssignment);
+        // TODO: implement it after operation has been supported in the Graph API
+//        spark.delete("/graph/relationship/:relationshipConceptId/role/:roleConceptId/entity/:entityConceptId", this::deleteEntityAndRoleToRelationshipAssignment);
     }
 
     private Json postRelationship(Request request, Response response) {
@@ -116,9 +115,9 @@ public class RelationshipController {
         }
     }
 
-    private Json deleteEntityAndRoleToRelationshipAssignment(Request request, Response response) {
-        throw new UnsupportedOperationException("Unsupported operation: DELETE /graph/entity/:conceptId/resource/:conceptId");
-    }
+//    private Json deleteEntityAndRoleToRelationshipAssignment(Request request, Response response) {
+//        throw new UnsupportedOperationException("Unsupported operation: DELETE /graph/entity/:conceptId/resource/:conceptId");
+//    }
 
     private Json relationshipJson(String conceptId) {
         return Json.object("relationship", Json.object("conceptId", conceptId));

@@ -37,7 +37,7 @@ public class RelationshipControllerTest {
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
         MetricRegistry metricRegistry = new MetricRegistry();
 
-        new RelationshipController(mockFactory, spark, metricRegistry);
+        new RelationshipController(mockFactory, spark);
     });
 
     @Before

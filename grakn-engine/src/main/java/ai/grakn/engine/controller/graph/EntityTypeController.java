@@ -24,7 +24,6 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import com.codahale.metrics.MetricRegistry;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
@@ -52,17 +51,19 @@ public class EntityTypeController {
     private final EngineGraknTxFactory factory;
     private static final Logger LOG = LoggerFactory.getLogger(EntityTypeController.class);
 
-    public EntityTypeController(EngineGraknTxFactory factory, Service spark,
-                                MetricRegistry metricRegistry) {
+    public EntityTypeController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
         spark.get("/graph/entityType/:entityTypeLabel", this::getEntityType);
         spark.post("/graph/entityType", this::postEntityType);
-        spark.delete("/graph/entityType/:entityTypeLabel", this::deleteEntityType); // TODO: implement
+        // TODO: implement it after operation has been supported in the Graph API
+//        spark.delete("/graph/entityType/:entityTypeLabel", this::deleteEntityType);
         spark.put("/graph/entityType/:entityTypeLabel/attribute/:attributeTypeLabel", this::assignAttributeTypeToEntityType);
-        spark.delete("/graph/entityType/:entityTypeId/attribute/:attributeTypeId", this::deleteAttributeTypeToEntitiyTypeAssignment); // TODO: implement
+        // TODO: implement it after operation has been supported in the Graph API
+//        spark.delete("/graph/entityType/:entityTypeId/attribute/:attributeTypeId", this::deleteAttributeTypeToEntitiyTypeAssignment);
         spark.put("/graph/entityType/:entityTypeId/plays/:roleTypeId", this::assignRoleToEntityType);
-        spark.delete("/graph/entityType/:entityTypeId/plays/:roleTypeId", this::deleteRoleToEntitiyTypeAssignment); // TODO: implement
+        // TODO: implement it after operation has been supported in the Graph API
+//        spark.delete("/graph/entityType/:entityTypeId/plays/:roleTypeId", this::deleteRoleToEntitiyTypeAssignment);
     }
 
     private Json getEntityType(Request request, Response response) {
@@ -105,9 +106,9 @@ public class EntityTypeController {
         }
     }
 
-    private String deleteEntityType(Request request, Response response) {
-        throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId");
-    }
+//    private String deleteEntityType(Request request, Response response) {
+//        throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId");
+//    }
 
     private Json assignAttributeTypeToEntityType(Request request, Response response) {
         LOG.info("assignAttributeTypeToEntityType - request received.");
@@ -135,9 +136,9 @@ public class EntityTypeController {
         }
     }
 
-    private Json deleteAttributeTypeToEntitiyTypeAssignment(Request request, Response response) {
-        throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId/attribute/:attributeTypeId");
-    }
+//    private Json deleteAttributeTypeToEntitiyTypeAssignment(Request request, Response response) {
+//        throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId/attribute/:attributeTypeId");
+//    }
 
     private Json assignRoleToEntityType(Request request, Response response) {
         LOG.info("assignAttributeTypeToEntityType - request received.");
@@ -165,9 +166,9 @@ public class EntityTypeController {
         }
     }
 
-    private Json deleteRoleToEntitiyTypeAssignment(Request request, Response response) {
-        throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId/attribute/:attributeTypeId");
-    }
+//    private Json deleteRoleToEntitiyTypeAssignment(Request request, Response response) {
+//        throw new UnsupportedOperationException("Unsupported operation: DELETE /entityType/:entityTypeId/attribute/:attributeTypeId");
+//    }
 
 
     private Json entityTypeJson(String conceptId, String label) {
