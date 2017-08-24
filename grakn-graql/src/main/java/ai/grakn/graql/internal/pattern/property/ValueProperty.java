@@ -53,7 +53,7 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
         return new AutoValue_ValueProperty(predicate);
     }
 
-    public abstract ai.grakn.graql.ValuePredicate predicate();
+    public abstract ValuePredicate predicate();
 
     @Override
     public String getName() {
