@@ -131,7 +131,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return corresponding positive query (with neq predicates removed)
      */
-    public ReasonerQueryImpl positive(){
+    private ReasonerQueryImpl positive(){
         return new ReasonerQueryImpl(getAtoms().stream().filter(at -> !(at instanceof NeqPredicate)).collect(Collectors.toSet()), tx());
     }
 
@@ -534,6 +534,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public boolean requiresReiteration() {
         Set<InferenceRule> dependentRules = RuleUtil.getDependentRules(this).collect(Collectors.toSet());
         return RuleUtil.subGraphHasLoopsWithNegativeFlux(dependentRules, tx())
-                || RuleUtil.subGraphHasRulesWithHeadSatisfyingBody(dependentRules, tx());
+                || RuleUtil.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
     }
 }

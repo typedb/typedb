@@ -45,7 +45,6 @@ import java.util.Set;
  * {@link ai.grakn.graql.internal.pattern.property.PlaysProperty}
  * {@link ai.grakn.graql.internal.pattern.property.RelatesProperty}
  * {@link ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty}
- * {@link ai.grakn.graql.internal.pattern.property.HasScopeProperty}
  * </p>
  *
  * @author Kasper Piskorski

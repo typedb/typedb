@@ -217,7 +217,7 @@ public final class ResolutionPlan {
             if (top == null) {
                 top = atoms.stream()
                         .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                        .findFirst().get();
+                        .findFirst().orElse(null);
             }
         }
 

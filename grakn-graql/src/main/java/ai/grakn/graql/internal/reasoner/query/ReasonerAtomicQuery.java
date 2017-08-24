@@ -77,7 +77,7 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilt
  */
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
-    private Atom atom;
+    private final Atom atom;
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
     ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
