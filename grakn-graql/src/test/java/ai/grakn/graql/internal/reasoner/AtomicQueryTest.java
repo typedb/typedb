@@ -160,8 +160,8 @@ public class AtomicQueryTest {
         Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
         ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
         ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
-        assertEquals(query.getAtom().isUserDefinedName(), false);
-        assertEquals(query2.getAtom().isUserDefinedName(), true);
+        assertEquals(query.getAtom().isUserDefined(), false);
+        assertEquals(query2.getAtom().isUserDefined(), true);
         assertEquals(query.getAtoms().size(), 1);
         assertEquals(query2.getAtoms().size(), 2);
     }

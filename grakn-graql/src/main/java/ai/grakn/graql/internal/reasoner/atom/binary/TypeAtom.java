@@ -96,7 +96,7 @@ public abstract class TypeAtom extends Binary{
 
     @Override
     public boolean requiresMaterialisation() {
-        return isUserDefinedName() && getOntologyConcept() != null && getOntologyConcept().isRelationshipType();
+        return isUserDefined() && getOntologyConcept() != null && getOntologyConcept().isRelationshipType();
     }
 
     @Override

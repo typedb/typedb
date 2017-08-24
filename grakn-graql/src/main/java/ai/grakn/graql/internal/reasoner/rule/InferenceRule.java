@@ -219,8 +219,7 @@ public class InferenceRule {
         HashSet<Atom> toRemove = new HashSet<>();
         HashSet<Atom> rewrites = new HashSet<>();
         body.getAtoms(Atom.class)
-                .filter(Atom::isRelation)
-                .filter(at -> !at.isUserDefinedName())
+                .filter(at -> !at.isUserDefined())
                 .filter(at -> Objects.nonNull(at.getOntologyConcept()))
                 .filter(at -> at.getOntologyConcept().equals(head.getAtom().getOntologyConcept()))
                 .peek(toRemove::add)
@@ -236,7 +235,7 @@ public class InferenceRule {
      * @return rewritten rule
      */
     public InferenceRule rewriteToUserDefined(Atom parentAtom){
-        return parentAtom.isUserDefinedName()? this.rewriteHead().rewriteBody() : this;
+        return parentAtom.isUserDefined()? this.rewriteHead().rewriteBody() : this;
     }
 
     /**

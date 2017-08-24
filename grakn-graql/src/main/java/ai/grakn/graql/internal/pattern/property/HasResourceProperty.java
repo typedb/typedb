@@ -217,20 +217,21 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        // TODO: Support relationship variable in reasoner
+        //NB: HasResourceProperty always has (type) label specified
         Var varName = var.var().asUserDefined();
 
-        Label type = this.type();
-        VarPatternAdmin attribute = this.attribute();
-        Var attributeVariable = attribute.var().asUserDefined();
-        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute, vars, parent);
+        Var relationVariable = relationship().var();
+        Var attributeVariable = attribute().var().asUserDefined();
+        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent);
 
-        IsaProperty isaProp = attribute.getProperties(IsaProperty.class).findFirst().orElse(null);
+        IsaProperty isaProp = attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
         VarPatternAdmin typeVar = isaProp != null? isaProp.type() : null;
         IdPredicate idPredicate = typeVar != null? getIdPredicate(attributeVariable, typeVar, vars, parent) : null;
 
         //add resource atom
-        VarPatternAdmin resVar = varName.has(type, attributeVariable).admin();
-        return new ResourceAtom(resVar, attributeVariable, idPredicate, predicates, parent);
+        VarPatternAdmin resVar = relationVariable.isUserDefinedName()?
+                varName.has(type(), attributeVariable, relationVariable).admin() :
+                varName.has(type(), attributeVariable).admin();
+        return new ResourceAtom(resVar, attributeVariable, relationVariable, idPredicate, predicates, parent);
     }
 }

@@ -107,7 +107,7 @@ public class RelationAtom extends IsaAtom {
 
     @Override
     public String toString(){
-        String relationString = (isUserDefinedName()? getVarName() + " ": "") +
+        String relationString = (isUserDefined()? getVarName() + " ": "") +
                 (getOntologyConcept() != null? getOntologyConcept().getLabel() : "") +
                 getRelationPlayers().toString();
         return relationString + getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
@@ -173,7 +173,7 @@ public class RelationAtom extends IsaAtom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         RelationAtom a2 = (RelationAtom) obj;
-        return (isUserDefinedName() == a2.isUserDefinedName())
+        return (isUserDefined() == a2.isUserDefined())
                 && Objects.equals(this.getTypeId(), a2.getTypeId())
                 && getRoleConceptIdMap().equals(a2.getRoleConceptIdMap())
                 && getRoleTypeMap().equals(a2.getRoleTypeMap())
@@ -206,7 +206,7 @@ public class RelationAtom extends IsaAtom {
 
     @Override
     public boolean requiresMaterialisation() {
-        return isUserDefinedName();
+        return isUserDefined();
     }
 
     @Override
@@ -214,6 +214,19 @@ public class RelationAtom extends IsaAtom {
         //can form a rule head if specified type and all relation players have a specified/unambiguously inferrable role type
         return super.isAllowedToFormRuleHead()
                 && !hasMetaRoles();
+    }
+
+    @Override
+    public Set<Var> getVarNames() {
+        Set<Var> vars = super.getVarNames();
+        vars.addAll(getRolePlayers());
+        //add user specified role type vars
+        getRelationPlayers().stream()
+                .map(RelationPlayer::getRole)
+                .flatMap(CommonUtil::optionalToStream)
+                .filter(v -> v.var().isUserDefinedName())
+                .forEach(r -> vars.add(r.var()));
+        return vars;
     }
 
     @Override
@@ -446,19 +459,6 @@ public class RelationAtom extends IsaAtom {
         return this
                 .inferRelationType(new QueryAnswer())
                 .inferRoleTypes();
-    }
-
-    @Override
-    public Set<Var> getVarNames() {
-        Set<Var> vars = super.getVarNames();
-        vars.addAll(getRolePlayers());
-        //add user specified role type vars
-        getRelationPlayers().stream()
-                .map(RelationPlayer::getRole)
-                .flatMap(CommonUtil::optionalToStream)
-                .filter(v -> v.var().isUserDefinedName())
-                .forEach(r -> vars.add(r.var()));
-        return vars;
     }
 
     /**
@@ -755,20 +755,6 @@ public class RelationAtom extends IsaAtom {
     }
 
     @Override
-    public Unifier getUnifier(Atom pAtom) {
-        if (this.equals(pAtom)) return new UnifierImpl();
-
-        Unifier unifier = super.getUnifier(pAtom);
-        if (pAtom.isRelation()) {
-            RelationAtom parentAtom = (RelationAtom) pAtom;
-
-            getRelationPlayerMappings(parentAtom)
-                    .forEach(rpm -> unifier.addMapping(rpm.getKey().getRolePlayer().var(), rpm.getValue().getRolePlayer().var()));
-        }
-        return unifier.removeTrivialMappings();
-    }
-
-    @Override
     public Atom rewriteToUserDefined(){
         VarPattern newVar = Graql.var().asUserDefined();
         VarPattern relVar = getPattern().asVarPattern().getProperty(IsaProperty.class)
@@ -784,5 +770,19 @@ public class RelationAtom extends IsaAtom {
             }
         }
         return new RelationAtom(relVar.admin(), getPredicateVariable(), getPredicate(), getParentQuery());
+    }
+
+    @Override
+    public Unifier getUnifier(Atom pAtom) {
+        if (this.equals(pAtom)) return new UnifierImpl();
+
+        Unifier unifier = super.getUnifier(pAtom);
+        if (pAtom.isRelation()) {
+            RelationAtom parentAtom = (RelationAtom) pAtom;
+
+            getRelationPlayerMappings(parentAtom)
+                    .forEach(rpm -> unifier.addMapping(rpm.getKey().getRolePlayer().var(), rpm.getValue().getRolePlayer().var()));
+        }
+        return unifier.removeTrivialMappings();
     }
 }
