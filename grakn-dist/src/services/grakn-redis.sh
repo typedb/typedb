@@ -52,16 +52,16 @@ start)
     if [ $(redisRunning) ] ; then
         echo "Redis is already running"
     else
-        echo "Starting redis"
+        echo "Starting Redis"
         executeRedisServer "${GRAKN_HOME}/services/redis/redis.conf"
     fi
     ;;
 stop)
-    echo "Stopping redis"
+    echo "Stopping Redis"
     executeRedisCli shutdown
     ;;
 clean)
-    echo "Cleaning redis"
+    echo "Cleaning Redis"
 
     if [ ! $(redisRunning) ] ; then
         executeRedisServer "${GRAKN_HOME}/services/redis/redis.conf"

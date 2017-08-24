@@ -62,7 +62,7 @@ start)
         echo "Cassandra already running"
     else
         # cassandra has not already started
-        echo -n "Starting cassandra "
+        echo -n "Starting Cassandra "
         echo ""
         "${GRAKN_HOME}"/services/cassandra/cassandra -p $CASSANDRA_PS
 
@@ -72,7 +72,7 @@ start)
 
 stop)
 
-    echo "Stopping cassandra"
+    echo "Stopping Cassandra"
     if [[ -e $CASSANDRA_PS ]]; then
         pid=`cat $CASSANDRA_PS`
         kill "$pid"

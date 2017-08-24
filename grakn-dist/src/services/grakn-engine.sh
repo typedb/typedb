@@ -38,8 +38,9 @@ for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
     fi
 done
 
-# Add path containing logback.xml
+# Add path containing grakn.properties and logback.xml
 CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
+CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
 
 wait_for_engine() {
     local now_s=`date '+%s'`
@@ -65,10 +66,10 @@ case "$1" in
 start)
 
     if [ -e "$ENGINE_PS" ] && ps -p `cat $ENGINE_PS` > /dev/null ; then
-        echo "Engine already running"
+        echo "Grakn already running"
     else
         # engine has not already started
-        echo -n "Starting engine"
+        echo -n "Starting Grakn"
         cd "${GRAKN_HOME}"
         if [[ "$FOREGROUND" = true ]]; then
             java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.engine.GraknEngineServer
@@ -94,11 +95,11 @@ status)
 
     ENGINE_PIDS=$(ps ax | grep -i 'ai\.grakn\.engine\.GraknEngineServer' | grep java | grep -v grep | awk '{print $1}')
     if [ -e "$ENGINE_PS" ] && ps -p `cat $ENGINE_PS` > /dev/null ; then
-        echo "Engine is $(cat $ENGINE_PS)"
+        echo "Grakn is $(cat $ENGINE_PS)"
     elif [ -n "$ENGINE_PIDS" ]; then
-        echo "Engine is $ENGINE_PIDS (foreground)"
+        echo "Grakn is $ENGINE_PIDS (foreground)"
     else
-        echo "Engine has stopped"
+        echo "Grakn has stopped"
     fi
     ;;
 

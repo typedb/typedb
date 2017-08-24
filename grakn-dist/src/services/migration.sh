@@ -10,8 +10,9 @@ for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
    CLASSPATH="$CLASSPATH:$jar"
 done
 
-# Add path containing logback.xml
+# Add path containing grakn.properties and logback.xml
 CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
+CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
 
 if [ "$1" == "csv" ]
 then

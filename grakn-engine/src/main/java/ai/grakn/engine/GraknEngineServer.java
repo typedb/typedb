@@ -136,7 +136,7 @@ public class GraknEngineServer implements AutoCloseable {
             startHTTP();
         }
         graknEngineStatus.setReady(true);
-        LOG.info("Engine started in {}", timer.stop());
+        LOG.info("Grakn started in {}", timer.stop());
     }
 
     @Override

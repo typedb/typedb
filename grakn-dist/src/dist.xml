@@ -50,12 +50,20 @@
             </includes>
         </fileSet>
         -->
-        <!-- grakn.properties and logback.xml (main config) -->
+        <!-- grakn.properties -->
         <fileSet>
             <outputDirectory>conf</outputDirectory>
             <directory>${main.basedir}/conf/main</directory>
             <includes>
-                <include>**</include>
+                <include>grakn.properties</include>
+            </includes>
+        </fileSet>
+        <!-- and logback.xml (main config) -->
+        <fileSet>
+            <outputDirectory>services/grakn</outputDirectory>
+            <directory>${main.basedir}/conf/main</directory>
+            <includes>
+                <include>logback.xml</include>
             </includes>
         </fileSet>
         <fileSet>
