@@ -41,7 +41,9 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.collect.Sets;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -185,7 +187,7 @@ public class InferenceRule {
     private ReasonerQueryImpl getCombinedQuery(){
         Set<Atomic> allAtoms = new HashSet<>();
         allAtoms.add(head.getAtom());
-        body.getAtoms(Atom.class).forEach(allAtoms::add);
+        body.getAtoms().forEach(allAtoms::add);
         return ReasonerQueries.create(allAtoms, tx);
     }
 
@@ -206,7 +208,7 @@ public class InferenceRule {
 
         //only transfer value predicates if head has a user specified value variable
         Atom headAtom = head.getAtom();
-        Set<Atomic> bodyAtoms = body.getAtoms(Atom.class).collect(toSet());
+        Set<Atomic> bodyAtoms = new HashSet<>(body.getAtoms());
         if(headAtom.isResource() && ((ResourceAtom) headAtom).getMultiPredicate().isEmpty()){
             Set<ValuePredicate> vps = parentAtom.getPredicates(ValuePredicate.class)
                     .flatMap(vp -> vp.unify(unifier).stream())
@@ -248,7 +250,7 @@ public class InferenceRule {
 
     private InferenceRule rewrite(){
         ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined());
-        Set<Atomic> bodyRewrites = new HashSet<>();
+        List<Atom> bodyRewrites = new ArrayList<>();
         body.getAtoms(Atom.class)
                 .map(at -> {
                     if (at.isRelation()

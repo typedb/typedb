@@ -94,6 +94,26 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .build();
     }
 
+    ReasonerQueryImpl(List<Atom> atoms, GraknTx tx){
+        this.tx = tx;
+        this.atomSet =  ImmutableSet.<Atomic>builder()
+                .addAll(atoms.stream()
+                        .flatMap(at -> Stream.concat(Stream.of(at), at.getNonSelectableConstraints()))
+                        .map(at -> AtomicFactory.create(at, this)).iterator())
+                .build();
+    }
+
+    ReasonerQueryImpl(Set<Atomic> atoms, GraknTx tx){
+        this.tx = tx;
+        this.atomSet = ImmutableSet.<Atomic>builder()
+                .addAll(atoms.stream().map(at -> AtomicFactory.create(at, this)).iterator())
+                .build();
+    }
+
+    ReasonerQueryImpl(Atom atom) {
+        this(Collections.singletonList(atom), atom.getParentQuery().tx());
+    }
+
     ReasonerQueryImpl(ReasonerQueryImpl q) {
         this.tx = q.tx;
         this.atomSet =  ImmutableSet.<Atomic>builder()
@@ -101,38 +121,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .build();
     }
 
-    /*
-    ReasonerQueryImpl(List<Atom> atoms, GraknTx tx){
-        //TODO
-    }
-    */
-
-    ReasonerQueryImpl(Set<Atomic> atoms, GraknTx tx){
-        this.tx = tx;
-
-        Set<Atomic> toAdd = new HashSet<>();
-        atoms.stream()
-                .map(at -> AtomicFactory.create(at, this))
-                .forEach(toAdd::add);
-
-        atoms.stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
-                .flatMap(Atom::getNonSelectableConstraints)
-                .map(at -> AtomicFactory.create(at, this))
-                .forEach(toAdd::add);
-
-        this.atomSet = ImmutableSet.copyOf(toAdd);
-    }
-
-    ReasonerQueryImpl(Atom atom) {
-        this(Collections.singleton(atom), atom.getParentQuery().tx());
-    }
-
     /**
      * @return corresponding reasoner query with inferred types
      */
     public ReasonerQueryImpl inferTypes() {
         return new ReasonerQueryImpl(getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()), tx());
+    }
+
+    /**
+     * @return corresponding positive query (with neq predicates removed)
+     */
+    public ReasonerQueryImpl positive(){
+        return new ReasonerQueryImpl(getAtoms().stream().filter(at -> !(at instanceof NeqPredicate)).collect(Collectors.toSet()), tx());
     }
 
     @Override
@@ -424,9 +424,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                                Cache<ReasonerAtomicQuery, ?> dCache,
                                boolean differentialJoin) {
 
+        //handling neq predicates by using complement
         Set<NeqPredicate> neqPredicates = getAtoms(NeqPredicate.class).collect(Collectors.toSet());
-        ReasonerQueryImpl positive = ReasonerQueries.createPositive(this);
-        //neqPredicates.forEach(this::removeAtomic);
+        ReasonerQueryImpl positive = neqPredicates.isEmpty()? this : this.positive();
 
         Stream<Answer> join = differentialJoin?
                 positive.differentialJoin(subGoals, cache, dCache) :
@@ -450,10 +450,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     Stream<Answer> resolveAndMaterialise(LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
 
+        //handling neq predicates by using complement
         Set<NeqPredicate> neqPredicates = getAtoms(NeqPredicate.class).collect(Collectors.toSet());
-        //neqPredicates.forEach(this::removeAtomic);
+        ReasonerQueryImpl positive = neqPredicates.isEmpty()? this : this.positive();
 
-        Iterator<Atom> atIt = ReasonerQueries.createPositive(this).selectAtoms().iterator();
+        Iterator<Atom> atIt = positive.selectAtoms().iterator();
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());
         Stream<Answer> answerStream = atomicQuery.resolveAndMaterialise(cache, dCache);
         Set<Var> joinedVars = atomicQuery.getVarNames();
@@ -522,7 +523,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
 
         return Sets.cartesianProduct(atomOptions).stream()
-                .map(atomList -> ReasonerQueries.create(new HashSet<>(atomList), tx()));
+                .map(atomList -> ReasonerQueries.create(atomList, tx()));
     }
 
     /**

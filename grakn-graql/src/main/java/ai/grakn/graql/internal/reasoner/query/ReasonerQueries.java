@@ -24,10 +24,10 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -55,17 +55,6 @@ public class ReasonerQueries {
 
     /**
      *
-     * @param q
-     * @return
-     */
-    public static ReasonerQueryImpl create(ReasonerQueryImpl q) {
-        return q.isAtomic()?
-                new ReasonerAtomicQuery(q).inferTypes() :
-                new ReasonerQueryImpl(q).inferTypes();
-    }
-
-    /**
-     *
      * @param as
      * @param tx
      * @return
@@ -78,6 +67,29 @@ public class ReasonerQueries {
     }
 
     /**
+     * @param as
+     * @param tx
+     * @return
+     */
+    public static ReasonerQueryImpl create(List<Atom> as, GraknTx tx){
+        boolean isAtomic = as.size() == 1;
+        return isAtomic?
+                new ReasonerAtomicQuery(Iterables.getOnlyElement(as)).inferTypes() :
+                new ReasonerQueryImpl(as, tx).inferTypes();
+    }
+
+    /**
+     *
+     * @param q
+     * @return
+     */
+    public static ReasonerQueryImpl create(ReasonerQueryImpl q) {
+        return q.isAtomic()?
+                new ReasonerAtomicQuery(q).inferTypes() :
+                new ReasonerQueryImpl(q).inferTypes();
+    }
+
+    /**
      *
      * @param q
      * @param sub
@@ -85,10 +97,6 @@ public class ReasonerQueries {
      */
     public static ReasonerQueryImpl create(ReasonerQueryImpl q, Answer sub){
         return create(Sets.union(q.getAtoms(), sub.toPredicates(q)), q.tx());
-    }
-
-    static ReasonerQueryImpl createPositive(ReasonerQueryImpl q){
-        return create(q.getAtoms().stream().filter(at -> !(at instanceof NeqPredicate)).collect(Collectors.toSet()), q.tx());
     }
 
     /**
