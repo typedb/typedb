@@ -81,7 +81,7 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
      * @return a delete query that will delete the given variables for each result of this match query
      */
     @CheckReturnValue
-    DeleteQuery delete(String... vars);
+    DeleteQuery delete(String var, String... vars);
 
     /**
      * @param vars an array of variables to delete for each result of this match query

@@ -285,7 +285,7 @@ public class DefineQueryTest {
         DefineQuery query = qb.define(type.label("my-type").sub("entity"), type2.label("my-type"));
 
         Answer result = query.execute();
-        assertThat(result.keySet(), containsInAnyOrder(type, type2));
+        assertThat(result.vars(), containsInAnyOrder(type, type2));
         assertEquals(result.get(type), result.get(type2));
     }
 

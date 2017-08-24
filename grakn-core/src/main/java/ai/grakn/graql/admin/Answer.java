@@ -43,7 +43,7 @@ public interface Answer {
     Answer copy();
 
     @CheckReturnValue
-    Set<Var> keySet();
+    Set<Var> vars();
 
     @CheckReturnValue
     Collection<Concept> values();

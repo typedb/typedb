@@ -205,7 +205,7 @@ public class InsertQueryTest {
         Set<Answer> results = insert.stream().collect(toSet());
         assertEquals(1, results.size());
         Answer result = results.iterator().next();
-        assertEquals(ImmutableSet.of(var("x"), var("z")), result.keySet());
+        assertEquals(ImmutableSet.of(var("x"), var("z")), result.vars());
         assertThat(result.values(), Matchers.everyItem(notNullValue(Concept.class)));
     }
 
@@ -225,7 +225,7 @@ public class InsertQueryTest {
         assertNotExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
 
         Answer result1 = results.next();
-        assertEquals(ImmutableSet.of(var("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(var("x")), result1.vars());
 
         boolean query123 = qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).iterator().hasNext();
         boolean query456 = qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).iterator().hasNext();
@@ -236,7 +236,7 @@ public class InsertQueryTest {
 
         //Check that both are inserted correctly
         Answer result2 = results.next();
-        assertEquals(ImmutableSet.of(var("x")), result1.keySet());
+        assertEquals(ImmutableSet.of(var("x")), result1.vars());
         assertExists(qb, var().isa("language").has("name", "123").has("name", "HELLO"));
         assertExists(qb, var().isa("language").has("name", "456").has("name", "HELLO"));
         assertFalse(results.hasNext());
@@ -373,7 +373,7 @@ public class InsertQueryTest {
         InsertQuery query = qb.insert(x.isa(type), type.label("movie"));
 
         Answer result = Iterables.getOnlyElement(query);
-        assertThat(result.keySet(), containsInAnyOrder(x, type));
+        assertThat(result.vars(), containsInAnyOrder(x, type));
         assertEquals(result.get(type), result.get(x).asEntity().type());
         assertEquals(result.get(type).asType().getLabel(), Label.of("movie"));
     }

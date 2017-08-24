@@ -34,12 +34,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collections;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static ai.grakn.util.GraqlTestUtil.assertNotExists;
@@ -218,6 +216,18 @@ public class DeleteQueryTest {
     }
 
     @Test
+    public void whenDeletingWithNoArguments_AllVariablesGetDeleted() {
+        qb.define(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
+        qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
+
+        assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
+
+        qb.match(x.isa("fake-type"), y.isa("fake-type"), x.neq(y)).limit(1).delete().execute();
+
+        assertNotExists(qb, var().isa("fake-type"));
+    }
+
+    @Test
     public void testErrorWhenDeleteEntityTypeWithInstances() {
         assertExists(qb, x.label("movie").sub("entity"));
         assertExists(qb, x.isa("movie"));
@@ -250,13 +260,6 @@ public class DeleteQueryTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y));
         movieKB.tx().graql().match(x.isa("movie")).delete(y).execute();
-    }
-
-    @Test
-    public void whenDeletingAnEmptyPattern_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(NO_PATTERNS.getMessage());
-        movieKB.tx().graql().match(var()).delete(Collections.EMPTY_SET).execute();
     }
 
     @Test(expected = Exception.class)

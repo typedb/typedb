@@ -397,7 +397,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     public boolean hasFullSubstitution(){
-        return getSubstitution().keySet().containsAll(getVarNames());
+        return getSubstitution().vars().containsAll(getVarNames());
     }
 
     private Stream<Answer> fullJoin(Set<ReasonerAtomicQuery> subGoals,

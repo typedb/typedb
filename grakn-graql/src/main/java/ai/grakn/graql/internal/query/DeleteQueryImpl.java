@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
-import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
@@ -49,10 +48,6 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
      * @param matchQuery a pattern to match and delete for each result
      */
     static DeleteQueryImpl of(Collection<? extends Var> vars, MatchQuery matchQuery) {
-        if (vars.isEmpty()) {
-            throw GraqlQueryException.noPatterns();
-        }
-
         return new AutoValue_DeleteQueryImpl(ImmutableSet.copyOf(vars), matchQuery.admin());
     }
 
@@ -85,7 +80,9 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     private void deleteResult(Answer result) {
-        for (Var var : vars()) {
+        Collection<Var> toDelete = vars().isEmpty() ? result.vars() : vars();
+
+        for (Var var : toDelete) {
             result.get(var).delete();
         }
     }

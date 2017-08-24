@@ -588,7 +588,7 @@ public class ReasoningTests {
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers2.size(), 2);
         Set<Var> vars = Sets.newHashSet(var("b"), var("p"), var("c"), var("rel1"), var("rel2"));
-        answers2.forEach(ans -> assertTrue(ans.keySet().containsAll(vars)));
+        answers2.forEach(ans -> assertTrue(ans.vars().containsAll(vars)));
     }
 
     @Test //Expected result: 2 relations obtained by correctly finding reified relations
