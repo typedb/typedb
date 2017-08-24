@@ -49,7 +49,7 @@ public class RedisInflightTaskConsumer extends TimerTask {
     private static final Logger LOG = LoggerFactory.getLogger(RedisInflightTaskConsumer.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
-    static final int ITERATIONS = 10;
+    static final int ITERATIONS = 1;
     private final Meter exceptions;
     private final Meter processed;
     private final Meter dead;

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.Printer;
@@ -42,8 +42,8 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
     }
 
     @Override
-    public AggregateQuery<T> withGraph(GraknGraph graph) {
-        return new AggregateQueryImpl<>(matchQuery.withGraph(graph).admin(), aggregate);
+    public AggregateQuery<T> withTx(GraknTx tx) {
+        return new AggregateQueryImpl<>(matchQuery.withTx(tx).admin(), aggregate);
     }
 
     @Override

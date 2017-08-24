@@ -1,25 +1,27 @@
-insert
+define
 
 entity1 sub entity
     plays rel-from
     plays rel-to
     has name;
 
-horizontal sub relation
+horizontal sub relationship
     relates rel-from
     relates rel-to;
 
-vertical sub relation
+vertical sub relationship
     relates rel-from
     relates rel-to;
 
-diagonal sub relation
+diagonal sub relationship
     relates rel-from
     relates rel-to;
 
 rel-from sub role;
 rel-to sub role;
-name sub resource datatype string;
+name sub attribute datatype string;
+
+insert
 
 isa inference-rule
 when {

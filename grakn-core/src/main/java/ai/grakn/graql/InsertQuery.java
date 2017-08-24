@@ -18,7 +18,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 
@@ -40,11 +40,11 @@ import java.util.List;
 public interface InsertQuery extends Query<List<Answer>>, Streamable<Answer> {
 
     /**
-     * @param graph the graph to execute the query on
+     * @param tx the graph to execute the query on
      * @return a new InsertQuery with the graph set
      */
     @Override
-    InsertQuery withGraph(GraknGraph graph);
+    InsertQuery withTx(GraknTx tx);
 
     /**
      * @return admin instance for inspecting and manipulating this query

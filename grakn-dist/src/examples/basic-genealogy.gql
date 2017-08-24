@@ -1,4 +1,4 @@
-insert
+define
 
 # Entities
 
@@ -20,19 +20,19 @@ person sub entity
 
 # Resources
 
-identifier sub resource datatype string;
-firstname sub resource datatype string;
-surname sub resource datatype string;
-middlename sub resource datatype string;
-picture sub resource datatype string;
-age sub resource datatype long;
-birth-date sub resource datatype string;
-death-date sub resource datatype string;
-gender sub resource datatype string;
+identifier sub attribute datatype string;
+firstname sub attribute datatype string;
+surname sub attribute datatype string;
+middlename sub attribute datatype string;
+picture sub attribute datatype string;
+age sub attribute datatype long;
+birth-date sub attribute datatype string;
+death-date sub attribute datatype string;
+gender sub attribute datatype string;
 
 # Roles and Relations
 
-marriage sub relation
+marriage sub relationship
 	relates spouse1
 	relates spouse2
 	has picture;
@@ -40,7 +40,7 @@ marriage sub relation
 spouse1 sub role;
 spouse2 sub role;
 
-parentship sub relation
+parentship sub relationship
 	relates parent
 	relates child;
 
@@ -73,14 +73,14 @@ person
 	plays grandmother
 	plays grandfather;
 
-marriage sub relation
+marriage sub relationship
 	relates husband
 	relates wife;
 
 husband sub role;
 wife sub role;
 
-parentship sub relation
+parentship sub relationship
 	relates mother
 	relates father
 	relates son
@@ -91,7 +91,7 @@ father sub parent;
 son sub child;
 daughter sub child;
 
-siblings sub relation
+siblings sub relationship
     relates sibling  # TODO, deal with this role properly
 	relates sibling1
 	relates sibling2;
@@ -100,7 +100,7 @@ sibling sub role;
 sibling1 sub sibling;
 sibling2 sub sibling;
 
-grandparentship sub relation
+grandparentship sub relationship
 	relates grandparent
 	relates grandfather
 	relates grandmother
@@ -115,7 +115,7 @@ grandchild sub role;
 grandson sub grandchild;
 granddaughter sub grandchild;
 
-cousins sub relation
+cousins sub relationship
     relates cousin  # TODO, deal with this role properly
 	relates cousin1
 	relates cousin2;
@@ -124,7 +124,7 @@ cousin sub role;
 cousin1 sub cousin;
 cousin2 sub cousin;
 
-in-laws sub relation
+in-laws sub relationship
 	relates child-in-law
 	relates son-in-law
 	relates daughter-in-law
@@ -140,6 +140,7 @@ mother-in-law sub parent-in-law;
 father-in-law sub parent-in-law;
 
 
+insert
 
 # DATA
 

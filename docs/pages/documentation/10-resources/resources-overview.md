@@ -3,7 +3,7 @@ title: Resources Overview
 keywords: setup, getting started, download
 last_updated: August 10, 2016
 tags: [getting-started]
-summary: "Resources to help you learn more about graph databases."
+summary: "Resources to help you learn more about databases."
 sidebar: documentation_sidebar
 permalink: /documentation/resources/resources-overview.html
 folder: documentation

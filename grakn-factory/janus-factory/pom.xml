@@ -23,7 +23,7 @@
     <parent>
         <artifactId>grakn-factory</artifactId>
         <groupId>ai.grakn</groupId>
-        <version>0.17.0-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -32,7 +32,7 @@
     <dependencies>
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>grakn-graph</artifactId>
+            <artifactId>grakn-kb</artifactId>
             <version>${project.version}</version>
         </dependency>
 

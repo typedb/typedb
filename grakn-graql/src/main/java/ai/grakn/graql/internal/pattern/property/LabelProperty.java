@@ -27,9 +27,9 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.StringConverter;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -43,19 +43,16 @@ import java.util.Set;
  *
  * @author Felix Chapman
  */
-public class LabelProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+@AutoValue
+public abstract class LabelProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
     public static final String NAME = "label";
 
-    private final Label label;
-
-    public LabelProperty(Label label) {
-        this.label = label;
+    public static LabelProperty of(Label label) {
+        return new AutoValue_LabelProperty(label);
     }
 
-    public Label getLabelValue() {
-        return label;
-    }
+    public abstract Label label();
 
     @Override
     public String getName() {
@@ -64,27 +61,27 @@ public class LabelProperty extends AbstractVarProperty implements NamedProperty,
 
     @Override
     public String getProperty() {
-        return StringConverter.typeLabelToString(label);
+        return StringConverter.typeLabelToString(label());
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.label(this, start, label));
+        return ImmutableSet.of(EquivalentFragmentSets.label(this, start, label()));
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.builder(var).label(label);
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        // This is supported in insert queries in order to allow looking up schema concepts by label
+        return define(var);
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of();
-    }
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).label(label());
+        };
 
-    @Override
-    public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 
     @Override
@@ -93,23 +90,7 @@ public class LabelProperty extends AbstractVarProperty implements NamedProperty,
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        LabelProperty that = (LabelProperty) o;
-
-        return label.equals(that.label);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return label.hashCode();
-    }
-
-    @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new IdPredicate(var.getVarName(), this, parent);
+        return new IdPredicate(var.var(), this, parent);
     }
 }

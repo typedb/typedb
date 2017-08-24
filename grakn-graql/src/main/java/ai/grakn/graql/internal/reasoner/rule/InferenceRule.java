@@ -18,9 +18,9 @@
 
 package ai.grakn.graql.internal.reasoner.rule;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.OntologyConcept;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -62,7 +62,7 @@ public class InferenceRule {
 
     private int priority = Integer.MAX_VALUE;
 
-    public InferenceRule(Rule rule, GraknGraph graph){
+    public InferenceRule(Rule rule, GraknTx graph){
         ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects
         body = ReasonerQueries.create(conjunction(rule.getWhen().admin()), graph);
@@ -115,11 +115,24 @@ public class InferenceRule {
 
     public ConceptId getRuleId(){ return ruleId;}
 
+
     /**
-     * @return true if head and body do not share any variables
+     * @return true if the rule has disconnected head, i.e. head and body do not share any variables
      */
     public boolean hasDisconnectedHead(){
         return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
+    }
+
+    /**
+     * @return true if head satisfies the pattern specified in the body of the rule
+     */
+    boolean headSatisfiesBody(){
+        ReasonerQueryImpl extendedHead = ReasonerQueries.create(getHead());
+        getBody().getAtoms(TypeAtom.class)
+                .filter(t -> !t.isRelation())
+                .map(at -> AtomicFactory.create(at, extendedHead))
+                .forEach(extendedHead::addAtomic);
+        return getBody().isEquivalent(extendedHead);
     }
 
     /**
@@ -182,13 +195,13 @@ public class InferenceRule {
         Set<TypeAtom> allTypes = Sets.union(unifiedTypes, ruleTypes);
         allTypes.stream()
                 .filter(ta -> {
-                    OntologyConcept ontologyConcept = ta.getOntologyConcept();
-                    OntologyConcept subType = allTypes.stream()
-                            .map(Atom::getOntologyConcept)
+                    SchemaConcept schemaConcept = ta.getSchemaConcept();
+                    SchemaConcept subType = allTypes.stream()
+                            .map(Atom::getSchemaConcept)
                             .filter(Objects::nonNull)
-                            .filter(t -> ReasonerUtils.getSupers(t).contains(ontologyConcept))
+                            .filter(t -> ReasonerUtils.getSupers(t).contains(schemaConcept))
                             .findFirst().orElse(null);
-                    return ontologyConcept == null || subType == null;
+                    return schemaConcept == null || subType == null;
                 }).forEach(t -> body.addAtomic(AtomicFactory.create(t, body)));
 
         return this;
@@ -208,8 +221,8 @@ public class InferenceRule {
         body.getAtoms(Atom.class)
                 .filter(Atom::isRelation)
                 .filter(at -> !at.isUserDefinedName())
-                .filter(at -> Objects.nonNull(at.getOntologyConcept()))
-                .filter(at -> at.getOntologyConcept().equals(head.getAtom().getOntologyConcept()))
+                .filter(at -> Objects.nonNull(at.getSchemaConcept()))
+                .filter(at -> at.getSchemaConcept().equals(head.getAtom().getSchemaConcept()))
                 .peek(toRemove::add)
                 .forEach(at -> rewrites.add(at.rewriteToUserDefined()));
         toRemove.forEach(body::removeAtomic);
@@ -232,13 +245,13 @@ public class InferenceRule {
      */
     public Unifier getUnifier(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
-        if (parentAtom.getOntologyConcept() != null){
+        if (parentAtom.getSchemaConcept() != null){
             return childAtom.getUnifier(parentAtom);
         }
         //case of match all relation atom
         else{
             Atom extendedParent = ((RelationAtom) parentAtom)
-                    .addType(childAtom.getOntologyConcept())
+                    .addType(childAtom.getSchemaConcept())
                     .inferTypes();
             return childAtom.getUnifier(extendedParent);
         }

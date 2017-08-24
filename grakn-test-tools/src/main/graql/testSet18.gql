@@ -1,10 +1,12 @@
-insert
+define
 
 entity1 sub entity
 	has res1;
 
 #Resources
-res1 sub resource datatype string;
+res1 sub attribute datatype string;
+
+insert
 
 #Rules
 

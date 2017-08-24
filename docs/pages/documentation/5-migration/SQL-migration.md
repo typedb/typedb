@@ -11,7 +11,7 @@ comment_issue_id: 32
 ---
 
 ## Introduction
-This tutorial shows you how to populate a graph in Grakn with SQL data, by walking through a simple example. If you wish to follow along and have not yet set up the Grakn environment, please see the [setup guide](../get-started/setup-guide.html).
+This tutorial shows you how to populate a knowledge base in Grakn with SQL data, by walking through a simple example. If you wish to follow along and have not yet set up the Grakn environment, please see the [setup guide](../get-started/setup-guide.html).
 
 ## Migration Shell Script for SQL
 The migration shell script can be found in */bin* directory of your Grakn environment. We will illustrate its usage in an example below:
@@ -26,7 +26,7 @@ usage: migration.sh sql -template <arg> -driver <arg> -user <arg> -pass <arg> -l
  -c,--config <arg>     Configuration file.
  -driver <arg>         JDBC driver
  -h,--help             Print usage message.
- -k,--keyspace <arg>   Grakn graph. Required.
+ -k,--keyspace <arg>   Grakn knowledge base. Required.
  -location <arg>       JDBC url (location of DB)
  -n,--no               Write to standard out.
  -pass <arg>           JDBC password
@@ -44,8 +44,8 @@ Grakn relies on the JDBC API to connect to any RDBMS that uses the SQL language.
 
 The steps to migrate the CSV to GRAKN.AI are:
 
-* define an ontology for the data to derive the full benefit of a knowledge graph
-* create templated Graql to map the data to the ontology by instructing the migrator on how the results of a SQL query can be mapped to your ontology. The SQL migrator will apply the template to each row of data in the table, replacing the indicated sections in the template with provided data. In this migrator, the column header is the key, while the content of each row at that column is the value.
+* define a schema for the data to derive the full benefit of a knowledge base
+* create templated Graql to map the data to the schema by instructing the migrator on how the results of a SQL query can be mapped to your schema. The SQL migrator will apply the template to each row of data in the table, replacing the indicated sections in the template with provided data. In this migrator, the column header is the key, while the content of each row at that column is the value.
 * invoke the Grakn migrator through the shell script or Java API. 
 
 {% include note.html content="SQL Migration makes heavy use of the Graql templating language. You will need a foundation in Graql templating before continuing, so please read through our [templating documentation](../graql/graql-templating.html) to find out more." %}
@@ -78,7 +78,7 @@ CREATE TABLE event
 ALTER TABLE event ADD FOREIGN KEY ( name ) REFERENCES pet ( name );
 ```
 
-We can define an ontology that corresponds to the SQL tables as follows:
+We can define a schema that corresponds to the SQL tables as follows:
 
 ```graql-test-ignore
 
@@ -97,12 +97,12 @@ snake sub pet;
 hamster sub pet;
 bird sub pet;
 
-name sub resource datatype string;
-owner sub resource datatype string;
-sex sub resource datatype string;
-birth sub resource datatype string;
-death sub resource datatype string;
-count sub resource datatype long;
+name sub attribute datatype string;
+owner sub attribute datatype string;
+sex sub attribute datatype string;
+birth sub attribute datatype string;
+death sub attribute datatype string;
+count sub attribute datatype long;
 
 event sub entity,
   has name,
@@ -110,13 +110,13 @@ event sub entity,
   has description;
 ```
 
-The ontology is not complete at this point, as we have not included any relationship between pets and their events. In SQL, a `foreign key` is a column that references another column, as seen in the SQL schema line `ALTER TABLE event ADD FOREIGN KEY ( name ) REFERENCES pet ( name );`.
+The schema is not complete at this point, as we have not included any relationship between pets and their events. In SQL, a `foreign key` is a column that references another column, as seen in the SQL schema line `ALTER TABLE event ADD FOREIGN KEY ( name ) REFERENCES pet ( name );`.
 
 For Grakn, we can use the following:
 
 ```graql-test-ignore
 insert
-occurs sub relation
+occurs sub relationship
   relates event-occurred
   relates pet-in-event;
 
@@ -127,10 +127,10 @@ pet plays pet-in-event;
 event plays event-occurred;
 ```
 
-To load the ontology into Grakn, we create a single file that contains both sections shown above, named *ontology.gql*. From the Grakn installation folder, invoke the Graql shell, passing the -f flag to indicate the ontology file to load into a graph. This call starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete:
+To load the schema into Grakn, we create a single file that contains both sections shown above, named *schema.gql*. From the Grakn installation folder, invoke the Graql shell, passing the -f flag to indicate the schema file to load into a knowledge base. This call starts the Graql shell in non-interactive mode, loading the specified file and exiting after the load is complete:
 
 ```
-./bin/graql.sh -f ./ontology.gql
+./bin/graql.sh -f ./schema.gql
 ```
 
 ### SQL Data Migration
@@ -185,7 +185,7 @@ In order to migrate the pets table from the SQL database, we prepare a SQL query
 SELECT * FROM pet; 
 ```
 
-We also prepare a Graql template, *pet-template.gql* which creates instances for data according to the defined ontology. The template will create an entity of the appropriate pet subtype (`cat`, `dog`, `snake`, `hamster` or `bird`) for each row returned by the query. It will attach name, owner and sex resources to each of these entities, and if the birth and death dates are present in the data, attaches those too.
+We also prepare a Graql template, *pet-template.gql* which creates instances for data according to the defined schema. The template will create an entity of the appropriate pet subtype (`cat`, `dog`, `snake`, `hamster` or `bird`) for each row returned by the query. It will attach name, owner and sex resources to each of these entities, and if the birth and death dates are present in the data, attaches those too.
 
 ```
 insert
@@ -198,7 +198,7 @@ $x isa <SPECIES>
   if(<DEATH> != null) do { has death <DEATH> };
 ```
 
-To apply the template above to the SQL query and populate the graph with the `pet` entities, we use Grakn migration script:
+To apply the template above to the SQL query and populate the knowledge base with the `pet` entities, we use Grakn migration script:
 
 ```
 migration.sh sql -q "SELECT * FROM pet;" -location jdbc:mysql://localhost:3306/world -user root -pass root -t ./pet-template.gql -k grakn
@@ -225,7 +225,7 @@ insert $event isa event
 
 ```
 
-To populate the graph with the `event` entities, we then use the Grakn migration script:
+To populate the knowledge base with the `event` entities, we then use the Grakn migration script:
 
 ```
 migration.sh sql -q "SELECT event.name AS name, event.date AS date, event.eventtype AS description FROM event;" -location jdbc:mysql://localhost:3306/world -user root -pass root -t ./pet-template.gql -k grakn
@@ -233,7 +233,7 @@ migration.sh sql -q "SELECT event.name AS name, event.date AS date, event.eventt
 
 Note: The SQL query is entered into the command line in quotes, although in future releases of Grakn, we plan to allow queries to be saved in a file, which can be specified with an appropriate flag.
 
-At this point, the SQL data has been added to a graph in Grakn, and can be queried. For example:
+At this point, the SQL data has been added to a knowledge base in Grakn, and can be queried. For example:
 
 ```bash
 match $x isa cat; # Get all cats
@@ -257,7 +257,7 @@ File template = "./pet-template.gql"
 // get the JDBC connection
 try(Connection connection = DriverManager.getConnection(jdbcDBUrl, jdbcUser, jdbcPass)) {
 
-    Migrator migrator = Migrator.to(Grakn.DEFAULT_URI, graph.getKeyspace());
+    Migrator migrator = Migrator.to(Grakn.DEFAULT_URI, tx.getKeyspace());
 
     // create migrator
     SQLMigrator sqlMigrator = new SQLMigrator(query, connection);

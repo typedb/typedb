@@ -19,7 +19,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.tasks.manager.TaskManager;
@@ -85,7 +85,7 @@ public class TaskManagers extends Generator<TaskManager> {
             try {
                 Constructor<? extends TaskManager> constructor =
                         taskManagerToReturn.getConstructor(EngineID.class, GraknEngineConfig.class,
-                                Pool.class, EngineGraknGraphFactory.class,
+                                Pool.class, EngineGraknTxFactory.class,
                                 LockProvider.class, MetricRegistry.class);
                 // TODO this doesn't take a Redis connection. Make sure this is what we expect
                 taskManagers.put(taskManagerToReturn,

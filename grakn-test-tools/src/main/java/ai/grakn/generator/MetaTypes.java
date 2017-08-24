@@ -19,8 +19,8 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.OntologyConcept;
-import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
 
 /**
  * This is a generator that just produces the top-level meta-type `thing`.
@@ -29,16 +29,16 @@ import ai.grakn.generator.AbstractOntologyConceptGenerator.Meta;
  *
  * @author Felix Chapman
  */
-public class MetaTypes extends FromGraphGenerator<OntologyConcept> {
+public class MetaTypes extends FromTxGenerator<SchemaConcept> {
 
     public MetaTypes() {
-        // TODO: This should generate `Type`, not `OntologyConcept`
-        super(OntologyConcept.class);
+        // TODO: This should generate `Type`, not `SchemaConcept`
+        super(SchemaConcept.class);
     }
 
     @Override
-    protected OntologyConcept generateFromGraph() {
-        return graph().admin().getMetaConcept();
+    protected SchemaConcept generateFromTx() {
+        return tx().admin().getMetaConcept();
     }
 
     public final void configure(Meta meta) {

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
@@ -76,8 +76,8 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public DeleteQuery withGraph(GraknGraph graph) {
-        return Queries.delete(deleters, matchQuery.withGraph(graph));
+    public DeleteQuery withTx(GraknTx tx) {
+        return Queries.delete(deleters, matchQuery.withTx(tx));
     }
 
     @Override
@@ -87,10 +87,10 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
     private void deleteResult(Answer result) {
         for (VarPatternAdmin deleter : deleters) {
-            Concept concept = result.get(deleter.getVarName());
+            Concept concept = result.get(deleter.var());
 
             if (concept == null) {
-                throw GraqlQueryException.varNotInQuery(deleter.getVarName());
+                throw GraqlQueryException.varNotInQuery(deleter.var());
             }
 
             deletePattern(concept, deleter);
@@ -109,13 +109,13 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
             result.delete();
         } else {
             deleter.getProperties().forEach(property ->
-                    ((VarPropertyInternal) property).delete(getGraph(), result)
+                    ((VarPropertyInternal) property).delete(tx(), result)
             );
         }
     }
 
-    private GraknGraph getGraph() {
-        return matchQuery.getGraph().orElseThrow(GraqlQueryException::noGraph);
+    private GraknTx tx() {
+        return matchQuery.tx().orElseThrow(GraqlQueryException::noTx);
     }
 
     @Override

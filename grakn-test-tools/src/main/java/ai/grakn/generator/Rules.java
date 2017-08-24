@@ -37,7 +37,7 @@ public class Rules extends AbstractThingGenerator<Rule, RuleType> {
     @Override
     protected Rule newInstance(RuleType type) {
         // TODO: generate more complicated rules
-        QueryBuilder graql = this.graph().graql();
+        QueryBuilder graql = this.tx().graql();
         return type.putRule(graql.parsePattern("$x"), graql.parsePattern("$x"));
     }
 }

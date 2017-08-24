@@ -19,13 +19,13 @@
 package ai.grakn;
 
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
 
 /**
  * <p>
- *     Builds a Grakn Graph Session
+ *     Builds a {@link GraknSession}
  * </p>
  *
  * <p>
@@ -46,10 +46,10 @@ public interface GraknSession extends AutoCloseable {
      *
      * @param transactionType The type of transaction to open see {@link GraknTxType} for more details
      * @return A new Grakn graph transaction
-     * @see GraknGraph
+     * @see GraknTx
      */
     @CheckReturnValue
-    GraknGraph open(GraknTxType transactionType);
+    GraknTx open(GraknTxType transactionType);
 
     /**
      * Get a new or existing GraknComputer.
@@ -63,7 +63,7 @@ public interface GraknSession extends AutoCloseable {
     /**
      * Closes the main connection to the graph. This should be done at the end of using the graph.
      *
-     * @throws GraphOperationException when more than 1 transaction is open on the graph
+     * @throws GraknTxOperationException when more than 1 transaction is open on the graph
      */
-    void close() throws GraphOperationException;
+    void close() throws GraknTxOperationException;
 }

@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
@@ -33,8 +33,8 @@ import javax.annotation.CheckReturnValue;
  *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
- *     ({@link EntityType}, {@link Role}, {@link RelationType}, {@link RuleType} or {@link ResourceType})
- *     or an {@link Thing} ({@link Entity}, {@link Relation} , {@link Resource}, {@link Rule}).
+ *     ({@link EntityType}, {@link Role}, {@link RelationshipType}, {@link RuleType} or {@link AttributeType})
+ *     or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Attribute}, {@link Rule}).
  * </p>
  *
  * @author fppt
@@ -52,13 +52,13 @@ public interface Concept extends Comparable<Concept>{
 
     //------------------------------------- Other ---------------------------------
     /**
-     * Return as a {@link OntologyConcept} if the {@link Concept} is a {@link OntologyConcept}.
+     * Return as a {@link SchemaConcept} if the {@link Concept} is a {@link SchemaConcept}.
      *
-     * @return A {@link OntologyConcept} if the {@link Concept} is a {@link OntologyConcept}
+     * @return A {@link SchemaConcept} if the {@link Concept} is a {@link SchemaConcept}
      */
     @CheckReturnValue
-    default OntologyConcept asOntologyConcept(){
-        throw GraphOperationException.invalidCasting(this, OntologyConcept.class);
+    default SchemaConcept asSchemaConcept(){
+        throw GraknTxOperationException.invalidCasting(this, SchemaConcept.class);
     }
 
     /**
@@ -68,7 +68,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default Type asType(){
-        throw GraphOperationException.invalidCasting(this, Type.class);
+        throw GraknTxOperationException.invalidCasting(this, Type.class);
     }
 
     /**
@@ -78,7 +78,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default Thing asThing(){
-        throw GraphOperationException.invalidCasting(this, Thing.class);
+        throw GraknTxOperationException.invalidCasting(this, Thing.class);
     }
 
     /**
@@ -88,7 +88,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default EntityType asEntityType(){
-        throw GraphOperationException.invalidCasting(this, EntityType.class);
+        throw GraknTxOperationException.invalidCasting(this, EntityType.class);
     }
 
     /**
@@ -98,27 +98,27 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default Role asRole(){
-        throw GraphOperationException.invalidCasting(this, Role.class);
+        throw GraknTxOperationException.invalidCasting(this, Role.class);
     }
 
     /**
-     * Return as a {@link RelationType} if the {@link Concept} is a {@link RelationType}.
+     * Return as a {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}.
      *
-     * @return A {@link RelationType} if the {@link Concept} is a {@link RelationType}
+     * @return A {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
-    default RelationType asRelationType(){
-        throw GraphOperationException.invalidCasting(this, RelationType.class);
+    default RelationshipType asRelationshipType(){
+        throw GraknTxOperationException.invalidCasting(this, RelationshipType.class);
     }
 
     /**
-     * Return as a {@link RelationType} if the {@link Concept} is a {@link RelationType}
+     * Return as a {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
      *
-     * @return A {@link RelationType} if the {@link Concept} is a {@link RelationType}
+     * @return A {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
-    default <D> ResourceType<D> asResourceType(){
-        throw GraphOperationException.invalidCasting(this, ResourceType.class);
+    default <D> AttributeType<D> asAttributeType(){
+        throw GraknTxOperationException.invalidCasting(this, AttributeType.class);
     }
 
     /**
@@ -128,7 +128,7 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default RuleType asRuleType(){
-        throw GraphOperationException.invalidCasting(this, RuleType.class);
+        throw GraknTxOperationException.invalidCasting(this, RuleType.class);
     }
 
     /**
@@ -137,27 +137,27 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default Entity asEntity(){
-        throw GraphOperationException.invalidCasting(this, Entity.class);
+        throw GraknTxOperationException.invalidCasting(this, Entity.class);
     }
 
     /**
-     * Return as a {@link Relation} if the {@link Concept} is a {@link Relation} {@link Thing}.
+     * Return as a {@link Relationship} if the {@link Concept} is a {@link Relationship} {@link Thing}.
      *
-     * @return A {@link Relation}  if the {@link Concept} is a {@link Relation}
+     * @return A {@link Relationship}  if the {@link Concept} is a {@link Relationship}
      */
     @CheckReturnValue
-    default Relation asRelation(){
-        throw GraphOperationException.invalidCasting(this, Relation.class);
+    default Relationship asRelationship(){
+        throw GraknTxOperationException.invalidCasting(this, Relationship.class);
     }
 
     /**
-     * Return as a {@link Resource}  if the {@link Concept} is a {@link Resource} {@link Thing}.
+     * Return as a {@link Attribute}  if the {@link Concept} is a {@link Attribute} {@link Thing}.
      *
-     * @return A {@link Resource} if the {@link Concept} is a {@link Resource}
+     * @return A {@link Attribute} if the {@link Concept} is a {@link Attribute}
      */
     @CheckReturnValue
-    default <D> Resource<D> asResource(){
-        throw GraphOperationException.invalidCasting(this, Resource.class);
+    default <D> Attribute<D> asAttribute(){
+        throw GraknTxOperationException.invalidCasting(this, Attribute.class);
     }
 
     /**
@@ -167,16 +167,16 @@ public interface Concept extends Comparable<Concept>{
      */
     @CheckReturnValue
     default Rule asRule(){
-        throw GraphOperationException.invalidCasting(this, Rule.class);
+        throw GraknTxOperationException.invalidCasting(this, Rule.class);
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link OntologyConcept}
+     * Determine if the {@link Concept} is a {@link SchemaConcept}
      *
-     * @return true if the{@link Concept} concept is a {@link OntologyConcept}
+     * @return true if the{@link Concept} concept is a {@link SchemaConcept}
      */
     @CheckReturnValue
-    default boolean isOntologyConcept(){
+    default boolean isSchemaConcept(){
         return false;
     }
 
@@ -221,22 +221,22 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link RelationType}.
+     * Determine if the {@link Concept} is a {@link RelationshipType}.
      *
-     * @return true if the {@link Concept} is a {@link RelationType}
+     * @return true if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
-    default boolean isRelationType(){
+    default boolean isRelationshipType(){
         return false;
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link ResourceType}.
+     * Determine if the {@link Concept} is a {@link AttributeType}.
      *
-     * @return true if the{@link Concept} concept is a {@link ResourceType}
+     * @return true if the{@link Concept} concept is a {@link AttributeType}
      */
     @CheckReturnValue
-    default boolean isResourceType(){
+    default boolean isAttributeType(){
         return false;
     }
 
@@ -261,22 +261,22 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link Relation}.
+     * Determine if the {@link Concept} is a {@link Relationship}.
      *
-     * @return true if the {@link Concept} is a {@link Relation}
+     * @return true if the {@link Concept} is a {@link Relationship}
      */
     @CheckReturnValue
-    default boolean isRelation(){
+    default boolean isRelationship(){
         return false;
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link Resource}.
+     * Determine if the {@link Concept} is a {@link Attribute}.
      *
-     * @return true if the {@link Concept} is a {@link Resource}
+     * @return true if the {@link Concept} is a {@link Attribute}
      */
     @CheckReturnValue
-    default boolean isResource(){
+    default boolean isAttribute(){
         return false;
     }
 
@@ -293,7 +293,7 @@ public interface Concept extends Comparable<Concept>{
     /**
      * Delete the Concept.
      *
-     * @throws GraphOperationException Throws an exception if this is a type with incoming concepts.
+     * @throws GraknTxOperationException Throws an exception if this is a type with incoming concepts.
      */
-    void delete() throws GraphOperationException;
+    void delete() throws GraknTxOperationException;
 }

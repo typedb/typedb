@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Graql;
@@ -48,14 +48,14 @@ public class LabelFragmentSetTest {
     private static final Label EXISTING_LABEL = Label.of("something");
     private static final Label NON_EXISTENT_LABEL = Label.of("doesn't exist");
 
-    private GraknGraph graph;
+    private GraknTx graph;
 
     @Before
     public void setUp() {
-        graph = mock(GraknGraph.class);
+        graph = mock(GraknTx.class);
 
-        when(graph.getOntologyConcept(EXISTING_LABEL)).thenReturn(mock(Type.class));
-        when(graph.getOntologyConcept(NON_EXISTENT_LABEL)).thenReturn(null);
+        when(graph.getSchemaConcept(EXISTING_LABEL)).thenReturn(mock(Type.class));
+        when(graph.getSchemaConcept(NON_EXISTENT_LABEL)).thenReturn(null);
     }
 
     @Test

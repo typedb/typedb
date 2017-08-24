@@ -37,9 +37,9 @@ public enum ErrorMessage {
     TOO_MANY_CONCEPTS("Too many concepts found for key [%s] and value [%s]"),
     INVALID_DATATYPE("The value [%s] must be of datatype [%s]"),
     INVALID_OBJECT_TYPE("The concept [%s] is not of type [%s]"),
-    REGEX_INSTANCE_FAILURE("The regex [%s] of Resource Type [%s] cannot be applied because value [%s] " +
+    REGEX_INSTANCE_FAILURE("The regex [%s] of Attribute Type [%s] cannot be applied because value [%s] " +
             "does not conform to the regular expression"),
-    REGEX_NOT_STRING("The Resource Type [%s] is not of type String so it cannot support regular expressions"),
+    REGEX_NOT_STRING("The Attribute Type [%s] is not of type String so it cannot support regular expressions"),
     CLOSED_CLEAR("The session for graph has been closed due to deleting the graph"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The transaction was not %s. The graph was actually effected directly"),
     IMMUTABLE_VALUE("The value [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
@@ -49,16 +49,16 @@ public enum ErrorMessage {
     INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
     BACKEND_EXCEPTION("Backend Exception."),
     INITIALIZATION_EXCEPTION("Graph for keyspace [%s] not properly initialized. Missing keyspace name resource"),
-    GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
+    TX_CLOSED("The Transaction for keyspace [%s] is closed"),
     SESSION_CLOSED("The session for graph [%s] was closed"),
-    GRAPH_CLOSED_ON_ACTION("The transaction was %s and closed graph [%s]. Use the session to get a new transaction for the graph."),
-    TRANSACTIONS_OPEN("Closed session on graph [%s] with [%s] open transactions"),
+    TX_CLOSED_ON_ACTION("The transaction was %s and closed [%s]. Use the session to get a new transaction for the graph."),
+    TXS_OPEN("Closed session on graph [%s] with [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
-    CANNOT_BE_KEY_AND_RESOURCE("The Type [%s] cannot have the Resource Type [%s] as a key and as a resource"),
+    CANNOT_BE_KEY_AND_RESOURCE("The Type [%s] cannot have the Attribute Type [%s] as a key and as a resource"),
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]"),
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
     IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
-    CLOSE_GRAPH_FAILURE("Unable to close graph [%s]"),
+    CLOSE_FAILURE("Unable to close graph [%s]"),
     VERSION_MISMATCH("You are attempting to use Grakn Version [%s] with a graph build using version [%s], this is not supported."),
     NO_TYPE("Concept [%s] does not have a type"),
     INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
@@ -76,15 +76,15 @@ public enum ErrorMessage {
             "which it's type [%s] is not connecting to via a relates connection \n"),
 
     VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play Role [%s] \n"),
-    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relation Type. \n"),
-    VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
+    VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("Role [%s] does not have a relates connection to any Relationship Type. \n"),
+    VALIDATION_RELATION_TYPE("Relationship Type [%s] does not have one or more roles \n"),
 
     VALIDATION_NOT_EXACTLY_ONE_KEY("Thing [%s] does not have exactly one key of type [%s] \n"),
 
-    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role [%s] which is connected to Relation Type [%s] " +
-            "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),
+    VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role [%s] which is connected to Relationship Type [%s] " +
+            "does not have a %s Role Type which is connected to the %s Relationship Type [%s] \n"),
 
-    VALIDATION_RELATION_DUPLICATE("You have created one or more relations with the following roles and role player [%s] \n"),
+    VALIDATION_RELATION_DUPLICATE("You have created one or more relationships with the following roles and role player [%s] \n"),
     VALIDATION_REQUIRED_RELATION("The role player [%s] of type [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),
 
     VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] of type [%s] refers to type [%s] which does not exist in the graph \n"),
@@ -111,7 +111,7 @@ public enum ErrorMessage {
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
     INVALID_COMPUTER("The graph computer [%s] is not supported"),
     CONFIG_IGNORED("The config parameter [%s] with value [%s] is ignored for this implementation"),
-    CANNOT_PRODUCE_GRAPH("Cannot produce a Grakn graph using the backend [%s]"),
+    CANNOT_PRODUCE_TX("Cannot produce a Grakn Transaction using the backend [%s]"),
 
     //--------------------------------------------- Client Errors
     INVALID_ENGINE_RESPONSE("Grakn Engine located at [%s] returned response [%s], cannot proceed."),
@@ -121,7 +121,7 @@ public enum ErrorMessage {
     COULD_NOT_REACH_ENGINE("Could not reach Grakn engine at [%s]"),
 
     //--------------------------------------------- Graql Errors -----------------------------------------------
-    NO_GRAPH("no graph provided"),
+    NO_TX("no graph provided"),
 
     SYNTAX_ERROR_NO_POINTER("syntax error at line %s:\n%s"),
     SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
@@ -144,7 +144,7 @@ public enum ErrorMessage {
     NO_PATTERNS("no patterns have been provided. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
     NO_LABEL_SPECIFIED_FOR_HAS("no label was specified for a resource type in a 'has' property"),
-    MULTIPLE_GRAPH("a graph has been specified twice for this query"),
+    MULTIPLE_TX("a graph has been specified twice for this query"),
 
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
     INSERT_PREDICATE("cannot insert a concept with a predicate"),
@@ -184,8 +184,8 @@ public enum ErrorMessage {
     CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
 
     //Post processing Errors
-    GRAPH_MUTATION_ERROR("Unexpected error during graph mutation due to [%s]"),
-    UNABLE_TO_MUTATE_GRAPH("Unable to mutate graph [%s] due to several repeating errors"),
+    TX_MUTATION_ERROR("Unexpected error during graph mutation due to [%s]"),
+    UNABLE_TO_MUTATE("Unable to mutate [%s] due to several repeating errors"),
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
 
     //Distributed loading Errors

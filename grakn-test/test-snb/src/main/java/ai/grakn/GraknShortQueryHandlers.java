@@ -17,7 +17,7 @@
  */
 package ai.grakn;
 
-import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.Answer;
 import com.ldbc.driver.DbException;
@@ -63,7 +63,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String query =
                         "match" +
@@ -85,14 +85,14 @@ public class GraknShortQueryHandlers {
 
                     LdbcShortQuery1PersonProfileResult result =
                             new LdbcShortQuery1PersonProfileResult(
-                                    (String) fres.get("first-name").asResource().getValue(),
-                                    (String) fres.get("last-name").asResource().getValue(),
-                                    ((LocalDateTime) fres.get("birth-day").asResource().getValue()).toInstant(ZoneOffset.UTC).toEpochMilli(),
-                                    (String) fres.get("location-ip").asResource().getValue(),
-                                    (String) fres.get("browser-used").asResource().getValue(),
-                                    (Long) fres.get("placeID").asResource().getValue(),
-                                    (String) fres.get("gender").asResource().getValue(),
-                                    ((LocalDateTime) fres.get("creation-date").asResource().getValue()).toInstant(ZoneOffset.UTC).toEpochMilli());
+                                    (String) fres.get("first-name").asAttribute().getValue(),
+                                    (String) fres.get("last-name").asAttribute().getValue(),
+                                    ((LocalDateTime) fres.get("birth-day").asAttribute().getValue()).toInstant(ZoneOffset.UTC).toEpochMilli(),
+                                    (String) fres.get("location-ip").asAttribute().getValue(),
+                                    (String) fres.get("browser-used").asAttribute().getValue(),
+                                    (Long) fres.get("placeID").asAttribute().getValue(),
+                                    (String) fres.get("gender").asAttribute().getValue(),
+                                    ((LocalDateTime) fres.get("creation-date").asAttribute().getValue()).toInstant(ZoneOffset.UTC).toEpochMilli());
 
                     resultReporter.report(0, result, operation);
 
@@ -115,7 +115,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String messageQuery = "match " +
                         "$person isa person has person-id " + operation.personId() + "; " +
@@ -148,14 +148,14 @@ public class GraknShortQueryHandlers {
                     allResults.addAll(results);
                 });
 
-                Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asResource().getValue().toInstant(ZoneOffset.UTC).toEpochMilli())
+                Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli())
                         .thenComparing(map -> resource(map, "messageId")).reversed();
 
                 List<LdbcShortQuery2PersonPostsResult> result = allResults.stream()
                         .sorted(ugly)
                         .map(map -> new LdbcShortQuery2PersonPostsResult(resource(map, "messageId"),
                                 resource(map, "content"),
-                                map.get("date").<LocalDateTime>asResource().getValue().toInstant(ZoneOffset.UTC).toEpochMilli(),
+                                map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli(),
                                 resource(map, "opId"),
                                 resource(map, "authorId"),
                                 resource(map, "fname"),
@@ -169,7 +169,7 @@ public class GraknShortQueryHandlers {
         }
 
         private <T> T resource(Answer result, String name) {
-            return result.get(name).<T>asResource().getValue();
+            return result.get(name).<T>asAttribute().getValue();
         }
     }
 
@@ -185,7 +185,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String query = "match " +
                         "$person has person-id " + operation.personId() + "; " +
@@ -197,7 +197,7 @@ public class GraknShortQueryHandlers {
                 List<Answer> results = graph.graql().<MatchQuery>parse(query).execute();
 
 
-                    Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asResource().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()).reversed()
+                    Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()).reversed()
                             .thenComparing(map -> resource(map, "friendId"));
 
                     List<LdbcShortQuery3PersonFriendsResult> result = results.stream()
@@ -205,7 +205,7 @@ public class GraknShortQueryHandlers {
                             .map(map -> new LdbcShortQuery3PersonFriendsResult(resource(map, "friendId"),
                                     resource(map, "fname"),
                                     resource(map, "lname"),
-                                    map.get("date").<LocalDateTime>asResource().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()))
+                                    map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()))
                             .collect(Collectors.toList());
 
                     resultReporter.report(0, result, operation);
@@ -215,7 +215,7 @@ public class GraknShortQueryHandlers {
         }
 
         private <T> T resource(Answer result, String name) {
-            return result.get(name).<T>asResource().getValue();
+            return result.get(name).<T>asAttribute().getValue();
         }
     }
 
@@ -231,7 +231,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String query = "match " +
                         "$m has message-id " + operation.messageId() + "; " +
@@ -245,8 +245,8 @@ public class GraknShortQueryHandlers {
                     Answer fres = results.get(0);
 
                     LdbcShortQuery4MessageContentResult result = new LdbcShortQuery4MessageContentResult(
-                            (String) fres.get("content").asResource().getValue(),
-                            ((LocalDateTime) fres.get("date").asResource().getValue()).toInstant(ZoneOffset.UTC).toEpochMilli()
+                            (String) fres.get("content").asAttribute().getValue(),
+                            ((LocalDateTime) fres.get("date").asAttribute().getValue()).toInstant(ZoneOffset.UTC).toEpochMilli()
                     );
 
                     resultReporter.report(0, result, operation);
@@ -272,7 +272,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String query = "match " +
                         " $m has message-id " + operation.messageId() + ";" +
@@ -286,9 +286,9 @@ public class GraknShortQueryHandlers {
                 if (results.size() >= 1) {
                     Answer fres = results.get(0);
                     LdbcShortQuery5MessageCreatorResult result = new LdbcShortQuery5MessageCreatorResult(
-                            (Long) fres.get("pID").asResource().getValue(),
-                            (String) fres.get("fname").asResource().getValue(),
-                            (String) fres.get("lname").asResource().getValue()
+                            (Long) fres.get("pID").asAttribute().getValue(),
+                            (String) fres.get("fname").asAttribute().getValue(),
+                            (String) fres.get("lname").asAttribute().getValue()
                     );
 
                     resultReporter.report(0, result, operation);
@@ -314,7 +314,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String query = "match " +
                         "$m has message-id " + operation.messageId() + "; " +
@@ -329,11 +329,11 @@ public class GraknShortQueryHandlers {
                 if (results.size() > 0) {
                     Answer fres = results.get(0);
                     LdbcShortQuery6MessageForumResult result = new LdbcShortQuery6MessageForumResult(
-                            (Long) fres.get("fid").asResource().getValue(),
-                            (String) fres.get("title").asResource().getValue(),
-                            (Long) fres.get("modid").asResource().getValue(),
-                            (String) fres.get("fname").asResource().getValue(),
-                            (String) fres.get("lname").asResource().getValue()
+                            (Long) fres.get("fid").asAttribute().getValue(),
+                            (String) fres.get("title").asAttribute().getValue(),
+                            (Long) fres.get("modid").asAttribute().getValue(),
+                            (String) fres.get("fname").asAttribute().getValue(),
+                            (String) fres.get("lname").asAttribute().getValue()
                     );
 
                     resultReporter.report(0, result, operation);
@@ -359,7 +359,7 @@ public class GraknShortQueryHandlers {
                                      GraknDbConnectionState dbConnectionState,
                                      ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
-            try (GraknGraph graph = session.open(GraknTxType.READ)) {
+            try (GraknTx graph = session.open(GraknTxType.READ)) {
 
                 String query = "match $m isa message has message-id " + operation.messageId() + " ;" +
                         "(product: $m, creator: $author1) isa has-creator; " +
@@ -374,14 +374,14 @@ public class GraknShortQueryHandlers {
 
                 List<Answer> results = graph.graql().<MatchQuery>parse(query).execute();
 
-                Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asResource().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()).reversed()
+                Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()).reversed()
                         .thenComparing(map -> resource(map, "pid"));
 
                 List<LdbcShortQuery7MessageRepliesResult> result = results.stream()
                         .sorted(ugly)
                         .map(map -> new LdbcShortQuery7MessageRepliesResult(resource(map, "cid"),
                                 resource(map, "content"),
-                                map.get("date").<LocalDateTime>asResource().getValue().toInstant(ZoneOffset.UTC).toEpochMilli(),
+                                map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli(),
                                 resource(map, "pid"),
                                 resource(map, "fname"),
                                 resource(map, "lname"),
@@ -394,10 +394,10 @@ public class GraknShortQueryHandlers {
 
         }
 
-        private boolean checkIfFriends(String author1, String author2, GraknGraph graph) {
+        private boolean checkIfFriends(String author1, String author2, GraknTx graph) {
             String query = "match $x id '" + author1 + "'; $y id '" + author2 + "';" +
-                    "(friend: $x, friend:  $y) isa knows; ask;";
-            return graph.graql().<AskQuery>parse(query).execute();
+                    "(friend: $x, friend:  $y) isa knows; aggregate ask;";
+            return graph.graql().<AggregateQuery<Boolean>>parse(query).execute();
         }
 
         private String conceptId(Answer result, String name) {
@@ -405,7 +405,7 @@ public class GraknShortQueryHandlers {
         }
 
         private <T> T resource(Answer result, String name) {
-            return result.get(name).<T>asResource().getValue();
+            return result.get(name).<T>asAttribute().getValue();
         }
     }
 }

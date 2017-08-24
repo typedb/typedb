@@ -84,7 +84,7 @@ start)
 
 stop)
 
-    echo "Stopping engine"
+    echo "Stopping Grakn"
     if [[ -e "$ENGINE_PS" ]]; then
         kill `cat $ENGINE_PS`
         rm $ENGINE_PS

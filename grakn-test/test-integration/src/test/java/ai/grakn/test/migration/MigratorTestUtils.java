@@ -18,19 +18,19 @@
 
 package ai.grakn.test.migration;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
 
@@ -62,41 +62,41 @@ public class MigratorTestUtils {
         return new File(MigratorTestUtils.class.getResource(component + "/" + fileName).getPath());
     }
 
-    public static void load(GraknSession factory, File ontology) {
-        try(GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+    public static void load(GraknSession factory, File schema) {
+        try(GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.graql()
-                    .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
+                    .parse(Files.readLines(schema, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();
 
             graph.commit();
-        } catch (IOException |InvalidGraphException e){
+        } catch (IOException |InvalidKBException e){
             throw new RuntimeException(e);
         }
     }
 
-    public static void assertResourceEntityRelationExists(GraknGraph graph, String resourceName, Object resourceValue, Entity owner){
-        ResourceType resourceType = graph.getResourceType(resourceName);
-        assertNotNull(resourceType);
-        assertEquals(resourceValue, owner.resources(resourceType)
-                .map(Resource::getValue)
+    public static void assertResourceEntityRelationExists(GraknTx graph, String resourceName, Object resourceValue, Entity owner){
+        AttributeType attributeType = graph.getAttributeType(resourceName);
+        assertNotNull(attributeType);
+        assertEquals(resourceValue, owner.attributes(attributeType)
+                .map(Attribute::getValue)
                 .findFirst().get());
     }
 
-    public static void assertRelationBetweenInstancesExists(GraknGraph graph, Thing thing1, Thing thing2, Label relation){
-        RelationType relationType = graph.getOntologyConcept(relation);
+    public static void assertRelationBetweenInstancesExists(GraknTx graph, Thing thing1, Thing thing2, Label relation){
+        RelationshipType relationshipType = graph.getSchemaConcept(relation);
 
-        Role role1 = thing1.plays().filter(r -> r.relationTypes().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
-        assertTrue(thing1.relations(role1).anyMatch(rel -> rel.rolePlayers().anyMatch(r -> r.equals(thing2))));
+        Role role1 = thing1.plays().filter(r -> r.relationTypes().anyMatch(rel -> rel.equals(relationshipType))).findFirst().get();
+        assertTrue(thing1.relationships(role1).anyMatch(rel -> rel.rolePlayers().anyMatch(r -> r.equals(thing2))));
     }
 
 
-    public static Thing getProperty(GraknGraph graph, Thing thing, String label) {
+    public static Thing getProperty(GraknTx graph, Thing thing, String label) {
         assertEquals(getProperties(graph, thing, label).size(), 1);
         return getProperties(graph, thing, label).iterator().next();
     }
 
-    public static Collection<Thing> getProperties(GraknGraph graph, Thing thing, String label) {
-        RelationType relation = graph.getRelationType(label);
+    public static Collection<Thing> getProperties(GraknTx graph, Thing thing, String label) {
+        RelationshipType relation = graph.getRelationshipType(label);
 
         Set<Thing> things = new HashSet<>();
 
@@ -108,24 +108,24 @@ public class MigratorTestUtils {
         return things;
     }
 
-    public static Resource getResource(GraknGraph graph, Thing thing, Label label) {
+    public static Attribute getResource(GraknTx graph, Thing thing, Label label) {
         assertEquals(getResources(graph, thing, label).count(), 1);
         return getResources(graph, thing, label).findAny().get();
     }
 
-    public static Stream<Resource> getResources(GraknGraph graph, Thing thing, Label label) {
-        Role roleOwner = graph.getOntologyConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
-        Role roleOther = graph.getOntologyConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
+    public static Stream<Attribute> getResources(GraknTx graph, Thing thing, Label label) {
+        Role roleOwner = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
+        Role roleOther = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 
-        Stream<Relation> relations = thing.relations(roleOwner);
-        return relations.flatMap(r -> r.rolePlayers(roleOther)).map(Concept::asResource);
+        Stream<Relationship> relations = thing.relationships(roleOwner);
+        return relations.flatMap(r -> r.rolePlayers(roleOther)).map(Concept::asAttribute);
     }
 
     /**
      * Check that the pet graph has been loaded correctly
      */
     public static void assertPetGraphCorrect(GraknSession session){
-        try(GraknGraph graph = session.open(GraknTxType.READ)) {
+        try(GraknTx graph = session.open(GraknTxType.READ)) {
             Collection<Entity> pets = graph.getEntityType("pet").instances().collect(Collectors.toSet());
             assertEquals(9, pets.size());
 
@@ -135,14 +135,14 @@ public class MigratorTestUtils {
             Collection<Entity> hamsters = graph.getEntityType("hamster").instances().collect(Collectors.toSet());
             assertEquals(1, hamsters.size());
 
-            ResourceType<String> name = graph.getResourceType("name");
-            ResourceType<String> death = graph.getResourceType("death");
+            AttributeType<String> name = graph.getAttributeType("name");
+            AttributeType<String> death = graph.getAttributeType("death");
 
-            Entity puffball = name.getResource("Puffball").ownerInstances().iterator().next().asEntity();
-            assertEquals(0, puffball.resources(death).count());
+            Entity puffball = name.getAttribute("Puffball").ownerInstances().iterator().next().asEntity();
+            assertEquals(0, puffball.attributes(death).count());
 
-            Entity bowser = name.getResource("Bowser").ownerInstances().iterator().next().asEntity();
-            assertEquals(1, bowser.resources(death).count());
+            Entity bowser = name.getAttribute("Bowser").ownerInstances().iterator().next().asEntity();
+            assertEquals(1, bowser.attributes(death).count());
         }
     }
 
@@ -150,17 +150,17 @@ public class MigratorTestUtils {
      * Check that the pokemon graph has been loaded correctly
      */
     public static void assertPokemonGraphCorrect(GraknSession session){
-        try(GraknGraph graph = session.open(GraknTxType.READ)){
+        try(GraknTx graph = session.open(GraknTxType.READ)){
             Collection<Entity> pokemon = graph.getEntityType("pokemon").instances().collect(Collectors.toSet());
             assertEquals(9, pokemon.size());
 
-            ResourceType<String> typeid = graph.getResourceType("type-id");
-            ResourceType<String> pokedexno = graph.getResourceType("pokedex-no");
+            AttributeType<String> typeid = graph.getAttributeType("type-id");
+            AttributeType<String> pokedexno = graph.getAttributeType("pokedex-no");
 
-            Entity grass = typeid.getResource("12").ownerInstances().iterator().next().asEntity();
-            Entity poison = typeid.getResource("4").ownerInstances().iterator().next().asEntity();
-            Entity bulbasaur = pokedexno.getResource("1").ownerInstances().iterator().next().asEntity();
-            RelationType relation = graph.getRelationType("has-type");
+            Entity grass = typeid.getAttribute("12").ownerInstances().iterator().next().asEntity();
+            Entity poison = typeid.getAttribute("4").ownerInstances().iterator().next().asEntity();
+            Entity bulbasaur = pokedexno.getAttribute("1").ownerInstances().iterator().next().asEntity();
+            RelationshipType relation = graph.getRelationshipType("has-type");
 
             assertNotNull(grass);
             assertNotNull(poison);

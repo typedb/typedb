@@ -26,6 +26,7 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.util.ConcurrencyUtil;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
@@ -64,6 +65,16 @@ import java.util.function.Function;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import static ai.grakn.engine.tasks.manager.TaskSchedule.recurring;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
+import static ai.grakn.util.REST.Response.Task.CLASS_NAME;
+import static ai.grakn.util.REST.Response.Task.CREATOR;
+import static ai.grakn.util.REST.Response.Task.ENGINE_ID;
+import static ai.grakn.util.REST.Response.Task.EXCEPTION;
+import static ai.grakn.util.REST.Response.Task.ID;
+import static ai.grakn.util.REST.Response.Task.INTERVAL;
+import static ai.grakn.util.REST.Response.Task.RECURRING;
+import static ai.grakn.util.REST.Response.Task.RUN_AT;
+import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
+import static ai.grakn.util.REST.Response.Task.STATUS;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
@@ -283,7 +294,7 @@ public class TasksController {
                 .map(taskStateWithConfiguration -> CompletableFuture
                         .supplyAsync(() -> addTaskToManager(taskStateWithConfiguration), executor))
                 .collect(toList());
-        return all(futures);
+        return ConcurrencyUtil.all(futures);
     }
 
     private Json extractConfiguration(Json taskJson) {
@@ -313,14 +324,6 @@ public class TasksController {
             singleTaskReturnJson.set("code", HttpStatus.SC_INTERNAL_SERVER_ERROR);
         }
         return singleTaskReturnJson;
-    }
-
-    static private <T> CompletableFuture<List<T>> all(List<CompletableFuture<T>> cf) {
-        return CompletableFuture.allOf(cf.toArray(new CompletableFuture[cf.size()]))
-                .thenApply(v -> cf.stream()
-                        .map(CompletableFuture::join)
-                        .collect(toList())
-                );
     }
 
     private TaskState extractParametersAndProcessTask(Json singleTaskJson) {
@@ -417,21 +420,20 @@ public class TasksController {
     // TODO: Return 'schedule' object as its own object
     private Json serialiseStateSubset(TaskState state) {
         return Json.object()
-                .set("id", state.getId().getValue())
-                .set("status", state.status().name())
-                .set("creator", state.creator())
-                .set("className", state.taskClass().getName())
-                .set("runAt", state.schedule().runAt().toEpochMilli())
-                .set("recurring", state.schedule().isRecurring());
+                .set(ID, state.getId().getValue())
+                .set(STATUS, state.status().name())
+                .set(CREATOR, state.creator())
+                .set(CLASS_NAME, state.taskClass().getName())
+                .set(RUN_AT, state.schedule().runAt().toEpochMilli())
+                .set(RECURRING, state.schedule().isRecurring());
     }
 
     private Json serialiseStateFull(TaskState state) {
         return serialiseStateSubset(state)
-                .set("interval", state.schedule().interval().map(Duration::toMillis).orElse(null))
-                .set("recurring", state.schedule().isRecurring())
-                .set("exception", state.exception())
-                .set("stackTrace", state.stackTrace())
-                .set("engineID", state.engineID() != null ? state.engineID().value() : null);
+                .set(INTERVAL, state.schedule().interval().map(Duration::toMillis).orElse(null))
+                .set(EXCEPTION, state.exception())
+                .set(STACK_TRACE, state.stackTrace())
+                .set(ENGINE_ID, state.engineID() != null ? state.engineID().value() : null);
     }
 
     private static class TaskStateWithConfiguration {

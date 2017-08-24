@@ -19,14 +19,15 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertFalse;
@@ -35,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 public class AskQueryTest {
 
     @ClassRule
-    public static final GraphContext graph = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -44,17 +45,17 @@ public class AskQueryTest {
 
     @Before
     public void setUp() {
-        qb = graph.graph().graql();
+        qb = sampleKB.tx().graql();
     }
 
     @Test
-    public void testPositiveQuery() {
-        assertTrue(qb.match(var().isa("movie").has("tmdb-vote-count", 1000)).ask().execute());
+    public void whenExecutingAskWithPatternThatShouldMatch_ReturnTrue() {
+        assertTrue(qb.match(var().isa("movie").has("tmdb-vote-count", 1000)).aggregate(ask()).execute());
     }
 
     @Test
-    public void testNegativeQuery() {
-        assertFalse(qb.match(var("y").isa("award")).ask().execute());
+    public void whenExecutingAskWithPatternThatShouldntMatch_ReturnFalse() {
+        assertFalse(qb.match(var("y").isa("award")).aggregate(ask()).execute());
     }
 
     @Test
@@ -63,11 +64,11 @@ public class AskQueryTest {
                 var().rel("x").rel("y").isa("directed-by"),
                 var("x").val("Apocalypse Now"),
                 var("y").val("Martin Sheen")
-        ).ask().execute());
+        ).aggregate(ask()).execute());
     }
 
     @Test
-    public void testAskNoVariables() {
-        assertTrue(qb.match(label("person").plays("actor")).ask().execute());
+    public void whenExecutingPositiveAskWithoutAnyVariables_ReturnTrue() {
+        assertTrue(qb.match(label("person").plays("actor")).aggregate(ask()).execute());
     }
 }

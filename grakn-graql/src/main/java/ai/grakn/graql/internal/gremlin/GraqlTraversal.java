@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import com.google.auto.value.AutoValue;
@@ -67,7 +67,7 @@ public abstract class GraqlTraversal {
      */
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(GraknGraph graph) {
+    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(GraknTx graph) {
         Traversal[] traversals =
                 fragments().stream().map(list -> getConjunctionTraversal(graph, list)).toArray(Traversal[]::new);
 
@@ -85,7 +85,7 @@ public abstract class GraqlTraversal {
      * @return a gremlin traversal that represents this inner query
      */
     private GraphTraversal<? extends Element, Map<String, Element>> getConjunctionTraversal(
-            GraknGraph graph, ImmutableList<Fragment> fragmentList
+            GraknTx graph, ImmutableList<Fragment> fragmentList
     ) {
         GraphTraversal traversal = __.V();
 
@@ -98,7 +98,7 @@ public abstract class GraqlTraversal {
     }
 
     private GraphTraversal<?, Map<String, Element>> applyFragments(
-            GraknGraph graph, ImmutableList<Fragment> fragmentList, GraphTraversal<Element, Element> traversal) {
+            GraknTx graph, ImmutableList<Fragment> fragmentList, GraphTraversal<Element, Element> traversal) {
         Set<Var> foundNames = new HashSet<>();
 
         // Apply fragments in order into one single traversal
@@ -124,7 +124,7 @@ public abstract class GraqlTraversal {
      */
     private void applyFragment(
             Fragment fragment, GraphTraversal<Element, ? extends Element> traversal,
-            @Nullable Var currentName, Set<Var> names, GraknGraph graph
+            @Nullable Var currentName, Set<Var> names, GraknTx graph
     ) {
         Var start = fragment.getStart();
 

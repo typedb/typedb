@@ -30,7 +30,7 @@ import java.util.Set;
 
 /**
  * <p>
- * Graph Computer Used For Analytics Algorithms
+ * {@link GraphComputer} Used For Analytics Algorithms
  * </p>
  * <p>
  * <p>

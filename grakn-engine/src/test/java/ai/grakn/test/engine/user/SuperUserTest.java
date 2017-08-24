@@ -18,9 +18,9 @@
 package ai.grakn.test.engine.user;
 
 import ai.grakn.engine.EngineTestHelper;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;
@@ -37,10 +37,10 @@ import org.junit.Test;
 public class SuperUserTest {
     private static final String adminPassword = "top secret";
 
-    private static EngineGraknGraphFactory graknFactory;
+    private static EngineGraknTxFactory graknFactory;
 
     @ClassRule
-    public static final GraphContext graph = GraphContext.empty();
+    public static final SampleKBContext sampleKB = SampleKBContext.empty();
 
     private UsersHandler users;
 
@@ -52,7 +52,7 @@ public class SuperUserTest {
     @BeforeClass
     public static void beforeClass() {
         // TODO: Doing it here because it has to happen after Cassandra starts. Consider refactoring
-        graknFactory = EngineGraknGraphFactory.createAndLoadSystemOntology(EngineTestHelper.config().getProperties());
+        graknFactory = EngineGraknTxFactory.createAndLoadSystemSchema(EngineTestHelper.config().getProperties());
     }
 
     @Test

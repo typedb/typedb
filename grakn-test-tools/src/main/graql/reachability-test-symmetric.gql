@@ -1,7 +1,7 @@
-insert
+define
 
 ###################################################
-####################Ontology######################
+####################Schema######################
 #################################################
 
 "vertex" sub entity
@@ -9,15 +9,17 @@ insert
 
 "link-endA" sub role;
 "link-endB" sub role;
-"link" sub relation, relates link-endA, relates link-endB;
+"link" sub relationship, relates link-endA, relates link-endB;
 vertex plays link-endA, plays link-endB;
 
 "reach-endA" sub role;
 "reach-endB" sub role;
-"reachable" sub relation, relates reach-endA, relates reach-endB;
+"reachable" sub relationship, relates reach-endA, relates reach-endB;
 vertex plays reach-endA, plays reach-endB;
 
-"index" sub resource, datatype string;
+"index" sub attribute, datatype string;
+
+insert
 
 ####################################################
 ##################DATA#############################
