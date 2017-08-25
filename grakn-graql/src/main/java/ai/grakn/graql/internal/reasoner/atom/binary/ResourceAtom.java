@@ -40,14 +40,13 @@ import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-import com.google.common.collect.ImmutableSet;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint;
 
