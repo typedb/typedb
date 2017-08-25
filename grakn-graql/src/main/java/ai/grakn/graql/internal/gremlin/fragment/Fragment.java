@@ -31,6 +31,7 @@ import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -97,7 +98,7 @@ public abstract class Fragment {
     /**
      * Get the corresponding property
      */
-    public abstract VarProperty getVarProperty();
+    public abstract @Nullable VarProperty getVarProperty();
 
     /**
      * @return the variable name that this fragment starts from in the query

@@ -29,11 +29,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 @AutoValue
 abstract class NeqFragment extends Fragment {
 
-    @Override
-    ImmutableSet<Var> otherVarNames() {
-        return ImmutableSet.of(other());
-    }
-
     abstract Var other();
 
     @Override
