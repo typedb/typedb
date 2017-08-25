@@ -124,12 +124,31 @@ public interface RuleType extends Type {
     RuleType plays(Role role);
 
     /**
+     * Removes the ability of this {@link RuleType} to play a specific {@link Role}
      *
-     * @param role The Role Type which the instances of this Type should no longer be allowed to play.
-     * @return The Rule Type itself
+     * @param role The {@link Role} which the {@link Thing}s of this {@link RuleType} should no longer be allowed to play.
+     * @return The {@link RuleType} itself.
      */
     @Override
     RuleType deletePlays(Role role);
+
+    /**
+     * Removes the ability for {@link Thing}s of this {@link RuleType} to have {@link Attribute}s of type {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link RuleType} can no longer have
+     * @return The {@link RuleType} itself.
+     */
+    @Override
+    RuleType deleteAttribute(AttributeType attributeType);
+
+    /**
+     * Removes {@link AttributeType} as a key to this {@link RuleType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link RuleType} can no longer have as a key
+     * @return The {@link RuleType} itself.
+     */
+    @Override
+    RuleType deleteKey(AttributeType attributeType);
 
     /**
      *

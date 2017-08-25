@@ -58,7 +58,6 @@ public final class Schema {
         SUB("sub"),
         RELATES("relates"),
         PLAYS("plays"),
-        HAS_SCOPE("has-scope"),
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
         SHORTCUT("shortcut"),

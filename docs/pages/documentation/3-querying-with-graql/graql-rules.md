@@ -139,7 +139,6 @@ That means atomic queries contain at most one statement that can potentially app
 | `relationship` | `(parent: $x, child: $y) isa parentship;` | ✓ | ✓ |
 | attribute comparison | `$x val > $y;`  | ✓ | x |
 | `!=` | `$x != $y;` | ✓ | x |
-| `has-scope` | `($x, $y) has-scope $z;$x has-scope $y;`  | ✓ | x |
 
 ### Type Properties
 

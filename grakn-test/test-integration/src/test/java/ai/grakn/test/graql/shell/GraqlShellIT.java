@@ -138,7 +138,7 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void whenUsingExecuteOptionAndPassingQueriesWithoutVariables_PrintWarning() throws Exception {
+    public void whenUsingExecuteOptionAndPassingMatchQueriesWithoutVariables_PrintWarning() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         String result = testShell("", err, "-e", "match sub entity;");
 
@@ -147,6 +147,18 @@ public class GraqlShellIT {
 
         // ...but also a warning
         assertThat(err.toString(), containsString(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage()));
+    }
+
+    @Test
+    public void whenUsingExecuteOptionAndPassingNonMatchQueriesWithoutVariables_DoNotPrintWarning() throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        String result = testShell("", err, "-e", "define person sub entity;");
+
+        // There should be a result...
+        assertThat(result, containsString("{}"));
+
+        // ...and no warning
+        assertEquals("", err.toString());
     }
 
     @Test
