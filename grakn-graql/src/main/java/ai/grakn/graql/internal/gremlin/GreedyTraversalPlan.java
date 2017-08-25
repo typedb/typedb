@@ -32,6 +32,7 @@ import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.SparseWeightedGraph;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -192,7 +193,7 @@ public class GreedyTraversalPlan {
                 other.getDependants().add(fragment);
 
                 // check whether it's value fragment
-                if (fragment.getEquivalentFragmentSet().fragments().size() == 1) {
+                if (fragment.getVarProperty() instanceof ValueProperty) {
                     // as value fragment is not symmetric, we need to add it again
                     other.getFragmentsWithDependency().add(fragment);
                     start.getDependants().add(fragment);

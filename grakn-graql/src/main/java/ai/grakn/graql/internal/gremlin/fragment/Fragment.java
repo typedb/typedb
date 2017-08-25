@@ -22,12 +22,10 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -95,23 +93,6 @@ public abstract class Fragment {
     static final double COST_NEQ = Math.log1p(0.5);
     static final double COST_DATA_TYPE = Math.log1p(2D / AttributeType.DataType.SUPPORTED_TYPES.size());
     static final double COST_UNSPECIFIC_PREDICATE = Math.log1p(0.5);
-
-    private EquivalentFragmentSet equivalentFragmentSet = null;
-
-    /**
-     * @return the EquivalentFragmentSet that contains this Fragment
-     */
-    public final EquivalentFragmentSet getEquivalentFragmentSet() {
-        Preconditions.checkNotNull(equivalentFragmentSet, "Should not call getEquivalentFragmentSet before setEquivalentFragmentSet");
-        return equivalentFragmentSet;
-    }
-
-    /**
-     * @param equivalentFragmentSet the EquivalentFragmentSet that contains this Fragment
-     */
-    public final void setEquivalentFragmentSet(EquivalentFragmentSet equivalentFragmentSet) {
-        this.equivalentFragmentSet = equivalentFragmentSet;
-    }
 
     /**
      * Get the corresponding property
