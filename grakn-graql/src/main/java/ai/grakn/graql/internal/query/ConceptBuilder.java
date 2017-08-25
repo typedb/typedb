@@ -80,7 +80,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class ConceptBuilder {
 
-    private final InsertQueryExecutor executor;
+    private final QueryOperationExecutor executor;
 
     private final Var var;
 
@@ -155,7 +155,7 @@ public class ConceptBuilder {
         return set(THEN, then);
     }
 
-    static ConceptBuilder of(InsertQueryExecutor executor, Var var) {
+    static ConceptBuilder of(QueryOperationExecutor executor, Var var) {
         return new ConceptBuilder(executor, var);
     }
 
@@ -181,9 +181,9 @@ public class ConceptBuilder {
         Concept concept = null;
 
         if (has(ID)) {
-            concept = executor.graph().getConcept(use(ID));
+            concept = executor.tx().getConcept(use(ID));
         } else if (has(LABEL)) {
-            concept = executor.graph().getSchemaConcept(use(LABEL));
+            concept = executor.tx().getSchemaConcept(use(LABEL));
         }
 
         if (concept != null) {
@@ -205,7 +205,7 @@ public class ConceptBuilder {
         Concept concept;
 
         if (has(SUPER_CONCEPT)) {
-            concept = putOntologyConcept();
+            concept = putSchemaConcept();
         } else if (has(TYPE)) {
             concept = putInstance();
         } else {
@@ -246,7 +246,7 @@ public class ConceptBuilder {
     private static final BuilderParam<Pattern> WHEN = () -> WhenProperty.NAME;
     private static final BuilderParam<Pattern> THEN = () -> ThenProperty.NAME;
 
-    private ConceptBuilder(InsertQueryExecutor executor, Var var) {
+    private ConceptBuilder(QueryOperationExecutor executor, Var var) {
         this.executor = executor;
         this.var = var;
     }
@@ -345,24 +345,24 @@ public class ConceptBuilder {
         }
     }
 
-    private SchemaConcept putOntologyConcept() {
+    private SchemaConcept putSchemaConcept() {
         SchemaConcept superConcept = use(SUPER_CONCEPT);
         Label label = use(LABEL);
 
         SchemaConcept concept;
 
         if (superConcept.isEntityType()) {
-            concept = executor.graph().putEntityType(label);
+            concept = executor.tx().putEntityType(label);
         } else if (superConcept.isRelationshipType()) {
-            concept = executor.graph().putRelationshipType(label);
+            concept = executor.tx().putRelationshipType(label);
         } else if (superConcept.isRole()) {
-            concept = executor.graph().putRole(label);
+            concept = executor.tx().putRole(label);
         } else if (superConcept.isAttributeType()) {
             AttributeType attributeType = superConcept.asAttributeType();
             AttributeType.DataType<?> dataType = useOrDefault(DATA_TYPE, attributeType.getDataType());
-            concept = executor.graph().putAttributeType(label, dataType);
+            concept = executor.tx().putAttributeType(label, dataType);
         } else if (superConcept.isRuleType()) {
-            concept = executor.graph().putRuleType(label);
+            concept = executor.tx().putRuleType(label);
         } else {
             throw GraqlQueryException.insertMetaType(label, superConcept);
         }

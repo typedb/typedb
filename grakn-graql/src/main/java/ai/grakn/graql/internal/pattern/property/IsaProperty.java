@@ -30,7 +30,6 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
@@ -92,19 +91,13 @@ public abstract class IsaProperty extends AbstractVarProperty implements UniqueV
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Type type = executor.get(this.type().var()).asType();
-        executor.builder(var).isa(type);
-    }
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Type type = executor.get(this.type().var()).asType();
+            executor.builder(var).isa(type);
+        };
 
-    @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(type().var());
-    }
-
-    @Override
-    public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
+        return PropertyExecutor.builder(method).requires(type().var()).produces(var).build();
     }
 
     @Override

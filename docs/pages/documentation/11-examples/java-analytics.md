@@ -67,20 +67,20 @@ The rest of the project is contained in the Java example code, which can be foun
 
 The Janus factory is required because engine is configured with Janus as the backend. The `slf4j-nop` dependency is a work around because we are using a later version of Spark. The spring framework dependency is a current bug workaround in GRAKN.AI version 0.12.0.
 
-First, we load the ontology and data we will be working with, which is the familiar *basic-genealogy.gql* dataset.
+First, we load the schema and data we will be working with, which is the familiar *basic-genealogy.gql* dataset.
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
 ```java-test-ignore
 private static void loadBasicGenealogy() {
     ClassLoader classLoader = Main.class.getClassLoader();
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
             try {
-                graph.graql().parse(IOUtils.toString(classLoader.getResourceAsStream("basic-genealogy.gql"))).execute();
+                tx.graql().parse(IOUtils.toString(classLoader.getResourceAsStream("basic-genealogy.gql"))).execute();
                 } catch (IOException e) {
                     e.printStackTrace();
             }
-            graph.commit();
+            tx.commit();
         }
     }
 }
@@ -88,7 +88,7 @@ private static void loadBasicGenealogy() {
 
 ## Connect to Grakn Engine
 
-The next thing to do is connect to the running engine instance and check that the graph contains the data that we expect. This can be achieved with the following code:
+The next thing to do is connect to the running engine instance and check that the knowledge base contains the data that we expect. This can be achieved with the following code:
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
 ```java-test-ignore
@@ -96,11 +96,11 @@ private static void testConnection() {
     // initialise the connection to Grakn engine
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
-        // open a graph (database transaction)
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        // open a tx (database transaction)
+        try (GraknTx tx = session.open(GraknTxType.READ)) {
 
             // construct a match query to find people
-            MatchQuery query = graph.graql().match(var("x").isa("person"));
+            MatchQuery query = tx.graql().match(var("x").isa("person"));
 
             // execute the query
             List<Map<String, Concept>> result = query.limit(10).execute();
@@ -115,7 +115,7 @@ private static void testConnection() {
 
 ## Compute the Clusters
 
-Now that we have established the connection to Grakn engine works we can obtain the graph object and compute the clusters that we are interested in:
+Now that we have established the connection to Grakn engine works we can obtain the transaction object and compute the clusters that we are interested in:
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
 ```java-test-ignore
@@ -123,11 +123,11 @@ private static Map<String, Set<String>> computeClusters() {
     // initialise the connection to Grakn engine
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
-        // open a graph (database transaction)
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        // open a tx (database transaction)
+        try (GraknTx tx = session.open(GraknTxType.READ)) {
 
             // construct the analytics cluster query
-            ClusterQuery<Map<String, Set<String>>> query = graph.graql().compute().cluster().in("person", "marriage").members();
+            ClusterQuery<Map<String, Set<String>>> query = tx.graql().compute().cluster().in("person", "marriage").members();
 
             // execute the analytics query
             Map<String, Set<String>> clusters = query.execute();
@@ -138,7 +138,7 @@ private static Map<String, Set<String>> computeClusters() {
     }
 ```
 
-Here we have used the `in` syntax to specify that we want to compute the clusters while only considering instances of the types `marriage` and `person`. The graph that we are effectively working on can be seen in the image below. We can see three clusters, but there are more in the basic genealogy example. The code above will have found all of the clusters and returned a `Map` from the unique cluster label to a set containing the ids of the instances in the cluster.
+Here we have used the `in` syntax to specify that we want to compute the clusters while only considering instances of the types `marriage` and `person`. The knowledge base that we are effectively working on can be seen in the image below. We can see three clusters, but there are more in the basic genealogy example. The code above will have found all of the clusters and returned a `Map` from the unique cluster label to a set containing the ids of the instances in the cluster.
 
 If we had not used the members syntax we would only know the size of the clusters not the members.
 
@@ -147,7 +147,7 @@ If we had not used the members syntax we would only know the size of the cluster
 
 ## Persist the Cluster Information
 
-Now that we have information about the clusters, it would be useful to add it to the graph so that we can visualise it. We can do this by creating a new entity type called `cluster` and a new relationship type called `grouping` with the roles `group` and `member`. The ontology can be mutated as follows:
+Now that we have information about the clusters, it would be useful to add it to the knowledge base so that we can visualise it. We can do this by creating a new entity type called `cluster` and a new relationship type called `grouping` with the roles `group` and `member`. The schema can be mutated as follows:
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
 ```java-test-ignore
@@ -155,8 +155,8 @@ private static void mutateOntology() {
     // initialise the connection to Grakn engine
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
-        // open a graph (database transaction)
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        // open a tx (database transaction)
+        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
 
             // create set of vars representing the mutation
             Var group = Graql.var("group").label("group").sub("role");
@@ -167,19 +167,19 @@ private static void mutateOntology() {
             Var marriagePlaysRole = Graql.var("marriage").label("marriage").plays("member");
 
             // construct the insert query
-            InsertQuery query = graph.graql().insert(group, member, grouping, cluster, personPlaysRole, marriagePlaysRole);
+            InsertQuery query = tx.graql().insert(group, member, grouping, cluster, personPlaysRole, marriagePlaysRole);
 
             // execute the insert query
             query.execute();
 
             // don't forget to commit the changes
-            graph.commit();
+            tx.commit();
         }
     }
 }
 ```
 
-We also have to ensure that the existing types in the ontology can play the specified roles.
+We also have to ensure that the existing types in the schema can play the specified roles.
 
 Now all that is left is to populate the graph with the clusters and grouping relationships. To do this we can create a cluster for each result from the analytics query, which can then be attached to each of the concepts returned in the set of members:
 
@@ -193,8 +193,8 @@ private static void persistClusters(Map<String, Set<String>> results) {
         // iterate through results of cluster query
         results.forEach((clusterID, memberSet) -> {
 
-            // open a graph (database transaction)
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            // open a tx (database transaction)
+            try (GraknTx tx = session.open(GraknTxType.WRITE)) {
 
                     // collect the vars to insert
                     Set<Var> insertVars = new HashSet<>();
@@ -210,8 +210,8 @@ private static void persistClusters(Map<String, Set<String>> results) {
                     });
 
                 // execute query and commit
-                graph.graql().insert(insertVars).execute();
-                graph.commit();
+                tx.graql().insert(insertVars).execute();
+                tx.commit();
             }
         });
     }
@@ -230,7 +230,7 @@ If you explore the results you can now see the entities that are members of a gi
 
 ## Compute the degrees
 
-When using the visualiser it is probably quite useful to be able to see the size of the cluster before clicking on it. In order to add this information to the graph we will use another analytics function degree. The code to compute the degree is:
+When using the visualiser it is probably quite useful to be able to see the size of the cluster before clicking on it. In order to add this information to the knowledge base we will use another analytics function degree. The code to compute the degree is:
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
 ```java-test-ignore
@@ -238,11 +238,11 @@ private static Map<Long, Set<String>> degreeOfClusters() {
     // initialise the connection to Grakn engine
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
-        // open a graph (database transaction)
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
+        // open a tx (database transaction)
+        try (GraknTx tx = session.open(GraknTxType.READ)) {
 
             // construct the analytics cluster query
-            DegreeQuery query = graph.graql().compute().degree().in("cluster", "grouping").of("cluster");
+            DegreeQuery query = tx.graql().compute().degree().in("cluster", "grouping").of("cluster");
 
             // execute the analytics query
             Map<Long, Set<String>> degrees = query.execute();
@@ -253,12 +253,12 @@ private static Map<Long, Set<String>> degreeOfClusters() {
 }
 ```
 
-The `in` syntax has again been used here to restrict the algorithm to the graph shown below. Further, the `of` syntax has been used to compute the degree for the cluster alone. What is returned from this calculation is a `Map` from the degree which is a `long` to the ids of the instances that have that degree.
+The `in` syntax has again been used here to restrict the algorithm to the knowledge base shown below. Further, the `of` syntax has been used to compute the degree for the cluster alone. What is returned from this calculation is a `Map` from the degree which is a `long` to the ids of the instances that have that degree.
 
 
 ## Persist the Degrees
 
-As we did when computing the clusters, we need to put the information back into the graph. This time we will attach an attribute called `degree` to the cluster entity. The ontology mutation and persisting of the degrees is performed in a single method:
+As we did when computing the clusters, we need to put the information back into the knowledge base. This time we will attach an attribute called `degree` to the cluster entity. The schema mutation and persisting of the degrees is performed in a single method:
 
 
 <!-- We ignore these examples because try-with-resources isn't valid Groovy -->
@@ -267,20 +267,20 @@ private static void persistDegrees(Map<Long, Set<String>> degrees) {
     // initialise the connection to Grakn engine
     try (GraknSession session = Grakn.session(Grakn.DEFAULT_URI, "genealogy")) {
 
-        try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+        try (GraknTx tx = session.open(GraknTxType.WRITE)) {
 
-            // mutate the ontology
+            // mutate the schema
             Var degree = Graql.var().label("degree").sub("attribute").datatype(ResourceType.DataType.LONG);
             Var cluster = Graql.var().label("cluster").has("degree");
 
             // execute the query
-            graph.graql().insert(degree, cluster).execute();
+            tx.graql().insert(degree, cluster).execute();
 
             // don't forget to commit
-            graph.commit();
+            tx.commit();
             }
 
-            try (GraknTx graph = session.open(GraknTxType.WRITE)) {
+            try (GraknTx tx = session.open(GraknTxType.WRITE)) {
 
             // add the degrees to the cluster
             Set<Var> degreeMutation = new HashSet<>();
@@ -291,16 +291,16 @@ private static void persistDegrees(Map<Long, Set<String>> degrees) {
             });
 
             // execute the query
-            graph.graql().insert(degreeMutation).execute();
+            tx.graql().insert(degreeMutation).execute();
 
             // don't forget to commit
-            graph.commit();
+            tx.commit();
             }
         }
     }
 ```
 
-We used a single transaction for this because it is a small graph.
+We used a single transaction for this because it is a small knowledge base.
 
 We can now query for all the clusters in the visualiser, see their size and click on them to find the members. 
 

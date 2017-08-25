@@ -77,12 +77,6 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
     Stream<Concept> get(Var var);
 
     /**
-     * @return an ask query that will return true if any matches are found
-     */
-    @CheckReturnValue
-    AskQuery ask();
-
-    /**
      * @param vars an array of variables to insert for each result of this match query
      * @return an insert query that will insert the given variables for each result of this match query
      */
@@ -152,11 +146,11 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
     MatchQuery orderBy(Var varName, Order order);
 
     /**
-     * @param graph the graph to execute the query on
+     * @param tx the graph to execute the query on
      * @return a new MatchQuery with the graph set
      */
     @Override
-    MatchQuery withGraph(GraknTx graph);
+    MatchQuery withTx(GraknTx tx);
 
     /**
      * @param limit the maximum number of results the query should return

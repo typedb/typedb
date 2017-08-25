@@ -75,7 +75,8 @@ public class QueryParser {
             "date", AttributeType.DataType.DATE
     );
 
-    private static final Set<Integer> NEW_QUERY_TOKENS = ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT);
+    private static final Set<Integer> NEW_QUERY_TOKENS =
+            ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT, GraqlLexer.DEFINE);
 
     /**
      * Create a query parser with the specified graph
@@ -293,6 +294,7 @@ public class QueryParser {
     @SuppressWarnings("unchecked")
     private void registerDefaultAggregates() {
         registerAggregate("count", 0, args -> Graql.count());
+        registerAggregate("ask", 0, args -> Graql.ask());
         registerAggregate("sum", 1, args -> Aggregates.sum((Var) args.get(0)));
         registerAggregate("max", 1, args -> Aggregates.max((Var) args.get(0)));
         registerAggregate("min", 1, args -> Aggregates.min((Var) args.get(0)));

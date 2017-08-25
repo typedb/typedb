@@ -11,7 +11,7 @@ import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.xml.XmlMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
-import ai.grakn.util.GraphLoader;
+import ai.grakn.util.SampleKBLoader;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -35,8 +35,8 @@ public class XMLMigratorTest {
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @BeforeClass
-    public static void loadOntology(){
-        keyspace = GraphLoader.randomKeyspace();
+    public static void loadSchema(){
+        keyspace = SampleKBLoader.randomKeyspace();
         session = Grakn.session(engine.uri(), keyspace);
     }
 
@@ -100,8 +100,8 @@ public class XMLMigratorTest {
     }
 
     private static void migrateXMLWithElement(String element, String template){
-        // load the ontology
-        MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "ontology.gql"));
+        // load the schema
+        MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "schema.gql"));
 
         // load the data
         Migrator migrator = Migrator.to(engine.uri(), keyspace);

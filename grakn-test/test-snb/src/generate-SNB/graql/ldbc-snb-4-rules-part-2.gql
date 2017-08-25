@@ -1,0 +1,27 @@
+insert
+
+$rootPost isa inference-rule
+when {
+  $p isa post;
+}
+then {
+  (parent-message: $p, child-message: $p) isa original-post;
+};
+
+$childComments isa inference-rule
+when {
+  (reply: $c, original: $m) isa reply-of;
+  (child-message: $m, parent-message: $op) isa original-post;
+}
+then {
+  (child-message: $c, parent-message: $op) isa original-post;
+};
+
+$forumOfComments isa inference-rule
+when {
+  (child-message: $m, parent-message: $op) isa original-post;
+  (contained: $op, container: $forum) isa container-of;
+}
+then {
+  (member-message: $m, group-forum: $forum) isa forum-member;
+};

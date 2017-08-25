@@ -96,14 +96,6 @@ public class Fragments {
         return new OutIsaFragment(varProperty, start, end);
     }
 
-    public static Fragment inHasScope(VarProperty varProperty, Var start, Var end) {
-        return new InHasScopeFragment(varProperty, start, end);
-    }
-
-    public static Fragment outHasScope(VarProperty varProperty, Var start, Var end) {
-        return new OutHasScopeFragment(varProperty, start, end);
-    }
-
     public static Fragment dataType(VarProperty varProperty, Var start, AttributeType.DataType dataType) {
         return new DataTypeFragment(varProperty, start, dataType);
     }
@@ -231,19 +223,19 @@ public class Fragments {
         role.ifPresent(var -> {
             Var edge = Graql.var();
             traversal.as(edge.getValue());
-            Fragments.outSubs(traverseOntologyConceptFromEdge(traversal, edgeProperty));
+            Fragments.outSubs(traverseSchemaConceptFromEdge(traversal, edgeProperty));
             traversal.as(var.getValue()).select(edge.getValue());
         });
     }
 
-    static <S> GraphTraversal<S, Vertex> traverseOntologyConceptFromEdge(
+    static <S> GraphTraversal<S, Vertex> traverseSchemaConceptFromEdge(
             GraphTraversal<S, Edge> traversal, Schema.EdgeProperty edgeProperty) {
 
         // Access label ID from edge
         Var labelId = Graql.var();
         traversal.values(edgeProperty.name()).as(labelId.getValue());
 
-        // Look up ontology concept using ID
+        // Look up schema concept using ID
         return traversal.V().has(LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
     }
 

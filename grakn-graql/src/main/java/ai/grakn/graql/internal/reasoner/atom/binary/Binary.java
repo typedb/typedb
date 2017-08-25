@@ -44,7 +44,7 @@ import java.util.Set;
 /**
  *
  * <p>
- * Implementation for binary atoms with single id predicate for an ontology concept. Binary atoms take the form:
+ * Implementation for binary atoms with single id predicate for a schema concept. Binary atoms take the form:
  *
  * <>($varName, $predicateVariable), type($predicateVariable)
  *
@@ -79,9 +79,9 @@ public abstract class Binary extends Atom {
 
     @Nullable
     @Override
-    public SchemaConcept getOntologyConcept(){
+    public SchemaConcept getSchemaConcept(){
         if (type == null && typeId != null) {
-            type = getParentQuery().graph().getConcept(typeId).asType();
+            type = getParentQuery().tx().getConcept(typeId).asType();
         }
         return type;
     }

@@ -21,7 +21,7 @@ This example takes a very simple example from [TinkerPop3 Documentation](http://
 
 The image above is used from the documentation provided for TinkerPop3, and licensed by the [Apache Software Foundation](http://www.apache.org). 
 
-We have chosen this example as it may already be familiar, and is simple enough to demonstrate some of the fundamentals of Graql. We walk through the entities ("things") and relationships between them and show how to represent them using Graql to define a schema. We then use Graql to add the data to the knowledge base.  The main purpose of this example, however, is to use it for practice at making sample queries on the graph. 
+We have chosen this example as it may already be familiar, and is simple enough to demonstrate some of the fundamentals of Graql. We walk through the entities ("things") and relationships between them and show how to represent them using Graql to define a schema. We then use Graql to add the data to the knowledge base.  The main purpose of this example, however, is to use it for practice at making sample queries on the knowledge base. 
 
 ### Starting Graql
 
@@ -50,8 +50,8 @@ The relationships between the entities are straightforward:
 Here, we add person and software entities, via the Graql shell:
 
 ```graql
-insert person sub entity;
-insert software sub entity;
+define person sub entity;
+define software sub entity;
 ```
 
 
@@ -60,14 +60,14 @@ insert software sub entity;
 To assign resources to the entities, which you can think of as attributes, we use resources. First, we define what they are (age is a number, programming language is a string that represents the language's name), then we allocate them to the entity in question:
 
 ```graql
-insert age sub attribute datatype long;
-insert name sub attribute datatype string;
-insert person has age, has name;
+define age sub attribute datatype long;
+define name sub attribute datatype string;
+define person has age, has name;
 
-insert lang sub attribute datatype string;
-insert software has lang has name;
+define lang sub attribute datatype string;
+define software has lang has name;
 
-insert weight sub attribute datatype double;
+define weight sub attribute datatype double;
 ```
 
 ### Relations
@@ -75,11 +75,11 @@ insert weight sub attribute datatype double;
 Let's first define the relationship between people. The diagram shows that marko knows vadas, but we don't have any information about whether the inverse is true (though it seems likely that vadas probably also knows marko). Let's set up a relationship called `knows`, which has two roles - `knower` (for marko) and `known-about` (for vadas):
 
 ```graql
-insert knower sub role;
-insert known-about sub role;
-insert person plays knower;
-insert person plays known-about;
-insert knows sub relationship, relates knower, relates known-about, has weight;
+define knower sub role;
+define known-about sub role;
+define person plays knower;
+define person plays known-about;
+define knows sub relationship, relates knower, relates known-about, has weight;
 ```
 
 Note that the  `knows` relationship also has an attribute, in the form of an attribute called `weight` (though it's not clear from the TinkerPop example what this represents).
@@ -87,13 +87,13 @@ Note that the  `knows` relationship also has an attribute, in the form of an att
 We can set up a similar relationship between software and the people that created it:
 
 ```graql
-insert programmer sub role;
-insert programmed sub role;
+define programmer sub role;
+define programmed sub role;
 
-insert person plays programmer;
-insert software plays programmed;
+define person plays programmer;
+define software plays programmed;
 
-insert programming sub relationship, relates programmer, relates programmed, has weight;
+define programming sub relationship, relates programmer, relates programmed, has weight;
 ```
 
 And that's it. At this point, we have defined the schema of the knowledge base.
@@ -126,7 +126,7 @@ match $josh has name "josh"; $ripple has name "ripple"; insert (programmer: $jos
 
 This example is designed to get you up close and personal with Graql queries. It will run through a few basic examples, then ask you a set of "Test Yourself" questions. 
 
-OK, so if you've followed the above, you should now have a schema and some data in a knowledge base. How do you go about using the graph to answer your queries? That's where the `match` statement comes in. 
+OK, so if you've followed the above, you should now have a schema and some data in a knowledge base. How do you go about using the knowledge base to answer your queries? That's where the `match` statement comes in. 
 
 As with any query language, you use a variable to receive the results of the match query, which you must prefix with a `$`. So, to make the query "List every person in the knowledge base", you would use the following in Graql:
 

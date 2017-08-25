@@ -36,7 +36,7 @@ import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import com.theoryinpractise.halbuilder.api.Representation;
-import javafx.util.Pair;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -207,7 +207,7 @@ public class HALUtils {
         // Overrides the varNames that have roles in the previous map
         reasonerRel.getRoleVarMap().entries().stream().filter(entry -> !Schema.MetaSchema.isMetaLabel(entry.getKey().getLabel())).forEach(entry -> varNamesToRole.put(entry.getValue(), entry.getKey().getLabel().getValue()));
 
-        String relationType = (reasonerRel.getOntologyConcept() != null) ? reasonerRel.getOntologyConcept().getLabel().getValue() : "";
+        String relationType = (reasonerRel.getSchemaConcept() != null) ? reasonerRel.getSchemaConcept().getLabel().getValue() : "";
         return new Pair<>(varNamesToRole, relationType);
     }
 

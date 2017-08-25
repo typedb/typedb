@@ -35,7 +35,7 @@ import java.util.Map;
 
 /**
  <p>
- Grakn is the main entry point to connect to a Grakn Knowledge Graph.
+ Grakn is the main entry point to connect to a Grakn Knowledge Base.
 
  To connect to a knowledge graph, first make sure you have a Grakn Engine server running by starting it from the shell using:
  <pre>{@code grakn.sh start}</pre>
@@ -87,7 +87,7 @@ public class Grakn {
      */
     public static final String DEFAULT_URI = "localhost:4567";
 
-    private static final String GRAKN_GRAPH_SESSION_IMPLEMENTATION = "ai.grakn.factory.GraknSessionImpl";
+    private static final String GRAKN_SESSION_IMPLEMENTATION = "ai.grakn.factory.GraknSessionImpl";
 
     /**
      * Constant to be passed to {@link #session(String, String)} to specify an in-memory graph.
@@ -129,6 +129,6 @@ public class Grakn {
     public static GraknSession session(String location, String keyspace) {
         String finalKeyspace = keyspace.toLowerCase(Locale.getDefault());
         String key = location + finalKeyspace;
-        return clients.computeIfAbsent(key, (k) -> loadImplementation(GRAKN_GRAPH_SESSION_IMPLEMENTATION, location, finalKeyspace));
+        return clients.computeIfAbsent(key, (k) -> loadImplementation(GRAKN_SESSION_IMPLEMENTATION, location, finalKeyspace));
     }
 }

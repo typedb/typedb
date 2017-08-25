@@ -28,7 +28,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
@@ -71,7 +71,7 @@ public class AnalyticsTest {
 
     @Ignore // No longer applicable
     @Test
-    public void testInferredResourceRelation() throws InvalidGraphException {
+    public void testInferredResourceRelation() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             Label resourceLabel = Label.of("degree");
             AttributeType<Long> degree = graph.putAttributeType(resourceLabel, AttributeType.DataType.LONG);
@@ -97,7 +97,7 @@ public class AnalyticsTest {
     }
 
     @Test
-    public void testNullResourceDoesntBreakAnalytics() throws InvalidGraphException {
+    public void testNullResourceDoesntBreakAnalytics() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             // make slightly odd graph
             Label resourceTypeId = Label.of("degree");
@@ -131,7 +131,7 @@ public class AnalyticsTest {
         // TODO: move parallel tests to integration tests
         assumeFalse(GraknTestSetup.usingTinker());
 
-        addOntologyAndEntities();
+        addSchemaAndEntities();
 
         List<String> queryList = new ArrayList<>();
         queryList.add("compute count;");
@@ -147,7 +147,7 @@ public class AnalyticsTest {
         assertEquals(queryList.size(), result.size());
     }
 
-    private void addOntologyAndEntities() throws InvalidGraphException {
+    private void addSchemaAndEntities() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);

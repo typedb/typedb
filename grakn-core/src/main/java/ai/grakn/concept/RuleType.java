@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.graph.admin.GraknAdmin;
+import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.graql.Pattern;
 
 import javax.annotation.CheckReturnValue;
@@ -56,24 +56,6 @@ public interface RuleType extends Type {
      * @return a new Rule
      */
     Rule putRule(Pattern when, Pattern then);
-
-    /**
-     * Classifies the type to a specific scope. This allows you to optionally categorise types.
-     *
-     * @param scope The category of this Type
-     * @return The Type itself.
-     */
-    @Override
-    RuleType scope(Thing scope);
-
-    /**
-     * Delete the scope specified.
-     *
-     * @param scope The Instances that is currently scoping this Type.
-     * @return The Type itself
-     */
-    @Override
-    RuleType deleteScope(Thing scope);
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.

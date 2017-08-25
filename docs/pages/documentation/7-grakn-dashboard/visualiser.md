@@ -20,7 +20,7 @@ If you have not yet set up the Grakn environment, please see the [Setup guide](.
 
 You can find the *basic-genealogy.gql* example that we will work with in the *examples* directory of the Grakn distribution zip. You can also find this file on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql). 
 
-The first step is to load the ontology and data into Grakn. You need to use your terminal to do this, as the visualiser is a read-only interface to a knowledge base. From the terminal, start Grakn, and load the file as follows:
+The first step is to load the schema and data into Grakn. You need to use your terminal to do this, as the visualiser is a read-only interface to a knowledge base. From the terminal, start Grakn, and load the file as follows:
 
 ```bash
 <relative-path-to-Grakn>/bin/grakn.sh start
@@ -50,7 +50,7 @@ Go to the keyspace selector at the top right and select the appropriate keyspace
 
 ### Make a Query
 
-The main pane of your knowledge base will be empty at this point. You can submit queries by typing them into the form in the middle of the top menu bar. You will then need to click '>' (or *Enter*) to visualise the graph. For example:
+The main pane of your knowledge base will be empty at this point. You can submit queries by typing them into the form in the middle of the top menu bar. You will then need to click '>' (or *Enter*) to visualise the knowledge base. For example:
 
 
 ```graql
@@ -61,7 +61,7 @@ match $x isa person, has firstname "John";
 
 You can zoom the display in and out, and move the nodes around for better visibility. 
 
-Alternatively, for simple visualisation, you can click the Types dropdown in the top menu to list out what is in the ontology. For our example, go to the Entities dropdown and choose `person`. The query specific to your selection will be displayed in the form with a default offset and result limit, which is applied by the visualiser (`offset 0; limit 30`). 
+Alternatively, for simple visualisation, you can click the Types dropdown in the top menu to list out what is in the schema. For our example, go to the Entities dropdown and choose `person`. The query specific to your selection will be displayed in the form with a default offset and result limit, which is applied by the visualiser (`offset 0; limit 30`). 
 
 ```graql
 match $x isa person; offset 0; limit 30;
@@ -128,7 +128,7 @@ If you want to tidy your nodes by aligning them all horizontally or vertically, 
 There are 3 inference settings that can be changed.
 
 * Activate inference - activates inference, per query. It is off by default, but turn this on when you need to run queries that use inference.
-* Materialise inference - persists the inference into the knowledge base, per query. This is off by default, but should be turned on when running a query when you want to add the results of inference back into the graph.
+* Materialise inference - persists the inference into the knowledge base, per query. This is off by default, but should be turned on when running a query when you want to add the results of inference back into the knowledge base.
 * Materialise All: Off by default. Activates and persists all inference across the knowledge base.
 
 #### Query Limit   

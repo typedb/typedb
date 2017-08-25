@@ -1,8 +1,8 @@
-insert
+define
 
 
 ###################################################
-####################Ontology######################
+####################Schema######################
 #################################################
 
 "Person" sub entity
@@ -19,6 +19,8 @@ Person plays parent, plays child;
 Person plays ancestor, plays descendant;
 
 "name" sub attribute, datatype string;
+
+insert
 
 ####################################################
 ##################DATA#############################

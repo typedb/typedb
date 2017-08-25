@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
@@ -52,7 +52,7 @@ public interface RelationshipType extends Type {
      *
      * @return a new empty relation.
      *
-     * @throws GraphOperationException if this is a meta type
+     * @throws GraknTxOperationException if this is a meta type
      */
     Relationship addRelationship();
 
@@ -71,24 +71,6 @@ public interface RelationshipType extends Type {
      * @return The {@link RelationshipType} itself
      */
     RelationshipType sub(RelationshipType type);
-
-    /**
-     * Classifies the type to a specific scope. This allows you to optionally categorise types.
-     *
-     * @param scope The category of this Type
-     * @return The Type itself.
-     */
-    @Override
-    RelationshipType scope(Thing scope);
-
-    /**
-     * Delete the scope specified.
-     *
-     * @param scope The Instances that is currently scoping this Type.
-     * @return The Type itself
-     */
-    @Override
-    RelationshipType deleteScope(Thing scope);
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.

@@ -4,6 +4,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -13,9 +14,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlTestUtil.assertExists;
 import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class PhilosophersExampleIT {
 
@@ -23,15 +24,15 @@ public class PhilosophersExampleIT {
 
     @BeforeClass
     public static void setUp() throws IOException {
-        GraknTx graph = Grakn.session("in-memory", "my-graph").open(GraknTxType.WRITE);
-        qb = graph.graql();
-        runInsertQuery("src/examples/philosophers.gql");
+        GraknTx tx = Grakn.session("in-memory", "my-graph").open(GraknTxType.WRITE);
+        qb = tx.graql();
+        runQueries("src/examples/philosophers.gql");
     }
 
 
     @Test
     public void testAlexanderHasShahOfPersiaTitle() {
-        assertTrue(qb.match(var().has("name", "Alexander").has("title", "Shah of Persia")).ask().execute());
+        assertExists(qb, var().has("name", "Alexander").has("title", "Shah of Persia"));
 
     }
 
@@ -41,7 +42,7 @@ public class PhilosophersExampleIT {
     }
 
     @Test
-    public void testCynicismIsInTheGraph() {
+    public void testCynicismIsInTheKB() {
         assertEquals(1, qb.<MatchQuery>parse("match $x has name 'Cynicism';").stream().count());
     }
 
@@ -67,9 +68,9 @@ public class PhilosophersExampleIT {
         );
     }
 
-    private static void runInsertQuery(String path) throws IOException {
+    private static void runQueries(String path) throws IOException {
         String query = Files.readAllLines(Paths.get(path)).stream().collect(joining("\n"));
-        qb.parse(query).execute();
+        qb.parseList(query).forEach(Query::execute);
     }
 
 }

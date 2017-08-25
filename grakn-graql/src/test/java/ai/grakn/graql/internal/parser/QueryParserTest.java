@@ -24,7 +24,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -57,8 +57,10 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.count;
+import static ai.grakn.graql.Graql.define;
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.group;
 import static ai.grakn.graql.Graql.gt;
@@ -271,7 +273,7 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testOntologyQuery() {
+    public void testSchemaQuery() {
         MatchQuery expected = match(var("x").plays("actor")).orderBy("x");
         MatchQuery parsed = parse("match $x plays actor; order by $x asc;");
         assertEquals(expected, parsed);
@@ -324,16 +326,16 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testPositiveAskQuery() {
-        AskQuery expected = match(var("x").isa("movie").has("title", "Godfather")).ask();
-        AskQuery parsed = parse("match $x isa movie has title 'Godfather'; ask;");
+    public void whenComparingPositiveAskQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
+        AggregateQuery<Boolean> expected = match(var("x").isa("movie").has("title", "Godfather")).aggregate(ask());
+        AggregateQuery<Boolean> parsed = parse("match $x isa movie has title 'Godfather'; aggregate ask;");
         assertEquals(expected, parsed);
     }
 
     @Test
-    public void testNegativeAskQuery() {
-        AskQuery expected = match(var("x").isa("movie").has("title", "Dogfather")).ask();
-        AskQuery parsed = parse("match $x isa movie has title 'Dogfather'; ask;");
+    public void whenComparingNegativeAskQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
+        AggregateQuery<Boolean> expected = match(var("x").isa("movie").has("title", "Dogfather")).aggregate(ask());
+        AggregateQuery<Boolean> parsed = parse("match $x isa movie has title 'Dogfather'; aggregate ask;");
         assertEquals(expected, parsed);
     }
 
@@ -352,14 +354,8 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testInsertOntologyQuery() {
+    public void whenParsingInsertQuery_ResultIsSameAsJavaGraql() {
         InsertQuery expected = insert(
-                label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
-                label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolution").relates("evolves-from").relates("evolves-to"),
-                label("pokemon").plays("evolves-from").plays("evolves-to").has("name"),
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),
                 var("z").has("name", "Raichu").isa("pokemon"),
@@ -368,17 +364,34 @@ public class QueryParserTest {
         );
 
         InsertQuery parsed = parse("insert " +
-                "'pokemon' sub entity;" +
-                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
-                "evolves-from sub role;" +
-                "label \"evolves-to\" sub role;" +
-                "evolution relates evolves-from, relates evolves-to;" +
-                "pokemon plays evolves-from plays evolves-to has name;" +
                 "$x has name 'Pichu' isa pokemon;" +
                 "$y has name 'Pikachu' isa pokemon;" +
                 "$z has name 'Raichu' isa pokemon;" +
                 "(evolves-from: $x ,evolves-to: $y) isa evolution;" +
                 "(evolves-from: $y, evolves-to: $z) isa evolution;"
+        );
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void whenParsingDefineQuery_ResultIsSameAsJavaGraql() {
+        DefineQuery expected = define(
+                label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
+                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
+                label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                label("evolution").relates("evolves-from").relates("evolves-to"),
+                label("pokemon").plays("evolves-from").plays("evolves-to").has("name")
+        );
+
+        DefineQuery parsed = parse("define " +
+                "'pokemon' sub entity;" +
+                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
+                "evolves-from sub role;" +
+                "label \"evolves-to\" sub role;" +
+                "evolution relates evolves-from, relates evolves-to;" +
+                "pokemon plays evolves-from plays evolves-to has name;"
         );
 
         assertEquals(expected, parsed);
@@ -439,10 +452,10 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testComments() {
-        AskQuery expected = match(var("x").isa("movie")).ask();
-        AskQuery parsed = parse(
-                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; ask;"
+    public void whenParsingQueryWithComments_TheyAreIgnored() {
+        AggregateQuery<Boolean> expected = match(var("x").isa("movie")).aggregate(ask());
+        AggregateQuery<Boolean> parsed = parse(
+                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; aggregate ask;"
         );
         assertEquals(expected, parsed);
     }
@@ -658,11 +671,6 @@ public class QueryParserTest {
         DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
 
         Assert.assertEquals(AttributeType.DataType.BOOLEAN, property.dataType());
-    }
-
-    @Test
-    public void testParseHasScope() {
-        assertEquals("match $x has-scope $y;", parse("match $x has-scope $y;").toString());
     }
 
     @Test

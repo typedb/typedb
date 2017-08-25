@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
@@ -46,9 +47,10 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 import ai.grakn.graql.internal.reasoner.state.AtomicState;
+import ai.grakn.graql.internal.reasoner.state.NeqComplementState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
 import com.google.common.collect.Sets;
-import javafx.util.Pair;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -217,7 +219,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * execute insert on the query and return inserted answers
      */
     private Stream<Answer> insert() {
-        return Graql.insert(getPattern().varPatterns()).withGraph(graph()).stream();
+        return Graql.insert(getPattern().varPatterns()).withTx(tx()).stream();
     }
 
     public Stream<Answer> materialise(Answer answer) {
@@ -345,7 +347,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return new AtomicState(this, sub, u, parent, subGoals, cache);
+        return getAtoms(NeqPredicate.class).findFirst().isPresent()?
+                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
+                new AtomicState(this, sub, u, parent, subGoals, cache);
     }
 
     /**
@@ -354,7 +358,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(Answer sub){
         Atom atom = getAtom();
-        if (atom.isRelation() && atom.getOntologyConcept() == null){
+        if (atom.isRelation() && atom.getSchemaConcept() == null){
             List<RelationshipType> relationshipTypes = ((RelationAtom) atom).inferPossibleRelationTypes(sub);
             LOG.trace("AQ: " + this + ": inferred rel types for: " + relationshipTypes.stream().map(Type::getLabel).collect(Collectors.toList()));
             return relationshipTypes.stream()

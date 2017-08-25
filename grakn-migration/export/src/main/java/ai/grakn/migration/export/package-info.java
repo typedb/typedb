@@ -17,7 +17,7 @@
  */
 
 /**
- *  Implements export of data and ontology from a Grakn graph into Graql statements.
+ *  Implements export of data and schema from a Grakn graph into Graql statements.
  */
 
 package ai.grakn.migration.export;

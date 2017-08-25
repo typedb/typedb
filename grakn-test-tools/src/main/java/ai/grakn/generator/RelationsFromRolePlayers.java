@@ -35,23 +35,23 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public class RelationsFromRolePlayers extends FromGraphGenerator<Relationship> {
+public class RelationsFromRolePlayers extends FromTxGenerator<Relationship> {
 
     public RelationsFromRolePlayers() {
         super(Relationship.class);
     }
 
     @Override
-    protected Relationship generateFromGraph() {
-        Stream<? extends Thing> things = ((Type) graph().admin().getMetaConcept()).instances();
+    protected Relationship generateFromTx() {
+        Stream<? extends Thing> things = ((Type) tx().admin().getMetaConcept()).instances();
 
-        Optional<Relationship> relation = things.flatMap(thing -> thing.relations()).findAny();
+        Optional<Relationship> relation = things.flatMap(thing -> thing.relationships()).findAny();
 
         if (relation.isPresent()) {
             return relation.get();
         } else {
             // Give up and fall back to normal generator
-            return genFromGraph(Relations.class).generate(random, status);
+            return genFromTx(Relations.class).generate(random, status);
         }
     }
 }

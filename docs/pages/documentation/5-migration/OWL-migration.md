@@ -70,7 +70,7 @@ Consider the following OWL ontology:
 <\rdf:RDF>
 ```
 
-The ontology defines a single class (type) `Person` as well as two instances of the class - individuals `Witold` and `Stefan`. The ontology defines properties `hasAncestor` and its inverse `isAncestorOf` as well as `hasParent` and `isParentOf` properties. The `hasAncestor` property is defined as transitive and additionally defines a property chain which corresponds to the rule:
+The schema defines a single class (type) `Person` as well as two instances of the class - individuals `Witold` and `Stefan`. The schema defines properties `hasAncestor` and its inverse `isAncestorOf` as well as `hasParent` and `isParentOf` properties. The `hasAncestor` property is defined as transitive and additionally defines a property chain which corresponds to the rule:
 
 ```
 hasAncestor(X, Y) :- hasParent(X, Z), hasAncestor(Z, Y);
@@ -79,11 +79,8 @@ hasAncestor(X, Y) :- hasParent(X, Z), hasAncestor(Z, Y);
 Upon migration, the OWL ontology will be mapped to Grakn. The resulting Graql statement, if printed out, looks as follows:
 
 ```graql
-insert
-
+define
 "tPerson" sub entity;
-$eWitold isa tPerson;
-$eStefan isa tPerson;
 
 "owl-subject-op-isAncestorOf" sub role;
 "owl-object-op-isAncestorOf" sub role;
@@ -105,6 +102,9 @@ tPerson plays owl-subject-op-isParentOf, plays owl-object-op-isParentOf;
 "op-hasParent" sub relationship, relates owl-subject-op-hasParent, relates owl-object-op-hasParent;
 tPerson plays owl-subject-op-hasParent, plays owl-object-op-hasParent;
 
+insert
+$eWitold isa tPerson;
+$eStefan isa tPerson;
 (owl-subject-op-isParentOf: $eStefan, owl-object-op-isParentOf: $eWitold) isa op-isParentOf;
 
 $inv-op-hasAncestor isa inference-rule,

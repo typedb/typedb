@@ -18,7 +18,7 @@
 
 package ai.grakn.test.migration.owl;
 
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -40,10 +40,10 @@ public class TestSubProperties extends TestOwlGraknBase {
 
 	@Ignore //TODO: Fix this test. Not sure why it is not working remotely
 	@Before
-	public void loadShakespeare() throws InvalidGraphException {
+	public void loadShakespeare() throws InvalidKBException {
         shakespeare = loadOntologyFromResource("owl", "shakespeare.owl");
-        migrator.ontology(shakespeare).graph(graph).migrate();
-        migrator.graph().commit();
+        migrator.ontology(shakespeare).tx(tx).migrate();
+        migrator.tx().commit();
 	}
 
     @Ignore //TODO: Fix this test. Not sure why it is not working remotely
@@ -54,7 +54,7 @@ public class TestSubProperties extends TestOwlGraknBase {
     	Map<OWLNamedIndividual, Set<OWLNamedIndividual>> createdInstances = 
     			reasoner.getObjectPropertyInstances(manager.getOWLDataFactory().getOWLObjectProperty(createdProp));
     	int owlCount = createdInstances.values().stream().mapToInt(Set::size).sum();
-        int mmCount = migrator.graph().graql().infer(false).match(var("r").isa(migrator.namer().objectPropertyName(createdProp)))
+        int mmCount = migrator.tx().graql().infer(false).match(var("r").isa(migrator.namer().objectPropertyName(createdProp)))
     		.stream().mapToInt(M -> 1).sum();
     	Assert.assertEquals(owlCount, mmCount);
     }

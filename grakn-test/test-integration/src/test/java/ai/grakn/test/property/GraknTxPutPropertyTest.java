@@ -27,10 +27,10 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.generator.FromGraphGenerator.FromGraph;
-import ai.grakn.generator.GraknGraphs.Open;
+import ai.grakn.generator.FromTxGenerator.FromTx;
+import ai.grakn.generator.GraknTxs.Open;
 import ai.grakn.generator.Labels.Unused;
 import ai.grakn.generator.PutSchemaConceptFunctions;
 import ai.grakn.generator.PutTypeFunctions;
@@ -65,20 +65,20 @@ public class GraknTxPutPropertyTest {
     public ExpectedException exception = ExpectedException.none();
 
     @Property
-    public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyConceptWithTheGivenLabel(
+    public void whenCallingAnyPutSchemaConceptMethod_CreateAnOntologyConceptWithTheGivenLabel(
             @Open GraknTx graph, @Unused Label label,
-            @From(PutSchemaConceptFunctions.class) BiFunction<GraknTx, Label, SchemaConcept> putOntologyConcept
+            @From(PutSchemaConceptFunctions.class) BiFunction<GraknTx, Label, SchemaConcept> putSchemaConcept
     ) {
-        SchemaConcept type = putOntologyConcept.apply(graph, label);
+        SchemaConcept type = putSchemaConcept.apply(graph, label);
         assertEquals(label, type.getLabel());
     }
 
     @Property
-    public void whenCallingAnyPutOntologyConceptMethod_CreateAnOntologyConceptWithDefaultProperties(
+    public void whenCallingAnyPutSchemaConceptMethod_CreateAnOntologyConceptWithDefaultProperties(
             @Open GraknTx graph, @Unused Label label,
-            @From(PutSchemaConceptFunctions.class) BiFunction<GraknTx, Label, SchemaConcept> putOntologyConcept
+            @From(PutSchemaConceptFunctions.class) BiFunction<GraknTx, Label, SchemaConcept> putSchemaConcept
     ) {
-        SchemaConcept concept = putOntologyConcept.apply(graph, label);
+        SchemaConcept concept = putSchemaConcept.apply(graph, label);
 
         assertThat("Concept should only have one sub-type: itself", concept.subs().collect(toSet()), contains(concept));
         assertFalse("Concept should not be implicit", concept.isImplicit());
@@ -94,7 +94,6 @@ public class GraknTxPutPropertyTest {
         Type type = putType.apply(graph, label);
 
         assertThat("Type should not play any roles", type.plays().collect(toSet()), empty());
-        assertThat("Type should not have any scopes", type.scopes().collect(toSet()), empty());
         assertFalse("Type should not be abstract", type.isAbstract());
     }
 
@@ -107,17 +106,17 @@ public class GraknTxPutPropertyTest {
 
     @Property
     public void whenCallingPutEntityTypeWithAnExistingEntityTypeLabel_ItReturnsThatType(
-            @Open GraknTx graph, @FromGraph EntityType entityType) {
+            @Open GraknTx graph, @FromTx EntityType entityType) {
         EntityType newType = graph.putEntityType(entityType.getLabel());
         assertEquals(entityType, newType);
     }
 
     @Property
     public void whenCallingPutEntityTypeWithAnExistingNonEntityTypeLabel_Throw(
-            @Open GraknTx graph, @FromGraph Type type) {
+            @Open GraknTx graph, @FromTx Type type) {
         assumeFalse(type.isEntityType());
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
@@ -144,7 +143,7 @@ public class GraknTxPutPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeWithThePropertiesOfAnExistingResourceType_ItReturnsThatType(
-            @Open GraknTx graph, @FromGraph AttributeType<?> attributeType) {
+            @Open GraknTx graph, @FromTx AttributeType<?> attributeType) {
         assumeFalse(attributeType.equals(graph.admin().getMetaResourceType()));
 
         Label label = attributeType.getLabel();
@@ -157,10 +156,10 @@ public class GraknTxPutPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeWithAnExistingNonResourceTypeLabel_Throw(
-            @Open GraknTx graph, @FromGraph Type type, AttributeType.DataType<?> dataType) {
+            @Open GraknTx graph, @FromTx Type type, AttributeType.DataType<?> dataType) {
         assumeFalse(type.isAttributeType());
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
@@ -171,16 +170,16 @@ public class GraknTxPutPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeWithAnExistingNonUniqueResourceTypeLabelButADifferentDataType_Throw(
-            @Open GraknTx graph, @FromGraph AttributeType<?> attributeType,
+            @Open GraknTx graph, @FromTx AttributeType<?> attributeType,
             AttributeType.DataType<?> dataType) {
         assumeThat(dataType, not(is(attributeType.getDataType())));
         Label label = attributeType.getLabel();
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         if(isMetaLabel(label)) {
-            exception.expectMessage(GraphOperationException.metaTypeImmutable(label).getMessage());
+            exception.expectMessage(GraknTxOperationException.metaTypeImmutable(label).getMessage());
         } else {
-            exception.expectMessage(GraphOperationException.immutableProperty(attributeType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE).getMessage());
+            exception.expectMessage(GraknTxOperationException.immutableProperty(attributeType.getDataType(), dataType, Schema.VertexProperty.DATA_TYPE).getMessage());
         }
 
         graph.putAttributeType(label, dataType);
@@ -194,17 +193,17 @@ public class GraknTxPutPropertyTest {
 
     @Property
     public void whenCallingPutRuleTypeWithAnExistingRuleTypeLabel_ItReturnsThatType(
-            @Open GraknTx graph, @FromGraph RuleType ruleType) {
+            @Open GraknTx graph, @FromTx RuleType ruleType) {
         RuleType newType = graph.putRuleType(ruleType.getLabel());
         assertEquals(ruleType, newType);
     }
 
     @Property
     public void whenCallingPutRuleTypeWithAnExistingNonRuleTypeLabel_Throw(
-            @Open GraknTx graph, @FromGraph Type type) {
+            @Open GraknTx graph, @FromTx Type type) {
         assumeFalse(type.isRuleType());
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
@@ -230,17 +229,17 @@ public class GraknTxPutPropertyTest {
 
     @Property
     public void whenCallingPutRelationTypeWithAnExistingRelationTypeLabel_ItReturnsThatType(
-            @Open GraknTx graph, @FromGraph RelationshipType relationshipType) {
+            @Open GraknTx graph, @FromTx RelationshipType relationshipType) {
         RelationshipType newType = graph.putRelationshipType(relationshipType.getLabel());
         assertEquals(relationshipType, newType);
     }
 
     @Property
     public void whenCallingPutRelationTypeWithAnExistingNonRelationTypeLabel_Throw(
-            @Open GraknTx graph, @FromGraph Type type) {
+            @Open GraknTx graph, @FromTx Type type) {
         assumeFalse(type.isRelationshipType());
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {
@@ -266,15 +265,15 @@ public class GraknTxPutPropertyTest {
 
     @Property
     public void whenCallingPutRoleWithAnExistingRoleLabel_ItReturnsThatRole(
-            @Open GraknTx graph, @FromGraph Role role) {
+            @Open GraknTx graph, @FromTx Role role) {
         Role newType = graph.putRole(role.getLabel());
         assertEquals(role, newType);
     }
 
     @Property
     public void whenCallingPutRoleWithAnExistingTypeLabel_Throw(
-            @Open GraknTx graph, @FromGraph Type type) {
-        exception.expect(GraphOperationException.class);
+            @Open GraknTx graph, @FromTx Type type) {
+        exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){
             exception.expectMessage(ErrorMessage.RESERVED_WORD.getMessage(type.getLabel().getValue()));
         } else {

@@ -47,7 +47,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import javafx.util.Pair;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -216,12 +215,12 @@ public class ReasonerUtils {
     }
 
     /**
-     * @param ontologyConcepts entry set
+     * @param schemaConcepts entry set
      * @return top non-meta {@link SchemaConcept} from within the provided set of {@link Role}
      */
-    public static <T extends SchemaConcept> Set<T> getOntologyConcepts(Set<T> ontologyConcepts) {
-        return ontologyConcepts.stream()
-                .filter(rt -> Sets.intersection(getSupers(rt), ontologyConcepts).isEmpty())
+    public static <T extends SchemaConcept> Set<T> getSchemaConcepts(Set<T> schemaConcepts) {
+        return schemaConcepts.stream()
+                .filter(rt -> Sets.intersection(getSupers(rt), schemaConcepts).isEmpty())
                 .collect(toSet());
     }
 

@@ -45,7 +45,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Felix Chapman
  */
-public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> extends FromGraphGenerator<T> {
+public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> extends FromTxGenerator<T> {
 
     private Optional<Boolean> meta = Optional.empty();
 
@@ -54,33 +54,33 @@ public abstract class AbstractSchemaConceptGenerator<T extends SchemaConcept> ex
     }
 
     @Override
-    protected final T generateFromGraph() {
-        Collection<T> ontologyConcepts;
+    protected final T generateFromTx() {
+        Collection<T> schemaConcepts;
 
         if (!includeNonMeta()) {
-            ontologyConcepts = Sets.newHashSet(otherMetaSchemaConcepts());
-            ontologyConcepts.add(metaSchemaConcept());
+            schemaConcepts = Sets.newHashSet(otherMetaSchemaConcepts());
+            schemaConcepts.add(metaSchemaConcept());
         } else {
-            ontologyConcepts = (Collection<T>) metaSchemaConcept().subs().collect(toSet());
+            schemaConcepts = (Collection<T>) metaSchemaConcept().subs().collect(toSet());
         }
 
-        ontologyConcepts = ontologyConcepts.stream().filter(this::filter).collect(toSet());
+        schemaConcepts = schemaConcepts.stream().filter(this::filter).collect(toSet());
 
         if (!includeMeta()) {
-            ontologyConcepts.remove(metaSchemaConcept());
-            ontologyConcepts.removeAll(otherMetaSchemaConcepts());
+            schemaConcepts.remove(metaSchemaConcept());
+            schemaConcepts.removeAll(otherMetaSchemaConcepts());
         }
 
-        if (ontologyConcepts.isEmpty() && includeNonMeta()) {
-            Label label = genFromGraph(Labels.class).mustBeUnused().generate(random, status);
-            assert graph().getSchemaConcept(label) == null;
-            return newOntologyConcept(label);
+        if (schemaConcepts.isEmpty() && includeNonMeta()) {
+            Label label = genFromTx(Labels.class).mustBeUnused().generate(random, status);
+            assert tx().getSchemaConcept(label) == null;
+            return newSchemaConcept(label);
         } else {
-            return random.choose(ontologyConcepts);
+            return random.choose(schemaConcepts);
         }
     }
 
-    protected abstract T newOntologyConcept(Label label);
+    protected abstract T newSchemaConcept(Label label);
 
     protected abstract T metaSchemaConcept();
 

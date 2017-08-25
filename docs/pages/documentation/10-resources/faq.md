@@ -14,11 +14,11 @@ comment_issue_id: 25
 
 ## About GRAKN.AI
 
-### Why did you develop a new ontology and query language? 
+### Why did you develop a new query language? 
 
-We are often asked why we have developed a new ontology and query language rather than use existing standards like [RDF](https://en.wikipedia.org/wiki/Resource_Description_Framework), [OWL](https://en.wikipedia.org/wiki/Web_Ontology_Language) and [SPARQL](https://en.wikipedia.org/wiki/SPARQL). 
+We are often asked why we have developed a new schema and query language rather than use existing standards like [RDF](https://en.wikipedia.org/wiki/Resource_Description_Framework), [OWL](https://en.wikipedia.org/wiki/Web_Ontology_Language) and [SPARQL](https://en.wikipedia.org/wiki/SPARQL). 
 
-We have written a [substantial explanation](https://blog.grakn.ai/knowledge-graph-representation-grakn-ai-or-owl-506065bd3f24#.5zjvkta9u) to this question on our blog. In summary, our underlying data model is that of a property graph, so in principle we’re able to import and export from/to RDF if needed. However, our ontology language is designed to strike a different and better balance between expressiveness and complexity than offered by the existing OWL profiles, especially in the context of knowledge graph structures. In consequence, our query language, Graql, is aligned with our ontology formalism to enable higher level query capabilities than supported by SPARQL over an RDF data model.
+We have written a [substantial explanation](https://blog.grakn.ai/knowledge-graph-representation-grakn-ai-or-owl-506065bd3f24#.5zjvkta9u) to this question on our blog. In summary, our underlying data model is that of a property graph, so in principle we’re able to import and export from/to RDF if needed. However, our language is designed to strike a different and better balance between expressiveness and complexity than offered by the existing OWL profiles, especially in the context of knowledge graph structures. In consequence, our query language, Graql, is aligned with our schema formalism to enable higher level query capabilities than supported by SPARQL over an RDF data model.
 
 OWL is not well-suited for graph-structures. Because of its formal foundations and computational limitations it is in fact a more natural language for managing tree-shaped data instead. OWL also makes it hard to help validate consistency of data and ensure it is well-structured, and this is what knowledge graph applications require.
 
@@ -125,7 +125,7 @@ It is possible for the system to record that `Brad Pitt` is an actor multiple ti
 
 **Merging Resources**
 
-{% include note.html content="This only happens when using a batch graph." %}
+{% include note.html content="This only happens when batch loading." %}
 
 When using a batch load, many safety checks are skipped in favour of speed. One such check is the possible existence of an attribute before creating it. So if the following transactions are executed simultaneously while batch loading: 
 

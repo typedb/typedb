@@ -11,7 +11,7 @@ folder: documentation
 
 {% include warning.html content="Please note that this page is in progress and subject to revision." %}
 
-In this section we focus on using the Java API in a multi-threaded environment, and show how to create multiple transactions, which can affect the graph concurrently.
+In this section we focus on using the Java API in a multi-threaded environment, and show how to create multiple transactions, which can affect the knowledge base concurrently.
 
 ## Creating Concurrent Transactions
 
@@ -32,10 +32,10 @@ GraknSession session = Grakn.session(uri, "MyGraph");
 Set<Future> futures = new HashSet<>();
 ExecutorService pool = Executors.newFixedThreadPool(10);
 
-//Create sample ontology
+//Create sample schema
 GraknTx tx = session.open(GraknTxType.WRITE);
 EntityType entityType = tx.putEntityType("Some Entity Type");
-graph.commit();
+tx.commit();
 
 //Load the data concurrently
 for(int i = 0; i < 100; i ++){

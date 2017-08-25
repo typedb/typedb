@@ -28,8 +28,8 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -49,13 +49,13 @@ import static org.junit.Assert.assertFalse;
 public class AdminTest {
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
 
     private QueryBuilder qb;
 
     @Before
     public void setUp() {
-        qb = rule.graph().graql();
+        qb = rule.tx().graql();
     }
 
     @Test
@@ -68,9 +68,9 @@ public class AdminTest {
 
         Set<SchemaConcept> types = Stream.of(
                 "movie", "production", "tmdb-vote-count", "character", "production-with-cast", "has-cast"
-        ).map(t -> rule.graph().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
+        ).map(t -> rule.tx().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
 
-        assertEquals(types, query.admin().getOntologyConcepts());
+        assertEquals(types, query.admin().getSchemaConcepts());
     }
 
     @Test
@@ -142,8 +142,8 @@ public class AdminTest {
     @Test
     public void testInsertQueryGetTypes() {
         InsertQuery query = qb.insert(var("x").isa("person").has("name", var("y")), var().rel("actor", "x").isa("has-cast"));
-        Set<SchemaConcept> types = Stream.of("person", "name", "actor", "has-cast").map(t -> rule.graph().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
-        assertEquals(types, query.admin().getOntologyConcepts());
+        Set<SchemaConcept> types = Stream.of("person", "name", "actor", "has-cast").map(t -> rule.tx().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
+        assertEquals(types, query.admin().getSchemaConcepts());
     }
 
     @Test
@@ -152,8 +152,8 @@ public class AdminTest {
                         .insert(var("x").isa("person").has("name", var("z")), var().rel("actor", "x").isa("has-cast"));
 
         Set<SchemaConcept> types =
-                Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.graph().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
+                Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.tx().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
 
-        assertEquals(types, query.admin().getOntologyConcepts());
+        assertEquals(types, query.admin().getSchemaConcepts());
     }
 }

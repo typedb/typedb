@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
@@ -32,12 +32,10 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.HasAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -140,20 +138,19 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Type entityTypeConcept = executor.get(var).asType();
-        AttributeType attributeTypeConcept = executor.get(resourceType().var()).asAttributeType();
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Type entityTypeConcept = executor.get(var).asType();
+            AttributeType attributeTypeConcept = executor.get(resourceType().var()).asAttributeType();
 
-        if (required()) {
-            entityTypeConcept.key(attributeTypeConcept);
-        } else {
-            entityTypeConcept.attribute(attributeTypeConcept);
-        }
-    }
+            if (required()) {
+                entityTypeConcept.key(attributeTypeConcept);
+            } else {
+                entityTypeConcept.attribute(attributeTypeConcept);
+            }
+        };
 
-    @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, resourceType().var());
+        return PropertyExecutor.builder(method).requires(var, resourceType().var()).build();
     }
 
     @Override
@@ -163,7 +160,7 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
         Label label = this.resourceType().getTypeLabel().orElse(null);
 
         Var predicateVar = var().asUserDefined();
-        SchemaConcept schemaConcept = parent.graph().getSchemaConcept(label);
+        SchemaConcept schemaConcept = parent.tx().getSchemaConcept(label);
         IdPredicate predicate = new IdPredicate(predicateVar, schemaConcept, parent);
         //isa part
         VarPatternAdmin resVar = varName.has(Graql.label(label)).admin();

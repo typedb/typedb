@@ -195,9 +195,9 @@ public class InferenceRule {
         Set<TypeAtom> allTypes = Sets.union(unifiedTypes, ruleTypes);
         allTypes.stream()
                 .filter(ta -> {
-                    SchemaConcept schemaConcept = ta.getOntologyConcept();
+                    SchemaConcept schemaConcept = ta.getSchemaConcept();
                     SchemaConcept subType = allTypes.stream()
-                            .map(Atom::getOntologyConcept)
+                            .map(Atom::getSchemaConcept)
                             .filter(Objects::nonNull)
                             .filter(t -> ReasonerUtils.getSupers(t).contains(schemaConcept))
                             .findFirst().orElse(null);
@@ -220,8 +220,8 @@ public class InferenceRule {
         HashSet<Atom> rewrites = new HashSet<>();
         body.getAtoms(Atom.class)
                 .filter(at -> !at.isUserDefined())
-                .filter(at -> Objects.nonNull(at.getOntologyConcept()))
-                .filter(at -> at.getOntologyConcept().equals(head.getAtom().getOntologyConcept()))
+                .filter(at -> Objects.nonNull(at.getSchemaConcept()))
+                .filter(at -> at.getSchemaConcept().equals(head.getAtom().getSchemaConcept()))
                 .peek(toRemove::add)
                 .forEach(at -> rewrites.add(at.rewriteToUserDefined()));
         toRemove.forEach(body::removeAtomic);
@@ -244,13 +244,13 @@ public class InferenceRule {
      */
     public Unifier getUnifier(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
-        if (parentAtom.getOntologyConcept() != null){
+        if (parentAtom.getSchemaConcept() != null){
             return childAtom.getUnifier(parentAtom);
         }
         //case of match all relation atom
         else{
             Atom extendedParent = ((RelationAtom) parentAtom)
-                    .addType(childAtom.getOntologyConcept())
+                    .addType(childAtom.getSchemaConcept())
                     .inferTypes();
             return childAtom.getUnifier(extendedParent);
         }

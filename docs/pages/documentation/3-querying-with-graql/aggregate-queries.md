@@ -20,6 +20,30 @@ An aggregate query applies an operation onto a [match query](match-queries.html)
 
 ## Aggregate Functions
 
+### Ask
+
+Whether the given [match query](match-queries.html) has any results.
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell-ask" data-toggle="tab">Graql</a></li>
+    <li><a href="#java-ask" data-toggle="tab">Java</a></li>
+</ul>
+
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell-ask">
+<pre>
+match divorce sub relationship; aggregate ask;
+match marriage sub relationship; aggregate ask;
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java-ask">
+<pre>
+qb.match(label("divorce").sub("relationship")).aggregate(ask()).execute();
+qb.match(label("marriage").sub("relationship")).aggregate(ask()).execute();
+</pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
 ### Count
 
 Count the number of results of the match query or aggregate result.

@@ -34,12 +34,12 @@ public class RelationTypes extends AbstractTypeGenerator<RelationshipType> {
     }
 
     @Override
-    protected RelationshipType newOntologyConcept(Label label) {
-        return graph().putRelationshipType(label);
+    protected RelationshipType newSchemaConcept(Label label) {
+        return tx().putRelationshipType(label);
     }
 
     @Override
     protected RelationshipType metaSchemaConcept() {
-        return graph().admin().getMetaRelationType();
+        return tx().admin().getMetaRelationType();
     }
 }

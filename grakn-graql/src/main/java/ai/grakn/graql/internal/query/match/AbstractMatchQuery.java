@@ -23,7 +23,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -88,8 +87,8 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final MatchQuery withGraph(GraknTx graph) {
-        return new MatchQueryGraph(graph, this);
+    public final MatchQuery withTx(GraknTx tx) {
+        return new MatchQueryTx(tx, this);
     }
 
     @Override
@@ -140,11 +139,6 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
             }
             return result.get(var);
         });
-    }
-
-    @Override
-    public final AskQuery ask() {
-        return Queries.ask(this);
     }
 
     @Override

@@ -1,4 +1,4 @@
-insert
+define
 
 #Roles
 
@@ -33,6 +33,8 @@ inferredRelation sub relationship
 #Resources
 
 "name" sub attribute, datatype string;
+
+insert
 
 $a1 isa entity1, has name "a1";
 $a2 isa entity1, has name "a2";

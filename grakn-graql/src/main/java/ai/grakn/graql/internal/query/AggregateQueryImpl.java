@@ -42,8 +42,8 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
     }
 
     @Override
-    public AggregateQuery<T> withGraph(GraknTx graph) {
-        return new AggregateQueryImpl<>(matchQuery.withGraph(graph).admin(), aggregate);
+    public AggregateQuery<T> withTx(GraknTx tx) {
+        return new AggregateQueryImpl<>(matchQuery.withTx(tx).admin(), aggregate);
     }
 
     @Override

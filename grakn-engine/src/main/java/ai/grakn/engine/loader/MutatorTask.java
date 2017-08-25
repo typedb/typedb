@@ -20,7 +20,7 @@ package ai.grakn.engine.loader;
 
 import ai.grakn.GraknTx;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.postprocessing.GraphMutators;
+import ai.grakn.engine.postprocessing.GraknTxMutators;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -28,18 +28,16 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 import ai.grakn.util.REST;
+import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
+import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer.Context;
-import mjson.Json;
-
 import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
-import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
-import static com.codahale.metrics.MetricRegistry.name;
+import mjson.Json;
 
 /**
  * Task that will mutate data in a graph. It uses the engine running on the
@@ -60,7 +58,7 @@ public class MutatorTask extends BackgroundTask {
         String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
         int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
-        GraphMutators.runBatchMutationWithRetry(factory(), keyspace, maxRetry, (graph) ->
+        GraknTxMutators.runBatchMutationWithRetry(factory(), keyspace, maxRetry, (graph) ->
                 insertQueriesInOneTransaction(graph, inserts)
         );
 
@@ -81,7 +79,7 @@ public class MutatorTask extends BackgroundTask {
             } else {
                 inserts.forEach(q -> {
                     try(Context contextSingle = metricRegistry().timer(name(MutatorTask.class, "execution-single")).time()){
-                        q.withGraph(graph).execute();
+                        q.withTx(graph).execute();
                     }
                 });
 

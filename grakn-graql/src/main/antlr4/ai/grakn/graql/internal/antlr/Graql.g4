@@ -9,7 +9,7 @@ queryListElem : matchQuery | insertOnly | simpleQuery ;
 
 queryEOF       : query EOF ;
 query          : matchQuery | insertQuery | simpleQuery ;
-simpleQuery    : askQuery | deleteQuery | aggregateQuery | computeQuery ;
+simpleQuery    : defineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
 matchQuery     : MATCH patterns                                   # matchBase
                | matchQuery 'select' VARIABLE (',' VARIABLE)* ';' # matchSelect
@@ -19,10 +19,10 @@ matchQuery     : MATCH patterns                                   # matchBase
                | matchQuery 'order' 'by' VARIABLE ORDER?      ';' # matchOrderBy
                ;
 
-askQuery       : matchQuery 'ask' ';' ;
 insertQuery    : matchInsert | insertOnly ;
 insertOnly     : INSERT varPatterns ;
 matchInsert    : matchQuery INSERT varPatterns ;
+defineQuery    : DEFINE varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
@@ -65,24 +65,23 @@ pattern        : varPattern                    # varPatternCase
 varPatterns    : (varPattern ';')+ ;
 varPattern     : VARIABLE | variable? property (','? property)* ;
 
-property       : 'isa' variable                 # isa
-               | 'sub' variable                 # sub
-               | 'relates' variable             # relates
-               | 'plays' variable               # plays
-               | 'has-scope' VARIABLE           # hasScope
-               | 'id' id                        # propId
-               | 'label' label                  # propLabel
-               | 'val' predicate                # propValue
-               | 'when' '{' patterns '}'        # propWhen
-               | 'then' '{' varPatterns '}'     # propThen
-               | 'has' label (resource=VARIABLE | predicate) ('as' relation=VARIABLE)? # propHas
-               | 'has' variable                 # propResource
-               | 'key' variable                 # propKey
-               | '(' casting (',' casting)* ')' # propRel
-               | 'is-abstract'                  # isAbstract
-               | 'datatype' DATATYPE            # propDatatype
-               | 'regex' REGEX                  # propRegex
-               | '!=' variable                  # propNeq
+property       : 'isa' variable                     # isa
+               | 'sub' variable                     # sub
+               | 'relates' variable                 # relates
+               | 'plays' variable                   # plays
+               | 'id' id                            # propId
+               | 'label' label                      # propLabel
+               | 'val' predicate                    # propValue
+               | 'when' '{' patterns '}'            # propWhen
+               | 'then' '{' varPatterns '}'         # propThen
+               | 'has' label (resource=VARIABLE | predicate) ('as' relation=VARIABLE)?# propHas
+               | 'has' variable                     # propResource
+               | 'key' variable                     # propKey
+               | '(' casting (',' casting)* ')'     # propRel
+               | 'is-abstract'                      # isAbstract
+               | 'datatype' DATATYPE                # propDatatype
+               | 'regex' REGEX                      # propRegex
+               | '!=' variable                      # propNeq
                ;
 
 casting        : variable (':' VARIABLE)?
@@ -135,6 +134,7 @@ MEMBERS        : 'members' ;
 SIZE           : 'size' ;
 MATCH          : 'match' ;
 INSERT         : 'insert' ;
+DEFINE         : 'define' ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
 ORDER          : 'asc' | 'desc' ;

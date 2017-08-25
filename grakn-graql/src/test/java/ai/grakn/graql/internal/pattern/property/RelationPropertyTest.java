@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMultiset;
 import org.junit.ClassRule;
@@ -38,7 +38,7 @@ import static ai.grakn.graql.Graql.var;
 public class RelationPropertyTest {
 
     @ClassRule
-    public static GraphContext graph = GraphContext.empty();
+    public static SampleKBContext sampleKB = SampleKBContext.empty();
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -51,6 +51,6 @@ public class RelationPropertyTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.notARelationType(role).getMessage());
 
-        property.checkValidProperty(graph.graph(), var("x").isa(label(role)).admin());
+        property.checkValidProperty(sampleKB.tx(), var("x").isa(label(role)).admin());
     }
 }

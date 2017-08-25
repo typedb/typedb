@@ -27,7 +27,6 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.auto.value.AutoValue;
@@ -71,18 +70,18 @@ public abstract class LabelProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.builder(var).label(label());
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        // This is supported in insert queries in order to allow looking up schema concepts by label
+        return define(var);
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of();
-    }
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).label(label());
+        };
 
-    @Override
-    public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 
     @Override

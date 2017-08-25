@@ -37,7 +37,7 @@ import java.util.Set;
  * <p>
  * Atom implementation defining type atoms of the general form:
  *
- * {isa|sub|plays|relates|has|has-scope}($varName, $predicateVariable)
+ * {isa|sub|plays|relates|has}($varName, $predicateVariable)
  *
  * Type atoms correspond to the following respective graql properties:
  * {@link IsaProperty},
@@ -45,7 +45,6 @@ import java.util.Set;
  * {@link ai.grakn.graql.internal.pattern.property.PlaysProperty}
  * {@link ai.grakn.graql.internal.pattern.property.RelatesProperty}
  * {@link ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty}
- * {@link ai.grakn.graql.internal.pattern.property.HasScopeProperty}
  * </p>
  *
  * @author Kasper Piskorski
@@ -80,10 +79,10 @@ public abstract class TypeAtom extends Binary{
     @Override
     public boolean isRuleApplicable(InferenceRule child) {
         Atom ruleAtom = child.getHead().getAtom();
-        return this.getOntologyConcept() != null
+        return this.getSchemaConcept() != null
                 //ensure not ontological atom query
                 && getPattern().asVarPattern().hasProperty(IsaProperty.class)
-                && this.getOntologyConcept().subs().anyMatch(sub -> sub.equals(ruleAtom.getOntologyConcept()));
+                && this.getSchemaConcept().subs().anyMatch(sub -> sub.equals(ruleAtom.getSchemaConcept()));
     }
 
     @Override
@@ -96,22 +95,22 @@ public abstract class TypeAtom extends Binary{
 
     @Override
     public boolean requiresMaterialisation() {
-        return isUserDefined() && getOntologyConcept() != null && getOntologyConcept().isRelationshipType();
+        return isUserDefined() && getSchemaConcept() != null && getSchemaConcept().isRelationshipType();
     }
 
     @Override
     public int computePriority(Set<Var> subbedVars){
         int priority = super.computePriority(subbedVars);
         priority += ResolutionPlan.IS_TYPE_ATOM;
-        priority += getOntologyConcept() == null && !isRelation()? ResolutionPlan.NON_SPECIFIC_TYPE_ATOM : 0;
+        priority += getSchemaConcept() == null && !isRelation()? ResolutionPlan.NON_SPECIFIC_TYPE_ATOM : 0;
         return priority;
     }
 
     @Nullable
     @Override
-    public SchemaConcept getOntologyConcept() {
+    public SchemaConcept getSchemaConcept() {
         return getPredicate() != null ?
-                getParentQuery().graph().getConcept(getPredicate().getPredicate()) : null;
+                getParentQuery().tx().getConcept(getPredicate().getPredicate()) : null;
     }
 
     /**

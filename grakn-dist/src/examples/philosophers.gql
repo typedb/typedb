@@ -1,4 +1,4 @@
-insert
+define
 
 
 # Concept types
@@ -48,6 +48,8 @@ knowledge sub relationship
 thinker sub role;
 thought sub role;
 
+
+insert
 
 # Instances
 

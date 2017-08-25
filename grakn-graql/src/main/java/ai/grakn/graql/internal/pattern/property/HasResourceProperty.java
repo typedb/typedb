@@ -36,7 +36,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -76,6 +75,8 @@ import static java.util.stream.Collectors.joining;
 @AutoValue
 public abstract class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
+    public static final String NAME = "has";
+
     public static HasResourceProperty of(Label attributeType, VarPatternAdmin attribute, VarPatternAdmin relationship) {
         attribute = attribute.isa(label(attributeType)).admin();
         return new AutoValue_HasResourceProperty(attributeType, attribute, relationship);
@@ -87,7 +88,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
     @Override
     public String getName() {
-        return "has";
+        return NAME;
     }
 
     @Override
@@ -129,28 +130,21 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
 
     @Override
     void checkValidProperty(GraknTx graph, VarPatternAdmin var) {
-        SchemaConcept ontologyConcept = graph.getSchemaConcept(type());
-        if(ontologyConcept == null || !ontologyConcept.isAttributeType()) {
+        SchemaConcept schemaConcept = graph.getSchemaConcept(type());
+        if(schemaConcept == null || !schemaConcept.isAttributeType()) {
             throw GraqlQueryException.mustBeResourceType(type());
         }
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Attribute attributeConcept = executor.get(attribute().var()).asAttribute();
-        Thing thing = executor.get(var).asThing();
-        ConceptId relationshipId = thing.attributeRelationship(attributeConcept).getId();
-        executor.builder(relationship().var()).id(relationshipId);
-    }
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {Attribute attributeConcept = executor.get(attribute().var()).asAttribute();
+            Thing thing = executor.get(var).asThing();
+            ConceptId relationshipId =thing.attributeRelationship(attributeConcept).getId();
+            executor.builder(relationship().var()).id(relationshipId);
+        };
 
-    @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, attribute().var());
-    }
-
-    @Override
-    public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(relationship().var());
+        return PropertyExecutor.builder(method).produces(relationship().var()).requires(var, attribute().var()).build();
     }
 
     @Override
@@ -161,7 +155,7 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         Role owner = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(type()));
         Role value = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(type()));
 
-        concept.asThing().relations(owner)
+        concept.asThing().relationships(owner)
                 .filter(relationship -> testPredicate(predicate, relationship, value))
                 .forEach(Concept::delete);
     }

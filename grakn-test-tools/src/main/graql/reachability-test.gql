@@ -1,7 +1,7 @@
-insert
+define
 
 ###################################################
-####################Ontology######################
+####################Schema######################
 #################################################
 
 "vertex" sub entity
@@ -18,6 +18,8 @@ vertex plays link-from, plays link-to;
 vertex plays reach-from, plays reach-to;
 
 "index" sub attribute, datatype string;
+
+insert
 
 ####################################################
 ##################DATA#############################

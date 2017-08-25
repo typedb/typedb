@@ -34,14 +34,14 @@ public class ResourceTypes extends AbstractTypeGenerator<AttributeType> {
     }
 
     @Override
-    protected AttributeType newOntologyConcept(Label label) {
+    protected AttributeType newSchemaConcept(Label label) {
         AttributeType.DataType<?> dataType = gen(AttributeType.DataType.class);
 
-        return graph().putAttributeType(label, dataType);
+        return tx().putAttributeType(label, dataType);
     }
 
     @Override
     protected AttributeType metaSchemaConcept() {
-        return graph().admin().getMetaResourceType();
+        return tx().admin().getMetaResourceType();
     }
 }

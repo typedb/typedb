@@ -30,7 +30,7 @@ import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import javafx.util.Pair;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -101,7 +101,7 @@ public class QueryAnswerStream {
         if (types.isEmpty()) return true;
         for (TypeAtom type : types){
             Var var = type.getVarName();
-            SchemaConcept t = type.getOntologyConcept();
+            SchemaConcept t = type.getSchemaConcept();
             if (t.subs().noneMatch(sub -> sub.equals(answer.get(var).asThing().type()))) {
                 return false;
             }

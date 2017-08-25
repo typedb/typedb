@@ -37,10 +37,10 @@ public class REST {
         /**
          * URIs to visualiser controller
          */
-        public static class Graph {
+        public static class KB {
             @Deprecated
-            public static final String GRAQL = "/graph/graql";
-            public static final String ANY_GRAQL = "/graph/graql/execute";
+            public static final String GRAQL = "/kb/graql";
+            public static final String ANY_GRAQL = "/kb/graql/execute";
         }
 
         /**
@@ -68,8 +68,8 @@ public class REST {
          * URIs to concept controller endpoints
          */
         public static class Concept {
-            public static final String CONCEPT = "/graph/concept/";
-            public static final String ONTOLOGY = "/graph/ontology";
+            public static final String CONCEPT = "/kb/concept/";
+            public static final String SCHEMA = "/kb/schema";
         }
 
         /**
@@ -98,7 +98,7 @@ public class REST {
         // Request parameters
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
-        public static final String GRAPH_CONFIG_PARAM = "graphConfig";
+        public static final String CONFIG_PARAM = "config";
         public static final String TASK_STATUS_PARAMETER = "status";
         public static final String TASK_CLASS_NAME_PARAMETER = "className";
         public static final String TASK_CREATOR_PARAMETER = "creator";
@@ -141,9 +141,9 @@ public class REST {
     }
 
     /**
-     * Class listing possible graph configuration options.
+     * Class listing possible knowledge base configuration options.
      */
-    public static class GraphConfig{
+    public static class KBConfig {
         public static final String DEFAULT = "default";
         public static final String COMPUTER = "computer";
     }
@@ -152,10 +152,6 @@ public class REST {
      * Class listing various HTTP connection strings.
      */
     public static class HttpConn{
-        public static final int OK = 200;
-        public static final String UTF8 = "UTF8";
-        public static final String CONTENT_LENGTH = "Content-Length";
-        public static final String CONTENT_TYPE = "Content-Type";
         public static final String POST_METHOD = "POST";
         public static final String DELETE_METHOD = "DELETE";
         public static final String GET_METHOD = "GET";

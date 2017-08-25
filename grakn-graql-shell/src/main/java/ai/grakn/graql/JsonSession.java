@@ -115,7 +115,7 @@ public class JsonSession {
 
     private Json getMessage() {
         try {
-            return messages.poll(timeout, TimeUnit.MINUTES);
+            return messages.poll(timeout, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

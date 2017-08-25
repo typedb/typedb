@@ -24,8 +24,8 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -44,11 +44,11 @@ public class QueryToStringTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
 
     @Before
     public void setUp() {
-        qb = rule.graph().graql();
+        qb = rule.tx().graql();
     }
 
     @Test
@@ -88,11 +88,6 @@ public class QueryToStringTest {
     @Test
     public void testQueryWithRelatesToString() {
         assertSameResults(qb.match(var("x").relates(var("y"))));
-    }
-
-    @Test
-    public void testQueryWithHasScopeToString() {
-        assertEquals("match $x has-scope $y;", qb.match(var("x").hasScope(var("y"))).toString());
     }
 
     @Test

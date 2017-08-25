@@ -43,10 +43,10 @@ public interface ReasonerQuery{
     ReasonerQuery copy();
 
     /**
-     * @return GraknTx associated with this reasoner query
+     * @return {@link GraknTx} associated with this reasoner query
      */
     @CheckReturnValue
-    GraknTx graph();
+    GraknTx tx();
 
     /**
      * @return conjunctive pattern corresponding to this reasoner query
@@ -111,5 +111,5 @@ public interface ReasonerQuery{
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    Map<Var, SchemaConcept> getVarOntologyConceptMap();
+    Map<Var, SchemaConcept> getVarSchemaConceptMap();
 }

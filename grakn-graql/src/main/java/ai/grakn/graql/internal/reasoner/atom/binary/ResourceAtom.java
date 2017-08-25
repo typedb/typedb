@@ -28,25 +28,24 @@ import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint;
 
@@ -86,7 +85,7 @@ public class ResourceAtom extends Binary{
         String multiPredicateString = getMultiPredicate().isEmpty()?
                 getPredicateVariable().toString() :
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
-        return getVarName() + " has " + getOntologyConcept().getLabel() + " " +
+        return getVarName() + " has " + getSchemaConcept().getLabel() + " " +
                 multiPredicateString +
                 getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining("")) +
                 (relationVariable.isUserDefinedName()? "(" + relationVariable + ")" : "");
@@ -173,8 +172,8 @@ public class ResourceAtom extends Binary{
         TypeAtom parentTypeConstraint = this.getTypeConstraints().findFirst().orElse(null);
         TypeAtom childTypeConstraint = childAtom.getTypeConstraints().findFirst().orElse(null);
 
-        SchemaConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getOntologyConcept() : null;
-        SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getOntologyConcept() : null;
+        SchemaConcept parentType = parentTypeConstraint != null? parentTypeConstraint.getSchemaConcept() : null;
+        SchemaConcept childType = childTypeConstraint != null? childTypeConstraint.getSchemaConcept() : null;
         if (parentType != null && childType != null && checkDisjoint(parentType, childType)) return false;
 
         //check predicates
@@ -208,7 +207,7 @@ public class ResourceAtom extends Binary{
 
     @Override
     public boolean isAllowedToFormRuleHead(){
-        if (getOntologyConcept() == null || getMultiPredicate().size() > 1) return false;
+        if (getSchemaConcept() == null || getMultiPredicate().size() > 1) return false;
         if (getMultiPredicate().isEmpty()) return true;
 
         ValuePredicate predicate = getMultiPredicate().iterator().next();
@@ -224,7 +223,7 @@ public class ResourceAtom extends Binary{
 
     @Override
     public Set<String> validateOntologically() {
-        SchemaConcept type = getOntologyConcept();
+        SchemaConcept type = getSchemaConcept();
         if (type == null) {
             return new HashSet<>();
         }
@@ -235,7 +234,7 @@ public class ResourceAtom extends Binary{
             return errors;
         }
 
-        SchemaConcept ownerType = getParentQuery().getVarOntologyConceptMap().get(getVarName());
+        SchemaConcept ownerType = getParentQuery().getVarSchemaConceptMap().get(getVarName());
 
         if (ownerType != null
                 && ownerType.isType()
@@ -245,28 +244,9 @@ public class ResourceAtom extends Binary{
         return errors;
     }
 
-    @Override
-    public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
-        if(type.equals(ValuePredicate.class)){
-            return Stream.concat(
-                    super.getPredicates(type),
-                    getMultiPredicate().stream()
-            ).map(type::cast);
-        }
-        return super.getPredicates(type);
-    }
-
-    @Override
-    public Set<TypeAtom> getSpecificTypeConstraints() {
-        return getTypeConstraints()
-                .filter(t -> t.getVarName().equals(getVarName()))
-                .filter(t -> Objects.nonNull(t.getOntologyConcept()))
-                .collect(Collectors.toSet());
-    }
-
 
     private boolean isSuperNode(){
-        return graph().graql().match(getCombinedPattern()).admin().stream()
+        return tx().graql().match(getCombinedPattern()).admin().stream()
                 .skip(ResolutionPlan.RESOURCE_SUPERNODE_SIZE)
                 .findFirst().isPresent();
     }
@@ -329,7 +309,7 @@ public class ResourceAtom extends Binary{
         Var attributeVariable = getPredicateVariable();
         Var relationVariable = getRelationVariable().asUserDefined();
         VarPattern newVar = getVarName()
-                .has(getOntologyConcept().getLabel(), attributeVariable, relationVariable);
+                .has(getSchemaConcept().getLabel(), attributeVariable, relationVariable);
         return new ResourceAtom(newVar.admin(), attributeVariable, relationVariable, getPredicate(), getMultiPredicate(), getParentQuery());
     }
 
@@ -350,4 +330,24 @@ public class ResourceAtom extends Binary{
         }
         return unifier;
     }
+
+    @Override
+    public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
+        if(type.equals(ValuePredicate.class)){
+            return Stream.concat(
+                    super.getPredicates(type),
+                    getMultiPredicate().stream()
+            ).map(type::cast);
+        }
+        return super.getPredicates(type);
+    }
+
+    @Override
+    public Set<TypeAtom> getSpecificTypeConstraints() {
+        return getTypeConstraints()
+                .filter(t -> t.getVarName().equals(getVarName()))
+                .filter(t -> Objects.nonNull(t.getSchemaConcept()))
+                .collect(Collectors.toSet());
+    }
+
 }

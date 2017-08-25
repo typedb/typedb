@@ -60,7 +60,7 @@ public interface Thing extends Concept{
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
      */
     @CheckReturnValue
-    Stream<Relationship> relations(Role... roles);
+    Stream<Relationship> relationships(Role... roles);
 
     /**
      * Determine the Role Types that this Thing may play.

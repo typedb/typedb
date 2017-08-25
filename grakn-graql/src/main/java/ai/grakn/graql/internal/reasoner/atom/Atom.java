@@ -29,7 +29,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
-import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -77,12 +77,12 @@ public abstract class Atom extends AtomicBase {
 
     @Override
     public boolean isRecursive(){
-        if (isResource() || getOntologyConcept() == null) return false;
-        SchemaConcept schemaConcept = getOntologyConcept();
+        if (isResource() || getSchemaConcept() == null) return false;
+        SchemaConcept schemaConcept = getSchemaConcept();
         return getApplicableRules()
                 .filter(rule -> rule.getBody().selectAtoms().stream()
-                        .filter(at -> Objects.nonNull(at.getOntologyConcept()))
-                        .filter(at -> checkCompatible(schemaConcept, at.getOntologyConcept())).findFirst().isPresent())
+                        .filter(at -> Objects.nonNull(at.getSchemaConcept()))
+                        .filter(at -> checkCompatible(schemaConcept, at.getSchemaConcept())).findFirst().isPresent())
                 .filter(this::isRuleApplicable)
                 .findFirst().isPresent();
     }
@@ -148,7 +148,7 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     private Stream<Rule> getPotentialRules(){
-        return RuleGraph.getRulesWithType(getOntologyConcept(), graph());
+        return RuleUtil.getRulesWithType(getSchemaConcept(), tx());
     }
 
     /**
@@ -158,7 +158,7 @@ public abstract class Atom extends AtomicBase {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
             return getPotentialRules()
-                    .map(rule -> new InferenceRule(rule, graph()))
+                    .map(rule -> new InferenceRule(rule, tx()))
                     .filter(this::isRuleApplicable)
                     .map(r -> r.rewriteToUserDefined(this))
                     .peek(applicableRules::add);
@@ -174,7 +174,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return corresponding type if any
      */
-    public abstract SchemaConcept getOntologyConcept();
+    public abstract SchemaConcept getSchemaConcept();
 
     /**
      * @return type id of the corresponding type if any

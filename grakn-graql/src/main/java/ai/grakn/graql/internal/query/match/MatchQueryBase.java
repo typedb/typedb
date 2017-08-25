@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graph.admin.GraknAdmin;
+import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -77,7 +77,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
     @Override
     public Stream<Answer> stream(Optional<GraknTx> optionalGraph) {
-        GraknTx graph = optionalGraph.orElseThrow(GraqlQueryException::noGraph);
+        GraknTx graph = optionalGraph.orElseThrow(GraqlQueryException::noTx);
 
         for (VarPatternAdmin var : pattern.varPatterns()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
@@ -102,18 +102,18 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Set<SchemaConcept> getOntologyConcepts(GraknTx graph) {
+    public Set<SchemaConcept> getSchemaConcepts(GraknTx tx) {
         return pattern.varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
-                .map(graph::<SchemaConcept>getSchemaConcept)
+                .map(tx::<SchemaConcept>getSchemaConcept)
                 .filter(Objects::nonNull)
                 .collect(toSet());
     }
 
     @Override
-    public Set<SchemaConcept> getOntologyConcepts() {
-        throw GraqlQueryException.noGraph();
+    public Set<SchemaConcept> getSchemaConcepts() {
+        throw GraqlQueryException.noTx();
     }
 
     @Override
@@ -122,7 +122,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Optional<GraknTx> getGraph() {
+    public Optional<GraknTx> tx() {
         return Optional.empty();
     }
 

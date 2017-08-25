@@ -88,7 +88,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must have a resource of the given type with an exact matching value
      *
-     * @param type a resource type in the ontology
+     * @param type a resource type in the schema
      * @param value a value of a resource
      * @return this
      */
@@ -98,7 +98,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must have a resource of the given type that matches the given atom
      *
-     * @param type a resource type in the ontology
+     * @param type a resource type in the schema
      * @param predicate a atom on the value of a resource
      * @return this
      */
@@ -108,7 +108,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must have an {@link Attribute} of the given type that matches the given atom
      *
-     * @param type a resource type in the ontology
+     * @param type a resource type in the schema
      * @param attribute a variable pattern representing an {@link Attribute}
      * @return this
      */
@@ -118,7 +118,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must have an {@link Attribute} of the given type that matches the given atom
      *
-     * @param type a resource type in the ontology
+     * @param type a resource type in the schema
      * @param attribute a variable pattern representing an {@link Attribute}
      * @return this
      */
@@ -194,13 +194,6 @@ public interface VarPattern extends Pattern {
     VarPattern plays(VarPattern type);
 
     /**
-     * @param type a scope that this variable must have
-     * @return this
-     */
-    @CheckReturnValue
-    VarPattern hasScope(VarPattern type);
-
-    /**
      * @param type a resource type that this type variable can be related to
      * @return this
      */
@@ -249,7 +242,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must be a relation with the given roleplayer playing the given {@link Role}
      *
-     * @param role   a {@link Role} in the ontology
+     * @param role   a {@link Role} in the schema
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
@@ -269,7 +262,7 @@ public interface VarPattern extends Pattern {
     /**
      * the variable must be a relation with the given roleplayer playing the given {@link Role}
      *
-     * @param role   a {@link Role} in the ontology
+     * @param role   a {@link Role} in the schema
      * @param roleplayer a variable pattern representing a roleplayer
      * @return this
      */

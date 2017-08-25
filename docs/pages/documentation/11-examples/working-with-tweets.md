@@ -13,7 +13,7 @@ comment_issue_id: 27
 # Working With Tweets
 In this tutorial we will look at how to stream public tweets into Grakn's knowledge base. The tutorial aims to demonstrate key concepts such as receiving, inserting and querying data. Upon the completion of this tutorial, you will have learnt about these concepts:
 
-- Defining a simple Grakn.ai ontology using the Java API
+- Defining a simple Grakn.ai schema using the Java API
 - Streaming public tweets into the application with the [Twitter4J](http://twitter4j.org/ "Twitter4J") library
 - Inserting tweets into the knowledge base using Grakn's Java API
 - Performing simple queries using Graql, the Grakn's query language
@@ -113,7 +113,7 @@ Then continue to the `<dependencies>` section and make sure you have all the req
 
 Let's kick things off by defining a `Main` class inside the `ai.grakn.twitterexample` package. Aside from Twitter credentials, it contains a few important Grakn settings.
 
-First, we have decided to use an **in-memory knowledge base** for simplicity's sake — working with an in-memory graph frees us from having to set up a Grakn distribution in the local machine. The in-memory graph is not for storing data and will be lost once the program finishes execution. Second, the graph will be stored in a **keyspace** named `twitter-example`.
+First, we have decided to use an **in-memory knowledge base** for simplicity's sake — working with an in-memory knowledge base frees us from having to set up a Grakn distribution in the local machine. The in-memory graph is not for storing data and will be lost once the program finishes execution. Second, the graph will be stored in a **keyspace** named `twitter-example`.
 
 <!-- A lot of these examples are not valid Groovy, so they've been ignored in tests -->
 ```java-test-ignore
@@ -130,7 +130,7 @@ public class Main {
   private static final String accessTokenSecret = "...";
 
   // Grakn settings
-  private static final String graphImplementation = Grakn.IN_MEMORY;
+  private static final String implementation = Grakn.IN_MEMORY;
   private static final String keyspace = "twitter-example";
 
   public static void main(String[] args) {
@@ -143,7 +143,7 @@ We then define a `GraknSession` object in `main()`. Enclosing it in a `try-with-
 
 ```java-test-ignore
 public static void main(String[] args) {
-  try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
+  try (GraknSession session = Grakn.session(implementation, keyspace)) {
     // our code will go here
   }
 }
@@ -152,34 +152,34 @@ public static void main(String[] args) {
 Following that, another equally important object for operating on the knowledge base is `GraknTx`. After performing the operations we desire, we must not forget to commit. For convenience, let's define a helper method which opens a `GraknTx` in write mode, and commits it after executing the function `fn`. We will be using this function in various places throughout the tutorial.
 
 ```java-test-ignore
-public class GraknTweetOntologyHelper {
+public class GraknTweetSchemaHelper {
   public static void withGraknTx(GraknSession session, Consumer<GraknTx> fn) {
-    GraknTx graphWriter = session.open(GraknTxType.WRITE);
-    fn.accept(graphWriter);
-    graphWriter.commit();
+    GraknTx tx = session.open(GraknTxType.WRITE);
+    fn.accept(tx);
+    tx.commit();
   }
 }
 ```
 
 We have decided to omit exception handling to keep the tutorial simple. In production code however, it will be very important and must not be forgotten.
 
-## Defining The Ontology
+## Defining The Schema
 
-Let's define the ontology. As we are mainly interested in both the **tweet** and **who posted the tweet**, let us capture these concepts by defining two **entity types**: `user` and `tweet`.
+Let's define the schema. As we are mainly interested in both the **tweet** and **who posted the tweet**, let us capture these concepts by defining two **entity types**: `user` and `tweet`.
 
 The `user` entity will hold the user's actual username in a **attribute** called `screen_name`, while the `tweet` entity will contain the user's tweet in another attribute called `text`. We will also define an attribute `identifier` for the id.
 
 Next we will define two **roles** - `posts` and `posted_by` to express that a `user` posts a `tweet`, and similarly, a `tweet` is posted by a `user`. We will tie this two roles by a **relationship** called `user-tweet-relationship`.
 
-The structure can be summarized by the following graph:
+The structure can be summarized by the following image:
 
-![Ontology](/images/working-with-tweets-ontology.jpg)
+![Schema](/images/working-with-tweets-schema.jpg)
 
-With that set, let's define a new method `initTweetOntology` inside `GraknTweetOntologyHelper` class and define our ontology creation there.
+With that set, let's define a new method `initTweetSchema` inside `GraknTweetSchemaHelper` class and define our schema creation there.
 
 ```java-test-ignore
-public class GraknTweetOntologyHelper {
-  public static void initTweetOntology(GraknTx tx) {
+public class GraknTweetSchemaHelper {
+  public static void initTweetSchema(GraknTx tx) {
 
   }
 }
@@ -224,19 +224,19 @@ userType.plays(postsType);
 tweetType.plays(postedByType);
 ```
 
-Now invoke the method in `main` so the ontology is created at the start of the application.
+Now invoke the method in `main` so the schema is created at the start of the application.
 
 ```java-test-ignore
 public static void main(String[] args) {
-  try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
-    withGraknTx(session, tx -> initTweetOntology(tx)); // initialize ontology
+  try (GraknSession session = Grakn.session(implememntation, keyspace)) {
+    withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
   }
 }
 ```
 
 ## Streaming Data From Twitter
 
-Now that we're done with ontology creation, let's develop the code for listening to the public tweet stream.
+Now that we're done with schema creation, let's develop the code for listening to the public tweet stream.
 
 Define a new method `listenToTwitterStreamAsync ` and put it in a class named `AsyncTweetStreamProcessorHelper `.  In addition to accepting Twitter credential settings, we will also need to supply a callback `onTweetReceived`, will be invoked whenever the application receives a new tweet. Further down, we will use this callback for storing, querying and displaying tweets as they come.
 
@@ -321,8 +321,8 @@ Let's wrap up this section by adding the call to `listenToTwitterStreamAsync` in
 
 ```java-test-ignore
 public static void main(String[] args) {
-  try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
-    withGraknTx(session, tx -> initTweetOntology(tx)); // initialize ontology
+  try (GraknSession session = Grakn.session(implementation, keyspace)) {
+    withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
 
     listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
       // TODO: do something upon receiving a new tweet
@@ -333,7 +333,7 @@ public static void main(String[] args) {
 
 ## Inserting Tweets Into The Knowledge Base
 
-At this point our little program already has a clearly defined ontology, and is able to listen to incoming tweets. However, we have yet to decide what exactly we're going to do with them. In this section we will have a look at how to:
+At this point our little program already has a clearly defined schema, and is able to listen to incoming tweets. However, we have yet to decide what exactly we're going to do with them. In this section we will have a look at how to:
 
 1. Insert an incoming tweet into the knowledge base
 2. Insert a user who posted the tweet, only once — we don't want to insert the same user twice
@@ -436,8 +436,8 @@ We're done with tweet insertion functionality! Next step: querying the stored da
 
 ```java-test-ignore
 public static void main(String[] args) {
-  try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
-    withGraknTx(session, tx -> initTweetOntology(tx)); // initialize ontology
+  try (GraknSession session = Grakn.session(implementation, keyspace)) {
+    withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
 
     listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
       withGraknTx(session, tx -> insertUserTweet(tx, screenName, tweet)); // insert tweet
@@ -539,12 +539,12 @@ public class Main {
   private static final String accessTokenSecret = "...";
 
   // Grakn settings
-  private static final String graphImplementation = Grakn.IN_MEMORY;
+  private static final String implementation = Grakn.IN_MEMORY;
   private static final String keyspace = "twitter-example";
 
   public static void main(String[] args) {
-    try (GraknSession session = Grakn.session(graphImplementation, keyspace)) {
-      withGraknTx(session, tx -> initTweetOntology(tx)); // initialize ontology
+    try (GraknSession session = Grakn.session(mplementation, keyspace)) {
+      withGraknTx(session, tx -> initTweetSchema(tx)); // initialize schema
 
       listenToTwitterStreamAsync(consumerKey, consumerSecret, accessToken, accessTokenSecret, (screenName, tweet) -> {
         withGraknTx(session, tx -> {
@@ -584,4 +584,4 @@ Watch the terminal as the application runs. You should see the following text pr
 ------
 ```
 
-Finally, we have shown you many useful concepts — from creating an ontology, storing data, crafting a Graql query, as well as displaying the result of the query. These are fundamental concepts that you will likely use in almost every area.
+Finally, we have shown you many useful concepts — from creating a schema, storing data, crafting a Graql query, as well as displaying the result of the query. These are fundamental concepts that you will likely use in almost every area.

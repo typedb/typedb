@@ -21,11 +21,11 @@ package ai.grakn.test.property;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
-import ai.grakn.generator.FromGraphGenerator.FromGraph;
-import ai.grakn.generator.GraknGraphs.Open;
+import ai.grakn.generator.FromTxGenerator.FromTx;
+import ai.grakn.generator.GraknTxs.Open;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.Ignore;
@@ -63,39 +63,39 @@ public class SchemaConceptPropertyTest {
 
     @Property
     public void whenDeletingAMetaConcept_Throw(@Meta SchemaConcept schemaConcept) {
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         exception.expectMessage(isOneOf(
-                GraphOperationException.metaTypeImmutable(schemaConcept.getLabel()).getMessage(),
-                GraphOperationException.cannotBeDeleted(schemaConcept).getMessage()
+                GraknTxOperationException.metaTypeImmutable(schemaConcept.getLabel()).getMessage(),
+                GraknTxOperationException.cannotBeDeleted(schemaConcept).getMessage()
         ));
         schemaConcept.delete();
     }
 
     @Property
-    public void whenDeletingAnOntologyConceptWithDirectSubs_Throw(@NonMeta SchemaConcept schemaConcept) {
+    public void whenDeletingASchemaConceptWithDirectSubs_Throw(@NonMeta SchemaConcept schemaConcept) {
         SchemaConcept superConcept = schemaConcept.sup();
         assumeFalse(isMetaLabel(superConcept.getLabel()));
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.cannotBeDeleted(superConcept).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.cannotBeDeleted(superConcept).getMessage());
         superConcept.delete();
     }
 
     @Property
-    public void whenCallingGetLabel_TheResultIsUnique(SchemaConcept concept1, @FromGraph SchemaConcept concept2) {
+    public void whenCallingGetLabel_TheResultIsUnique(SchemaConcept concept1, @FromTx SchemaConcept concept2) {
         assumeThat(concept1, not(is(concept2)));
         assertNotEquals(concept1.getLabel(), concept2.getLabel());
     }
 
     @Property
     public void whenCallingGetLabel_TheResultCanBeUsedToRetrieveTheSameConcept(
-            @Open GraknTx graph, @FromGraph SchemaConcept concept) {
+            @Open GraknTx graph, @FromTx SchemaConcept concept) {
         Label label = concept.getLabel();
         assertEquals(concept, graph.getSchemaConcept(label));
     }
 
     @Property
-    public void whenAnOntologyElementHasADirectSuper_ItIsADirectSubOfThatSuper(SchemaConcept schemaConcept) {
+    public void whenASchemaElementHasADirectSuper_ItIsADirectSubOfThatSuper(SchemaConcept schemaConcept) {
         SchemaConcept superConcept = schemaConcept.sup();
         assumeTrue(superConcept != null);
 
@@ -108,21 +108,21 @@ public class SchemaConceptPropertyTest {
     }
 
     @Property
-    public void whenAnOntologyConceptHasAnIndirectSuper_ItIsAnIndirectSubOfThatSuper(
+    public void whenASchemaConceptHasAnIndirectSuper_ItIsAnIndirectSubOfThatSuper(
             SchemaConcept subConcept, long seed) {
         SchemaConcept superConcept = PropertyUtil.choose(PropertyUtil.indirectSupers(subConcept), seed);
         assertThat(superConcept.subs().collect(toSet()), hasItem(subConcept));
     }
 
     @Property
-    public void whenAnOntologyConceptHasAnIndirectSub_ItIsAnIndirectSuperOfThatSub(
+    public void whenASchemaConceptHasAnIndirectSub_ItIsAnIndirectSuperOfThatSub(
             SchemaConcept superConcept, long seed) {
         SchemaConcept subConcept = PropertyUtil.choose(superConcept.subs(), seed);
         assertThat(PropertyUtil.indirectSupers(subConcept), hasItem(superConcept));
     }
 
     @Property
-    public void whenGettingIndirectSub_ReturnSelfAndIndirectSubsOfDirectSub(@FromGraph SchemaConcept concept) {
+    public void whenGettingIndirectSub_ReturnSelfAndIndirectSubsOfDirectSub(@FromTx SchemaConcept concept) {
         Collection<SchemaConcept> directSubs = PropertyUtil.directSubs(concept);
         SchemaConcept[] expected = Stream.concat(
                 Stream.of(concept),
@@ -133,17 +133,17 @@ public class SchemaConceptPropertyTest {
     }
 
     @Property
-    public void whenGettingTheIndirectSubs_TheyContainTheOntologyConcept(SchemaConcept concept) {
+    public void whenGettingTheIndirectSubs_TheyContainTheSchemaConcept(SchemaConcept concept) {
         assertThat(concept.subs().collect(toSet()), hasItem(concept));
     }
 
     @Property
     public void whenSettingTheDirectSuperOfAMetaConcept_Throw(
-            @Meta SchemaConcept subConcept, @FromGraph SchemaConcept superConcept) {
-        assumeTrue(sameOntologyConcept(subConcept, superConcept));
+            @Meta SchemaConcept subConcept, @FromTx SchemaConcept superConcept) {
+        assumeTrue(sameSchemaConcept(subConcept, superConcept));
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
         setDirectSuper(subConcept, superConcept);
     }
 
@@ -152,15 +152,15 @@ public class SchemaConceptPropertyTest {
             @NonMeta SchemaConcept concept, long seed) {
         SchemaConcept newSuperConcept = PropertyUtil.choose(concept.subs(), seed);
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.loopCreated(concept, newSuperConcept).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.loopCreated(concept, newSuperConcept).getMessage());
         setDirectSuper(concept, newSuperConcept);
     }
 
     @Property
     public void whenSettingTheDirectSuper_TheDirectSuperIsSet(
-            @NonMeta SchemaConcept subConcept, @FromGraph SchemaConcept superConcept) {
-        assumeTrue(sameOntologyConcept(subConcept, superConcept));
+            @NonMeta SchemaConcept subConcept, @FromTx SchemaConcept superConcept) {
+        assumeTrue(sameSchemaConcept(subConcept, superConcept));
         assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
         //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
@@ -173,11 +173,11 @@ public class SchemaConceptPropertyTest {
 
     @Property
     public void whenAddingADirectSubThatIsAMetaConcept_Throw(
-            SchemaConcept superConcept, @Meta @FromGraph SchemaConcept subConcept) {
-        assumeTrue(sameOntologyConcept(subConcept, superConcept));
+            SchemaConcept superConcept, @Meta @FromTx SchemaConcept subConcept) {
+        assumeTrue(sameSchemaConcept(subConcept, superConcept));
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.metaTypeImmutable(subConcept.getLabel()).getMessage());
         addDirectSub(superConcept, subConcept);
     }
 
@@ -186,15 +186,15 @@ public class SchemaConceptPropertyTest {
             @NonMeta SchemaConcept newSubConcept, long seed) {
         SchemaConcept concept = PropertyUtil.choose(newSubConcept.subs(), seed);
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.loopCreated(newSubConcept, concept).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.loopCreated(newSubConcept, concept).getMessage());
         addDirectSub(concept, newSubConcept);
     }
 
     @Property
     public void whenAddingADirectSub_TheDirectSubIsAdded(
-            SchemaConcept superConcept, @NonMeta @FromGraph SchemaConcept subConcept) {
-        assumeTrue(sameOntologyConcept(subConcept, superConcept));
+            SchemaConcept superConcept, @NonMeta @FromTx SchemaConcept subConcept) {
+        assumeTrue(sameSchemaConcept(subConcept, superConcept));
         assumeThat(subConcept.subs().collect(toSet()), not(hasItem(superConcept)));
 
         //TODO: get rid of this once traversing to the instances of an implicit type does not require  the plays edge
@@ -207,26 +207,26 @@ public class SchemaConceptPropertyTest {
 
     @Ignore // TODO: Find a way to generate linked rules
     @Property
-    public void whenDeletingAnOntologyConceptWithHypothesisRules_Throw(SchemaConcept concept) {
+    public void whenDeletingASchemaConceptWithHypothesisRules_Throw(SchemaConcept concept) {
         assumeThat(concept.getRulesOfHypothesis().collect(toSet()), not(empty()));
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.cannotBeDeleted(concept).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.cannotBeDeleted(concept).getMessage());
         concept.delete();
     }
 
     @Ignore // TODO: Find a way to generate linked rules
     @Property
-    public void whenDeletingAnOntologyConceptWithConclusionRules_Throw(SchemaConcept concept) {
+    public void whenDeletingASchemaConceptWithConclusionRules_Throw(SchemaConcept concept) {
         assumeThat(concept.getRulesOfConclusion().collect(toSet()), not(empty()));
 
-        exception.expect(GraphOperationException.class);
-        exception.expectMessage(GraphOperationException.cannotBeDeleted(concept).getMessage());
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(GraknTxOperationException.cannotBeDeleted(concept).getMessage());
         concept.delete();
     }
 
 
-    private boolean sameOntologyConcept(SchemaConcept concept1, SchemaConcept concept2) {
+    private boolean sameSchemaConcept(SchemaConcept concept1, SchemaConcept concept2) {
         return concept1.isEntityType() && concept2.isEntityType() ||
                 concept1.isRelationshipType() && concept2.isRelationshipType() ||
                 concept1.isRole() && concept2.isRole() ||

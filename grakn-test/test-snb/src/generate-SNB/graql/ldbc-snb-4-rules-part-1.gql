@@ -1,0 +1,18 @@
+define
+
+original-post sub relationship
+  relates parent-message
+  relates child-message;
+parent-message sub role;
+child-message sub role;
+message plays child-message;
+post plays parent-message;
+
+forum-member sub relationship
+  relates member-message
+  relates group-forum;
+member-message sub role;
+group-forum sub role;
+forum plays group-forum;
+message plays member-message;
+

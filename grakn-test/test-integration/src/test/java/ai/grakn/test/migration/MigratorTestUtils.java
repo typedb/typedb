@@ -30,7 +30,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
 
@@ -62,14 +62,14 @@ public class MigratorTestUtils {
         return new File(MigratorTestUtils.class.getResource(component + "/" + fileName).getPath());
     }
 
-    public static void load(GraknSession factory, File ontology) {
+    public static void load(GraknSession factory, File schema) {
         try(GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.graql()
-                    .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
+                    .parse(Files.readLines(schema, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();
 
             graph.commit();
-        } catch (IOException |InvalidGraphException e){
+        } catch (IOException |InvalidKBException e){
             throw new RuntimeException(e);
         }
     }
@@ -86,7 +86,7 @@ public class MigratorTestUtils {
         RelationshipType relationshipType = graph.getSchemaConcept(relation);
 
         Role role1 = thing1.plays().filter(r -> r.relationTypes().anyMatch(rel -> rel.equals(relationshipType))).findFirst().get();
-        assertTrue(thing1.relations(role1).anyMatch(rel -> rel.rolePlayers().anyMatch(r -> r.equals(thing2))));
+        assertTrue(thing1.relationships(role1).anyMatch(rel -> rel.rolePlayers().anyMatch(r -> r.equals(thing2))));
     }
 
 
@@ -117,7 +117,7 @@ public class MigratorTestUtils {
         Role roleOwner = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(label));
         Role roleOther = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 
-        Stream<Relationship> relations = thing.relations(roleOwner);
+        Stream<Relationship> relations = thing.relationships(roleOwner);
         return relations.flatMap(r -> r.rolePlayers(roleOther)).map(Concept::asAttribute);
     }
 

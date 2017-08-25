@@ -84,7 +84,7 @@ Maradi
 
 ## Where Next?
 
-After running this SQL migration, check out the [Graql documentation](../graql/graql-overview.html) and the [Java API documentation](../developing-with-java/graph-api.html) for more instructions on how you can explore the world.
+After running this SQL migration, check out the [Graql documentation](../graql/graql-overview.html) and the [Java API documentation](../developing-with-java/java-api.html) for more instructions on how you can explore the world.
 
 
 {% include links.html %}
