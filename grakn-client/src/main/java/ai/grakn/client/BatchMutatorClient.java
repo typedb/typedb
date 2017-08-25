@@ -25,6 +25,7 @@ import static ai.grakn.util.REST.Request.BATCH_NUMBER;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
 import com.codahale.metrics.ConsoleReporter;
+import com.codahale.metrics.Meter;
 import static com.codahale.metrics.MetricAttribute.M5_RATE;
 import static com.codahale.metrics.MetricAttribute.P95;
 import static com.codahale.metrics.MetricAttribute.P98;
@@ -86,20 +87,23 @@ public class BatchMutatorClient {
     private final Timer addTimer;
     private final Timer batchSendToLoaderTimer;
     private final Timer batchSendToEngineTimer;
+    private final Meter failureMeter;
 
     private Consumer<TaskId> onCompletionOfTask;
     private AtomicInteger batchNumber;
     private int batchSize;
     private boolean retry = false;
     private ExecutorService threadPool;
-    private final AtomicInteger succeeded = new AtomicInteger(0);
-    private final AtomicInteger failed = new AtomicInteger(0);
 
     public BatchMutatorClient(String keyspace, String uri) {
-        this(keyspace, uri, (TaskId t) -> {});
+        this(keyspace, uri, (TaskId t) -> {}, true);
     }
 
-    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskId> onCompletionOfTask) {
+    public BatchMutatorClient(String keyspace, String uri, boolean reportStats) {
+        this(keyspace, uri, (TaskId t) -> {}, reportStats);
+    }
+
+    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskId> onCompletionOfTask, boolean reportStats) {
         this.keyspace = keyspace;
         this.queries = new ArrayList<>();
         this.futures = new HashSet<>();
@@ -129,12 +133,16 @@ public class BatchMutatorClient {
                 .timer(name(BatchMutatorClient.class, "batch_send_to_engine"));
         addTimer = metricRegistry
                 .timer(name(BatchMutatorClient.class, "add"));
-        final ConsoleReporter reporter = ConsoleReporter.forRegistry(metricRegistry)
-                .convertRatesTo(TimeUnit.SECONDS)
-                .convertDurationsTo(TimeUnit.MILLISECONDS)
-                .disabledMetricAttributes(ImmutableSet.of(P999, STDDEV, P98, P95, M5_RATE))
-                .build();
-        reporter.start(30, TimeUnit.SECONDS);
+        failureMeter = metricRegistry
+                .meter(name(BatchMutatorClient.class, "failure"));
+        if (reportStats) {
+            final ConsoleReporter reporter = ConsoleReporter.forRegistry(metricRegistry)
+                    .convertRatesTo(TimeUnit.SECONDS)
+                    .convertDurationsTo(TimeUnit.MILLISECONDS)
+                    .disabledMetricAttributes(ImmutableSet.of(P999, STDDEV, P98, P95, M5_RATE))
+                    .build();
+            reporter.start(1, TimeUnit.MINUTES);
+        }
     }
 
     /**
@@ -275,24 +283,14 @@ public class BatchMutatorClient {
             try {
                 TaskId taskId = sendQueryRetry.call(callable);
                 onCompletionOfTask.accept(taskId);
-                count(true);
                 return null;
             } catch (Exception e) {
+                failureMeter.mark();
                 LOG.error("Error while executing queries:\n{}", queries, e);
-                count(false);
                 throw new RuntimeException(e);
             }
         });
-
         futures.add(future);
-    }
-
-    private void count(boolean success) {
-        int s = success ? succeeded.incrementAndGet() : succeeded.get();
-        int f = success ? failed.get() : failed.incrementAndGet();
-        if (success && (s % 100 == 0)) {
-            System.out.println("Success " + s + " failure " + f);
-        }
     }
 }
 
