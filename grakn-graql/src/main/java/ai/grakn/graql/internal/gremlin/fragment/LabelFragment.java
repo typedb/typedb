@@ -20,42 +20,28 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
-import com.google.common.collect.ImmutableSet;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
-
-import java.util.Optional;
 
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 
-class LabelFragment extends Fragment {
+@AutoValue
+abstract class LabelFragment extends Fragment {
 
-    private final Label label;
-    private final Var start;
-    private final Optional<Var> end = Optional.empty();
-    private final ImmutableSet<Var> otherVarNames = ImmutableSet.of();
-    private VarProperty varProperty; // For reasoner to map fragments to atoms
-
-    LabelFragment(VarProperty varProperty, Var start, Label label) {
-        super();
-        this.varProperty = varProperty;
-        this.start = start;
-        this.label = label;
-    }
+    abstract Label label();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
             GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
 
-        return traversal.has(LABEL_ID.name(), graph.admin().convertToId(label).getValue());
+        return traversal.has(LABEL_ID.name(), graph.admin().convertToId(label()).getValue());
     }
 
     @Override
     public String getName() {
-        return "[label:" + typeLabelToString(label) + "]";
+        return "[label:" + typeLabelToString(label()) + "]";
     }
 
     @Override
@@ -66,52 +52,5 @@ class LabelFragment extends Fragment {
     @Override
     public boolean hasFixedFragmentCost() {
         return true;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        LabelFragment that = (LabelFragment) o;
-
-        return label != null ? label.equals(that.label) : that.label == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (label != null ? label.hashCode() : 0);
-        return result;
-    }
-
-    /**
-     * Get the corresponding property
-     */
-    public VarProperty getVarProperty() {
-        return varProperty;
-    }
-
-    /**
-     * @return the variable name that this fragment starts from in the query
-     */
-    @Override
-    public final Var getStart() {
-        return start;
-    }
-
-    /**
-     * @return the variable name that this fragment ends at in the query, if this query has an end variable
-     */
-    @Override
-    public final Optional<Var> getEnd() {
-        return end;
-    }
-
-    @Override
-    ImmutableSet<Var> otherVarNames() {
-        return otherVarNames;
     }
 }

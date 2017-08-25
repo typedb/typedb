@@ -22,47 +22,35 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
-import com.google.common.collect.ImmutableSet;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.CommonUtil.optionalToStream;
 import static java.util.stream.Collectors.toSet;
 
-class ValueFragment extends Fragment {
+@AutoValue
+abstract class ValueFragment extends Fragment {
 
-    private final ValuePredicate predicate;
-    private final Var start;
-    private final Optional<Var> end = Optional.empty();
-    private final ImmutableSet<Var> otherVarNames = ImmutableSet.of();
-    private VarProperty varProperty; // For reasoner to map fragments to atoms
-
-    ValueFragment(VarProperty varProperty, Var start, ValuePredicate predicate) {
-        super();
-        this.varProperty = varProperty;
-        this.start = start;
-        this.predicate = predicate;
-    }
+    abstract ValuePredicate predicate();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
             GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
 
-        return predicate.applyPredicate(traversal);
+        return predicate().applyPredicate(traversal);
     }
 
     @Override
     public String getName() {
-        return "[value:" + predicate + "]";
+        return "[value:" + predicate() + "]";
     }
 
     @Override
     public double fragmentCost() {
-        if (predicate.isSpecific()) {
+        if (predicate().isSpecific()) {
             return COST_RESOURCES_PER_VALUE;
         } else {
             // Assume approximately half of values will satisfy a filter
@@ -72,58 +60,11 @@ class ValueFragment extends Fragment {
 
     @Override
     public boolean hasFixedFragmentCost() {
-        return predicate.isSpecific() && getDependencies().isEmpty();
+        return predicate().isSpecific() && getDependencies().isEmpty();
     }
 
     @Override
     public Set<Var> getDependencies() {
-        return optionalToStream(predicate.getInnerVar()).map(VarPatternAdmin::var).collect(toSet());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        ValueFragment that = (ValueFragment) o;
-
-        return predicate != null ? predicate.equals(that.predicate) : that.predicate == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (predicate != null ? predicate.hashCode() : 0);
-        return result;
-    }
-
-    /**
-     * Get the corresponding property
-     */
-    public VarProperty getVarProperty() {
-        return varProperty;
-    }
-
-    /**
-     * @return the variable name that this fragment starts from in the query
-     */
-    @Override
-    public final Var getStart() {
-        return start;
-    }
-
-    /**
-     * @return the variable name that this fragment ends at in the query, if this query has an end variable
-     */
-    @Override
-    public final Optional<Var> getEnd() {
-        return end;
-    }
-
-    @Override
-    ImmutableSet<Var> otherVarNames() {
-        return otherVarNames;
+        return optionalToStream(predicate().getInnerVar()).map(VarPatternAdmin::var).collect(toSet());
     }
 }

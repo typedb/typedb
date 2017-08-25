@@ -20,38 +20,31 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
-import java.util.Optional;
+@AutoValue
+abstract class NeqFragment extends Fragment {
 
-class NeqFragment extends Fragment {
-
-    private final Var other;
-    private final Var start;
-    private final Optional<Var> end = Optional.empty();
-    private final ImmutableSet<Var> otherVarNames = ImmutableSet.of();
-    private VarProperty varProperty; // For reasoner to map fragments to atoms
-
-    NeqFragment(VarProperty varProperty, Var start, Var other) {
-        super();
-        this.varProperty = varProperty;
-        this.start = start;
-        this.other = other;
+    @Override
+    ImmutableSet<Var> otherVarNames() {
+        return ImmutableSet.of(other());
     }
+
+    abstract Var other();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
             GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
-        return traversal.where(P.neq(other.getValue()));
+        return traversal.where(P.neq(other().getValue()));
     }
 
     @Override
     public String getName() {
-        return "[neq:" + other.shortName() + "]";
+        return "[neq:" + other().shortName() + "]";
     }
 
     @Override
@@ -62,52 +55,6 @@ class NeqFragment extends Fragment {
 
     @Override
     public ImmutableSet<Var> getDependencies() {
-        return ImmutableSet.of(other);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        NeqFragment that = (NeqFragment) o;
-
-        return other.equals(that.other);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + other.hashCode();
-        return result;
-    }
-
-    /**
-     * Get the corresponding property
-     */
-    public VarProperty getVarProperty() {
-        return varProperty;
-    }
-
-    /**
-     * @return the variable name that this fragment starts from in the query
-     */
-    @Override
-    public final Var getStart() {
-        return start;
-    }
-
-    /**
-     * @return the variable name that this fragment ends at in the query, if this query has an end variable
-     */
-    @Override
-    public final Optional<Var> getEnd() {
-        return end;
-    }
-
-    @Override
-    ImmutableSet<Var> otherVarNames() {
-        return otherVarNames;
+        return ImmutableSet.of(other());
     }
 }

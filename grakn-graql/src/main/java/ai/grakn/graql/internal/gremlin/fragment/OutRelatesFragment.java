@@ -20,12 +20,11 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import com.google.common.collect.ImmutableSet;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
@@ -35,19 +34,11 @@ import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.RELATES;
 
-class OutRelatesFragment extends Fragment {
+@AutoValue
+abstract class OutRelatesFragment extends Fragment {
 
-    private final Var start;
-    private final Optional<Var> end;
-    private final ImmutableSet<Var> otherVarNames = ImmutableSet.of();
-    private VarProperty varProperty; // For reasoner to map fragments to atoms
-
-    OutRelatesFragment(VarProperty varProperty, Var start, Var end) {
-        super();
-        this.varProperty = varProperty;
-        this.start = start;
-        this.end = Optional.of(end);
-    }
+    @Override
+    public abstract Optional<Var> getEnd();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
@@ -70,25 +61,5 @@ class OutRelatesFragment extends Fragment {
     public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
                                                               Map<Node, Map<Node, Fragment>> edges) {
         return getDirectedEdges(NodeId.NodeType.RELATES, nodes, edges);
-    }
-
-    @Override
-    public VarProperty getVarProperty() {
-        return varProperty;
-    }
-
-    @Override
-    public Var getStart() {
-        return start;
-    }
-
-    @Override
-    public Optional<Var> getEnd() {
-        return end;
-    }
-
-    @Override
-    ImmutableSet<Var> otherVarNames() {
-        return otherVarNames;
     }
 }

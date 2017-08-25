@@ -73,27 +73,27 @@ public class Fragments {
     }
 
     public static Fragment inSub(VarProperty varProperty, Var start, Var end) {
-        return new InSubFragment(varProperty, start, end);
+        return new AutoValue_InSubFragment(varProperty, start, Optional.of(end));
     }
 
     public static Fragment outSub(VarProperty varProperty, Var start, Var end) {
-        return new OutSubFragment(varProperty, start, end);
+        return new AutoValue_OutSubFragment(varProperty, start, Optional.of(end));
     }
 
     public static InRelatesFragment inRelates(VarProperty varProperty, Var start, Var end) {
-        return new InRelatesFragment(varProperty, start, end);
+        return new AutoValue_InRelatesFragment(varProperty, start, Optional.of(end));
     }
 
     public static Fragment outRelates(VarProperty varProperty, Var start, Var end) {
-        return new OutRelatesFragment(varProperty, start, end);
+        return new AutoValue_OutRelatesFragment(varProperty, start, Optional.of(end));
     }
 
     public static Fragment inIsa(VarProperty varProperty, Var start, Var end) {
-        return new InIsaFragment(varProperty, start, end);
+        return new AutoValue_InIsaFragment(varProperty, start, Optional.of(end));
     }
 
     public static Fragment outIsa(VarProperty varProperty, Var start, Var end) {
-        return new OutIsaFragment(varProperty, start, end);
+        return new AutoValue_OutIsaFragment(varProperty, start, Optional.of(end));
     }
 
     public static Fragment dataType(VarProperty varProperty, Var start, AttributeType.DataType dataType) {
@@ -101,11 +101,11 @@ public class Fragments {
     }
 
     public static Fragment inPlays(VarProperty varProperty, Var start, Var end, boolean required) {
-        return new InPlaysFragment(varProperty, start, end, required);
+        return new AutoValue_InPlaysFragment(varProperty, start, Optional.of(end), required);
     }
 
     public static Fragment outPlays(VarProperty varProperty, Var start, Var end, boolean required) {
-        return new OutPlaysFragment(varProperty, start, end, required);
+        return new AutoValue_OutPlaysFragment(varProperty, start, Optional.of(end), required);
     }
 
     public static Fragment id(VarProperty varProperty, Var start, ConceptId id) {
@@ -113,34 +113,35 @@ public class Fragments {
     }
 
     public static Fragment label(VarProperty varProperty, Var start, Label label) {
-        return new LabelFragment(varProperty, start, label);
+        return new AutoValue_LabelFragment(varProperty, start, label);
     }
 
     public static Fragment value(VarProperty varProperty, Var start, ValuePredicate predicate) {
-        return new ValueFragment(varProperty, start, predicate);
+        return new AutoValue_ValueFragment(varProperty, start, predicate);
     }
 
     public static Fragment isAbstract(VarProperty varProperty, Var start) {
-        return new IsAbstractFragment(varProperty, start);
+        return new AutoValue_IsAbstractFragment(varProperty, start);
     }
 
     public static Fragment regex(VarProperty varProperty, Var start, String regex) {
-        return new RegexFragment(varProperty, start, regex);
+        return new AutoValue_RegexFragment(varProperty, start, regex);
     }
 
     public static Fragment notInternal(VarProperty varProperty, Var start) {
-        return new NotInternalFragment(varProperty, start);
+        return new AutoValue_NotInternalFragment(varProperty, start);
     }
 
     public static Fragment neq(VarProperty varProperty, Var start, Var other) {
-        return new NeqFragment(varProperty, start, other);
+        return new AutoValue_NeqFragment(varProperty, start, other);
     }
 
     /**
      * A {@link Fragment} that uses an index stored on each resource. Resources are indexed by direct type and value.
      */
     public static Fragment resourceIndex(VarProperty varProperty, Var start, Label label, Object resourceValue) {
-        return new ResourceIndexFragment(varProperty, start, label, resourceValue);
+        String resourceIndex = Schema.generateAttributeIndex(label, resourceValue.toString());
+        return new AutoValue_ResourceIndexFragment(varProperty, start, resourceIndex);
     }
 
     static <T> GraphTraversal<T, Vertex> outSubs(GraphTraversal<T, Vertex> traversal) {
