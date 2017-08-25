@@ -250,11 +250,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return cachedIsAbstract.get();
     }
 
-    @Override
-    public Stream<Thing> scopes() {
-        return neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE);
-    }
-
     void trackRolePlayers(){
         instances().forEach(concept -> ((ThingImpl<?, ?>)concept).castingsInstance().forEach(
                 rolePlayer -> vertex().tx().txCache().trackForValidation(rolePlayer)));

@@ -57,7 +57,7 @@ true, false
 #### Schema definition
 
 ```graql-test-ignore
-has, has-scope, 
+has,
 is-abstract, isa, 
 key,
 plays,
