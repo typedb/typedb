@@ -155,4 +155,11 @@ public interface Atomic {
      */
     @CheckReturnValue
     Set<Var> getVarNames();
+
+    /**
+     * infers types (type, role types) for the atom if applicable/possible
+     * @return either this atom if nothing could be inferred or a fresh atom with inferred types
+     */
+    @CheckReturnValue
+    Atomic inferTypes();
 }
