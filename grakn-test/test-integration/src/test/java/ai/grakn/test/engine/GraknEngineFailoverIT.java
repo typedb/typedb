@@ -175,7 +175,7 @@ public class GraknEngineFailoverIT {
                         t.creator(),
                         t.schedule().runAt(),
                         t.schedule().interval().orElse(null),
-                        configuration(t).json());
+                        configuration(t).json(), false);
             } catch (Exception e) {
                 LOG.error("Exception while sending task {}", t.getId(), e);
                 return null;

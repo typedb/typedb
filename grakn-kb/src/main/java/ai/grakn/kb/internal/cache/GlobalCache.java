@@ -59,7 +59,7 @@ public class GlobalCache {
     public GlobalCache(Properties properties){
         cachedLabels = new ConcurrentHashMap<>();
 
-        int cacheTimeout = Integer.parseInt(properties.get(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS).toString());
+        int cacheTimeout = Integer.parseInt(properties.getProperty(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS, "600000"));
         cachedTypes = CacheBuilder.newBuilder()
                 .maximumSize(1000)
                 .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)

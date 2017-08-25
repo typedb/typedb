@@ -105,6 +105,7 @@ public class REST {
         public static final String TASK_RUN_AT_PARAMETER = "runAt";
         public static final String TASK_PRIORITY_PARAMETER = "priority";
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
+        public static final String TASK_RUN_WAIT_PARAMETER = "wait";
         public static final String TASK_LOADER_MUTATIONS = "mutations";
         public static final String BATCH_NUMBER = "batchNumber";
         public static final String LIMIT_PARAM = "limit";

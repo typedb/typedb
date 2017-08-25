@@ -38,4 +38,6 @@ public interface TaskSubmitter {
      * @param taskState Task to execute
      */
     void addTask(TaskState taskState, TaskConfiguration configuration);
+
+    void runTask(TaskState taskState, TaskConfiguration configuration);
 }

@@ -80,7 +80,8 @@ public class TaskClientTest {
         Duration interval = Duration.ofSeconds(1);
         Json configuration = Json.nil();
 
-        TaskId identifier = client.sendTask(taskClass, creator, runAt, interval, configuration);
+        TaskId identifier = client.sendTask(taskClass, creator, runAt, interval, configuration,
+                false);
 
         verify(manager).addTask(argThat(argument ->
                 argument.getId().equals(identifier)
@@ -102,7 +103,7 @@ public class TaskClientTest {
             Json configuration = Json.nil();
 
             exception.expect(GraknBackendException.class);
-            client.sendTask(taskClass, creator, runAt, null, configuration);
+            client.sendTask(taskClass, creator, runAt, null, configuration, false);
         } finally {
             ctx.start();
         }

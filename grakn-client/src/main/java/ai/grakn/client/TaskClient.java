@@ -19,6 +19,9 @@
 
 package ai.grakn.client;
 
+import ai.grakn.engine.TaskId;
+import ai.grakn.engine.TaskStatus;
+import ai.grakn.exception.GraknBackendException;
 import static ai.grakn.util.REST.Request.CONFIGURATION_PARAM;
 import static ai.grakn.util.REST.Request.LIMIT_PARAM;
 import static ai.grakn.util.REST.Request.TASKS_PARAM;
@@ -29,30 +32,27 @@ import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import static java.lang.String.format;
-import static org.apache.http.HttpHeaders.CONTENT_TYPE;
-import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
-import static org.apache.http.HttpStatus.SC_NOT_FOUND;
-import static org.apache.http.HttpStatus.SC_OK;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
-
-import ai.grakn.engine.TaskId;
-import ai.grakn.engine.TaskStatus;
-import ai.grakn.exception.GraknBackendException;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import java.io.IOException;
+import static java.lang.String.format;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.Instant;
 import mjson.Json;
+import static org.apache.http.HttpHeaders.CONTENT_TYPE;
+import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
 import org.apache.http.HttpResponse;
+import static org.apache.http.HttpStatus.SC_ACCEPTED;
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.apache.http.HttpStatus.SC_OK;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.utils.URIBuilder;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
@@ -74,7 +74,7 @@ public class TaskClient extends Client {
         this.host = host;
         this.port = port;
     }
-    
+
     public static TaskClient of(String host, int port) {
         return new TaskClient(host, port);
     }
@@ -87,15 +87,19 @@ public class TaskClient extends Client {
      * @param runAt Time at which the task should be executed
      * @param interval Interval at which the task should recur, can be null
      * @param configuration Data on which to execute the task
+     * @param wait
      * @return Identifier of the submitted task that will be executed on a server
      */
-    public TaskId sendTask(Class<?> taskClass, String creator, Instant runAt, Duration interval, Json configuration) {
-        return sendTask(taskClass.getName(), creator, runAt, interval, configuration, -1);
+    public TaskId sendTask(Class<?> taskClass, String creator, Instant runAt, Duration interval,
+            Json configuration, boolean wait) {
+        return sendTask(taskClass.getName(), creator, runAt, interval, configuration, -1, wait);
     }
 
-    TaskId sendTask(String taskClass, String creator, Instant runAt, Duration interval, Json configuration, long limit){
+    TaskId sendTask(String taskClass, String creator, Instant runAt, Duration interval,
+            Json configuration, long limit, boolean wait){
         try {
-            URIBuilder uri = new URIBuilder(TASKS)
+            // TODO do this properly
+            URIBuilder uri = new URIBuilder(TASKS + (wait ? "?wait=true" : ""))
                     .setScheme(DEFAULT_SCHEME_NAME)
                     .setHost(host)
                     .setPort(port);
@@ -206,7 +210,8 @@ public class TaskClient extends Client {
     }
 
     private boolean isOk(HttpResponse response){
-        return response.getStatusLine().getStatusCode() == SC_OK;
+        int statusCode = response.getStatusLine().getStatusCode();
+        return statusCode == SC_OK || statusCode == SC_ACCEPTED;
     }
 
     private void assertOk(HttpResponse response){

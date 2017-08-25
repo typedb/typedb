@@ -92,6 +92,10 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
     }
 
+    public static GraqlQueryException labelNotFound(Label label, VarPatternAdmin var) {
+        return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label) + " var: " + var);
+    }
+
     public static GraqlQueryException failDelete(VarProperty property) {
         StringBuilder builder = new StringBuilder();
         property.buildString(builder);

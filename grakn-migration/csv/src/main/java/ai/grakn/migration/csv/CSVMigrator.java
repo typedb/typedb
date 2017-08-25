@@ -19,10 +19,6 @@
 package ai.grakn.migration.csv;
 
 import ai.grakn.migration.base.MigrationCLI;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -34,10 +30,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import static java.util.stream.Collectors.toMap;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static java.util.stream.Collectors.toMap;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 
 /**
  * The CSV migrator will migrate all of the data in a CSV file into Grakn Graql var patters, to be

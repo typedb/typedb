@@ -19,22 +19,19 @@
 package ai.grakn.migration.base;
 
 import ai.grakn.client.BatchMutatorClient;
+import ai.grakn.engine.TaskId;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.macro.Macro;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import static java.lang.String.format;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
-import static java.lang.String.format;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -125,11 +122,6 @@ public class Migrator {
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
         loader.setRetryPolicy(retry);
-        loader.setTaskCompletionConsumer(json -> {
-            if (json.has(STACK_TRACE) && json.at(STACK_TRACE).isString()) {
-                System.err.println(json.at(STACK_TRACE).asString());
-            }
-        });
 
         converter
                 .flatMap(d -> template(template, d))
@@ -163,8 +155,8 @@ public class Migrator {
      *
      * @return function that operates on completion of a task
      */
-    private Consumer<Json> recordMigrationStates(){
-        return (Json json) -> {
+    private Consumer<TaskId> recordMigrationStates(){
+        return (TaskId taskId) -> {
             numberBatchesCompleted.incrementAndGet();
 
             long timeElapsedSeconds = (System.currentTimeMillis() - startTime)/1000;

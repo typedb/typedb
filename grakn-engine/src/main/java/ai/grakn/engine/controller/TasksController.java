@@ -33,7 +33,7 @@ import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
-import static ai.grakn.util.REST.Response.Task.EXCEPTION;
+import static ai.grakn.util.REST.Response.EXCEPTION;
 import static ai.grakn.util.REST.Response.Task.ID;
 import static ai.grakn.util.REST.Response.Task.STATUS;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
@@ -89,7 +89,7 @@ public class TasksController {
     private static final TaskState.Priority DEFAULT_TASK_PRIORITY = TaskState.Priority.LOW;
 
     private static final int MAX_THREADS = 10;
-    private static final Duration MAX_EXECUTION_TIME = Duration.ofSeconds(10);
+    private static final Duration MAX_EXECUTION_TIME = Duration.ofMinutes(5);
 
     private final TaskManager manager;
     private final ExecutorService executor;
@@ -201,6 +201,9 @@ public class TasksController {
             @ApiImplicitParam(name = REST.Request.TASKS_PARAM, value = "JSON Array containing an ordered list of task parameters and comfigurations.", required = true, dataType = "List", paramType = "body")
     })
     private Json createTasks(Request request, Response response) {
+        String waitString = request.queryParams("wait");
+        boolean wait = waitString != null && waitString.equals("true");
+
         Json requestBodyAsJson = bodyAsJson(request);
         // This covers the previous behaviour. It looks like a quirk of the testing
         // client library we are using. Consider deprecating it.
@@ -220,7 +223,7 @@ public class TasksController {
         final Timer.Context context = createTasksTimer.time();
         try {
             List<TaskStateWithConfiguration> taskStates = parseTasks(taskJsonList);
-            CompletableFuture<List<Json>> completableFuture = saveTasksInQueue(taskStates);
+            CompletableFuture<List<Json>> completableFuture = saveTasksInQueue(taskStates, wait);
             try {
                 return buildResponseForTasks(response, responseJson, completableFuture);
             } catch (TimeoutException | InterruptedException e) {
@@ -279,11 +282,11 @@ public class TasksController {
     }
 
     private CompletableFuture<List<Json>> saveTasksInQueue(
-            List<TaskStateWithConfiguration> taskStates) {
+            List<TaskStateWithConfiguration> taskStates, boolean wait) {
         // Put the tasks in a persistent queue
         List<CompletableFuture<Json>> futures = taskStates.stream()
                 .map(taskStateWithConfiguration -> CompletableFuture
-                        .supplyAsync(() -> addTaskToManager(taskStateWithConfiguration), executor))
+                        .supplyAsync(() -> addTaskToManager(taskStateWithConfiguration, wait), executor))
                 .collect(toList());
         return ConcurrencyUtil.all(futures);
     }
@@ -304,10 +307,14 @@ public class TasksController {
         }
     }
 
-    private Json addTaskToManager(TaskStateWithConfiguration taskState) {
+    private Json addTaskToManager(TaskStateWithConfiguration taskState, boolean wait) {
         Json singleTaskReturnJson = Json.object().set("index", taskState.getIndex());
         try {
-            manager.addTask(taskState.getTaskState(), TaskConfiguration.of(taskState.getConfiguration()));
+            if (wait) {
+                manager.runTask(taskState.getTaskState(), TaskConfiguration.of(taskState.getConfiguration()));
+            } else {
+                manager.addTask(taskState.getTaskState(), TaskConfiguration.of(taskState.getConfiguration()));
+            }
             singleTaskReturnJson.set("id", taskState.getTaskState().getId().getValue());
             singleTaskReturnJson.set("code", HttpStatus.SC_OK);
         } catch (Exception e) {

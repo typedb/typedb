@@ -32,8 +32,11 @@ import ai.grakn.redisq.Redisq;
 import ai.grakn.redisq.RedisqBuilder;
 import ai.grakn.redisq.State;
 import static ai.grakn.redisq.State.DONE;
+import static ai.grakn.redisq.State.FAILED;
 import ai.grakn.redisq.exceptions.StateFutureInitializationException;
+import ai.grakn.redisq.exceptions.WaitException;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.ImmutableSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -61,7 +64,7 @@ public class RedisTaskManager implements TaskManager {
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
                             EngineGraknTxFactory factory, LockProvider distributedLockClient,
                             MetricRegistry metricRegistry) {
-        this(engineId, config, jedisPool, 1, factory, distributedLockClient, metricRegistry);
+        this(engineId, config, jedisPool, 64, factory, distributedLockClient, metricRegistry);
     }
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
@@ -69,11 +72,12 @@ public class RedisTaskManager implements TaskManager {
                             MetricRegistry metricRegistry) {
         Consumer<Task> consumer = new RedisTaskQueueConsumer(this, engineId, config, RedisCountStorage
                 .create(jedisPool, metricRegistry), metricRegistry, factory, distributedLockClient);
-
+        LOG.info("Running queue consumer with {} execution threads", threads);
         this.redisq = new RedisqBuilder<Task>()
                 .setJedisPool(jedisPool)
                 .setName("grakn")
                 .setConsumer(consumer)
+                .setMetricRegistry(metricRegistry)
                 .setThreadPool(Executors.newFixedThreadPool(threads))
                 .setDocumentClass(Task.class)
                 .createRedisq();
@@ -120,14 +124,26 @@ public class RedisTaskManager implements TaskManager {
         redisq.push(task);
     }
 
+    @Override
+    public void runTask(TaskState taskState, TaskConfiguration configuration) {
+        Task task = Task.builder()
+                .setTaskConfiguration(configuration)
+                .setTaskState(taskState).build();
+        try {
+            redisq.pushAndWait(task, 5, TimeUnit.MINUTES);
+        } catch (WaitException e) {
+            throw new RuntimeException("Could not run task", e);
+        }
+    }
+
     public void waitForTask(TaskId taskId)
             throws StateFutureInitializationException, ExecutionException, InterruptedException {
-        redisq.getFutureForDocumentStateWait(DONE, taskId.getValue(), 1, TimeUnit.SECONDS).get();
+        redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(), 1, TimeUnit.SECONDS).get();
     }
 
     public void waitForTask(State state, TaskId taskId, long timeout, TimeUnit timeUnit)
             throws StateFutureInitializationException, ExecutionException, InterruptedException, TimeoutException {
-        redisq.getFutureForDocumentStateWait(state, taskId.getValue(), 1, TimeUnit.SECONDS).get(timeout, timeUnit);
+        redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(), 1, TimeUnit.SECONDS).get(timeout, timeUnit);
     }
 
     public Redisq getQueue() {
