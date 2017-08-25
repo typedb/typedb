@@ -325,7 +325,7 @@ public class GenealogyTest {
         assertEquals(answers.size(), 50);
         assertEquals(answers.size(), requeriedAnswers.size());
     }
-    
+
     @Test
     public void testInLaws2() {
         String queryString = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$y has gender 'male';";

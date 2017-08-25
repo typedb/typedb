@@ -92,7 +92,7 @@ public class ConjunctiveState extends QueryState {
             return new AnswerState(dbIterator.next(), getUnifier(), getParentState());
         }
 
-        if (!visited) {
+        if (!subQueries.isEmpty() && !visited) {
             visited = true;
             return new CumulativeState(subQueries, new QueryAnswer(), getUnifier(), this, getSubGoals(), getCache());
         }

@@ -131,7 +131,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return corresponding positive query (with neq predicates removed)
      */
-    private ReasonerQueryImpl positive(){
+    public ReasonerQueryImpl positive(){
         return new ReasonerQueryImpl(getAtoms().stream().filter(at -> !(at instanceof NeqPredicate)).collect(Collectors.toSet()), tx());
     }
 

@@ -66,14 +66,11 @@ public class AtomicState extends QueryState{
                 .iterator();
         this.cacheUnifier = streamUnifierPair.getValue().inverse();
 
-        //if this already has full substitution and exists in the db then do not resolve further
-        //NB: the queryIterator check is purely because we may want to ask for an explanation
-        boolean hasFullSubstitution = query.isGround();
+        //if this is ground and exists in the db then do not resolve further
         if(subGoals.contains(query)
-                || (hasFullSubstitution && dbIterator.hasNext() ) ){
+                || (query.isGround() && dbIterator.hasNext() ) ){
             this.ruleIterator = Collections.emptyIterator();
-        }
-        else {
+        } else {
             this.ruleIterator = query.getRuleIterator();
         }
 
