@@ -22,7 +22,7 @@ GRAKN.AI requires Oracle Java 8 (Standard Edition) with the `$JAVA_HOME` set acc
 <br /> 
 If you intend to build Grakn from source code, or develop on top of it, you will also need Maven 3.
 <br /> 
-If you are looking for information about setting up a production deployment of GRAKN.AI, please see the [deployment guide](./deploy-grakn/grakn-deployment-guide.html)." %}
+If you are looking for information about setting up a production deployment of GRAKN.AI, please see the [deployment guide](../deploy-grakn/grakn-deployment-guide.html)." %}
 
 Unzip the download into your preferred location and run the following in the terminal to start Grakn:
 
