@@ -91,6 +91,14 @@ public interface Relationship extends Thing {
      */
     Relationship addRolePlayer(Role role, Thing thing);
 
+    /**
+     * Removes the provided {@link Attribute} from this {@link Relationship}
+     * @param attribute the {@link Attribute} to be removed
+     * @return The {@link Relationship} itself
+     */
+    @Override
+    Relationship deleteAttribute(Attribute attribute);
+
     //------------------------------------- Other ---------------------------------
     @Deprecated
     @CheckReturnValue

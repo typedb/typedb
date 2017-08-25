@@ -242,12 +242,6 @@ public abstract class Atom extends AtomicBase {
     public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return Collections.singleton(new UnifierImpl());}
 
     /**
-     * infers types (type, role types) fo the atom if applicable/possible
-     * @return either this atom if nothing could be inferred or a fresh atom with inferred types
-     */
-    public Atom inferTypes(){ return this; }
-
-    /**
      * rewrites the atom to one with user defined name
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */

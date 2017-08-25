@@ -37,13 +37,14 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 
+import com.google.common.collect.ImmutableSet;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint;
 
@@ -61,18 +62,20 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint
  *
  */
 public class ResourceAtom extends Binary{
-    private final Set<ValuePredicate> multiPredicate = new HashSet<>();
+    private final ImmutableSet<ValuePredicate> multiPredicate;
 
     public ResourceAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
         super(pattern, predicateVar, idPred, par);
-        this.multiPredicate.addAll(ps);
+        this.multiPredicate = ImmutableSet.copyOf(ps);
     }
+
     private ResourceAtom(ResourceAtom a) {
         super(a);
-        Set<ValuePredicate> multiPredicate = getMultiPredicate();
-        a.getMultiPredicate().stream()
-                .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
-                .forEach(multiPredicate::add);
+        this.multiPredicate = ImmutableSet.<ValuePredicate>builder().addAll(
+                a.getMultiPredicate().stream()
+                        .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
+                        .iterator()
+        ).build();
     }
 
     @Override

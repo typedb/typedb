@@ -96,14 +96,6 @@ public class Fragments {
         return new OutIsaFragment(varProperty, start, end);
     }
 
-    public static Fragment inHasScope(VarProperty varProperty, Var start, Var end) {
-        return new InHasScopeFragment(varProperty, start, end);
-    }
-
-    public static Fragment outHasScope(VarProperty varProperty, Var start, Var end) {
-        return new OutHasScopeFragment(varProperty, start, end);
-    }
-
     public static Fragment dataType(VarProperty varProperty, Var start, AttributeType.DataType dataType) {
         return new DataTypeFragment(varProperty, start, dataType);
     }

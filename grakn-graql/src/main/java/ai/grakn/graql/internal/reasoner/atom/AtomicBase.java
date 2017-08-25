@@ -88,6 +88,9 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public void setParentQuery(ReasonerQuery q){ parent = q;}
 
+    @Override
+    public Atomic inferTypes(){ return this; }
+
     /**
      * @return GraknTx this atomic is defined in
      */
