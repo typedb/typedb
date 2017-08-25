@@ -124,6 +124,22 @@ public class RelationAtom extends IsaAtom {
         return relationPlayers;
     }
 
+    private Set<Label> getRoleLabels() {
+        return getRelationPlayers().stream()
+                .map(RelationPlayer::getRole)
+                .flatMap(CommonUtil::optionalToStream)
+                .map(VarPatternAdmin::getTypeLabel)
+                .flatMap(CommonUtil::optionalToStream)
+                .collect(toSet());
+    }
+
+    /**
+     * @return set constituting the role player var names
+     */
+    public Set<Var> getRolePlayers() {
+        return getRelationPlayers().stream().map(c -> c.getRolePlayer().var()).collect(toSet());
+    }
+
     @Override
     public Atomic copy() {
         return new RelationAtom(this);
@@ -175,9 +191,13 @@ public class RelationAtom extends IsaAtom {
         RelationAtom a2 = (RelationAtom) obj;
         return (isUserDefinedName() == a2.isUserDefinedName())
                 && Objects.equals(this.getTypeId(), a2.getTypeId())
+                //check relation players equivalent
+                && getRolePlayers().size() == a2.getRolePlayers().size()
+                && getRelationPlayers().size() == a2.getRelationPlayers().size()
+                && getRoleLabels().equals(a2.getRoleLabels())
+                //check constraints
                 && getRoleConceptIdMap().equals(a2.getRoleConceptIdMap())
-                && getRoleTypeMap().equals(a2.getRoleTypeMap())
-                && getRolePlayers().size() == a2.getRolePlayers().size();
+                && getRoleTypeMap().equals(a2.getRoleTypeMap());
     }
 
     @Override
@@ -186,6 +206,7 @@ public class RelationAtom extends IsaAtom {
         equivalenceHashCode = equivalenceHashCode * 37 + (this.getTypeId() != null ? this.getTypeId().hashCode() : 0);
         equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().hashCode();
         equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleTypeMap().hashCode();
+        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleLabels().hashCode();
         return equivalenceHashCode;
     }
 
@@ -273,11 +294,10 @@ public class RelationAtom extends IsaAtom {
                     .collect(Collectors.toMap(Atomic::getVarName, pred -> pred));
             Multimap<Role, Var> roleMap = getRoleVarMap();
 
-            roleMap.entries().forEach(e -> {
-                Role role = e.getKey();
-                Var var = e.getValue();
-                roleConceptIdMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : "");
-            });
+            roleMap.entries().stream()
+                    .filter(e -> varSubMap.containsKey(e.getValue()))
+                    .sorted(Comparator.comparing(e -> varSubMap.get(e.getValue()).getPredicateValue()))
+                    .forEach(e -> roleConceptIdMap.put(e.getKey(), varSubMap.get(e.getValue()).getPredicateValue()));
         }
         return roleConceptIdMap;
     }
@@ -458,15 +478,6 @@ public class RelationAtom extends IsaAtom {
                 .flatMap(CommonUtil::optionalToStream)
                 .filter(v -> v.var().isUserDefinedName())
                 .forEach(r -> vars.add(r.var()));
-        return vars;
-    }
-
-    /**
-     * @return set constituting the role player var names
-     */
-    public Set<Var> getRolePlayers() {
-        Set<Var> vars = new HashSet<>();
-        getRelationPlayers().forEach(c -> vars.add(c.getRolePlayer().var()));
         return vars;
     }
 
