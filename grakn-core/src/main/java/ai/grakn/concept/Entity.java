@@ -53,6 +53,14 @@ public interface Entity extends Thing {
     @Override
     Entity attribute(Attribute attribute);
 
+    /**
+     * Removes the provided {@link Attribute} from this {@link Entity}
+     * @param attribute the {@link Attribute} to be removed
+     * @return The {@link Entity} itself
+     */
+    @Override
+    Entity deleteAttribute(Attribute attribute);
+
     //------------------------------------- Other ---------------------------------
     @Deprecated
     @CheckReturnValue

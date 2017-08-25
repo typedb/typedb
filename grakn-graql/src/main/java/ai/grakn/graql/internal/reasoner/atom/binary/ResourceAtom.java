@@ -38,14 +38,16 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
+import com.google.common.collect.ImmutableSet;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint;
 
@@ -64,20 +66,22 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint
  */
 public class ResourceAtom extends Binary{
     private final Var relationVariable;
-    private final Set<ValuePredicate> multiPredicate = new HashSet<>();
+    private final ImmutableSet<ValuePredicate> multiPredicate;
 
     public ResourceAtom(VarPatternAdmin pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
         super(pattern, attributeVar, idPred, par);
         this.relationVariable = relationVariable;
-        this.multiPredicate.addAll(ps);
+        this.multiPredicate = ImmutableSet.copyOf(ps);
     }
+
     private ResourceAtom(ResourceAtom a) {
         super(a);
         this.relationVariable = a.getRelationVariable();
-        Set<ValuePredicate> multiPredicate = getMultiPredicate();
-        a.getMultiPredicate().stream()
-                .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
-                .forEach(multiPredicate::add);
+        this.multiPredicate = ImmutableSet.<ValuePredicate>builder().addAll(
+                a.getMultiPredicate().stream()
+                        .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
+                        .iterator()
+        ).build();
     }
 
     @Override
@@ -149,7 +153,7 @@ public class ResourceAtom extends Binary{
     }
 
     public Set<ValuePredicate> getMultiPredicate() { return multiPredicate;}
-    private Var getRelationVariable(){ return relationVariable;}
+    public Var getRelationVariable(){ return relationVariable;}
 
     @Override
     public PatternAdmin getCombinedPattern() {

@@ -22,6 +22,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
@@ -39,7 +41,9 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.collect.Sets;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -56,20 +60,30 @@ import static java.util.stream.Collectors.toSet;
  */
 public class InferenceRule {
 
+    private final GraknTx tx;
     private final ConceptId ruleId;
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
 
     private int priority = Integer.MAX_VALUE;
 
-    public InferenceRule(Rule rule, GraknTx graph){
-        ruleId = rule.getId();
+    public InferenceRule(Rule rule, GraknTx tx){
+        this.tx = tx;
+        this.ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects
-        body = ReasonerQueries.create(conjunction(rule.getWhen().admin()), graph);
-        head = ReasonerQueries.atomic(conjunction(rule.getThen().admin()), graph);
+        this.body = ReasonerQueries.create(conjunction(rule.getWhen().admin()), tx);
+        this.head = ReasonerQueries.atomic(conjunction(rule.getThen().admin()), tx);
+    }
+
+    private InferenceRule(ReasonerAtomicQuery head, ReasonerQueryImpl body, ConceptId ruleId, GraknTx tx){
+        this.tx = tx;
+        this.ruleId = ruleId;
+        this.head = head;
+        this.body = body;
     }
 
     public InferenceRule(InferenceRule r){
+        this.tx = r.tx;
         this.ruleId = r.getRuleId();
         this.body = ReasonerQueries.create(r.getBody());
         this.head = ReasonerQueries.atomic(r.getHead());
@@ -106,7 +120,7 @@ public class InferenceRule {
         return priority;
     }
 
-    private static Conjunction<VarPatternAdmin> conjunction(PatternAdmin pattern){
+    private Conjunction<VarPatternAdmin> conjunction(PatternAdmin pattern){
         Set<VarPatternAdmin> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
@@ -114,7 +128,6 @@ public class InferenceRule {
     }
 
     public ConceptId getRuleId(){ return ruleId;}
-
 
     /**
      * @return true if the rule has disconnected head, i.e. head and body do not share any variables
@@ -127,16 +140,15 @@ public class InferenceRule {
      * @return true if head satisfies the pattern specified in the body of the rule
      */
     boolean headSatisfiesBody(){
-        ReasonerQueryImpl extendedHead = ReasonerQueries.create(getHead());
+        Set<Atomic> atoms = new HashSet<>(getHead().getAtoms());
         getBody().getAtoms(TypeAtom.class)
                 .filter(t -> !t.isRelation())
-                .map(at -> AtomicFactory.create(at, extendedHead))
-                .forEach(extendedHead::addAtomic);
-        return getBody().isEquivalent(extendedHead);
+                .forEach(atoms::add);
+        return getBody().isEquivalent(ReasonerQueries.create(atoms, tx));
     }
 
     /**
-     * rule requires materialisation in the context of resolving parentatom
+     * rule requires materialisation in the context of resolving parent atom
      * if parent atom requires materialisation, head atom requires materialisation or if the head contains only fresh variables
      *
      * @return true if the rule needs to be materialised
@@ -157,13 +169,33 @@ public class InferenceRule {
     public ReasonerAtomicQuery getHead(){ return head;}
 
     /**
+     * @param sub substitution to be added to the rule
+     * @return inference rule with added substitution
+     */
+    public InferenceRule withSubstitution(Answer sub){
+        return new InferenceRule(
+                ReasonerQueries.atomic(getHead(), sub),
+                ReasonerQueries.create(getBody(), sub),
+                ruleId,
+                tx
+        );
+    }
+
+    /**
+     * @return reasoner query formed of combining head and body queries
+     */
+    private ReasonerQueryImpl getCombinedQuery(){
+        Set<Atomic> allAtoms = new HashSet<>();
+        allAtoms.add(head.getAtom());
+        body.getAtoms().forEach(allAtoms::add);
+        return ReasonerQueries.create(allAtoms, tx);
+    }
+
+    /**
      * @return a conclusion atom which parent contains all atoms in the rule
      */
     public Atom getRuleConclusionAtom() {
-        ReasonerAtomicQuery ruleQuery = ReasonerQueries.atomic(head);
-        Atom atom = ruleQuery.getAtom();
-        body.getAtoms().forEach(at -> ruleQuery.addAtomic(at.copy()));
-        return atom;
+        return getCombinedQuery().getAtoms(Atom.class).filter(at -> at.equals(head.getAtom())).findFirst().orElse(null);
     }
 
     /**
@@ -176,13 +208,20 @@ public class InferenceRule {
 
         //only transfer value predicates if head has a user specified value variable
         Atom headAtom = head.getAtom();
+        Set<Atomic> bodyAtoms = new HashSet<>(body.getAtoms());
         if(headAtom.isResource() && ((ResourceAtom) headAtom).getMultiPredicate().isEmpty()){
-            parentAtom.getPredicates(ValuePredicate.class)
+            Set<ValuePredicate> vps = parentAtom.getPredicates(ValuePredicate.class)
                     .flatMap(vp -> vp.unify(unifier).stream())
-                    .forEach(vp -> {
-                        head.addAtomic(AtomicFactory.create(vp, head));
-                        body.addAtomic(AtomicFactory.create(vp, body));
-                    });
+                    .collect(toSet());
+            headAtom = new ResourceAtom(
+                    headAtom.getPattern().asVarPattern(),
+                    headAtom.getPredicateVariable(),
+                    ((ResourceAtom) headAtom).getRelationVariable(),
+                    ((ResourceAtom) headAtom).getPredicate(),
+                    vps,
+                    headAtom.getParentQuery()
+            );
+            bodyAtoms.addAll(vps);
         }
 
         Set<TypeAtom> unifiedTypes = parentAtom.getTypeConstraints()
@@ -191,7 +230,6 @@ public class InferenceRule {
 
         //set rule body types to sub types of combined query+rule types
         Set<TypeAtom> ruleTypes = body.getAtoms(TypeAtom.class).filter(t -> !t.isRelation()).collect(toSet());
-        ruleTypes.forEach(body::removeAtomic);
         Set<TypeAtom> allTypes = Sets.union(unifiedTypes, ruleTypes);
         allTypes.stream()
                 .filter(ta -> {
@@ -202,31 +240,31 @@ public class InferenceRule {
                             .filter(t -> ReasonerUtils.getSupers(t).contains(schemaConcept))
                             .findFirst().orElse(null);
                     return schemaConcept == null || subType == null;
-                }).forEach(t -> body.addAtomic(AtomicFactory.create(t, body)));
-
-        return this;
+                }).forEach(t -> bodyAtoms.add(AtomicFactory.create(t, body)));
+        return new InferenceRule(
+                ReasonerQueries.atomic(headAtom),
+                ReasonerQueries.create(bodyAtoms, tx),
+                ruleId,
+                tx
+        );
     }
 
-    private InferenceRule rewriteHead(){
-        Atom childAtom = head.getAtom();
-        Atom newAtom = childAtom.rewriteToUserDefined();
-        head.removeAtomic(childAtom);
-        head.addAtomic(newAtom);
-        return this;
-    }
-
-    private InferenceRule rewriteBody(){
-        HashSet<Atom> toRemove = new HashSet<>();
-        HashSet<Atom> rewrites = new HashSet<>();
+    private InferenceRule rewrite(){
+        ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined());
+        List<Atom> bodyRewrites = new ArrayList<>();
         body.getAtoms(Atom.class)
-                .filter(at -> !at.isUserDefined())
-                .filter(at -> Objects.nonNull(at.getSchemaConcept()))
-                .filter(at -> at.getSchemaConcept().equals(head.getAtom().getSchemaConcept()))
-                .peek(toRemove::add)
-                .forEach(at -> rewrites.add(at.rewriteToUserDefined()));
-        toRemove.forEach(body::removeAtomic);
-        rewrites.forEach(body::addAtomic);
-        return this;
+                .map(at -> {
+                    if (at.isRelation()
+                            && !at.isUserDefined()
+                            && Objects.equals(at.getSchemaConcept(), head.getAtom().getSchemaConcept())){
+                        return at.rewriteToUserDefined();
+                    } else {
+                        return at;
+                    }
+                }).forEach(bodyRewrites::add);
+
+        ReasonerQueryImpl rewrittenBody = ReasonerQueries.create(bodyRewrites, tx);
+        return new InferenceRule(rewrittenHead, rewrittenBody, ruleId, tx);
     }
 
     /**
@@ -235,7 +273,7 @@ public class InferenceRule {
      * @return rewritten rule
      */
     public InferenceRule rewriteToUserDefined(Atom parentAtom){
-        return parentAtom.isUserDefined()? this.rewriteHead().rewriteBody() : this;
+        return parentAtom.isUserDefined()? rewrite() : this;
     }
 
     /**

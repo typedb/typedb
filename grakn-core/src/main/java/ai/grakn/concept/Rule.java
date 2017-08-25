@@ -92,6 +92,13 @@ public interface Rule extends Thing {
     @Override
     RuleType type();
 
+    /**
+     * Removes the provided {@link Attribute} from this {@link Rule}
+     * @param attribute the {@link Attribute} to be removed
+     * @return The {@link Rule} itself
+     */
+    @Override
+    Rule deleteAttribute(Attribute attribute);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

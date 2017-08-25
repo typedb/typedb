@@ -329,8 +329,8 @@ public class InsertQueryTest {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.define(
-                label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
+                label("a-new-type").sub("entity").key("a-new-attribute-type"),
+                label("a-new-attribute-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
 
         qb.insert(
@@ -386,7 +386,7 @@ public class InsertQueryTest {
         Answer result = Iterables.getOnlyElement(query);
         assertThat(result.keySet(), containsInAnyOrder(x, type));
         assertEquals(result.get(type), result.get(x).asEntity().type());
-        assertEquals(result.get(type).asType().getLabel(), Label.of(" movie "));
+        assertEquals(result.get(type).asType().getLabel(), Label.of("movie"));
     }
 
     @Test

@@ -21,8 +21,8 @@ package ai.grakn.kb.internal.concept;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -316,11 +316,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return changingSuperAllowed;
     }
 
-    /**
-     *
-     * @param role The Role Type which the instances of this Type should no longer be allowed to play.
-     * @return The Type itself.
-     */
     @Override
     public T deletePlays(Role role) {
         checkSchemaMutationAllowed();
@@ -329,6 +324,37 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         ((RoleImpl) role).deleteCachedDirectPlaysByType(this);
 
         trackRolePlayers();
+
+        return getThis();
+    }
+
+    @Override
+    public T deleteAttribute(AttributeType attributeType){
+        return deleteAttribute(Schema.ImplicitType.HAS_OWNER, attributes(), attributeType);
+    }
+
+    @Override
+    public T deleteKey(AttributeType attributeType){
+        return deleteAttribute(Schema.ImplicitType.KEY_OWNER, keys(), attributeType);
+    }
+
+
+    /**
+     * Helper method to delete a {@link AttributeType} which is possible linked to this {@link Type}.
+     * The link to {@link AttributeType} is removed if <code>attributeToRemove</code> is in the candidate list
+     * <code>attributeTypes</code>
+     *
+     * @param implicitType the {@link Schema.ImplicitType} which specifies which implicit {@link Role} should be removed
+     * @param attributeTypes The list of candidate which potentially contains the {@link AttributeType} to remove
+     * @param attributeToRemove the {@link AttributeType} to remove
+     * @return the {@link Type} itself
+     */
+    private T deleteAttribute(Schema.ImplicitType implicitType,  Stream<AttributeType> attributeTypes, AttributeType attributeToRemove){
+        if(attributeTypes.anyMatch(a ->  a.equals(attributeToRemove))){
+            Label label = implicitType.getLabel(attributeToRemove.getLabel());
+            Role role = vertex().tx().getSchemaConcept(label);
+            if(role != null) deletePlays(role);
+        }
 
         return getThis();
     }
