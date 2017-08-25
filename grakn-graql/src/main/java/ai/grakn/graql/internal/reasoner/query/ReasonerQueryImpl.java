@@ -396,7 +396,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return this;
     }
 
-    public boolean hasFullSubstitution(){
+    /**
+     * @return true if this query is a ground query
+     */
+    public boolean isGround(){
         return getSubstitution().vars().containsAll(getVarNames());
     }
 
