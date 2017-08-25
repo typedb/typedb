@@ -67,11 +67,20 @@ class OutShortcutFragment extends Fragment {
     private final Optional<Var> role;
     private final Optional<Set<Label>> roleLabels;
     private final Optional<Set<Label>> relationTypeLabels;
+    private final Var start;
+    private final Optional<Var> end;
+    private final ImmutableSet<Var> otherVarNames;
+    private VarProperty varProperty; // For reasoner to map fragments to atoms
 
     OutShortcutFragment(VarProperty varProperty,
                         Var relation, Var edge, Var rolePlayer, Optional<Var> role, Optional<Set<Label>> roleLabels,
                         Optional<Set<Label>> relationTypeLabels) {
-        super(varProperty, relation, rolePlayer, edge, optionalVarToArray(role));
+        this.varProperty = varProperty;
+        this.start = relation;
+        this.end = Optional.of(rolePlayer);
+        ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(edge);
+        role.ifPresent(builder::add);
+        this.otherVarNames = builder.build();
         this.edge = edge;
         this.role = role;
         this.roleLabels = roleLabels;
@@ -166,5 +175,33 @@ class OutShortcutFragment extends Fragment {
     @Override
     public boolean canOperateOnEdges() {
         return true;
+    }
+
+    /**
+     * Get the corresponding property
+     */
+    public VarProperty getVarProperty() {
+        return varProperty;
+    }
+
+    /**
+     * @return the variable name that this fragment starts from in the query
+     */
+    @Override
+    public final Var getStart() {
+        return start;
+    }
+
+    /**
+     * @return the variable name that this fragment ends at in the query, if this query has an end variable
+     */
+    @Override
+    public final Optional<Var> getEnd() {
+        return end;
+    }
+
+    @Override
+    ImmutableSet<Var> otherVarNames() {
+        return otherVarNames;
     }
 }

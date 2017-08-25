@@ -22,14 +22,24 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
+import java.util.Optional;
+
 class NotInternalFragment extends Fragment {
 
+    private final Var start;
+    private final Optional<Var> end = Optional.empty();
+    private final ImmutableSet<Var> otherVarNames = ImmutableSet.of();
+    private VarProperty varProperty; // For reasoner to map fragments to atoms
+
     NotInternalFragment(VarProperty varProperty, Var start) {
-        super(varProperty, start);
+        super();
+        this.varProperty = varProperty;
+        this.start = start;
     }
 
     @Override
@@ -51,5 +61,33 @@ class NotInternalFragment extends Fragment {
     @Override
     public double fragmentCost() {
         return COST_SAME_AS_PREVIOUS;
+    }
+
+    /**
+     * Get the corresponding property
+     */
+    public VarProperty getVarProperty() {
+        return varProperty;
+    }
+
+    /**
+     * @return the variable name that this fragment starts from in the query
+     */
+    @Override
+    public final Var getStart() {
+        return start;
+    }
+
+    /**
+     * @return the variable name that this fragment ends at in the query, if this query has an end variable
+     */
+    @Override
+    public final Optional<Var> getEnd() {
+        return end;
+    }
+
+    @Override
+    ImmutableSet<Var> otherVarNames() {
+        return otherVarNames;
     }
 }

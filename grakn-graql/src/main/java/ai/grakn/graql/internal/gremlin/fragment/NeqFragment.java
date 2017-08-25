@@ -26,12 +26,20 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
+import java.util.Optional;
+
 class NeqFragment extends Fragment {
 
     private final Var other;
+    private final Var start;
+    private final Optional<Var> end = Optional.empty();
+    private final ImmutableSet<Var> otherVarNames = ImmutableSet.of();
+    private VarProperty varProperty; // For reasoner to map fragments to atoms
 
     NeqFragment(VarProperty varProperty, Var start, Var other) {
-        super(varProperty, start);
+        super();
+        this.varProperty = varProperty;
+        this.start = start;
         this.other = other;
     }
 
@@ -73,5 +81,33 @@ class NeqFragment extends Fragment {
         int result = super.hashCode();
         result = 31 * result + other.hashCode();
         return result;
+    }
+
+    /**
+     * Get the corresponding property
+     */
+    public VarProperty getVarProperty() {
+        return varProperty;
+    }
+
+    /**
+     * @return the variable name that this fragment starts from in the query
+     */
+    @Override
+    public final Var getStart() {
+        return start;
+    }
+
+    /**
+     * @return the variable name that this fragment ends at in the query, if this query has an end variable
+     */
+    @Override
+    public final Optional<Var> getEnd() {
+        return end;
+    }
+
+    @Override
+    ImmutableSet<Var> otherVarNames() {
+        return otherVarNames;
     }
 }

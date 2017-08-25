@@ -32,6 +32,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
@@ -40,8 +41,16 @@ import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 
 class OutIsaFragment extends Fragment {
 
+    private final Var start;
+    private final Optional<Var> end;
+    private final ImmutableSet<Var> otherVarNames = ImmutableSet.of();
+    private VarProperty varProperty; // For reasoner to map fragments to atoms
+
     OutIsaFragment(VarProperty varProperty, Var start, Var end) {
-        super(varProperty, start, end);
+        super();
+        this.varProperty = varProperty;
+        this.start = start;
+        this.end = Optional.of(end);
     }
 
     @Override
@@ -79,5 +88,33 @@ class OutIsaFragment extends Fragment {
     @Override
     public boolean canOperateOnEdges() {
         return true;
+    }
+
+    /**
+     * Get the corresponding property
+     */
+    public VarProperty getVarProperty() {
+        return varProperty;
+    }
+
+    /**
+     * @return the variable name that this fragment starts from in the query
+     */
+    @Override
+    public final Var getStart() {
+        return start;
+    }
+
+    /**
+     * @return the variable name that this fragment ends at in the query, if this query has an end variable
+     */
+    @Override
+    public final Optional<Var> getEnd() {
+        return end;
+    }
+
+    @Override
+    ImmutableSet<Var> otherVarNames() {
+        return otherVarNames;
     }
 }

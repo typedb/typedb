@@ -66,11 +66,20 @@ class InShortcutFragment extends Fragment {
     private final Optional<Var> role;
     private final Optional<Set<Label>> roleLabels;
     private final Optional<Set<Label>> relationTypeLabels;
+    private final Var start;
+    private final Optional<Var> end;
+    private final ImmutableSet<Var> otherVarNames;
+    private VarProperty varProperty; // For reasoner to map fragments to atoms
 
     InShortcutFragment(VarProperty varProperty,
                        Var rolePlayer, Var edge, Var relation, Optional<Var> role, Optional<Set<Label>> roleLabels,
                        Optional<Set<Label>> relationTypeLabels) {
-        super(varProperty, rolePlayer, relation, edge, optionalVarToArray(role));
+        this.varProperty = varProperty;
+        this.start = rolePlayer;
+        this.end = Optional.of(relation);
+        ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(edge);
+        role.ifPresent(builder::add);
+        this.otherVarNames = builder.build();
         this.edge = edge;
         this.role = role;
         this.roleLabels = roleLabels;
@@ -157,5 +166,33 @@ class InShortcutFragment extends Fragment {
         result = 31 * result + roleLabels.hashCode();
         result = 31 * result + relationTypeLabels.hashCode();
         return result;
+    }
+
+    /**
+     * Get the corresponding property
+     */
+    public VarProperty getVarProperty() {
+        return varProperty;
+    }
+
+    /**
+     * @return the variable name that this fragment starts from in the query
+     */
+    @Override
+    public final Var getStart() {
+        return start;
+    }
+
+    /**
+     * @return the variable name that this fragment ends at in the query, if this query has an end variable
+     */
+    @Override
+    public final Optional<Var> getEnd() {
+        return end;
+    }
+
+    @Override
+    ImmutableSet<Var> otherVarNames() {
+        return otherVarNames;
     }
 }

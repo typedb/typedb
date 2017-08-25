@@ -22,17 +22,26 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
+import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
+
+import java.util.Optional;
 
 import static ai.grakn.util.Schema.VertexProperty.DATA_TYPE;
 
 class DataTypeFragment extends Fragment {
 
     private final AttributeType.DataType dataType;
+    private final Var start;
+    private final Optional<Var> end = Optional.empty();
+    private final ImmutableSet<Var> otherVarNames = ImmutableSet.of();
+    private VarProperty varProperty; // For reasoner to map fragments to atoms
 
     DataTypeFragment(VarProperty varProperty, Var start, AttributeType.DataType dataType) {
-        super(varProperty, start);
+        super();
+        this.varProperty = varProperty;
+        this.start = start;
         this.dataType = dataType;
     }
 
@@ -68,5 +77,33 @@ class DataTypeFragment extends Fragment {
         int result = super.hashCode();
         result = 31 * result + (dataType != null ? dataType.hashCode() : 0);
         return result;
+    }
+
+    /**
+     * Get the corresponding property
+     */
+    public VarProperty getVarProperty() {
+        return varProperty;
+    }
+
+    /**
+     * @return the variable name that this fragment starts from in the query
+     */
+    @Override
+    public final Var getStart() {
+        return start;
+    }
+
+    /**
+     * @return the variable name that this fragment ends at in the query, if this query has an end variable
+     */
+    @Override
+    public final Optional<Var> getEnd() {
+        return end;
+    }
+
+    @Override
+    ImmutableSet<Var> otherVarNames() {
+        return otherVarNames;
     }
 }

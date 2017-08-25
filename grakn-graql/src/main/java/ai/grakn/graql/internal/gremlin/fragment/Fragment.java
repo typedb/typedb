@@ -40,7 +40,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
-import static ai.grakn.util.CommonUtil.optionalToStream;
 
 /**
  * represents a graph traversal, with one start point and optionally an end point
@@ -97,37 +96,7 @@ public abstract class Fragment {
     static final double COST_DATA_TYPE = Math.log1p(2D / AttributeType.DataType.SUPPORTED_TYPES.size());
     static final double COST_UNSPECIFIC_PREDICATE = Math.log1p(0.5);
 
-    private final Var start;
-    private final Optional<Var> end;
-    private final ImmutableSet<Var> varNames;
     private EquivalentFragmentSet equivalentFragmentSet = null;
-
-    private VarProperty varProperty; // For reasoner to map fragments to atoms
-
-    Fragment(VarProperty varProperty, Var start) {
-        this.varProperty = varProperty;
-        this.start = start;
-        this.end = Optional.empty();
-        this.varNames = ImmutableSet.of(start);
-    }
-
-    Fragment(VarProperty varProperty, Var start, Var end, Var... others) {
-        this.varProperty = varProperty;
-        this.start = start;
-        this.end = Optional.of(end);
-        this.varNames = ImmutableSet.<Var>builder().add(start).add(end).add(others).build();
-    }
-
-    Fragment(VarProperty varProperty, Var start, Var end, Var other, Var... others) {
-        this.varProperty = varProperty;
-        this.start = start;
-        this.end = Optional.of(end);
-        this.varNames = ImmutableSet.<Var>builder().add(start).add(end).add(other).add(others).build();
-    }
-
-    static Var[] optionalVarToArray(Optional<Var> var) {
-        return optionalToStream(var).toArray(Var[]::new);
-    }
 
     /**
      * @return the EquivalentFragmentSet that contains this Fragment
@@ -145,18 +114,21 @@ public abstract class Fragment {
     }
 
     /**
+     * Get the corresponding property
+     */
+    public abstract VarProperty getVarProperty();
+
+    /**
      * @return the variable name that this fragment starts from in the query
      */
-    public final Var getStart() {
-        return start;
-    }
+    public abstract Var getStart();
 
     /**
      * @return the variable name that this fragment ends at in the query, if this query has an end variable
      */
-    public final Optional<Var> getEnd() {
-        return end;
-    }
+    public abstract Optional<Var> getEnd();
+
+    abstract ImmutableSet<Var> otherVarNames();
 
     /**
      * @return the variable names that this fragment requires to have already been visited
@@ -166,10 +138,13 @@ public abstract class Fragment {
     }
 
     /**
-         * Get all variable names in the fragment - the start and end (if present)
-         */
+     * Get all variable names in the fragment - the start and end (if present)
+     */
     public Set<Var> getVariableNames() {
-        return varNames;
+        ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(getStart());
+        getEnd().ifPresent(builder::add);
+        builder.addAll(otherVarNames());
+        return builder.build();
     }
 
     /**
@@ -184,36 +159,9 @@ public abstract class Fragment {
         return Collections.emptySet();
     }
 
-    /**
-     * Get the corresponding property
-     */
-    public VarProperty getVarProperty() {
-        return varProperty;
-    }
-
     @Override
     public String toString() {
-        return start + getName() + end.map(Object::toString).orElse("");
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Fragment that = (Fragment) o;
-
-        if (start != null ? !start.equals(that.start) : that.start != null) return false;
-        if (end != null ? !end.equals(that.end) : that.end != null) return false;
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = start != null ? start.hashCode() : 0;
-        result = 31 * result + (end != null ? end.hashCode() : 0);
-        return result;
+        return getStart() + getName() + getEnd().map(Object::toString).orElse("");
     }
 
     public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(NodeId.NodeType nodeType,

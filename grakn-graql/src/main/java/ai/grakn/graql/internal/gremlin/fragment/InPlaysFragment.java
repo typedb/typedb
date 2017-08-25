@@ -26,11 +26,13 @@ import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
@@ -38,9 +40,16 @@ import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 class InPlaysFragment extends Fragment {
 
     private final boolean required;
+    private final Var start;
+    private final Optional<Var> end;
+    private final ImmutableSet<Var> otherVarNames = ImmutableSet.of();
+    private VarProperty varProperty; // For reasoner to map fragments to atoms
 
     InPlaysFragment(VarProperty varProperty, Var start, Var end, boolean required) {
-        super(varProperty, start, end);
+        super();
+        this.varProperty = varProperty;
+        this.start = start;
+        this.end = Optional.of(end);
         this.required = required;
     }
 
@@ -75,5 +84,33 @@ class InPlaysFragment extends Fragment {
     public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
                                                               Map<Node, Map<Node, Fragment>> edges) {
         return getDirectedEdges(NodeId.NodeType.PLAYS, nodes, edges);
+    }
+
+    /**
+     * Get the corresponding property
+     */
+    public VarProperty getVarProperty() {
+        return varProperty;
+    }
+
+    /**
+     * @return the variable name that this fragment starts from in the query
+     */
+    @Override
+    public final Var getStart() {
+        return start;
+    }
+
+    /**
+     * @return the variable name that this fragment ends at in the query, if this query has an end variable
+     */
+    @Override
+    public final Optional<Var> getEnd() {
+        return end;
+    }
+
+    @Override
+    ImmutableSet<Var> otherVarNames() {
+        return otherVarNames;
     }
 }
