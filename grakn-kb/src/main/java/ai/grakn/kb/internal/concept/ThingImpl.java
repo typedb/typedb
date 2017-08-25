@@ -19,13 +19,13 @@
 package ai.grakn.kb.internal.concept;
 
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -44,6 +44,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -256,6 +257,30 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         vertex().tx().factory().buildRelation(resourceEdge, hasResource, hasResourceOwner, hasResourceValue);
 
         return getThis();
+    }
+
+    @Override
+    public T deleteAttribute(Attribute attribute){
+        Role roleHasOwner = vertex().tx().getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(attribute.type().getLabel()));
+        Role roleKeyOwner = vertex().tx().getSchemaConcept(Schema.ImplicitType.KEY_OWNER.getLabel(attribute.type().getLabel()));
+
+        Role roleHasValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().getLabel()));
+        Role roleKeyValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.KEY_VALUE.getLabel(attribute.type().getLabel()));
+
+        Stream<Relationship> relationships = relationships(filterNulls(roleHasOwner, roleKeyOwner));
+        relationships.filter(relationship -> {
+                    Stream<Thing> rolePlayers = relationship.rolePlayers(filterNulls(roleHasValue, roleKeyValue));
+                    return rolePlayers.anyMatch(rolePlayer -> rolePlayer.equals(attribute));
+                }).forEach(Concept::delete);
+
+        return getThis();
+    }
+
+    /**
+     * Returns an array with all the nulls filtered out.
+     */
+    private Role[] filterNulls(Role ... roles){
+        return Arrays.stream(roles).filter(Objects::nonNull).toArray(Role[]::new);
     }
 
     /**
