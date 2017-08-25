@@ -94,7 +94,6 @@ public class GraknTxPutPropertyTest {
         Type type = putType.apply(graph, label);
 
         assertThat("Type should not play any roles", type.plays().collect(toSet()), empty());
-        assertThat("Type should not have any scopes", type.scopes().collect(toSet()), empty());
         assertFalse("Type should not be abstract", type.isAbstract());
     }
 

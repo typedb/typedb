@@ -151,14 +151,6 @@ public interface Type extends SchemaConcept {
     @CheckReturnValue
     Boolean isAbstract();
 
-    /**
-     * Retrieve a list of the Instances that scope this Type.
-     *
-     * @return A list of the Instances that scope this Type.
-     */
-    @CheckReturnValue
-    Stream<Thing> scopes();
-
     //------------------------------------- Other ----------------------------------
     /**
      *

@@ -75,13 +75,6 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is a relation with a scope.
-     */
-    public static EquivalentFragmentSet hasScope(VarProperty varProperty, Var relation, Var scope) {
-        return new HasScopeFragmentSet(varProperty, relation, scope);
-    }
-
-    /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a relation type which involves a role.
      */
     public static EquivalentFragmentSet relates(VarProperty varProperty, Var relationType, Var roleType) {
