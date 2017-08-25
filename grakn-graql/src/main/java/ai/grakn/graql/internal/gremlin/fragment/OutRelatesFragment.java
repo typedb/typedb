@@ -72,26 +72,18 @@ class OutRelatesFragment extends Fragment {
         return getDirectedEdges(NodeId.NodeType.RELATES, nodes, edges);
     }
 
-    /**
-     * Get the corresponding property
-     */
+    @Override
     public VarProperty getVarProperty() {
         return varProperty;
     }
 
-    /**
-     * @return the variable name that this fragment starts from in the query
-     */
     @Override
-    public final Var getStart() {
+    public Var getStart() {
         return start;
     }
 
-    /**
-     * @return the variable name that this fragment ends at in the query, if this query has an end variable
-     */
     @Override
-    public final Optional<Var> getEnd() {
+    public Optional<Var> getEnd() {
         return end;
     }
 
