@@ -109,7 +109,7 @@ public class Fragments {
     }
 
     public static Fragment id(VarProperty varProperty, Var start, ConceptId id) {
-        return new IdFragment(varProperty, start, id);
+        return new AutoValue_IdFragment(varProperty, start, id);
     }
 
     public static Fragment label(VarProperty varProperty, Var start, Label label) {

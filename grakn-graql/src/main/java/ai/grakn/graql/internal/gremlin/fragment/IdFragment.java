@@ -20,36 +20,20 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
-import com.google.common.collect.ImmutableSet;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Optional;
-
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
-class IdFragment extends Fragment {
+@AutoValue
+abstract class IdFragment extends Fragment {
 
-    private final VarProperty varProperty;
-    private final Var start;
-    private final ConceptId id;
-
-    ConceptId id() {
-        return id;
-    }
-
-    IdFragment(VarProperty varProperty, Var start, ConceptId id) {
-        super();
-        this.varProperty = varProperty;
-        this.start = start;
-        this.id = id;
-    }
+    abstract ConceptId id();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
@@ -96,25 +80,5 @@ class IdFragment extends Fragment {
     @Override
     public boolean canOperateOnEdges() {
         return id().getValue().startsWith(Schema.PREFIX_EDGE);
-    }
-
-    @Override
-    public VarProperty getVarProperty() {
-        return varProperty;
-    }
-
-    @Override
-    public Var getStart() {
-        return start;
-    }
-
-    @Override
-    public final Optional<Var> getEnd() {
-        return Optional.empty();
-    }
-
-    @Override
-    ImmutableSet<Var> otherVarNames() {
-        return ImmutableSet.of();
     }
 }
