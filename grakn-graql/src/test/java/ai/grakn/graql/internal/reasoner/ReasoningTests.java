@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner;
 
+import ai.grakn.concept.Label;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
@@ -305,7 +306,7 @@ public class ReasoningTests {
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
-    public void reusingResources1() {
+    public void reusingResources() {
         QueryBuilder qb = testSet14.graph().graql().infer(true);
         String queryString1 = "match $x isa entity1, has res1 $y;";
         QueryAnswers answers1 = queryAnswers(qb.parse(queryString1));
@@ -314,6 +315,16 @@ public class ReasoningTests {
 
         assertEquals(answers2.size(), 1);
         assertEquals(answers1.size(), 2);
+    }
+
+    @Test
+    public void whenReasoningWithResourcesWithRelationVar_ResultsAreComplete() {
+        QueryBuilder qb = testSet14.graph().graql().infer(true);
+
+        VarPattern has = var("x").has(Label.of("res1"), var("y"), var("r"));
+        List<Answer> answers = qb.match(has).execute();
+        assertEquals(answers.size(), 2);
+        answers.forEach(a -> assertTrue(a.keySet().contains(var("r"))));
     }
 
     @Test

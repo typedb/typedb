@@ -19,6 +19,7 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -63,14 +64,17 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint
  *
  */
 public class ResourceAtom extends Binary{
+    private final Var relationVariable;
     private final Set<ValuePredicate> multiPredicate = new HashSet<>();
 
-    public ResourceAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
-        super(pattern, predicateVar, idPred, par);
+    public ResourceAtom(VarPatternAdmin pattern, Var attributeVar, Var relationVariable, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
+        super(pattern, attributeVar, idPred, par);
+        this.relationVariable = relationVariable;
         this.multiPredicate.addAll(ps);
     }
     private ResourceAtom(ResourceAtom a) {
         super(a);
+        this.relationVariable = a.getRelationVariable();
         Set<ValuePredicate> multiPredicate = getMultiPredicate();
         a.getMultiPredicate().stream()
                 .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
@@ -84,7 +88,8 @@ public class ResourceAtom extends Binary{
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getOntologyConcept().getLabel() + " " +
                 multiPredicateString +
-                getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining(""));
+                getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining("")) +
+                (relationVariable.isUserDefinedName()? "(" + relationVariable + ")" : "");
     }
 
     @Override
@@ -93,6 +98,7 @@ public class ResourceAtom extends Binary{
         hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + this.getVarName().hashCode();
         hashCode = hashCode * 37 + this.getPredicateVariable().hashCode();
+        hashCode = hashCode * 37 + this.getRelationVariable().hashCode();
         return hashCode;
     }
 
@@ -100,10 +106,11 @@ public class ResourceAtom extends Binary{
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        Binary a2 = (Binary) obj;
+        ResourceAtom a2 = (ResourceAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName())
-                && this.getPredicateVariable().equals(a2.getPredicateVariable());
+                && this.getPredicateVariable().equals(a2.getPredicateVariable())
+                && this.getRelationVariable().equals(a2.getRelationVariable());
     }
 
     @Override
@@ -143,6 +150,7 @@ public class ResourceAtom extends Binary{
     }
 
     public Set<ValuePredicate> getMultiPredicate() { return multiPredicate;}
+    private Var getRelationVariable(){ return relationVariable;}
 
     @Override
     public PatternAdmin getCombinedPattern() {
@@ -193,12 +201,25 @@ public class ResourceAtom extends Binary{
     public boolean isSelectable(){ return true;}
 
     @Override
+    public boolean isUserDefined(){ return relationVariable.isUserDefinedName();}
+
+    @Override
+    public boolean requiresMaterialisation(){ return true;}
+
+    @Override
     public boolean isAllowedToFormRuleHead(){
         if (getOntologyConcept() == null || getMultiPredicate().size() > 1) return false;
         if (getMultiPredicate().isEmpty()) return true;
 
         ValuePredicate predicate = getMultiPredicate().iterator().next();
         return predicate.getPredicate().isSpecific();
+    }
+
+    @Override
+    public Set<Var> getVarNames() {
+        Set<Var> vars = super.getVarNames();
+        if (relationVariable.isUserDefinedName()) vars.add(relationVariable);
+        return vars;
     }
 
     @Override
@@ -225,7 +246,24 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public boolean requiresMaterialisation(){ return true;}
+    public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
+        if(type.equals(ValuePredicate.class)){
+            return Stream.concat(
+                    super.getPredicates(type),
+                    getMultiPredicate().stream()
+            ).map(type::cast);
+        }
+        return super.getPredicates(type);
+    }
+
+    @Override
+    public Set<TypeAtom> getSpecificTypeConstraints() {
+        return getTypeConstraints()
+                .filter(t -> t.getVarName().equals(getVarName()))
+                .filter(t -> Objects.nonNull(t.getOntologyConcept()))
+                .collect(Collectors.toSet());
+    }
+
 
     private boolean isSuperNode(){
         return graph().graql().match(getCombinedPattern()).admin().stream()
@@ -287,42 +325,29 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
+    public Atom rewriteToUserDefined(){
+        Var attributeVariable = getPredicateVariable();
+        Var relationVariable = getRelationVariable().asUserDefined();
+        VarPattern newVar = getVarName()
+                .has(getOntologyConcept().getLabel(), attributeVariable, relationVariable);
+        return new ResourceAtom(newVar.admin(), attributeVariable, relationVariable, getPredicate(), getMultiPredicate(), getParentQuery());
+    }
+
+    @Override
     public Unifier getUnifier(Atom parentAtom) {
         if (!(parentAtom instanceof ResourceAtom)){
             return new UnifierImpl(ImmutableMap.of(this.getPredicateVariable(), parentAtom.getVarName()));
         }
         Unifier unifier = super.getUnifier(parentAtom);
-
         ResourceAtom parent = (ResourceAtom) parentAtom;
-        Var childResourceVarName = this.getPredicateVariable();
-        Var parentResourceVarName = parent.getPredicateVariable();
 
-        if (!childResourceVarName.getValue().isEmpty()
-                && !parentResourceVarName.getValue().isEmpty()
-                && !childResourceVarName.equals(parentResourceVarName)) {
-            unifier.addMapping(childResourceVarName, parentResourceVarName);
+        //unify relation vars
+        Var childRelationVarName = this.getRelationVariable();
+        Var parentRelationVarName = parent.getRelationVariable();
+        if (parentRelationVarName.isUserDefinedName()
+                && !childRelationVarName.equals(parentRelationVarName)){
+            unifier.addMapping(childRelationVarName, parentRelationVarName);
         }
-
         return unifier;
     }
-
-    @Override
-    public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
-        if(type.equals(ValuePredicate.class)){
-            return Stream.concat(
-                    super.getPredicates(type),
-                    getMultiPredicate().stream()
-            ).map(type::cast);
-        }
-        return super.getPredicates(type);
-    }
-
-    @Override
-    public Set<TypeAtom> getSpecificTypeConstraints() {
-        return getTypeConstraints()
-                .filter(t -> t.getVarName().equals(getVarName()))
-                .filter(t -> Objects.nonNull(t.getOntologyConcept()))
-                .collect(Collectors.toSet());
-    }
-
 }

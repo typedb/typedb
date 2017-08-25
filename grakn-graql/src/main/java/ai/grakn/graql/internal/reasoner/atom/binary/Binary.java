@@ -102,7 +102,8 @@ public abstract class Binary extends Atom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Binary a2 = (Binary) obj;
-        return Objects.equals(this.getTypeId(), a2.getTypeId())
+        return  (isUserDefined() == a2.isUserDefined())
+                && Objects.equals(this.getTypeId(), a2.getTypeId())
                 && hasEquivalentPredicatesWith(a2);
     }
 
@@ -129,7 +130,7 @@ public abstract class Binary extends Atom {
     @Override
     public Set<Var> getVarNames() {
         Set<Var> vars = new HashSet<>();
-        if (isUserDefinedName()) vars.add(getVarName());
+        if (getVarName().isUserDefinedName()) vars.add(getVarName());
         if (!predicateVariable.getValue().isEmpty()) vars.add(predicateVariable);
         return vars;
     }
@@ -141,20 +142,20 @@ public abstract class Binary extends Atom {
         }
 
         Unifier unifier = new UnifierImpl();
-        Var childPredVarName = this.getPredicateVariable();
-        Var parentPredVarName = parentAtom.getPredicateVariable();
+        Var childPredicateVarName = this.getPredicateVariable();
+        Var parentPredicateVarName = parentAtom.getPredicateVariable();
 
-        if (parentAtom.isUserDefinedName()){
+        if (parentAtom.getVarName().isUserDefinedName()){
             Var childVarName = this.getVarName();
             Var parentVarName = parentAtom.getVarName();
             if (!childVarName.equals(parentVarName)) {
                 unifier.addMapping(childVarName, parentVarName);
             }
         }
-        if (!childPredVarName.getValue().isEmpty()
-                && !parentPredVarName.getValue().isEmpty()
-                && !childPredVarName.equals(parentPredVarName)) {
-            unifier.addMapping(childPredVarName, parentPredVarName);
+        if (!childPredicateVarName.getValue().isEmpty()
+                && !parentPredicateVarName.getValue().isEmpty()
+                && !childPredicateVarName.equals(parentPredicateVarName)) {
+            unifier.addMapping(childPredicateVarName, parentPredicateVarName);
         }
         return unifier;
     }
