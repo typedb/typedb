@@ -126,9 +126,13 @@ public abstract class Fragment {
     /**
      * @return the variable name that this fragment ends at in the query, if this query has an end variable
      */
-    public abstract Optional<Var> getEnd();
+    public Optional<Var> getEnd() {
+        return Optional.empty();
+    }
 
-    abstract ImmutableSet<Var> otherVarNames();
+    ImmutableSet<Var> otherVarNames() {
+        return ImmutableSet.of();
+    }
 
     /**
      * @return the variable names that this fragment requires to have already been visited
@@ -140,7 +144,7 @@ public abstract class Fragment {
     /**
      * Get all variable names in the fragment - the start and end (if present)
      */
-    public Set<Var> getVariableNames() {
+    public final Set<Var> getVariableNames() {
         ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(getStart());
         getEnd().ifPresent(builder::add);
         builder.addAll(otherVarNames());
