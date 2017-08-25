@@ -108,8 +108,8 @@ public abstract class Fragment {
     /**
      * @return the variable name that this fragment ends at in the query, if this query has an end variable
      */
-    public Optional<Var> getEnd() {
-        return Optional.empty();
+    public @Nullable Var getEnd() {
+        return null;
     }
 
     ImmutableSet<Var> otherVarNames() {
@@ -128,7 +128,7 @@ public abstract class Fragment {
      */
     public final Set<Var> getVariableNames() {
         ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(getStart());
-        getEnd().ifPresent(builder::add);
+        if (getEnd() != null) builder.add(getEnd());
         builder.addAll(otherVarNames());
         return builder.build();
     }
@@ -147,7 +147,7 @@ public abstract class Fragment {
 
     @Override
     public String toString() {
-        return getStart() + getName() + getEnd().map(Object::toString).orElse("");
+        return getStart() + getName() + Optional.ofNullable(getEnd()).map(Object::toString).orElse("");
     }
 
     public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(NodeId.NodeType nodeType,
@@ -155,8 +155,8 @@ public abstract class Fragment {
                                                               Map<Node, Map<Node, Fragment>> edgeToFragment) {
 
         Node start = Node.addIfAbsent(NodeId.NodeType.VAR, getStart(), nodes);
-        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, getEnd().get(), nodes);
-        Node middle = Node.addIfAbsent(nodeType, Sets.newHashSet(getStart(), getEnd().get()), nodes);
+        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, getEnd(), nodes);
+        Node middle = Node.addIfAbsent(nodeType, Sets.newHashSet(getStart(), getEnd()), nodes);
         middle.setInvalidStartingPoint();
 
         addEdgeToFragmentMapping(middle, start, edgeToFragment);
@@ -170,7 +170,7 @@ public abstract class Fragment {
                                                               Map<Node, Map<Node, Fragment>> edgeToFragment) {
 
         Node start = Node.addIfAbsent(NodeId.NodeType.VAR, getStart(), nodes);
-        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, getEnd().get(), nodes);
+        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, getEnd(), nodes);
         Node middle = Node.addIfAbsent(NodeId.NodeType.VAR, edge, nodes);
         middle.setInvalidStartingPoint();
 

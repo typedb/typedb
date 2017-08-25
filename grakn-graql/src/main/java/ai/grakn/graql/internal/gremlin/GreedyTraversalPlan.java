@@ -153,7 +153,7 @@ public class GreedyTraversalPlan {
     private static Predicate<Fragment> filterNodeFragment(List<Fragment> plan, Map<NodeId, Node> allNodes,
                                                           Set<Node> connectedNodes, Set<Node> nodesWithFixedCost) {
         return fragment -> {
-            if (!fragment.getEnd().isPresent()) {
+            if (fragment.getEnd() == null) {
                 Node start = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.getStart(), allNodes);
                 connectedNodes.add(start);
 

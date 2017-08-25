@@ -64,7 +64,7 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
 abstract class OutShortcutFragment extends Fragment {
 
     @Override
-    public abstract Optional<Var> getEnd();
+    public abstract Var getEnd();
 
     abstract Var edge();
 

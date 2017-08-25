@@ -64,38 +64,38 @@ public class Fragments {
                                       Var rolePlayer, Var edge, Var relation, Optional<Var> role,
                                       Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
         return new AutoValue_InShortcutFragment(
-                varProperty, rolePlayer, Optional.of(relation), edge, role, roleLabels, relationTypeLabels);
+                varProperty, rolePlayer, relation, edge, role, roleLabels, relationTypeLabels);
     }
 
     public static Fragment outShortcut(VarProperty varProperty,
                                        Var relation, Var edge, Var rolePlayer, Optional<Var> role,
                                        Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
         return new AutoValue_OutShortcutFragment(
-                varProperty, relation, Optional.of(rolePlayer), edge, role, roleLabels, relationTypeLabels);
+                varProperty, relation, rolePlayer, edge, role, roleLabels, relationTypeLabels);
     }
 
     public static Fragment inSub(VarProperty varProperty, Var start, Var end) {
-        return new AutoValue_InSubFragment(varProperty, start, Optional.of(end));
+        return new AutoValue_InSubFragment(varProperty, start, end);
     }
 
     public static Fragment outSub(VarProperty varProperty, Var start, Var end) {
-        return new AutoValue_OutSubFragment(varProperty, start, Optional.of(end));
+        return new AutoValue_OutSubFragment(varProperty, start, end);
     }
 
     public static InRelatesFragment inRelates(VarProperty varProperty, Var start, Var end) {
-        return new AutoValue_InRelatesFragment(varProperty, start, Optional.of(end));
+        return new AutoValue_InRelatesFragment(varProperty, start, end);
     }
 
     public static Fragment outRelates(VarProperty varProperty, Var start, Var end) {
-        return new AutoValue_OutRelatesFragment(varProperty, start, Optional.of(end));
+        return new AutoValue_OutRelatesFragment(varProperty, start, end);
     }
 
     public static Fragment inIsa(VarProperty varProperty, Var start, Var end) {
-        return new AutoValue_InIsaFragment(varProperty, start, Optional.of(end));
+        return new AutoValue_InIsaFragment(varProperty, start, end);
     }
 
     public static Fragment outIsa(VarProperty varProperty, Var start, Var end) {
-        return new AutoValue_OutIsaFragment(varProperty, start, Optional.of(end));
+        return new AutoValue_OutIsaFragment(varProperty, start, end);
     }
 
     public static Fragment dataType(VarProperty varProperty, Var start, AttributeType.DataType dataType) {
@@ -103,11 +103,11 @@ public class Fragments {
     }
 
     public static Fragment inPlays(VarProperty varProperty, Var start, Var end, boolean required) {
-        return new AutoValue_InPlaysFragment(varProperty, start, Optional.of(end), required);
+        return new AutoValue_InPlaysFragment(varProperty, start, end, required);
     }
 
     public static Fragment outPlays(VarProperty varProperty, Var start, Var end, boolean required) {
-        return new AutoValue_OutPlaysFragment(varProperty, start, Optional.of(end), required);
+        return new AutoValue_OutPlaysFragment(varProperty, start, end, required);
     }
 
     public static Fragment id(VarProperty varProperty, Var start, ConceptId id) {

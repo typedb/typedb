@@ -31,7 +31,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
@@ -40,7 +39,7 @@ import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 abstract class InPlaysFragment extends Fragment {
 
     @Override
-    public abstract Optional<Var> getEnd();
+    public abstract Var getEnd();
 
     abstract boolean required();
 

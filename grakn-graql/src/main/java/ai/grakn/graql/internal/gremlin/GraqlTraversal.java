@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import com.google.auto.value.AutoValue;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -37,7 +37,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
@@ -106,7 +105,7 @@ public abstract class GraqlTraversal {
 
         for (Fragment fragment : fragmentList) {
             applyFragment(fragment, traversal, currentName, foundNames, graph);
-            currentName = fragment.getEnd().orElse(fragment.getStart());
+            currentName = fragment.getEnd() != null ? fragment.getEnd() : fragment.getStart();
         }
 
         // Select all the variable names
@@ -148,7 +147,8 @@ public abstract class GraqlTraversal {
         // Apply fragment to traversal
         fragment.applyTraversal(traversal, graph);
 
-        fragment.getEnd().ifPresent(end -> {
+        Var end = fragment.getEnd();
+        if (end != null) {
             if (!names.contains(end)) {
                 // This variable name has not been encountered before, remember it and use the 'as' step
                 traversal.as(end.getValue());
@@ -156,7 +156,7 @@ public abstract class GraqlTraversal {
                 // This variable name has been encountered before, confirm it is the same
                 traversal.where(P.eq(end.getValue()));
             }
-        });
+        }
 
         names.addAll(fragment.getVariableNames());
     }
@@ -215,10 +215,10 @@ public abstract class GraqlTraversal {
 
                 sb.append(fragment.getName());
 
-                Optional<Var> end = fragment.getEnd();
-                if (end.isPresent()) {
-                    sb.append(end.get().shortName());
-                    currentName = end.get();
+                Var end = fragment.getEnd();
+                if (end != null) {
+                    sb.append(end.shortName());
+                    currentName = end;
                 }
             }
 

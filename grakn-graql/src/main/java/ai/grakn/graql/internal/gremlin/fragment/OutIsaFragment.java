@@ -32,7 +32,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
@@ -43,7 +42,7 @@ import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 abstract class OutIsaFragment extends Fragment {
 
     @Override
-    public abstract Optional<Var> getEnd();
+    public abstract Var getEnd();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(

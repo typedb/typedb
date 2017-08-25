@@ -34,7 +34,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.var;
@@ -52,7 +51,7 @@ import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 abstract class InIsaFragment extends Fragment {
 
     @Override
-    public abstract Optional<Var> getEnd();
+    public abstract Var getEnd();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
