@@ -31,7 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import java.util.Map;
 import java.util.Set;
 
-class InSubFragment extends AbstractFragment {
+class InSubFragment extends Fragment {
 
     InSubFragment(VarProperty varProperty, Var start, Var end) {
         super(varProperty, start, end);

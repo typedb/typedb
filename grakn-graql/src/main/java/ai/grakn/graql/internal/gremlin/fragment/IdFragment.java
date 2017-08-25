@@ -31,7 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
-class IdFragment extends AbstractFragment {
+class IdFragment extends Fragment {
 
     private final ConceptId id;
 

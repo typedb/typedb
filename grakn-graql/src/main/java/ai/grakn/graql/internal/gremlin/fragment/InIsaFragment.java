@@ -47,7 +47,7 @@ import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 import static ai.grakn.util.Schema.VertexProperty.IS_IMPLICIT;
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 
-class InIsaFragment extends AbstractFragment {
+class InIsaFragment extends Fragment {
 
     InIsaFragment(VarProperty varProperty, Var start, Var end) {
         super(varProperty, start, end);

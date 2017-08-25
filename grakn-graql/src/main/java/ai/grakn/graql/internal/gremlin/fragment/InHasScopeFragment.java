@@ -33,7 +33,7 @@ import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.HAS_SCOPE;
 
-class InHasScopeFragment extends AbstractFragment {
+class InHasScopeFragment extends Fragment {
 
     InHasScopeFragment(VarProperty varProperty, Var start, Var end) {
         super(varProperty, start, end);

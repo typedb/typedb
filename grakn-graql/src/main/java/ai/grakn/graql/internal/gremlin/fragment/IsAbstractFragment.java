@@ -25,7 +25,7 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
-class IsAbstractFragment extends AbstractFragment {
+class IsAbstractFragment extends Fragment {
 
     IsAbstractFragment(VarProperty varProperty, Var start) {
         super(varProperty, start);
