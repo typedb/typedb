@@ -334,7 +334,7 @@ public class InsertQueryTest {
         ).execute();
 
         qb.insert(
-                var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-attribute-type", "goodbye")
+                var().isa("a-new-type").has("a-new-attribute-type", "hello").has("a-new-attribute-type", "goodbye")
         ).execute();
 
         exception.expect(InvalidKBException.class);
