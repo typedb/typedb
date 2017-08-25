@@ -198,7 +198,8 @@ public class GraqlShell {
 
         if (queries.isPresent()) {
             for (String query : queries.get()) {
-                if (!query.contains("$")) {
+                // This is a best-effort guess as to whether the user has made a mistake, without parsing the query
+                if (!query.contains("$") && query.trim().startsWith("match")) {
                     System.err.println(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage());
                     break;
                 }

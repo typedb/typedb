@@ -80,7 +80,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class ConceptBuilder {
 
-    private final InsertQueryExecutor executor;
+    private final QueryOperationExecutor executor;
 
     private final Var var;
 
@@ -155,7 +155,7 @@ public class ConceptBuilder {
         return set(THEN, then);
     }
 
-    static ConceptBuilder of(InsertQueryExecutor executor, Var var) {
+    static ConceptBuilder of(QueryOperationExecutor executor, Var var) {
         return new ConceptBuilder(executor, var);
     }
 
@@ -246,7 +246,7 @@ public class ConceptBuilder {
     private static final BuilderParam<Pattern> WHEN = () -> WhenProperty.NAME;
     private static final BuilderParam<Pattern> THEN = () -> ThenProperty.NAME;
 
-    private ConceptBuilder(InsertQueryExecutor executor, Var var) {
+    private ConceptBuilder(QueryOperationExecutor executor, Var var) {
         this.executor = executor;
         this.var = var;
     }
