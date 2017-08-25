@@ -40,7 +40,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -113,8 +112,8 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                shortcut(this, relationship().var(), edge1, start, Optional.empty()),
-                shortcut(this, relationship().var(), edge2, attribute().var(), Optional.empty()),
+                shortcut(this, relationship().var(), edge1, start, null),
+                shortcut(this, relationship().var(), edge2, attribute().var(), null),
                 neq(this, edge1, edge2)
         );
     }

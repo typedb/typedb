@@ -37,8 +37,8 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_DIRECTION;
@@ -68,16 +68,17 @@ abstract class InShortcutFragment extends Fragment {
 
     abstract Var edge();
 
-    abstract Optional<Var> role();
+    abstract @Nullable Var role();
 
-    abstract Optional<Set<Label>> roleLabels();
+    abstract @Nullable ImmutableSet<Label> roleLabels();
 
-    abstract Optional<Set<Label>> relationTypeLabels();
+    abstract @Nullable ImmutableSet<Label> relationTypeLabels();
 
     @Override
     ImmutableSet<Var> otherVarNames() {
         ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(edge());
-        role().ifPresent(builder::add);
+        Var role = role();
+        if (role != null) builder.add(role);
         return builder.build();
     }
 
@@ -124,10 +125,11 @@ abstract class InShortcutFragment extends Fragment {
 
     @Override
     public String getName() {
-        String role = role().map(rt -> " role:" + rt.shortName()).orElse("");
+        Var role = role();
+        String roleString = role != null ? " role:" + role.shortName() : "";
         String rels = displayOptionalTypeLabels("rels", relationTypeLabels());
         String roles = displayOptionalTypeLabels("roles", roleLabels());
-        return "<-[shortcut:" + edge().shortName() + role + rels + roles + "]-";
+        return "<-[shortcut:" + edge().shortName() + roleString + rels + roles + "]-";
     }
 
     @Override

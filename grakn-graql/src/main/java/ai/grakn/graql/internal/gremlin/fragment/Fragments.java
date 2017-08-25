@@ -37,7 +37,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Optional;
+import javax.annotation.Nullable;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
@@ -61,15 +61,17 @@ public class Fragments {
     }
 
     public static Fragment inShortcut(VarProperty varProperty,
-                                      Var rolePlayer, Var edge, Var relation, Optional<Var> role,
-                                      Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
+                                      Var rolePlayer, Var edge, Var relation, @Nullable Var role,
+                                      @Nullable ImmutableSet<Label> roleLabels,
+                                      @Nullable ImmutableSet<Label> relationTypeLabels) {
         return new AutoValue_InShortcutFragment(
                 varProperty, rolePlayer, relation, edge, role, roleLabels, relationTypeLabels);
     }
 
     public static Fragment outShortcut(VarProperty varProperty,
-                                       Var relation, Var edge, Var rolePlayer, Optional<Var> role,
-                                       Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
+                                       Var relation, Var edge, Var rolePlayer, @Nullable Var role,
+                                       @Nullable ImmutableSet<Label> roleLabels,
+                                       @Nullable ImmutableSet<Label> relationTypeLabels) {
         return new AutoValue_OutShortcutFragment(
                 varProperty, relation, rolePlayer, edge, role, roleLabels, relationTypeLabels);
     }
@@ -141,7 +143,8 @@ public class Fragments {
     /**
      * A {@link Fragment} that uses an index stored on each resource. Resources are indexed by direct type and value.
      */
-    public static Fragment resourceIndex(VarProperty varProperty, Var start, Label label, Object resourceValue) {
+    public static Fragment resourceIndex(
+            @Nullable VarProperty varProperty, Var start, Label label, Object resourceValue) {
         String resourceIndex = Schema.generateAttributeIndex(label, resourceValue.toString());
         return new AutoValue_ResourceIndexFragment(varProperty, start, resourceIndex);
     }
@@ -201,18 +204,23 @@ public class Fragments {
         return (GraphTraversal<T, Edge>) traversal.hasNot(Schema.VertexProperty.ID.name());
     }
 
-    static String displayOptionalTypeLabels(String name, Optional<Set<Label>> typeLabels) {
-        return typeLabels.map(labels ->
-                " " + name + ":" + labels.stream().map(StringConverter::typeLabelToString).collect(joining(","))
-        ).orElse("");
+    static String displayOptionalTypeLabels(String name, @Nullable Set<Label> typeLabels) {
+        if (typeLabels != null) {
+            return " " + name + ":" + typeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(","));
+        } else {
+            return "";
+        }
     }
 
     static void applyTypeLabelsToTraversal(
-            GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property, Optional<Set<Label>> typeLabels, GraknTx graph) {
-        typeLabels.ifPresent(labels -> {
-            Set<Integer> typeIds = labels.stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
+            GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property,
+            @Nullable Set<Label> typeLabels, GraknTx graph) {
+
+        if (typeLabels != null) {
+            Set<Integer> typeIds =
+                    typeLabels.stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
             traversal.has(property.name(), P.within(typeIds));
-        });
+        }
     }
 
     /**
@@ -222,13 +230,13 @@ public class Fragments {
      * @param role the variable to assign to the role. If not present, do nothing
      * @param edgeProperty the edge property to look up the role label ID
      */
-    static void traverseRoleFromShortcutEdge(GraphTraversal<?, Edge> traversal, Optional<Var> role, Schema.EdgeProperty edgeProperty) {
-        role.ifPresent(var -> {
+    static void traverseRoleFromShortcutEdge(GraphTraversal<?, Edge> traversal, @Nullable Var role, Schema.EdgeProperty edgeProperty) {
+        if (role != null) {
             Var edge = Graql.var();
             traversal.as(edge.getValue());
             Fragments.outSubs(traverseSchemaConceptFromEdge(traversal, edgeProperty));
-            traversal.as(var.getValue()).select(edge.getValue());
-        });
+            traversal.as(role.getValue()).select(edge.getValue());
+        }
     }
 
     static <S> GraphTraversal<S, Vertex> traverseSchemaConceptFromEdge(
