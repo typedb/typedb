@@ -102,7 +102,8 @@ public abstract class Binary extends Atom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Binary a2 = (Binary) obj;
-        return Objects.equals(this.getTypeId(), a2.getTypeId())
+        return  (isUserDefined() == a2.isUserDefined())
+                && Objects.equals(this.getTypeId(), a2.getTypeId())
                 && hasEquivalentPredicatesWith(a2);
     }
 

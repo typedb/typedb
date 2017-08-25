@@ -98,6 +98,7 @@ public class ResourceAtom extends Binary{
         hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + this.getVarName().hashCode();
         hashCode = hashCode * 37 + this.getPredicateVariable().hashCode();
+        hashCode = hashCode * 37 + this.getRelationVariable().hashCode();
         return hashCode;
     }
 
@@ -105,10 +106,11 @@ public class ResourceAtom extends Binary{
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        Binary a2 = (Binary) obj;
+        ResourceAtom a2 = (ResourceAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName())
-                && this.getPredicateVariable().equals(a2.getPredicateVariable());
+                && this.getPredicateVariable().equals(a2.getPredicateVariable())
+                && this.getRelationVariable().equals(a2.getRelationVariable());
     }
 
     @Override

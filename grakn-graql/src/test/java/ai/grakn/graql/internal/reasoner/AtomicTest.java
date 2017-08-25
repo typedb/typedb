@@ -254,25 +254,40 @@ public class AtomicTest {
         GraknTx graph = unificationTestSet.graph();
         String patternString = "{$x has res1 'value';}";
         String patternString2 = "{$y has res1 $r;$r val 'value';}";
-        String patternString3 = "{$y has res1 $r;}";
+        String patternString3 = "{$x has res1 $r;}";
         String patternString4 = "{$y has res1 'value2';}";
+        String patternString5= "{$x has res1 $y as $r;$y val 'value';}";
+        String patternString6 = "{$y has res1 $r as $x;$r val 'value';}";
 
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
         Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
         Conjunction<VarPatternAdmin> pattern4 = conjunction(patternString4, graph);
+        Conjunction<VarPatternAdmin> pattern5 = conjunction(patternString5, graph);
+        Conjunction<VarPatternAdmin> pattern6 = conjunction(patternString6, graph);
 
         Atom atom = ReasonerQueries.atomic(pattern, graph).getAtom();
         Atom atom2 = ReasonerQueries.atomic(pattern2, graph).getAtom();
         Atom atom3 = ReasonerQueries.atomic(pattern3, graph).getAtom();
         Atom atom4 = ReasonerQueries.atomic(pattern4, graph).getAtom();
+        Atom atom5 = ReasonerQueries.atomic(pattern5, graph).getAtom();
+        Atom atom6 = ReasonerQueries.atomic(pattern6, graph).getAtom();
 
         atomicEquivalence(atom, atom2, true);
         atomicEquivalence(atom, atom3, false);
         atomicEquivalence(atom, atom4, false);
+        atomicEquivalence(atom, atom5, false);
+        atomicEquivalence(atom, atom6, false);
         atomicEquivalence(atom2, atom3, false);
         atomicEquivalence(atom2, atom4, false);
+        atomicEquivalence(atom2, atom5, false);
+        atomicEquivalence(atom2, atom6, false);
         atomicEquivalence(atom3, atom4, false);
+        atomicEquivalence(atom3, atom5, false);
+        atomicEquivalence(atom3, atom6, false);
+        atomicEquivalence(atom4, atom5, false);
+        atomicEquivalence(atom4, atom6, false);
+        atomicEquivalence(atom5, atom6, true);
     }
 
     @Test //tests alpha-equivalence of queries with resources with multi predicate
@@ -1114,9 +1129,12 @@ public class AtomicTest {
         String resource = "{$x has res1 $r;$r val 'f';}";
         String resource2 = "{$r has res1 $x;$x val 'f';}";
         String resource3 = "{$r has res1 'f';}";
+        String resource4 = "{$x has res1 $y as $r;$y val 'f';}";
+        String resource5 = "{$y has res1 $r as $x;$r val 'f';}";
         testUnification(resource, resource2, true, true, graph);
         testUnification(resource, resource3, true, true, graph);
         testUnification(resource2, resource3, true, true, graph);
+        testUnification(resource4, resource5, true, true, graph);
     }
 
     @Test
