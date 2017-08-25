@@ -316,11 +316,6 @@ public class TasksControllerTest {
         Json json = response.as(Json.class, jsonMapper);
 
         assertThat(json.at("id").asString(), equalTo(task.getId().getValue()));
-        // TODO these are not stored at the moment
-//        assertThat(json.at(TASK_CLASS_NAME_PARAMETER).asString(), equalTo(task.taskClass().getName()));
-//        assertThat(json.at(TASK_CREATOR_PARAMETER).asString(), equalTo(task.creator()));
-//        assertThat(json.at(TASK_RUN_AT_PARAMETER).asLong(), equalTo(task.schedule().runAt().toEpochMilli()));
-//        assertThat(json.at(TASK_STATUS_PARAMETER).asString(), equalTo(task.status().name()));
     }
 
     @Test
@@ -411,8 +406,6 @@ public class TasksControllerTest {
 
         assertThat(json.at("id").asString(), equalTo(task.getId().getValue()));
         assertThat(json.at(TASK_STATUS_PARAMETER).asString(), equalTo(FAILED.name()));
-        // TODO: uncomment, Stacktrace in task not implemented
-        // assertThat(json.at("stackTrace").asString(), equalTo(getFullStackTrace(exception)));
     }
 
     private Map<String, String> defaultParams(){

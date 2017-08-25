@@ -33,33 +33,29 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * <p>
- *     Tracks Knowledge Base Specific Variables
- * </p>
+ * <p> Tracks Knowledge Base Specific Variables </p>
  *
- * <p>
- *     Caches Knowledge Base or Session specific data which is shared across transactions:
- *     <ol>
- *         <li>Schema Cache - All the types which make up the schema. This cache expires</li>
- *         <li>
- *             Label Cache - All the labels which make up the schema. This can never expire and is needed in order
- *             to perform fast lookups. Essentially it is used for mapping labels to ids.
- *         </li>
- *     <ol/>
- * </p>
+ * <p> Caches Knowledge Base or Session specific data which is shared across transactions: <ol>
+ * <li>Schema Cache - All the types which make up the schema. This cache expires</li> <li> Label
+ * Cache - All the labels which make up the schema. This can never expire and is needed in order to
+ * perform fast lookups. Essentially it is used for mapping labels to ids. </li> <ol/> </p>
  *
  * @author fppt
- *
  */
 public class GlobalCache {
+
+    public static final int DEFAULT_CACHE_TIMEOUT_MS = 600_000;
+
     //Caches
     private final Cache<Label, SchemaConcept> cachedTypes;
     private final Map<Label, LabelId> cachedLabels;
 
-    public GlobalCache(Properties properties){
+    public GlobalCache(Properties properties) {
         cachedLabels = new ConcurrentHashMap<>();
 
-        int cacheTimeout = Integer.parseInt(properties.getProperty(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS, "600000"));
+        int cacheTimeout = Integer.parseInt(properties
+                .getProperty(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS,
+                        String.valueOf(DEFAULT_CACHE_TIMEOUT_MS)));
         cachedTypes = CacheBuilder.newBuilder()
                 .maximumSize(1000)
                 .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
@@ -72,28 +68,29 @@ public class GlobalCache {
      * @param label The label of the type to cache
      * @param type The type to cache
      */
-    public void cacheType(Label label, SchemaConcept type){
+    public void cacheType(Label label, SchemaConcept type) {
         cachedTypes.put(label, type);
     }
 
     /**
-     * Caches a label so we can map type labels to type ids. This is necesssary so we can make fast indexed lookups.
+     * Caches a label so we can map type labels to type ids. This is necesssary so we can make fast
+     * indexed lookups.
      *
      * @param label The label of the type to cache
      * @param id The id of the type to cache
      */
-    public void cacheLabel(Label label, LabelId id){
+    public void cacheLabel(Label label, LabelId id) {
         cachedLabels.put(label, id);
     }
 
     /**
-     * Reads the {@link SchemaConcept} and their {@link Label} currently in the transaction cache into the graph cache.
-     * This usually happens when a commit occurs and allows us to track schema mutations without having to read
-     * the graph.
+     * Reads the {@link SchemaConcept} and their {@link Label} currently in the transaction cache
+     * into the graph cache. This usually happens when a commit occurs and allows us to track schema
+     * mutations without having to read the graph.
      *
      * @param txCache The transaction cache
      */
-    void readTxCache(TxCache txCache){
+    void readTxCache(TxCache txCache) {
         //TODO: The difference between the caches need to be taken into account. For example if a type is delete then it should be removed from the cachedLabels
         cachedLabels.putAll(txCache.getLabelCache());
         cachedTypes.putAll(txCache.getSchemaConceptCache());
@@ -108,7 +105,7 @@ public class GlobalCache {
      *
      * @return an immutable copy of the cached labels.
      */
-    Map<Label, LabelId> getCachedLabels(){
+    Map<Label, LabelId> getCachedLabels() {
         return ImmutableMap.copyOf(cachedLabels);
     }
 
@@ -117,7 +114,7 @@ public class GlobalCache {
      *
      * @return an immutable copy of the cached schema.
      */
-    public Map<Label, SchemaConcept> getCachedTypes(){
+    public Map<Label, SchemaConcept> getCachedTypes() {
         return ImmutableMap.copyOf(cachedTypes.asMap());
     }
 }

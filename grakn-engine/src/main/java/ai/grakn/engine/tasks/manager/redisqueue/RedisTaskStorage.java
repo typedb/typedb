@@ -48,23 +48,17 @@ import org.slf4j.LoggerFactory;
 public class RedisTaskStorage implements TaskStateStorage {
 
     private static final Logger LOG = LoggerFactory.getLogger(RedisTaskStorage.class);
-    private final EngineID engineID;
     private final Meter writeError;
 
     private Redisq<Task> redis;
 
-    private RedisTaskStorage(Redisq<Task> redis, EngineID engineID, MetricRegistry metricRegistry) {
+    private RedisTaskStorage(Redisq<Task> redis, MetricRegistry metricRegistry) {
         this.redis = redis;
-        this.engineID = engineID;
         this.writeError = metricRegistry.meter(name(RedisTaskStorage.class, "write", "error"));
     }
 
-    public static RedisTaskStorage create(Redisq<Task> redisq, EngineID engineID, MetricRegistry metricRegistry) {
-        return new RedisTaskStorage(redisq, engineID, metricRegistry);
-    }
-
     public static RedisTaskStorage create(Redisq<Task> redisq, MetricRegistry metricRegistry) {
-        return new RedisTaskStorage(redisq, EngineID.me(), metricRegistry);
+        return new RedisTaskStorage(redisq, metricRegistry);
     }
 
     private State mapStatus(TaskStatus status) {
@@ -99,22 +93,7 @@ public class RedisTaskStorage implements TaskStateStorage {
             // TODO return optional
             throw GraknBackendException.stateStorage();
         }
-        TaskState ts = TaskState.of(id);
-        switch(state.get().getState()) {
-            case NEW:
-                break;
-            case FAILED:
-                ts.markFailed(state.get().getInfo());
-                break;
-            case PROCESSING:
-                ts.markRunning(engineID);
-                break;
-            case DONE:
-                ts.markCompleted();
-                break;
-            default:
-        }
-        return ts;
+        return TaskState.of(id, TaskStatus.fromState(state.get().getState()));
     }
 
     @Override

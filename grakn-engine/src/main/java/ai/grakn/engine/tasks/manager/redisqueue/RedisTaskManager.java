@@ -64,7 +64,7 @@ public class RedisTaskManager implements TaskManager {
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
                             EngineGraknTxFactory factory, LockProvider distributedLockClient,
                             MetricRegistry metricRegistry) {
-        this(engineId, config, jedisPool, 64, factory, distributedLockClient, metricRegistry);
+        this(engineId, config, jedisPool, 32, factory, distributedLockClient, metricRegistry);
     }
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
@@ -81,7 +81,7 @@ public class RedisTaskManager implements TaskManager {
                 .setThreadPool(Executors.newFixedThreadPool(threads))
                 .setDocumentClass(Task.class)
                 .createRedisq();
-        this.taskStorage = RedisTaskStorage.create(redisq, engineId, metricRegistry);
+        this.taskStorage = RedisTaskStorage.create(redisq, metricRegistry);
     }
 
     @Override

@@ -89,7 +89,7 @@ public class TasksController {
     private static final TaskState.Priority DEFAULT_TASK_PRIORITY = TaskState.Priority.LOW;
 
     private static final int MAX_THREADS = 10;
-    private static final Duration MAX_EXECUTION_TIME = Duration.ofMinutes(5);
+    private static final Duration MAX_EXECUTION_TIME = Duration.ofSeconds(10);
 
     private final TaskManager manager;
     private final ExecutorService executor;

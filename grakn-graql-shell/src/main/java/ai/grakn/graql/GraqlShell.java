@@ -20,6 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.Grakn;
 import ai.grakn.client.BatchMutatorClient;
+import ai.grakn.engine.TaskId;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
@@ -301,11 +302,8 @@ public class GraqlShell {
         activeTasks.ifPresent(batchMutatorClient::setNumberActiveTasks);
         batchSize.ifPresent(batchMutatorClient::setBatchSize);
 
-        batchMutatorClient.setTaskCompletionConsumer((json) -> {
-//            TaskStatus status = TaskStatus.valueOf(json.getValue());
-
+        batchMutatorClient.setTaskCompletionConsumer((TaskId t) -> {
             numberBatchesCompleted.incrementAndGet();
-//            System.out.println(format("Status of batch: %s", status));
             System.out.println(format("Number batches completed: %s", numberBatchesCompleted.get()));
             System.out.println(format("Approximate queries executed: %s", numberBatchesCompleted.get() * batchMutatorClient.getBatchSize()));
         });

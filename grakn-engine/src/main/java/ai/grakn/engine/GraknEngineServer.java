@@ -130,8 +130,7 @@ public class GraknEngineServer implements AutoCloseable {
         Stopwatch timer = Stopwatch.createStarted();
         logStartMessage(
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
-                prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER),
-                prop.getProperty(REDIS_HOST));
+                prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
         synchronized (this){
             lockAndInitializeSystemSchema();
             startHTTP();
@@ -198,6 +197,7 @@ public class GraknEngineServer implements AutoCloseable {
                     .map(s -> new RedisTaskManager(engineId, prop, jedisPool, Integer.parseInt(s), factory, lockProvider, metricRegistry))
                     .orElseGet(() -> new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry));
         } else  {
+            LOG.info("Task queue in memory");
             // Redis storage for counts, in the RedisTaskManager it's created in consumers
             RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool, metricRegistry);
             taskManager = new StandaloneTaskManager(engineId, prop, redisCountStorage, factory, lockProvider, metricRegistry);
@@ -383,11 +383,10 @@ public class GraknEngineServer implements AutoCloseable {
         return builder.build();
     }
 
-    private void logStartMessage(String host, String port, String redisHost) {
+    private void logStartMessage(String host, String port) {
         String address = "http://" + host + ":" + port;
         LOG.info("\n==================================================");
         LOG.info("\n" + String.format(GraknEngineConfig.GRAKN_ASCII, address));
         LOG.info("\n==================================================");
-        LOG.info("\nTasks handled in {}", redisHost);
     }
 }

@@ -1,7 +1,6 @@
 package ai.grakn.engine.loader;
 
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import ai.grakn.graql.Graql;
 import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
@@ -32,7 +31,7 @@ public class MutatorTaskTest {
         taskConfiguration = mock(TaskConfiguration.class);
 
         Json badTaskJson = Json.object();
-        badTaskJson.set(KEYSPACE,"keyspace");
+        badTaskJson.set(KEYSPACE, "keyspace");
         Json readOnlyJson = Json.array();
         readOnlyJson.add(readOnlyQuery);
         badTaskJson.set(TASK_LOADER_MUTATIONS, readOnlyJson);
@@ -43,18 +42,8 @@ public class MutatorTaskTest {
     @Test
     public void checkReadOnlyQueriesAreRejected() {
         MutatorTask mutatorTask = new MutatorTask();
-        TaskSubmitter taskSubmitter = new TaskSubmitter() {
-            @Override
-            public void addTask(TaskState taskState, TaskConfiguration configuration) {
-
-            }
-
-            @Override
-            public void runTask(TaskState taskState, TaskConfiguration configuration) {
-
-            }
-        };
-        mutatorTask.initialize((x) -> System.out.println(x.toString()), taskConfiguration, taskSubmitter, null, null, null, null,
+        mutatorTask.initialize((x) -> System.out.println(x.toString()), taskConfiguration,
+                TaskSubmitter.getNoopTaskSubmitter(), null, null, null, null,
                 new MetricRegistry());
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(READ_ONLY_QUERY.getMessage(readOnlyQuery));

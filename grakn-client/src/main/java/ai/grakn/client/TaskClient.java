@@ -29,6 +29,7 @@ import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_RUN_WAIT_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
@@ -98,12 +99,15 @@ public class TaskClient extends Client {
     TaskId sendTask(String taskClass, String creator, Instant runAt, Duration interval,
             Json configuration, long limit, boolean wait){
         try {
-            // TODO do this properly
-            URIBuilder uri = new URIBuilder(TASKS + (wait ? "?wait=true" : ""))
+            URIBuilder uri = new URIBuilder(TASKS )
                     .setScheme(DEFAULT_SCHEME_NAME)
                     .setHost(host)
                     .setPort(port);
 
+            if (wait) {
+                // This tells the taskController on the engine to wait for the task to be executed
+                uri.setParameter(TASK_RUN_WAIT_PARAMETER, "true");
+            }
 
             Builder<String, String> taskBuilder = ImmutableMap.builder();
             taskBuilder.put(TASK_CLASS_NAME_PARAMETER, taskClass);
