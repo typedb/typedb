@@ -35,7 +35,7 @@ abstract class IsAbstractFragment extends Fragment {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "[is-abstract]";
     }
 

@@ -40,7 +40,7 @@ abstract class LabelFragment extends Fragment {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "[label:" + typeLabelToString(label()) + "]";
     }
 

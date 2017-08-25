@@ -39,7 +39,7 @@ abstract class ResourceIndexFragment extends Fragment {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "[index:" + resourceIndex() + "]";
     }
 

@@ -39,7 +39,7 @@ import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 abstract class OutPlaysFragment extends Fragment {
 
     @Override
-    public abstract Var getEnd();
+    public abstract Var end();
 
     abstract boolean required();
 
@@ -57,7 +57,7 @@ abstract class OutPlaysFragment extends Fragment {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         if (required()) {
             return "-[plays:required]->";
         } else {
@@ -71,8 +71,8 @@ abstract class OutPlaysFragment extends Fragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
-                                                              Map<Node, Map<Node, Fragment>> edges) {
-        return getDirectedEdges(NodeId.NodeType.PLAYS, nodes, edges);
+    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
+                                                           Map<Node, Map<Node, Fragment>> edges) {
+        return directedEdges(NodeId.NodeType.PLAYS, nodes, edges);
     }
 }

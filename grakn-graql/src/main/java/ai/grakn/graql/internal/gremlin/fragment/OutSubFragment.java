@@ -35,7 +35,7 @@ import java.util.Set;
 abstract class OutSubFragment extends Fragment {
 
     @Override
-    public abstract Var getEnd();
+    public abstract Var end();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
@@ -45,7 +45,7 @@ abstract class OutSubFragment extends Fragment {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "-[sub]->";
     }
 
@@ -55,8 +55,8 @@ abstract class OutSubFragment extends Fragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
-                                                              Map<Node, Map<Node, Fragment>> edges) {
-        return getDirectedEdges(NodeId.NodeType.SUB, nodes, edges);
+    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
+                                                           Map<Node, Map<Node, Fragment>> edges) {
+        return directedEdges(NodeId.NodeType.SUB, nodes, edges);
     }
 }

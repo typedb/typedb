@@ -79,7 +79,7 @@ class LabelFragmentSet extends EquivalentFragmentSet {
             boolean varReferredToInOtherFragment = fragmentSets.stream()
                     .filter(set -> !set.equals(labelSet))
                     .flatMap(set -> set.fragments().stream())
-                    .map(Fragment::getVariableNames)
+                    .map(Fragment::vars)
                     .anyMatch(vars -> vars.contains(labelSet.type()));
 
             if (!varReferredToInOtherFragment) {

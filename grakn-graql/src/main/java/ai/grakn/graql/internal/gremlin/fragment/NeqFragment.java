@@ -38,7 +38,7 @@ abstract class NeqFragment extends Fragment {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "[neq:" + other().shortName() + "]";
     }
 
@@ -49,7 +49,7 @@ abstract class NeqFragment extends Fragment {
     }
 
     @Override
-    public ImmutableSet<Var> getDependencies() {
+    public ImmutableSet<Var> dependencies() {
         return ImmutableSet.of(other());
     }
 }

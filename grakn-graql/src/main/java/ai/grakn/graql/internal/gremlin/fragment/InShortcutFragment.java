@@ -64,7 +64,7 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
 abstract class InShortcutFragment extends Fragment {
 
     @Override
-    public abstract Var getEnd();
+    public abstract Var end();
 
     abstract Var edge();
 
@@ -75,7 +75,7 @@ abstract class InShortcutFragment extends Fragment {
     abstract @Nullable ImmutableSet<Label> relationTypeLabels();
 
     @Override
-    ImmutableSet<Var> otherVarNames() {
+    ImmutableSet<Var> otherVars() {
         ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(edge());
         Var role = role();
         if (role != null) builder.add(role);
@@ -124,7 +124,7 @@ abstract class InShortcutFragment extends Fragment {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         Var role = role();
         String roleString = role != null ? " role:" + role.shortName() : "";
         String rels = displayOptionalTypeLabels("rels", relationTypeLabels());
@@ -138,8 +138,8 @@ abstract class InShortcutFragment extends Fragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
-                                                              Map<Node, Map<Node, Fragment>> edges) {
-        return getDirectedEdges(edge(), nodes, edges);
+    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
+                                                           Map<Node, Map<Node, Fragment>> edges) {
+        return directedEdges(edge(), nodes, edges);
     }
 }

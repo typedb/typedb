@@ -38,7 +38,7 @@ abstract class DataTypeFragment extends Fragment {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "[datatype:" + dataType().getName() + "]";
     }
 

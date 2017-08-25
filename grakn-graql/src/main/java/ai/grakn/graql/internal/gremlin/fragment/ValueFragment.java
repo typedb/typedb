@@ -44,7 +44,7 @@ abstract class ValueFragment extends Fragment {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "[value:" + predicate() + "]";
     }
 
@@ -60,11 +60,11 @@ abstract class ValueFragment extends Fragment {
 
     @Override
     public boolean hasFixedFragmentCost() {
-        return predicate().isSpecific() && getDependencies().isEmpty();
+        return predicate().isSpecific() && dependencies().isEmpty();
     }
 
     @Override
-    public Set<Var> getDependencies() {
+    public Set<Var> dependencies() {
         return optionalToStream(predicate().getInnerVar()).map(VarPatternAdmin::var).collect(toSet());
     }
 }

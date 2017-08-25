@@ -328,11 +328,11 @@ public class GraqlTraversalTest {
             Set<Var> visited = new HashSet<>();
 
             for (Fragment fragment : fragmentList) {
-                if (!visited.containsAll(fragment.getDependencies())) {
+                if (!visited.containsAll(fragment.dependencies())) {
                     return Optional.empty();
                 }
 
-                visited.addAll(fragment.getVariableNames());
+                visited.addAll(fragment.vars());
             }
         }
 

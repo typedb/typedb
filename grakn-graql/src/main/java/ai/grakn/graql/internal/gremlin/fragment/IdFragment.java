@@ -63,7 +63,7 @@ abstract class IdFragment extends Fragment {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "[id:" + idToString(id()) + "]";
     }
 
