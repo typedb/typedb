@@ -22,12 +22,12 @@ package ai.grakn.graql.internal.gremlin.fragment;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -60,30 +60,25 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
  *
  * @author Felix Chapman
  */
-class InShortcutFragment extends Fragment {
+@AutoValue
+abstract class InShortcutFragment extends Fragment {
 
-    private final Var edge;
-    private final Optional<Var> role;
-    private final Optional<Set<Label>> roleLabels;
-    private final Optional<Set<Label>> relationTypeLabels;
-    private final Var start;
-    private final Optional<Var> end;
-    private final ImmutableSet<Var> otherVarNames;
-    private VarProperty varProperty; // For reasoner to map fragments to atoms
+    @Override
+    public abstract Optional<Var> getEnd();
 
-    InShortcutFragment(VarProperty varProperty,
-                       Var rolePlayer, Var edge, Var relation, Optional<Var> role, Optional<Set<Label>> roleLabels,
-                       Optional<Set<Label>> relationTypeLabels) {
-        this.varProperty = varProperty;
-        this.start = rolePlayer;
-        this.end = Optional.of(relation);
-        ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(edge);
-        role.ifPresent(builder::add);
-        this.otherVarNames = builder.build();
-        this.edge = edge;
-        this.role = role;
-        this.roleLabels = roleLabels;
-        this.relationTypeLabels = relationTypeLabels;
+    abstract Var edge();
+
+    abstract Optional<Var> role();
+
+    abstract Optional<Set<Label>> roleLabels();
+
+    abstract Optional<Set<Label>> relationTypeLabels();
+
+    @Override
+    ImmutableSet<Var> otherVarNames() {
+        ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(edge());
+        role().ifPresent(builder::add);
+        return builder.build();
     }
 
     @Override
@@ -98,13 +93,13 @@ class InShortcutFragment extends Fragment {
     }
 
     private GraphTraversal<Vertex, Vertex> reifiedRelationTraversal(GraknTx graph) {
-        GraphTraversal<Vertex, Edge> edgeTraversal = __.<Vertex>inE(SHORTCUT.getLabel()).as(edge.getValue());
+        GraphTraversal<Vertex, Edge> edgeTraversal = __.<Vertex>inE(SHORTCUT.getLabel()).as(edge().getValue());
 
         // Filter by any provided type labels
-        applyTypeLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels, graph);
-        applyTypeLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), graph);
+        applyTypeLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), graph);
 
-        traverseRoleFromShortcutEdge(edgeTraversal, role, ROLE_LABEL_ID);
+        traverseRoleFromShortcutEdge(edgeTraversal, role(), ROLE_LABEL_ID);
 
         return edgeTraversal.outV();
     }
@@ -116,23 +111,23 @@ class InShortcutFragment extends Fragment {
 
         // Identify the relation - role-player pair by combining the relationship edge and direction into a map
         edgeTraversal.as(RELATION_EDGE).constant(direction).as(RELATION_DIRECTION);
-        edgeTraversal.select(Pop.last, RELATION_EDGE, RELATION_DIRECTION).as(edge.getValue()).select(RELATION_EDGE);
+        edgeTraversal.select(Pop.last, RELATION_EDGE, RELATION_DIRECTION).as(edge().getValue()).select(RELATION_EDGE);
 
         // Filter by any provided type labels
-        applyTypeLabelsToTraversal(edgeTraversal, roleProperty, roleLabels, graph);
-        applyTypeLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels, graph);
+        applyTypeLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), graph);
+        applyTypeLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), graph);
 
-        traverseRoleFromShortcutEdge(edgeTraversal, role, roleProperty);
+        traverseRoleFromShortcutEdge(edgeTraversal, role(), roleProperty);
 
         return edgeTraversal;
     }
 
     @Override
     public String getName() {
-        String role = this.role.map(rt -> " role:" + rt.shortName()).orElse("");
-        String rels = displayOptionalTypeLabels("rels", relationTypeLabels);
-        String roles = displayOptionalTypeLabels("roles", roleLabels);
-        return "<-[shortcut:" + edge.shortName() + role + rels + roles + "]-";
+        String role = role().map(rt -> " role:" + rt.shortName()).orElse("");
+        String rels = displayOptionalTypeLabels("rels", relationTypeLabels());
+        String roles = displayOptionalTypeLabels("roles", roleLabels());
+        return "<-[shortcut:" + edge().shortName() + role + rels + roles + "]-";
     }
 
     @Override
@@ -143,56 +138,6 @@ class InShortcutFragment extends Fragment {
     @Override
     public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
                                                               Map<Node, Map<Node, Fragment>> edges) {
-        return getDirectedEdges(edge, nodes, edges);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        InShortcutFragment that = (InShortcutFragment) o;
-
-        if (!edge.equals(that.edge)) return false;
-        if (!roleLabels.equals(that.roleLabels)) return false;
-        return relationTypeLabels.equals(that.relationTypeLabels);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + edge.hashCode();
-        result = 31 * result + roleLabels.hashCode();
-        result = 31 * result + relationTypeLabels.hashCode();
-        return result;
-    }
-
-    /**
-     * Get the corresponding property
-     */
-    public VarProperty getVarProperty() {
-        return varProperty;
-    }
-
-    /**
-     * @return the variable name that this fragment starts from in the query
-     */
-    @Override
-    public final Var getStart() {
-        return start;
-    }
-
-    /**
-     * @return the variable name that this fragment ends at in the query, if this query has an end variable
-     */
-    @Override
-    public final Optional<Var> getEnd() {
-        return end;
-    }
-
-    @Override
-    ImmutableSet<Var> otherVarNames() {
-        return otherVarNames;
+        return getDirectedEdges(edge(), nodes, edges);
     }
 }

@@ -63,13 +63,15 @@ public class Fragments {
     public static Fragment inShortcut(VarProperty varProperty,
                                       Var rolePlayer, Var edge, Var relation, Optional<Var> role,
                                       Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
-        return new InShortcutFragment(varProperty, rolePlayer, edge, relation, role, roleLabels, relationTypeLabels);
+        return new AutoValue_InShortcutFragment(
+                varProperty, rolePlayer, Optional.of(relation), edge, role, roleLabels, relationTypeLabels);
     }
 
     public static Fragment outShortcut(VarProperty varProperty,
                                        Var relation, Var edge, Var rolePlayer, Optional<Var> role,
                                        Optional<Set<Label>> roleLabels, Optional<Set<Label>> relationTypeLabels) {
-        return new OutShortcutFragment(varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels);
+        return new AutoValue_OutShortcutFragment(
+                varProperty, relation, Optional.of(rolePlayer), edge, role, roleLabels, relationTypeLabels);
     }
 
     public static Fragment inSub(VarProperty varProperty, Var start, Var end) {
