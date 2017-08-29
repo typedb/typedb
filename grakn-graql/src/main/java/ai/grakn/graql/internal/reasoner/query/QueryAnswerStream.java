@@ -111,7 +111,7 @@ public class QueryAnswerStream {
 
     private static Answer joinOperator(Answer m1, Answer m2){
         boolean isCompatible = true;
-        Set<Var> joinVars = Sets.intersection(m1.keySet(), m2.keySet());
+        Set<Var> joinVars = Sets.intersection(m1.vars(), m2.vars());
         Iterator<Var> it = joinVars.iterator();
         while(it.hasNext() && isCompatible) {
             Var var = it.next();

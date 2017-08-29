@@ -21,11 +21,9 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
@@ -38,7 +36,6 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -145,29 +142,6 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         };
 
         return PropertyExecutor.builder(method).produces(relationship().var()).requires(var, attribute().var()).build();
-    }
-
-    @Override
-    public void delete(GraknTx graph, Concept concept) {
-        Optional<ai.grakn.graql.ValuePredicate> predicate =
-                attribute().getProperties(ValueProperty.class).map(ValueProperty::predicate).findAny();
-
-        Role owner = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(type()));
-        Role value = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(type()));
-
-        concept.asThing().relationships(owner)
-                .filter(relationship -> testPredicate(predicate, relationship, value))
-                .forEach(Concept::delete);
-    }
-
-    private boolean testPredicate(
-            Optional<ai.grakn.graql.ValuePredicate> optPredicate, Relationship relationship, Role attributeRole) {
-        Object value = relationship.rolePlayers(attributeRole).iterator().next().asAttribute().getValue();
-
-        return optPredicate
-                .flatMap(ai.grakn.graql.ValuePredicate::getPredicate)
-                .map(predicate -> predicate.test(value))
-                .orElse(true);
     }
 
     @Override
