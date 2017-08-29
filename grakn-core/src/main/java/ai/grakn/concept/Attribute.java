@@ -91,6 +91,14 @@ public interface Attribute<D> extends Thing {
     @Override
     Attribute attribute(Attribute attribute);
 
+    /**
+     * Removes the provided {@link Attribute} from this {@link Attribute}
+     * @param attribute the {@link Attribute} to be removed
+     * @return The {@link Attribute} itself
+     */
+    @Override
+    Attribute deleteAttribute(Attribute attribute);
+
     //------------------------------------- Other ---------------------------------
     @SuppressWarnings("unchecked")
     @Deprecated

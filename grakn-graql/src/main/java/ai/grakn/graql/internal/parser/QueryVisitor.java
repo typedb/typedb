@@ -54,6 +54,7 @@ import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +66,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -452,7 +454,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     public UnaryOperator<VarPattern> visitPropHas(GraqlParser.PropHasContext ctx) {
         Label type = visitLabel(ctx.label());
 
-        VarPattern resource = ctx.VARIABLE() != null ? getVariable(ctx.VARIABLE()) : var();
+        VarPattern relation = Optional.ofNullable(ctx.relation).map(this::getVariable).orElseGet(Graql::var);
+        VarPattern resource = Optional.ofNullable(ctx.resource).map(this::getVariable).orElseGet(Graql::var);
 
         if (ctx.predicate() != null) {
             resource = resource.val(visitPredicate(ctx.predicate()));
@@ -460,7 +463,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         VarPattern finalResource = resource;
 
-        return var -> var.has(type, finalResource);
+        return var -> var.has(type, finalResource, relation);
     }
 
     @Override
@@ -662,6 +665,10 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     private Var getVariable(TerminalNode variable) {
+        return getVariable(variable.getSymbol());
+    }
+
+    private Var getVariable(Token variable) {
         // Remove '$' prefix
         return var(variable.getText().substring(1));
     }

@@ -95,8 +95,13 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
 
     @Override
     public Relationship attribute(Attribute attribute) {
-        reify().attribute(attribute);
+        attributeRelationship(attribute);
         return this;
+    }
+
+    @Override
+    public Relationship attributeRelationship(Attribute attribute) {
+        return reify().attributeRelationship(attribute);
     }
 
     @Override
@@ -153,6 +158,12 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     public Relationship addRolePlayer(Role role, Thing thing) {
         reify().addRolePlayer(role, thing);
         vertex().tx().txCache().trackForValidation(this); //This is so we can reassign the hash if needed
+        return this;
+    }
+
+    @Override
+    public Relationship deleteAttribute(Attribute attribute) {
+        reified().ifPresent(rel -> rel.deleteAttribute(attribute));
         return this;
     }
 
