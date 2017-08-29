@@ -21,8 +21,7 @@ package ai.grakn.graql.internal.hal;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.Query;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.AcademyKB;
 import ai.grakn.test.kbs.GenealogyKB;
@@ -144,8 +143,8 @@ public class HALBuilderTest {
     }
 
     private Json getHALRepresentation(GraknTx graph, String queryString) {
-        Query<?> query = graph.graql().materialise(false).infer(true).parse(queryString);
-        return renderHALArrayData((MatchQuery) query, 0, 5);
+        GetQuery query = graph.graql().materialise(false).infer(true).parse(queryString);
+        return renderHALArrayData(query, 0, 5);
     }
 
     private Json getHALExploreRepresentation(GraknTx graph, String conceptId) {
@@ -154,8 +153,8 @@ public class HALBuilderTest {
     }
 
     private Json getHALRepresentationNoInference(GraknTx graph, String queryString) {
-        Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
-        return renderHALArrayData((MatchQuery) query, 0, 5);
+        GetQuery query = graph.graql().materialise(false).infer(false).parse(queryString);
+        return renderHALArrayData(query, 0, 5);
     }
 
 }

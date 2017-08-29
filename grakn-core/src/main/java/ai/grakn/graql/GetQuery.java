@@ -22,7 +22,10 @@ package ai.grakn.graql;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.admin.Answer;
 
+import javax.annotation.CheckReturnValue;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * a query used for finding data in a graph that matches the given patterns.
@@ -42,4 +45,22 @@ public interface GetQuery extends Query<List<Answer>>, Streamable<Answer> {
      */
     @Override
     GetQuery withTx(GraknTx tx);
+
+    /**
+     * Get the transaction this query is running against, if it is set
+     */
+    @CheckReturnValue
+    Optional<GraknTx> tx();
+
+    /**
+     * Get the {@link MatchQuery} this {@link GetQuery} contains
+     */
+    @CheckReturnValue
+    MatchQuery matchQuery();
+
+    /**
+     * Get the {@link Var}s this {@link GetQuery} will select from the answers
+     */
+    @CheckReturnValue
+    Set<Var> vars();
 }

@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
@@ -32,11 +32,11 @@ import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import com.theoryinpractise.halbuilder.api.Representation;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -133,51 +133,51 @@ public class HALUtils {
         }
     }
 
-    static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQuery(MatchQuery matchQuery, Answer firstAnswer) {
+    static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQuery(GetQuery getQuery, Answer firstAnswer) {
         final Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
         AnswerExplanation firstExplanation = firstAnswer.getExplanation();
         if (firstExplanation.isEmpty()) {
-            return computeRoleTypesFromQueryNoReasoner(matchQuery);
+            return computeRoleTypesFromQueryNoReasoner(getQuery);
         } else {
             if (firstExplanation.isRuleExplanation() || firstExplanation.isLookupExplanation()) {
-                updateRoleTypesFromAnswer(roleTypes, firstAnswer, matchQuery);
+                updateRoleTypesFromAnswer(roleTypes, firstAnswer, getQuery);
             } else {
-                firstAnswer.getExplanation().getAnswers().forEach(answer -> updateRoleTypesFromAnswer(roleTypes, answer, matchQuery));
+                firstAnswer.getExplanation().getAnswers().forEach(answer -> updateRoleTypesFromAnswer(roleTypes, answer, getQuery));
             }
             return roleTypes;
         }
     }
 
-    private static void updateRoleTypesFromAnswer(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Answer answer, MatchQuery matchQuery) {
+    private static void updateRoleTypesFromAnswer(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Answer answer, GetQuery getQuery) {
         Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
         if (atom.isRelation()) {
             Optional<VarPatternAdmin> var = atom.getPattern().varPatterns().stream().filter(x -> x.hasProperty(RelationProperty.class)).findFirst();
             VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
-            if (var.isPresent() && !var.get().var().isUserDefinedName() && bothRolePlayersAreSelected(atom, matchQuery)) {
+            if (var.isPresent() && !var.get().var().isUserDefinedName() && bothRolePlayersAreSelected(atom, getQuery)) {
                 roleTypes.put(varAdmin, pairVarNamesRelationType(atom));
             }
         }
     }
 
-    private static boolean bothRolePlayersAreSelected(Atom atom, MatchQuery matchQuery) {
+    private static boolean bothRolePlayersAreSelected(Atom atom, GetQuery getQuery) {
         RelationAtom reasonerRel = ((RelationAtom) atom);
         Set<Var> rolePlayersInAtom = reasonerRel.getRolePlayers().stream().collect(Collectors.toSet());
-        Set<Var> selectedVars = matchQuery.admin().getSelectedNames();
+        Set<Var> selectedVars = getQuery.vars();
         //If all the role players contained in the current relation are also selected in the user query
         return Sets.intersection(rolePlayersInAtom, selectedVars).equals(rolePlayersInAtom);
     }
 
-    private static boolean bothRolePlayersAreSelectedNoReasoner(VarPatternAdmin var, MatchQuery matchQuery) {
+    private static boolean bothRolePlayersAreSelectedNoReasoner(VarPatternAdmin var, GetQuery getQuery) {
         Set<Var> rolePlayersInVar =  var.getProperty(RelationProperty.class).get().relationPlayers().stream().map(x->x.getRolePlayer().var()).collect(Collectors.toSet());
-        Set<Var> selectedVars = matchQuery.admin().getSelectedNames();
+        Set<Var> selectedVars = getQuery.vars();
         //If all the role players contained in the current relation are also selected in the user query
         return Sets.intersection(rolePlayersInVar, selectedVars).equals(rolePlayersInVar);
     }
 
-    private static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQueryNoReasoner(MatchQuery matchQuery) {
+    private static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQueryNoReasoner(GetQuery getQuery) {
         final Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
-        matchQuery.admin().getPattern().varPatterns().forEach(var -> {
-            if (var.getProperty(RelationProperty.class).isPresent() && !var.var().isUserDefinedName() && bothRolePlayersAreSelectedNoReasoner(var,matchQuery)) {
+        getQuery.matchQuery().admin().getPattern().varPatterns().forEach(var -> {
+            if (var.getProperty(RelationProperty.class).isPresent() && !var.var().isUserDefinedName() && bothRolePlayersAreSelectedNoReasoner(var,getQuery)) {
                 Map<Var, String> tempMap = new HashMap<>();
                 var.getProperty(RelationProperty.class).get()
                         .relationPlayers().forEach(x -> {

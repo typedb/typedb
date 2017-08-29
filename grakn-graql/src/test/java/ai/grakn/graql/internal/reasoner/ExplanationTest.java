@@ -20,10 +20,8 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.test.kbs.GenealogyKB;
-import ai.grakn.test.kbs.GeoKB;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -32,6 +30,8 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.GenealogyKB;
+import ai.grakn.test.kbs.GeoKB;
 import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -87,7 +87,7 @@ public class ExplanationTest {
         Answer answer3 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), poland));
         Answer answer4 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), europe));
 
-        List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
@@ -134,7 +134,7 @@ public class ExplanationTest {
         Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), poland));
         Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), uw, Graql.var("y"), poland));
 
-        List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
@@ -164,8 +164,8 @@ public class ExplanationTest {
                 "$x id '" + polibuda.getId() + "';" +
                 "$y id '" + europe.getId() + "';";
 
-        MatchQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.admin().execute();
+        GetQuery query = iqb.parse(queryString);
+        List<Answer> answers = query.execute();
         assertEquals(answers.size(), 1);
 
         Answer answer = answers.iterator().next();
@@ -185,8 +185,8 @@ public class ExplanationTest {
                 "$z id '" + masovia.getId() + "';" +
                 "select $y;";
 
-        MatchQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.admin().execute();
+        GetQuery query = iqb.parse(queryString);
+        List<Answer> answers = query.execute();
         assertEquals(answers.size(), 1);
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
     }
@@ -198,8 +198,8 @@ public class ExplanationTest {
                 "$x id '" + polibuda.getId() + "';" +
                 "$y id '" + uw.getId() + "';";
 
-        MatchQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.admin().execute();
+        GetQuery query = iqb.parse(queryString);
+        List<Answer> answers = query.execute();
         assertEquals(answers.size(), 0);
     }
 
@@ -207,8 +207,8 @@ public class ExplanationTest {
     public void testExplainingNonRuleResolvableQuery(){
         String queryString = "match $x isa city, has name $n;";
 
-        MatchQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.admin().execute();
+        GetQuery query = iqb.parse(queryString);
+        List<Answer> answers = query.execute();
         answers.forEach(ans -> assertEquals(ans.getExplanation().isEmpty(), true));
     }
 
@@ -224,8 +224,8 @@ public class ExplanationTest {
                 "$x id '" + a1.getId() + "';" +
                 "$y id '" + a2.getId() + "';";
 
-        MatchQuery query = eiqb.parse(queryString);
-        List<Answer> answers = query.admin().execute();
+        GetQuery query = eiqb.parse(queryString);
+        List<Answer> answers = query.execute();
         assertEquals(answers.size(), 0);
     }
 
@@ -239,13 +239,13 @@ public class ExplanationTest {
                 "$x has name $xName;" +
                 "$w has name $wName;";
 
-        MatchQuery query = eiqb.parse(queryString);
+        GetQuery query = eiqb.parse(queryString);
         List<Answer> answers = query.execute();
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
     }
 
     private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
-        return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).execute().iterator().next().get("x");
+        return graph.graql().match(Graql.var("x").has(typeLabel, val)).get("x").findAny().get();
     }
 
     private Answer findAnswer(Answer a, List<Answer> list){

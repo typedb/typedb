@@ -192,7 +192,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             if (!answer.isEmpty()) return answer;
         }
 
-        List<Answer> match = ReasonerQueries.atomic(this, sub).getMatchQuery().execute();
+        List<Answer> match = ReasonerQueries.atomic(this, sub).getQuery().execute();
         return match.isEmpty()? new QueryAnswer() : match.iterator().next();
     }
 
@@ -202,7 +202,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     private Stream<Answer> DBlookup() {
-        return getMatchQuery().admin().stream()
+        return getQuery().stream()
                 .map(a -> a.explain(new LookupExplanation(this)));
     }
 
@@ -341,7 +341,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public Stream<Answer> resolveAndMaterialise(LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
         if (!this.getAtom().isRuleResolvable()) {
-            return this.getMatchQuery().admin().stream().map(QueryAnswer::new);
+            return this.getQuery().stream().map(QueryAnswer::new);
         } else {
             return new QueryAnswerIterator(cache, dCache).hasStream();
         }

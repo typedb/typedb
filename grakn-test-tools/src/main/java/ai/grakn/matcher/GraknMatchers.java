@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import com.google.common.collect.Maps;
@@ -34,12 +35,12 @@ import org.hamcrest.TypeSafeMatcher;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.util.Schema.MetaSchema.THING;
+import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
 import static ai.grakn.util.Schema.MetaSchema.CONSTRAINT_RULE;
 import static ai.grakn.util.Schema.MetaSchema.ENTITY;
 import static ai.grakn.util.Schema.MetaSchema.INFERENCE_RULE;
-import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
+import static ai.grakn.util.Schema.MetaSchema.THING;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItem;
@@ -62,10 +63,10 @@ public class GraknMatchers {
     /**
      * Create a matcher to test against the results of a Graql query.
      */
-    public static Matcher<MatchQuery> results(
+    public static Matcher<GetQuery> results(
             Matcher<? extends Iterable<? extends Map<? extends Var, ? extends MatchableConcept>>> matcher
     ) {
-        return new PropertyMatcher<MatchQuery, Iterable<? extends Map<? extends Var, ? extends MatchableConcept>>>(matcher) {
+        return new PropertyMatcher<GetQuery, Iterable<? extends Map<? extends Var, ? extends MatchableConcept>>>(matcher) {
 
             @Override
             public String getName() {
@@ -73,7 +74,7 @@ public class GraknMatchers {
             }
 
             @Override
-            Iterable<? extends Map<Var, ? extends MatchableConcept>> transform(MatchQuery item) {
+            Iterable<? extends Map<Var, ? extends MatchableConcept>> transform(GetQuery item) {
                 return item.stream().map(m -> Maps.transformValues(m.map(), MatchableConcept::of)).collect(toList());
             }
         };
@@ -103,10 +104,10 @@ public class GraknMatchers {
     /**
      * Create matcher to test against a particular variable on every result of a Graql query.
      */
-    public static Matcher<MatchQuery> variable(
+    public static Matcher<GetQuery> variable(
             Var var, Matcher<? extends Iterable<? extends MatchableConcept>> matcher
     ) {
-        return new PropertyMatcher<MatchQuery, Iterable<? extends MatchableConcept>>(matcher) {
+        return new PropertyMatcher<GetQuery, Iterable<? extends MatchableConcept>>(matcher) {
 
             @Override
             public String getName() {
@@ -114,8 +115,8 @@ public class GraknMatchers {
             }
 
             @Override
-            Iterable<? extends MatchableConcept> transform(MatchQuery item) {
-                return item.get(var).map(MatchableConcept::of).collect(toList());
+            Iterable<? extends MatchableConcept> transform(GetQuery item) {
+                return item.stream().map(answer -> MatchableConcept.of(answer.get(var))).collect(toList());
             }
         };
     }

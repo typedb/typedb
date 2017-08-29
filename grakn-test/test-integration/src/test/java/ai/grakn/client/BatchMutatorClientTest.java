@@ -18,14 +18,14 @@
 
 package ai.grakn.client;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -203,10 +203,10 @@ public class BatchMutatorClientTest {
     @Test
     public void whenAddingReadOnlyQueriesThrowError() {
         BatchMutatorClient loader = loader();
-        MatchQuery matchQuery = match(var("x").isa("y"));
+        GetQuery getQuery = match(var("x").isa("y")).get();
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(READ_ONLY_QUERY.getMessage(matchQuery.toString()));
-        loader.add(matchQuery);
+        exception.expectMessage(READ_ONLY_QUERY.getMessage(getQuery.toString()));
+        loader.add(getQuery);
     }
 
     @Test

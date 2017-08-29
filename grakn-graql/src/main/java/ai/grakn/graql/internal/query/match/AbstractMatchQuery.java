@@ -29,7 +29,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Order;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
@@ -56,23 +55,8 @@ import static java.util.stream.Collectors.toSet;
 abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
-    public final Stream<String> resultsString(Printer printer) {
-        return stream().map(printer::graqlString);
-    }
-
-    @Override
-    public final boolean isReadOnly() {
-        return true;
-    }
-
-    @Override
     public final MatchQueryAdmin admin() {
         return this;
-    }
-
-    @Override
-    public final List<Answer> execute() {
-        return stream().collect(toList());
     }
 
     /**

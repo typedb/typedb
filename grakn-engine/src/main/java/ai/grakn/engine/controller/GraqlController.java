@@ -27,7 +27,7 @@ import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.analytics.PathQuery;
@@ -273,8 +273,8 @@ public class GraqlController {
         // This ugly instanceof business needs to be done because the HAL array renderer does not
         // support Compute queries and because Compute queries do not have the "admin" interface
 
-        if(query instanceof MatchQuery) {
-            return renderHALArrayData((MatchQuery) query, 0, numberEmbeddedComponents);
+        if(query instanceof GetQuery) {
+            return renderHALArrayData((GetQuery) query, 0, numberEmbeddedComponents);
         } else if(query instanceof PathQuery) {
             Json array = Json.array();
             // The below was taken line-for-line from previous way of rendering

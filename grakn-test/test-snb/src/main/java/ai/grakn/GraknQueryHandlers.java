@@ -141,7 +141,7 @@ public class GraknQueryHandlers {
                         aMessageDate.val(lte(maxDate)));
 
                 List<Answer> rawResult = graknLdbcQuery2.orderBy(aMessageDate, Order.desc)
-                        .limit(ldbcQuery2.limit()).withTx(graknTx).execute();
+                        .limit(ldbcQuery2.limit()).withTx(graknTx).get().execute();
 
                 // sort first by date and then by message id
                 Comparator<Answer> ugly = Comparator.<Answer>comparingLong(
@@ -157,7 +157,7 @@ public class GraknQueryHandlers {
                             aMessage.has(creationDate, aMessageDate)
                                     .has(messageID, var().val(GraknQueryHandlers.<Long>resource(map, aMessageId))),
                             or(aMessage.has(messageContent, someContent), aMessage.has(messageImageFile, someContent)));
-                    Answer extendedInfo = queryExtendedInfo.withTx(graknTx).execute().iterator().next();
+                    Answer extendedInfo = queryExtendedInfo.withTx(graknTx).get().execute().iterator().next();
 
                     // prepare the answer from the original query and the query for extended information
                     return new LdbcQuery2Result(
@@ -196,7 +196,7 @@ public class GraknQueryHandlers {
                         aReply.has(creationDate, aMessageDate).has(messageID, aMessageId)
                 );
                 List<Answer> rawResult = orderQuery.withTx(graknTx)
-                        .orderBy(aMessageDate, Order.desc).limit(ldbcQuery8.limit()).execute();
+                        .orderBy(aMessageDate, Order.desc).limit(ldbcQuery8.limit()).get().execute();
 
                 // sort first by date and then by message id
                 Comparator<Answer> ugly = Comparator.<Answer>comparingLong(
@@ -212,7 +212,7 @@ public class GraknQueryHandlers {
                             var().rel(aReply).rel(responder).isa(hasCreatorType),
                             responder.has(personID, responderId).has(personFirstName, responderFirst).has(personLastName, responderLast)
                             );
-                    Answer extendedInfo = queryExtendedInfo.withTx(graknTx).execute().iterator().next();
+                    Answer extendedInfo = queryExtendedInfo.withTx(graknTx).get().execute().iterator().next();
 
                     // prepare the answer from the original query and the query for extended information
                     return new LdbcQuery8Result(
@@ -242,7 +242,7 @@ public class GraknQueryHandlers {
 
                 // for speed fetch the Grakn id first
                 ConceptId graknPersonId = match(thePerson.has(personID, var().val(ldbcQuery1.personId()))).withTx(graknTx).
-                        execute().iterator().next().get(thePerson).getId();
+                        get().execute().iterator().next().get(thePerson).getId();
 
                 // sort by lastname and then id
                 Comparator<Answer> ugly = Comparator.<Answer,String>comparing(
@@ -258,7 +258,7 @@ public class GraknQueryHandlers {
                                 has(personLastName,aFriendLastName).
                                 has(personID, aFriendId),
                         thePerson.neq(aFriend));
-                List<Answer> distance1Result = matchQuery.withTx(graknTx).execute();
+                List<Answer> distance1Result = matchQuery.withTx(graknTx).get().execute();
                 List<LdbcQuery1Result> distance1LdbcResult = populateResults(distance1Result.stream().sorted(ugly), ldbcQuery1, graknTx, 1);
                 if (distance1Result.size() < ldbcQuery1.limit()) {
                     matchQuery = match(thePerson.id(graknPersonId),
@@ -269,7 +269,7 @@ public class GraknQueryHandlers {
                                     has(personID, aFriendId),
                             thePerson.neq(aFriend)
                             );
-                    List<Answer> distance2Result = matchQuery.withTx(graknTx).execute();
+                    List<Answer> distance2Result = matchQuery.withTx(graknTx).get().execute();
                     distance1LdbcResult.addAll(populateResults(distance2Result.stream().sorted(ugly),ldbcQuery1, graknTx, 2));
                     if (distance1Result.size() + distance2Result.size() < ldbcQuery1.limit()) {
                         matchQuery = match(thePerson.id(graknPersonId),
@@ -282,7 +282,7 @@ public class GraknQueryHandlers {
                                 thePerson.neq(aFriend),
                                 aFriend.neq(anyone)
                         );
-                        List<Answer> distance3Result = matchQuery.withTx(graknTx).execute();
+                        List<Answer> distance3Result = matchQuery.withTx(graknTx).get().execute();
                         distance1LdbcResult.addAll(populateResults(distance3Result.stream().sorted(ugly),ldbcQuery1, graknTx, 3));
                     }
                 }
@@ -306,7 +306,7 @@ public class GraknQueryHandlers {
                 MatchQuery locationQuery = match(
                         aFriend.id(map.get(aFriend).getId()),
                         var().rel(aFriend).rel(aLocation).isa(isLocatedIn));
-                Answer locationResult = locationQuery.withTx(graknTx).execute().iterator().next();
+                Answer locationResult = locationQuery.withTx(graknTx).get().execute().iterator().next();
 
                 Var aYear = var("aYear");
                 Var aOrganisation = var("aOrganisation");
@@ -315,7 +315,7 @@ public class GraknQueryHandlers {
                         var().rel(aFriend).rel(aOrganisation).isa(studyAt).has(classYear, aYear),
                         var().rel(aOrganisation).rel(aLocation).isa(isLocatedIn)
                 );
-                List<Answer> universityResults = universityQuery.withTx(graknTx).execute();
+                List<Answer> universityResults = universityQuery.withTx(graknTx).get().execute();
                 List<List<Object>> universityProcessedResults = universityResults.stream().map(answer -> {
                     List<Object> result = new ArrayList<Object>();
                     result.add(getSingleResource(answer.get(aOrganisation).asEntity(), name, graknTx));
@@ -329,7 +329,7 @@ public class GraknQueryHandlers {
                         var().rel(aFriend).rel(aOrganisation).isa(workAt).has(workFrom, aYear),
                         var().rel(aOrganisation).rel(aLocation).isa(isLocatedIn)
                 );
-                List<Answer> workResults = workQuery.withTx(graknTx).execute();
+                List<Answer> workResults = workQuery.withTx(graknTx).get().execute();
                 List<List<Object>> workProcessedResults = workResults.stream().map(answer -> {
                     List<Object> result = new ArrayList<Object>();
                     result.add(getSingleResource(answer.get(aOrganisation).asEntity(), name, graknTx));
@@ -378,9 +378,9 @@ public class GraknQueryHandlers {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graknTx = session.open(GraknTxType.READ)) {
                 MatchQuery matchQuery = match(thePerson.has(personID,var().val(ldbcQuery13.person1Id())));
-                Concept person1 = matchQuery.withTx(graknTx).execute().iterator().next().get(thePerson);
+                Concept person1 = matchQuery.withTx(graknTx).get().execute().iterator().next().get(thePerson);
                 matchQuery = match(thePerson.has(personID,var().val(ldbcQuery13.person2Id())));
-                Concept person2 = matchQuery.withTx(graknTx).execute().iterator().next().get(thePerson);
+                Concept person2 = matchQuery.withTx(graknTx).get().execute().iterator().next().get(thePerson);
 
                 PathQuery pathQuery = compute().path().from(person1.getId()).to(person2.getId())
                         .in("knows", "person");

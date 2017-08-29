@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
+
 /**
  * A DeleteQuery that will execute deletions for every result of a MatchQuery
  */
@@ -59,7 +61,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
     @Override
     public Void execute() {
-        List<Answer> results = matchQuery.execute();
+        List<Answer> results = matchQuery.stream().collect(toList());
         results.forEach(this::deleteResult);
         return null;
     }

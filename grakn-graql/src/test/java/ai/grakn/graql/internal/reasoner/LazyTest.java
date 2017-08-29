@@ -81,7 +81,7 @@ public class LazyTest {
         ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
-        Stream<Answer> dbStream = query.getMatchQuery().stream();
+        Stream<Answer> dbStream = query.getQuery().stream();
         cache.record(query, dbStream);
 
         Set<Answer> collect2 = cache.getAnswerStream(query2).collect(toSet());
@@ -138,8 +138,8 @@ public class LazyTest {
 
         Set<Var> joinVars = Sets.intersection(query.getVarNames(), query2.getVarNames());
         Stream<Answer> join = join(
-                query.getMatchQuery().admin().stream(),
-                query2.getMatchQuery().admin().stream(),
+                query.getQuery().stream(),
+                query2.getQuery().stream(),
                 ImmutableSet.copyOf(joinVars)
                 )
                 .map(a -> a.filterVars(rule.getHead().getVarNames()))
@@ -190,7 +190,7 @@ public class LazyTest {
         final int limit = 10;
         final long maxTime = 2000;
         startTime = System.currentTimeMillis();
-        List<Answer> results = query.limit(limit).execute();
+        List<Answer> results = query.limit(limit).get().execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
         assertEquals(results.size(), limit);

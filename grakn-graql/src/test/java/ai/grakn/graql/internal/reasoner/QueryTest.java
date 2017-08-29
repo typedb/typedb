@@ -184,7 +184,7 @@ public class QueryTest {
     }
 
     private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
-        return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).execute().iterator().next().get("x");
+        return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).get("x").findAny().get();
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

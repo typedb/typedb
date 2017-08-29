@@ -18,7 +18,7 @@
 package ai.grakn;
 
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.admin.Answer;
 import com.ldbc.driver.DbException;
 import com.ldbc.driver.OperationHandler;
@@ -79,7 +79,7 @@ public class GraknShortQueryHandlers {
                                 "(located: $person, region: $place) isa is-located-in; " +
                                 "($place, $placeID) isa key-place-id; ";
 
-                List<Answer> results = graph.graql().<MatchQuery>parse(query).execute();
+                List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
                 if (results.size() > 0) {
                     Answer fres = results.get(0);
 
@@ -125,7 +125,7 @@ public class GraknShortQueryHandlers {
                         "order by $date desc;" +
                         "limit " + String.valueOf(operation.limit()) + ";";
 
-                List<Answer> messageResults = graph.graql().<MatchQuery>parse(messageQuery).execute();
+                List<Answer> messageResults = graph.graql().<GetQuery>parse(messageQuery).execute();
 
                 List<Answer> allResults = new ArrayList<>();
                 messageResults.forEach(a -> {
@@ -144,7 +144,7 @@ public class GraknShortQueryHandlers {
                             "($person2, $fname) isa has-first-name; " +
                             "($person2, $lname) isa has-last-name; ";
 
-                    List<Answer> results = graph.graql().infer(true).<MatchQuery>parse(query).execute();
+                    List<Answer> results = graph.graql().infer(true).<GetQuery>parse(query).execute();
                     allResults.addAll(results);
                 });
 
@@ -194,7 +194,7 @@ public class GraknShortQueryHandlers {
                         "$friend has person-id $friendId has first-name $fname has last-name $lname;";
 
 
-                List<Answer> results = graph.graql().<MatchQuery>parse(query).execute();
+                List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
 
 
                     Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()).reversed()
@@ -238,7 +238,7 @@ public class GraknShortQueryHandlers {
                         "($m, $date) isa has-creation-date; " +
                         "($m, $content) isa has-content or ($m, $content) isa has-image-file;";
 
-                List<Answer> results = graph.graql().<MatchQuery>parse(query).execute();
+                List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
 
 
                 if (results.size() > 0) {
@@ -281,7 +281,7 @@ public class GraknShortQueryHandlers {
                         " ($person, $lname) isa has-last-name;" +
                         " ($person, $pID) isa key-person-id;";
 
-                List<Answer> results = graph.graql().<MatchQuery>parse(query).execute();
+                List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
 
                 if (results.size() >= 1) {
                     Answer fres = results.get(0);
@@ -324,7 +324,7 @@ public class GraknShortQueryHandlers {
                         "$mod isa person has person-id $modid has first-name $fname has last-name $lname;";
 
 
-                List<Answer> results = graph.graql().infer(true).<MatchQuery>parse(query).execute();
+                List<Answer> results = graph.graql().infer(true).<GetQuery>parse(query).execute();
 
                 if (results.size() > 0) {
                     Answer fres = results.get(0);
@@ -372,7 +372,7 @@ public class GraknShortQueryHandlers {
                         "($author2, $fname) isa has-first-name; " +
                         "($author2, $lname) isa has-last-name;";
 
-                List<Answer> results = graph.graql().<MatchQuery>parse(query).execute();
+                List<Answer> results = graph.graql().<GetQuery>parse(query).execute();
 
                 Comparator<Answer> ugly = Comparator.<Answer>comparingLong(map -> map.get("date").<LocalDateTime>asAttribute().getValue().toInstant(ZoneOffset.UTC).toEpochMilli()).reversed()
                         .thenComparing(map -> resource(map, "pid"));

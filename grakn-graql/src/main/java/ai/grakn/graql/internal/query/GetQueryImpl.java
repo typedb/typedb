@@ -28,8 +28,12 @@ import ai.grakn.graql.admin.Answer;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
+import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Default implementation of {@link GetQuery}
@@ -39,8 +43,8 @@ import java.util.stream.Stream;
 @AutoValue
 public abstract class GetQueryImpl implements GetQuery {
 
-    abstract ImmutableSet<Var> vars();
-    abstract MatchQuery matchQuery();
+    public abstract ImmutableSet<Var> vars();
+    public abstract MatchQuery matchQuery();
 
     @Override
     public GetQuery withTx(GraknTx tx) {
@@ -49,12 +53,12 @@ public abstract class GetQueryImpl implements GetQuery {
 
     @Override
     public List<Answer> execute() {
-        return matchQuery().execute();
+        return stream().collect(toList());
     }
 
     @Override
     public Stream<String> resultsString(Printer printer) {
-        return matchQuery().resultsString(printer);
+        return stream().map(printer::graqlString);
     }
 
     @Override
@@ -65,5 +69,10 @@ public abstract class GetQueryImpl implements GetQuery {
     @Override
     public Stream<Answer> stream() {
         return matchQuery().stream();
+    }
+
+    @Nullable
+    public Optional<GraknTx> tx() {
+        return matchQuery().admin().tx();
     }
 }

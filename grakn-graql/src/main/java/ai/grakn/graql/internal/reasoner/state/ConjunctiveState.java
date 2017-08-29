@@ -65,7 +65,7 @@ public class ConjunctiveState extends QueryState {
         this.query = ReasonerQueries.create(q, sub);
 
         if (!query.isRuleResolvable()){
-            dbIterator = query.getMatchQuery().stream()
+            dbIterator = query.getQuery().stream()
                     .map(at -> at.explain(new JoinExplanation(query, at)))
                     .iterator();
             subQueries = new LinkedList<>();

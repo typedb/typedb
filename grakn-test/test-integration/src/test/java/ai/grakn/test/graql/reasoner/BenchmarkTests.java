@@ -20,7 +20,7 @@ package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.SampleKBContext;
@@ -88,7 +88,7 @@ public class BenchmarkTests {
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         String queryString = "match (P-from: $x, P-to: $y) isa P;";
-        MatchQuery query = iqb.parse(queryString);
+        GetQuery query = iqb.parse(queryString);
 
         startTime = System.currentTimeMillis();
         List<Answer> execute = query.execute();
@@ -96,7 +96,7 @@ public class BenchmarkTests {
 
         int limit = 100;
         startTime = System.currentTimeMillis();
-        List<Answer> results = query.limit(limit).execute();
+        List<Answer> results = query.matchQuery().limit(limit).get().execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }
@@ -128,10 +128,10 @@ public class BenchmarkTests {
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
 
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q;";
-        MatchQuery query = iqb.parse(queryString);
+        GetQuery query = iqb.parse(queryString);
 
         String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a';";
-        MatchQuery query2 = iqb.parse(queryString2);
+        GetQuery query2 = iqb.parse(queryString2);
 
         startTime = System.currentTimeMillis();
         List<Answer> execute = query.execute();
@@ -145,12 +145,12 @@ public class BenchmarkTests {
 
         int limit = 10;
         startTime = System.currentTimeMillis();
-        List<Answer> results = query.limit(limit).execute();
+        List<Answer> results = query.matchQuery().limit(limit).get().execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
 
         startTime = System.currentTimeMillis();
-        results = query2.limit(limit).execute();
+        results = query2.matchQuery().limit(limit).get().execute();
         answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }
@@ -196,16 +196,16 @@ public class BenchmarkTests {
 
         //full result
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q;";
-        MatchQuery query = iqb.parse(queryString);
+        GetQuery query = iqb.parse(queryString);
 
         //with specific resource
         String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a';";
-        MatchQuery query2 = iqb.parse(queryString2);
+        GetQuery query2 = iqb.parse(queryString2);
 
         //with substitution
-        Concept id = iqb.<MatchQuery>parse("match $x has index 'a';").execute().iterator().next().get("x");
+        Concept id = iqb.<GetQuery>parse("match $x has index 'a';").execute().iterator().next().get("x");
         String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id '" + id.getId().getValue() + "';";
-        MatchQuery query3 = iqb.parse(queryString3);
+        GetQuery query3 = iqb.parse(queryString3);
 
         startTime = System.currentTimeMillis();
         List<Answer> execute = query.execute();
@@ -221,7 +221,7 @@ public class BenchmarkTests {
 
         int limit = 100;
         startTime = System.currentTimeMillis();
-        List<Answer> results = query.limit(limit).execute();
+        List<Answer> results = query.matchQuery().limit(limit).get().execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }
@@ -266,7 +266,7 @@ public class BenchmarkTests {
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal;";
-        MatchQuery query = iqb.parse(queryString);
+        GetQuery query = iqb.parse(queryString);
 
         startTime = System.currentTimeMillis();
         List<Answer> execute = query.execute();
@@ -274,7 +274,7 @@ public class BenchmarkTests {
 
         int limit = 10;
         startTime = System.currentTimeMillis();
-        List<Answer> results = query.limit(limit).execute();
+        List<Answer> results = query.matchQuery().limit(limit).get().execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }

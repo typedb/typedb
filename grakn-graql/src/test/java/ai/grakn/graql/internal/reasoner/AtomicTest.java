@@ -24,6 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -1072,7 +1073,7 @@ public class AtomicTest {
     @Test
     public void testUnification_RelationWithMetaRolesAndIds(){
         GraknTx graph = unificationTestSet.tx();
-        Concept instance = graph.graql().<MatchQuery>parse("match $x isa entity1;").execute().iterator().next().get(var("x"));
+        Concept instance = graph.graql().<GetQuery>parse("match $x isa entity1; get;").execute().iterator().next().get(var("x"));
         String relation = "{(role: $x, role: $y) isa relation1; $y id '" + instance.getId().getValue() + "';}";
         String relation2 = "{(role: $z, role: $v) isa relation1; $z id '" + instance.getId().getValue() + "';}";
         String relation3 = "{(role: $z, role: $v) isa relation1; $v id '" + instance.getId().getValue() + "';}";
@@ -1112,9 +1113,9 @@ public class AtomicTest {
         Atom parentAtom = parentQuery.getAtom();
         Atom parentAtom2 = parentQuery2.getAtom();
 
-        QueryAnswers childAnswers = queryAnswers(childQuery.getMatchQuery());
-        QueryAnswers parentAnswers = queryAnswers(parentQuery.getMatchQuery());
-        QueryAnswers parentAnswers2 = queryAnswers(parentQuery2.getMatchQuery());
+        QueryAnswers childAnswers = queryAnswers(childQuery.getQuery());
+        QueryAnswers parentAnswers = queryAnswers(parentQuery.getQuery());
+        QueryAnswers parentAnswers2 = queryAnswers(parentQuery2.getQuery());
 
         Unifier unifier = childAtom.getUnifier(parentAtom);
         Unifier unifier2 = childAtom.getUnifier(parentAtom2);
@@ -1148,7 +1149,7 @@ public class AtomicTest {
         ReasonerAtomicQuery resourceQuery2 = ReasonerQueries.atomic(conjunction(resource2, graph), graph);
         ReasonerAtomicQuery resourceQuery3 = ReasonerQueries.atomic(conjunction(resource3, graph), graph);
 
-        String type = "{$x isa res1;$x id '" + resourceQuery.getMatchQuery().execute().iterator().next().get("r").getId().getValue()  + "';}";
+        String type = "{$x isa res1;$x id '" + resourceQuery.getQuery().execute().iterator().next().get("r").getId().getValue()  + "';}";
         ReasonerAtomicQuery typeQuery = ReasonerQueries.atomic(conjunction(type, graph), graph);
         Atom typeAtom = typeQuery.getAtom();
 
@@ -1160,10 +1161,10 @@ public class AtomicTest {
         Unifier unifier2 = resourceAtom2.getUnifier(typeAtom);
         Unifier unifier3 = resourceAtom3.getUnifier(typeAtom);
 
-        Answer typeAnswer = queryAnswers(typeQuery.getMatchQuery()).iterator().next();
-        Answer resourceAnswer = queryAnswers(resourceQuery.getMatchQuery()).iterator().next();
-        Answer resourceAnswer2 = queryAnswers(resourceQuery2.getMatchQuery()).iterator().next();
-        Answer resourceAnswer3 = queryAnswers(resourceQuery3.getMatchQuery()).iterator().next();
+        Answer typeAnswer = queryAnswers(typeQuery.getQuery()).iterator().next();
+        Answer resourceAnswer = queryAnswers(resourceQuery.getQuery()).iterator().next();
+        Answer resourceAnswer2 = queryAnswers(resourceQuery2.getQuery()).iterator().next();
+        Answer resourceAnswer3 = queryAnswers(resourceQuery3.getQuery()).iterator().next();
 
         assertEquals(typeAnswer.get(var("x")), resourceAnswer.unify(unifier).get(var("x")));
         assertEquals(typeAnswer.get(var("x")), resourceAnswer2.unify(unifier2).get(var("x")));
@@ -1269,8 +1270,8 @@ public class AtomicTest {
 
         Unifier unifier = childAtom.getUnifier(parentAtom);
 
-        QueryAnswers childAnswers = queryAnswers(childQuery.getMatchQuery());
-        QueryAnswers parentAnswers = queryAnswers(parentQuery.getMatchQuery());
+        QueryAnswers childAnswers = queryAnswers(childQuery.getQuery());
+        QueryAnswers parentAnswers = queryAnswers(parentQuery.getQuery());
 
         if (checkInverse) {
             Unifier unifier2 = parentAtom.getUnifier(childAtom);
@@ -1287,12 +1288,12 @@ public class AtomicTest {
         }
     }
 
-    private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().stream().collect(toSet()));
+    private QueryAnswers queryAnswers(GetQuery query) {
+        return new QueryAnswers(query.stream().collect(toSet()));
     }
 
     private Concept getConcept(GraknTx graph, String typeName, Object val){
-        return graph.graql().match(var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
+        return graph.graql().match(var("x").has(typeName, val).admin()).get("x").findAny().get();
     }
 
     private Multimap<Role, Var> roleSetMap(Multimap<Role, Var> roleVarMap) {

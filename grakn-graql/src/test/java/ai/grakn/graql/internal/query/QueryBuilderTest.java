@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -59,13 +60,13 @@ public class QueryBuilderTest {
 
     @Test
     public void whenBuildingQueryWithGraphFirst_ItExecutes() {
-        MatchQuery query = movieKB.tx().graql().match(x.isa("movie"));
+        GetQuery query = movieKB.tx().graql().match(x.isa("movie")).get();
         assertThat(query, variable(x, containsAllMovies));
     }
 
     @Test
     public void whenBuildingMatchQueryWithGraphLast_ItExecutes() {
-        MatchQuery query = match(x.isa("movie")).withTx(movieKB.tx());
+        GetQuery query = match(x.isa("movie")).withTx(movieKB.tx()).get();
         assertThat(query, variable(x, containsAllMovies));
     }
 

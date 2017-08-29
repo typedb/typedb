@@ -307,7 +307,7 @@ public class GeoInferenceTest {
     }
 
     private Concept getConcept(GraknTx graph, String typeName, Object val){
-        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
+        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).get("x").findAny().get();
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {

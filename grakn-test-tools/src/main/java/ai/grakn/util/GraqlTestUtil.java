@@ -42,8 +42,8 @@ public class GraqlTestUtil {
         assertExists(qb.match(patterns));
     }
 
-    public static void assertExists(MatchQuery query) {
-        assertTrue(query.iterator().hasNext());
+    public static void assertExists(Iterable<?> iterable) {
+        assertTrue(iterable.iterator().hasNext());
     }
 
     public static void assertNotExists(GraknTx tx, Pattern... patterns) {

@@ -25,7 +25,6 @@ import ai.grakn.graql.admin.MatchQueryAdmin;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -39,7 +38,7 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
+public interface MatchQuery extends Streamable<Answer> {
 
     /**
      * @param vars an array of variable to select
@@ -176,7 +175,6 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
      * @param tx the graph to execute the query on
      * @return a new MatchQuery with the graph set
      */
-    @Override
     MatchQuery withTx(GraknTx tx);
 
     /**

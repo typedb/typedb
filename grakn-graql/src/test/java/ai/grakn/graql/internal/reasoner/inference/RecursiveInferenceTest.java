@@ -20,6 +20,12 @@ package ai.grakn.graql.internal.reasoner.inference;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.DiagonalKB;
 import ai.grakn.test.kbs.MatrixKB;
 import ai.grakn.test.kbs.MatrixKBII;
@@ -30,13 +36,6 @@ import ai.grakn.test.kbs.PathKBSymmetric;
 import ai.grakn.test.kbs.TailRecursionKB;
 import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.test.SampleKBContext;
-
-import ai.grakn.test.GraknTestSetup;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -413,7 +412,7 @@ public class RecursiveInferenceTest {
     }
 
     private Concept getConcept(GraknTx graph, String typeName, Object val){
-        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
+        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).get("x").findAny().get();
     }
 
     @Test
@@ -542,15 +541,15 @@ public class RecursiveInferenceTest {
 
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal;";
 
-        assertEquals(iqb.materialise(false).<MatchQuery>parse(queryString).execute().size(), 64);
-        assertEquals(iqb.materialise(true).<MatchQuery>parse(queryString).execute().size(), 64);
+        assertEquals(iqb.materialise(false).<GetQuery>parse(queryString).execute().size(), 64);
+        assertEquals(iqb.materialise(true).<GetQuery>parse(queryString).execute().size(), 64);
     }
 
-    private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().stream().collect(toSet()));
+    private QueryAnswers queryAnswers(GetQuery query) {
+        return new QueryAnswers(query.stream().collect(toSet()));
     }
 
-    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+    private void assertQueriesEqual(GetQuery q1, GetQuery q2) {
         QueryAnswers answers = queryAnswers(q1);
         QueryAnswers answers2 = queryAnswers(q2);
         assertEquals(answers, answers2);
