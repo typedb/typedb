@@ -46,8 +46,10 @@ import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
