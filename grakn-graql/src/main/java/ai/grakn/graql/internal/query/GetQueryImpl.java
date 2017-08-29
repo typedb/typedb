@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -68,11 +69,16 @@ public abstract class GetQueryImpl implements GetQuery {
 
     @Override
     public Stream<Answer> stream() {
-        return matchQuery().stream();
+        return matchQuery().stream().map(result -> result.filterVars(vars())).distinct();
     }
 
     @Nullable
     public Optional<GraknTx> tx() {
         return matchQuery().admin().tx();
+    }
+
+    @Override
+    public String toString() {
+        return matchQuery().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
     }
 }

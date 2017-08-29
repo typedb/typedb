@@ -27,6 +27,7 @@ import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -62,7 +63,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -96,13 +96,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Iterator<? extends Query<?>> visitQueryList(GraqlParser.QueryListContext ctx) {
-        return ctx.queryListElem().stream().map(this::visitQueryListElem).iterator();
-    }
-
-    @Override
-    public Query<?> visitQueryListElem(GraqlParser.QueryListElemContext ctx) {
-        return (Query<?>) super.visitQueryListElem(ctx);
+    public Stream<? extends Query<?>> visitQueryList(GraqlParser.QueryListContext ctx) {
+        return ctx.query().stream().map(this::visitQuery);
     }
 
     @Override
@@ -156,20 +151,27 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public GetQuery visitGetQuery(GraqlParser.GetQueryContext ctx) {
+        Set<Var> vars = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
+
+        MatchQuery match = visitMatchQuery(ctx.matchQuery());
+
+        if (vars.isEmpty()) {
+            return match.get();
+        } else {
+            return match.get(vars);
+        }
+    }
+
+    @Override
     public InsertQuery visitInsertQuery(GraqlParser.InsertQueryContext ctx) {
-        return (InsertQuery) super.visitInsertQuery(ctx);
-    }
-
-    @Override
-    public InsertQuery visitInsertOnly(GraqlParser.InsertOnlyContext ctx) {
         Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
-        return queryBuilder.insert(vars);
-    }
 
-    @Override
-    public InsertQuery visitMatchInsert(GraqlParser.MatchInsertContext ctx) {
-        Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
-        return visitMatchQuery(ctx.matchQuery()).insert(vars);
+        if (ctx.matchQuery() != null) {
+            return visitMatchQuery(ctx.matchQuery()).insert(vars);
+        } else {
+            return queryBuilder.insert(vars);
+        }
     }
 
     @Override

@@ -48,6 +48,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Order.asc;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -128,22 +129,24 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public GetQuery get() {
-        return null;
+        return get(getPattern().commonVars());
     }
 
     @Override
     public GetQuery get(String var, String... vars) {
-        return null;
+        Stream<String> varStream = Stream.concat(Stream.of(var), Stream.of(vars));
+        return get(varStream.map(Graql::var).collect(toImmutableSet()));
     }
 
     @Override
     public GetQuery get(Var var, Var... vars) {
-        return null;
+        Stream<Var> varStream = Stream.concat(Stream.of(var), Stream.of(vars));
+        return get(varStream.collect(toImmutableSet()));
     }
 
     @Override
     public GetQuery get(Set<Var> vars) {
-        return null;
+        return Queries.get(ImmutableSet.copyOf(vars), this);
     }
 
     @Override

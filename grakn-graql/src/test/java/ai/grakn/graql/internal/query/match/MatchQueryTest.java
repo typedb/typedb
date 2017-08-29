@@ -428,10 +428,9 @@ public class MatchQueryTest {
                 var("a").rel("production-with-cast", x).rel(y),
                 y.has("name", "Miss Piggy"),
                 var("a").isa("has-cast")
-        ).get(ImmutableSet.of(x));
+        ).get();
 
-        // There are two results because Miss Piggy plays both actor and character roles in 'The Muppets' cast
-        assertThat(query, variable(x, contains(theMuppets, theMuppets)));
+        assertThat(query, variable(x, contains(theMuppets)));
     }
 
     @Test
@@ -854,7 +853,7 @@ public class MatchQueryTest {
 
     @Test
     public void testQueryDoesNotCrash() {
-        qb.parse("match $m isa movie; (actor: $a1, $m); (actor: $a2, $m); select $a1, $a2;").execute();
+        qb.parse("match $m isa movie; (actor: $a1, $m); (actor: $a2, $m); get $a1, $a2;").execute();
     }
 
     @Test
@@ -899,7 +898,7 @@ public class MatchQueryTest {
 
     @Test
     public void testQueryNoVariables() {
-        GetQuery query = qb.match(var().isa("movie")).get();
+        GetQuery query = qb.match(x.isa("movie")).get();
         List<Answer> results = query.execute();
         assertThat(results, allOf(
                 (Matcher) everyItem(not(hasKey(anything()))),
@@ -991,10 +990,7 @@ public class MatchQueryTest {
     public void whenQueryingForAResourceWhichHasItselfAsAResource_ReturnTheResource() {
         GetQuery query = weirdKB.tx().graql().match(var("x").has("name", var("x"))).get();
 
-        // There are actually two results expected here:
-        // This is because the semantics of `$x has foo $y` are "find all connected $x and $y where `$y isa foo`"
-        // Therefore, it's valid to arrive back at `$x` by following the binary relation in _either_ direction.
-        assertThat(query, variable(x, contains(hasValue("weird"), hasValue("weird"))));
+        assertThat(query, variable(x, contains(hasValue("weird"))));
     }
 
     @Test

@@ -20,10 +20,13 @@
 package ai.grakn.util;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -54,7 +57,11 @@ public class GraqlTestUtil {
         assertNotExists(qb.match(patterns));
     }
 
-    public static void assertNotExists(MatchQuery query) {
-        assertFalse(query.iterator().hasNext());
+    public static void assertNotExists(Iterable<?> iterable) {
+        assertFalse(iterable.iterator().hasNext());
+    }
+
+    public static void assertQueriesEqual(GetQuery q1, GetQuery q2) {
+        assertEquals(q1.stream().collect(Collectors.toSet()), q2.stream().collect(Collectors.toSet()));
     }
 }

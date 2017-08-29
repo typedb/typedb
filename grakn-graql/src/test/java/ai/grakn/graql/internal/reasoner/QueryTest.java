@@ -21,17 +21,14 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GeoKB;
-import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -185,9 +182,5 @@ public class QueryTest {
 
     private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
         return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).get("x").findAny().get();
-    }
-
-    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
-        assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
     }
 }

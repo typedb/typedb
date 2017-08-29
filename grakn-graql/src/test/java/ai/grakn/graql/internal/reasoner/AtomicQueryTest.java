@@ -85,7 +85,7 @@ public class AtomicQueryTest {
     public void testWhenMaterialising_MaterialisedInformationIsPresentInGraph(){
         GraknTx graph = geoKB.tx();
         QueryBuilder qb = graph.graql().infer(false);
-        String explicitQuery = "match (geo-entity: $x, entity-location: $y) isa is-located-in;$x has name 'Warsaw';$y has name 'Poland';";
+        String explicitQuery = "match (geo-entity: $x, entity-location: $y) isa is-located-in;$x has name 'Warsaw';$y has name 'Poland'; get;";
         assertTrue(!qb.<GetQuery>parse(explicitQuery).iterator().hasNext());
 
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
@@ -126,8 +126,8 @@ public class AtomicQueryTest {
     @Test
     public void testWhenRoleTypesAreAmbiguous_answersArePermutedCorrectly(){
         GraknTx graph = geoKB.tx();
-        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
-        String queryString2 = "match ($x, $y) isa is-located-in;";
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
+        String queryString2 = "match ($x, $y) isa is-located-in; get;";
 
         QueryBuilder qb = graph.graql().infer(false);
         GetQuery query = qb.parse(queryString);

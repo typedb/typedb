@@ -19,10 +19,7 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
-import ai.grakn.test.kbs.GeoKB;
-import ai.grakn.test.kbs.MatrixKBII;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -36,9 +33,11 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.test.SampleKBContext;
-
+import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.GeoKB;
+import ai.grakn.test.kbs.MatrixKBII;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
@@ -162,10 +161,10 @@ public class LazyTest {
     @Test
     public void testKnownFilter(){
         GraknTx graph = geoKB.tx();
-        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
-        MatchQuery query = graph.graql().parse(queryString);
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
+        GetQuery query = graph.graql().parse(queryString);
         QueryAnswers answers = queryAnswers(query);
-        long count = query.admin()
+        long count = query
                 .stream()
                 .filter(a -> QueryAnswerStream.knownFilter(a, answers.stream()))
                 .count();
@@ -184,21 +183,21 @@ public class LazyTest {
         GraknTx graph = sampleKB.tx();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
-        String queryString = "match (P-from: $x, P-to: $y) isa P;";
-        MatchQuery query = iqb.parse(queryString);
+        String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
+        GetQuery query = iqb.parse(queryString);
 
         final int limit = 10;
         final long maxTime = 2000;
         startTime = System.currentTimeMillis();
-        List<Answer> results = query.limit(limit).get().execute();
+        List<Answer> results = query.matchQuery().limit(limit).get().execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
         assertEquals(results.size(), limit);
         assertTrue(answerTime < maxTime);
     }
 
-    private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().stream().collect(toSet()));
+    private QueryAnswers queryAnswers(GetQuery query) {
+        return new QueryAnswers(query.stream().collect(toSet()));
     }
 
     private Conjunction<VarPatternAdmin> conjunction(String patternString, GraknTx graph){

@@ -110,7 +110,7 @@ public class MatchQueryModifierTest {
                         y.isa("genre").val(neq("crime"))
                 ),
                 y.has("name", n)
-        ).orderBy(n).offset(4).limit(8).get(ImmutableSet.of(x));
+        ).orderBy(n).offset(4).limit(8).get();
 
         assertThat(query, variable(x, containsInAnyOrder(
                 MovieMatchers.hocusPocus, MovieMatchers.spy, MovieMatchers.spy, MovieMatchers.theMuppets, MovieMatchers.theMuppets, MovieMatchers.godfather, MovieMatchers.apocalypseNow, MovieMatchers.apocalypseNow
@@ -146,20 +146,9 @@ public class MatchQueryModifierTest {
                         y.isa("genre").has("name", "crime"),
                         y.isa("person").has("name", "Marlon Brando")
                 )
-        ).orderBy("t", desc).distinct().get(ImmutableSet.of(x));
+        ).orderBy("t", desc).get(ImmutableSet.of(x));
 
         assertThat(query, variable(x, contains(MovieMatchers.heat, MovieMatchers.godfather, MovieMatchers.apocalypseNow)));
-    }
-
-    @Test
-    public void testNondistinctQuery() {
-        GetQuery query = qb.match(
-                x.isa("person"),
-                y.has("title", "The Muppets"),
-                var().rel(x).rel(y)
-        ).get(ImmutableSet.of(x));
-
-        assertThat(query, variable(x, containsInAnyOrder(MovieMatchers.kermitTheFrog, MovieMatchers.kermitTheFrog, MovieMatchers.missPiggy, MovieMatchers.missPiggy)));
     }
 
     @Test

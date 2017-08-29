@@ -96,6 +96,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
         }
 
         return traversal.toStream()
+                .distinct()
                 .map(elements -> makeResults(graph, elements))
                 .sequential()
                 .map(QueryAnswer::new);

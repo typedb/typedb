@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.GetQuery;
@@ -33,6 +34,7 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Internal query factory
@@ -45,6 +47,14 @@ public class Queries {
     }
 
     public static GetQuery get(ImmutableSet<Var> vars, MatchQueryAdmin matchQuery) {
+        Set<Var> selectedVars = matchQuery.getSelectedNames();
+
+        for (Var var : vars) {
+            if (!selectedVars.contains(var)) {
+                throw GraqlQueryException.varNotInQuery(var);
+            }
+        }
+
         return new AutoValue_GetQueryImpl(vars, matchQuery);
     }
 

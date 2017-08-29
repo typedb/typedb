@@ -80,7 +80,7 @@ public class ExplanationTest {
 
     @Test
     public void testExplanationTreeCorrect_TransitiveClosure() {
-        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
         Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), warsaw));
         Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), masovia));
@@ -129,7 +129,7 @@ public class ExplanationTest {
     public void testExplanationTreeCorrect_TransitiveClosureWithSpecificResourceAndTypes() {
         String queryString = "match $x isa university;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "$y isa country;$y has name 'Poland';";
+                "$y isa country;$y has name 'Poland'; get;";
 
         Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), poland));
         Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), uw, Graql.var("y"), poland));
@@ -162,7 +162,7 @@ public class ExplanationTest {
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$x id '" + polibuda.getId() + "';" +
-                "$y id '" + europe.getId() + "';";
+                "$y id '" + europe.getId() + "'; get;";
 
         GetQuery query = iqb.parse(queryString);
         List<Answer> answers = query.execute();
@@ -183,7 +183,7 @@ public class ExplanationTest {
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;" +
                 "$x id '" + polibuda.getId() + "';" +
                 "$z id '" + masovia.getId() + "';" +
-                "select $y;";
+                "get $y;";
 
         GetQuery query = iqb.parse(queryString);
         List<Answer> answers = query.execute();
@@ -196,7 +196,7 @@ public class ExplanationTest {
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$x id '" + polibuda.getId() + "';" +
-                "$y id '" + uw.getId() + "';";
+                "$y id '" + uw.getId() + "'; get;";
 
         GetQuery query = iqb.parse(queryString);
         List<Answer> answers = query.execute();
@@ -205,7 +205,7 @@ public class ExplanationTest {
 
     @Test
     public void testExplainingNonRuleResolvableQuery(){
-        String queryString = "match $x isa city, has name $n;";
+        String queryString = "match $x isa city, has name $n; get;";
 
         GetQuery query = iqb.parse(queryString);
         List<Answer> answers = query.execute();
@@ -222,7 +222,7 @@ public class ExplanationTest {
         String queryString = "match " +
                 "(role1: $x, role2: $y) isa relation1;" +
                 "$x id '" + a1.getId() + "';" +
-                "$y id '" + a2.getId() + "';";
+                "$y id '" + a2.getId() + "'; get;";
 
         GetQuery query = eiqb.parse(queryString);
         List<Answer> answers = query.execute();
@@ -237,7 +237,7 @@ public class ExplanationTest {
         String queryString = "match " +
                 "(role1: $x, role2: $w) isa inferredRelation;" +
                 "$x has name $xName;" +
-                "$w has name $wName;";
+                "$w has name $wName; get;";
 
         GetQuery query = eiqb.parse(queryString);
         List<Answer> answers = query.execute();

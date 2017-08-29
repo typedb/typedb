@@ -1,15 +1,9 @@
 grammar Graql;
 
-queryList : queryListElem* ;
-
-// This rule exists so query lists never parse "match...insert" style queries,
-// because it is ambiguous.
-// TODO: Fix this by changing the syntax
-queryListElem : matchQuery | insertOnly | simpleQuery ;
+queryList : query* EOF ;
 
 queryEOF       : query EOF ;
-query          : matchQuery | insertQuery | simpleQuery ;
-simpleQuery    : defineQuery | deleteQuery | aggregateQuery | computeQuery ;
+query          : getQuery | insertQuery | defineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
 matchQuery     : MATCH patterns                                   # matchBase
                | matchQuery 'select' VARIABLE (',' VARIABLE)* ';' # matchSelect
@@ -19,9 +13,8 @@ matchQuery     : MATCH patterns                                   # matchBase
                | matchQuery 'order' 'by' VARIABLE ORDER?      ';' # matchOrderBy
                ;
 
-insertQuery    : matchInsert | insertOnly ;
-insertOnly     : INSERT varPatterns ;
-matchInsert    : matchQuery INSERT varPatterns ;
+getQuery       : matchQuery 'get' (VARIABLE (',' VARIABLE)*)? ';' ;
+insertQuery    : matchQuery? INSERT varPatterns ;
 defineQuery    : DEFINE varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;

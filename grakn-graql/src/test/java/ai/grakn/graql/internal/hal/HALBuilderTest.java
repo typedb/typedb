@@ -48,7 +48,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenReceivingHALResponse_EnsureResponseContainsConceptDetails() {
-        Json response = getHALRepresentation(academyKB.tx(), "match $x isa entity; limit 5;");
+        Json response = getHALRepresentation(academyKB.tx(), "match $x isa entity; limit 5; get;");
         String keyspace = academyKB.tx().getKeyspace();
         assertEquals(5, response.asList().size());
 
@@ -72,7 +72,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenAskForRelationTypes_EnsureAllObjectsHaveImplicitField() {
-        Json response = getHALRepresentation(academyKB.tx(), "match $x sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";");
+        Json response = getHALRepresentation(academyKB.tx(), "match $x sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + "; get;");
         response.asJsonList().forEach(halObj -> {
             assertTrue(halObj.has("_implicit"));
             if(halObj.at("_name").asString().startsWith("has-")){
@@ -108,7 +108,7 @@ public class HALBuilderTest {
                 "$country isa country has name \"Italy\";\n" +
                 "(owner: $company, owned: $platform) isa owns;\n" +
                 "(issuer: $company, issued: $bond) isa issues;\n" +
-                "select $bond, $article; offset 0; limit 5;");
+                "select $bond, $article; offset 0; limit 5; get;");
 
         // Limit to 5 results, each result will contain 2 variables, so the expected size of HAL results is 10.
         assertEquals(10, response.asList().size());
@@ -133,7 +133,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenTriggerReasonerWithTransitiveRule_EnsureWeReceiveAValidHALResponse() {
-        Json response = getHALRepresentation(academyKB.tx(), "match $x isa region; $y isa oil-platform; (located: $y, location: $x) isa located-in; limit 20;");
+        Json response = getHALRepresentation(academyKB.tx(), "match $x isa region; $y isa oil-platform; (located: $y, location: $x) isa located-in; limit 20; get;");
         // Limit to 20 results, each result will contain 3 variables, expected size 60
         assertEquals(60, response.asList().size());
         response.asJsonList().forEach(halObj -> {
