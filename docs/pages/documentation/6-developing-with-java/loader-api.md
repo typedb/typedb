@@ -123,6 +123,8 @@ loader.add(insert);
 
 // Second transaction. Block here until the first transaction completes. 
 loader.add(insert);
+
+loader.waitToFinish();
 ```
 
 In the above scenario, the loader will block the calling thread when adding the second transaction. Only when the first transaction completes execution will the second transaction be sent to the server. 
@@ -174,6 +176,15 @@ loader.setRetryPolicy(true);
 
 // The client will not attempt to resend the batch of queries if the server becomes unavailable
 loader.setRetryPolicy(false);
+```
+
+
+## Close
+
+The loader can be closed as follows
+
+```java
+loader.close();
 ```
 
 ## Comments

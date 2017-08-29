@@ -71,7 +71,6 @@ public class RedisTaskStorage implements TaskStateStorage {
         return state.getId();
     }
 
-
     @Override
     public Boolean updateState(TaskState state) {
         try {

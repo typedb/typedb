@@ -50,6 +50,8 @@ The creating of tasks requires a number of parameters:
 
 **Configuration** Data on which to execute the task represented in a Json object
 
+**Wait** Whether to wait for the server to acknowledge the request
+
 The `TaskClient.sendTask()` function accepts all of the above as arguments:
 
 ```java
@@ -60,8 +62,9 @@ String creator = this.getClass().getName();
 Instant runAt = Instant.now();
 Duration interval = Duration.ofSeconds(1);
 Json configuration = Json.nil();
+boolean wait = false;
 
-TaskId identifier = client.sendTask(taskClass, creator, runAt, interval, configuration);
+TaskId identifier = client.sendTask(taskClass, creator, runAt, interval, configuration, wait);
 ```
 
 This function will execute a `POST` request against the server that will then run the specified task asynchronously. The client is responsible for checking on the status of the task (see below).

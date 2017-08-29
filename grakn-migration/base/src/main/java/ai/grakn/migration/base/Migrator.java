@@ -130,6 +130,7 @@ public class Migrator {
                     loader.add(q);
                 });
         loader.waitToFinish();
+        loader.close();
     }
 
     /**

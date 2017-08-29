@@ -313,6 +313,7 @@ public class GraqlShell {
         Graql.parseList(queries).forEach(batchMutatorClient::add);
 
         batchMutatorClient.waitToFinish();
+        batchMutatorClient.close();
     }
 
     /**

@@ -99,6 +99,10 @@ public class BatchMutatorClient {
         this(keyspace, uri, (TaskId t) -> {}, true);
     }
 
+    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskId> onCompletionOfTask) {
+        this(keyspace, uri, onCompletionOfTask, false);
+    }
+
     public BatchMutatorClient(String keyspace, String uri, boolean reportStats) {
         this(keyspace, uri, (TaskId t) -> {}, reportStats);
     }
@@ -242,8 +246,14 @@ public class BatchMutatorClient {
                 e.printStackTrace();
             }
         });
-        threadPool.shutdownNow();
         LOG.info("All tasks completed");
+    }
+
+    /**
+     * Wait for all of the submitted tasks to have been completed
+     */
+    public void close(){
+        threadPool.shutdownNow();
     }
 
     /**

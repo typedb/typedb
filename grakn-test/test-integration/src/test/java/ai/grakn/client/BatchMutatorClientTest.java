@@ -73,6 +73,7 @@ public class BatchMutatorClientTest {
 
         // Wait for queries to finish
         loader.waitToFinish();
+        loader.close();
 
         // Verify that the logger received the failed log message
         assertEquals(1, tasksCompleted.get());
@@ -84,6 +85,7 @@ public class BatchMutatorClientTest {
 
         generate(this::query).limit(100).forEach(loader::add);
         loader.waitToFinish();
+        loader.close();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             assertEquals(100, graph.getEntityType("name_tag").instances().count());
@@ -97,6 +99,7 @@ public class BatchMutatorClientTest {
         loader.setBatchSize(20);
         generate(this::query).limit(100).forEach(loader::add);
         loader.waitToFinish();
+        loader.close();
 
         verify(loader, times(5)).sendQueriesToLoader(argThat(insertQueries -> insertQueries.size() == 20));
     }
@@ -109,6 +112,7 @@ public class BatchMutatorClientTest {
         generate(this::query).limit(90).forEach(loader::add);
 
         loader.waitToFinish();
+        loader.close();
 
         verify(loader, times(4)).sendQueriesToLoader(argThat(insertQueries -> insertQueries.size() == 20));
         verify(loader, times(1)).sendQueriesToLoader(argThat(insertQueries -> insertQueries.size() == 10));
@@ -137,7 +141,7 @@ public class BatchMutatorClientTest {
         }
 
         loader.waitToFinish();
-
+        loader.close();
         assertEquals(4, tasksCompletedWithoutError.get());
     }
 
@@ -157,6 +161,7 @@ public class BatchMutatorClientTest {
         mutatorClient.add(insertQuery);
         mutatorClient.add(insertQuery);
         mutatorClient.waitToFinish();
+        mutatorClient.close();
         verify(mutatorClient, times(1)).sendQueriesToLoader(argThat(insertQueries -> insertQueries.size() == 2));
     }
 
