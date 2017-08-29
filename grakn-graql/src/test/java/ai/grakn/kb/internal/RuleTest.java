@@ -185,11 +185,6 @@ public class RuleTest {
                 graknTx.graql().parsePattern("$x has res1"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
-        validateIllegalRule(
-                graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
-                graknTx.graql().parsePattern("$x has-scope $y"),
-                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
-        );
     }
 
     @Test

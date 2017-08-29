@@ -479,7 +479,7 @@ public class GraqlShellIT {
 
     @Test
     public void testCommitError() throws Exception {
-        ShellResponse response = runShell("insert bob sub relation;\ncommit;\nmatch $x sub relation;\n");
+        ShellResponse response = runShell("insert bob sub relation;\ncommit;\nmatch $x sub relationship;\n");
         assertFalse(response.out(), response.err().isEmpty());
     }
 

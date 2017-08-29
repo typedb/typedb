@@ -42,6 +42,7 @@ public class MovieMatchers {
     public static final Matcher<MatchableConcept> gender = GraknMatchers.type("gender");
     public static final Matcher<MatchableConcept> realName = GraknMatchers.type("real-name");
     public static final Matcher<MatchableConcept> name = GraknMatchers.type("name");
+    public static final Matcher<MatchableConcept> provenance = GraknMatchers.type("provenance");
     public static final Matcher<MatchableConcept> tmdbVoteCount = GraknMatchers.type("tmdb-vote-count");
     public static final Matcher<MatchableConcept> releaseDate = GraknMatchers.type("release-date");
     public static final Matcher<MatchableConcept> runtime = GraknMatchers.type("runtime");
