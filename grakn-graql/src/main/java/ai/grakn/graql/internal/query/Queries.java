@@ -20,13 +20,16 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -39,6 +42,10 @@ import java.util.Optional;
 public class Queries {
 
     private Queries() {
+    }
+
+    public static GetQuery get(ImmutableSet<Var> vars, MatchQueryAdmin matchQuery) {
+        return new AutoValue_GetQueryImpl(vars, matchQuery);
     }
 
     /**

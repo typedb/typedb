@@ -24,6 +24,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -139,6 +140,26 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
             }
             return result.get(var);
         });
+    }
+
+    @Override
+    public GetQuery get() {
+        return null;
+    }
+
+    @Override
+    public GetQuery get(String var, String... vars) {
+        return null;
+    }
+
+    @Override
+    public GetQuery get(Var var, Var... vars) {
+        return null;
+    }
+
+    @Override
+    public GetQuery get(Set<Var> vars) {
+        return null;
     }
 
     @Override

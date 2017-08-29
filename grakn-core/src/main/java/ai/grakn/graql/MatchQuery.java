@@ -77,6 +77,33 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
     Stream<Concept> get(Var var);
 
     /**
+     * Get all {@link Var}s mentioned in the query
+     */
+    @CheckReturnValue
+    GetQuery get();
+
+    /**
+     * @param vars an array of variables to select
+     * @return a {@link GetQuery} that selects the given variables
+     */
+    @CheckReturnValue
+    GetQuery get(String var, String... vars);
+
+    /**
+     * @param vars an array of {@link Var}s to select
+     * @return a {@link GetQuery} that selects the given variables
+     */
+    @CheckReturnValue
+    GetQuery get(Var var, Var... vars);
+
+    /**
+     * @param vars a set of {@link Var}s to select
+     * @return a {@link GetQuery} that selects the given variables
+     */
+    @CheckReturnValue
+    GetQuery get(Set<Var> vars);
+
+    /**
      * @param vars an array of variables to insert for each result of this match query
      * @return an insert query that will insert the given variables for each result of this match query
      */
