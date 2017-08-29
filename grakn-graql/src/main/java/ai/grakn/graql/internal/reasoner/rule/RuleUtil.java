@@ -92,7 +92,7 @@ public class RuleUtil {
      * @param rules set of rules of interest forming a rule subgraph
      * @return true if the rule subgraph formed from provided rules contains any rule with head satisfying the body pattern
      */
-    public static boolean subGraphHasRulesWithHeadSatisfyingBody(Set<InferenceRule> rules){
+    public static boolean subGraphHasRulesWithHeadSatisfyingBody(Set<InferenceRule> rules, GraknTx graph){
         return rules.stream()
                 .filter(InferenceRule::headSatisfiesBody)
                 .findFirst().isPresent();
@@ -102,7 +102,7 @@ public class RuleUtil {
      * @param topTypes entry types in the rule graph
      * @return all rules that are reachable from the entry types
      */
-    public static Set<Rule> getDependentRules(Set<Type> topTypes){
+    public static Stream<Rule> getDependentRules(Set<Type> topTypes){
         Set<Rule> rules = new HashSet<>();
         Set<Type> visitedTypes = new HashSet<>();
         Stack<Type> types = new Stack<>();
@@ -118,14 +118,14 @@ public class RuleUtil {
                 visitedTypes.add(type);
             }
         }
-        return rules;
+        return rules.stream();
     }
 
     /**
      * @param query top query
      * @return all rules that are reachable from the entry types
      */
-    public static Set<InferenceRule> getDependentRules(ReasonerQueryImpl query){
+    public static Stream<InferenceRule> getDependentRules(ReasonerQueryImpl query){
         Set<InferenceRule> rules = new HashSet<>();
         Set<Atom> visitedAtoms = new HashSet<>();
         Stack<Atom> atoms = new Stack<>();
@@ -141,6 +141,6 @@ public class RuleUtil {
                 visitedAtoms.add(atom);
             }
         }
-        return rules;
+        return rules.stream();
     }
 }

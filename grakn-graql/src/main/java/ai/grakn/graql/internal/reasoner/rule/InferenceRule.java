@@ -101,7 +101,7 @@ public class InferenceRule {
      */
     public int resolutionPriority(){
         if (priority == Integer.MAX_VALUE) {
-            priority = -RuleUtil.getDependentRules(getBody()).size();
+            priority = getBody().resolutionPriority();
         }
         return priority;
     }
