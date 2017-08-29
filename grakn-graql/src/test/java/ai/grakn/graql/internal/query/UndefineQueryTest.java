@@ -27,6 +27,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
@@ -48,8 +49,11 @@ import static ai.grakn.concept.AttributeType.DataType.INTEGER;
 import static ai.grakn.concept.AttributeType.DataType.STRING;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.GraqlTestUtil.assertExists;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -277,6 +281,34 @@ public class UndefineQueryTest {
         assertNull(tx.getAttributeType("pokedex-no"));
         assertNull(tx.getRole("ancestor"));
         assertNull(tx.getRole("descendant"));
+    }
+
+    @Test
+    public void whenUndefiningATypeWithInstances_Throw() {
+        assertExists(qb, x.label("movie").sub("entity"));
+        assertExists(qb, x.isa("movie"));
+
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(allOf(containsString("movie"), containsString("delet")));
+        qb.undefine(label("movie").sub("production")).execute();
+    }
+
+    @Test
+    public void whenUndefiningASuperConcept_Throw() {
+        assertExists(qb, x.label("production").sub("entity"));
+
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(allOf(containsString("production"), containsString("delet")));
+        qb.undefine(label("production").sub(ENTITY)).execute();
+    }
+
+    @Test
+    public void whenUndefiningARoleWithPlayers_Throw() {
+        assertExists(qb, x.label("actor"));
+
+        exception.expect(GraknTxOperationException.class);
+        exception.expectMessage(allOf(containsString("actor"), containsString("delet")));
+        qb.undefine(label("actor").sub(ROLE)).execute();
     }
 
     @Test

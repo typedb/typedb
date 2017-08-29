@@ -19,6 +19,8 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
@@ -83,7 +85,13 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
         Collection<Var> toDelete = vars().isEmpty() ? result.vars() : vars();
 
         for (Var var : toDelete) {
-            result.get(var).delete();
+            Concept concept = result.get(var);
+
+            if (concept.isSchemaConcept()) {
+                throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
+            }
+
+            concept.delete();
         }
     }
 
