@@ -369,7 +369,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return true if this query is a ground query
      */
     public boolean isGround(){
-        return getSubstitution().keySet().containsAll(getVarNames());
+        return getSubstitution().vars().containsAll(getVarNames());
     }
 
     private Stream<Answer> fullJoin(Set<ReasonerAtomicQuery> subGoals,

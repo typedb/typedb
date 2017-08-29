@@ -383,7 +383,7 @@ public class RelationAtom extends IsaAtom {
     private Set<Type> inferEntityTypes(Answer sub) {
         if (sub.isEmpty()) return Collections.emptySet();
 
-        Set<Var> subbedVars = Sets.intersection(getRolePlayers(), sub.keySet());
+        Set<Var> subbedVars = Sets.intersection(getRolePlayers(), sub.vars());
         Set<Var> untypedVars = Sets.difference(subbedVars, getParentQuery().getVarSchemaConceptMap().keySet());
         return untypedVars.stream()
                 .map(v -> new Pair<>(v, sub.get(v)))

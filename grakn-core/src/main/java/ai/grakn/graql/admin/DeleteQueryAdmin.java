@@ -22,7 +22,6 @@ import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.MatchQuery;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Collection;
 
 /**
  * Admin class for inspecting and manipulating a DeleteQuery
@@ -30,12 +29,6 @@ import java.util.Collection;
  * @author Felix Chapman
  */
 public interface DeleteQueryAdmin extends DeleteQuery {
-    /**
-     * @return the variables to delete
-     */
-    @CheckReturnValue
-    Collection<VarPatternAdmin> getDeleters();
-
     /**
      * @return the match query this delete query is operating on
      */

@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -54,11 +53,6 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     @Override
     public PropertyExecutor define(Var var) throws GraqlQueryException {
         throw GraqlQueryException.defineUnsupportedProperty(getName());
-    }
-
-    @Override
-    public void delete(GraknTx graph, Concept concept) {
-        throw GraqlQueryException.failDelete(this);
     }
 
     @Override
