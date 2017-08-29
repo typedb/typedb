@@ -73,11 +73,24 @@ public interface Thing extends Concept{
 
     /**
      * Creates a {@link Relationship} from this {@link Thing} to the provided {@link Attribute}.
-     *
+     * <p>
+     * This has the same effect as {@link #attributeRelationship(Attribute)}, but returns the instance itself to allow
+     * method chaining.
+     * </p>
      * @param attribute The {@link Attribute} to which a {@link Relationship} is created
      * @return The instance itself
      */
     Thing attribute(Attribute attribute);
+
+    /**
+     * Creates a {@link Relationship} from this instance to the provided {@link Attribute}.
+     * <p>
+     * This has the same effect as {@link #attribute(Attribute)}, but returns the new {@link Relationship}.
+     * </p>
+     * @param attribute The {@link Attribute} to which a {@link Relationship} is created
+     * @return The {@link Relationship} connecting the {@link Thing} and the {@link Attribute}
+     */
+    Relationship attributeRelationship(Attribute attribute);
 
     /**
      * Retrieves a collection of {@link Attribute} attached to this {@link Thing}

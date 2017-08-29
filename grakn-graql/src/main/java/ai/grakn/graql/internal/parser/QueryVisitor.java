@@ -52,7 +52,9 @@ import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +66,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -121,8 +124,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public MatchQuery visitMatchSelect(GraqlParser.MatchSelectContext ctx) {
-        Set<Var> names = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
-        return visitMatchQuery(ctx.matchQuery()).select(names);
+        return visitMatchQuery(ctx.matchQuery()).select(visitVariables(ctx.variables()));
     }
 
     @Override
@@ -184,13 +186,18 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
-        Collection<VarPattern> getters = visitVarPatterns(ctx.varPatterns());
-        return visitMatchQuery(ctx.matchQuery()).delete(getters);
+        Collection<Var> vars = ctx.variables() != null ? visitVariables(ctx.variables()) : ImmutableSet.of();
+        return visitMatchQuery(ctx.matchQuery()).delete(vars);
     }
 
     @Override
     public ComputeQuery<?> visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
         return visitComputeMethod(ctx.computeMethod());
+    }
+
+    @Override
+    public Set<Var> visitVariables(GraqlParser.VariablesContext ctx) {
+        return ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
     }
 
     @Override
@@ -453,7 +460,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     public UnaryOperator<VarPattern> visitPropHas(GraqlParser.PropHasContext ctx) {
         Label type = visitLabel(ctx.label());
 
-        VarPattern resource = ctx.VARIABLE() != null ? getVariable(ctx.VARIABLE()) : var();
+        VarPattern relation = Optional.ofNullable(ctx.relation).map(this::getVariable).orElseGet(Graql::var);
+        VarPattern resource = Optional.ofNullable(ctx.resource).map(this::getVariable).orElseGet(Graql::var);
 
         if (ctx.predicate() != null) {
             resource = resource.val(visitPredicate(ctx.predicate()));
@@ -461,7 +469,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         VarPattern finalResource = resource;
 
-        return var -> var.has(type, finalResource);
+        return var -> var.has(type, finalResource, relation);
     }
 
     @Override
@@ -663,6 +671,10 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     private Var getVariable(TerminalNode variable) {
+        return getVariable(variable.getSymbol());
+    }
+
+    private Var getVariable(Token variable) {
         // Remove '$' prefix
         return var(variable.getText().substring(1));
     }

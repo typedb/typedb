@@ -128,12 +128,6 @@ public class AdminTest {
     }
 
     @Test
-    public void testDeleteQueryDeleters() {
-        DeleteQuery query = qb.match(var("x").isa("movie")).delete("x");
-        assertEquals(1, query.admin().getDeleters().size());
-    }
-
-    @Test
     public void testDeleteQueryPattern() {
         DeleteQuery query = qb.match(var("x").isa("movie")).delete("x");
         assertEquals("match $x isa movie;", query.admin().getMatchQuery().toString());
