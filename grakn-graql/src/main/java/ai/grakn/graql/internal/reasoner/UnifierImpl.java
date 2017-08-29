@@ -50,7 +50,7 @@ public class UnifierImpl implements Unifier {
     public UnifierImpl(Map<Var, Var> map){
         map.entrySet().forEach(m -> unifier.put(m.getKey(), m.getValue()));
     }
-    public UnifierImpl(Unifier u){
+    private UnifierImpl(Unifier u){
         merge(u);
     }
 
