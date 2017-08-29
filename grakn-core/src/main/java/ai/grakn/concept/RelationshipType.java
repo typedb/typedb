@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
@@ -52,7 +52,7 @@ public interface RelationshipType extends Type {
      *
      * @return a new empty relation.
      *
-     * @throws GraphOperationException if this is a meta type
+     * @throws GraknTxOperationException if this is a meta type
      */
     Relationship addRelationship();
 
@@ -71,24 +71,6 @@ public interface RelationshipType extends Type {
      * @return The {@link RelationshipType} itself
      */
     RelationshipType sub(RelationshipType type);
-
-    /**
-     * Classifies the type to a specific scope. This allows you to optionally categorise types.
-     *
-     * @param scope The category of this Type
-     * @return The Type itself.
-     */
-    @Override
-    RelationshipType scope(Thing scope);
-
-    /**
-     * Delete the scope specified.
-     *
-     * @param scope The Instances that is currently scoping this Type.
-     * @return The Type itself
-     */
-    @Override
-    RelationshipType deleteScope(Thing scope);
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
@@ -176,13 +158,31 @@ public interface RelationshipType extends Type {
     RelationshipType plays(Role role);
 
     /**
-     * Removes the Role to prevent instances of this {@link RelationshipType} from playing it.
+     * Removes the ability of this {@link RelationshipType} to play a specific {@link Role}
      *
-     * @param role The Role which the instances of this Type should no longer be allowed to play.
-     * @return The {@link RelationshipType} itself.
+     * @param role The {@link Role} which the {@link Thing}s of this {@link RuleType} should no longer be allowed to play.
+     * @return The {@link RuleType} itself.
      */
     @Override
     RelationshipType deletePlays(Role role);
+
+    /**
+     * Removes the ability for {@link Thing}s of this {@link RelationshipType} to have {@link Attribute}s of type {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link RelationshipType} can no longer have
+     * @return The {@link RelationshipType} itself.
+     */
+    @Override
+    RelationshipType deleteAttribute(AttributeType attributeType);
+
+    /**
+     * Removes {@link AttributeType} as a key to this {@link RelationshipType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link RelationshipType} can no longer have as a key
+     * @return The {@link RelationshipType} itself.
+     */
+    @Override
+    RelationshipType deleteKey(AttributeType attributeType);
 
     /**
      * Retrieve all the {@link Relationship} instances of this {@link RelationshipType}

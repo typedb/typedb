@@ -18,8 +18,8 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -28,7 +28,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.Schema;
@@ -71,7 +71,7 @@ public class AnalyticsTest {
 
     @Ignore
     @Test
-    public void testImplicitResourceRelation() throws InvalidGraphException {
+    public void testImplicitResourceRelation() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             Label resourceLabel = Label.of("someResource");
             AttributeType<Long> someResource = graph.putAttributeType(resourceLabel, AttributeType.DataType.LONG);
@@ -97,7 +97,7 @@ public class AnalyticsTest {
     }
 
     @Test
-    public void testNullResourceDoesntBreakAnalytics() throws InvalidGraphException {
+    public void testNullResourceDoesntBreakAnalytics() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             // make slightly odd graph
             Label resourceTypeId = Label.of("degree");
@@ -147,7 +147,7 @@ public class AnalyticsTest {
         assertEquals(queryList.size(), result.size());
     }
 
-    private void addSchemaAndEntities() throws InvalidGraphException {
+    private void addSchemaAndEntities() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);

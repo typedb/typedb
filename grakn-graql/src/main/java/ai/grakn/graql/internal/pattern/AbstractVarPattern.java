@@ -37,7 +37,6 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
-import ai.grakn.graql.internal.pattern.property.HasScopeProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
@@ -196,13 +195,18 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final VarPattern has(String type, VarPattern varPattern) {
-        return has(Label.of(type), varPattern);
+    public final VarPattern has(String type, VarPattern attribute) {
+        return has(Label.of(type), attribute);
     }
 
     @Override
-    public final VarPattern has(Label type, VarPattern varPattern) {
-        return addProperty(HasResourceProperty.of(type, varPattern.admin()));
+    public final VarPattern has(Label type, VarPattern attribute) {
+        return has(type, attribute, Graql.var());
+    }
+
+    @Override
+    public final VarPattern has(Label type, VarPattern attribute, VarPattern relationship) {
+        return addProperty(HasResourceProperty.of(type, attribute.admin(), relationship.admin()));
     }
 
     @Override
@@ -243,11 +247,6 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     @Override
     public final VarPattern plays(VarPattern type) {
         return addProperty(PlaysProperty.of(type.admin(), false));
-    }
-
-    @Override
-    public final VarPattern hasScope(VarPattern type) {
-        return addProperty(HasScopeProperty.of(type.admin()));
     }
 
     @Override

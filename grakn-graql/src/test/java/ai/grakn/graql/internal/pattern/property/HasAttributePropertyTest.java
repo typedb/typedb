@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Label;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 import ai.grakn.util.Schema;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -39,16 +39,16 @@ public class HasAttributePropertyTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final GraphContext graph = GraphContext.empty();
+    public static final SampleKBContext sampleKB = SampleKBContext.empty();
 
     @Test
     public void whenCallingCheckValidPropertyAndLabelRefersToARole_Throw() {
         Label label = Schema.MetaSchema.ROLE.getLabel();
-        HasResourceProperty property = HasResourceProperty.of(label, var("x").admin());
+        HasResourceProperty property = HasResourceProperty.of(label, var("x").admin(), var().admin());
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.mustBeResourceType(label).getMessage());
 
-        property.checkValidProperty(graph.graph(), var("y").admin());
+        property.checkValidProperty(sampleKB.tx(), var("y").admin());
     }
 }

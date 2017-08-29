@@ -21,12 +21,12 @@ package ai.grakn.kb.internal.concept;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.EdgeElement;
@@ -72,7 +72,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            Role role = vertex().graph().factory().buildConcept(edge.target());
+            Role role = vertex().tx().factory().buildConcept(edge.target());
             Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
             roleTypes.put(role, required);
         });
@@ -141,11 +141,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean checkNeeded){
         if(checkNeeded) preCheckForInstanceCreation();
 
-        if(isAbstract()) throw GraphOperationException.addingInstancesToAbstractType(this);
+        if(isAbstract()) throw GraknTxOperationException.addingInstancesToAbstractType(this);
 
-        VertexElement instanceVertex = vertex().graph().addVertex(instanceBaseType);
+        VertexElement instanceVertex = vertex().tx().addVertex(instanceBaseType);
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
-            vertex().graph().txCache().addedInstance(getId());
+            vertex().tx().txCache().addedInstance(getId());
         }
         return producer.apply(instanceVertex, getThis());
     }
@@ -156,10 +156,10 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * It can also fail when attempting to attach an {@link ai.grakn.concept.Attribute} to a meta type
      */
     private void preCheckForInstanceCreation(){
-        vertex().graph().checkMutationAllowed();
+        vertex().tx().checkMutationAllowed();
 
         if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
-            throw GraphOperationException.metaTypeImmutable(getLabel());
+            throw GraknTxOperationException.metaTypeImmutable(getLabel());
         }
     }
 
@@ -202,7 +202,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                 filter(roleLabel -> roleLabel.startsWith(prefix) && roleLabel.endsWith(suffix)).
                 map(roleLabel -> {
                     String attributeTypeLabel = roleLabel.replace(prefix, "").replace(suffix, "");
-                    return vertex().graph().getAttributeType(attributeTypeLabel);
+                    return vertex().tx().getAttributeType(attributeTypeLabel);
                 });
     }
 
@@ -241,7 +241,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     Stream<V> instancesDirect(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
-                map(edge -> vertex().graph().factory().buildShard(edge.source())).
+                map(edge -> vertex().tx().factory().buildShard(edge.source())).
                 flatMap(Shard::<V>links);
     }
 
@@ -250,31 +250,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return cachedIsAbstract.get();
     }
 
-    @Override
-    public Stream<Thing> scopes() {
-        return neighbours(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE);
-    }
-
-    /**
-     *
-     * @param thing A new thing which can scope this concept
-     * @return The concept itself
-     */
-    @Override
-    public T scope(Thing thing) {
-        putEdge(ConceptVertex.from(thing), Schema.EdgeLabel.HAS_SCOPE);
-        return getThis();
-    }
-
-    @Override
-    public T deleteScope(Thing scope) {
-        deleteEdge(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE, (Concept) scope);
-        return getThis();
-    }
-
     void trackRolePlayers(){
         instances().forEach(concept -> ((ThingImpl<?, ?>)concept).castingsInstance().forEach(
-                rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer)));
+                rolePlayer -> vertex().tx().txCache().trackForValidation(rolePlayer)));
     }
 
     public T plays(Role role, boolean required) {
@@ -330,7 +308,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             //It is possible to be disconnecting from a role which is no longer in use but checking this will take too long
             //So we assume the role is in sure and throw if that is the case
             if(!superPlays.isEmpty() && instancesDirect().findAny().isPresent()){
-                throw GraphOperationException.changingSuperWillDisconnectRole(oldSuperType, newSuperType, superPlays.iterator().next());
+                throw GraknTxOperationException.changingSuperWillDisconnectRole(oldSuperType, newSuperType, superPlays.iterator().next());
             }
 
             return true;
@@ -338,11 +316,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return changingSuperAllowed;
     }
 
-    /**
-     *
-     * @param role The Role Type which the instances of this Type should no longer be allowed to play.
-     * @return The Type itself.
-     */
     @Override
     public T deletePlays(Role role) {
         checkSchemaMutationAllowed();
@@ -355,6 +328,37 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return getThis();
     }
 
+    @Override
+    public T deleteAttribute(AttributeType attributeType){
+        return deleteAttribute(Schema.ImplicitType.HAS_OWNER, attributes(), attributeType);
+    }
+
+    @Override
+    public T deleteKey(AttributeType attributeType){
+        return deleteAttribute(Schema.ImplicitType.KEY_OWNER, keys(), attributeType);
+    }
+
+
+    /**
+     * Helper method to delete a {@link AttributeType} which is possible linked to this {@link Type}.
+     * The link to {@link AttributeType} is removed if <code>attributeToRemove</code> is in the candidate list
+     * <code>attributeTypes</code>
+     *
+     * @param implicitType the {@link Schema.ImplicitType} which specifies which implicit {@link Role} should be removed
+     * @param attributeTypes The list of candidate which potentially contains the {@link AttributeType} to remove
+     * @param attributeToRemove the {@link AttributeType} to remove
+     * @return the {@link Type} itself
+     */
+    private T deleteAttribute(Schema.ImplicitType implicitType,  Stream<AttributeType> attributeTypes, AttributeType attributeToRemove){
+        if(attributeTypes.anyMatch(a ->  a.equals(attributeToRemove))){
+            Label label = implicitType.getLabel(attributeToRemove.getLabel());
+            Role role = vertex().tx().getSchemaConcept(label);
+            if(role != null) deletePlays(role);
+        }
+
+        return getThis();
+    }
+
     /**
      *
      * @param isAbstract  Specifies if the concept is abstract (true) or not (false).
@@ -363,7 +367,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      */
     public T setAbstract(Boolean isAbstract) {
         if(!Schema.MetaSchema.isMetaLabel(getLabel()) && isAbstract && instancesDirect().findAny().isPresent()){
-            throw GraphOperationException.addingInstancesToAbstractType(this);
+            throw GraknTxOperationException.addingInstancesToAbstractType(this);
         }
 
         property(Schema.VertexProperty.IS_ABSTRACT, isAbstract);
@@ -392,13 +396,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         //Check if attribute type is the meta
         if(Schema.MetaSchema.ATTRIBUTE.getLabel().equals(attributeType.getLabel())){
-            throw GraphOperationException.metaTypeImmutable(attributeType.getLabel());
+            throw GraknTxOperationException.metaTypeImmutable(attributeType.getLabel());
         }
 
         Label attributeLabel = attributeType.getLabel();
-        Role ownerRole = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
-        Role valueRole = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
-        RelationshipType relationshipType = vertex().graph().putRelationTypeImplicit(has.getLabel(attributeLabel)).
+        Role ownerRole = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
+        Role valueRole = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
+        RelationshipType relationshipType = vertex().tx().putRelationTypeImplicit(has.getLabel(attributeLabel)).
                 relates(ownerRole).
                 relates(valueRole);
 
@@ -406,9 +410,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         AttributeType attributeTypeSuper = attributeType.sup();
         Label superLabel = attributeTypeSuper.getLabel();
         if(!Schema.MetaSchema.ATTRIBUTE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
-            Role ownerRoleSuper = vertex().graph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
-            Role valueRoleSuper = vertex().graph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-            RelationshipType relationshipTypeSuper = vertex().graph().putRelationTypeImplicit(has.getLabel(superLabel)).
+            Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
+            Role valueRoleSuper = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(superLabel));
+            RelationshipType relationshipTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
                     relates(ownerRoleSuper).relates(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation
@@ -445,11 +449,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @param implicitType The implicit relation to check against.
      * @param attributeType The {@link AttributeType} which should not be in that implicit relation
      *
-     * @throws GraphOperationException when the {@link AttributeType} is already used in another implicit relation
+     * @throws GraknTxOperationException when the {@link AttributeType} is already used in another implicit relation
      */
     private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, AttributeType attributeType){
         if(attributes(implicitType).anyMatch(rt -> rt.equals(attributeType))) {
-            throw GraphOperationException.duplicateHas(this, attributeType);
+            throw GraknTxOperationException.duplicateHas(this, attributeType);
         }
     }
 

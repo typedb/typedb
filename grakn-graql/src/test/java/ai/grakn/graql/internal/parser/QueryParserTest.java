@@ -24,6 +24,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -41,7 +42,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -60,6 +60,7 @@ import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.count;
+import static ai.grakn.graql.Graql.define;
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.group;
 import static ai.grakn.graql.Graql.gt;
@@ -353,14 +354,8 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testInsertSchemaQuery() {
+    public void whenParsingInsertQuery_ResultIsSameAsJavaGraql() {
         InsertQuery expected = insert(
-                label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
-                label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolution").relates("evolves-from").relates("evolves-to"),
-                label("pokemon").plays("evolves-from").plays("evolves-to").has("name"),
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),
                 var("z").has("name", "Raichu").isa("pokemon"),
@@ -369,17 +364,34 @@ public class QueryParserTest {
         );
 
         InsertQuery parsed = parse("insert " +
-                "'pokemon' sub entity;" +
-                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
-                "evolves-from sub role;" +
-                "label \"evolves-to\" sub role;" +
-                "evolution relates evolves-from, relates evolves-to;" +
-                "pokemon plays evolves-from plays evolves-to has name;" +
                 "$x has name 'Pichu' isa pokemon;" +
                 "$y has name 'Pikachu' isa pokemon;" +
                 "$z has name 'Raichu' isa pokemon;" +
                 "(evolves-from: $x ,evolves-to: $y) isa evolution;" +
                 "(evolves-from: $y, evolves-to: $z) isa evolution;"
+        );
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void whenParsingDefineQuery_ResultIsSameAsJavaGraql() {
+        DefineQuery expected = define(
+                label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
+                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
+                label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                label("evolution").relates("evolves-from").relates("evolves-to"),
+                label("pokemon").plays("evolves-from").plays("evolves-to").has("name")
+        );
+
+        DefineQuery parsed = parse("define " +
+                "'pokemon' sub entity;" +
+                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
+                "evolves-from sub role;" +
+                "label \"evolves-to\" sub role;" +
+                "evolution relates evolves-from, relates evolves-to;" +
+                "pokemon plays evolves-from plays evolves-to has name;"
         );
 
         assertEquals(expected, parsed);
@@ -662,11 +674,6 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testParseHasScope() {
-        assertEquals("match $x has-scope $y;", parse("match $x has-scope $y;").toString());
-    }
-
-    @Test
     public void testParseKey() {
         assertEquals("match $x key name;", parse("match $x key name;").toString());
     }
@@ -789,8 +796,13 @@ public class QueryParserTest {
         assertEquals(bigNumber, count[0]);
     }
 
+    @Test
+    public void whenParsingAQueryWithReifiedAttributeRelationshipSyntax_ItIsEquivalentToJavaGraql() {
+        assertParseEquivalence("match $x has name $z as $x;");
+    }
+
     @Test(expected = GraqlSyntaxException.class)
-    public void testMultipleQueriesThrowsSyntaxException() {
+    public void whenParsingMultipleQueriesLikeOne_Throw() {
         //noinspection ResultOfMethodCallIgnored
         parse("insert $x isa movie; insert $y isa movie");
     }
@@ -841,10 +853,6 @@ public class QueryParserTest {
         exception.expectMessage(ErrorMessage.UNKNOWN_AGGREGATE.getMessage("hello"));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate hello $x;");
-    }
-
-    public static void assertQueriesEqual(MatchQuery query, MatchQuery parsedQuery) {
-        assertEquals(Sets.newHashSet(query), Sets.newHashSet(parsedQuery));
     }
 
     private static void assertParseEquivalence(String query) {

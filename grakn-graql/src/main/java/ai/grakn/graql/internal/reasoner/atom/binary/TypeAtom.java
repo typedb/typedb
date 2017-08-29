@@ -37,7 +37,7 @@ import java.util.Set;
  * <p>
  * Atom implementation defining type atoms of the general form:
  *
- * {isa|sub|plays|relates|has|has-scope}($varName, $predicateVariable)
+ * {isa|sub|plays|relates|has}($varName, $predicateVariable)
  *
  * Type atoms correspond to the following respective graql properties:
  * {@link IsaProperty},
@@ -45,7 +45,6 @@ import java.util.Set;
  * {@link ai.grakn.graql.internal.pattern.property.PlaysProperty}
  * {@link ai.grakn.graql.internal.pattern.property.RelatesProperty}
  * {@link ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty}
- * {@link ai.grakn.graql.internal.pattern.property.HasScopeProperty}
  * </p>
  *
  * @author Kasper Piskorski
@@ -96,7 +95,7 @@ public abstract class TypeAtom extends Binary{
 
     @Override
     public boolean requiresMaterialisation() {
-        return isUserDefinedName() && getSchemaConcept() != null && getSchemaConcept().isRelationshipType();
+        return isUserDefined() && getSchemaConcept() != null && getSchemaConcept().isRelationshipType();
     }
 
     @Override
@@ -111,7 +110,7 @@ public abstract class TypeAtom extends Binary{
     @Override
     public SchemaConcept getSchemaConcept() {
         return getPredicate() != null ?
-                getParentQuery().graph().getConcept(getPredicate().getPredicate()) : null;
+                getParentQuery().tx().getConcept(getPredicate().getPredicate()) : null;
     }
 
     /**

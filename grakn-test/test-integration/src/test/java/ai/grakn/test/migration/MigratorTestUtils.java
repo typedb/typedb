@@ -30,7 +30,7 @@ import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
 
@@ -69,7 +69,7 @@ public class MigratorTestUtils {
                     .execute();
 
             graph.commit();
-        } catch (IOException |InvalidGraphException e){
+        } catch (IOException |InvalidKBException e){
             throw new RuntimeException(e);
         }
     }

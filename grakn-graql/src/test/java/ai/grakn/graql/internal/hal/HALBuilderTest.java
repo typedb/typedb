@@ -23,12 +23,13 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.AcademyGraph;
-import ai.grakn.test.graphs.GenealogyGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.AcademyKB;
+import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.Schema;
 import mjson.Json;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static ai.grakn.graql.internal.hal.HALBuilder.HALExploreConcept;
@@ -41,15 +42,15 @@ import static org.junit.Assert.assertTrue;
 public class HALBuilderTest {
 
     @ClassRule
-    public static final GraphContext academyGraph = GraphContext.preLoad(AcademyGraph.get());
+    public static final SampleKBContext academyKB = SampleKBContext.preLoad(AcademyKB.get());
 
-    public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get());
+    public static final SampleKBContext genealogyKB = SampleKBContext.preLoad(GenealogyKB.get());
 
 
     @Test
     public void whenReceivingHALResponse_EnsureResponseContainsConceptDetails() {
-        Json response = getHALRepresentation(academyGraph.graph(), "match $x isa entity; limit 5;");
-        String keyspace = academyGraph.graph().getKeyspace();
+        Json response = getHALRepresentation(academyKB.tx(), "match $x isa entity; limit 5;");
+        String keyspace = academyKB.tx().getKeyspace();
         assertEquals(5, response.asList().size());
 
         response.asJsonList().forEach(halObj -> {
@@ -64,15 +65,15 @@ public class HALBuilderTest {
 
     @Test
     public void whenExecuteExploreHAL_EnsureHALResponseContainsCorrectExploreLinks() {
-        Json response = getHALRepresentation(academyGraph.graph(), "match $x isa entity; limit 5;");
+        Json response = getHALRepresentation(academyKB.tx(), "match $x isa entity; limit 5;");
         String conceptId = response.asJsonList().get(0).at("_id").asString();
-        Json halObj = getHALExploreRepresentation(academyGraph.graph(), conceptId);
+        Json halObj = getHALExploreRepresentation(academyKB.tx(), conceptId);
         assertTrue(halObj.at("_links").at("explore").asJsonList().get(0).at("href").asString().contains("explore"));
     }
 
     @Test
     public void whenAskForRelationTypes_EnsureAllObjectsHaveImplicitField() {
-        Json response = getHALRepresentation(academyGraph.graph(), "match $x sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";");
+        Json response = getHALRepresentation(academyKB.tx(), "match $x sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";");
         response.asJsonList().forEach(halObj -> {
             assertTrue(halObj.has("_implicit"));
             if(halObj.at("_name").asString().startsWith("has-")){
@@ -83,7 +84,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenUseSelectInQueryUsingInference_EnsureWeReceiveAValidHALResponse() {
-        Json response = getHALRepresentation(academyGraph.graph(), "match $article isa article has subject \"Italian Referendum\";\n" +
+        Json response = getHALRepresentation(academyKB.tx(), "match $article isa article has subject \"Italian Referendum\";\n" +
                 "$platform isa oil-platform has distance-from-coast <= 18;\n" +
                 "(location: $country, located: $platform) isa located-in;\n" +
                 "$country isa country has name \"Italy\";\n" +
@@ -102,7 +103,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenUseSelectInQueryWithoutUsingInference_EnsureWeReceiveAValidHALResponse() {
-        Json response = getHALRepresentationNoInference(academyGraph.graph(), "match $article isa article has subject \"Italian Referendum\";\n" +
+        Json response = getHALRepresentationNoInference(academyKB.tx(), "match $article isa article has subject \"Italian Referendum\";\n" +
                 "$platform isa oil-platform has distance-from-coast <= 18;\n" +
                 "(location: $country, located: $platform) isa located-in;\n" +
                 "$country isa country has name \"Italy\";\n" +
@@ -119,9 +120,10 @@ public class HALBuilderTest {
         });
     }
 
+    @Ignore("This test is very slow for some reason! 7 minutes locally") // TODO, task 16749
     @Test
     public void whenSelectInferredRelationWithSingleVar_EnsureValidExplanationHrefIsContainedInResponse(){
-        Json response = getHALRepresentation(genealogyGraph.graph(), "match $x isa marriage; offset 0; limit 5;");
+        Json response = getHALRepresentation(genealogyKB.tx(), "match $x isa marriage; offset 0; limit 5;");
         assertEquals(5, response.asList().size());
         response.asJsonList().forEach(halObj -> {
             assertEquals("inferred-relation", halObj.at("_baseType").asString());
@@ -132,7 +134,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenTriggerReasonerWithTransitiveRule_EnsureWeReceiveAValidHALResponse() {
-        Json response = getHALRepresentation(academyGraph.graph(), "match $x isa region; $y isa oil-platform; (located: $y, location: $x) isa located-in; limit 20;");
+        Json response = getHALRepresentation(academyKB.tx(), "match $x isa region; $y isa oil-platform; (located: $y, location: $x) isa located-in; limit 20;");
         // Limit to 20 results, each result will contain 3 variables, expected size 60
         assertEquals(60, response.asList().size());
         response.asJsonList().forEach(halObj -> {

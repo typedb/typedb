@@ -19,8 +19,8 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.graql.Autocomplete;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.junit.ClassRule;
@@ -39,7 +39,7 @@ public class AutocompleteTest {
     private final Set<String> types = ImmutableSet.of("production", "movie", "person");
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
 
     @Test
     public void whenAutocompletingAnEmptyQuery_CandidatesIncludeTypesAndKeywords() {
@@ -69,9 +69,10 @@ public class AutocompleteTest {
 
     @Test
     public void whenAutocompletingWithinWord_AppropriateCandidatesAreFound() {
-        String queryString = "match $x has title";
+        String queryString = "match $x rela actor";
+        //                   index 9 --^ ^--index 11
         Autocomplete autocomplete = Autocomplete.create(types, queryString, 11);
-        assertThat(autocomplete.getCandidates(), hasItem("has"));
+        assertThat(autocomplete.getCandidates(), hasItem("relates"));
         assertThat(autocomplete.getCandidates(), not(hasItem("delete")));
         assertEquals(9, autocomplete.getCursorPosition());
     }

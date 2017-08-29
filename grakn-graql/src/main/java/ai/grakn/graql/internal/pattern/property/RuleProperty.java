@@ -27,7 +27,6 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -50,16 +49,6 @@ public abstract class RuleProperty extends AbstractVarProperty implements Unique
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getName()));
-    }
-
-    @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of();
-    }
-
-    @Override
-    public final Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
     }
 
     @Nullable

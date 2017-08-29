@@ -66,7 +66,7 @@ public abstract class AtomicBase implements Atomic {
     public boolean containsVar(Var name){ return getVarNames().contains(name);}
 
     @Override
-    public boolean isUserDefinedName(){ return atomPattern.asVarPattern().var().isUserDefinedName();}
+    public boolean isUserDefined(){ return varName.isUserDefinedName();}
     
     @Override
     public Var getVarName(){ return varName;}
@@ -88,9 +88,12 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public void setParentQuery(ReasonerQuery q){ parent = q;}
 
+    @Override
+    public Atomic inferTypes(){ return this; }
+
     /**
      * @return GraknTx this atomic is defined in
      */
-    protected GraknTx graph(){ return getParentQuery().graph();}
+    protected GraknTx tx(){ return getParentQuery().tx();}
 }
 

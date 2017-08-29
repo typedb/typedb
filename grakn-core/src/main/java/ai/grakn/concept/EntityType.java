@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
@@ -62,8 +62,8 @@ public interface EntityType extends Type{
      * @param type The supertype of this EntityType
      * @return The EntityType itself
      *
-     * @throws GraphOperationException if this is a meta type
-     * @throws GraphOperationException if the given supertype is already an indirect subtype of this type
+     * @throws GraknTxOperationException if this is a meta type
+     * @throws GraknTxOperationException if the given supertype is already an indirect subtype of this type
      */
     EntityType sup(EntityType type);
 
@@ -73,8 +73,8 @@ public interface EntityType extends Type{
      * @param type The sub type of this entity type
      * @return The EntityType itself
      *
-     * @throws GraphOperationException if the sub type is a meta type
-     * @throws GraphOperationException if the given subtype is already an indirect supertype of this type
+     * @throws GraknTxOperationException if the sub type is a meta type
+     * @throws GraknTxOperationException if the given subtype is already an indirect supertype of this type
      */
     EntityType sub(EntityType type);
 
@@ -88,13 +88,31 @@ public interface EntityType extends Type{
     EntityType plays(Role role);
 
     /**
-     * Removes the Role to prevent instances of this EntityType from playing it.
+     * Removes the ability of this {@link EntityType} to play a specific {@link Role}
      *
-     * @param role The Role Type which the instances of this EntityType should no longer be allowed to play.
-     * @return The EntityType itself
+     * @param role The {@link Role} which the {@link Thing}s of this {@link EntityType} should no longer be allowed to play.
+     * @return The {@link EntityType} itself.
      */
     @Override
     EntityType deletePlays(Role role);
+
+    /**
+     * Removes the ability for {@link Thing}s of this {@link EntityType} to have {@link Attribute}s of type {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link EntityType} can no longer have
+     * @return The {@link EntityType} itself.
+     */
+    @Override
+    EntityType deleteAttribute(AttributeType attributeType);
+
+    /**
+     * Removes {@link AttributeType} as a key to this {@link EntityType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link EntityType} can no longer have as a key
+     * @return The {@link EntityType} itself.
+     */
+    @Override
+    EntityType deleteKey(AttributeType attributeType);
 
     /**
      * Creates and returns a new Entity instance, whose direct type will be this type.
@@ -102,27 +120,9 @@ public interface EntityType extends Type{
      *
      * @return a new empty entity.
      *
-     * @throws GraphOperationException if this is a meta type
+     * @throws GraknTxOperationException if this is a meta type
      */
     Entity addEntity();
-
-    /**
-     * Classifies the type to a specific scope. This allows you to optionally categorise types.
-     *
-     * @param scope The category of this Type
-     * @return The Type itself.
-     */
-    @Override
-    EntityType scope(Thing scope);
-
-    /**
-     * Delete the scope specified.
-     *
-     * @param scope The Instances that is currently scoping this Type.
-     * @return The Type itself
-     */
-    @Override
-    EntityType deleteScope(Thing scope);
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.

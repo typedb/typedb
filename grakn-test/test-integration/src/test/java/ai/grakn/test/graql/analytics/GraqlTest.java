@@ -31,7 +31,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.GraqlSyntaxException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.MaxQuery;
@@ -85,7 +85,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testGraqlCount() throws InvalidGraphException, InterruptedException, ExecutionException {
+    public void testGraqlCount() throws InvalidKBException, InterruptedException, ExecutionException {
         addSchemaAndEntities();
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             assertEquals(6L,
@@ -134,7 +134,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testStatisticsMethods() throws InvalidGraphException {
+    public void testStatisticsMethods() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             Label resourceTypeId = Label.of("my-resource");
 
@@ -180,7 +180,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testConnectedComponents() throws InvalidGraphException {
+    public void testConnectedComponents() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             Map<String, Long> sizeMap =
                     graph.graql().<ClusterQuery<Map<String, Long>>>parse("compute cluster;").execute();
@@ -192,7 +192,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testPath() throws InvalidGraphException {
+    public void testPath() throws InvalidKBException {
         addSchemaAndEntities();
 
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
@@ -211,7 +211,7 @@ public class GraqlTest {
     }
 
     @Test(expected = GraqlQueryException.class)
-    public void testNonResourceTypeAsSubgraphForAnalytics() throws InvalidGraphException {
+    public void testNonResourceTypeAsSubgraphForAnalytics() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.putEntityType(thingy);
             graph.commit();
@@ -223,7 +223,7 @@ public class GraqlTest {
     }
 
     @Test(expected = GraqlSyntaxException.class)
-    public void testErrorWhenNoSubgrapForAnalytics() throws InvalidGraphException {
+    public void testErrorWhenNoSubgrapForAnalytics() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().parse("compute sum;").execute();
             graph.graql().parse("compute min;").execute();
@@ -234,7 +234,7 @@ public class GraqlTest {
     }
 
     @Test
-    public void testAnalyticsDoesNotCommitByMistake() throws InvalidGraphException {
+    public void testAnalyticsDoesNotCommitByMistake() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             graph.putAttributeType("number", AttributeType.DataType.LONG);
             graph.commit();
@@ -248,7 +248,7 @@ public class GraqlTest {
         analyticsCommands.forEach(command -> {
             try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
                 // insert a node but do not commit it
-                graph.graql().parse("insert thingy sub entity;").execute();
+                graph.graql().parse("define thingy sub entity;").execute();
                 // use analytics
                 graph.graql().parse(command).execute();
             }
@@ -260,7 +260,7 @@ public class GraqlTest {
         });
     }
 
-    private void addSchemaAndEntities() throws InvalidGraphException {
+    private void addSchemaAndEntities() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thingy);
             EntityType entityType2 = graph.putEntityType(anotherThing);

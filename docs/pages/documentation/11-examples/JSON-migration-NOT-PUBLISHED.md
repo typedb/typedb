@@ -13,7 +13,7 @@ comment_issue_id: 27
 
 ## Introduction
 
-This example looks at the migration of simple JSON data to build a graph in GRAKN.AI. The data is an invented library catalogue of a very small number of books, and illustrates how to migrate simple data and handle issues such as preventing the creation of duplicate entities. You can find the data, schema and templates for this example in our [sample projects repo](https://github.com/graknlabs/sample-projects/tree/master/example-json-migration-library) on Github.
+This example looks at the migration of simple JSON data to build a knowledge base in GRAKN.AI. The data is an invented library catalogue of a very small number of books, and illustrates how to migrate simple data and handle issues such as preventing the creation of duplicate entities. You can find the data, schema and templates for this example in our [sample projects repo](https://github.com/graknlabs/sample-projects/tree/master/example-json-migration-library) on Github.
 
 For a detailed overview of CSV migration, we recommend that you take a look at the Grakn documentation on [JSON Migration](https://grakn.ai/pages/documentation/migration/JSON-migration.html) and [Graql templating](https://grakn.ai/pages/documentation/graql/graql-templating.html).  
 
@@ -55,7 +55,7 @@ The `id` value can be considered to be unique and identify each book. However, o
 The schema for the book catalogue is as follows:
 
 ```graql
-insert
+define
 
 # Entities
 
@@ -106,7 +106,7 @@ To load *schema.gql* into Grakn, make sure the engine is running and choose a cl
 
 ### Data Migration
 
-Having loaded the schema, the next steps are to populate the graph by migrating data into Grakn, using Graql templates. There are separate templates for each entity. First, for the books:
+Having loaded the schema, the next steps are to populate the knowledge base by migrating data into Grakn, using Graql templates. There are separate templates for each entity. First, for the books:
 
 ```graql-template
 insert

@@ -29,7 +29,7 @@ import ai.grakn.generator.AbstractSchemaConceptGenerator.Meta;
  *
  * @author Felix Chapman
  */
-public class MetaTypes extends FromGraphGenerator<SchemaConcept> {
+public class MetaTypes extends FromTxGenerator<SchemaConcept> {
 
     public MetaTypes() {
         // TODO: This should generate `Type`, not `SchemaConcept`
@@ -37,8 +37,8 @@ public class MetaTypes extends FromGraphGenerator<SchemaConcept> {
     }
 
     @Override
-    protected SchemaConcept generateFromGraph() {
-        return graph().admin().getMetaConcept();
+    protected SchemaConcept generateFromTx() {
+        return tx().admin().getMetaConcept();
     }
 
     public final void configure(Meta meta) {

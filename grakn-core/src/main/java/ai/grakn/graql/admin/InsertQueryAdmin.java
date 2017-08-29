@@ -57,5 +57,5 @@ public interface InsertQueryAdmin extends InsertQuery {
      * @return the graph set on this query, if it was provided one
      */
     @CheckReturnValue
-    Optional<GraknTx> getGraph();
+    Optional<GraknTx> getTx();
 }

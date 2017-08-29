@@ -52,7 +52,7 @@ public class Cache<V> {
     //Transaction bound. If this is not set it does not yet exist in the scope of the transaction.
     private final ThreadLocal<V> valueTx = new ThreadLocal<>();
 
-    //Graph bound value which has already been persisted and acts as a shared component cache
+    //Globally bound value which has already been persisted and acts as a shared component cache
     private Optional<V> valueGlobal = Optional.empty();
 
     public Cache(Cacheable<V> cacheable, Supplier<V> databaseReader){

@@ -38,7 +38,7 @@ import java.util.Set;
 class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MaxQuery {
 
     MaxQueryImpl(Optional<GraknTx> graph) {
-        this.graph = graph;
+        this.tx = graph;
     }
 
     @Override
@@ -85,8 +85,8 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MaxQuery withGraph(GraknTx graph) {
-        return (MaxQuery) super.withGraph(graph);
+    public MaxQuery withTx(GraknTx tx) {
+        return (MaxQuery) super.withTx(tx);
     }
 
     @Override

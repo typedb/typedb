@@ -26,8 +26,8 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.matcher.MovieMatchers;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -57,7 +57,7 @@ import static org.junit.Assert.assertEquals;
 public class AggregateTest {
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -66,7 +66,7 @@ public class AggregateTest {
 
     @Before
     public void setUp() {
-        qb = rule.graph().graql();
+        qb = rule.tx().graql();
     }
 
     @Test
@@ -90,7 +90,7 @@ public class AggregateTest {
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
                 assertEquals(movie, result.get(Graql.var("x")));
-                Assert.assertEquals(rule.graph().getEntityType("person"), result.get(Graql.var("y")).asThing().type());
+                Assert.assertEquals(rule.tx().getEntityType("person"), result.get(Graql.var("y")).asThing().type());
             });
         });
     }
@@ -102,7 +102,7 @@ public class AggregateTest {
 
         Map<Concept, Long> groupCount = groupCountQuery.execute();
 
-        Thing godfather = rule.graph().getAttributeType("title").getAttribute("Godfather").owner();
+        Thing godfather = rule.tx().getAttributeType("title").getAttribute("Godfather").owner();
 
         assertEquals(new Long(9), groupCount.get(godfather));
     }
@@ -236,24 +236,24 @@ public class AggregateTest {
 
     @Test
     public void testEmptyMatchCount() {
-        assertEquals(0L, rule.graph().graql().match(var().isa("runtime")).aggregate(count()).execute().longValue());
-        rule.graph().graql().match(var()).aggregate(count()).execute();
+        assertEquals(0L, rule.tx().graql().match(var().isa("runtime")).aggregate(count()).execute().longValue());
+        rule.tx().graql().match(var()).aggregate(count()).execute();
     }
 
     @Test(expected = Exception.class) // TODO: Would help if the error message is more specific
     public void testVarsNotExist() {
-        rule.graph().graql().match(var("x").isa("movie")).aggregate(min("y")).execute();
-        System.out.println(rule.graph().graql().match(var("x").isa("movie")).aggregate(min("x")).execute());
+        rule.tx().graql().match(var("x").isa("movie")).aggregate(min("y")).execute();
+        System.out.println(rule.tx().graql().match(var("x").isa("movie")).aggregate(min("x")).execute());
     }
 
     @Test(expected = Exception.class)
     public void testMinOnEntity() {
-        rule.graph().graql().match(var("x")).aggregate(min("x")).execute();
+        rule.tx().graql().match(var("x")).aggregate(min("x")).execute();
     }
 
     @Test(expected = Exception.class)
     public void testIncorrectResourceDataType() {
-        rule.graph().graql().match(var("x").isa("movie").has("title", var("y")))
+        rule.tx().graql().match(var("x").isa("movie").has("title", var("y")))
                 .aggregate(sum("y")).execute();
     }
 
@@ -261,6 +261,6 @@ public class AggregateTest {
     public void whenGroupVarIsNotInQuery_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("z")));
-        rule.graph().graql().match(var("x").isa("movie").has("title", var("y"))).aggregate(group("z", count())).execute();
+        rule.tx().graql().match(var("x").isa("movie").has("title", var("y"))).aggregate(group("z", count())).execute();
     }
 }

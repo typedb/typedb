@@ -59,7 +59,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
     @Override
     public Relationship addRelationship() {
         return addInstance(Schema.BaseType.RELATIONSHIP,
-                (vertex, type) -> vertex().graph().factory().buildRelation(vertex, type), true);
+                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), true);
     }
 
     @Override
@@ -93,7 +93,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
         ((RoleImpl) role).addCachedRelationType(this);
 
         //Put all the instance back in for tracking because their unique hashes need to be regenerated
-        instances().forEach(instance -> vertex().graph().txCache().trackForValidation(instance));
+        instances().forEach(instance -> vertex().tx().txCache().trackForValidation(instance));
 
         return this;
     }
@@ -110,14 +110,14 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
         RoleImpl roleTypeImpl = (RoleImpl) role;
         //Add roleplayers of role to make sure relations are still valid
-        roleTypeImpl.rolePlayers().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
+        roleTypeImpl.rolePlayers().forEach(rolePlayer -> vertex().tx().txCache().trackForValidation(rolePlayer));
 
 
         //Add the Role Type itself
-        vertex().graph().txCache().trackForValidation(roleTypeImpl);
+        vertex().tx().txCache().trackForValidation(roleTypeImpl);
 
         //Add the Relationship Type
-        vertex().graph().txCache().trackForValidation(roleTypeImpl);
+        vertex().tx().txCache().trackForValidation(roleTypeImpl);
 
         //Remove from internal cache
         cachedRelates.ifPresent(set -> set.remove(role));
@@ -126,7 +126,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
         ((RoleImpl) role).deleteCachedRelationType(this);
 
         //Put all the instance back in for tracking because their unique hashes need to be regenerated
-        instances().forEach(instance -> vertex().graph().txCache().trackForValidation(instance));
+        instances().forEach(instance -> vertex().tx().txCache().trackForValidation(instance));
 
         return this;
     }
@@ -141,7 +141,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
         //Update the cache of the connected role types
         cachedRelates.get().forEach(r -> {
             RoleImpl role = ((RoleImpl) r);
-            vertex().graph().txCache().trackForValidation(role);
+            vertex().tx().txCache().trackForValidation(role);
             ((RoleImpl) r).deleteCachedRelationType(this);
         });
     }
@@ -151,7 +151,7 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
         instances().forEach(concept -> {
             RelationshipImpl relation = RelationshipImpl.from(concept);
             if(relation.reified().isPresent()){
-                relation.reified().get().castingsRelation().forEach(rolePlayer -> vertex().graph().txCache().trackForValidation(rolePlayer));
+                relation.reified().get().castingsRelation().forEach(rolePlayer -> vertex().tx().txCache().trackForValidation(rolePlayer));
             }
         });
     }
@@ -172,14 +172,14 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
                 flatMap(role -> role.playedByTypes()).
                 flatMap(type ->{
                     //Traversal is used here to take advantage of vertex centric index
-                    return  vertex().graph().getTinkerTraversal().V().
+                    return  vertex().tx().getTinkerTraversal().V().
                             has(Schema.VertexProperty.ID.name(), type.getId().getValue()).
                             in(Schema.EdgeLabel.SHARD.getLabel()).
                             in(Schema.EdgeLabel.ISA.getLabel()).
                             outE(Schema.EdgeLabel.RESOURCE.getLabel()).
                             has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), getLabelId().getValue()).
                             toStream().
-                            map(edge -> vertex().graph().factory().buildConcept(edge).asRelationship());
+                            map(edge -> vertex().tx().factory().buildConcept(edge).asRelationship());
                 });
     }
 }

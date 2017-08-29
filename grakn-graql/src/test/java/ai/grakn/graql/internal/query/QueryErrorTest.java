@@ -22,14 +22,15 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.exception.InvalidGraphException;
+import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.graql.Var;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.junit.Before;
@@ -52,16 +53,16 @@ public class QueryErrorTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext rule = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
-    public static final GraphContext empty = GraphContext.empty();
+    public static final SampleKBContext empty = SampleKBContext.empty();
 
     private QueryBuilder qb;
 
     @Before
     public void setUp() {
-        qb = rule.graph().graql();
+        qb = rule.tx().graql();
     }
 
     @Test
@@ -128,7 +129,7 @@ public class QueryErrorTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("select");
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa("movie")).select();
+        qb.match(var("x").isa("movie")).select(new Var[] {});
     }
 
     @Test
@@ -147,15 +148,15 @@ public class QueryErrorTest {
     }
 
     @Test
-    public void testExceptionWhenNoHasResourceRelation() throws InvalidGraphException {
+    public void testExceptionWhenNoHasResourceRelation() throws InvalidKBException {
         // Create a fresh graph, with no has between person and name
-        QueryBuilder emptyQb = empty.graph().graql();
-        emptyQb.insert(
+        QueryBuilder emptyQb = empty.tx().graql();
+        emptyQb.define(
                 label("person").sub("entity"),
                 label("name").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         exception.expectMessage(allOf(
                 containsString("person"),
                 containsString("name")
@@ -179,7 +180,7 @@ public class QueryErrorTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("id"), containsString("plays product-type")));
         qb.parse(
-                "insert " +
+                "define " +
                         "tag-group sub role; product-type sub role;" +
                         "category sub entity, plays tag-group; plays product-type;"
         ).execute();
@@ -207,8 +208,8 @@ public class QueryErrorTest {
 
     @Test
     public void whenTryingToSetExistingInstanceType_Throw() {
-        Thing movie = rule.graph().getEntityType("movie").instances().iterator().next();
-        Type person = rule.graph().getEntityType("person");
+        Thing movie = rule.tx().getEntityType("movie").instances().iterator().next();
+        Type person = rule.tx().getEntityType("person");
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(containsString("person"));

@@ -1,4 +1,4 @@
-insert
+define
 
 ###################################################
 ####################Schema######################
@@ -31,6 +31,8 @@ entity2 plays Q-rA plays Q-rB;
 entity2 plays P-rA plays P-rB;
 
 "index" sub attribute, datatype string;
+
+insert
 
 ####################################################
 ##################RULES#############################

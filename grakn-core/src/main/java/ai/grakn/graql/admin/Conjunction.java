@@ -43,5 +43,5 @@ public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
      * @return the corresponding reasoner query
      */
     @CheckReturnValue
-    ReasonerQuery toReasonerQuery(GraknTx graph);
+    ReasonerQuery toReasonerQuery(GraknTx tx);
 }

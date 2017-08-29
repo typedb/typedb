@@ -47,7 +47,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import javafx.util.Pair;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -255,7 +254,7 @@ public class ReasonerUtils {
     }
 
     /**
-     * compute the map of compatible relation types for given types (intersection of allowed sets of relation types for each entry type)
+     * compute the map of compatible relation types for given types (intersection of allowed sets of relationship types for each entry type)
      * and compatible role types
      * @param types for which the set of compatible relation types is to be computed
      //* @param typeMapper function mapping a type to the set of compatible relation types

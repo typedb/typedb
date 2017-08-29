@@ -1,4 +1,4 @@
-insert
+define
 
 the-thing sub entity
    has a-string;

@@ -1,4 +1,4 @@
-insert
+define
 
 #Roles
 
@@ -29,6 +29,8 @@ relation3 sub relationship
 
 res1 sub attribute datatype string;
 res2 sub attribute datatype string;
+
+insert
 
 #Rules
 

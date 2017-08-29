@@ -138,7 +138,7 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void whenUsingExecuteOptionAndPassingQueriesWithoutVariables_PrintWarning() throws Exception {
+    public void whenUsingExecuteOptionAndPassingMatchQueriesWithoutVariables_PrintWarning() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         String result = testShell("", err, "-e", "match sub entity;");
 
@@ -150,8 +150,20 @@ public class GraqlShellIT {
     }
 
     @Test
+    public void whenUsingExecuteOptionAndPassingNonMatchQueriesWithoutVariables_DoNotPrintWarning() throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        String result = testShell("", err, "-e", "define person sub entity;");
+
+        // There should be a result...
+        assertThat(result, containsString("{}"));
+
+        // ...and no warning
+        assertEquals("", err.toString());
+    }
+
+    @Test
     public void testDefaultKeyspace() throws Exception {
-        testShell("insert im-in-the-default-keyspace sub entity;\ncommit\n");
+        testShell("define im-in-the-default-keyspace sub entity;\ncommit\n");
 
         assertShellMatches(ImmutableList.of("-k", "grakn"),
                 "match im-in-the-default-keyspace sub entity; aggregate ask;",
@@ -161,8 +173,8 @@ public class GraqlShellIT {
 
     @Test
     public void testSpecificKeyspace() throws Exception {
-        testShell("insert foo-foo sub entity;\ncommit\n", "-k", "foo");
-        testShell("insert bar-bar sub entity;\ncommit\n", "-k", "bar");
+        testShell("define foo-foo sub entity;\ncommit\n", "-k", "foo");
+        testShell("define bar-bar sub entity;\ncommit\n", "-k", "bar");
 
         String fooFooinFoo = testShell("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
         String fooFooInBar = testShell("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
@@ -221,7 +233,7 @@ public class GraqlShellIT {
     @Test
     public void testInsertQuery() throws Exception {
         assertShellMatches(
-                "insert entity2 sub entity;",
+                "define entity2 sub entity;",
                 anything(),
                 "match $x isa entity2; aggregate ask;",
                 containsString("False"),
@@ -235,7 +247,8 @@ public class GraqlShellIT {
     @Test
     public void testInsertOutput() throws Exception {
         assertShellMatches(
-                "insert X sub entity; $thingy isa X;",
+                "define X sub entity; insert $thingy isa X;",
+                containsString("{}"),
                 allOf(containsString("$thingy"), containsString("isa"), containsString("X"))
         );
     }
@@ -279,9 +292,9 @@ public class GraqlShellIT {
     @Test
     public void testReasonerOff() throws Exception {
         assertShellMatches(
-                "insert man sub entity has name; name sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string;",
+                "define man sub entity has name; name sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string;",
                 anything(),
-                "insert person sub entity;",
+                "define person sub entity;",
                 anything(),
                 "insert has name 'felix' isa man;",
                 anything(),
@@ -296,9 +309,9 @@ public class GraqlShellIT {
     @Test
     public void testReasoner() throws Exception {
         assertShellMatches(ImmutableList.of("--infer"),
-                "insert man sub entity has name; name sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string;",
+                "define man sub entity has name; name sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string;",
                 anything(),
-                "insert person sub entity;",
+                "define person sub entity;",
                 anything(),
                 "insert has name 'felix' isa man;",
                 anything(),
@@ -315,7 +328,7 @@ public class GraqlShellIT {
     @Test
     public void testInvalidQuery() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        testShell("insert movie sub entity; $moon isa movie; $europa isa $moon;\n", err);
+        testShell("define movie sub entity; insert $moon isa movie; $europa isa $moon;\n", err);
 
         assertThat(err.toString(), allOf(containsString("not"), containsString("type")));
     }
@@ -323,7 +336,8 @@ public class GraqlShellIT {
     @Test
     public void testComputeCount() throws Exception {
         assertShellMatches(
-                "insert X sub entity; $a isa X; $b isa X; $c isa X;",
+                "define X sub entity; insert $a isa X; $b isa X; $c isa X;",
+                anything(),
                 anything(),
                 "commit",
                 "compute count;",
@@ -426,7 +440,8 @@ public class GraqlShellIT {
             String value = Strings.repeat("really-", 100000) + "long-value";
 
             assertShellMatches(
-                    "insert X sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; val '" + value + "' isa X;",
+                    "define X sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; insert val '" + value + "' isa X;",
+                    anything(),
                     anything(),
                     "match $x isa X;",
                     allOf(containsString("$x"), containsString(value))
@@ -458,7 +473,7 @@ public class GraqlShellIT {
     @Test
     public void testCommitError() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        String out = testShell("insert bob sub relation;\ncommit;\nmatch $x sub relation;\n", err);
+        String out = testShell("insert bob sub relation;\ncommit;\nmatch $x sub relationship;\n", err);
         assertFalse(out, err.toString().isEmpty());
     }
 
@@ -472,7 +487,8 @@ public class GraqlShellIT {
     @Test
     public void testDefaultDontDisplayResources() throws Exception {
         assertShellMatches(
-                "insert X sub entity; R sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; X has R; isa X has R 'foo';",
+                "define X sub entity; R sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; X has R; insert isa X has R 'foo';",
+                anything(),
                 anything(),
                 "match $x isa X;",
                 allOf(containsString("id"), not(containsString("\"foo\"")))
@@ -482,7 +498,8 @@ public class GraqlShellIT {
     @Test
     public void testDisplayResourcesCommand() throws Exception {
         assertShellMatches(
-                "insert X sub entity; R sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; X has R; isa X has R 'foo';",
+                "define X sub entity; R sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; X has R; insert isa X has R 'foo';",
+                anything(),
                 anything(),
                 "display R;",
                 "match $x isa X;",
@@ -493,7 +510,7 @@ public class GraqlShellIT {
     @Test
     public void whenRunningCleanCommand_TheGraphIsCleanedAndCommitted() throws Exception {
         assertShellMatches(
-                "insert my-type sub entity;",
+                "define my-type sub entity;",
                 is("{}"),
                 "commit",
                 "match $x sub entity;",
@@ -515,7 +532,7 @@ public class GraqlShellIT {
     @Test
     public void whenCancellingCleanCommand_TheGraphIsNotCleaned() throws Exception {
         assertShellMatches(
-                "insert my-type sub entity;",
+                "define my-type sub entity;",
                 is("{}"),
                 "match $x sub entity;",
                 containsString("entity"),
@@ -542,8 +559,9 @@ public class GraqlShellIT {
     @Test
     public void testExecuteMultipleQueries() throws Exception {
         assertShellMatches(
-                "insert X sub entity; $x isa X; match $y isa X; match $y isa X; aggregate count;",
-                // Make sure we see results from all three queries
+                "define X sub entity; insert $x isa X; match $y isa X; match $y isa X; aggregate count;",
+                // Make sure we see results from all four queries
+                containsString("{}"),
                 containsString("$x"),
                 containsString("$y"),
                 is("1")
@@ -604,8 +622,8 @@ public class GraqlShellIT {
     public void testDuplicateRelation() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell(
-                "insert R sub " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue() + ", relates R1, relates R2; R1 sub role; R2 sub role;\n" +
-                        "insert X sub entity, plays R1, plays R2;\n" +
+                "define R sub " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue() + ", relates R1, relates R2; R1 sub role; R2 sub role;\n" +
+                        "define X sub entity, plays R1, plays R2;\n" +
                         "insert $x isa X; (R1: $x, R2: $x) isa R;\n" +
                         "match $x isa X; insert (R1: $x, R2: $x) isa R;\n" +
                         "commit\n",

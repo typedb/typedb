@@ -42,25 +42,39 @@ import java.util.stream.Stream;
 public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
 
     /**
-     * @param names an array of variable names to select
+     * @param vars an array of variable to select
      * @return a new MatchQuery that selects the given variables
      */
     @CheckReturnValue
-    MatchQuery select(String... names);
+    MatchQuery select(String... vars);
 
     /**
-     * @param names a set of variable names to select
+     * @param vars an array of variable to select
      * @return a new MatchQuery that selects the given variables
      */
     @CheckReturnValue
-    MatchQuery select(Set<Var> names);
+    MatchQuery select(Var... vars);
 
     /**
-     * @param name a variable name to get
+     * @param vars a set of variable to select
+     * @return a new MatchQuery that selects the given variables
+     */
+    @CheckReturnValue
+    MatchQuery select(Set<Var> vars);
+
+    /**
+     * @param var a variable to get
      * @return a stream of concepts
      */
     @CheckReturnValue
-    Stream<Concept> get(String name);
+    Stream<Concept> get(String var);
+
+    /**
+     * @param var a variable to get
+     * @return a stream of concepts
+     */
+    @CheckReturnValue
+    Stream<Concept> get(Var var);
 
     /**
      * @param vars an array of variables to insert for each result of this match query
@@ -132,11 +146,11 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
     MatchQuery orderBy(Var varName, Order order);
 
     /**
-     * @param graph the graph to execute the query on
+     * @param tx the graph to execute the query on
      * @return a new MatchQuery with the graph set
      */
     @Override
-    MatchQuery withGraph(GraknTx graph);
+    MatchQuery withTx(GraknTx tx);
 
     /**
      * @param limit the maximum number of results the query should return

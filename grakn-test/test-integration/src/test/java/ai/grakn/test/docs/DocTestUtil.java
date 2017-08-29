@@ -26,7 +26,7 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.test.graphs.GenealogyGraph;
+import ai.grakn.test.kbs.GenealogyKB;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
@@ -48,7 +48,7 @@ public class DocTestUtil {
         GraknSession session = Grakn.session(uri, keyspace);
 
         try (GraknTx tx = session.open(GraknTxType.WRITE)) {
-            GenealogyGraph.get().accept(tx);
+            GenealogyKB.get().accept(tx);
 
             // TODO: Remove custom genealogy schema when not used
             AttributeType<Long> age = tx.putAttributeType("age", AttributeType.DataType.LONG);

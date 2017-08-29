@@ -23,8 +23,8 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.kb.internal.TxTestBase;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -42,15 +42,15 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class ConceptTest extends GraphTestBase {
+public class ConceptTest extends TxTestBase {
 
     @Test
     public void whenComparingConcepts_EnsureEqualityIsBasedOnConceptID() {
-        Concept v1_1 = graknGraph.putEntityType("Value_1");
-        Concept v1_2 = graknGraph.getEntityType("Value_1");
-        Concept v1_3 = graknGraph.putEntityType("Value_1");
+        Concept v1_1 = tx.putEntityType("Value_1");
+        Concept v1_2 = tx.getEntityType("Value_1");
+        Concept v1_3 = tx.putEntityType("Value_1");
 
-        Concept v2_1 = graknGraph.putEntityType("Value_2");
+        Concept v2_1 = tx.putEntityType("Value_2");
 
         assertEquals(v1_1, v1_2);
         assertNotEquals(v1_1, v2_1);
@@ -68,7 +68,7 @@ public class ConceptTest extends GraphTestBase {
 
     @Test
     public void checkToStringHasMinimalInformation() {
-        EntityType concept = graknGraph.putEntityType("a");
+        EntityType concept = tx.putEntityType("a");
         Thing entity = concept.addEntity();
 
         assertTrue(entity.toString().contains(Schema.BaseType.ENTITY.name()));
@@ -77,9 +77,9 @@ public class ConceptTest extends GraphTestBase {
 
     @Test
     public void whenGettingEdgesFromAConcept_EdgesFilteredByLabelAreReturned(){
-        EntityType entityType1 = graknGraph.putEntityType("entity type");
-        EntityTypeImpl entityType2 = (EntityTypeImpl) graknGraph.putEntityType("entity type 1").sup(entityType1);
-        EntityType entityType3 = graknGraph.putEntityType("entity type 2").sup(entityType2);
+        EntityType entityType1 = tx.putEntityType("entity type");
+        EntityTypeImpl entityType2 = (EntityTypeImpl) tx.putEntityType("entity type 1").sup(entityType1);
+        EntityType entityType3 = tx.putEntityType("entity type 2").sup(entityType2);
 
         Set<EdgeElement> superType = entityType2.vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
         Set<EdgeElement> subs = entityType2.vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
@@ -87,13 +87,13 @@ public class ConceptTest extends GraphTestBase {
         assertThat(superType, is(not(empty())));
         assertThat(subs, is(not(empty())));
 
-        superType.forEach(edge -> assertEquals(entityType1, graknGraph.factory().buildConcept(edge.target())));
-        subs.forEach(edge -> assertEquals(entityType3, graknGraph.factory().buildConcept(edge.source())));
+        superType.forEach(edge -> assertEquals(entityType1, tx.factory().buildConcept(edge.target())));
+        subs.forEach(edge -> assertEquals(entityType3, tx.factory().buildConcept(edge.source())));
     }
 
     @Test
     public void whenCastingToCorrectType_ReturnCorrectType(){
-        Concept concept = graknGraph.putEntityType("Test");
+        Concept concept = tx.putEntityType("Test");
         assertTrue("Concept is not of type [" + EntityType.class.getName() + "]", concept.isEntityType());
         EntityType type = concept.asEntityType();
         assertEquals(type, concept);
@@ -102,11 +102,11 @@ public class ConceptTest extends GraphTestBase {
 
     @Test
     public void whenCastingToInCorrectType_Throw(){
-        EntityType thingType = graknGraph.putEntityType("thing type");
+        EntityType thingType = tx.putEntityType("thing type");
         Entity thing = thingType.addEntity();
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.invalidCasting(thing, Type.class).getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.invalidCasting(thing, Type.class).getMessage());
 
         //noinspection ResultOfMethodCallIgnored
         thing.asType();

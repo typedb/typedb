@@ -35,7 +35,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.query.QueryOperationExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.CommonUtil;
@@ -74,6 +74,11 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
     }
 
     public abstract ImmutableMultiset<RelationPlayer> relationPlayers();
+
+    @Override
+    String getName() {
+        return "relationship";
+    }
 
     @Override
     public void buildString(StringBuilder builder) {
@@ -127,7 +132,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
     }
 
     /**
-     * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relation
+     * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relationship
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin rolePlayer) {
@@ -179,9 +184,13 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Relationship relationship = executor.get(var).asRelationship();
-        relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relationship, relationPlayer));
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Relationship relationship = executor.get(var).asRelationship();
+            relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relationship, relationPlayer));
+        };
+
+        return PropertyExecutor.builder(method).requires(requiredVars(var)).build();
     }
 
     /**
@@ -189,7 +198,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
      * @param relationship the concept representing the {@link Relationship}
      * @param relationPlayer a casting between a role type and role player
      */
-    private void addRoleplayer(InsertQueryExecutor executor, Relationship relationship, RelationPlayer relationPlayer) {
+    private void addRoleplayer(QueryOperationExecutor executor, Relationship relationship, RelationPlayer relationPlayer) {
         VarPatternAdmin roleVar = getRole(relationPlayer);
 
         Role role = executor.get(roleVar.var()).asRole();
@@ -197,8 +206,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
         relationship.addRolePlayer(role, roleplayer);
     }
 
-    @Override
-    public Set<Var> requiredVars(Var var) {
+    private Set<Var> requiredVars(Var var) {
         Stream<Var> relationPlayers = this.relationPlayers().stream()
                 .flatMap(relationPlayer -> Stream.of(relationPlayer.getRolePlayer(), getRole(relationPlayer)))
                 .map(VarPatternAdmin::var);
@@ -212,12 +220,13 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        //keep varName if reified, reified if contains more properties than the RelationProperty itself and potential IsaProperty
+        //set varName as user defined if reified
+        //reified if contains more properties than the RelationProperty itself and potential IsaProperty
         boolean isReified = var.getProperties()
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .filter(prop -> !IsaProperty.class.isInstance(prop))
-                .count() > 0;
-        VarPattern relVar = (var.var().isUserDefinedName() || isReified)? var.var().asUserDefined() : Graql.var();
+                .findFirst().isPresent();
+        VarPattern relVar = isReified? var.var().asUserDefined() : var.var();
 
         for (RelationPlayer rp : relationPlayers()) {
             VarPatternAdmin role = rp.getRole().orElse(null);
@@ -229,13 +238,16 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
         //id part
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
         IdPredicate predicate = null;
+
+        //if no isa property present generate type variable
         Var typeVariable = isaProp != null? isaProp.type().var().asUserDefined() : Graql.var().asUserDefined();
+
         //Isa present
         if (isaProp != null) {
             VarPatternAdmin isaVar = isaProp.type();
             Label label = isaVar.getTypeLabel().orElse(null);
             if (label != null) {
-                VarPatternAdmin idVar = typeVariable.id(parent.graph().getSchemaConcept(label).getId()).admin();
+                VarPatternAdmin idVar = typeVariable.id(parent.tx().getSchemaConcept(label).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
             } else {
                 typeVariable = isaVar.var();

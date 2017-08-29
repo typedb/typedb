@@ -40,7 +40,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     private long clusterSize = -1L;
 
     ClusterQueryImpl(Optional<GraknTx> graph) {
-        this.graph = graph;
+        this.tx = graph;
     }
 
     @Override
@@ -136,8 +136,8 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     }
 
     @Override
-    public ClusterQuery<T> withGraph(GraknTx graph) {
-        return (ClusterQuery<T>) super.withGraph(graph);
+    public ClusterQuery<T> withTx(GraknTx tx) {
+        return (ClusterQuery<T>) super.withTx(tx);
     }
 
     @Override

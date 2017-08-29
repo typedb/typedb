@@ -26,7 +26,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
@@ -82,14 +82,14 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     public T setLabel(Label label){
         try {
-            vertex().graph().txCache().remove(this);
+            vertex().tx().txCache().remove(this);
             vertex().propertyUnique(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
             cachedLabel.set(label);
-            vertex().graph().txCache().cacheConcept(this);
+            vertex().tx().txCache().cacheConcept(this);
             return getThis();
         } catch (PropertyNotUniqueException exception){
-            vertex().graph().txCache().cacheConcept(this);
-            throw GraphOperationException.labelTaken(label);
+            vertex().tx().txCache().cacheConcept(this);
+            throw GraknTxOperationException.labelTaken(label);
         }
     }
 
@@ -182,9 +182,9 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             txCacheClear();
 
             //Clear Global Cache
-            vertex().graph().txCache().remove(this);
+            vertex().tx().txCache().remove(this);
         } else {
-            throw GraphOperationException.cannotBeDeleted(this);
+            throw GraknTxOperationException.cannotBeDeleted(this);
         }
     }
 
@@ -228,9 +228,9 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * 2. The graph is not batch loading
      */
     void checkSchemaMutationAllowed(){
-        vertex().graph().checkSchemaMutationAllowed();
+        vertex().tx().checkSchemaMutationAllowed();
         if(Schema.MetaSchema.isMetaLabel(getLabel())){
-            throw GraphOperationException.metaTypeImmutable(getLabel());
+            throw GraknTxOperationException.metaTypeImmutable(getLabel());
         }
     }
 
@@ -269,7 +269,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             //Note the check before the actual construction
             if(superLoops()){
                 cachedSuperType.set(oldSuperType); //Reset if the new super type causes a loop
-                throw GraphOperationException.loopCreated(this, newSuperType);
+                throw GraknTxOperationException.loopCreated(this, newSuperType);
             }
 
             //Modify the graph once we have checked no loop occurs

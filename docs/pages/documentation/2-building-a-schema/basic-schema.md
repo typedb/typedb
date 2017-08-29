@@ -18,7 +18,7 @@ comment_issue_id: 22
 
 In this section we are going to run through the construction of a basic schema. We recommend that you refer to the [Knowledge Model](../the-fundamentals/grakn-knowledge-model.html) documentation before reading this page. The process we will follow is a general guideline as to how you may start designing a schema.
 
-The schema we will be building will be used for a genealogy knowledge base used for mapping out a family tree. You can find the complete schema, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-graph).
+The schema we will be building will be used for a genealogy knowledge base used for mapping out a family tree. You can find the complete schema, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-knowledge-base).
 
 
 ## Identifying Entity Types
@@ -29,7 +29,7 @@ For example if you are modelling a retail store, valid categories may be `produc
 For our genealogy knowledge base we know that it will mostly be filled with people. So we can create an entity type:
 
 ```graql
-insert
+define
   person sub entity;
 ```
 
@@ -43,7 +43,7 @@ So what helps describe a `person`?
 Philosophical debates aside let us go with something simple. A `person` typically has a `firstname`, a `lastname`, and a `gender`. We can model this and other resources that identify a person with:
 
 ```graql
-insert
+define
 
 person sub entity
   has identifier
@@ -83,7 +83,7 @@ In a Grakn, N-ary relationships are also possible. For example, a `person` has a
 In our example, we will add `marriage` and `parentship` relationships. A `marriage` has two roles: `spouse1` and `spouse2`, while `parentship` has a `parent` role and a `child` role.
 
 ```graql
-insert
+define
 
 marriage sub relationship
   relates spouse1
@@ -108,7 +108,7 @@ The next step is to give our entity types permission to play specific roles.  We
 For this current example we only have one entity type, which can play all our current roles, so we explicitly state that with:  
 
 ```graql
-insert
+define
 
 person sub entity
   plays parent
@@ -124,7 +124,7 @@ We have now completed our basic genealogy schema.
 The final schema will now look something like this:
 
 ```graql
-insert
+define
 
  # Entities
 

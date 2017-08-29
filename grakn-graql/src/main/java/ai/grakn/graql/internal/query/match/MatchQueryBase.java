@@ -77,7 +77,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
     @Override
     public Stream<Answer> stream(Optional<GraknTx> optionalGraph) {
-        GraknTx graph = optionalGraph.orElseThrow(GraqlQueryException::noGraph);
+        GraknTx graph = optionalGraph.orElseThrow(GraqlQueryException::noTx);
 
         for (VarPatternAdmin var : pattern.varPatterns()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
@@ -102,18 +102,18 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Set<SchemaConcept> getSchemaConcepts(GraknTx graph) {
+    public Set<SchemaConcept> getSchemaConcepts(GraknTx tx) {
         return pattern.varPatterns().stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
-                .map(graph::<SchemaConcept>getSchemaConcept)
+                .map(tx::<SchemaConcept>getSchemaConcept)
                 .filter(Objects::nonNull)
                 .collect(toSet());
     }
 
     @Override
     public Set<SchemaConcept> getSchemaConcepts() {
-        throw GraqlQueryException.noGraph();
+        throw GraqlQueryException.noTx();
     }
 
     @Override
@@ -122,7 +122,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Optional<GraknTx> getGraph() {
+    public Optional<GraknTx> tx() {
         return Optional.empty();
     }
 

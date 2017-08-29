@@ -29,7 +29,7 @@ import java.util.Properties;
 
 /**
  * <p>
- *     A Grakn Graph on top of {@link HadoopGraph}
+ *     A {@link GraknTx} on top of {@link HadoopGraph}
  * </p>
  *
  * <p>
@@ -58,7 +58,7 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<GraknTxAbstract<Hado
 
     @Override
     GraknTxAbstract<HadoopGraph> buildGraknGraphFromTinker(HadoopGraph graph) {
-        throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_GRAPH.getMessage(HadoopGraph.class.getName()));
+        throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_TX.getMessage(HadoopGraph.class.getName()));
     }
 
     @Override

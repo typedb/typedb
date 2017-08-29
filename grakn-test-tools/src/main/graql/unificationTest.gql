@@ -1,4 +1,4 @@
-insert
+define
 
 #Roles
 
@@ -34,6 +34,8 @@ relation1 sub relationship
 #Resources
 
 res1 sub attribute datatype string;
+
+insert
 
 #Instances
 

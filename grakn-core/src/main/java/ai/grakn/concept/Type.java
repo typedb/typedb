@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -58,18 +58,18 @@ public interface Type extends SchemaConcept {
      * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
      * @return The concept itself
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-    Type setAbstract(Boolean isAbstract) throws GraphOperationException;
+    Type setAbstract(Boolean isAbstract) throws GraknTxOperationException;
 
     /**
      *
      * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-    Type plays(Role role) throws GraphOperationException;
+    Type plays(Role role) throws GraknTxOperationException;
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType} to be linked in a strictly one-to-one mapping.
@@ -77,9 +77,9 @@ public interface Type extends SchemaConcept {
      * @param attributeType The {@link AttributeType} which instances of this type should be allowed to play.
      * @return The Type itself.
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-    Type key(AttributeType attributeType) throws GraphOperationException;
+    Type key(AttributeType attributeType) throws GraknTxOperationException;
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a {@link AttributeType}  to be linked.
@@ -87,25 +87,9 @@ public interface Type extends SchemaConcept {
      * @param attributeType The {@link AttributeType}  which instances of this type should be allowed to play.
      * @return The Type itself.
      *
-     * @throws GraphOperationException if this is a meta-type
+     * @throws GraknTxOperationException if this is a meta-type
      */
-     Type attribute(AttributeType attributeType) throws GraphOperationException;
-
-    /**
-     * Classifies the type to a specific scope. This allows you to optionally categorise types.
-     *
-     * @param scope The category of this Type
-     * @return The Type itself.
-     */
-    Type scope(Thing scope);
-
-    /**
-     * Delete the scope specified.
-     *
-     * @param scope The Instances that is currently scoping this Type.
-     * @return The Type itself
-     */
-    Type deleteScope(Thing scope);
+     Type attribute(AttributeType attributeType) throws GraknTxOperationException;
 
     //------------------------------------- Accessors ---------------------------------
 
@@ -167,21 +151,30 @@ public interface Type extends SchemaConcept {
     @CheckReturnValue
     Boolean isAbstract();
 
-    /**
-     * Retrieve a list of the Instances that scope this Type.
-     *
-     * @return A list of the Instances that scope this Type.
-     */
-    @CheckReturnValue
-    Stream<Thing> scopes();
-
     //------------------------------------- Other ----------------------------------
     /**
+     * Removes the ability of this {@link Type} to play a specific {@link Role}
      *
-     * @param role The Role Type which the instances of this Type should no longer be allowed to play.
-     * @return The Type itself.
+     * @param role The {@link Role} which the {@link Thing}s of this {@link Type} should no longer be allowed to play.
+     * @return The {@link Type} itself.
      */
     Type deletePlays(Role role);
+
+    /**
+     * Removes the ability for {@link Thing}s of this {@link Type} to have {@link Attribute}s of type {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link Type} can no longer have
+     * @return The {@link Type} itself.
+     */
+    Type deleteAttribute(AttributeType attributeType);
+
+    /**
+     * Removes {@link AttributeType} as a key to this {@link Type}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link Type} can no longer have as a key
+     * @return The {@link Type} itself.
+     */
+    Type deleteKey(AttributeType attributeType);
 
     @Deprecated
     @CheckReturnValue

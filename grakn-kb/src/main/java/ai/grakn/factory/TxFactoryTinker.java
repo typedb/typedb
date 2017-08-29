@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknTx;
 import ai.grakn.kb.internal.GraknTxTinker;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -27,7 +28,7 @@ import java.util.Properties;
 
 /**
  * <p>
- *     A Grakn Graph on top of {@link TinkerGraph}
+ *     A {@link GraknTx} on top of {@link TinkerGraph}
  * </p>
  *
  * <p>
@@ -59,10 +60,10 @@ public class TxFactoryTinker extends TxFactoryAbstract<GraknTxTinker, TinkerGrap
 
     @Override
     protected TinkerGraph getTinkerPopGraph(TinkerGraph graph, boolean batchLoading){
-        if(super.graph == null || isClosed(super.graph)){
-            super.graph = buildTinkerPopGraph(batchLoading);
+        if(super.tx == null || isClosed(super.tx)){
+            super.tx = buildTinkerPopGraph(batchLoading);
         }
-        return super.graph;
+        return super.tx;
     }
 
     @Override

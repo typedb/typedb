@@ -30,10 +30,11 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -138,7 +139,7 @@ public final class ResolutionPlan {
      */
     public static LinkedList<ReasonerQueryImpl> getResolutionPlanFromTraversal(ReasonerQueryImpl query){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
-        GraknTx graph = query.graph();
+        GraknTx graph = query.tx();
 
         Map<VarProperty, Atom> propertyMap = new HashMap<>();
         query.getAtoms(Atom.class)
@@ -158,7 +159,7 @@ public final class ResolutionPlan {
                 .distinct()
                 .collect(Collectors.toCollection(LinkedList::new));
 
-        Set<Atom> nonResolvableAtoms = new HashSet<>();
+        List<Atom> nonResolvableAtoms = new ArrayList<>();
         while (!atoms.isEmpty()) {
             Atom top = atoms.remove();
             if (top.isRuleResolvable()) {
@@ -181,14 +182,14 @@ public final class ResolutionPlan {
      */
     public static LinkedList<ReasonerQueryImpl> getResolutionPlan(ReasonerQueryImpl query){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
-        GraknTx graph = query.graph();
+        GraknTx graph = query.tx();
 
         LinkedList<Atom> atoms = query.selectAtoms().stream()
                 .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
                 .collect(Collectors.toCollection(LinkedList::new));
 
         Atom top = atoms.getFirst();
-        Set<Atom> nonResolvableAtoms = new HashSet<>();
+        List<Atom> nonResolvableAtoms = new ArrayList<>();
         Set<Var> subbedVars = query.getAtoms(IdPredicate.class).map(IdPredicate::getVarName).collect(Collectors.toSet());
         while (!atoms.isEmpty()) {
 
@@ -216,7 +217,7 @@ public final class ResolutionPlan {
             if (top == null) {
                 top = atoms.stream()
                         .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
-                        .findFirst().get();
+                        .findFirst().orElse(null);
             }
         }
 

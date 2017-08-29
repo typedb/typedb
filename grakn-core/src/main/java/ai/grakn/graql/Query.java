@@ -33,11 +33,11 @@ import java.util.stream.Stream;
 public interface Query<T> {
 
     /**
-     * @param graph the graph to execute the query on
+     * @param tx the graph to execute the query on
      * @return a new query with the graph set
      */
     @CheckReturnValue
-    Query<T> withGraph(GraknTx graph);
+    Query<T> withTx(GraknTx tx);
 
     /**
      * Execute the query against the graph (potentially writing to the graph) and return a result

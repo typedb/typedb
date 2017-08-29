@@ -1,4 +1,4 @@
-insert
+define
 
 #######################################################
 ########################Schema######################
@@ -62,6 +62,8 @@ person has recommended-generic-wine-type;
 "wine" sub entity
     has name;
 wine plays recommended-wine;
+
+insert
 
 #######################################################
 ######################DATA########################

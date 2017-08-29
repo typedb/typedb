@@ -63,7 +63,7 @@ public class CountTest {
 
         // assert the graph is empty
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
-            Assert.assertEquals(0L, Graql.compute().count().withGraph(graph).execute().longValue());
+            Assert.assertEquals(0L, Graql.compute().count().withTx(graph).execute().longValue());
             Assert.assertEquals(0L, graph.graql().compute().count().execute().longValue());
         }
 
@@ -77,7 +77,7 @@ public class CountTest {
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Assert.assertEquals(2L,
-                    Graql.compute().withGraph(graph).count().in(nameThing).execute().longValue());
+                    Graql.compute().withTx(graph).count().in(nameThing).execute().longValue());
         }
 
         // create 1 more, rdd is refreshed
@@ -90,7 +90,7 @@ public class CountTest {
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             // assert computer returns the correct count of instances
             Assert.assertEquals(2L,
-                    Graql.compute().withGraph(graph).count().in(nameThing).execute().longValue());
+                    Graql.compute().withTx(graph).count().in(nameThing).execute().longValue());
             Assert.assertEquals(3L, graph.graql().compute().count().execute().longValue());
         }
 

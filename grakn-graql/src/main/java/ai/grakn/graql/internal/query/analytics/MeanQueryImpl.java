@@ -38,7 +38,7 @@ import java.util.Set;
 class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements MeanQuery {
 
     MeanQueryImpl(Optional<GraknTx> graph) {
-        this.graph = graph;
+        this.tx = graph;
     }
 
     @Override
@@ -88,8 +88,8 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
     }
 
     @Override
-    public MeanQuery withGraph(GraknTx graph) {
-        return (MeanQuery) super.withGraph(graph);
+    public MeanQuery withTx(GraknTx tx) {
+        return (MeanQuery) super.withTx(tx);
     }
 
     @Override

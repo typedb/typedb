@@ -42,7 +42,7 @@ The schema is a way to describe the entities and their relationships, so the und
 The schema is shown below. There is a single entity, `person`, which has a number of resources and can play various roles (`parent`, `child`, `spouse1` and `spouse2`) in two possible relationships (`parentship` and `marriage`).
 
 ```graql
-insert
+define
 
 # Entities
 
@@ -222,7 +222,7 @@ insert
 
 For each row in the CSV file, the template matches the child and parent cells to their corresponding `person` entities, and then inserts a `parentship` relationship, placing the entities it has matched into the `child` and `parent` roles.
 
-{% include note.html content="You must ensure that all entities exist in a graph before inserting relationships." %}
+{% include note.html content="You must ensure that all entities exist in a knowledge base before inserting relationships." %}
 
 Calling the Grakn migrator on the *births.csv* file using the above template (named `births-migrator.gql`) is performed as follows:
 
@@ -317,7 +317,7 @@ There should be 60 people in the dataset.
 
 ## Data Export
 
-In this example, we have imported a dataset stored in three separate CSV files into Grakn to build a simple knowledge base. We have discussed the schema and migration templates, and shown how to apply the templates to the CSV data using the shell migrator, using a script file *loader.sh* to automate calling the migrator on each file It is possible to export the data from Grakn, in *.gql* format, so that it can easily be loaded to a graph again without the need to migrate from CSV.  
+In this example, we have imported a dataset stored in three separate CSV files into Grakn to build a simple knowledge base. We have discussed the schema and migration templates, and shown how to apply the templates to the CSV data using the shell migrator, using a script file *loader.sh* to automate calling the migrator on each file It is possible to export the data from Grakn, in *.gql* format, so that it can easily be loaded to a knowledge base again without the need to migrate from CSV.  
 
 To export the data, we use the Grakn *migration.sh* shell script again, as described in the [migration documentation](../migration/migration-overview.html#export-from-grakn):
 

@@ -64,7 +64,7 @@ Year,Make,Model,Description,Price
 Here is the schema for the example:   
 
 ```graql
-insert
+define
 
 car sub entity
   has name

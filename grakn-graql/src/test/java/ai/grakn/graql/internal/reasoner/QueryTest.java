@@ -27,9 +27,10 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+
 import ai.grakn.test.GraknTestSetup;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.GeoGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.GeoKB;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -45,10 +46,10 @@ import static org.junit.Assume.assumeTrue;
 public class QueryTest {
 
     @ClassRule
-    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext geoKB = SampleKBContext.preLoad(GeoKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static final GraphContext genealogySchema = GraphContext.preLoad("genealogy/schema.gql").assumeTrue(GraknTestSetup.usingTinker());
+    public static final SampleKBContext genealogySchema = SampleKBContext.preLoad("genealogy/schema.gql").assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -57,7 +58,7 @@ public class QueryTest {
 
     @Test //simple equality tests between original and a copy of a query
     public void testAlphaEquivalence_QueryCopyIsAlphaEquivalent(){
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         String patternString = "{$x isa city;$y isa country;($x, $y) isa is-located-in;}";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, graph), graph);
         queryEquivalence(query, (ReasonerQueryImpl) query.copy(), true);
@@ -65,7 +66,7 @@ public class QueryTest {
 
     @Test //check two queries are alpha-equivalent - equal up to the choice of free variables
     public void testAlphaEquivalence() {
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         String patternString = "{" +
                 "$x isa city, has name 'Warsaw';" +
                 "$y isa region;" +
@@ -89,7 +90,7 @@ public class QueryTest {
     @Ignore
     @Test
     public void testAlphaEquivalence_chainTreeAndLoopStructure() {
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         String chainString = "{" +
                 "($x, $y) isa is-located-in;" +
                 "($y, $z) isa is-located-in;" +
@@ -118,7 +119,7 @@ public class QueryTest {
 
     @Test //tests various configurations of alpha-equivalence with extra type atoms present
     public void testAlphaEquivalence_nonMatchingTypes() {
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         String polandId = getConcept(graph, "name", "Poland").getId().getValue();
         String patternString = "{$y id '" + polandId + "'; $y isa country; (geo-entity: $y1, entity-location: $y), isa is-located-in;}";
         String patternString2 = "{$x1 id '" + polandId + "'; $y isa country; (geo-entity: $x1, entity-location: $x2), isa is-located-in;}";
@@ -144,7 +145,7 @@ public class QueryTest {
 
     @Test //tests alpha-equivalence of queries with indirect types
     public void testAlphaEquivalence_indirectTypes(){
-        GraknTx graph = geoGraph.graph();
+        GraknTx graph = geoKB.tx();
         String patternString = "{(entity-location: $x2, geo-entity: $x1) isa is-located-in;" +
                 "$x1 isa $t1; $t1 sub geoObject;}";
         String patternString2 = "{(geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
@@ -158,7 +159,7 @@ public class QueryTest {
     //Bug #11150 Relations with resources as single VarPatternAdmin
     @Test //tests whether directly and indirectly reified relations are equivalent
     public void testAlphaEquivalence_reifiedRelation(){
-        GraknTx graph = genealogySchema.graph();
+        GraknTx graph = genealogySchema.tx();
         String patternString = "{$rel (happening: $b, protagonist: $p) isa event-protagonist has event-role 'parent';}";
         String patternString2 = "{$rel (happening: $c, protagonist: $r) isa event-protagonist; $rel has event-role 'parent';}";
 

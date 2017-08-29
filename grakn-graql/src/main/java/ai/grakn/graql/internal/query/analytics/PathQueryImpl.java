@@ -50,7 +50,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     private ConceptId destinationId = null;
 
     PathQueryImpl(Optional<GraknTx> graph) {
-        this.graph = graph;
+        this.tx = graph;
     }
 
     @Override
@@ -65,7 +65,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
             throw GraqlQueryException.instanceDoesNotExist();
         }
         if (sourceId.equals(destinationId)) {
-            return Optional.of(Collections.singletonList(graph.get().getConcept(sourceId)));
+            return Optional.of(Collections.singletonList(tx.get().getConcept(sourceId)));
         }
         ComputerResult result;
 
@@ -101,7 +101,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
         List<ConceptId> fullPath = new ArrayList<>();
         for (int index = 0; index < path.size() - 1; index++) {
             fullPath.add(path.get(index));
-            ConceptId resourceRelationId = getResourceEdgeId(graph.get(), path.get(index), path.get(index + 1));
+            ConceptId resourceRelationId = getResourceEdgeId(tx.get(), path.get(index), path.get(index + 1));
             if (resourceRelationId != null) {
                 fullPath.add(resourceRelationId);
             }
@@ -110,7 +110,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
 
         LOGGER.debug("The path found is: " + fullPath);
         LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(fullPath.stream().map(graph.get()::<Thing>getConcept).collect(Collectors.toList()));
+        return Optional.of(fullPath.stream().map(tx.get()::<Thing>getConcept).collect(Collectors.toList()));
     }
 
     @Override
@@ -146,8 +146,8 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     }
 
     @Override
-    public PathQuery withGraph(GraknTx graph) {
-        return (PathQuery) super.withGraph(graph);
+    public PathQuery withTx(GraknTx tx) {
+        return (PathQuery) super.withTx(tx);
     }
 
     @Override

@@ -20,11 +20,11 @@ package ai.grakn.graql.internal.reasoner.inference;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.RuleType;
-import ai.grakn.test.graphs.CWGraph;
+import ai.grakn.test.kbs.CWKB;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.GraphContext;
+import ai.grakn.test.SampleKBContext;
 
 import ai.grakn.test.GraknTestSetup;
 import org.junit.BeforeClass;
@@ -42,16 +42,16 @@ public class CWInferenceTest {
     private static QueryBuilder iqb;
 
     @ClassRule
-    public static GraphContext cwGraph = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static SampleKBContext cwKB = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @ClassRule
-    public static GraphContext cwGraph2 = GraphContext.preLoad(CWGraph.get()).assumeTrue(GraknTestSetup.usingTinker());
+    public static SampleKBContext cwKB2 = SampleKBContext.preLoad(CWKB.get()).assumeTrue(GraknTestSetup.usingTinker());
 
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(GraknTestSetup.usingTinker());
-        qb = cwGraph.graph().graql().infer(false);
-        iqb = cwGraph.graph().graql().infer(true).materialise(false);
+        qb = cwKB.tx().graql().infer(false);
+        iqb = cwKB.tx().graql().infer(true).materialise(false);
     }
 
     @Test
@@ -73,7 +73,7 @@ public class CWInferenceTest {
 
     @Test
     public void testTransactionQuery() {
-        QueryBuilder qb = cwGraph2.graph().graql().infer(false);
+        QueryBuilder qb = cwKB2.tx().graql().infer(false);
                 String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction;";
         String explicitQuery = "match " +
                 "$x isa person;" +
@@ -206,7 +206,7 @@ public class CWInferenceTest {
 
     @Test
     public void testGraphCase() {
-        GraknTx localGraph = cwGraph2.graph();
+        GraknTx localGraph = cwKB2.tx();
         QueryBuilder lqb = localGraph.graql().infer(false);
         QueryBuilder ilqb = localGraph.graql().infer(true);
         RuleType inferenceRule = localGraph.getRuleType("inference-rule");
@@ -238,7 +238,7 @@ public class CWInferenceTest {
                 "};" +
                 "}; select $x;";
 
-        cwGraph2.graph(); //Reopen transaction
+        cwKB2.tx(); //Reopen transaction
         assertQueriesEqual(ilqb.parse(queryString), lqb.parse(explicitQuery));
     }
 

@@ -82,7 +82,8 @@ esac
 graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-1-resources.gql -r $ENGINE
 graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-2-relations.gql -r $ENGINE
 graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-3-entities.gql -r $ENGINE
-graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-4-rules.gql -r $ENGINE
+graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-4-rules-part-1.gql -r $ENGINE
+graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-4-rules-part-2.gql -r $ENGINE
 
 # lazily take account of OS
 unamestr=`uname`

@@ -28,7 +28,7 @@ All Grakn applications require the following Maven dependency:
 </dependencies>
 ```
     
-This dependency will give you access to the Core API as well as an in-memory knowledge base, which serves as a toy graph, should you wish to use the stack without having to have an instance of the Grakn server running.
+This dependency will give you access to the Core API as well as an in-memory knowledge base, which serves as a toy knowledge base, should you wish to use the stack without having to have an instance of the Grakn server running.
 
 ## Server Dependent Setup
 
@@ -98,7 +98,7 @@ tx = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
     
 The string "keyspace" uniquely identifies the knowledge base and allows you to create different knowledge bases.  
 
-Please note that knowledge base keyspaces are **not** case sensitive so the following two graphs are actually the same graph:
+Please note that knowledge base keyspaces are **not** case sensitive so the following two knowledge bases are actually the same:
 
 ```java-test-ignore
     GraknTx tx1 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
@@ -113,7 +113,7 @@ All knowledge bases are also singletons specific to their keyspaces so be aware 
    tx3 = Grakn.session("127.6.21.2", "keyspace").open(GraknTxType.WRITE);
 ```
   
-any changes to `tx1`, `tx2`, or `tx3` will all be persisted to the same graph.
+any changes to `tx1`, `tx2`, or `tx3` will all be persisted to the same knowledge base.
 
 ## Controlling The Behaviour of Knowledge Base Transactions
   
@@ -128,7 +128,7 @@ We currently support three types of transactions:
 
 The pages in this section of the documentation cover some of the public APIs available to Java developers:
 
-* [Java API](./graph-api.html)
+* [Java API](./java-api.html)
 * [Java Graql](./java-graql.html)
 * [Migration API](./migration-api.html)
 * [Loader API](./loader-api.html)

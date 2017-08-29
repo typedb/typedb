@@ -194,7 +194,8 @@ public class GraqlShell {
 
         if (queries.isPresent()) {
             for (String query : queries.get()) {
-                if (!query.contains("$")) {
+                // This is a best-effort guess as to whether the user has made a mistake, without parsing the query
+                if (!query.contains("$") && query.trim().startsWith("match")) {
                     System.err.println(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage());
                     break;
                 }
@@ -516,10 +517,11 @@ public class GraqlShell {
         Iterable<String> splitQuery = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(queryString);
 
         for (String queryChunk : splitQuery) {
-            session.sendJson(Json.object(
+            Json jsonObject = Json.object(
                     ACTION, ACTION_QUERY,
                     QUERY, queryChunk
-            ));
+            );
+            session.sendJson(jsonObject);
         }
 
         session.sendJson(Json.object(ACTION, ACTION_END));

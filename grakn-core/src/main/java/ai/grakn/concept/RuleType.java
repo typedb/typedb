@@ -58,24 +58,6 @@ public interface RuleType extends Type {
     Rule putRule(Pattern when, Pattern then);
 
     /**
-     * Classifies the type to a specific scope. This allows you to optionally categorise types.
-     *
-     * @param scope The category of this Type
-     * @return The Type itself.
-     */
-    @Override
-    RuleType scope(Thing scope);
-
-    /**
-     * Delete the scope specified.
-     *
-     * @param scope The Instances that is currently scoping this Type.
-     * @return The Type itself
-     */
-    @Override
-    RuleType deleteScope(Thing scope);
-
-    /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
      * @param attributeType The resource type which instances of this type should be allowed to play.
@@ -142,12 +124,31 @@ public interface RuleType extends Type {
     RuleType plays(Role role);
 
     /**
+     * Removes the ability of this {@link RuleType} to play a specific {@link Role}
      *
-     * @param role The Role Type which the instances of this Type should no longer be allowed to play.
-     * @return The Rule Type itself
+     * @param role The {@link Role} which the {@link Thing}s of this {@link RuleType} should no longer be allowed to play.
+     * @return The {@link RuleType} itself.
      */
     @Override
     RuleType deletePlays(Role role);
+
+    /**
+     * Removes the ability for {@link Thing}s of this {@link RuleType} to have {@link Attribute}s of type {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link RuleType} can no longer have
+     * @return The {@link RuleType} itself.
+     */
+    @Override
+    RuleType deleteAttribute(AttributeType attributeType);
+
+    /**
+     * Removes {@link AttributeType} as a key to this {@link RuleType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link RuleType} can no longer have as a key
+     * @return The {@link RuleType} itself.
+     */
+    @Override
+    RuleType deleteKey(AttributeType attributeType);
 
     /**
      *

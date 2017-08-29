@@ -36,7 +36,7 @@ import static ai.grakn.graql.internal.analytics.GraknMapReduce.RESERVED_TYPE_LAB
 class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
 
     CountQueryImpl(Optional<GraknTx> graph) {
-        this.graph = graph;
+        this.tx = graph;
     }
 
     @Override
@@ -97,8 +97,8 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
     }
 
     @Override
-    public CountQuery withGraph(GraknTx graph) {
-        return (CountQuery) super.withGraph(graph);
+    public CountQuery withTx(GraknTx tx) {
+        return (CountQuery) super.withTx(tx);
     }
 
 }

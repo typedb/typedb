@@ -19,14 +19,14 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.test.GraphContext;
-import ai.grakn.test.graphs.MovieGraph;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.Schema;
 import org.junit.After;
 import org.junit.Before;
@@ -58,7 +58,7 @@ public class DeleteQueryTest {
     private QueryBuilder qb;
 
     @ClassRule
-    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+    public static final SampleKBContext movieKB = SampleKBContext.preLoad(MovieKB.get());
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -70,7 +70,7 @@ public class DeleteQueryTest {
 
     @Before
     public void setUp() {
-        qb = movieGraph.graph().graql();
+        qb = movieKB.tx().graql();
 
         kurtz = qb.match(x.has("name", "Colonel Walter E. Kurtz"));
         marlonBrando = qb.match(x.has("name", "Marlon Brando"));
@@ -81,12 +81,12 @@ public class DeleteQueryTest {
 
     @After
     public void cleanUp(){
-        movieGraph.rollback();
+        movieKB.rollback();
     }
 
     @Test
     public void testDeleteMultiple() {
-        qb.insert(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
+        qb.define(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
         qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
 
         assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
@@ -136,7 +136,7 @@ public class DeleteQueryTest {
         assertNotExists(qb, actor);
         assertExists(qb, productionWithCast);
 
-        qb.insert(actor).execute();
+        qb.define(actor).execute();
         assertExists(qb, actor);
     }
 
@@ -251,7 +251,7 @@ public class DeleteQueryTest {
     public void testDeleteEntityTypeWithNoInstances() {
         MatchQuery shoeType = qb.match(x.label("shoe").sub("entity"));
 
-        qb.insert(label("shoe").sub("entity")).execute();
+        qb.define(label("shoe").sub("entity")).execute();
 
         assertExists(shoeType);
 
@@ -264,22 +264,22 @@ public class DeleteQueryTest {
     public void testDeleteEntityTypeAfterInstances() {
         MatchQuery movie = qb.match(x.isa("movie"));
 
-        assertNotNull(movieGraph.graph().getEntityType("movie"));
+        assertNotNull(movieKB.tx().getEntityType("movie"));
         assertExists(movie);
 
         movie.delete(x).execute();
 
-        assertNotNull(movieGraph.graph().getEntityType("movie"));
+        assertNotNull(movieKB.tx().getEntityType("movie"));
         assertNotExists(movie);
 
         qb.match(x.label("movie").sub("entity")).delete(x).execute();
 
-        assertNull(movieGraph.graph().getEntityType("movie"));
+        assertNull(movieKB.tx().getEntityType("movie"));
     }
 
     @Test
     public void whenDeletingMultipleVariables_AllVariablesGetDeleted() {
-        qb.insert(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
+        qb.define(label("fake-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue())).execute();
         qb.insert(x.isa("fake-type"), y.isa("fake-type")).execute();
 
         assertEquals(2, qb.match(x.isa("fake-type")).stream().count());
@@ -294,7 +294,7 @@ public class DeleteQueryTest {
         assertExists(qb, x.label("movie").sub("entity"));
         assertExists(qb, x.isa("movie"));
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         exception.expectMessage(allOf(containsString("movie"), containsString("delet")));
         qb.match(x.label("movie").sub("entity")).delete(x).execute();
     }
@@ -303,7 +303,7 @@ public class DeleteQueryTest {
     public void testErrorWhenDeleteSuperEntityType() {
         assertExists(qb, x.label("production").sub("entity"));
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         exception.expectMessage(allOf(containsString("production"), containsString("delet")));
         qb.match(x.label("production").sub("entity")).delete(x).execute();
     }
@@ -312,7 +312,7 @@ public class DeleteQueryTest {
     public void testErrorWhenDeleteRoleTypeWithPlayers() {
         assertExists(qb, x.label("actor"));
 
-        exception.expect(GraphOperationException.class);
+        exception.expect(GraknTxOperationException.class);
         exception.expectMessage(allOf(containsString("actor"), containsString("delet")));
         qb.match(x.label("actor")).delete(x).execute();
     }
@@ -328,24 +328,24 @@ public class DeleteQueryTest {
     public void whenDeletingAVariableNotInTheQuery_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y));
-        movieGraph.graph().graql().match(x.isa("movie")).delete(y).execute();
+        movieKB.tx().graql().match(x.isa("movie")).delete(y).execute();
     }
 
     @Test
     public void whenDeletingAnEmptyPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
-        movieGraph.graph().graql().match(var()).delete(Collections.EMPTY_SET).execute();
+        movieKB.tx().graql().match(var()).delete(Collections.EMPTY_SET).execute();
     }
 
     @Test(expected = Exception.class)
     public void deleteVarNameNullSet() {
-        movieGraph.graph().graql().match(var()).delete((Set<VarPattern>) null).execute();
+        movieKB.tx().graql().match(var()).delete((Set<VarPattern>) null).execute();
     }
 
     @Test(expected = Exception.class)
     public void whenDeleteIsPassedNull_Throw() {
-        movieGraph.graph().graql().match(var()).delete((String) null).execute();
+        movieKB.tx().graql().match(var()).delete((String) null).execute();
     }
 
 }

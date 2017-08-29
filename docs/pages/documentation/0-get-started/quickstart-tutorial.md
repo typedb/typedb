@@ -53,7 +53,7 @@ You can find out much more about the Grakn schema in our documentation about the
 For the purposes of this guide, the schema describes items of data and defines how they relate to one another. You need to have a basic understanding of the schema to be able to make useful queries on the data, so let's review the chunks of it that are important for our initial demonstration:
 
 ```graql
-insert
+define
 
 # Entities
 
@@ -131,7 +131,7 @@ $40972456 (spouse2: $40964120, spouse1: $8248) isa marriage;
 $81940536 (spouse2: $233568, spouse1: $41361488) has picture "http:\/\/1.bp.blogspot.com\/-Ty9Ox8v7LUw\/VKoGzIlsMII\/AAAAAAAAAZw\/UtkUvrujvBQ\/s1600\/johnandmary.jpg" isa marriage;
 ```
 
-Don't worry about the numbers such as `$57472`. These are variables in Graql, and happen to have randomly assigned numbers to make them unique. Each statement is adding either a `person`, a `parentship` or a `marriage` to the knowledge base.  We will show how to add more data to the graph shortly in the [Extending The Graph](#extending-the-graph) section. First, however, it is time to query the graph in the Graql shell. 
+Don't worry about the numbers such as `$57472`. These are variables in Graql, and happen to have randomly assigned numbers to make them unique. Each statement is adding either a `person`, a `parentship` or a `marriage` to the knowledge base.  We will show how to add more data in the [Extending The Knowledge Base](#extending-the-knowledge-base) section. First, however, it is time to query the graph in the Graql shell. 
 
 ## Querying the Knowledge Base
 
@@ -167,14 +167,14 @@ Querying the knowledge base is more fully described in the [Graql documentation]
 
 ## Extending the Knowledge Base
 
-Besides making `match` queries, it is also possible to `insert` items [(see further documentation)](../graql/insert-queries.html) and `delete` items [(see further documentation)](../graql/delete-queries.html) through the Graql shell. To illustrate inserting a fictional person:
+Besides making `match` queries, it is also possible to `insert` data [(see further documentation)](../graql/insert-queries.html) and `delete` items [(see further documentation)](../graql/delete-queries.html) through the Graql shell. To illustrate inserting a fictional person:
 
 ```graql
 insert $g isa person has firstname "Titus" has identifier "Titus Groan" has surname "Groan" has gender "male";
 commit
 ```
 
-{% include note.html content="<b>Don't forget to `commit`!</b> <br /> Nothing you have entered into the Graql shell has yet been committed to the knowledge base, nor has it been validated. To save any changes you make to a graph, you need to type `commit` in the shell. It is a good habit to get into regularly committing what you have entered." %}
+{% include note.html content="<b>Don't forget to `commit`!</b> <br /> Nothing you have entered into the Graql shell has yet been committed to the knowledge base, nor has it been validated. To save any changes you make you need to type `commit` in the shell. It is a good habit to get into regularly committing what you have entered." %}
 
 To find your inserted `person`:
 
@@ -212,7 +212,7 @@ We will move on to discuss the use of GRAKN.AI to infer new information about a 
 However, the `person` entity does have a gender attribute, and we can use Grakn to infer more information about each relationship by using that property. The schema accommodates the more specific roles of mother, father, daughter and son:
 
 ```graql
-insert
+define
 
 person 
   plays son

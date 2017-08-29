@@ -19,7 +19,7 @@
 package ai.grakn.concept;
 
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 
@@ -95,13 +95,31 @@ public interface AttributeType<D> extends Type {
     AttributeType<D> plays(Role role);
 
     /**
-     * Removes the Role to prevent instances of this {@link AttributeType} from playing it.
+     * Removes the ability of this {@link AttributeType} to play a specific {@link Role}
      *
-     * @param role The Role Type which the instances of this {@link AttributeType} should no longer be allowed to play.
+     * @param role The {@link Role} which the {@link Thing}s of this {@link AttributeType} should no longer be allowed to play.
      * @return The {@link AttributeType} itself.
      */
     @Override
     AttributeType<D> deletePlays(Role role);
+
+    /**
+     * Removes the ability for {@link Thing}s of this {@link AttributeType} to have {@link Attribute}s of type {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link AttributeType} can no longer have
+     * @return The {@link AttributeType} itself.
+     */
+    @Override
+    AttributeType<D> deleteAttribute(AttributeType attributeType);
+
+    /**
+     * Removes {@link AttributeType} as a key to this {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link AttributeType} can no longer have as a key
+     * @return The {@link AttributeType} itself.
+     */
+    @Override
+    AttributeType<D> deleteKey(AttributeType attributeType);
 
     /**
      * Set the regular expression that instances of the {@link AttributeType} must conform to.
@@ -118,24 +136,6 @@ public interface AttributeType<D> extends Type {
      * @return new or existing {@link Attribute} of this type with the provided value.
      */
     Attribute<D> putAttribute(D value);
-
-    /**
-     * Classifies the type to a specific scope. This allows you to optionally categorise types.
-     *
-     * @param scope The category of this Type
-     * @return The Type itself.
-     */
-    @Override
-    AttributeType<D> scope(Thing scope);
-
-    /**
-     * Delete the scope specified.
-     *
-     * @param scope The Instances that is currently scoping this Type.
-     * @return The Type itself
-     */
-    @Override
-    AttributeType<D> deleteScope(Thing scope);
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
@@ -277,7 +277,7 @@ public interface AttributeType<D> extends Type {
                 (o) -> {
                     if (o == null) return null;
                     if (!(o instanceof Long)) {
-                        throw GraphOperationException.invalidResourceValue(o, LONG);
+                        throw GraknTxOperationException.invalidResourceValue(o, LONG);
                     }
                     return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.of("Z"));
                 });

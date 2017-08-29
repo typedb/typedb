@@ -29,7 +29,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
-import ai.grakn.graql.internal.reasoner.rule.RuleGraph;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -148,7 +148,7 @@ public abstract class Atom extends AtomicBase {
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
     private Stream<Rule> getPotentialRules(){
-        return RuleGraph.getRulesWithType(getSchemaConcept(), graph());
+        return RuleUtil.getRulesWithType(getSchemaConcept(), tx());
     }
 
     /**
@@ -158,7 +158,7 @@ public abstract class Atom extends AtomicBase {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
             return getPotentialRules()
-                    .map(rule -> new InferenceRule(rule, graph()))
+                    .map(rule -> new InferenceRule(rule, tx()))
                     .filter(this::isRuleApplicable)
                     .map(r -> r.rewriteToUserDefined(this))
                     .peek(applicableRules::add);
@@ -240,12 +240,6 @@ public abstract class Atom extends AtomicBase {
      * @return set of permutation unifiers that guarantee all variants of role assignments are performed and hence the results are complete
      */
     public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return Collections.singleton(new UnifierImpl());}
-
-    /**
-     * infers types (type, role types) fo the atom if applicable/possible
-     * @return either this atom if nothing could be inferred or a fresh atom with inferred types
-     */
-    public Atom inferTypes(){ return this; }
 
     /**
      * rewrites the atom to one with user defined name

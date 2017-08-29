@@ -24,8 +24,8 @@ import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.exception.GraphOperationException;
-import ai.grakn.kb.internal.GraphTestBase;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.kb.internal.TxTestBase;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,13 +38,13 @@ import static junit.framework.TestCase.assertNull;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 
-public class AttributeTypeTest extends GraphTestBase {
+public class AttributeTypeTest extends TxTestBase {
     private AttributeType<String> attributeType;
 
 
     @Before
-    public void buildGraph() {
-        attributeType = graknGraph.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
+    public void setup() {
+        attributeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
     }
 
     @Test
@@ -68,9 +68,9 @@ public class AttributeTypeTest extends GraphTestBase {
 
     @Test
     public void whenSettingRegexOnNonStringResourceType_Throw(){
-        AttributeType<Long> thing = graknGraph.putAttributeType("Random ID", AttributeType.DataType.LONG);
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.cannotSetRegex(thing).getMessage());
+        AttributeType<Long> thing = tx.putAttributeType("Random ID", AttributeType.DataType.LONG);
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.cannotSetRegex(thing).getMessage());
         thing.setRegex("blab");
     }
 
@@ -78,7 +78,7 @@ public class AttributeTypeTest extends GraphTestBase {
     public void whenAddingResourceWhichDoesNotMatchRegex_Throw(){
         attributeType.setRegex("[abc]");
         attributeType.putAttribute("a");
-        expectedException.expect(GraphOperationException.class);
+        expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(CoreMatchers.allOf(containsString("[abc]"), containsString("1"), containsString(attributeType.getLabel().getValue())));
         attributeType.putAttribute("1");
     }
@@ -86,15 +86,15 @@ public class AttributeTypeTest extends GraphTestBase {
     @Test
     public void whenSettingRegexOnResourceTypeWithResourceNotMatchingRegex_Throw(){
         attributeType.putAttribute("1");
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.regexFailure(attributeType, "1", "[abc]").getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.regexFailure(attributeType, "1", "[abc]").getMessage());
         attributeType.setRegex("[abc]");
     }
 
     @Test
     public void whenGettingTheResourceFromAResourceType_ReturnTheResource(){
-        AttributeType<String> t1 = graknGraph.putAttributeType("t1", AttributeType.DataType.STRING);
-        AttributeType<String> t2 = graknGraph.putAttributeType("t2", AttributeType.DataType.STRING);
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING);
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING);
 
         Attribute c1 = t1.putAttribute("1");
         Attribute c2 = t2.putAttribute("2");
@@ -108,39 +108,39 @@ public class AttributeTypeTest extends GraphTestBase {
 
     @Test
     public void whenCreatingMultipleResourceTypesWithDifferentRegexes_EnsureAllRegexesAreChecked(){
-        AttributeType<String> t1 = graknGraph.putAttributeType("t1", AttributeType.DataType.STRING).setRegex("[b]");
-        AttributeType<String> t2 = graknGraph.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]").sup(t1);
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING).setRegex("[b]");
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]").sup(t1);
 
         //Valid Attribute
         Attribute<String> attribute = t2.putAttribute("b");
 
         //Invalid Attribute
-        expectedException.expect(GraphOperationException.class);
+        expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(CoreMatchers.allOf(containsString("[b]"), containsString("b"), containsString(attribute.type().getLabel().getValue())));
         t2.putAttribute("a");
     }
 
     @Test
     public void whenSettingTheSuperTypeOfAStringResourceType_EnsureAllRegexesAreAppliedToResources(){
-        AttributeType<String> t1 = graknGraph.putAttributeType("t1", AttributeType.DataType.STRING).setRegex("[b]");
-        AttributeType<String> t2 = graknGraph.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]");
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING).setRegex("[b]");
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]");
 
         //Future Invalid
         Attribute<String> attribute = t2.putAttribute("a");
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.regexFailure(t2, "a", "[b]").getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.regexFailure(t2, "a", "[b]").getMessage());
         t2.sup(t1);
     }
 
     @Test
     public void whenSettingRegexOfSuperType_EnsureAllRegexesAreApplied(){
-        AttributeType<String> t1 = graknGraph.putAttributeType("t1", AttributeType.DataType.STRING);
-        AttributeType<String> t2 = graknGraph.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]").sup(t1);
+        AttributeType<String> t1 = tx.putAttributeType("t1", AttributeType.DataType.STRING);
+        AttributeType<String> t2 = tx.putAttributeType("t2", AttributeType.DataType.STRING).setRegex("[abc]").sup(t1);
         Attribute<String> attribute = t2.putAttribute("a");
 
-        expectedException.expect(GraphOperationException.class);
-        expectedException.expectMessage(GraphOperationException.regexFailure(t1, "a", "[b]").getMessage());
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.regexFailure(t1, "a", "[b]").getMessage());
         t1.setRegex("[b]");
     }
 
