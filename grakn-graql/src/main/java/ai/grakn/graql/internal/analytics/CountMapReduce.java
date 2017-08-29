@@ -39,15 +39,11 @@ public class CountMapReduce extends GraknMapReduce<Long> {
     public CountMapReduce() {
     }
 
-    public CountMapReduce(String edgeCountPropertyKey) {
-        this.persistentProperties.put(CountVertexProgram.EDGE_COUNT, edgeCountPropertyKey);
-    }
-
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
-        if (vertex.property((String) persistentProperties.get(CountVertexProgram.EDGE_COUNT)).isPresent()) {
+        if (vertex.property(CountVertexProgram.EDGE_COUNT).isPresent()) {
             emitter.emit(RESERVED_TYPE_LABEL_KEY,
-                    vertex.value((String) persistentProperties.get(CountVertexProgram.EDGE_COUNT)));
+                    vertex.value(CountVertexProgram.EDGE_COUNT));
         }
         emitter.emit(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()), 1L);
     }

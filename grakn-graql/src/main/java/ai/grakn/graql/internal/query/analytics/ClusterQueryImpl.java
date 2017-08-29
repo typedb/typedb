@@ -51,7 +51,7 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
         if (!selectedTypesHaveInstance()) return (T) Collections.emptyMap();
 
         ComputerResult result;
-        Set<Label> withResourceRelationTypes = getHasResourceRelationTypes();
+        Set<Label> withResourceRelationTypes = getHasResourceRelationLabels(subTypes);
         withResourceRelationTypes.addAll(subLabels);
 
         String randomId = getRandomJobId();

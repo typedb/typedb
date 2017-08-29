@@ -3,10 +3,13 @@ package ai.grakn.test.graql.analytics;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.exception.GraqlQueryException;
@@ -14,6 +17,7 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -28,6 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.internal.analytics.Utility.getResourceEdgeId;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -241,6 +246,136 @@ public class ShortestPathTest {
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Optional<List<Concept>> result = graph.graql().compute().path().from(startId).to(endId).execute();
             assertEquals(1, validPaths.stream().filter(path -> checkPathsAreEqual(path, result)).count());
+        }
+    }
+
+    @Test
+    public void testResourceEdges() {
+        ConceptId startId;
+        ConceptId endId;
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+            EntityType person = graph.putEntityType("person");
+            AttributeType<String> name = graph.putAttributeType("name", AttributeType.DataType.STRING);
+            person.attribute(name);
+            Entity aPerson = person.addEntity();
+            startId = aPerson.getId();
+            aPerson.attribute(name.putAttribute("jason"));
+            endId = name.getAttribute("jason").getId();
+
+            graph.commit();
+        }
+
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            Optional<List<Concept>> result = graph.graql().compute().path().from(startId).to(endId).execute();
+            assertEquals(3, result.get().size());
+            assertEquals("has-name", result.get().get(1).asRelationship().type().getLabel().getValue());
+        }
+    }
+
+    @Test
+    public void testResourceVerticesAndEdges() {
+        ConceptId idPerson1;
+        ConceptId idPerson2;
+        ConceptId idPerson3;
+
+        ConceptId idPower1;
+        ConceptId idPower2;
+        ConceptId idPower3;
+
+        ConceptId idRelationPerson1Power1;
+        ConceptId idRelationPerson2Power2;
+
+        ConceptId idRelationPerson1Person3;
+
+        List<ConceptId> pathPerson2Power1 = new ArrayList<>();
+        List<ConceptId> pathPower3Power1 = new ArrayList<>();
+        List<ConceptId> pathPerson3Power3 = new ArrayList<>();
+
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+            // manually construct the relation type and instance
+            EntityType person = graph.putEntityType("person");
+            AttributeType<Long> power = graph.putAttributeType("power", AttributeType.DataType.LONG);
+            Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")));
+            person.plays(resourceOwner);
+            Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")));
+            power.plays(resourceValue);
+
+            person.attribute(power);
+
+            Entity person1 = person.addEntity();
+            idPerson1 = person1.getId();
+            Entity person2 = person.addEntity();
+            idPerson2 = person2.getId();
+            Entity person3 = person.addEntity();
+            idPerson3 = person3.getId();
+
+            Attribute power1 = power.putAttribute(1L);
+            idPower1 = power1.getId();
+            Attribute power2 = power.putAttribute(2L);
+            idPower2 = power2.getId();
+            Attribute power3 = power.putAttribute(3L);
+            idPower3 = power3.getId();
+
+            RelationshipType relationType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
+                    .relates(resourceOwner).relates(resourceValue);
+
+            idRelationPerson1Power1 = relationType.addRelationship()
+                    .addRolePlayer(resourceOwner, person1)
+                    .addRolePlayer(resourceValue, power1).getId();
+
+            idRelationPerson2Power2 = relationType.addRelationship()
+                    .addRolePlayer(resourceOwner, person2)
+                    .addRolePlayer(resourceValue, power2).getId();
+
+            person1.attribute(power2);
+            person3.attribute(power3);
+
+            // finally add a relation between persons to make it more interesting
+            Role role1 = graph.putRole("role1");
+            Role role2 = graph.putRole("role2");
+            person.plays(role1).plays(role2);
+            RelationshipType relationTypePerson = graph.putRelationshipType(related).relates(role1).relates(role2);
+            idRelationPerson1Person3 = relationTypePerson.addRelationship()
+                    .addRolePlayer(role1, person1)
+                    .addRolePlayer(role2, person3).getId();
+            graph.commit();
+        }
+
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            Optional<List<Concept>> result;
+
+            // Path from power3 to power3
+            pathPerson3Power3.add(idPerson3);
+            pathPerson3Power3.add(getResourceEdgeId(graph, idPower3, idPerson3));
+            pathPerson3Power3.add(idPower3);
+            result = graph.graql().compute().path().from(idPerson3).to(idPower3).execute();
+            checkPathsAreEqual(pathPerson3Power3, result);
+
+            // Path from person2 to power1
+            pathPerson2Power1.add(idPerson2);
+            pathPerson2Power1.add(idRelationPerson2Power2);
+            pathPerson2Power1.add(idPower2);
+            pathPerson2Power1.add(getResourceEdgeId(graph, idPerson1, idPower2));
+            pathPerson2Power1.add(idPerson1);
+            pathPerson2Power1.add(idRelationPerson1Power1);
+            pathPerson2Power1.add(idPower1);
+
+            result = graph.graql().compute().path().from(idPerson2).to(idPower1).execute();
+            checkPathsAreEqual(pathPerson2Power1, result);
+
+            // Path from power3 to power1
+            pathPower3Power1.add(idPower3);
+            pathPower3Power1.add(getResourceEdgeId(graph, idPower3, idPerson3));
+            pathPower3Power1.add(idPerson3);
+            pathPower3Power1.add(idRelationPerson1Person3);
+            pathPower3Power1.add(idPerson1);
+            pathPower3Power1.add(idRelationPerson1Power1);
+            pathPower3Power1.add(idPerson1);
+            pathPower3Power1.add(idRelationPerson1Power1);
+            pathPower3Power1.add(idPower1);
+
+            result = graph.graql().compute().path().from(idPower3).to(idPower1).execute();
+            checkPathsAreEqual(pathPower3Power1, result);
         }
     }
 
