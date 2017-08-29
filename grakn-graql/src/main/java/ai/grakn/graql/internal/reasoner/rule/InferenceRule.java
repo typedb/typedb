@@ -216,6 +216,7 @@ public class InferenceRule {
             headAtom = new ResourceAtom(
                     headAtom.getPattern().asVarPattern(),
                     headAtom.getPredicateVariable(),
+                    ((ResourceAtom) headAtom).getRelationVariable(),
                     ((ResourceAtom) headAtom).getPredicate(),
                     vps,
                     headAtom.getParentQuery()
@@ -254,7 +255,7 @@ public class InferenceRule {
         body.getAtoms(Atom.class)
                 .map(at -> {
                     if (at.isRelation()
-                            && !at.isUserDefinedName()
+                            && !at.isUserDefined()
                             && Objects.equals(at.getSchemaConcept(), head.getAtom().getSchemaConcept())){
                         return at.rewriteToUserDefined();
                     } else {
@@ -272,7 +273,7 @@ public class InferenceRule {
      * @return rewritten rule
      */
     public InferenceRule rewriteToUserDefined(Atom parentAtom){
-        return parentAtom.isUserDefinedName()? rewrite() : this;
+        return parentAtom.isUserDefined()? rewrite() : this;
     }
 
     /**

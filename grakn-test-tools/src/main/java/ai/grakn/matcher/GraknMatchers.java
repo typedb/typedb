@@ -104,7 +104,7 @@ public class GraknMatchers {
      * Create matcher to test against a particular variable on every result of a Graql query.
      */
     public static Matcher<MatchQuery> variable(
-            String varName, Matcher<? extends Iterable<? extends MatchableConcept>> matcher
+            Var var, Matcher<? extends Iterable<? extends MatchableConcept>> matcher
     ) {
         return new PropertyMatcher<MatchQuery, Iterable<? extends MatchableConcept>>(matcher) {
 
@@ -115,7 +115,7 @@ public class GraknMatchers {
 
             @Override
             Iterable<? extends MatchableConcept> transform(MatchQuery item) {
-                return item.get(varName).map(MatchableConcept::of).collect(toList());
+                return item.get(var).map(MatchableConcept::of).collect(toList());
             }
         };
     }

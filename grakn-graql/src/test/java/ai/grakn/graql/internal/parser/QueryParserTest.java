@@ -42,7 +42,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -797,8 +796,13 @@ public class QueryParserTest {
         assertEquals(bigNumber, count[0]);
     }
 
+    @Test
+    public void whenParsingAQueryWithReifiedAttributeRelationshipSyntax_ItIsEquivalentToJavaGraql() {
+        assertParseEquivalence("match $x has name $z as $x;");
+    }
+
     @Test(expected = GraqlSyntaxException.class)
-    public void testMultipleQueriesThrowsSyntaxException() {
+    public void whenParsingMultipleQueriesLikeOne_Throw() {
         //noinspection ResultOfMethodCallIgnored
         parse("insert $x isa movie; insert $y isa movie");
     }
@@ -849,10 +853,6 @@ public class QueryParserTest {
         exception.expectMessage(ErrorMessage.UNKNOWN_AGGREGATE.getMessage("hello"));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate hello $x;");
-    }
-
-    public static void assertQueriesEqual(MatchQuery query, MatchQuery parsedQuery) {
-        assertEquals(Sets.newHashSet(query), Sets.newHashSet(parsedQuery));
     }
 
     private static void assertParseEquivalence(String query) {

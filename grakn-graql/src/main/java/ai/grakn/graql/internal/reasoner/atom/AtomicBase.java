@@ -66,7 +66,7 @@ public abstract class AtomicBase implements Atomic {
     public boolean containsVar(Var name){ return getVarNames().contains(name);}
 
     @Override
-    public boolean isUserDefinedName(){ return atomPattern.asVarPattern().var().isUserDefinedName();}
+    public boolean isUserDefined(){ return varName.isUserDefinedName();}
     
     @Override
     public Var getVarName(){ return varName;}

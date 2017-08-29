@@ -59,7 +59,7 @@ qb.match(var("x").has("id", "1216728"));
 
 ### val
 
-Match all resources that have a value matching the given [predicate](#predicates).
+Match all attributes that have a value matching the given [predicate](#predicates).
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell3" data-toggle="tab">Graql</a></li>
@@ -82,6 +82,8 @@ qb.match(var("x").val(contains("Bar")))
 
 ### has
 
+<!-- TODO: Describe new reified syntax -->
+
 Match things that have the attribute specified. If a [predicate](#predicates) is provided, the attribute must also match that predicate.
 
 <ul id="profileTabs" class="nav nav-tabs">
@@ -100,6 +102,27 @@ match $x has identifier contains "Bar";
 <pre>
 qb.match(var("x").has("identifier", var("x")));
 qb.match(var("x").has("identifier", contains("Bar")));
+</pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
+You can also specify a variable to represent the relationship connecting the thing and the attribute:
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell5" data-toggle="tab">Graql</a></li>
+    <li><a href="#java5" data-toggle="tab">Java</a></li>
+</ul>
+
+<!-- TODO: Update to final syntax -->
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell5">
+<pre>
+match $x has identifier "Bar" as $r;
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java5">
+<pre>
+qb.match(var("x").has(Label.of("identifier"), var().val("Bar"), var("r")));
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -316,7 +339,7 @@ qb.match(var("x").has("age", gt(70)));
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
-If a concept doesn't have a value, all predicates are considered false. The query below matches everything where the predicate `>10` is true. So, it will find all concepts with value greater than 10. However, if a concept does not have a value at all, the predicate is considered false, so it won’t appear in the results.
+If a concept doesn't have a value, all predicates are considered false. The query below matches everything where the predicate `>10` is true. So, it will find all concepts with value greater than 10. However, if a concept does not have a value at all, the predicate is considered false, so it won???t appear in the results.
 
 ```graql
 match $x val >10;

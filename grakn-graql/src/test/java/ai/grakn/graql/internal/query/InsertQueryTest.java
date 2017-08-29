@@ -18,9 +18,11 @@
 
 package ai.grakn.graql.internal.query;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
@@ -69,6 +71,8 @@ import static ai.grakn.util.Schema.MetaSchema.ENTITY;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.arrayContaining;
+import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.notNullValue;
@@ -83,6 +87,13 @@ import static org.junit.Assume.assumeTrue;
 public class InsertQueryTest {
 
     private QueryBuilder qb;
+
+    private static final Var w = var("w");
+    private static final Var x = var("x");
+    private static final Var y = var("y");
+    private static final Var z = var("z");
+
+    private static final Label title = Label.of("title");
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -318,12 +329,12 @@ public class InsertQueryTest {
         assumeTrue(GraknTestSetup.usingTinker()); // This should only run on tinker because it commits
 
         qb.define(
-                label("a-new-type").sub("entity").key("a-new-resource-type"),
-                label("a-new-resource-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
+                label("a-new-type").sub("entity").key("a-new-attribute-type"),
+                label("a-new-attribute-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING)
         ).execute();
 
         qb.insert(
-                var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
+                var().isa("a-new-type").has("a-new-attribute-type", "hello").has("a-new-attribute-type", "goodbye")
         ).execute();
 
         exception.expect(InvalidKBException.class);
@@ -376,6 +387,41 @@ public class InsertQueryTest {
         assertThat(result.keySet(), containsInAnyOrder(x, type));
         assertEquals(result.get(type), result.get(x).asEntity().type());
         assertEquals(result.get(type).asType().getLabel(), Label.of("movie"));
+    }
+
+    @Test
+    public void whenAddingAnAttributeRelationshipWithProvenance_TheAttributeAndProvenanceAreAdded() {
+        InsertQuery query = qb.insert(
+                y.has("provenance", z.val("Someone told me")),
+                w.isa("movie").has(title, x.val("My Movie"), y)
+        );
+
+        Answer answer = Iterables.getOnlyElement(query.execute());
+
+        Entity movie = answer.get(w).asEntity();
+        Attribute<String> theTitle = answer.get(x).asAttribute();
+        Relationship hasTitle = answer.get(y).asRelationship();
+        Attribute<String> provenance = answer.get(z).asAttribute();
+
+        assertThat(hasTitle.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
+        assertThat(hasTitle.attributes().toArray(), arrayContaining(provenance));
+    }
+
+    @Test
+    public void whenAddingProvenanceToAnExistingRelationship_TheProvenanceIsAdded() {
+        InsertQuery query = qb
+                .match(w.isa("movie").has(title, x.val("The Muppets"), y))
+                .insert(y.has("provenance", z.val("Someone told me")));
+
+        Answer answer = Iterables.getOnlyElement(query.execute());
+
+        Entity movie = answer.get(w).asEntity();
+        Attribute<String> theTitle = answer.get(x).asAttribute();
+        Relationship hasTitle = answer.get(y).asRelationship();
+        Attribute<String> provenance = answer.get(z).asAttribute();
+
+        assertThat(hasTitle.rolePlayers().toArray(), arrayContainingInAnyOrder(movie, theTitle));
+        assertThat(hasTitle.attributes().toArray(), arrayContaining(provenance));
     }
 
     @Test

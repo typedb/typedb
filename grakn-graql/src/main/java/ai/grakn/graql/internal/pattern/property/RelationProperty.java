@@ -132,7 +132,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
     }
 
     /**
-     * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relation
+     * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relationship
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin rolePlayer) {
@@ -220,12 +220,13 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        //keep varName if reified, reified if contains more properties than the RelationProperty itself and potential IsaProperty
+        //set varName as user defined if reified
+        //reified if contains more properties than the RelationProperty itself and potential IsaProperty
         boolean isReified = var.getProperties()
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .filter(prop -> !IsaProperty.class.isInstance(prop))
-                .count() > 0;
-        VarPattern relVar = (var.var().isUserDefinedName() || isReified)? var.var().asUserDefined() : Graql.var();
+                .findFirst().isPresent();
+        VarPattern relVar = isReified? var.var().asUserDefined() : var.var();
 
         for (RelationPlayer rp : relationPlayers()) {
             VarPatternAdmin role = rp.getRole().orElse(null);
@@ -237,7 +238,10 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
         //id part
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
         IdPredicate predicate = null;
+
+        //if no isa property present generate type variable
         Var typeVariable = isaProp != null? isaProp.type().var().asUserDefined() : Graql.var().asUserDefined();
+
         //Isa present
         if (isaProp != null) {
             VarPatternAdmin isaVar = isaProp.type();

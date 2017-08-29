@@ -142,9 +142,30 @@ qb.insert(var().isa("person").has("identifier", "Fuchsia Groan").has("gender", "
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
+You can also specify a variable to represent the relationship connecting the thing and the attribute:
+
+<ul id="profileTabs" class="nav nav-tabs">
+    <li class="active"><a href="#shell6" data-toggle="tab">Graql</a></li>
+    <li><a href="#java6" data-toggle="tab">Java</a></li>
+</ul>
+
+<!-- TODO: Update to final syntax -->
+<div class="tab-content">
+<div role="tabpanel" class="tab-pane active" id="shell6">
+<pre>
+insert isa person has identifier "Fuchsia Groan" as $r;
+</pre>
+</div>
+<div role="tabpanel" class="tab-pane" id="java6">
+<pre>
+qb.insert(var().isa("person").has(Label.of("identifier"), var().val("Fuchsia Groan"), var("r"))).execute();
+</pre>
+</div> <!-- tab-pane -->
+</div> <!-- tab-content -->
+
 ### relationship
 
-Make the concept a relationship that relates the given role players, playing the given roles.   
+Make the concept a relationship that relates the given role players, playing the given roles.
 *(With apologies to 'Gormenghast' fans, who will be aware that Titus and Fuchsia are siblings and thus cannot marry).*
 
 <ul id="profileTabs" class="nav nav-tabs">
