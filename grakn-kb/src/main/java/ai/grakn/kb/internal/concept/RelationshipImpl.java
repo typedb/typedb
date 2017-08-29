@@ -95,8 +95,13 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
 
     @Override
     public Relationship attribute(Attribute attribute) {
-        reify().attribute(attribute);
+        attributeRelationship(attribute);
         return this;
+    }
+
+    @Override
+    public Relationship attributeRelationship(Attribute attribute) {
+        return reify().attributeRelationship(attribute);
     }
 
     @Override

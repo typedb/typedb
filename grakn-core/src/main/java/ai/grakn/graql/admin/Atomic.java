@@ -80,10 +80,10 @@ public interface Atomic {
     int equivalenceHashCode();
 
     /**
-     * @return true if the variable name is user defined
+     * @return true if the atomic is user defined (all its variables are user defined)
      */
     @CheckReturnValue
-    default boolean isUserDefinedName(){ return false;}
+    boolean isUserDefined();
 
     /**
      * @return true if the atomic can be resolved by a rule (atom exists in one of the rule's head)

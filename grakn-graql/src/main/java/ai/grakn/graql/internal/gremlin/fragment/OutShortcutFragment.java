@@ -113,7 +113,7 @@ class OutShortcutFragment extends Fragment {
 
         traverseRoleFromShortcutEdge(edgeTraversal, role, roleProperty);
 
-        // Identify the relation - role-player pair by combining the relation edge and direction into a map
+        // Identify the relation - role-player pair by combining the relationship edge and direction into a map
         edgeTraversal.as(RELATION_EDGE).constant(direction).as(RELATION_DIRECTION);
         edgeTraversal.select(Pop.last, RELATION_EDGE, RELATION_DIRECTION).as(edge.getValue()).select(RELATION_EDGE);
 

@@ -231,7 +231,13 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     @Override
-    public T attribute(Attribute attribute){
+    public T attribute(Attribute attribute) {
+        attributeRelationship(attribute);
+        return getThis();
+    }
+
+    @Override
+    public Relationship attributeRelationship(Attribute attribute) {
         Schema.ImplicitType has = Schema.ImplicitType.HAS;
         Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_VALUE;
         Schema.ImplicitType hasOwner  = Schema.ImplicitType.HAS_OWNER;
@@ -254,9 +260,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         }
 
         EdgeElement resourceEdge = putEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.RESOURCE);
-        vertex().tx().factory().buildRelation(resourceEdge, hasResource, hasResourceOwner, hasResourceValue);
-
-        return getThis();
+        return vertex().tx().factory().buildRelation(resourceEdge, hasResource, hasResourceOwner, hasResourceValue);
     }
 
     @Override

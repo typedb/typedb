@@ -24,10 +24,11 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
+import ai.grakn.util.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,7 +41,7 @@ import java.util.function.Consumer;
 public class MovieKB extends TestKB {
 
     private static EntityType production, movie, person, genre, character, cluster, language;
-    private static AttributeType<String> title, gender, realName, name;
+    private static AttributeType<String> title, gender, realName, name, provenance;
     private static AttributeType<Long> tmdbVoteCount, runtime;
     private static AttributeType<Double> tmdbVoteAverage;
     private static AttributeType<LocalDateTime> releaseDate;
@@ -99,6 +100,7 @@ public class MovieKB extends TestKB {
         gender = tx.putAttributeType("gender", AttributeType.DataType.STRING).setRegex("(fe)?male");
         realName = tx.putAttributeType("real-name", AttributeType.DataType.STRING);
         name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
 
         production = tx.putEntityType("production")
                 .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast)
@@ -136,6 +138,8 @@ public class MovieKB extends TestKB {
 
         cluster = tx.putEntityType("cluster").plays(clusterOfProduction);
         cluster.attribute(name);
+
+        tx.getType(Schema.ImplicitType.HAS.getLabel("title")).attribute(provenance);
     }
 
     @Override
