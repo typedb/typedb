@@ -69,7 +69,6 @@ import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -241,14 +240,6 @@ public class AtomicTest {
         atomicEquivalence(hasAtom, subAtom2, false);
     }
 
-    private void atomicEquivalence(Atomic a, Atomic b, boolean expectation){
-        assertEquals(a.toString() + " =? " + b.toString(), a.isEquivalent(b), expectation);
-        //check hash additionally if need to be equal
-        if (expectation) {
-            assertEquals(a.toString() + " hash=? " + b.toString(), a.equivalenceHashCode() == b.equivalenceHashCode(), true);
-        }
-    }
-
     @Test
     public void testAlphaEquivalence_DifferentResourceVariants(){
         GraknTx graph = unificationTestSet.tx();
@@ -353,6 +344,7 @@ public class AtomicTest {
                 "{($x, $y) isa relation1;}",
                 "{(role1: $x, role2: $y) isa relation1;}",
                 "{(role: $y, role2: $z) isa relation1;}",
+                "{(role: $x, role: $x, role2: $z) isa relation1;}",
 
                 "{$x ($y, $z) isa relation1;}",
                 "{$x (role1: $y, role2: $z) isa relation1;}"
@@ -378,9 +370,63 @@ public class AtomicTest {
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
 
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
-        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
-        assertNotEquals(query, query2);
+        Atom atom = ReasonerQueries.atomic(pattern, graph).getAtom();
+        Atom atom2 = ReasonerQueries.atomic(pattern2, graph).getAtom();
+        atomicEquivalence(atom, atom2, false);
+    }
+
+    @Test
+    public void testAlphaEquivalence_RelationsWithSubstitution(){
+        GraknTx graph = unificationTestSet.tx();
+        String patternString = "{(role: $x, role: $y);$x id 'V666';}";
+        String patternString2 = "{(role: $x, role: $y);$y id 'V666';}";
+        String patternString3 = "{(role: $x, role: $y);$x id 'V666';$y id 'V667';}";
+        String patternString4 = "{(role: $x, role: $y);$y id 'V666';$x id 'V667';}";
+        String patternString5 = "{(role1: $x, role2: $y);$x id 'V666';$y id 'V667';}";
+        String patternString6 = "{(role1: $x, role2: $y);$y id 'V666';$x id 'V667';}";
+        String patternString7 = "{(role: $x, role: $y);$x id 'V666';$y id 'V666';}";
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern4 = conjunction(patternString4, graph);
+        Conjunction<VarPatternAdmin> pattern5 = conjunction(patternString5, graph);
+        Conjunction<VarPatternAdmin> pattern6 = conjunction(patternString6, graph);
+        Conjunction<VarPatternAdmin> pattern7 = conjunction(patternString7, graph);
+
+        Atom atom = ReasonerQueries.atomic(pattern, graph).getAtom();
+        Atom atom2 = ReasonerQueries.atomic(pattern2, graph).getAtom();
+        Atom atom3 = ReasonerQueries.atomic(pattern3, graph).getAtom();
+        Atom atom4 = ReasonerQueries.atomic(pattern4, graph).getAtom();
+        Atom atom5 = ReasonerQueries.atomic(pattern5, graph).getAtom();
+        Atom atom6 = ReasonerQueries.atomic(pattern6, graph).getAtom();
+        Atom atom7 = ReasonerQueries.atomic(pattern7, graph).getAtom();
+
+        atomicEquivalence(atom, atom2, true);
+        atomicEquivalence(atom, atom3, false);
+        atomicEquivalence(atom, atom4, false);
+        atomicEquivalence(atom, atom5, false);
+        atomicEquivalence(atom, atom6, false);
+        atomicEquivalence(atom, atom7, false);
+
+        atomicEquivalence(atom2, atom3, false);
+        atomicEquivalence(atom2, atom4, false);
+        atomicEquivalence(atom2, atom5, false);
+        atomicEquivalence(atom2, atom6, false);
+        atomicEquivalence(atom2, atom7, false);
+
+        atomicEquivalence(atom3, atom4, true);
+        atomicEquivalence(atom3, atom5, false);
+        atomicEquivalence(atom3, atom6, false);
+        atomicEquivalence(atom3, atom7, false);
+
+        atomicEquivalence(atom4, atom5, false);
+        atomicEquivalence(atom4, atom6, false);
+        atomicEquivalence(atom4, atom7, false);
+
+        atomicEquivalence(atom5, atom6, false);
+        atomicEquivalence(atom5, atom7, false);
+
+        atomicEquivalence(atom6, atom7, false);
     }
 
     @Test //each type can only play a specific role in the relation hence mapping unambiguous
@@ -1258,6 +1304,16 @@ public class AtomicTest {
         String patternString = "{$x isa someType;}";
         exception.expect(GraqlQueryException.class);
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString, graph), graph);
+    }
+
+    private void atomicEquivalence(Atomic a, Atomic b, boolean expectation){
+        assertEquals(a.toString() + " =? " + b.toString(), a.isEquivalent(b), expectation);
+        assertEquals(b.toString() + " =? " + a.toString(), b.isEquivalent(a), expectation);
+
+        //check hash additionally if need to be equal
+        if (expectation) {
+            assertEquals(a.toString() + " hash=? " + b.toString(), a.equivalenceHashCode() == b.equivalenceHashCode(), true);
+        }
     }
 
     private void testUnification(String parentPatternString, String childPatternString, boolean checkInverse, boolean checkEquality, GraknTx graph){
