@@ -70,7 +70,7 @@ public class AtomicState extends QueryState{
 
         //if this already has full substitution and exists in the db then do not resolve further
         //NB: the queryIterator check is purely because we may want to ask for an explanation
-        boolean hasFullSubstitution = query.hasFullSubstitution();
+        boolean hasFullSubstitution = query.isGround();
         if(subGoals.contains(query)
                 || (hasFullSubstitution && dbIterator.hasNext() ) ){
             this.ruleIterator = Collections.emptyIterator();
