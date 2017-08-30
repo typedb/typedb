@@ -68,6 +68,10 @@ public class NeqPredicate extends Predicate<Var> {
         return vars;
     }
 
+    /**
+     * @param sub substitution to be checked against the predicate
+     * @return true if provided subsitution satisfies the predicate
+     */
     public boolean isSatisfied(Answer sub) {
         return !sub.containsKey(getVarName())
                 || !sub.containsKey(getReferenceVarName())

@@ -167,7 +167,6 @@ public class ReasoningTests {
         List<Answer> answers = qb.<MatchQuery>parse(queryString).execute();
         List<Answer> answers2 = qb.<MatchQuery>parse(queryString2).execute();
 
-
         assertEquals(1, answers.size());
         assertEquals(4, answers2.size());
         assertNotEquals(answers.size() * answers2.size(), 0);
