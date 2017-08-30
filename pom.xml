@@ -452,7 +452,9 @@
                 <configuration>
                     <verbose>true</verbose>
                     <excludes>
+                        <!-- Skip generated classes, we only care about code we write -->
                         <exclude>**/ai/grakn/graql/internal/antlr/*.java</exclude>
+                        <exclude>**/AutoValue_**.java</exclude>
 
                         <!-- Following controllers contain duplicate annotations for documentation -->
                         <exclude>**/ai/grakn/engine/controller/GraqlController.java</exclude>
