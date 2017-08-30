@@ -4,6 +4,7 @@ BASEDIR=$(dirname "$0")
 GRAKN_DIST_TARGET=$BASEDIR/../../../target/
 GRAKN_DIST_TMP=$GRAKN_DIST_TARGET/grakn-bash-test/
 GRAKN_DIST_BIN=${GRAKN_DIST_TMP}/bin/
+REDIS_DATA_DIR=./db
 
 startEngine(){
   echo "Starting!"
@@ -13,13 +14,14 @@ startEngine(){
 
 loadData(){
   echo "Inserting data!"
-  "${GRAKN_DIST_BIN}"/graql.sh < insert-data.gql
+  "${GRAKN_DIST_TMP}"/graql < insert-data.gql
 }
 
 oneTimeSetUp() {
   set -e
   package=$(ls $GRAKN_DIST_TARGET/grakn-dist-*.tar.gz | head -1)
   mkdir -p ${GRAKN_DIST_TMP}
+  mkdir -p ${REDIS_DATA_DIR}
   tar -xf $GRAKN_DIST_TARGET/$(basename ${package}) -C ${GRAKN_DIST_TMP} --strip-components=1
 
   startEngine
@@ -28,20 +30,20 @@ oneTimeSetUp() {
 }
 
 oneTimeTearDown() {
-  echo "y" | "${GRAKN_DIST_BIN}"/grakn.sh clean
-  "${GRAKN_DIST_BIN}"/grakn.sh stop
+  echo "y" | "${GRAKN_DIST_BIN}"/grakn clean
+  "${GRAKN_DIST_BIN}"/grakn stop
 }
 
 testPersonCount()
 {
-  PERSON_COUNT=$(cat query-data.gql | "${GRAKN_DIST_BIN}"/graql.sh | grep -v '>>>' | grep person | wc -l)
+  PERSON_COUNT=$(cat query-data.gql | "${GRAKN_DIST_BIN}"/graql | grep -v '>>>' | grep person | wc -l)
   echo Persons found $PERSON_COUNT
   assertEquals 4 $PERSON_COUNT
 }
 
 testMarriageCount()
 {
-  MARRIAGE_COUNT=$(cat query-marriage.gql | "${GRAKN_DIST_BIN}"/graql.sh |  grep -v '>>>' | grep person | wc -l)
+  MARRIAGE_COUNT=$(cat query-marriage.gql | "${GRAKN_DIST_BIN}"/graql |  grep -v '>>>' | grep person | wc -l)
   echo Marriages found $MARRIAGE_COUNT
   assertEquals 1 $MARRIAGE_COUNT
 }
