@@ -26,7 +26,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
-class NotInternalFragment extends AbstractFragment {
+class NotInternalFragment extends Fragment {
 
     NotInternalFragment(VarProperty varProperty, Var start) {
         super(varProperty, start);

@@ -28,7 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 
-class LabelFragment extends AbstractFragment {
+class LabelFragment extends Fragment {
 
     private final Label label;
 

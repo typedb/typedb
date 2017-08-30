@@ -60,7 +60,7 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
  *
  * @author Felix Chapman
  */
-class InShortcutFragment extends AbstractFragment {
+class InShortcutFragment extends Fragment {
 
     private final Var edge;
     private final Optional<Var> role;

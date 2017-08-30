@@ -81,7 +81,7 @@ public class GraqlTraversalTest {
     private static final Var yy = Graql.var("yy");
     private static final Var zz = Graql.var("zz");
     private static final Fragment xId = id(null, x, ConceptId.of("Titanic"));
-    private static final Fragment xValue = value(null, x, eq("hello").admin());
+    private static final Fragment xValue = value(null, x, eq("hello"));
     private static final Fragment yId = id(null, y, ConceptId.of("movie"));
     private static final Fragment xIsaY = outIsa(null, x, y);
     private static final Fragment yTypeOfX = inIsa(null, y, x);
@@ -161,8 +161,8 @@ public class GraqlTraversalTest {
     @Ignore //TODO: No longer applicable. Think of a new test to replace this.
     @Test
     public void valueFilteringIsBetterThanANonFilteringOperation() {
-        GraqlTraversal valueFilterFirst = traversal(value(null, x, gt(1).admin()), inShortcut(x, b), outShortcut(b, y), outIsa(null, y, z));
-        GraqlTraversal shortcutFirst = traversal(outIsa(null, y, z), inShortcut(y, b), outShortcut(b, x), value(null, x, gt(1).admin()));
+        GraqlTraversal valueFilterFirst = traversal(value(null, x, gt(1)), inShortcut(x, b), outShortcut(b, y), outIsa(null, y, z));
+        GraqlTraversal shortcutFirst = traversal(outIsa(null, y, z), inShortcut(y, b), outShortcut(b, x), value(null, x, gt(1)));
 
         assertFaster(valueFilterFirst, shortcutFirst);
     }

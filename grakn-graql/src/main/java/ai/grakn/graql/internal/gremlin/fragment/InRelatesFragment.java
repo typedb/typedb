@@ -33,7 +33,7 @@ import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.RELATES;
 
-class InRelatesFragment extends AbstractFragment {
+class InRelatesFragment extends Fragment {
 
     InRelatesFragment(VarProperty varProperty, Var start, Var end) {
         super(varProperty, start, end);

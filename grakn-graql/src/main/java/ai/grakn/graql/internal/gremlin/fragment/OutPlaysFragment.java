@@ -35,7 +35,7 @@ import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 
-class OutPlaysFragment extends AbstractFragment {
+class OutPlaysFragment extends Fragment {
 
     private final boolean required;
 

@@ -38,7 +38,7 @@ import static ai.grakn.util.Schema.EdgeLabel.ISA;
 import static ai.grakn.util.Schema.EdgeLabel.SHARD;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 
-class OutIsaFragment extends AbstractFragment {
+class OutIsaFragment extends Fragment {
 
     OutIsaFragment(VarProperty varProperty, Var start, Var end) {
         super(varProperty, start, end);

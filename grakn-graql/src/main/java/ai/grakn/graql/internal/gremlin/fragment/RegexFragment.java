@@ -27,7 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 
 import static ai.grakn.util.Schema.VertexProperty.REGEX;
 
-class RegexFragment extends AbstractFragment {
+class RegexFragment extends Fragment {
 
     private final String regex;
 

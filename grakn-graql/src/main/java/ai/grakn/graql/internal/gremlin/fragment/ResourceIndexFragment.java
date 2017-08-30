@@ -29,7 +29,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 
 import static ai.grakn.util.Schema.VertexProperty.INDEX;
 
-class ResourceIndexFragment extends AbstractFragment {
+class ResourceIndexFragment extends Fragment {
 
     private final String resourceIndex;
 

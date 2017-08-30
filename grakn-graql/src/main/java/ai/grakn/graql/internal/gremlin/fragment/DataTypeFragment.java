@@ -27,7 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 
 import static ai.grakn.util.Schema.VertexProperty.DATA_TYPE;
 
-class DataTypeFragment extends AbstractFragment {
+class DataTypeFragment extends Fragment {
 
     private final AttributeType.DataType dataType;
 

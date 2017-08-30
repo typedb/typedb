@@ -26,7 +26,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
-class NeqFragment extends AbstractFragment {
+class NeqFragment extends Fragment {
 
     private final Var other;
 
