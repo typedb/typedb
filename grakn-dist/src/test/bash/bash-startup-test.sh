@@ -4,11 +4,10 @@ BASEDIR=$(dirname "$0")
 GRAKN_DIST_TARGET=$BASEDIR/../../../target/
 GRAKN_DIST_TMP=$GRAKN_DIST_TARGET/grakn-bash-test/
 GRAKN_DIST_BIN=${GRAKN_DIST_TMP}/bin/
-REDIS_DATA_DIR=./db
+REDIS_DATA_DIR=./db/redis
 
 startEngine(){
   echo "Starting!"
-  mkdir "db"
   _JAVA_OPTIONS="-Dcassandra.log.appender=STDOUT" "${GRAKN_DIST_TMP}/grakn" server start
 }
 
