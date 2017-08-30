@@ -20,12 +20,6 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
-import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
-import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -37,15 +31,8 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import javax.annotation.Nullable;
-import java.util.Map;
-import java.util.Set;
-
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_DIRECTION;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_EDGE;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelsToTraversal;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabels;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.traverseRoleFromShortcutEdge;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_OWNER_LABEL_ID;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID;
@@ -61,26 +48,7 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
  * @author Felix Chapman
  */
 @AutoValue
-abstract class InShortcutFragment extends Fragment {
-
-    @Override
-    public abstract Var end();
-
-    abstract Var edge();
-
-    abstract @Nullable Var role();
-
-    abstract @Nullable ImmutableSet<Label> roleLabels();
-
-    abstract @Nullable ImmutableSet<Label> relationTypeLabels();
-
-    @Override
-    ImmutableSet<Var> otherVars() {
-        ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(edge());
-        Var role = role();
-        if (role != null) builder.add(role);
-        return builder.build();
-    }
+abstract class InShortcutFragment extends AbstractShortcutFragment {
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
@@ -97,10 +65,10 @@ abstract class InShortcutFragment extends Fragment {
         GraphTraversal<Vertex, Edge> edgeTraversal = __.<Vertex>inE(SHORTCUT.getLabel()).as(edge().getValue());
 
         // Filter by any provided type labels
-        applyTypeLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), graph);
-        applyTypeLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), graph);
+        applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), graph);
+        applyLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), graph);
 
-        traverseRoleFromShortcutEdge(edgeTraversal, role(), ROLE_LABEL_ID);
+        traverseToRole(edgeTraversal, role(), ROLE_LABEL_ID);
 
         return edgeTraversal.outV();
     }
@@ -115,31 +83,21 @@ abstract class InShortcutFragment extends Fragment {
         edgeTraversal.select(Pop.last, RELATION_EDGE, RELATION_DIRECTION).as(edge().getValue()).select(RELATION_EDGE);
 
         // Filter by any provided type labels
-        applyTypeLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), graph);
-        applyTypeLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), graph);
+        applyLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), graph);
+        applyLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), graph);
 
-        traverseRoleFromShortcutEdge(edgeTraversal, role(), roleProperty);
+        traverseToRole(edgeTraversal, role(), roleProperty);
 
         return edgeTraversal;
     }
 
     @Override
     public String name() {
-        Var role = role();
-        String roleString = role != null ? " role:" + role.shortName() : "";
-        String rels = displayOptionalTypeLabels("rels", relationTypeLabels());
-        String roles = displayOptionalTypeLabels("roles", roleLabels());
-        return "<-[shortcut:" + edge().shortName() + roleString + rels + roles + "]-";
+        return "<-" + innerName() + "-";
     }
 
     @Override
     public double fragmentCost() {
         return COST_RELATIONS_PER_INSTANCE;
-    }
-
-    @Override
-    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
-                                                           Map<Node, Map<Node, Fragment>> edges) {
-        return directedEdges(edge(), nodes, edges);
     }
 }

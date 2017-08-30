@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
@@ -44,7 +43,6 @@ import static ai.grakn.util.Schema.EdgeLabel.SUB;
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 import static ai.grakn.util.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Factory for creating instances of {@link Fragment}.
@@ -209,33 +207,6 @@ public class Fragments {
             return " " + name + ":" + typeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(","));
         } else {
             return "";
-        }
-    }
-
-    static void applyTypeLabelsToTraversal(
-            GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property,
-            @Nullable Set<Label> typeLabels, GraknTx graph) {
-
-        if (typeLabels != null) {
-            Set<Integer> typeIds =
-                    typeLabels.stream().map(label -> graph.admin().convertToId(label).getValue()).collect(toSet());
-            traversal.has(property.name(), P.within(typeIds));
-        }
-    }
-
-    /**
-     * Optionally traverse from a shortcut edge to the role-type it mentions, plus any super-types.
-     *
-     * @param traversal the traversal, starting from the shortcut edge
-     * @param role the variable to assign to the role. If not present, do nothing
-     * @param edgeProperty the edge property to look up the role label ID
-     */
-    static void traverseRoleFromShortcutEdge(GraphTraversal<?, Edge> traversal, @Nullable Var role, Schema.EdgeProperty edgeProperty) {
-        if (role != null) {
-            Var edge = Graql.var();
-            traversal.as(edge.getValue());
-            Fragments.outSubs(traverseSchemaConceptFromEdge(traversal, edgeProperty));
-            traversal.as(role.getValue()).select(edge.getValue());
         }
     }
 
