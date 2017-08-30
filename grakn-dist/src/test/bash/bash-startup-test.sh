@@ -29,20 +29,21 @@ oneTimeSetUp() {
 }
 
 oneTimeTearDown() {
-  echo "y" | "${GRAKN_DIST_BIN}"/grakn clean
-  "${GRAKN_DIST_BIN}"/grakn server stop
+
+  echo "y" | "${GRAKN_DIST_TMP}"/grakn server clean
+  "${GRAKN_DIST_TMP}"/grakn server stop
 }
 
 testPersonCount()
 {
-  PERSON_COUNT=$(cat query-data.gql | "${GRAKN_DIST_BIN}"/graql | grep -v '>>>' | grep person | wc -l)
+  PERSON_COUNT=$(cat query-data.gql | "${GRAKN_DIST_TMP}"/graql | grep -v '>>>' | grep person | wc -l)
   echo Persons found $PERSON_COUNT
   assertEquals 4 $PERSON_COUNT
 }
 
 testMarriageCount()
 {
-  MARRIAGE_COUNT=$(cat query-marriage.gql | "${GRAKN_DIST_BIN}"/graql |  grep -v '>>>' | grep person | wc -l)
+  MARRIAGE_COUNT=$(cat query-marriage.gql | "${GRAKN_DIST_TMP}"/graql |  grep -v '>>>' | grep person | wc -l)
   echo Marriages found $MARRIAGE_COUNT
   assertEquals 1 $MARRIAGE_COUNT
 }
