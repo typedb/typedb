@@ -9,7 +9,7 @@ REDIS_DATA_DIR=./db
 startEngine(){
   echo "Starting!"
   mkdir "db"
-  _JAVA_OPTIONS="-Dcassandra.log.appender=STDOUT" "${GRAKN_DIST_TMP}/grakn" start
+  _JAVA_OPTIONS="-Dcassandra.log.appender=STDOUT" "${GRAKN_DIST_TMP}/grakn" server start
 }
 
 loadData(){
@@ -31,7 +31,7 @@ oneTimeSetUp() {
 
 oneTimeTearDown() {
   echo "y" | "${GRAKN_DIST_BIN}"/grakn clean
-  "${GRAKN_DIST_BIN}"/grakn stop
+  "${GRAKN_DIST_BIN}"/grakn server stop
 }
 
 testPersonCount()
