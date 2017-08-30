@@ -85,7 +85,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private final GraknTx tx;
     private final ImmutableSet<Atomic> atomSet;
-    private int priority = Integer.MAX_VALUE;
 
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
         this.tx = tx;
@@ -166,18 +165,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         atomSet.forEach(atom -> hashes.add(atom.equivalenceHashCode()));
         for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
         return hashCode;
-    }
-
-    /**
-     * @return the normalised priority of this query based on its atom content
-     */
-    public int resolutionPriority(){
-        if (priority == Integer.MAX_VALUE) {
-            Set<Atom> selectableAtoms = selectAtoms();
-            int totalPriority = selectableAtoms.stream().mapToInt(Atom::baseResolutionPriority).sum();
-            priority = totalPriority/selectableAtoms.size();
-        }
-        return priority;
     }
 
     @Override
@@ -532,7 +519,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return true if because of the rule graph form, the resolution of this query may require reiteration
      */
     public boolean requiresReiteration() {
-        Set<InferenceRule> dependentRules = RuleUtil.getDependentRules(this).collect(Collectors.toSet());
+        Set<InferenceRule> dependentRules = RuleUtil.getDependentRules(this);
         return RuleUtil.subGraphHasLoopsWithNegativeFlux(dependentRules, tx())
                 || RuleUtil.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
     }
