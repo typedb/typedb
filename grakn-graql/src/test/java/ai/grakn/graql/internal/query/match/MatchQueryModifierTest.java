@@ -37,7 +37,6 @@ import org.junit.rules.ExpectedException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Order.asc;
@@ -98,23 +97,6 @@ public class MatchQueryModifierTest {
         ).orderBy("v", desc).get();
 
         assertThat(query, variable(x, contains(MovieMatchers.godfather, MovieMatchers.godfather, MovieMatchers.apocalypseNow)));
-    }
-
-    @Test
-    public void testOrPatternOrderByUnselected() {
-        GetQuery query = qb.match(
-                x.isa("movie"),
-                var().rel(x).rel(y),
-                or(
-                        y.isa("person"),
-                        y.isa("genre").val(neq("crime"))
-                ),
-                y.has("name", n)
-        ).orderBy(n).offset(4).limit(8).get();
-
-        assertThat(query, variable(x, containsInAnyOrder(
-                MovieMatchers.hocusPocus, MovieMatchers.spy, MovieMatchers.spy, MovieMatchers.theMuppets, MovieMatchers.theMuppets, MovieMatchers.godfather, MovieMatchers.apocalypseNow, MovieMatchers.apocalypseNow
-        )));
     }
 
     @Test

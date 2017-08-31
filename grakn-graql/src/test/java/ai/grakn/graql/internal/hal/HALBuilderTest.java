@@ -64,7 +64,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenExecuteExploreHAL_EnsureHALResponseContainsCorrectExploreLinks() {
-        Json response = getHALRepresentation(academyKB.tx(), "match $x isa entity; limit 5;");
+        Json response = getHALRepresentation(academyKB.tx(), "match $x isa entity; limit 5; get;");
         String conceptId = response.asJsonList().get(0).at("_id").asString();
         Json halObj = getHALExploreRepresentation(academyKB.tx(), conceptId);
         assertTrue(halObj.at("_links").at("explore").asJsonList().get(0).at("href").asString().contains("explore"));
@@ -89,7 +89,7 @@ public class HALBuilderTest {
                 "$country isa country has name \"Italy\";\n" +
                 "(owner: $company, owned: $platform) isa owns;\n" +
                 "(issuer: $company, issued: $bond) isa issues;\n" +
-                "select $bond, $article; offset 0; limit 5;");
+                "offset 0; limit 5; get $bond, $article;");
 
         // Limit to 5 results, each result will contain 2 variables, so the expected size of HAL results is 10.
         assertEquals(10, response.asList().size());
@@ -108,7 +108,7 @@ public class HALBuilderTest {
                 "$country isa country has name \"Italy\";\n" +
                 "(owner: $company, owned: $platform) isa owns;\n" +
                 "(issuer: $company, issued: $bond) isa issues;\n" +
-                "select $bond, $article; offset 0; limit 5; get;");
+                "offset 0; limit 5; get $bond, $article;");
 
         // Limit to 5 results, each result will contain 2 variables, so the expected size of HAL results is 10.
         assertEquals(10, response.asList().size());

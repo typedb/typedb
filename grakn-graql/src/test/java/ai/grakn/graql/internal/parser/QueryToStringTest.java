@@ -179,7 +179,7 @@ public class QueryToStringTest {
     @Test
     public void testQueryToStringWithReservedKeywords() {
         GetQuery query = qb.match(var("x").isa("isa")).get();
-        assertEquals("match $x isa \"isa\"; get;", query.toString());
+        assertEquals("match $x isa \"isa\"; get $x;", query.toString());
     }
 
     @Test
