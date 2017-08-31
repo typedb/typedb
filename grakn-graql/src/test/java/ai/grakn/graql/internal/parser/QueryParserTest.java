@@ -264,10 +264,10 @@ public class QueryParserTest {
     public void testModifierQuery() {
         GetQuery expected = match(
                 var("y").isa("movie").has("title", var("n"))
-        ).orderBy("n").limit(4).offset(2).distinct().get();
+        ).orderBy("n").limit(4).offset(2).get();
 
         GetQuery parsed =
-                parse("match $y isa movie, has title $n; order by $n; limit 4; offset 2; distinct; get;");
+                parse("match $y isa movie, has title $n; order by $n; limit 4; offset 2; get;");
 
         assertEquals(expected, parsed);
     }

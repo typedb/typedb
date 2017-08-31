@@ -8,7 +8,6 @@ query          : getQuery | insertQuery | defineQuery | deleteQuery | aggregateQ
 matchQuery     : MATCH patterns                                   # matchBase
                | matchQuery 'limit' INTEGER                   ';' # matchLimit
                | matchQuery 'offset' INTEGER                  ';' # matchOffset
-               | matchQuery 'distinct'                        ';' # matchDistinct
                | matchQuery 'order' 'by' VARIABLE ORDER?      ';' # matchOrderBy
                ;
 

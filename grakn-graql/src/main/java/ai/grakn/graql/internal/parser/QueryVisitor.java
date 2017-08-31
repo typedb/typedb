@@ -141,11 +141,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public MatchQuery visitMatchDistinct(GraqlParser.MatchDistinctContext ctx) {
-        return visitMatchQuery(ctx.matchQuery()).distinct();
-    }
-
-    @Override
     public GetQuery visitGetQuery(GraqlParser.GetQueryContext ctx) {
         Set<Var> vars = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
 
