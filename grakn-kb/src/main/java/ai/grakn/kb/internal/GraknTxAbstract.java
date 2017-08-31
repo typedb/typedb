@@ -29,10 +29,10 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
@@ -531,12 +531,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public RuleType putRuleType(String label, Pattern when, Pattern then) {
+    public Rule putRuleType(String label, Pattern when, Pattern then) {
         return putRuleType(Label.of(label), when, then);
     }
 
     @Override
-    public RuleType putRuleType(Label label, Pattern when, Pattern then) {
+    public Rule putRuleType(Label label, Pattern when, Pattern then) {
         return putSchemaConcept(label, Schema.BaseType.RULE_TYPE,
                 v -> factory().buildRuleType(v, getMetaRuleType(), when, then));
     }
@@ -633,7 +633,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public RuleType getRuleType(String label) {
+    public Rule getRuleType(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RULE_TYPE);
     }
 
@@ -663,7 +663,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public RuleType getMetaRuleType() {
+    public Rule getMetaRuleType() {
         return getSchemaConcept(Schema.MetaSchema.RULE.getId());
     }
 

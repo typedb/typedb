@@ -27,7 +27,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
@@ -50,7 +50,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
@@ -95,7 +94,7 @@ public class InsertQueryTest {
 
     private static final Label title = Label.of("title");
 
-    @Rule
+    @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
@@ -299,9 +298,9 @@ public class InsertQueryTest {
         VarPattern vars = var("x").isa(ruleTypeId).when(when).then(then);
         qb.insert(vars).execute();
 
-        RuleType ruleType = movieKB.tx().getRuleType(ruleTypeId);
-        boolean found = ruleType.subs().
-                anyMatch(rule -> when.equals(rule.getWhen()) && then.equals(rule.getThen()));
+        Rule rule = movieKB.tx().getRuleType(ruleTypeId);
+        boolean found = rule.subs().
+                anyMatch(r -> when.equals(r.getWhen()) && then.equals(r.getThen()));
 
         assertTrue("Unable to find rule with when [" + when + "] and then [" + then + "]", found);
     }

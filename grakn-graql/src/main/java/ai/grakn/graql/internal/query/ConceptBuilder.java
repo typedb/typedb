@@ -24,7 +24,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -304,8 +304,8 @@ public class ConceptBuilder {
         validateParam(concept, ID, Concept.class, Concept::getId);
         validateParam(concept, VALUE, Attribute.class, Attribute::getValue);
         validateParam(concept, DATA_TYPE, AttributeType.class, AttributeType::getDataType);
-        validateParam(concept, WHEN, RuleType.class, RuleType::getWhen);
-        validateParam(concept, THEN, RuleType.class, RuleType::getThen);
+        validateParam(concept, WHEN, Rule.class, Rule::getWhen);
+        validateParam(concept, THEN, Rule.class, Rule::getThen);
     }
 
     /**

@@ -21,7 +21,7 @@ package ai.grakn.kb.internal;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.kb.internal.concept.RelationshipImpl;
 import ai.grakn.kb.internal.concept.RelationshipReified;
@@ -99,7 +99,7 @@ class Validator {
      * @param graph the graph to query against
      * @param rule the rule which needs to be validated
      */
-    private void validateRule(GraknTxAbstract<?> graph, RuleType rule){
+    private void validateRule(GraknTxAbstract<?> graph, Rule rule){
         Set<String> labelErrors = ValidateGlobalRules.validateRuleSchemaConceptExist(graph, rule);
         errorsFound.addAll(labelErrors);
         errorsFound.addAll(ValidateGlobalRules.validateRuleIsValidHornClause(graph, rule));

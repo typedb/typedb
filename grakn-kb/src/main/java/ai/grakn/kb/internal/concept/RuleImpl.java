@@ -18,17 +18,14 @@
 
 package ai.grakn.kb.internal.concept;
 
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
-import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import javax.annotation.Nullable;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -42,12 +39,12 @@ import java.util.stream.Stream;
  *
  * @author fppt
  */
-public class RuleTypeImpl extends SchemaConceptImpl<RuleType> implements RuleType {
-    RuleTypeImpl(VertexElement vertexElement) {
+public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
+    RuleImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    RuleTypeImpl(VertexElement vertexElement, RuleType type, Pattern when, Pattern then) {
+    RuleImpl(VertexElement vertexElement, Rule type, Pattern when, Pattern then) {
         super(vertexElement, type);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, getWhen(), Pattern::toString);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, getThen(), Pattern::toString);
@@ -106,12 +103,12 @@ public class RuleTypeImpl extends SchemaConceptImpl<RuleType> implements RuleTyp
     /**
      * Generate the internal hash in order to perform a faster lookups and ensure rules are unique
      */
-    static String generateRuleIndex(RuleType type, Pattern when, Pattern then){
+    static String generateRuleIndex(Rule type, Pattern when, Pattern then){
         return "RuleType_" + type.getLabel().getValue() + "_LHS:" + when.hashCode() + "_RHS:" + then.hashCode();
     }
 
-    public static <X extends Type, Y extends Thing> RuleTypeImpl from(RuleType type){
+    public static <X extends Type, Y extends Thing> RuleImpl from(Rule type){
         //noinspection unchecked
-        return (RuleTypeImpl) type;
+        return (RuleImpl) type;
     }
 }

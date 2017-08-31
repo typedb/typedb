@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.printer;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.graql.Printer;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
@@ -119,7 +119,7 @@ public class JsonPrinterTest {
 
     @Test
     public void testJsonRule() {
-        RuleType jsonRule = movieContext.tx().getAttributeType("name").getAttribute("expectation-rule").owner().asRuleType();
+        Rule jsonRule = movieContext.tx().getAttributeType("name").getAttribute("expectation-rule").owner().asRuleType();
         assertJsonEquals(
                 Json.object("id", jsonRule.getId().getValue(), "isa", "a-rule-type", "when", jsonRule.getWhen().toString(), "then", jsonRule.getThen().toString()),
                 jsonRule

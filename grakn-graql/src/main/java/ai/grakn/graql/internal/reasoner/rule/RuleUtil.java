@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
@@ -50,7 +50,7 @@ public class RuleUtil {
      * @param graph of interest
      * @return set of inference rule contained in the graph
      */
-    public static Stream<RuleType> getRules(GraknTx graph) {
+    public static Stream<Rule> getRules(GraknTx graph) {
         return graph.admin().getMetaRuleType().subs().
                 filter(sub -> sub.equals(graph.admin().getMetaRuleType()));
     }
@@ -69,7 +69,7 @@ public class RuleUtil {
      * @param graph of interest
      * @return rules containing specified type in the head
      */
-    public static Stream<RuleType> getRulesWithType(SchemaConcept type, GraknTx graph){
+    public static Stream<Rule> getRulesWithType(SchemaConcept type, GraknTx graph){
         return type != null ?
                 type.subs().flatMap(SchemaConcept::getRulesOfConclusion) :
                 getRules(graph);
@@ -82,8 +82,8 @@ public class RuleUtil {
      */
     public static boolean subGraphHasLoopsWithNegativeFlux(Set<InferenceRule> rules, GraknTx graph){
         return rules.stream()
-                .map(r -> graph.<RuleType>getConcept(r.getRuleId()))
-                .flatMap(RuleType::getConclusionTypes)
+                .map(r -> graph.<Rule>getConcept(r.getRuleId()))
+                .flatMap(Rule::getConclusionTypes)
                 .distinct()
                 .filter(type -> {
                     long outflux = type.getRulesOfHypothesis().count();
@@ -107,8 +107,8 @@ public class RuleUtil {
      * @param topTypes entry types in the rule graph
      * @return all rules that are reachable from the entry types
      */
-    public static Set<RuleType> getDependentRules(Set<Type> topTypes){
-        Set<RuleType> rules = new HashSet<>();
+    public static Set<Rule> getDependentRules(Set<Type> topTypes){
+        Set<Rule> rules = new HashSet<>();
         Set<Type> visitedTypes = new HashSet<>();
         Stack<Type> types = new Stack<>();
         topTypes.forEach(types::push);
@@ -117,7 +117,7 @@ public class RuleUtil {
             if (!visitedTypes.contains(type)){
                 type.getRulesOfConclusion()
                         .peek(rules::add)
-                        .flatMap(RuleType::getHypothesisTypes)
+                        .flatMap(Rule::getHypothesisTypes)
                         .filter(visitedTypes::contains)
                         .forEach(types::add);
                 visitedTypes.add(type);

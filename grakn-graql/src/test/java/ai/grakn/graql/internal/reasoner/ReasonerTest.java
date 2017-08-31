@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
@@ -117,7 +117,7 @@ public class ReasonerTest {
         Pattern head = and(tx.graql().parsePatterns("(member-location: $x, container-location: $x1) isa sublocate;"));
 
         InferenceRule R2 = new InferenceRule(tx.putRuleType("Rule: Sub Property Creation", body, head), tx);
-        RuleType rule = ReasonerUtils.createSubPropertyRule("Rule: Sb Property Rule", parent, child, roleMap, tx);
+        Rule rule = ReasonerUtils.createSubPropertyRule("Rule: Sb Property Rule", parent, child, roleMap, tx);
         InferenceRule R = new InferenceRule(rule, tx);
 
         assertTrue(R.getHead().equals(R2.getHead()));
@@ -127,7 +127,7 @@ public class ReasonerTest {
     @Test
     public void testTransitiveRuleCreation() {
         GraknTx tx = testSnbKB.tx();
-        RuleType rule = ReasonerUtils.createTransitiveRule(
+        Rule rule = ReasonerUtils.createTransitiveRule(
                 "Rule: Transitive Rule",
                 tx.getRelationshipType("sublocate"),
                 tx.getRole("member-location").getLabel(),
@@ -148,7 +148,7 @@ public class ReasonerTest {
     @Test
     public void testReflexiveRuleCreation() {
         GraknTx tx = testSnbKB.tx();
-        RuleType rule = ReasonerUtils.createReflexiveRule(
+        Rule rule = ReasonerUtils.createReflexiveRule(
                 "Reflexive Rule",
                 tx.getRelationshipType("knows"),
                 tx.getRole("acquaintance1").getLabel(),
@@ -175,7 +175,7 @@ public class ReasonerTest {
         chain.put(resides, new Pair<>(tx.getRole("located-subject").getLabel(), tx.getRole("subject-location").getLabel()));
         chain.put(sublocate, new Pair<>(tx.getRole("member-location").getLabel(), tx.getRole("container-location").getLabel()));
 
-        RuleType rule = ReasonerUtils.createPropertyChainRule(
+        Rule rule = ReasonerUtils.createPropertyChainRule(
                 "Rule: Property Chain Rule",
                 resides,
                 tx.getRole("located-subject").getLabel(),
@@ -202,13 +202,13 @@ public class ReasonerTest {
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                         "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
         Pattern head1 = Graql.and(tx.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
-        RuleType rule1 = tx.putRuleType("Rule 1", body1, head1);
+        Rule rule1 = tx.putRuleType("Rule 1", body1, head1);
 
         Pattern body2 = Graql.and(tx.graql().parsePatterns(
                         "(geo-entity: $l1, entity-location: $l2) isa is-located-in;" +
                         "(geo-entity: $l2, entity-location: $l3) isa is-located-in;"));
         Pattern head2 = Graql.and(tx.graql().parsePatterns("(geo-entity: $l1, entity-location: $l3) isa is-located-in;"));
-        RuleType rule2 = tx.putRuleType("Rule 2", body2, head2);
+        Rule rule2 = tx.putRuleType("Rule 2", body2, head2);
 
         InferenceRule R1 = new InferenceRule(rule1, tx);
         InferenceRule R2 = new InferenceRule(rule2, tx);

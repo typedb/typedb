@@ -20,37 +20,37 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.Label;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.graql.QueryBuilder;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 
 /**
- * A generator that produces random {@link RuleType}s
+ * A generator that produces random {@link Rule}s
  *
  * @author Felix Chapman
  */
-public class RuleTypes extends AbstractSchemaConceptGenerator<RuleType> {
+public class Rules extends AbstractSchemaConceptGenerator<Rule> {
 
-    public RuleTypes() {
-        super(RuleType.class);
+    public Rules() {
+        super(Rule.class);
     }
 
     @Override
-    protected RuleType newSchemaConcept(Label label) {
+    protected Rule newSchemaConcept(Label label) {
         // TODO: generate more complicated rules
         QueryBuilder graql = this.tx().graql();
         return tx().putRuleType(label, graql.parsePattern("$x"), graql.parsePattern("$x"));
     }
 
     @Override
-    protected RuleType metaSchemaConcept() {
+    protected Rule metaSchemaConcept() {
         return tx().admin().getMetaRuleType();
     }
 
     @Override
-    protected Collection<RuleType> otherMetaSchemaConcepts() {
+    protected Collection<Rule> otherMetaSchemaConcepts() {
         return ImmutableSet.of(tx().admin().getMetaRuleType());
     }
 }

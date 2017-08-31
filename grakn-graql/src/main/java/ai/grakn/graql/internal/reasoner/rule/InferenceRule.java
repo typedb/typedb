@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
@@ -67,7 +67,7 @@ public class InferenceRule {
 
     private int priority = Integer.MAX_VALUE;
 
-    public InferenceRule(RuleType rule, GraknTx tx){
+    public InferenceRule(Rule rule, GraknTx tx){
         this.tx = tx;
         this.ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects

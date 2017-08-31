@@ -25,9 +25,9 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
@@ -117,30 +117,30 @@ public interface GraknTx extends AutoCloseable{
     <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType);
 
     /**
-     * Create a {@link RuleType} with super-type {@code rule}, or return a pre-existing {@link RuleType}, with the
+     * Create a {@link Rule} with super-type {@code rule}, or return a pre-existing {@link Rule}, with the
      * specified label.
      *
-     * @param label A unique label for the {@link RuleType}
+     * @param label A unique label for the {@link Rule}
      * @param when A string representing the when part of the {@link Rule}
      * @param then A string representing the then part of the {@link Rule}
-     * @return new or existing {@link RuleType} with the provided label.
+     * @return new or existing {@link Rule} with the provided label.
      *
      * @throws GraknTxOperationException if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RuleType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Rule}.
      */
-    RuleType putRuleType(String label, Pattern when, Pattern then);
+    Rule putRuleType(String label, Pattern when, Pattern then);
 
     /**
-     * Create a {@link RuleType} with super-type {@code rule}, or return a pre-existing {@link RuleType}, with the
+     * Create a {@link Rule} with super-type {@code rule}, or return a pre-existing {@link Rule}, with the
      * specified label.
      *
-     * @param label A unique label for the {@link RuleType}
-     * @return new or existing {@link RuleType} with the provided label.
+     * @param label A unique label for the {@link Rule}
+     * @return new or existing {@link Rule} with the provided label.
      *
      * @throws GraknTxOperationException if the graph is closed
-     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RuleType}.
+     * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Rule}.
      */
-    RuleType putRuleType(Label label, Pattern when, Pattern then);
+    Rule putRuleType(Label label, Pattern when, Pattern then);
 
     /**
      * Create a {@link RelationshipType} with super-type {@code relation}, or return a pre-existing {@link RelationshipType},
@@ -292,16 +292,16 @@ public interface GraknTx extends AutoCloseable{
     Role getRole(String label);
 
     /**
-     * Get the Rule Type with the label provided, if it exists.
+     * Get the {@link Rule} with the label provided, if it exists.
      *
-     * @param label A unique label which identifies the Rule Type in the graph.
-     * @return The Rule Type with the provided label or null if no such Rule Type exists.
+     * @param label A unique label which identifies the {@link Rule} in the graph.
+     * @return The {@link Rule} with the provided label or null if no such Rule Type exists.
      *
      * @throws GraknTxOperationException if the graph is closed
      */
     @CheckReturnValue
     @Nullable
-    RuleType getRuleType(String label);
+    Rule getRuleType(String label);
 
     //------------------------------------- Utilities ----------------------------------
     // TODO: what does this do when the graph is closed?

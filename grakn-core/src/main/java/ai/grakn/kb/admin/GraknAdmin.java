@@ -26,9 +26,9 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -125,12 +125,12 @@ public interface GraknAdmin {
     EntityType getMetaEntityType();
 
     /**
-     * Get the root of all Rule Types;
+     * Get the root of all {@link Rule}s;
      *
-     * @return The meta rule type -> rule-type.
+     * @return The meta {@link Rule}
      */
     @CheckReturnValue
-    RuleType getMetaRuleType();
+    Rule getMetaRuleType();
 
     //------------------------------------- Admin Specific Operations ----------------------------------
 

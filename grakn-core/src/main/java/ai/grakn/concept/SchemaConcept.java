@@ -98,7 +98,7 @@ public interface SchemaConcept extends Concept {
      * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a hypothesis
      */
     @CheckReturnValue
-    Stream<RuleType> getRulesOfHypothesis();
+    Stream<Rule> getRulesOfHypothesis();
 
     /**
      * Return the collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion.
@@ -107,7 +107,7 @@ public interface SchemaConcept extends Concept {
      * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion
      */
     @CheckReturnValue
-    Stream<RuleType> getRulesOfConclusion();
+    Stream<Rule> getRulesOfConclusion();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

@@ -28,7 +28,7 @@ import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.kb.internal.concept.RelationshipReified;
@@ -81,7 +81,7 @@ public class TxCache {
     private final Set<RelationshipType> modifiedRelationshipTypes = new HashSet<>();
     private final Set<Relationship> modifiedRelationships = new HashSet<>();
 
-    private final Set<RuleType> modifiedRules = new HashSet<>();
+    private final Set<Rule> modifiedRules = new HashSet<>();
 
     private final Set<Attribute> modifiedAttributes = new HashSet<>();
 
@@ -374,7 +374,7 @@ public class TxCache {
         return modifiedRelationships;
     }
 
-    public Set<RuleType> getModifiedRules() {
+    public Set<Rule> getModifiedRules() {
         return modifiedRules;
     }
 

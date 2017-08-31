@@ -35,7 +35,7 @@ import java.util.stream.Stream;
  *
  * @author fppt
  */
-public interface RuleType extends SchemaConcept {
+public interface Rule extends SchemaConcept {
     //------------------------------------- Accessors ----------------------------------
     /**
      * Retrieves the Left Hand Side of the rule.
@@ -77,43 +77,43 @@ public interface RuleType extends SchemaConcept {
      * @param label The new {@link Label}.
      * @return The {@link Concept} itself
      */
-    RuleType setLabel(Label label);
+    Rule setLabel(Label label);
 
     /**
      *
-     * @return The super type of this Rule Type
+     * @return The super type of this {@link Rule}
      */
     @Override
     @Nonnull
-    RuleType sup();
+    Rule sup();
 
     /**
      *
-     * @param type The super type of this Rule Type
-     * @return The Rule Type itself
+     * @param type The super type of this {@link Rule}
+     * @return The {@link Rule} itself
      */
-    RuleType sup(RuleType type);
+    Rule sup(Rule type);
 
     /**
      * Adds another subtype to this type
      *
-     * @param type The sub type of this rule type
-     * @return The RuleType itself
+     * @param type The sub type of this {@link Rule}
+     * @return The Rule itself
      */
-    RuleType sub(RuleType type);
+    Rule sub(Rule type);
 
     /**
      *
-     * @return All the sub types of this rule type
+     * @return All the sub types of this {@link Rule}
      */
     @Override
-    Stream<RuleType> subs();
+    Stream<Rule> subs();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated
     @CheckReturnValue
     @Override
-    default RuleType asRuleType(){
+    default Rule asRuleType(){
         return this;
     }
 

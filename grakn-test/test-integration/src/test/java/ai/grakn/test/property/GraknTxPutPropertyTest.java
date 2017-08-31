@@ -22,10 +22,10 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
@@ -39,7 +39,6 @@ import ai.grakn.util.Schema;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
@@ -61,7 +60,7 @@ import static org.junit.Assume.assumeThat;
 @RunWith(JUnitQuickcheck.class)
 public class GraknTxPutPropertyTest {
 
-    @Rule
+    @org.junit.Rule
     public ExpectedException exception = ExpectedException.none();
 
     @Property
@@ -187,15 +186,15 @@ public class GraknTxPutPropertyTest {
 
     @Property
     public void whenCallingPutRuleType_CreateATypeWithSuperTypeRule(@Open GraknTx tx, @Unused Label label) {
-        RuleType ruleType = tx.putRuleType(label, tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
-        assertEquals(tx.admin().getMetaRuleType(), ruleType.sup());
+        Rule rule = tx.putRuleType(label, tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
+        assertEquals(tx.admin().getMetaRuleType(), rule.sup());
     }
 
     @Property
     public void whenCallingPutRuleTypeWithAnExistingRuleTypeLabel_ItReturnsThatType(
-            @Open GraknTx tx, @FromTx RuleType ruleType) {
-        RuleType newType = tx.putRuleType(ruleType.getLabel(), tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
-        assertEquals(ruleType, newType);
+            @Open GraknTx tx, @FromTx Rule rule) {
+        Rule newType = tx.putRuleType(rule.getLabel(), tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
+        assertEquals(rule, newType);
     }
 
     @Property

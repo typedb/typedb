@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -290,15 +290,15 @@ public class ReasonerUtils {
     }
 
     /**
-     * create transitive {@link RuleType} R(from: X, to: Y) :- R(from: X,to: Z), R(from: Z, to: Y)
-     * @param label the {@link Label} of the new {@link RuleType} to create
+     * create transitive {@link Rule} R(from: X, to: Y) :- R(from: X,to: Z), R(from: Z, to: Y)
+     * @param label the {@link Label} of the new {@link Rule} to create
      * @param relType transitive {@link RelationshipType}
      * @param fromRoleLabel  from directional {@link Role} {@link Label}
      * @param toRoleLabel to directional {@link Role} {@link Label}
-     * @param tx for the {@link RuleType} to be inserted
-     * @return the new {@link RuleType}
+     * @param tx for the {@link Rule} to be inserted
+     * @return the new {@link Rule}
      */
-    public static RuleType createTransitiveRule(String label, RelationshipType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx tx){
+    public static Rule createTransitiveRule(String label, RelationshipType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx tx){
         if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPatternAdmin startVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "z").admin();
@@ -310,14 +310,14 @@ public class ReasonerUtils {
 
     /**
      * create reflexive rule R(from: X, to: X) :- R(from: X,to: Y)
-     * @param label the {@link Label} of the new {@link RuleType} to create
+     * @param label the {@link Label} of the new {@link Rule} to create
      * @param relType reflexive {@link RelationshipType}
      * @param fromRoleLabel from directional {@link Role} {@link Label}
      * @param toRoleLabel to directional {@link Role} {@link Label}
-     * @param tx for the {@link RuleType} to be inserted
-     * @return the new {@link RuleType}
+     * @param tx for the {@link Rule} to be inserted
+     * @return the new {@link Rule}
      */
-    public static RuleType createReflexiveRule(String label, RelationshipType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx tx){
+    public static Rule createReflexiveRule(String label, RelationshipType relType, Label fromRoleLabel, Label toRoleLabel, GraknTx tx){
         if (!CommonUtil.containsOnly(relType.relates(), 2)) throw GraqlQueryException.ruleCreationArityMismatch();
 
         VarPattern body = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y");
@@ -327,14 +327,14 @@ public class ReasonerUtils {
 
     /**
      * creates rule parent :- child
-     * @param label the {@link Label} of the new {@link RuleType} to create
+     * @param label the {@link Label} of the new {@link Rule} to create
      * @param parent {@link RelationshipType} of parent
      * @param child {@link RelationshipType} of child
      * @param roleMappings map of corresponding {@link Role} names
-     * @param tx for the {@link RuleType} to be inserted
-     * @return the new {@link RuleType}
+     * @param tx for the {@link Rule} to be inserted
+     * @return the new {@link Rule}
      */
-    public static RuleType createSubPropertyRule(String label, RelationshipType parent, RelationshipType child, Map<Label, Label> roleMappings,
+    public static Rule createSubPropertyRule(String label, RelationshipType parent, RelationshipType child, Map<Label, Label> roleMappings,
                                              GraknTx tx){
         final long parentArity = parent.relates().count();
         final long childArity = child.relates().count();
@@ -354,15 +354,15 @@ public class ReasonerUtils {
 
     /**
      * creates rule R(fromRole: x, toRole: xm) :- R1(fromRole: x, ...), , R2, ... , Rn(..., toRole: xm)
-     * @param label the {@link Label} of the new {@link RuleType} to create
+     * @param label the {@link Label} of the new {@link Rule} to create
      * @param relation head {@link RelationshipType}
      * @param fromRoleLabel specifies the {@link Role} directionality of the head {@link RelationshipType}
      * @param toRoleLabel specifies the {@link Role} directionality of the head {@link RelationshipType}
      * @param chain map containing ordered relation with their corresponding {@link Role} mappings
-     * @param tx for the {@link RuleType} to be inserted
-     * @return the new {@link RuleType}
+     * @param tx for the {@link Rule} to be inserted
+     * @return the new {@link Rule}
      */
-    public static RuleType createPropertyChainRule(String label, RelationshipType relation, Label fromRoleLabel, Label toRoleLabel,
+    public static Rule createPropertyChainRule(String label, RelationshipType relation, Label fromRoleLabel, Label toRoleLabel,
                                                LinkedHashMap<RelationshipType, Pair<Label, Label>> chain, GraknTx tx){
         Stack<Var> varNames = new Stack<>();
         varNames.push(var("x"));

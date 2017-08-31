@@ -25,7 +25,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
@@ -80,7 +80,7 @@ public class RuleTest {
 
         when = graknTx.graql().parsePattern("$x isa Your-Type");
         then = graknTx.graql().parsePattern("$x isa My-Type");
-        RuleType rule = graknTx.putRuleType("My-Sad-Rule-Type", when, then);
+        Rule rule = graknTx.putRuleType("My-Sad-Rule-Type", when, then);
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
@@ -315,7 +315,7 @@ public class RuleTest {
     
     private void validateIllegalRule(Pattern when, Pattern then, ErrorMessage message){
         initTx(graknTx);
-        RuleType rule = graknTx.putRuleType(UUID.randomUUID().toString(), when, then);
+        Rule rule = graknTx.putRuleType(UUID.randomUUID().toString(), when, then);
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
@@ -351,7 +351,7 @@ public class RuleTest {
         when = graknTx.graql().parsePattern("$x isa type1");
         then = graknTx.graql().parsePattern("$x isa type2");
 
-        RuleType rule = graknTx.putRuleType("My-Happy-Rule", when, then);
+        Rule rule = graknTx.putRuleType("My-Happy-Rule", when, then);
         assertThat(rule.getHypothesisTypes().collect(Collectors.toSet()), empty());
         assertThat(rule.getConclusionTypes().collect(Collectors.toSet()), empty());
 
@@ -367,8 +367,8 @@ public class RuleTest {
         when = graknTx.graql().parsePattern("$x isa type1");
         then = graknTx.graql().parsePattern("$x isa type1");
 
-        RuleType rule1 = graknTx.putRuleType("My-Angry-Rule", when, then);
-        RuleType rule2 = graknTx.putRuleType("My-Angry-Rule", when, then);
+        Rule rule1 = graknTx.putRuleType("My-Angry-Rule", when, then);
+        Rule rule2 = graknTx.putRuleType("My-Angry-Rule", when, then);
 
         assertEquals(rule1, rule2);
     }
@@ -380,8 +380,8 @@ public class RuleTest {
         when = graknTx.graql().parsePattern("$x isa type1");
         then = graknTx.graql().parsePattern("$y isa type1");
 
-        RuleType rule1 = graknTx.putRuleType("My-Angry-Rule", when, then);
-        RuleType rule2 = graknTx.putRuleType("My-Angry-Rule", when, then);
+        Rule rule1 = graknTx.putRuleType("My-Angry-Rule", when, then);
+        Rule rule2 = graknTx.putRuleType("My-Angry-Rule", when, then);
 
         assertEquals(rule1, rule2);
     }

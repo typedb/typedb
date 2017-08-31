@@ -18,7 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -147,7 +147,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
-    private Stream<RuleType> getPotentialRules(){
+    private Stream<Rule> getPotentialRules(){
         return RuleUtil.getRulesWithType(getSchemaConcept(), tx());
     }
 

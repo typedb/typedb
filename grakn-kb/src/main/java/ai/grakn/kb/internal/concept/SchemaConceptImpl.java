@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -330,7 +330,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a hypothesis
      */
     @Override
-    public Stream<RuleType> getRulesOfHypothesis() {
+    public Stream<Rule> getRulesOfHypothesis() {
         return neighbours(Direction.IN, Schema.EdgeLabel.HYPOTHESIS);
     }
 
@@ -339,7 +339,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * @return A collection of {@link Rule} for which this {@link SchemaConcept} serves as a conclusion
      */
     @Override
-    public Stream<RuleType> getRulesOfConclusion() {
+    public Stream<Rule> getRulesOfConclusion() {
         return neighbours(Direction.IN, Schema.EdgeLabel.CONCLUSION);
     }
 

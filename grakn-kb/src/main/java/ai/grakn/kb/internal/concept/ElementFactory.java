@@ -24,7 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.kb.internal.GraknTxAbstract;
@@ -136,8 +136,8 @@ public final class ElementFactory {
     }
 
     // ----------------------------------------- Building Rules --------------------------------------------------
-    public RuleTypeImpl buildRuleType(VertexElement vertex, RuleType type, Pattern when, Pattern then){
-        return getOrBuildConcept(vertex, (v) -> new RuleTypeImpl(v, type, when, then));
+    public RuleImpl buildRuleType(VertexElement vertex, Rule type, Pattern when, Pattern then){
+        return getOrBuildConcept(vertex, (v) -> new RuleImpl(v, type, when, then));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
@@ -197,7 +197,7 @@ public final class ElementFactory {
                     concept = new AttributeImpl<>(vertexElement);
                     break;
                 case RULE_TYPE:
-                    concept = new RuleTypeImpl(vertexElement);
+                    concept = new RuleImpl(vertexElement);
                     break;
                 default:
                     throw GraknTxOperationException.unknownConcept(type.name());

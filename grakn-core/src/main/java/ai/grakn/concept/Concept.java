@@ -33,7 +33,7 @@ import javax.annotation.CheckReturnValue;
  *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
- *     ({@link EntityType}, {@link Role}, {@link RelationshipType}, {@link RuleType} or {@link AttributeType})
+ *     ({@link EntityType}, {@link Role}, {@link RelationshipType}, {@link Rule} or {@link AttributeType})
  *     or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Attribute}).
  * </p>
  *
@@ -122,13 +122,13 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Return as a {@link RuleType} if the {@link Concept} is a {@link RuleType}.
+     * Return as a {@link Rule} if the {@link Concept} is a {@link Rule}.
      *
-     * @return A {@link RuleType} if the {@link Concept} is a {@link RuleType}
+     * @return A {@link Rule} if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
-    default RuleType asRuleType(){
-        throw GraknTxOperationException.invalidCasting(this, RuleType.class);
+    default Rule asRuleType(){
+        throw GraknTxOperationException.invalidCasting(this, Rule.class);
     }
 
     /**
@@ -231,9 +231,9 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link RuleType}.
+     * Determine if the {@link Concept} is a {@link Rule}.
      *
-     * @return true if the {@link Concept} is a {@link RuleType}
+     * @return true if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
     default boolean isRuleType(){

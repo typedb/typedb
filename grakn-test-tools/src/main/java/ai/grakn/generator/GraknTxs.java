@@ -31,9 +31,9 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
@@ -254,14 +254,14 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
             },
             // () -> resourceType().setRegex(gen(String.class)), // TODO: Enable this when doesn't throw a NPE
             () -> {
-                RuleType ruleType1 = ruleType();
-                RuleType ruleType2 = ruleType();
-                ruleType1.sup(ruleType2);
-                summary(ruleType1, "superType", ruleType2);
+                Rule rule1 = ruleType();
+                Rule rule2 = ruleType();
+                rule1.sup(rule2);
+                summary(rule1, "superType", rule2);
             },
             //TODO: re-enable when grakn-kb can create graql constructs
             /*() -> {
-                RuleType ruleType = ruleType();
+                Rule ruleType = ruleType();
                 Rule rule = ruleType.putRule(graql.parsePattern("$x"), graql.parsePattern("$x"));// TODO: generate more complicated rules
                 summaryAssign(rule, ruleType, "putRule", "var(\"x\")", "var(\"y\")");
             },*/
@@ -334,7 +334,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
         return random.choose(tx.admin().getMetaRelationType().subs().collect(toSet()));
     }
 
-    private RuleType ruleType() {
+    private Rule ruleType() {
         return random.choose(tx.admin().getMetaRuleType().subs().collect(toSet()));
     }
 
