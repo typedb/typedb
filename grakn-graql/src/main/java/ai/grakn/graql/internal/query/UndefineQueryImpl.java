@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Printer;
-import ai.grakn.graql.Query;
 import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.auto.value.AutoValue;
@@ -46,8 +45,8 @@ abstract class UndefineQueryImpl implements UndefineQuery {
     }
 
     @Override
-    public Query<Void> withTx(GraknTx tx) {
-        return null;
+    public UndefineQuery withTx(GraknTx tx) {
+        return of(varPatterns(), tx);
     }
 
     @Override
@@ -62,7 +61,8 @@ abstract class UndefineQueryImpl implements UndefineQuery {
 
     @Override
     public Stream<String> resultsString(Printer printer) {
-        return null;
+        execute();
+        return Stream.empty();
     }
 
     @Override

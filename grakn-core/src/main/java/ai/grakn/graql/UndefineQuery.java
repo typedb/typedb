@@ -19,6 +19,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
 
 /**
@@ -30,4 +31,7 @@ import ai.grakn.concept.SchemaConcept;
  * @author Felix Chapman
  */
 public interface UndefineQuery extends Query<Void> {
+
+    @Override
+    UndefineQuery withTx(GraknTx tx);
 }

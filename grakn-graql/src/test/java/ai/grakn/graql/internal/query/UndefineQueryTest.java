@@ -34,6 +34,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
+import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.Schema;
@@ -44,6 +45,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
+import java.util.stream.Stream;
 
 import static ai.grakn.concept.AttributeType.DataType.INTEGER;
 import static ai.grakn.concept.AttributeType.DataType.STRING;
@@ -54,6 +56,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -319,5 +322,18 @@ public class UndefineQueryTest {
         exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(IsaProperty.NAME).getMessage());
 
         qb.undefine(var().id(movie.getId()).isa("movie")).execute();
+    }
+
+    @Test
+    public void whenGettingResultsString_ResultIsEmptyAndQueryExecutes() {
+        qb.define(label(NEW_TYPE).sub(ENTITY)).execute();
+
+        assertNotNull(tx.getType(NEW_TYPE));
+
+        Stream<String> stream = qb.undefine(label(NEW_TYPE).sub(ENTITY)).resultsString(Printers.json());
+
+        assertNull(tx.getType(NEW_TYPE));
+
+        assertThat(stream.toArray(), emptyArray());
     }
 }
