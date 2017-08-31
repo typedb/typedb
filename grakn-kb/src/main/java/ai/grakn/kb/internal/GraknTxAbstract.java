@@ -266,8 +266,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             VertexElement resourceType = addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
             VertexElement role = addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
             VertexElement ruleType = addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
-            VertexElement inferenceRuleType = addTypeVertex(Schema.MetaSchema.INFERENCE_RULE.getId(), Schema.MetaSchema.INFERENCE_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
-            VertexElement constraintRuleType = addTypeVertex(Schema.MetaSchema.CONSTRAINT_RULE.getId(), Schema.MetaSchema.CONSTRAINT_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
 
             relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
             role.property(Schema.VertexProperty.IS_ABSTRACT, true);
@@ -279,12 +277,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             ruleType.addEdge(type, Schema.EdgeLabel.SUB);
             resourceType.addEdge(type, Schema.EdgeLabel.SUB);
             entityType.addEdge(type, Schema.EdgeLabel.SUB);
-            inferenceRuleType.addEdge(ruleType, Schema.EdgeLabel.SUB);
-            constraintRuleType.addEdge(ruleType, Schema.EdgeLabel.SUB);
-
-            //Manual creation of shards on meta types which have instances
-            createMetaShard(inferenceRuleType);
-            createMetaShard(constraintRuleType);
 
             schemaInitialised = true;
         }
@@ -298,11 +290,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return schemaInitialised;
     }
 
-    private void createMetaShard(VertexElement metaNode) {
-        VertexElement metaShard = addVertex(Schema.BaseType.SHARD);
-        metaShard.addEdge(metaNode, Schema.EdgeLabel.SHARD);
-        metaNode.property(Schema.VertexProperty.CURRENT_SHARD, metaShard.id().toString());
-    }
 
     /**
      * Copies the {@link SchemaConcept} and it's subs into the {@link TxCache}.
@@ -678,16 +665,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public RuleType getMetaRuleType() {
         return getSchemaConcept(Schema.MetaSchema.RULE.getId());
-    }
-
-    @Override
-    public RuleType getMetaRuleInference() {
-        return getSchemaConcept(Schema.MetaSchema.INFERENCE_RULE.getId());
-    }
-
-    @Override
-    public RuleType getMetaRuleConstraint() {
-        return getSchemaConcept(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
     public void putShortcutEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {

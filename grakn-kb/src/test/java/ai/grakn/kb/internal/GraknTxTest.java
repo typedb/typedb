@@ -126,8 +126,6 @@ public class GraknTxTest extends TxTestBase {
                 tx.admin().getMetaEntityType(),
                 tx.admin().getMetaRuleType(),
                 tx.admin().getMetaResourceType(),
-                tx.admin().getMetaRuleConstraint(),
-                tx.admin().getMetaRuleInference(),
                 sampleEntityType,
                 sampleRelationshipType
         ));

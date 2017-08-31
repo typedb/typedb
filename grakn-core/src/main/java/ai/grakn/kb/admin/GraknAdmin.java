@@ -132,22 +132,6 @@ public interface GraknAdmin {
     @CheckReturnValue
     RuleType getMetaRuleType();
 
-    /**
-     * Get the root of all inference rules.
-     *
-     * @return The meta rule -> inference-rule.
-     */
-    @CheckReturnValue
-    RuleType getMetaRuleInference();
-
-    /**
-     * Get the root of all constraint rules.
-     *
-     * @return The meta rule -> constraint-rule.
-     */
-    @CheckReturnValue
-    RuleType getMetaRuleConstraint();
-
     //------------------------------------- Admin Specific Operations ----------------------------------
 
     /**

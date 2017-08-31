@@ -85,9 +85,7 @@ public final class Schema {
         ROLE("role", 3),
         ATTRIBUTE("attribute", 4),
         RELATIONSHIP("relationship", 5),
-        RULE("rule", 6),
-        INFERENCE_RULE("inference-rule", 7),
-        CONSTRAINT_RULE("constraint-rule", 8);
+        RULE("rule", 6);
 
 
         private final Label label;
