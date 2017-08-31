@@ -21,10 +21,11 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Attribute;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxJanus;
@@ -42,11 +43,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.ErrorMessage.TX_CLOSED_ON_ACTION;
 import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
+import static ai.grakn.util.ErrorMessage.TX_CLOSED_ON_ACTION;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -260,5 +262,16 @@ public class GraknTxJanusTest extends JanusTestBase {
         try(GraknTx graph = factory.open(GraknTxType.WRITE)){
             graph.getEntityType(label).addEntity();
         }
+    }
+
+    @Test
+    public void whenDeletingAConcept_TheConceptIsDeleted() {
+        Concept sacrifice = graknTx.putEntityType("sacrifice");
+
+        assertFalse(sacrifice.isDeleted());
+
+        sacrifice.delete();
+
+        assertTrue(sacrifice.isDeleted());
     }
 }

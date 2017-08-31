@@ -308,10 +308,8 @@ public final class ElementFactory {
 
     @Nullable
     public VertexElement buildVertexElement(Vertex vertex){
-        try {
-            graknGraph.validVertex(vertex);
-        } catch (IllegalStateException e){
-            LOG.warn("Invalid vertex [" + vertex + "] due to " + e.getMessage(), e);
+        if (!graknGraph.validElement(vertex)) {
+            LOG.warn("Invalid vertex [" + vertex + "]");
             return null;
         }
 
