@@ -91,7 +91,9 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     public PropertyExecutor undefine(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();
-            type.setAbstract(false);
+            if (!type.isDeleted()) {
+                type.setAbstract(false);
+            }
         };
 
         return PropertyExecutor.builder(method).requires(var).build();

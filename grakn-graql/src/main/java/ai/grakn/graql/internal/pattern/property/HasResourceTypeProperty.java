@@ -159,10 +159,12 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
             Type type = executor.get(var).asType();
             AttributeType<?> attributeType = executor.get(resourceType().var()).asAttributeType();
 
-            if (required()) {
-                type.deleteKey(attributeType);
-            } else {
-                type.deleteAttribute(attributeType);
+            if (!type.isDeleted() && !attributeType.isDeleted()) {
+                if (required()) {
+                    type.deleteKey(attributeType);
+                } else {
+                    type.deleteAttribute(attributeType);
+                }
             }
         };
 

@@ -101,7 +101,10 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
         PropertyExecutor.Method method = executor -> {
             Type type = executor.get(var).asType();
             Role role = executor.get(this.role().var()).asRole();
-            type.deletePlays(role);
+
+            if (!type.isDeleted() && !role.isDeleted()) {
+                type.deletePlays(role);
+            }
         };
 
         return PropertyExecutor.builder(method).requires(var, role().var()).build();

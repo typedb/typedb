@@ -82,7 +82,7 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
     public PropertyExecutor undefine(Var var) throws GraqlQueryException {
         PropertyExecutor.Method method = executor -> {
             AttributeType<Object> attributeType = executor.get(var).asAttributeType();
-            if (regex().equals(attributeType.getRegex())) {
+            if (!attributeType.isDeleted() && regex().equals(attributeType.getRegex())) {
                 attributeType.setRegex(null);
             }
         };

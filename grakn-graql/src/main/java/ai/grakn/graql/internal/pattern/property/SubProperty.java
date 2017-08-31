@@ -111,7 +111,7 @@ public abstract class SubProperty extends AbstractVarProperty implements NamedPr
             SchemaConcept expectedSuperConcept = executor.get(superType().var()).asSchemaConcept();
             SchemaConcept actualSuperConcept = concept.sup();
 
-            if (expectedSuperConcept.equals(actualSuperConcept)) {
+            if (!concept.isDeleted() && expectedSuperConcept.equals(actualSuperConcept)) {
                 concept.delete();
             }
         };
