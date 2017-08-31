@@ -30,8 +30,8 @@ import java.util.Set;
 /**
  * a query used for finding data in a graph that matches the given patterns.
  * <p>
- * The {@code MatchQuery} is a pattern-matching query. The patterns are described in a declarative fashion, forming a
- * subgraph, then the {@code MatchQuery} will traverse the graph in an efficient fashion to find any matching subgraphs.
+ * The {@link GetQuery} is a pattern-matching query. The patterns are described in a declarative fashion, forming a
+ * subgraph, then the {@link GetQuery} will traverse the graph in an efficient fashion to find any matching subgraphs.
  * <p>
  * Each matching subgraph will produce a map, where keys are variable names and values are concepts in the graph.
  *
@@ -53,10 +53,10 @@ public interface GetQuery extends Query<List<Answer>>, Streamable<Answer> {
     Optional<GraknTx> tx();
 
     /**
-     * Get the {@link MatchQuery} this {@link GetQuery} contains
+     * Get the {@link Match} this {@link GetQuery} contains
      */
     @CheckReturnValue
-    MatchQuery matchQuery();
+    Match match();
 
     /**
      * Get the {@link Var}s this {@link GetQuery} will select from the answers

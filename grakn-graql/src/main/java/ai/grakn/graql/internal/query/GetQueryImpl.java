@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -45,11 +45,11 @@ import static java.util.stream.Collectors.toList;
 public abstract class GetQueryImpl implements GetQuery {
 
     public abstract ImmutableSet<Var> vars();
-    public abstract MatchQuery matchQuery();
+    public abstract Match match();
 
     @Override
     public GetQuery withTx(GraknTx tx) {
-        return Queries.get(vars(), matchQuery().withTx(tx).admin());
+        return Queries.get(vars(), match().withTx(tx).admin());
     }
 
     @Override
@@ -69,16 +69,16 @@ public abstract class GetQueryImpl implements GetQuery {
 
     @Override
     public Stream<Answer> stream() {
-        return matchQuery().stream().map(result -> result.filterVars(vars())).distinct();
+        return match().stream().map(result -> result.filterVars(vars())).distinct();
     }
 
     @Nullable
     public Optional<GraknTx> tx() {
-        return matchQuery().admin().tx();
+        return match().admin().tx();
     }
 
     @Override
     public String toString() {
-        return matchQuery().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
+        return match().toString() + " get " + vars().stream().map(Object::toString).collect(joining(", ")) + ";";
     }
 }

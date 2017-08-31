@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -28,17 +29,17 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * A MatchQuery implementation, which contains an 'inner' MatchQuery.
+ * A {@link Match} implementation, which contains an 'inner' {@link Match}.
  *
- * This class behaves like a singly-linked list, referencing another MatchQuery until it reaches a MatchQueryBase.
+ * This class behaves like a singly-linked list, referencing another {@link Match} until it reaches a {@link MatchBase}.
  *
  * Query modifiers should extend this class and implement a stream() method that modifies the inner query.
  */
-abstract class MatchQueryModifier extends AbstractMatchQuery {
+abstract class MatchModifier extends AbstractMatch {
 
-    final AbstractMatchQuery inner;
+    final AbstractMatch inner;
 
-    MatchQueryModifier(AbstractMatchQuery inner) {
+    MatchModifier(AbstractMatch inner) {
         this.inner = inner;
     }
 
@@ -82,7 +83,7 @@ abstract class MatchQueryModifier extends AbstractMatchQuery {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        MatchQueryModifier maps = (MatchQueryModifier) o;
+        MatchModifier maps = (MatchModifier) o;
 
         return inner.equals(maps.inner);
     }

@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.test.SampleKBContext;
@@ -60,10 +60,10 @@ public class DeleteQueryTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private MatchQuery kurtz;
-    private MatchQuery marlonBrando;
-    private MatchQuery apocalypseNow;
-    private MatchQuery kurtzCastRelation;
+    private Match kurtz;
+    private Match marlonBrando;
+    private Match apocalypseNow;
+    private Match kurtzCastRelation;
 
     @Before
     public void setUp() {
@@ -126,7 +126,7 @@ public class DeleteQueryTest {
     @Test
     public void testDeleteAllRolePlayers() {
         ConceptId id = kurtzCastRelation.get("a").findFirst().get().getId();
-        MatchQuery relation = qb.match(var().id(id));
+        Match relation = qb.match(var().id(id));
 
         assertExists(kurtz);
         assertExists(marlonBrando);
@@ -175,7 +175,7 @@ public class DeleteQueryTest {
 
     @Test
     public void testDeleteEntityTypeWithNoInstances() {
-        MatchQuery shoeType = qb.match(x.label("shoe").sub("entity"));
+        Match shoeType = qb.match(x.label("shoe").sub("entity"));
 
         qb.define(label("shoe").sub("entity")).execute();
 
@@ -188,7 +188,7 @@ public class DeleteQueryTest {
 
     @Test
     public void testDeleteEntityTypeAfterInstances() {
-        MatchQuery movie = qb.match(x.isa("movie"));
+        Match movie = qb.match(x.isa("movie"));
 
         assertNotNull(movieKB.tx().getEntityType("movie"));
         assertExists(movie);

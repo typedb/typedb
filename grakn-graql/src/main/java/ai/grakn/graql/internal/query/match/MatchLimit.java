@@ -19,30 +19,34 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknTx;
-
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
+
 import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * "Order" modify that orders the underlying match query
+ * "Limit" modifier for match query that limits the results of a query.
  */
-class MatchQueryOrder extends MatchQueryModifier {
+class MatchLimit extends MatchModifier {
 
-    private final MatchOrderImpl order;
+    private final long limit;
 
-    MatchQueryOrder(AbstractMatchQuery inner, MatchOrderImpl order) {
+    MatchLimit(AbstractMatch inner, long limit) {
         super(inner);
-        this.order = order;
+        if (limit <= 0) {
+            throw GraqlQueryException.nonPositiveLimit(limit);
+        }
+        this.limit = limit;
     }
 
     @Override
     public Stream<Answer> stream(Optional<GraknTx> graph) {
-        return order.orderStream(inner.stream(graph));
+        return inner.stream(graph).limit(limit);
     }
 
     @Override
     protected String modifierString() {
-        return " " + order.toString() + ";";
+        return " limit " + limit + ";";
     }
 }

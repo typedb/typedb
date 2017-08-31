@@ -76,18 +76,18 @@ public class GraqlControllerTest {
     }
 
     @Test
-    public void whenRunningMatchQuery_JsonResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie;", jsonPrinter, APPLICATION_JSON_GRAQL);
+    public void whenRunningGetQuery_JsonResponseIsTheSameAsJava() {
+        assertResponseSameAsJavaGraql("match $x isa movie; get;", jsonPrinter, APPLICATION_JSON_GRAQL);
     }
 
     @Test
-    public void whenRunningMatchQuery_GraqlResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie;", graqlPrinter, APPLICATION_TEXT);
+    public void whenRunningGetQuery_GraqlResponseIsTheSameAsJava() {
+        assertResponseSameAsJavaGraql("match $x isa movie; get;", graqlPrinter, APPLICATION_TEXT);
     }
 
     @Test
-    public void whenRunningMatchQuery_HalResponseIsTheSameAsJava() {
-        assertResponseSameAsJavaGraql("match $x isa movie;", halPrinter, APPLICATION_HAL);
+    public void whenRunningGetQuery_HalResponseIsTheSameAsJava() {
+        assertResponseSameAsJavaGraql("match $x isa movie; get;", halPrinter, APPLICATION_HAL);
     }
 
     @Test

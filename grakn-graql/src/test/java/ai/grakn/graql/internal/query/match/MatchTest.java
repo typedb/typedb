@@ -35,7 +35,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
@@ -173,7 +173,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "unchecked"})
-public class MatchQueryTest {
+public class MatchTest {
 
     private static final Var x = var("x");
     private static final Var y = var("y");
@@ -812,7 +812,7 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchAllResourcesUsingResourceName() {
-        MatchQuery query = qb.match(var().has("title", "Godfather").has(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue(), x));
+        Match query = qb.match(var().has("title", "Godfather").has(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue(), x));
 
         Thing godfather = movieKB.tx().getAttributeType("title").getAttribute("Godfather").owner();
         Set<Attribute<?>> expected = godfather.attributes().collect(toSet());
@@ -994,7 +994,7 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryingForAnImplicitRelationById_TheRelationIsReturned() {
-        MatchQuery query = qb.match(var("x").isa(label(Schema.ImplicitType.HAS.getLabel("name"))));
+        Match query = qb.match(var("x").isa(label(Schema.ImplicitType.HAS.getLabel("name"))));
 
         Relationship relationship = query.get("x").findAny().get().asRelationship();
 

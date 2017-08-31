@@ -52,7 +52,7 @@ public class QueryToStringTest {
     }
 
     @Test
-    public void testSimpleMatchQueryToString() {
+    public void testSimpleGetQueryToString() {
         assertSameResults(qb.match(var("x").isa("movie").label("Godfather")).get());
     }
 

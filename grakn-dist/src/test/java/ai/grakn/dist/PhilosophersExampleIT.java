@@ -4,7 +4,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import org.junit.BeforeClass;
@@ -57,7 +57,7 @@ public class PhilosophersExampleIT {
 
     @Test
     public void testAlexanderIsTheOnlyPharaoh() {
-        MatchQuery pharaoh = qb.parse("match has name $x, has title contains 'Pharaoh';");
+        Match pharaoh = qb.parse("match has name $x, has title contains 'Pharaoh';");
         assertEquals("Alexander", pharaoh.iterator().next().get("x").asAttribute().getValue());
     }
 

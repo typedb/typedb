@@ -22,12 +22,12 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.InsertQueryAdmin;
-import ai.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
@@ -46,8 +46,8 @@ public class Queries {
     private Queries() {
     }
 
-    public static GetQuery get(ImmutableSet<Var> vars, MatchQueryAdmin matchQuery) {
-        Set<Var> selectedVars = matchQuery.getSelectedNames();
+    public static GetQuery get(ImmutableSet<Var> vars, MatchAdmin match) {
+        Set<Var> selectedVars = match.getSelectedNames();
 
         for (Var var : vars) {
             if (!selectedVars.contains(var)) {
@@ -55,22 +55,22 @@ public class Queries {
             }
         }
 
-        return new AutoValue_GetQueryImpl(vars, matchQuery);
+        return new AutoValue_GetQueryImpl(vars, match);
     }
 
     /**
-     * @param vars       a collection of Vars to insert
-     * @param matchQuery the match query to insert for each result
+     * @param vars  a collection of Vars to insert
+     * @param match the {@link Match} to insert for each result
      */
-    public static InsertQueryAdmin insert(ImmutableCollection<VarPatternAdmin> vars, MatchQueryAdmin matchQuery) {
-        return new InsertQueryImpl(vars, Optional.of(matchQuery), Optional.empty());
+    public static InsertQueryAdmin insert(ImmutableCollection<VarPatternAdmin> vars, MatchAdmin match) {
+        return new InsertQueryImpl(vars, Optional.of(match), Optional.empty());
     }
 
-    public static DeleteQueryAdmin delete(Collection<? extends Var> vars, MatchQuery matchQuery) {
-        return DeleteQueryImpl.of(vars, matchQuery);
+    public static DeleteQueryAdmin delete(Collection<? extends Var> vars, Match match) {
+        return DeleteQueryImpl.of(vars, match);
     }
 
-    public static <T> AggregateQuery<T> aggregate(MatchQueryAdmin matchQuery, Aggregate<? super Answer, T> aggregate) {
-        return new AggregateQueryImpl<>(matchQuery, aggregate);
+    public static <T> AggregateQuery<T> aggregate(MatchAdmin match, Aggregate<? super Answer, T> aggregate) {
+        return new AggregateQueryImpl<>(match, aggregate);
     }
 }

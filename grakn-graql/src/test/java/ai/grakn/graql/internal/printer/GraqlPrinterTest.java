@@ -23,7 +23,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
@@ -50,7 +50,7 @@ public class GraqlPrinterTest {
     public void testRelationOutput() {
         Printer printer = Printers.graql(true);
 
-        MatchQuery query = rule.tx().graql().match(var("r").isa("has-cast")
+        Match query = rule.tx().graql().match(var("r").isa("has-cast")
                 .rel(var().has("name", "Al Pacino"))
                 .rel(var().has("name", "Michael Corleone"))
                 .rel(var().has("title", "Godfather")));
@@ -67,7 +67,7 @@ public class GraqlPrinterTest {
     public void whenGettingOutputForRelation_TheResultShouldHaveCommasBetweenRolePlayers() {
         Printer printer = Printers.graql(true);
 
-        MatchQuery query = rule.tx().graql().match(var("r").isa("has-cluster"));
+        Match query = rule.tx().graql().match(var("r").isa("has-cluster"));
 
         Relationship relationship = query.get("r").iterator().next().asRelationship();
         long numRolePlayers = relationship.rolePlayers().count();
@@ -85,7 +85,7 @@ public class GraqlPrinterTest {
     public void whenGettingOutputForResource_IncludesValueOfResource() {
         Printer printer = Printers.graql(false);
 
-        MatchQuery query = rule.tx().graql().match(var("x").isa("title").val("Godfather"));
+        Match query = rule.tx().graql().match(var("x").isa("title").val("Godfather"));
 
         String result = printer.graqlString(query.iterator().next());
 

@@ -703,8 +703,8 @@ public class ReasonerTest {
 
         final int offset = 4;
         List<Answer> fullAnswers = query.execute();
-        List<Answer> answers = query.matchQuery().orderBy(Graql.var("a")).get().execute();
-        List<Answer> answers2 = query.matchQuery().orderBy(Graql.var("a")).offset(offset).get().execute();
+        List<Answer> answers = query.match().orderBy(Graql.var("a")).get().execute();
+        List<Answer> answers2 = query.match().orderBy(Graql.var("a")).offset(offset).get().execute();
 
         assertEquals(fullAnswers.size(), answers2.size() + offset);
         assertEquals(answers.size(), answers2.size() + offset);

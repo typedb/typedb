@@ -24,7 +24,7 @@ import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
@@ -65,7 +65,7 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void whenBuildingMatchQueryWithGraphLast_ItExecutes() {
+    public void whenBuildingMatchWithGraphLast_ItExecutes() {
         GetQuery query = match(x.isa("movie")).withTx(movieKB.tx()).get();
         assertThat(query, variable(x, containsAllMovies));
     }
@@ -102,8 +102,8 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void whenExecutingAMatchQueryWithoutAGraph_Throw() {
-        MatchQuery query = match(x.isa("movie"));
+    public void whenExecutingAMatchWithoutAGraph_Throw() {
+        Match query = match(x.isa("movie"));
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
         //noinspection ResultOfMethodCallIgnored
@@ -127,7 +127,7 @@ public class QueryBuilderTest {
 
     @Test
     public void whenGraphIsProvidedAndQueryExecutedWithNonexistentType_Throw() {
-        MatchQuery query = match(x.isa("not-a-thing"));
+        Match query = match(x.isa("not-a-thing"));
         exception.expect(GraqlQueryException.class);
         //noinspection ResultOfMethodCallIgnored
         query.withTx(movieKB.tx()).stream();

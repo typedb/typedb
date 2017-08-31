@@ -20,43 +20,48 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
-
 import ai.grakn.graql.admin.Answer;
+import com.google.auto.value.AutoValue;
+
 import java.util.Comparator;
 import java.util.stream.Stream;
 
-class MatchOrderImpl implements MatchOrder {
+/**
+ * A class for handling ordering match queries.
+ *
+ * @author Felix Chapman
+ */
+@AutoValue
+abstract class Ordering {
 
-    private final Var var;
+    abstract Var var();
+    abstract Order order();
 
-    private final Comparator<Answer> comparator;
+    static Ordering of(Var var, Order order) {
+        return new AutoValue_Ordering(var, order);
+    }
 
-    MatchOrderImpl(Var var, Order order) {
-        this.var = var;
+    /**
+     * Order the stream
+     * @param stream the stream to order
+     */
+    Stream<Answer> orderStream(Stream<Answer> stream) {
+        return stream.sorted(comparator());
+    }
 
+    private Comparator<Answer> comparator() {
         Comparator<Answer> comparator = Comparator.comparing(this::getOrderValue);
-
-        this.comparator = (order == Order.desc) ? comparator.reversed() : comparator;
-    }
-
-    @Override
-    public Var getVar() {
-        return var;
-    }
-
-    @Override
-    public Stream<Answer> orderStream(Stream<Answer> stream) {
-        return stream.sorted(comparator);
+        return (order() == Order.desc) ? comparator.reversed() : comparator;
     }
 
     // All data types are comparable, so this is safe
     @SuppressWarnings("unchecked")
     private Comparable<? super Comparable> getOrderValue(Answer result) {
-        return (Comparable<? super Comparable>) result.get(var).asAttribute().getValue();
+        return (Comparable<? super Comparable>) result.get(var()).asAttribute().getValue();
     }
 
     @Override
     public String toString() {
-        return "order by " + var + " ";
+        return "order by " + var() + " ";
     }
 }

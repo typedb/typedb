@@ -26,7 +26,7 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
@@ -179,7 +179,7 @@ public class QueryErrorTest {
 
     @Test
     public void testGetNonExistentVariable() {
-        MatchQuery query = qb.match(var("x").isa("movie"));
+        Match query = qb.match(var("x").isa("movie"));
 
         Stream<Concept> concepts = query.get("y");
 

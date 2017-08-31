@@ -23,7 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
@@ -60,7 +60,7 @@ import static ai.grakn.graql.internal.hal.HALUtils.computeRoleTypesFromQuery;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Class for building HAL representations of a {@link Concept} or a {@link MatchQuery}.
+ * Class for building HAL representations of a {@link Concept} or a {@link Match}.
  *
  * @author Marco Scoppetta
  */
@@ -86,7 +86,7 @@ public class HALBuilder {
             roleTypes = computeRoleTypesFromQuery(getQuery, results.iterator().next());
         }
         //Collect all the types explicitly asked in the match query
-        Set<Label> typesAskedInQuery = getQuery.matchQuery().admin().getSchemaConcepts().stream().map(SchemaConcept::getLabel).collect(toSet());
+        Set<Label> typesAskedInQuery = getQuery.match().admin().getSchemaConcepts().stream().map(SchemaConcept::getLabel).collect(toSet());
 
         return buildHALRepresentations(results, typesAskedInQuery, roleTypes, keyspace, offset, limit, filterInstances);
     }

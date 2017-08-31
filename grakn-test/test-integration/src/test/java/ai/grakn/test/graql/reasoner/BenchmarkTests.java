@@ -96,7 +96,7 @@ public class BenchmarkTests {
 
         int limit = 100;
         startTime = System.currentTimeMillis();
-        List<Answer> results = query.matchQuery().limit(limit).get().execute();
+        List<Answer> results = query.match().limit(limit).get().execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }
@@ -145,12 +145,12 @@ public class BenchmarkTests {
 
         int limit = 10;
         startTime = System.currentTimeMillis();
-        List<Answer> results = query.matchQuery().limit(limit).get().execute();
+        List<Answer> results = query.match().limit(limit).get().execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
 
         startTime = System.currentTimeMillis();
-        results = query2.matchQuery().limit(limit).get().execute();
+        results = query2.match().limit(limit).get().execute();
         answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }
@@ -221,7 +221,7 @@ public class BenchmarkTests {
 
         int limit = 100;
         startTime = System.currentTimeMillis();
-        List<Answer> results = query.matchQuery().limit(limit).get().execute();
+        List<Answer> results = query.match().limit(limit).get().execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }
@@ -274,7 +274,7 @@ public class BenchmarkTests {
 
         int limit = 10;
         startTime = System.currentTimeMillis();
-        List<Answer> results = query.matchQuery().limit(limit).get().execute();
+        List<Answer> results = query.match().limit(limit).get().execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }

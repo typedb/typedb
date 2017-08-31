@@ -19,8 +19,7 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.internal.pattern.Patterns;
 import com.google.common.collect.Sets;
 import org.junit.Test;
@@ -28,31 +27,31 @@ import org.junit.Test;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.mockito.Mockito.mock;
 
-public class MatchQueryBaseTest {
+public class MatchKBTest {
 
-    private final Conjunction<PatternAdmin> pattern1 = Patterns.conjunction(Sets.newHashSet(
-            var("x").isa("movie").admin(),
-            var().rel("x").rel("y").admin()
-    ));
-
-    private final Conjunction<PatternAdmin> pattern2 = Patterns.conjunction(Sets.newHashSet(
-            var("x").isa("movie").has("title", var("y")).admin()
-    ));
+    private final AbstractMatch query =
+            new MatchBase(Patterns.conjunction(Sets.newHashSet(var("x").admin())));
 
     @Test
-    public void matchQueriesContainingTheSamePatternAreEqual() {
-        MatchQueryBase query1 = new MatchQueryBase(pattern1);
-        MatchQueryBase query2 = new MatchQueryBase(pattern1);
+    public void matchesContainingTheSameGraphAndMatchBaseAreEqual() {
+        GraknTx graph = mock(GraknTx.class);
+
+        MatchTx query1 = new MatchTx(graph, query);
+        MatchTx query2 = new MatchTx(graph, query);
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
     }
 
     @Test
-    public void matchQueriesContainingDifferentPatternsAreNotEqual() {
-        MatchQueryBase query1 = new MatchQueryBase(pattern1);
-        MatchQueryBase query2 = new MatchQueryBase(pattern2);
+    public void matchesContainingDifferentGraphsAreNotEqual() {
+        GraknTx graph1 = mock(GraknTx.class);
+        GraknTx graph2 = mock(GraknTx.class);
+
+        MatchTx query1 = new MatchTx(graph1, query);
+        MatchTx query2 = new MatchTx(graph2, query);
 
         assertNotEquals(query1, query2);
     }

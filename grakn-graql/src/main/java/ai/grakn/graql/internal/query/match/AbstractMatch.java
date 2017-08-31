@@ -27,12 +27,12 @@ import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.util.AdminConverter;
@@ -51,10 +51,10 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 
 @SuppressWarnings("UnusedReturnValue")
-abstract class AbstractMatchQuery implements MatchQueryAdmin {
+abstract class AbstractMatch implements MatchAdmin {
 
     @Override
-    public final MatchQueryAdmin admin() {
+    public final MatchAdmin admin() {
         return this;
     }
 
@@ -71,18 +71,18 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final MatchQuery withTx(GraknTx tx) {
-        return new MatchQueryTx(tx, this);
+    public final Match withTx(GraknTx tx) {
+        return new MatchTx(tx, this);
     }
 
     @Override
-    public final MatchQuery limit(long limit) {
-        return new MatchQueryLimit(this, limit);
+    public final Match limit(long limit) {
+        return new MatchLimit(this, limit);
     }
 
     @Override
-    public final MatchQuery offset(long offset) {
-        return new MatchQueryOffset(this, offset);
+    public final Match offset(long offset) {
+        return new MatchOffset(this, offset);
     }
 
     @Override
@@ -155,22 +155,22 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final MatchQuery orderBy(String varName) {
+    public final Match orderBy(String varName) {
         return orderBy(varName, asc);
     }
 
     @Override
-    public final MatchQuery orderBy(Var varName) {
+    public final Match orderBy(Var varName) {
         return orderBy(varName, asc);
     }
 
     @Override
-    public final MatchQuery orderBy(String varName, Order order) {
+    public final Match orderBy(String varName, Order order) {
         return orderBy(Graql.var(varName), order);
     }
 
     @Override
-    public final MatchQuery orderBy(Var varName, Order order) {
-        return new MatchQueryOrder(this, new MatchOrderImpl(varName, order));
+    public final Match orderBy(Var varName, Order order) {
+        return new MatchOrder(this, Ordering.of(varName, order));
     }
 }

@@ -24,7 +24,7 @@ import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.ComputeQueryBuilder;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -35,7 +35,7 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.parser.QueryParser;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.analytics.ComputeQueryBuilderImpl;
-import ai.grakn.graql.internal.query.match.MatchQueryBase;
+import ai.grakn.graql.internal.query.match.MatchBase;
 import ai.grakn.graql.internal.template.TemplateParser;
 import ai.grakn.graql.internal.util.AdminConverter;
 import ai.grakn.graql.macro.Macro;
@@ -97,7 +97,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     @Override
-    public MatchQuery match(Pattern... patterns) {
+    public Match match(Pattern... patterns) {
         return match(Arrays.asList(patterns));
     }
 
@@ -106,10 +106,10 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     @Override
-    public MatchQuery match(Collection<? extends Pattern> patterns) {
+    public Match match(Collection<? extends Pattern> patterns) {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
-        MatchQueryBase base = new MatchQueryBase(conjunction);
-        MatchQuery query = infer ? base.infer(materialise).admin() : base;
+        MatchBase base = new MatchBase(conjunction);
+        Match query = infer ? base.infer(materialise).admin() : base;
         return tx.map(query::withTx).orElse(query);
     }
 

@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.match;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.matcher.MovieMatchers;
@@ -49,7 +49,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class MatchQueryModifierTest {
+public class MatchModifierTest {
 
     private QueryBuilder qb;
 
@@ -134,7 +134,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void whenGettingAVarNotInQuery_Throw() {
-        MatchQuery query = qb.match(x.isa("movie"));
+        Match query = qb.match(x.isa("movie"));
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y));

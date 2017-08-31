@@ -36,11 +36,11 @@ import static ai.grakn.util.CommonUtil.optionalOr;
 /**
  * Modifier that specifies the graph to execute the match query with.
  */
-class MatchQueryInfer extends MatchQueryModifier {
+class MatchInfer extends MatchModifier {
 
     private final boolean materialise;
 
-    MatchQueryInfer(AbstractMatchQuery inner, boolean materialise) {
+    MatchInfer(AbstractMatch inner, boolean materialise) {
         super(inner);
         this.materialise = materialise;
     }

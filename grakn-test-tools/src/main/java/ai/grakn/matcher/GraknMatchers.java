@@ -23,7 +23,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.GetQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -83,8 +83,8 @@ public class GraknMatchers {
     /**
      * Create a matcher to test against every variable of every result of a Graql query.
      */
-    public static Matcher<MatchQuery> allVariables(Matcher<? extends Iterable<? extends MatchableConcept>> matcher) {
-        return new PropertyMatcher<MatchQuery, Iterable<? extends MatchableConcept>>(matcher) {
+    public static Matcher<Match> allVariables(Matcher<? extends Iterable<? extends MatchableConcept>> matcher) {
+        return new PropertyMatcher<Match, Iterable<? extends MatchableConcept>>(matcher) {
 
             @Override
             public String getName() {
@@ -92,7 +92,7 @@ public class GraknMatchers {
             }
 
             @Override
-            Iterable<? extends MatchableConcept> transform(MatchQuery item) {
+            Iterable<? extends MatchableConcept> transform(Match item) {
                 return item.stream()
                         .flatMap(result -> result.values().stream())
                         .map(MatchableConcept::of)

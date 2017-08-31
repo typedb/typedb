@@ -28,11 +28,11 @@ import java.util.stream.Stream;
 /**
  * "Offset" modifier for match query that offsets (skips) some number of results.
  */
-class MatchQueryOffset extends MatchQueryModifier {
+class MatchOffset extends MatchModifier {
 
     private final long offset;
 
-    MatchQueryOffset(AbstractMatchQuery inner, long offset) {
+    MatchOffset(AbstractMatch inner, long offset) {
         super(inner);
         if (offset < 0) {
             throw GraqlQueryException.negativeOffset(offset);

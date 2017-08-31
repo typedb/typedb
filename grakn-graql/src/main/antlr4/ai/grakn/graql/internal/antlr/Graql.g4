@@ -5,17 +5,17 @@ queryList : query* EOF ;
 queryEOF       : query EOF ;
 query          : getQuery | insertQuery | defineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
-matchQuery     : MATCH patterns                                   # matchBase
-               | matchQuery 'limit' INTEGER                   ';' # matchLimit
-               | matchQuery 'offset' INTEGER                  ';' # matchOffset
-               | matchQuery 'order' 'by' VARIABLE ORDER?      ';' # matchOrderBy
+matchPart      : MATCH patterns                             # matchBase
+               | matchPart 'limit' INTEGER              ';' # matchLimit
+               | matchPart 'offset' INTEGER             ';' # matchOffset
+               | matchPart 'order' 'by' VARIABLE ORDER? ';' # matchOrderBy
                ;
 
-getQuery       : matchQuery 'get' (VARIABLE (',' VARIABLE)*)? ';' ;
-insertQuery    : matchQuery? INSERT varPatterns ;
+getQuery       : matchPart 'get' (VARIABLE (',' VARIABLE)*)? ';' ;
+insertQuery    : matchPart? INSERT varPatterns ;
 defineQuery    : DEFINE varPatterns ;
-deleteQuery    : matchQuery 'delete' variables? ';' ;
-aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
+deleteQuery    : matchPart 'delete' variables? ';' ;
+aggregateQuery : matchPart 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
 
 variables      : VARIABLE (',' VARIABLE)* ;

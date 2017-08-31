@@ -176,7 +176,7 @@ public class HALUtils {
 
     private static Map<VarPatternAdmin, Pair<Map<Var, String>, String>> computeRoleTypesFromQueryNoReasoner(GetQuery getQuery) {
         final Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
-        getQuery.matchQuery().admin().getPattern().varPatterns().forEach(var -> {
+        getQuery.match().admin().getPattern().varPatterns().forEach(var -> {
             if (var.getProperty(RelationProperty.class).isPresent() && !var.var().isUserDefinedName() && bothRolePlayersAreSelectedNoReasoner(var,getQuery)) {
                 Map<Var, String> tempMap = new HashMap<>();
                 var.getProperty(RelationProperty.class).get()

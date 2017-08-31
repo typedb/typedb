@@ -67,7 +67,7 @@ public class Graql {
      * @return a match query that will find matches of the given patterns
      */
     @CheckReturnValue
-    public static MatchQuery match(Pattern... patterns) {
+    public static Match match(Pattern... patterns) {
         return withoutGraph().match(patterns);
     }
 
@@ -76,7 +76,7 @@ public class Graql {
      * @return a match query that will find matches of the given patterns
      */
     @CheckReturnValue
-    public static MatchQuery match(Collection<? extends Pattern> patterns) {
+    public static Match match(Collection<? extends Pattern> patterns) {
         return withoutGraph().match(patterns);
     }
 

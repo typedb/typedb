@@ -21,7 +21,7 @@ package ai.grakn.graql;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.graql.admin.MatchAdmin;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -29,16 +29,17 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * a query used for finding data in a graph that matches the given patterns.
+ * a part of a query used for finding data in a graph that matches the given patterns.
  * <p>
- * The {@code MatchQuery} is a pattern-matching query. The patterns are described in a declarative fashion, forming a
- * subgraph, then the {@code MatchQuery} will traverse the graph in an efficient fashion to find any matching subgraphs.
+ * The {@link Match} is the pattern-matching part of a query. The patterns are described in a declarative fashion,
+ * forming a subgraph, then the {@link Match} will traverse the graph in an efficient fashion to find any matching
+ * subgraphs.
  * <p>
- * Each matching subgraph will produce a map, where keys are variable names and values are concepts in the graph.
+ * Each matching subgraph will produce a map, where keys are variables and values are concepts in the graph.
  *
  * @author Felix Chapman
  */
-public interface MatchQuery extends Streamable<Answer> {
+public interface Match extends Streamable<Answer> {
 
     /**
      * @param var a variable to get
@@ -119,56 +120,56 @@ public interface MatchQuery extends Streamable<Answer> {
     /**
      * Order the results by degree in ascending order
      * @param varName the variable name to order the results by
-     * @return a new MatchQuery with the given ordering
+     * @return a new {@link Match} with the given ordering
      */
     @CheckReturnValue
-    MatchQuery orderBy(String varName);
+    Match orderBy(String varName);
 
     /**
      * Order the results by degree in ascending order
      * @param varName the variable name to order the results by
-     * @return a new MatchQuery with the given ordering
+     * @return a new {@link Match} with the given ordering
      */
     @CheckReturnValue
-    MatchQuery orderBy(Var varName);
+    Match orderBy(Var varName);
 
     /**
      * Order the results by degree
      * @param varName the variable name to order the results by
      * @param order the ordering to use
-     * @return a new MatchQuery with the given ordering
+     * @return a new {@link Match} with the given ordering
      */
     @CheckReturnValue
-    MatchQuery orderBy(String varName, Order order);
+    Match orderBy(String varName, Order order);
 
     /**
      * Order the results by degree
      * @param varName the variable name to order the results by
      * @param order the ordering to use
-     * @return a new MatchQuery with the given ordering
+     * @return a new {@link Match} with the given ordering
      */
     @CheckReturnValue
-    MatchQuery orderBy(Var varName, Order order);
+    Match orderBy(Var varName, Order order);
 
     /**
      * @param tx the graph to execute the query on
-     * @return a new MatchQuery with the graph set
+     * @return a new {@link Match} with the graph set
      */
-    MatchQuery withTx(GraknTx tx);
+    Match withTx(GraknTx tx);
 
     /**
      * @param limit the maximum number of results the query should return
-     * @return a new MatchQuery with the limit set
+     * @return a new {@link Match} with the limit set
      */
     @CheckReturnValue
-    MatchQuery limit(long limit);
+    Match limit(long limit);
 
     /**
      * @param offset the number of results to skip
-     * @return a new MatchQuery with the offset set
+     * @return a new {@link Match} with the offset set
      */
     @CheckReturnValue
-    MatchQuery offset(long offset);
+    Match offset(long offset);
 
     /**
      * Aggregate results of a query.
@@ -183,5 +184,5 @@ public interface MatchQuery extends Streamable<Answer> {
      * @return admin instance for inspecting and manipulating this query
      */
     @CheckReturnValue
-    MatchQueryAdmin admin();
+    MatchAdmin admin();
 }

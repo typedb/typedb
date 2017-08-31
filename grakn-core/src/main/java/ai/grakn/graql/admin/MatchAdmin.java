@@ -20,7 +20,7 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
@@ -28,11 +28,11 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Admin class for inspecting and manipulating a MatchQuery
+ * Admin class for inspecting and manipulating a {@link Match}
  *
  * @author Felix Chapman
  */
-public interface MatchQueryAdmin extends MatchQuery {
+public interface MatchAdmin extends Match {
 
     /**
      * @param tx the {@link GraknTx} to use to get types from

@@ -211,7 +211,7 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void testMatchQuery() throws Exception {
+    public void testMatch() throws Exception {
         String[] result = runShellWithoutErrors(
                 "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";\nexit"
         ).split("\r\n?|\n");

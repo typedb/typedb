@@ -189,7 +189,7 @@ public class LazyTest {
         final int limit = 10;
         final long maxTime = 2000;
         startTime = System.currentTimeMillis();
-        List<Answer> results = query.matchQuery().limit(limit).get().execute();
+        List<Answer> results = query.match().limit(limit).get().execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
         assertEquals(results.size(), limit);

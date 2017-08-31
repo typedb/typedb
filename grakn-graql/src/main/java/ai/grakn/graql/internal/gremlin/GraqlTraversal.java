@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.util.Schema;
@@ -43,7 +44,7 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 /**
- * A traversal over a Grakn graph, representing one of many ways to execute a {@code MatchQuery}.
+ * A traversal over a Grakn graph, representing one of many ways to execute a {@link Match}.
  * Comprised of ordered {@code Fragment}s which are used to construct a TinkerPop {@code GraphTraversal}, which can be
  * retrieved and executed.
  *

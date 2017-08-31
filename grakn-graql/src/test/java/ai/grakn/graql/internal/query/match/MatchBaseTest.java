@@ -19,7 +19,8 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknTx;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import com.google.common.collect.Sets;
 import org.junit.Test;
@@ -27,31 +28,31 @@ import org.junit.Test;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.mockito.Mockito.mock;
 
-public class MatchQueryKBTest {
+public class MatchBaseTest {
 
-    private final AbstractMatchQuery query =
-            new MatchQueryBase(Patterns.conjunction(Sets.newHashSet(var("x").admin())));
+    private final Conjunction<PatternAdmin> pattern1 = Patterns.conjunction(Sets.newHashSet(
+            var("x").isa("movie").admin(),
+            var().rel("x").rel("y").admin()
+    ));
+
+    private final Conjunction<PatternAdmin> pattern2 = Patterns.conjunction(Sets.newHashSet(
+            var("x").isa("movie").has("title", var("y")).admin()
+    ));
 
     @Test
-    public void matchQueriesContainingTheSameGraphAndMatchQueryBaseAreEqual() {
-        GraknTx graph = mock(GraknTx.class);
-
-        MatchQueryTx query1 = new MatchQueryTx(graph, query);
-        MatchQueryTx query2 = new MatchQueryTx(graph, query);
+    public void matchQueriesContainingTheSamePatternAreEqual() {
+        MatchBase query1 = new MatchBase(pattern1);
+        MatchBase query2 = new MatchBase(pattern1);
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
     }
 
     @Test
-    public void matchQueriesContainingDifferentGraphsAreNotEqual() {
-        GraknTx graph1 = mock(GraknTx.class);
-        GraknTx graph2 = mock(GraknTx.class);
-
-        MatchQueryTx query1 = new MatchQueryTx(graph1, query);
-        MatchQueryTx query2 = new MatchQueryTx(graph2, query);
+    public void matchQueriesContainingDifferentPatternsAreNotEqual() {
+        MatchBase query1 = new MatchBase(pattern1);
+        MatchBase query2 = new MatchBase(pattern2);
 
         assertNotEquals(query1, query2);
     }

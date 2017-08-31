@@ -100,10 +100,10 @@ private static void testConnection() {
         try (GraknTx tx = session.open(GraknTxType.READ)) {
 
             // construct a match query to find people
-            MatchQuery query = tx.graql().match(var("x").isa("person"));
+            Match match = tx.graql().match(var("x").isa("person"));
 
             // execute the query
-            List<Map<String, Concept>> result = query.limit(10).execute();
+            List<Map<String, Concept>> result = match.limit(10).get().execute();
 
             // write the results to the console
             result.forEach(System.out::println);

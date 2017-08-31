@@ -244,7 +244,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @return corresponding MatchQuery
+     * @return corresponding {@link GetQuery}
      */
     @Override
     public GetQuery getQuery() {

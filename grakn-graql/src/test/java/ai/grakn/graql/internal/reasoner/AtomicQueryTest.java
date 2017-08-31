@@ -134,8 +134,8 @@ public class AtomicQueryTest {
         GetQuery query2 = qb.parse(queryString2);
         Set<Answer> answers = query.stream().collect(toSet());
         Set<Answer> fullAnswers = query2.stream().collect(toSet());
-        Atom mappedAtom = ReasonerQueries.atomic(conjunction(query.matchQuery().admin().getPattern()), graph).getAtom();
-        Atom unmappedAtom = ReasonerQueries.atomic(conjunction(query2.matchQuery().admin().getPattern()), graph).getAtom();
+        Atom mappedAtom = ReasonerQueries.atomic(conjunction(query.match().admin().getPattern()), graph).getAtom();
+        Atom unmappedAtom = ReasonerQueries.atomic(conjunction(query2.match().admin().getPattern()), graph).getAtom();
 
         Set<Unifier> permutationUnifiers = mappedAtom.getPermutationUnifiers(mappedAtom);
         Set<Answer> permutedAnswers = answers.stream()

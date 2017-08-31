@@ -22,7 +22,7 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
@@ -37,14 +37,14 @@ import static org.mockito.Mockito.mock;
 
 public class InsertQueryImplTest {
 
-    private final Optional<MatchQueryAdmin> match1 = Optional.of(Graql.match(var("x").isa("movie")).admin());
-    private final Optional<MatchQueryAdmin> match2 = Optional.of(Graql.match(var("y").isa("movie")).admin());
+    private final Optional<MatchAdmin> match1 = Optional.of(Graql.match(var("x").isa("movie")).admin());
+    private final Optional<MatchAdmin> match2 = Optional.of(Graql.match(var("y").isa("movie")).admin());
 
     private final ImmutableCollection<VarPatternAdmin> vars1 = ImmutableSet.of(var("x").admin());
     private final ImmutableCollection<VarPatternAdmin> vars2 = ImmutableSet.of(var("y").admin());
 
     @Test
-    public void insertQueriesWithTheSameVarsAndMatchQueryAreEqual() {
+    public void insertQueriesWithTheSameVarsAndQueryAreEqual() {
         InsertQuery query1 = new InsertQueryImpl(vars1, match1, Optional.empty());
         InsertQuery query2 = new InsertQueryImpl(vars1, match1, Optional.empty());
 
