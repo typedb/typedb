@@ -18,9 +18,10 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -52,7 +53,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-// TODO We can extend AbstractGraphTest instead when we remove persisting in analytics
 public class StatisticsTest {
 
     private static final String thing = "thingy";
@@ -89,7 +89,6 @@ public class StatisticsTest {
         addResourceRelations();
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
-            //TODO: add more detailed error messages
             // resources-type is not set
             assertGraqlQueryExceptionThrown(graph.graql().compute().max().in(thing)::execute);
             assertGraqlQueryExceptionThrown(graph.graql().compute().min().in(thing)::execute);
@@ -500,6 +499,62 @@ public class StatisticsTest {
             }
         }).collect(Collectors.toList());
         numberList.forEach(value -> assertEquals(1.5D, value.doubleValue(), delta));
+    }
+
+    @Test
+    public void testHasResourceVerticesAndEdges() {
+        try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
+
+            // manually construct the relation type and instance
+            EntityType person = graph.putEntityType("person");
+            AttributeType<Long> power = graph.putAttributeType("power", AttributeType.DataType.LONG);
+            Role resourceOwner = graph.putRole(Schema.ImplicitType.HAS_OWNER.getLabel(Label.of("power")));
+            person.plays(resourceOwner);
+            Role resourceValue = graph.putRole(Schema.ImplicitType.HAS_VALUE.getLabel(Label.of("power")));
+            power.plays(resourceValue);
+
+            person.attribute(power);
+
+            Entity person1 = person.addEntity();
+            Entity person2 = person.addEntity();
+            Entity person3 = person.addEntity();
+            Attribute power1 = power.putAttribute(1L);
+            Attribute power2 = power.putAttribute(2L);
+            Attribute power3 = power.putAttribute(3L);
+            RelationshipType relationType = graph.putRelationshipType(Schema.ImplicitType.HAS.getLabel(Label.of("power")))
+                    .relates(resourceOwner).relates(resourceValue);
+
+            relationType.addRelationship()
+                    .addRolePlayer(resourceOwner, person1)
+                    .addRolePlayer(resourceValue, power1);
+
+            relationType.addRelationship()
+                    .addRolePlayer(resourceOwner, person2)
+                    .addRolePlayer(resourceValue, power2);
+            person1.attribute(power2);
+
+            person3.attribute(power3);
+
+            graph.commit();
+        }
+
+        Optional<Number> result;
+
+        try (GraknTx graph = factory.open(GraknTxType.READ)) {
+            // No need to test all statistics as most of them share the same vertex program
+
+            result = graph.graql().compute().min().of("power").in().execute();
+            assertEquals(1L, result.get().longValue());
+
+            result = graph.graql().compute().max().of("power").in().execute();
+            assertEquals(3L, result.get().longValue());
+
+            result = graph.graql().compute().sum().of("power").in().execute();
+            assertEquals(8L, result.get().longValue());
+
+            result = graph.graql().compute().median().of("power").in().execute();
+            assertEquals(2L, result.get().longValue());
+        }
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {

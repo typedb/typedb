@@ -35,8 +35,7 @@ import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.util.Schema;
 import org.junit.Test;
 
-import java.util.stream.Collectors;
-
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -80,14 +79,14 @@ public class EntityTest extends TxTestBase {
         Casting rp2 = rolePlayer2.castingsInstance().findAny().get();
         Casting rp3 = rolePlayer3.castingsInstance().findAny().get();
 
-        assertThat(relation.reified().get().castingsRelation().collect(Collectors.toSet()), containsInAnyOrder(rp1, rp2, rp3));
+        assertThat(relation.reified().get().castingsRelation().collect(toSet()), containsInAnyOrder(rp1, rp2, rp3));
 
         //Delete And Check Again
         ConceptId idOfDeleted = rolePlayer1.getId();
         rolePlayer1.delete();
 
         assertNull(tx.getConcept(idOfDeleted));
-        assertThat(relation.reified().get().castingsRelation().collect(Collectors.toSet()), containsInAnyOrder(rp2, rp3));
+        assertThat(relation.reified().get().castingsRelation().collect(toSet()), containsInAnyOrder(rp2, rp3));
     }
 
     @Test
@@ -208,5 +207,20 @@ public class EntityTest extends TxTestBase {
         EntityType et = tx.putEntityType("et");
         EntityImpl e = (EntityImpl) et.addEntity();
         assertEquals(et.getLabel(), e.getInternalType());
+    }
+
+    @Test
+    public void whenRemovingAnAttributedFromAnEntity_EnsureTheAttributeIsNoLongerReturned(){
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        Attribute<String> fim = name.putAttribute("Fim");
+        Attribute<String> tim = name.putAttribute("Tim");
+        Attribute<String> pim = name.putAttribute("Pim");
+
+        EntityType person = tx.putEntityType("person").attribute(name);
+        Entity aPerson = person.addEntity().attribute(fim).attribute(tim).attribute(pim);
+        assertThat(aPerson.attributes().collect(toSet()), containsInAnyOrder(fim, tim, pim));
+
+        aPerson.deleteAttribute(tim);
+        assertThat(aPerson.attributes().collect(toSet()), containsInAnyOrder(fim, pim));
     }
 }

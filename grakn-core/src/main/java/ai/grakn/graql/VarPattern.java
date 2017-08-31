@@ -18,9 +18,11 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.graql.admin.VarPatternAdmin;
 
@@ -104,24 +106,36 @@ public interface VarPattern extends Pattern {
     VarPattern has(String type, ValuePredicate predicate);
 
     /**
-     * the variable must have a resource of the given type that matches the given atom
+     * the variable must have an {@link Attribute} of the given type that matches the given atom
      *
      * @param type a resource type in the schema
-     * @param varPattern a variable pattern representing a resource
+     * @param attribute a variable pattern representing an {@link Attribute}
      * @return this
      */
     @CheckReturnValue
-    VarPattern has(String type, VarPattern varPattern);
+    VarPattern has(String type, VarPattern attribute);
 
     /**
-     * the variable must have a resource of the given type that matches the given atom
+     * the variable must have an {@link Attribute} of the given type that matches the given atom
      *
      * @param type a resource type in the schema
-     * @param varPattern a variable pattern representing a resource
+     * @param attribute a variable pattern representing an {@link Attribute}
      * @return this
      */
     @CheckReturnValue
-    VarPattern has(Label type, VarPattern varPattern);
+    VarPattern has(Label type, VarPattern attribute);
+
+    /**
+     * the variable must have an {@link Attribute} of the given type that matches {@code resource}.
+     * The {@link Relationship} associating the two must match {@code relation}.
+     *
+     * @param type a resource type in the ontology
+     * @param attribute a variable pattern representing an {@link Attribute}
+     * @param relationship a variable pattern representing a {@link Relationship}
+     * @return this
+     */
+    @CheckReturnValue
+    VarPattern has(Label type, VarPattern attribute, VarPattern relationship);
 
     /**
      * @param type a concept type id that the variable must be of this type

@@ -20,9 +20,8 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -31,14 +30,10 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
-class IdFragment extends AbstractFragment {
+@AutoValue
+abstract class IdFragment extends Fragment {
 
-    private final ConceptId id;
-
-    IdFragment(VarProperty varProperty, Var start, ConceptId id) {
-        super(varProperty, start);
-        this.id = id;
-    }
+    abstract ConceptId id();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
@@ -60,35 +55,16 @@ class IdFragment extends AbstractFragment {
         
         // We know only vertices have this property, so the cast is safe
         //noinspection unchecked
-        return (GraphTraversal<Element, Vertex>) traversal.has(Schema.VertexProperty.ID.name(), id.getValue());
+        return (GraphTraversal<Element, Vertex>) traversal.has(Schema.VertexProperty.ID.name(), id().getValue());
     }
 
     private GraphTraversal<Edge, Edge> edgeTraversal() {
-        return __.hasId(id.getValue().substring(1));
+        return __.hasId(id().getValue().substring(1));
     }
 
     @Override
-    public String getName() {
-        return "[id:" + idToString(id) + "]";
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        IdFragment that = (IdFragment) o;
-
-        return id != null ? id.equals(that.id) : that.id == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (id != null ? id.hashCode() : 0);
-        return result;
+    public String name() {
+        return "[id:" + idToString(id()) + "]";
     }
 
     @Override
@@ -103,6 +79,6 @@ class IdFragment extends AbstractFragment {
 
     @Override
     public boolean canOperateOnEdges() {
-        return id.getValue().startsWith(Schema.PREFIX_EDGE);
+        return id().getValue().startsWith(Schema.PREFIX_EDGE);
     }
 }

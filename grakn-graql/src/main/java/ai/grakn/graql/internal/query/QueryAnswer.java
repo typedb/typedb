@@ -25,7 +25,12 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.reasoner.atom.binary.Binary;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.explanation.Explanation;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -87,7 +92,7 @@ public class QueryAnswer implements Answer {
     public int hashCode(){ return map.hashCode();}
 
     @Override
-    public Set<Var> keySet(){ return map.keySet();}
+    public Set<Var> vars(){ return map.keySet();}
 
     @Override
     public Collection<Concept> values(){ return map.values();}
@@ -176,7 +181,7 @@ public class QueryAnswer implements Answer {
     @Override
     public Answer filterVars(Set<Var> vars) {
         QueryAnswer filteredAnswer = new QueryAnswer(this);
-        Set<Var> varsToRemove = Sets.difference(this.keySet(), vars);
+        Set<Var> varsToRemove = Sets.difference(vars(), vars);
         varsToRemove.forEach(filteredAnswer::remove);
 
         return filteredAnswer.setExplanation(this.getExplanation());
@@ -238,5 +243,18 @@ public class QueryAnswer implements Answer {
         Set<AnswerExplanation> explanations = Sets.newHashSet(this.getExplanation());
         this.getExplanation().getAnswers().forEach(ans -> ans.getExplanations().forEach(explanations::add));
         return explanations;
+    }
+
+    @Override
+    public Set<Atomic> toPredicates(ReasonerQuery parent) {
+        Set<Var> varNames = parent.getVarNames();
+
+        //skip predicates from types
+        parent.getAtoms(TypeAtom.class).map(Binary::getPredicateVariable).forEach(varNames::remove);
+
+        return entrySet().stream()
+                .filter(e -> varNames.contains(e.getKey()))
+                .map(e -> new IdPredicate(e.getKey(), e.getValue(), parent))
+                .collect(Collectors.toSet());
     }
 }

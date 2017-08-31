@@ -47,6 +47,7 @@ import static ai.grakn.graql.Graql.var;
 public class RuleUtil {
 
     /**
+     * @param graph of interest
      * @return set of inference rule contained in the graph
      */
     public static Stream<Rule> getRules(GraknTx graph) {
@@ -54,6 +55,7 @@ public class RuleUtil {
     }
 
     /**
+     * @param graph of interest
      * @return true if at least one inference rule is present in the graph
      */
     public static boolean hasRules(GraknTx graph) {
@@ -63,6 +65,7 @@ public class RuleUtil {
 
     /**
      * @param type for which rules containing it in the head are sought
+     * @param graph of interest
      * @return rules containing specified type in the head
      */
     public static Stream<Rule> getRulesWithType(SchemaConcept type, GraknTx graph){
@@ -73,6 +76,7 @@ public class RuleUtil {
 
     /**
      * @param rules set of rules of interest forming a rule subgraph
+     * @param graph of interest
      * @return true if the rule subgraph formed from provided rules contains loops with negative net flux (appears in more rule heads than bodies)
      */
     public static boolean subGraphHasLoopsWithNegativeFlux(Set<InferenceRule> rules, GraknTx graph){
@@ -92,7 +96,7 @@ public class RuleUtil {
      * @param rules set of rules of interest forming a rule subgraph
      * @return true if the rule subgraph formed from provided rules contains any rule with head satisfying the body pattern
      */
-    public static boolean subGraphHasRulesWithHeadSatisfyingBody(Set<InferenceRule> rules, GraknTx graph){
+    public static boolean subGraphHasRulesWithHeadSatisfyingBody(Set<InferenceRule> rules){
         return rules.stream()
                 .filter(InferenceRule::headSatisfiesBody)
                 .findFirst().isPresent();
@@ -102,7 +106,7 @@ public class RuleUtil {
      * @param topTypes entry types in the rule graph
      * @return all rules that are reachable from the entry types
      */
-    public static Stream<Rule> getDependentRules(Set<Type> topTypes){
+    public static Set<Rule> getDependentRules(Set<Type> topTypes){
         Set<Rule> rules = new HashSet<>();
         Set<Type> visitedTypes = new HashSet<>();
         Stack<Type> types = new Stack<>();
@@ -118,14 +122,14 @@ public class RuleUtil {
                 visitedTypes.add(type);
             }
         }
-        return rules.stream();
+        return rules;
     }
 
     /**
      * @param query top query
      * @return all rules that are reachable from the entry types
      */
-    public static Stream<InferenceRule> getDependentRules(ReasonerQueryImpl query){
+    public static Set<InferenceRule> getDependentRules(ReasonerQueryImpl query){
         Set<InferenceRule> rules = new HashSet<>();
         Set<Atom> visitedAtoms = new HashSet<>();
         Stack<Atom> atoms = new Stack<>();
@@ -141,6 +145,6 @@ public class RuleUtil {
                 visitedAtoms.add(atom);
             }
         }
-        return rules.stream();
+        return rules;
     }
 }

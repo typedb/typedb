@@ -37,6 +37,7 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
@@ -46,6 +47,7 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleTuple;
 import ai.grakn.graql.internal.reasoner.state.AtomicState;
+import ai.grakn.graql.internal.reasoner.state.NeqComplementState;
 import ai.grakn.graql.internal.reasoner.state.QueryState;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
@@ -77,11 +79,11 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilt
  */
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
-    private Atom atom;
+    private final Atom atom;
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
-    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, GraknTx graph) {
-        super(pattern, graph);
+    ReasonerAtomicQuery(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
+        super(pattern, tx);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
@@ -95,8 +97,23 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
+    ReasonerAtomicQuery(Set<Atomic> atoms, GraknTx tx){
+        super(atoms, tx);
+        atom = selectAtoms().stream().findFirst().orElse(null);
+    }
+
     @Override
     public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
+
+    @Override
+    public ReasonerAtomicQuery inferTypes() {
+        return new ReasonerAtomicQuery(getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()), tx());
+    }
+
+    @Override
+    public ReasonerAtomicQuery positive(){
+        return new ReasonerAtomicQuery(getAtoms().stream().filter(at -> !(at instanceof NeqPredicate)).collect(Collectors.toSet()), tx());
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -122,23 +139,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     public Atom getAtom() {
         return atom;
-    }
-
-
-    @Override
-    public boolean addAtomic(Atomic at) {
-        if (super.addAtomic(at)) {
-            if (atom == null && at.isSelectable()) atom = (Atom) at;
-            return true;
-        } else return false;
-    }
-
-    @Override
-    public boolean removeAtomic(Atomic at) {
-        if (super.removeAtomic(at)) {
-            if (at.equals(atom)) atom = null;
-            return true;
-        } else return false;
     }
 
     @Override
@@ -192,7 +192,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             if (!answer.isEmpty()) return answer;
         }
 
-        List<Answer> match = new ReasonerAtomicQuery(this).addSubstitution(sub).getMatchQuery().execute();
+        List<Answer> match = ReasonerQueries.atomic(this, sub).getMatchQuery().execute();
         return match.isEmpty()? new QueryAnswer() : match.iterator().next();
     }
 
@@ -220,10 +220,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return Graql.insert(getPattern().varPatterns()).withTx(tx()).stream();
     }
 
+    /**
+     * materialise  this query with the accompanying answer - persist to kb
+     * @param answer to be materialised
+     * @return stream of materialised answers
+     */
     public Stream<Answer> materialise(Answer answer) {
-        ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
-        queryToMaterialise.addSubstitution(answer);
-        return queryToMaterialise.insert()
+        //declaring a local variable cause otherwise PMD doesn't recognise the use of insert() and complains
+        ReasonerAtomicQuery queryToMaterialise = ReasonerQueries.atomic(this, answer);
+        return queryToMaterialise
+                .insert()
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
 
@@ -318,13 +324,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             Iterator<RuleTuple> ruleIterator = getRuleIterator();
             while(ruleIterator.hasNext()) {
                 RuleTuple ruleContext = ruleIterator.next();
-                InferenceRule rule = ruleContext.getRule();
                 Unifier u = ruleContext.getRuleUnifier();
                 Unifier pu = ruleContext.getPermutationUnifier();
 
                 Answer sub = this.getSubstitution().unify(u.inverse());
-                rule.getHead().addSubstitution(sub);
-                rule.getBody().addSubstitution(sub);
+                InferenceRule rule = ruleContext.getRule().withSubstitution(sub);
 
                 Stream<Answer> localStream = resolveViaRule(rule, u, pu, subGoals, cache, dCache, differentialJoin);
                 answerStream = Stream.concat(answerStream, localStream);
@@ -345,7 +349,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return new AtomicState(this, sub, u, parent, subGoals, cache);
+        return getAtoms(NeqPredicate.class).findFirst().isPresent()?
+                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
+                new AtomicState(this, sub, u, parent, subGoals, cache);
     }
 
     /**
@@ -377,8 +383,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                     Unifier ruleUnifierInv = ruleUnifier.inverse();
                     return getAtom().getPermutationUnifiers(r.getHead().getAtom()).stream()
                             .map(permutationUnifier ->
-                                    new RuleTuple(new InferenceRule(r)
-                                            .propagateConstraints(getAtom(), permutationUnifier.combine(ruleUnifierInv)),
+                                    new RuleTuple(r.propagateConstraints(getAtom(), permutationUnifier.combine(ruleUnifierInv)),
                                             ruleUnifier,
                                             permutationUnifier));
                 })

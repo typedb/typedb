@@ -35,6 +35,7 @@ authored by - """ + user
         }
       }
     }
+<<<<<<< HEAD
     //Sets up environmental variables which can be shared between multiple tests
     withEnv(['VALIDATION_DATA=' + workspace + '/generate-SNB/readwrite_neo4j--validation_set.tar.gz',
              'CSV_DATA=' + workspace + '/generate-SNB/social_network',
@@ -68,12 +69,50 @@ authored by - """ + user
 //            sh '../grakn-test/test-snb/src/validate-snb/validate.sh'
 //          }
 //        }
+=======
+    //Only run validation master/stable
+    if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
+      //Sets up environmental variables which can be shared between multiple tests
+      withEnv(['VALIDATION_DATA=' + workspace + '/generate-SNB/readwrite_neo4j--validation_set.tar.gz',
+	       'CSV_DATA=' + workspace + '/generate-SNB/social_network',
+	       'KEYSPACE=snb',
+	       'ENGINE=localhost:4567',
+	       'ACTIVE_TASKS=1000',
+	       'PATH+EXTRA=' + workspace + '/grakn-package/bin',
+	       'LDBC_DRIVER=' + workspace + '/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar',
+	       'LDBC_CONNECTOR=' + workspace + "/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar",
+	       'LDBC_VALIDATION_CONFIG=' + workspace + '/grakn-test/test-snb/src/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
+	timeout(180) {
+	  dir('generate-SNB') {
+	    stage('Load Validation Data') {
+	      sh 'wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz'
+	      sh '../grakn-test/test-snb/src/generate-SNB/load-SNB.sh arch validate'
+	    }
+	  }
+	  stage('Measure Size') {
+	    sh 'nodetool flush'
+	    sh 'du -hd 0 grakn-package/db/cassandra/data'
+	  }
+	}
+	timeout(360) {
+	  dir('grakn-test/test-snb/') {
+	    stage('Build the SNB connectors') {
+	      sh 'mvn clean package assembly:single -Dmaven.repo.local=' + workspace + '/maven -DskipTests -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
+	    }
+	  }
+	  dir('validate-snb') {
+	    stage('Validate Queries') {
+	      sh '../grakn-test/test-snb/src/validate-snb/validate.sh'
+	    }
+	  }
+	}
+>>>>>>> central/master
       }
+      def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
+      slackSend channel: "#github", message: """
+  Periodic Build Success on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+  authored by - """ + user
     }
-    def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
-    slackSend channel: "#github", message: """
-Periodic Build Success on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
-authored by - """ + user
   } catch (error) {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
     slackSend channel: "#github", message: """

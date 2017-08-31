@@ -38,6 +38,7 @@ import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.util.AdminConverter;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -111,21 +112,30 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final MatchQuery select(String... names) {
-        return select(Stream.of(names).map(Graql::var).collect(toSet()));
+    public final MatchQuery select(String... vars) {
+        return select(Stream.of(vars).map(Graql::var).collect(toSet()));
     }
 
     @Override
-    public final MatchQuery select(Set<Var> names) {
-        return new MatchQuerySelect(this, ImmutableSet.copyOf(names));
+    public final MatchQuery select(Var... vars) {
+        return select(Sets.newHashSet(vars));
     }
 
     @Override
-    public final Stream<Concept> get(String name) {
-        Var var = Graql.var(name);
+    public final MatchQuery select(Set<Var> vars) {
+        return new MatchQuerySelect(this, ImmutableSet.copyOf(vars));
+    }
+
+    @Override
+    public final Stream<Concept> get(String var) {
+        return get(Graql.var(var));
+    }
+
+    @Override
+    public final Stream<Concept> get(Var var) {
         return stream().map(result -> {
             if (!result.containsKey(var)) {
-                throw GraqlQueryException.varNotInQuery(Graql.var(name));
+                throw GraqlQueryException.varNotInQuery(var);
             }
             return result.get(var);
         });
@@ -143,19 +153,19 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final DeleteQuery delete(VarPattern... deleters) {
-        return delete(Arrays.asList(deleters));
+    public final DeleteQuery delete(String var, String... vars) {
+        List<Var> varList = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Graql::var).collect(toList());
+        return delete(varList);
     }
 
     @Override
-    public final DeleteQuery delete(String... names) {
-        List<VarPattern> deleters = Arrays.stream(names).map(Graql::var).collect(toList());
-        return delete(deleters);
+    public final DeleteQuery delete(Var... vars) {
+        return delete(Arrays.asList(vars));
     }
 
     @Override
-    public final DeleteQuery delete(Collection<? extends VarPattern> deleters) {
-        return Queries.delete(AdminConverter.getVarAdmins(deleters), this);
+    public final DeleteQuery delete(Collection<? extends Var> vars) {
+        return Queries.delete(vars, this);
     }
 
     @Override

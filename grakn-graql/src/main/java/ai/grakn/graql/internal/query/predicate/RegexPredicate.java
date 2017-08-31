@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
-import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.util.Schema;
 import ai.grakn.util.StringUtil;
@@ -29,7 +29,7 @@ import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
-class RegexPredicate implements ValuePredicateAdmin {
+class RegexPredicate implements ValuePredicate {
 
     private final String pattern;
 
@@ -82,7 +82,7 @@ class RegexPredicate implements ValuePredicateAdmin {
     }
 
     @Override
-    public boolean isCompatibleWith(ValuePredicateAdmin predicate){
+    public boolean isCompatibleWith(ValuePredicate predicate){
         if (!(predicate instanceof EqPredicate)) return false;
         EqPredicate p = (EqPredicate) predicate;
         Object pVal = p.equalsValue().orElse(null);

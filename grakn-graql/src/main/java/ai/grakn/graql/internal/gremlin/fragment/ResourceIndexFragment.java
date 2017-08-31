@@ -20,34 +20,27 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
 import static ai.grakn.util.Schema.VertexProperty.INDEX;
 
-class ResourceIndexFragment extends AbstractFragment {
+@AutoValue
+abstract class ResourceIndexFragment extends Fragment {
 
-    private final String resourceIndex;
-
-    ResourceIndexFragment(VarProperty varProperty, Var start, Label label, Object value) {
-        super(varProperty, start);
-        this.resourceIndex = Schema.generateAttributeIndex(label, value.toString());
-    }
+    abstract String resourceIndex();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
             GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
 
-        return traversal.has(INDEX.name(), resourceIndex);
+        return traversal.has(INDEX.name(), resourceIndex());
     }
 
     @Override
-    public String getName() {
-        return "[index:" + resourceIndex + "]";
+    public String name() {
+        return "[index:" + resourceIndex() + "]";
     }
 
     @Override
@@ -58,23 +51,5 @@ class ResourceIndexFragment extends AbstractFragment {
     @Override
     public boolean hasFixedFragmentCost() {
         return true;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        ResourceIndexFragment that = (ResourceIndexFragment) o;
-
-        return resourceIndex.equals(that.resourceIndex);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + resourceIndex.hashCode();
-        return result;
     }
 }

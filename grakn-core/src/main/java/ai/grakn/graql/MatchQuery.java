@@ -42,25 +42,39 @@ import java.util.stream.Stream;
 public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
 
     /**
-     * @param names an array of variable names to select
+     * @param vars an array of variable to select
      * @return a new MatchQuery that selects the given variables
      */
     @CheckReturnValue
-    MatchQuery select(String... names);
+    MatchQuery select(String... vars);
 
     /**
-     * @param names a set of variable names to select
+     * @param vars an array of variable to select
      * @return a new MatchQuery that selects the given variables
      */
     @CheckReturnValue
-    MatchQuery select(Set<Var> names);
+    MatchQuery select(Var... vars);
 
     /**
-     * @param name a variable name to get
+     * @param vars a set of variable to select
+     * @return a new MatchQuery that selects the given variables
+     */
+    @CheckReturnValue
+    MatchQuery select(Set<Var> vars);
+
+    /**
+     * @param var a variable to get
      * @return a stream of concepts
      */
     @CheckReturnValue
-    Stream<Concept> get(String name);
+    Stream<Concept> get(String var);
+
+    /**
+     * @param var a variable to get
+     * @return a stream of concepts
+     */
+    @CheckReturnValue
+    Stream<Concept> get(Var var);
 
     /**
      * @param vars an array of variables to insert for each result of this match query
@@ -77,25 +91,25 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
     InsertQuery insert(Collection<? extends VarPattern> vars);
 
     /**
-     * @param names an array of variable names to delete for each result of this match query
-     * @return a delete query that will delete the given variable names for each result of this match query
+     * @param vars an array of variables to delete for each result of this match query
+     * @return a delete query that will delete the given variables for each result of this match query
      */
     @CheckReturnValue
-    DeleteQuery delete(String... names);
+    DeleteQuery delete(String var, String... vars);
 
     /**
-     * @param deleters an array of variables stating what properties to delete for each result of this match query
-     * @return a delete query that will delete the given properties for each result of this match query
+     * @param vars an array of variables to delete for each result of this match query
+     * @return a delete query that will delete the given variables for each result of this match query
      */
     @CheckReturnValue
-    DeleteQuery delete(VarPattern... deleters);
+    DeleteQuery delete(Var... vars);
 
     /**
-     * @param deleters a collection of variables stating what properties to delete for each result of this match query
-     * @return a delete query that will delete the given properties for each result of this match query
+     * @param vars a collection of variables to delete for each result of this match query
+     * @return a delete query that will delete the given variables for each result of this match query
      */
     @CheckReturnValue
-    DeleteQuery delete(Collection<? extends VarPattern> deleters);
+    DeleteQuery delete(Collection<? extends Var> vars);
 
     /**
      * Order the results by degree in ascending order

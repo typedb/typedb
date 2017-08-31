@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import com.google.auto.value.AutoValue;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -37,7 +37,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
@@ -106,7 +105,7 @@ public abstract class GraqlTraversal {
 
         for (Fragment fragment : fragmentList) {
             applyFragment(fragment, traversal, currentName, foundNames, graph);
-            currentName = fragment.getEnd().orElse(fragment.getStart());
+            currentName = fragment.end() != null ? fragment.end() : fragment.start();
         }
 
         // Select all the variable names
@@ -126,7 +125,7 @@ public abstract class GraqlTraversal {
             Fragment fragment, GraphTraversal<Element, ? extends Element> traversal,
             @Nullable Var currentName, Set<Var> names, GraknTx graph
     ) {
-        Var start = fragment.getStart();
+        Var start = fragment.start();
 
         if (currentName != null) {
             if (!currentName.equals(start)) {
@@ -148,7 +147,8 @@ public abstract class GraqlTraversal {
         // Apply fragment to traversal
         fragment.applyTraversal(traversal, graph);
 
-        fragment.getEnd().ifPresent(end -> {
+        Var end = fragment.end();
+        if (end != null) {
             if (!names.contains(end)) {
                 // This variable name has not been encountered before, remember it and use the 'as' step
                 traversal.as(end.getValue());
@@ -156,9 +156,9 @@ public abstract class GraqlTraversal {
                 // This variable name has been encountered before, confirm it is the same
                 traversal.where(P.eq(end.getValue()));
             }
-        });
+        }
 
-        names.addAll(fragment.getVariableNames());
+        names.addAll(fragment.vars());
     }
 
     /**
@@ -183,7 +183,7 @@ public abstract class GraqlTraversal {
 
         for (Fragment fragment : fragments) {
             cost = fragmentCost(fragment, names);
-            names.addAll(fragment.getVariableNames());
+            names.addAll(fragment.vars());
             listCost += cost;
         }
 
@@ -191,7 +191,7 @@ public abstract class GraqlTraversal {
     }
 
     static double fragmentCost(Fragment fragment, Collection<Var> names) {
-        if (names.contains(fragment.getStart())) {
+        if (names.contains(fragment.start())) {
             return fragment.fragmentCost();
         } else {
             // Restart traversal, meaning we are navigating from all vertices
@@ -206,19 +206,19 @@ public abstract class GraqlTraversal {
             Var currentName = null;
 
             for (Fragment fragment : list) {
-                if (!fragment.getStart().equals(currentName)) {
+                if (!fragment.start().equals(currentName)) {
                     if (currentName != null) sb.append(" ");
 
-                    sb.append(fragment.getStart().shortName());
-                    currentName = fragment.getStart();
+                    sb.append(fragment.start().shortName());
+                    currentName = fragment.start();
                 }
 
-                sb.append(fragment.getName());
+                sb.append(fragment.name());
 
-                Optional<Var> end = fragment.getEnd();
-                if (end.isPresent()) {
-                    sb.append(end.get().shortName());
-                    currentName = end.get();
+                Var end = fragment.end();
+                if (end != null) {
+                    sb.append(end.shortName());
+                    currentName = end;
                 }
             }
 

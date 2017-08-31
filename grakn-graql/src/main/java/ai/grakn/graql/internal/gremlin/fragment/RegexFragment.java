@@ -19,56 +19,32 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.StringUtil;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
 import static ai.grakn.util.Schema.VertexProperty.REGEX;
 
-class RegexFragment extends AbstractFragment {
+@AutoValue
+abstract class RegexFragment extends Fragment {
 
-    private final String regex;
-
-    RegexFragment(VarProperty varProperty, Var start, String regex) {
-        super(varProperty, start);
-        this.regex = regex;
-    }
+    abstract String regex();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
             GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
 
-        return traversal.has(REGEX.name(), regex);
+        return traversal.has(REGEX.name(), regex());
     }
 
     @Override
-    public String getName() {
-        return "[regex:" + StringUtil.valueToString(regex) + "]";
+    public String name() {
+        return "[regex:" + StringUtil.valueToString(regex()) + "]";
     }
 
     @Override
     public double fragmentCost() {
         return COST_SAME_AS_PREVIOUS;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        RegexFragment that = (RegexFragment) o;
-
-        return regex != null ? regex.equals(that.regex) : that.regex == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (regex != null ? regex.hashCode() : 0);
-        return result;
     }
 }
