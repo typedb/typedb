@@ -342,7 +342,7 @@ class ValidateGlobalRules {
     static Set<String> validateRuleIsValidHornClause(GraknTx graph, RuleType rule){
         Set<String> errors = new HashSet<>();
         if (rule.getWhen().admin().isDisjunction()){
-            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getLabel()));
         }
         errors.addAll(checkRuleHeadInvalid(graph, rule, rule.getThen()));
         return errors;
@@ -379,17 +379,17 @@ class ValidateGlobalRules {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<VarPatternAdmin>> patterns = head.admin().getDisjunctiveNormalForm().getPatterns();
         if (patterns.size() != 1){
-            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getId(), rule.getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getLabel()));
         } else {
             ReasonerQuery headQuery = patterns.iterator().next().toReasonerQuery(graph);
             Set<Atomic> allowed = headQuery.getAtoms().stream()
                     .filter(Atomic::isAllowedToFormRuleHead).collect(Collectors.toSet());
 
             if (allowed.size() > 1) {
-                errors.add(ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC.getMessage(rule.getId(), rule.getLabel()));
+                errors.add(ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC.getMessage(rule.getLabel()));
             }
             else if (allowed.isEmpty()){
-                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getId(), rule.getLabel()));
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getLabel()));
             }
         }
         return errors;
