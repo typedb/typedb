@@ -26,6 +26,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxJanus;
@@ -47,6 +49,7 @@ import static ai.grakn.util.ErrorMessage.IS_ABSTRACT;
 import static ai.grakn.util.ErrorMessage.TX_CLOSED_ON_ACTION;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.emptyArray;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -273,5 +276,18 @@ public class GraknTxJanusTest extends JanusTestBase {
         sacrifice.delete();
 
         assertTrue(sacrifice.isDeleted());
+    }
+
+    @Test
+    public void whenDeletingARelationshipTypeWithRoles_TheRelationshipTypeIsDeleted() {
+        Role murderer = graknTx.putRole("murderer");
+        Role victim = graknTx.putRole("victim");
+        RelationshipType murder = graknTx.putRelationshipType("murder").relates(murderer).relates(victim);
+
+        murder.delete();
+
+        assertTrue(murder.isDeleted());
+        assertThat(murderer.relationTypes().toArray(), emptyArray());
+        assertThat(victim.relationTypes().toArray(), emptyArray());
     }
 }
