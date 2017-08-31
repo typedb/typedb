@@ -31,7 +31,7 @@ insert
 
 #Rules
 
-isa inference-rule
+rule-1 sub rule
 	when {
 		$x isa entity1;
 	}
@@ -39,7 +39,7 @@ isa inference-rule
 		(symmetricRole: $x, symmetricRole: $x) isa relation1;
 	};
 
-isa inference-rule
+rule-2 sub rule
     when {
         (role1: $c, role2: $m) isa relation2;
         (symmetricRole: $m, symmetricRole: $op) isa relation1;

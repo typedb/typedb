@@ -1,6 +1,6 @@
-insert
+define
 
-$transitiveLocation isa inference-rule
+transitiveLocation sub rule
 when  {
   (located: $a, location: $b) isa located-in;
   (located: $b, location: $c) isa located-in;
@@ -10,7 +10,7 @@ then {
 };
 
 
-$articleReferendum isa inference-rule
+articleReferendum sub rule
 when {
   $art isa article has subject "Italian Referendum";
   $plat isa oil-platform has distance-from-coast <= 18;
@@ -22,7 +22,7 @@ then {
 };
 
 
-$articlesToBonds isa inference-rule
+articlesToBonds sub rule
 when {
   (information: $info, affected: $plat) isa affects;
   (owned: $plat, owner: $company) isa owns;

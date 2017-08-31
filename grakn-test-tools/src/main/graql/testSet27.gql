@@ -25,7 +25,7 @@ name sub attribute datatype string;
 
 insert
 
-isa inference-rule
+rule-1 sub rule
     when {
         $st isa state;
         (related-state: $st) isa achieved;

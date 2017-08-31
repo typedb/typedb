@@ -30,13 +30,13 @@ insert
 ##################RULES#############################
 ####################################################
 
-isa inference-rule,
+rule-1 sub rule,
 when {
 (arc-from: $x, arc-to: $y) isa arc;},
 then {
 (path-from: $x, path-to: $y) isa path;};
 
-isa inference-rule,
+rule-2 sub rule,
 when {
 (path-from: $x, path-to: $z) isa path;
 (path-from: $z, path-to: $y) isa path;},

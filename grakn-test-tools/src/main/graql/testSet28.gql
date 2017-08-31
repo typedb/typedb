@@ -34,7 +34,7 @@ insert
 
 #Rules
 
-$dummyRule isa inference-rule
+dummyRule sub rule
     when {
         (role3: $x, role4: $y) isa relation3;
         (role3: $y, role4: $z) isa relation3;

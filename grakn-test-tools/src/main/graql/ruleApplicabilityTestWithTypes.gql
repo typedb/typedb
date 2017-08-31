@@ -45,7 +45,7 @@ insert
 
 #Rules
 
-isa inference-rule
+rule-1 sub rule
 	when {
 		$x isa entity1;
 		$y isa entity2;

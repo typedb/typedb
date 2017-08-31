@@ -14,7 +14,7 @@ insert
 
 #Rules
 
-isa inference-rule
+rule-1 sub rule
 when {
     $x isa general-entity, has res1 > 0;
 }

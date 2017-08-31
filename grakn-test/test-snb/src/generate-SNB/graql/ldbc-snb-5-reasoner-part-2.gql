@@ -7,7 +7,7 @@ insert
 
 #1) Transitive closure of "knows"
 
-$rule0 isa inference-rule
+rule0 sub rule
 lhs
 {
 (friend:$x, friend:$y) isa knows-trans;
@@ -21,7 +21,7 @@ rhs
 
 #2) Pairs of people connected via paths of friends with pairwise shared interests
 
-$rule1 isa inference-rule
+rule1 sub rule
 lhs
 {
 $p1 isa person;
@@ -34,7 +34,7 @@ rhs
 (friend:$p1, friend:$p2) isa friends-sharing-interest;
 };
 
-$rule2 isa inference-rule
+rule2 sub rule
 lhs
 {
 (friend:$p1, friend:$p2) isa friends-sharing-interest;
@@ -44,7 +44,7 @@ rhs
 (friend:$p1, friend:$p2) isa friends-sharing-interest-trans;
 };
 
-$rule3 isa inference-rule
+rule3 sub rule
 lhs
 {
 (friend:$p1, friend:$p2) isa friends-sharing-interest-trans;
@@ -60,7 +60,7 @@ rhs
 
 #the following two rules define a temporal order on messeges belonging to the same threads
 
-$rule4 isa inference-rule
+rule4 sub rule
 lhs
 {
 $p isa post;
@@ -72,7 +72,7 @@ rhs
 };
 
 
-$rule5 isa inference-rule
+rule5 sub rule
 lhs
 {
 $p isa post;
@@ -89,7 +89,7 @@ rhs
 
 #the following rule marks the ordered pairs of messages that have been created by people knowing each other
 
-$rule6 isa inference-rule
+rule6 sub rule
 lhs
 {
 (predecessor:$p, successor:$s) isa message-succession;
@@ -104,7 +104,7 @@ rhs
 
 #the following two rules compute the transitive closure of the relationship inferred by the previous rule
 
-$rule65 isa inference-rule
+rule65 sub rule
 lhs
 {
 (trigger:$p, response:$s) isa friends-activity-propagation;
@@ -114,7 +114,7 @@ rhs
 (trigger:$p, response:$s) isa friends-activity-propagation-trans;
 };
 
-$rule7 isa inference-rule
+rule7 sub rule
 lhs
 {
 (trigger:$p, response:$s) isa friends-activity-propagation-trans;

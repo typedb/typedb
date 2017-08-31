@@ -34,7 +34,7 @@ insert
 
 #Rules
 
-$rule isa inference-rule
+rule sub rule
     when{
         $b isa entity2;
         $b has res1 'value';
@@ -47,7 +47,7 @@ $rule isa inference-rule
         (role1: $p, role2: $c) isa relation2;
     };
 
-$dummyRule isa inference-rule
+dummyRule sub rule
     when{
         (role1: $p, role2: $c) isa relation3;
     }

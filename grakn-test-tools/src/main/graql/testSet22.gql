@@ -21,7 +21,7 @@ insert
 
 #Rules
 
-$rule0 isa inference-rule
+rule0 sub rule
     when {
         (friend:$x, friend:$y);
         (friend:$y, friend:$z);

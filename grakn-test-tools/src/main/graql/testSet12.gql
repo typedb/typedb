@@ -29,7 +29,7 @@ insert
 
 #Rules
 
-isa inference-rule 
+rule-1 sub rule
 	when {
 		(role1:$x, role2:$y) isa relation1;
 		(role1:$y, role2:$z) isa relation1;
@@ -38,7 +38,7 @@ isa inference-rule
 		(role1:$x, role2:$z) isa relation1;
 	};
 
-isa inference-rule 
+rule-2 sub rule
 	when {
 		(role1:$x, role2:$y) isa relation1;
 	}
@@ -46,7 +46,7 @@ isa inference-rule
 		(role1:$x, role2:$y) isa relation2;
 	};
 
-isa inference-rule 
+rule-3 sub rule
 	when {
 		(role1:$x, role2:$y) isa relation3;
 	}
@@ -54,7 +54,7 @@ isa inference-rule
 		(role1:$x, role2:$y) isa relation2;
 	};
 
-isa inference-rule 
+rule-4 sub rule
 	when {
 		(role1:$x, role2:$y) isa relation2;
 	}

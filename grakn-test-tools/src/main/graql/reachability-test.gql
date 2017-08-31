@@ -39,13 +39,13 @@ $d isa vertex, has index "d";
 ##################RULES#############################
 ####################################################
 
-isa inference-rule,
+rule-1 sub rule,
 when {
 (link-from: $x, link-to: $y) isa link;},
 then {
 (reach-from: $x, reach-to: $y) isa reachable;};
 
-isa inference-rule,
+rule-2 sub rule,
 when {
 (link-from: $x, link-to: $z) isa link;
 (reach-from: $z, reach-to: $y) isa reachable;},

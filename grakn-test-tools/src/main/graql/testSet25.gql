@@ -32,7 +32,7 @@ insert
 
 #Rules
 
-$rule2 isa inference-rule
+rule2 sub rule
     when{
         (original:$p, reply:$s) isa reply-of;
         $s has creation-date $d1;
