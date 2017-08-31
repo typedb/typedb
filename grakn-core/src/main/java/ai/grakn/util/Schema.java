@@ -25,11 +25,10 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -132,7 +131,6 @@ public final class Schema {
         RELATIONSHIP(Relationship.class),
         ENTITY(Entity.class),
         ATTRIBUTE(Attribute.class),
-        RULE(Rule.class),
 
         //Internal
         SHARD(Vertex.class);

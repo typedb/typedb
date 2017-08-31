@@ -35,7 +35,7 @@ import java.util.stream.Stream;
  *
  * @author fppt
  */
-public interface RuleType extends Type {
+public interface RuleType extends SchemaConcept {
     //------------------------------------- Accessors ----------------------------------
     /**
      * Retrieves the Left Hand Side of the rule.
@@ -80,34 +80,6 @@ public interface RuleType extends Type {
     RuleType setLabel(Label label);
 
     /**
-     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
-     *
-     * @param attributeType The resource type which instances of this type should be allowed to play.
-     * @return The Type itself.
-     */
-    @Override
-    RuleType key(AttributeType attributeType);
-
-    /**
-     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked.
-     *
-     * @param attributeType The resource type which instances of this type should be allowed to play.
-     * @return The Type itself.
-     */
-    @Override
-    RuleType attribute(AttributeType attributeType);
-
-    //---- Inherited Methods
-    /**
-     *
-     * @param isAbstract  Specifies if the concept is abstract (true) or not (false).
-     *                    If the concept type is abstract it is not allowed to have any instances.
-     * @return The Rule Type itself
-     */
-    @Override
-    RuleType setAbstract(Boolean isAbstract);
-
-    /**
      *
      * @return The super type of this Rule Type
      */
@@ -136,48 +108,6 @@ public interface RuleType extends Type {
      */
     @Override
     Stream<RuleType> subs();
-
-    /**
-     *
-     * @param role The Role Type which the instances of this Type are allowed to play.
-     * @return The Rule Type itself
-     */
-    @Override
-    RuleType plays(Role role);
-
-    /**
-     * Removes the ability of this {@link RuleType} to play a specific {@link Role}
-     *
-     * @param role The {@link Role} which the {@link Thing}s of this {@link RuleType} should no longer be allowed to play.
-     * @return The {@link RuleType} itself.
-     */
-    @Override
-    RuleType deletePlays(Role role);
-
-    /**
-     * Removes the ability for {@link Thing}s of this {@link RuleType} to have {@link Attribute}s of type {@link AttributeType}
-     *
-     * @param attributeType the {@link AttributeType} which this {@link RuleType} can no longer have
-     * @return The {@link RuleType} itself.
-     */
-    @Override
-    RuleType deleteAttribute(AttributeType attributeType);
-
-    /**
-     * Removes {@link AttributeType} as a key to this {@link RuleType}
-     *
-     * @param attributeType the {@link AttributeType} which this {@link RuleType} can no longer have as a key
-     * @return The {@link RuleType} itself.
-     */
-    @Override
-    RuleType deleteKey(AttributeType attributeType);
-
-    /**
-     *
-     * @return All the rule instances of this Rule Type.
-     */
-    @Override
-    Stream<Rule> instances();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

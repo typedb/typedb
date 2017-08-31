@@ -21,7 +21,6 @@ package ai.grakn.kb.internal;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.kb.internal.concept.RelationshipImpl;

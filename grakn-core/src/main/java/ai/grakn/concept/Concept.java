@@ -34,7 +34,7 @@ import javax.annotation.CheckReturnValue;
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
  *     ({@link EntityType}, {@link Role}, {@link RelationshipType}, {@link RuleType} or {@link AttributeType})
- *     or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Attribute}, {@link Rule}).
+ *     or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Attribute}).
  * </p>
  *
  * @author fppt
@@ -158,16 +158,6 @@ public interface Concept extends Comparable<Concept>{
     @CheckReturnValue
     default <D> Attribute<D> asAttribute(){
         throw GraknTxOperationException.invalidCasting(this, Attribute.class);
-    }
-
-    /**
-     * Return as a {@link Rule} if the {@link Concept} is a {@link Rule} {@link Thing}.
-     *
-     * @return A {@link Rule} if the {@link Concept} is a {@link Rule}
-     */
-    @CheckReturnValue
-    default Rule asRule(){
-        throw GraknTxOperationException.invalidCasting(this, Rule.class);
     }
 
     /**

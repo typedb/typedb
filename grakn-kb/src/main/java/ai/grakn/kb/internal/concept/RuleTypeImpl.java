@@ -18,7 +18,6 @@
 
 package ai.grakn.kb.internal.concept;
 
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
@@ -39,12 +38,11 @@ import java.util.stream.Stream;
  *
  * <p>
  *     An ontological element used to define different types of {@link Rule}.
- *     Currently supported rules include {@link GraknAdmin#getMetaRuleInference()} and {@link GraknAdmin#getMetaRuleConstraint()}
  * </p>
  *
  * @author fppt
  */
-public class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
+public class RuleTypeImpl extends SchemaConceptImpl<RuleType> implements RuleType {
     RuleTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
@@ -54,6 +52,11 @@ public class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
         vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, getWhen(), Pattern::toString);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, getThen(), Pattern::toString);
         vertex().propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(sup(), when, then));
+    }
+
+    @Override
+    void trackRolePlayers() {
+        //TODO: CLean this up
     }
 
     @Override

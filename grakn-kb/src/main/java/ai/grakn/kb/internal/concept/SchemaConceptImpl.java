@@ -26,7 +26,6 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.cache.Cache;
