@@ -161,19 +161,19 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final DeleteQuery delete(VarPattern... deleters) {
-        return delete(Arrays.asList(deleters));
+    public final DeleteQuery delete(String var, String... vars) {
+        List<Var> varList = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Graql::var).collect(toList());
+        return delete(varList);
     }
 
     @Override
-    public final DeleteQuery delete(String... names) {
-        List<VarPattern> deleters = Arrays.stream(names).map(Graql::var).collect(toList());
-        return delete(deleters);
+    public final DeleteQuery delete(Var... vars) {
+        return delete(Arrays.asList(vars));
     }
 
     @Override
-    public final DeleteQuery delete(Collection<? extends VarPattern> deleters) {
-        return Queries.delete(AdminConverter.getVarAdmins(deleters), this);
+    public final DeleteQuery delete(Collection<? extends Var> vars) {
+        return Queries.delete(vars, this);
     }
 
     @Override

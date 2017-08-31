@@ -44,9 +44,6 @@ public abstract class EquivalentFragmentSet implements Streamable<Fragment> {
      * @param fragments an array of Fragments that this EquivalentFragmentSet contains
      */
     protected EquivalentFragmentSet(Fragment... fragments) {
-        for (Fragment fragment : fragments) {
-            fragment.setEquivalentFragmentSet(this);
-        }
         this.fragments = ImmutableSet.copyOf(fragments);
     }
 

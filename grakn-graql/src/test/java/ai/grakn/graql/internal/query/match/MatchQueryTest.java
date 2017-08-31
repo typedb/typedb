@@ -868,7 +868,7 @@ public class MatchQueryTest {
     public void whenMatchingHas_ThenTheResultOnlyContainsTheExpectedVariables() {
         GetQuery query = qb.match(x.has("name")).get();
         for (Answer result : query) {
-            assertEquals(result.keySet(), ImmutableSet.of(x));
+            assertEquals(result.vars(), ImmutableSet.of(x));
         }
     }
 

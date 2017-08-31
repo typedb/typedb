@@ -92,7 +92,7 @@ public class QueryAnswer implements Answer {
     public int hashCode(){ return map.hashCode();}
 
     @Override
-    public Set<Var> keySet(){ return map.keySet();}
+    public Set<Var> vars(){ return map.keySet();}
 
     @Override
     public Collection<Concept> values(){ return map.values();}
@@ -181,7 +181,7 @@ public class QueryAnswer implements Answer {
     @Override
     public Answer filterVars(Set<Var> vars) {
         QueryAnswer filteredAnswer = new QueryAnswer(this);
-        Set<Var> varsToRemove = Sets.difference(this.keySet(), vars);
+        Set<Var> varsToRemove = Sets.difference(vars(), vars);
         varsToRemove.forEach(filteredAnswer::remove);
 
         return filteredAnswer.setExplanation(this.getExplanation());

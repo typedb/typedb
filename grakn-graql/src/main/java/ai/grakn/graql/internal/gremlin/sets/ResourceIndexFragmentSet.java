@@ -21,12 +21,13 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.stream.Stream;
 
@@ -49,7 +50,7 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDir
  */
 class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
-    private ResourceIndexFragmentSet(VarProperty varProperty, Var start, Label label, Object value) {
+    private ResourceIndexFragmentSet(@Nullable VarProperty varProperty, Var start, Label label, Object value) {
         super(Fragments.resourceIndex(varProperty, start, label, value));
     }
 
@@ -100,7 +101,7 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
     private static Stream<ValueFragmentSet> equalsValueFragments(Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSetOfType(ValueFragmentSet.class, fragmentSets)
                 .filter(valueFragmentSet -> {
-                    ValuePredicateAdmin predicate = valueFragmentSet.predicate();
+                    ValuePredicate predicate = valueFragmentSet.predicate();
                     return predicate.equalsValue().isPresent() && !predicate.getInnerVar().isPresent();
                 });
     }

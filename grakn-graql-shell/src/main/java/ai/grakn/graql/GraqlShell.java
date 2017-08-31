@@ -150,19 +150,23 @@ public class GraqlShell {
 
     private final GraqlCompleter graqlCompleter = new GraqlCompleter();
 
+    private boolean errorOccurred = false;
+
     /**
      * Run a Graql REPL
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
      */
     public static void main(String[] args) {
-        runShell(args, GraknVersion.VERSION, HISTORY_FILENAME, new GraqlClient());
+        int exitCode = runShell(args, GraknVersion.VERSION, HISTORY_FILENAME);
+        System.exit(exitCode);
     }
 
-    public static void runShell(String[] args, String version, String historyFilename) {
-        runShell(args, version, historyFilename, new GraqlClient());
+    public static int runShell(String[] args, String version, String historyFilename) {
+        boolean success = runShell(args, version, historyFilename, new GraqlClient());
+        return success ? 0 : 1;
     }
 
-    public static void runShell(String[] args, String version, String historyFilename, GraqlClient client) {
+    public static boolean runShell(String[] args, String version, String historyFilename, GraqlClient client) {
 
         Options options = new Options();
         options.addOption("k", "keyspace", true, "keyspace of the graph");
@@ -187,7 +191,7 @@ public class GraqlShell {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
             System.err.println(e.getMessage());
-            return;
+            return false;
         }
 
         Optional<List<String>> queries = Optional.ofNullable(cmd.getOptionValue("e")).map(Lists::newArrayList);
@@ -207,12 +211,12 @@ public class GraqlShell {
         // Print usage message if requested or if invalid arguments provided
         if (cmd.hasOption("h") || !cmd.getArgList().isEmpty()) {
             printUsage(options, null);
-            return;
+            return true;
         }
 
         if (cmd.hasOption("v")) {
             System.out.println(version);
-            return;
+            return true;
         }
 
         String keyspace = cmd.getOptionValue("k", DEFAULT_KEYSPACE);
@@ -223,7 +227,7 @@ public class GraqlShell {
 
         if (!client.serverIsRunning(uriString)) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
-            return;
+            return false;
         }
 
         boolean infer = cmd.hasOption("n");
@@ -247,11 +251,12 @@ public class GraqlShell {
                 }
             } catch (NumberFormatException e) {
                 printUsage(options, "Cannot cast argument to an integer "+e.getMessage());
+                return false;
             }
-            return;
+            return true;
         } else if (cmd.hasOption("a") || cmd.hasOption("s")) {
             printUsage(options, "The active or size option has been specified without batch.");
-            return;
+            return false;
         }
 
 
@@ -262,14 +267,22 @@ public class GraqlShell {
 
             URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
 
-            new GraqlShell(
-                    historyFilename, keyspace, username, password, client, uri, queries, outputFormat,
+            GraqlShell shell = new GraqlShell(
+                    historyFilename, keyspace, username, password, client, uri, outputFormat,
                     infer, materialise
             );
+
+            // Start shell
+            shell.start(queries);
+            return !shell.errorOccurred;
         } catch (java.net.ConnectException e) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
+            return false;
         } catch (Throwable e) {
             System.err.println(getFullStackTrace(e));
+            return false;
+        } finally {
+            client.close();
         }
     }
 
@@ -326,59 +339,53 @@ public class GraqlShell {
      */
     GraqlShell(
             String historyFilename, String keyspace, Optional<String> username, Optional<String> password,
-            GraqlClient client, URI uri, Optional<List<String>> queryStrings, String outputFormat,
-            boolean infer, boolean materialise
+            GraqlClient client, URI uri, String outputFormat, boolean infer, boolean materialise
     ) throws Throwable {
 
         this.historyFilename = historyFilename;
 
-        try {
-            console = new ConsoleReader(System.in, System.out);
-            session = new JsonSession(client, uri);
+        console = new ConsoleReader(System.in, System.out);
+        session = new JsonSession(client, uri);
 
-            // Send the requested keyspace and output format to the server once connected
-            Json initJson = Json.object(
-                    ACTION, ACTION_INIT,
-                    KEYSPACE, keyspace,
-                    OUTPUT_FORMAT, outputFormat,
-                    INFER, infer,
-                    MATERIALISE, materialise
-            );
-            username.ifPresent(u -> initJson.set(USERNAME, u));
-            password.ifPresent(p -> initJson.set(PASSWORD, p));
-            session.sendJson(initJson);
+        // Send the requested keyspace and output format to the server once connected
+        Json initJson = Json.object(
+                ACTION, ACTION_INIT,
+                KEYSPACE, keyspace,
+                OUTPUT_FORMAT, outputFormat,
+                INFER, infer,
+                MATERIALISE, materialise
+        );
+        username.ifPresent(u -> initJson.set(USERNAME, u));
+        password.ifPresent(p -> initJson.set(PASSWORD, p));
+        session.sendJson(initJson);
 
-            // Wait to receive confirmation
-            handleMessagesFromServer();
-
-            // If session has closed, then we couldn't authorise
-            if (!session.isOpen()) {
-                return;
-            }
-
-            // Start shell
-            start(queryStrings);
-
-        } finally {
-            client.close();
-            console.flush();
-        }
+        // Wait to receive confirmation
+        handleMessagesFromServer();
     }
 
     private void start(Optional<List<String>> queryStrings) throws IOException {
-
-        // Begin sending pings
-        Thread thread = new Thread(() -> WebSocketPing.ping(session), "graql-shell-ping");
-        thread.setDaemon(true);
-        thread.start();
-
-        if (queryStrings.isPresent()) {
-            for (String queryString : queryStrings.get()) {
-                executeQuery(queryString);
-                commit();
+        try {
+            // If session has closed, then we couldn't authorise
+            if (!session.isOpen()) {
+                errorOccurred = true;
+                return;
             }
-        } else {
-            executeRepl();
+
+            // Begin sending pings
+            Thread thread = new Thread(() -> WebSocketPing.ping(session), "graql-shell-ping");
+            thread.setDaemon(true);
+            thread.start();
+
+            if (queryStrings.isPresent()) {
+                for (String queryString : queryStrings.get()) {
+                    executeQuery(queryString);
+                    commit();
+                }
+            } else {
+                executeRepl();
+            }
+        } finally {
+            console.flush();
         }
     }
 
@@ -453,6 +460,7 @@ public class GraqlShell {
                     queryString = loadQuery(path);
                 } catch (IOException e) {
                     System.err.println(e.toString());
+                    errorOccurred = true;
                     continue;
                 }
             }
@@ -512,7 +520,7 @@ public class GraqlShell {
         this.print(result.toString());
     }
 
-    private void executeQuery(String queryString) throws IOException {
+    private boolean executeQuery(String queryString) throws IOException {
         // Split query into chunks
         Iterable<String> splitQuery = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(queryString);
 
@@ -529,6 +537,8 @@ public class GraqlShell {
 
         // Flush the console so the output is all displayed before the next command
         console.flush();
+
+        return true;
     }
 
     private void handleMessagesFromServer() {
@@ -551,6 +561,7 @@ public class GraqlShell {
                 break;
             case ACTION_ERROR:
                 System.err.print(message.at(ERROR).asString());
+                errorOccurred = true;
                 break;
             case ACTION_PING:
                 // Ignore

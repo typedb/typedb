@@ -44,26 +44,17 @@ import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
-    // element key
     public static final String DEGREE = "degreeVertexProgram.degree";
     private static final String OF_LABELS = "degreeVertexProgram.ofLabelIds";
 
     Set<LabelId> ofLabelIds = new HashSet<>();
 
-    String degreePropertyKey;
-
     // Needed internally for OLAP tasks
     public DegreeVertexProgram() {
     }
 
-    public DegreeVertexProgram(Set<LabelId> ofLabelIds, String randomId) {
-        this(randomId);
+    public DegreeVertexProgram(Set<LabelId> ofLabelIds) {
         this.ofLabelIds = ofLabelIds;
-    }
-
-    public DegreeVertexProgram(String randomId) {
-        this.degreePropertyKey = DEGREE + randomId;
-        this.persistentProperties.put(DEGREE, degreePropertyKey);
     }
 
     @Override
@@ -77,17 +68,16 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
         super.loadState(graph, configuration);
         configuration.subset(OF_LABELS).getKeys().forEachRemaining(key ->
                 ofLabelIds.add((LabelId) configuration.getProperty(OF_LABELS + "." + key)));
-        degreePropertyKey = (String) this.persistentProperties.get(DEGREE);
     }
 
     @Override
     public Set<VertexComputeKey> getVertexComputeKeys() {
-        return Collections.singleton(VertexComputeKey.of(degreePropertyKey, false));
+        return Collections.singleton(VertexComputeKey.of(DEGREE, false));
     }
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        return memory.isInitialIteration() ? messageScopeSetShortcut : Collections.emptySet();
+        return memory.isInitialIteration() ? messageScopeSetInAndOut : Collections.emptySet();
     }
 
     @Override
@@ -117,7 +107,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     private void degreeMessageCounting(Messenger<Long> messenger, Vertex vertex) {
         if (ofLabelIds.isEmpty() || vertexHasSelectedTypeId(vertex, ofLabelIds)) {
-            vertex.property(degreePropertyKey, getMessageCount(messenger));
+            vertex.property(DEGREE, getMessageCount(messenger));
         }
     }
 }

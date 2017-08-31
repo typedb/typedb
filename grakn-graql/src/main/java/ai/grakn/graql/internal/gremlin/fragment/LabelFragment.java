@@ -20,33 +20,28 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
 
-class LabelFragment extends AbstractFragment {
+@AutoValue
+abstract class LabelFragment extends Fragment {
 
-    private final Label label;
-
-    LabelFragment(VarProperty varProperty, Var start, Label label) {
-        super(varProperty, start);
-        this.label = label;
-    }
+    abstract Label label();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
             GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
 
-        return traversal.has(LABEL_ID.name(), graph.admin().convertToId(label).getValue());
+        return traversal.has(LABEL_ID.name(), graph.admin().convertToId(label()).getValue());
     }
 
     @Override
-    public String getName() {
-        return "[label:" + typeLabelToString(label) + "]";
+    public String name() {
+        return "[label:" + typeLabelToString(label()) + "]";
     }
 
     @Override
@@ -57,24 +52,5 @@ class LabelFragment extends AbstractFragment {
     @Override
     public boolean hasFixedFragmentCost() {
         return true;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        LabelFragment that = (LabelFragment) o;
-
-        return label != null ? label.equals(that.label) : that.label == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (label != null ? label.hashCode() : 0);
-        return result;
     }
 }

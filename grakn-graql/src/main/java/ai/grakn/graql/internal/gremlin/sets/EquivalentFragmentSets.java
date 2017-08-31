@@ -24,8 +24,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.util.CommonUtil;
@@ -33,7 +33,6 @@ import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -63,8 +62,8 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a shortcut edge between two role-players.
      */
-    public static EquivalentFragmentSet shortcut(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, Optional<Var> roleType) {
-        return new ShortcutFragmentSet(varProperty, relation, edge, rolePlayer, roleType, Optional.empty(), Optional.empty());
+    public static EquivalentFragmentSet shortcut(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, @Nullable Var role) {
+        return new ShortcutFragmentSet(varProperty, relation, edge, rolePlayer, role, null, null);
     }
 
     /**
@@ -105,7 +104,7 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable represents a resource with value matching a predicate.
      */
-    public static EquivalentFragmentSet value(VarProperty varProperty, Var resource, ValuePredicateAdmin predicate) {
+    public static EquivalentFragmentSet value(VarProperty varProperty, Var resource, ValuePredicate predicate) {
         return new ValueFragmentSet(varProperty, resource, predicate);
     }
 

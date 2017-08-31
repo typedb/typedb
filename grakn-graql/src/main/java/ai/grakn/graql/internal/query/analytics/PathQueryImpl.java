@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.internal.analytics.Utility.getResourceEdgeId;
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
 class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implements PathQuery {
@@ -76,8 +77,10 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
                     new ClusterMemberMapReduce(ShortestPathVertexProgram.FOUND_IN_ITERATION),
                     subLabelIds);
         } catch (RuntimeException e) {
-            if ((e.getCause() instanceof IllegalStateException && e.getCause().getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage())) ||
-                    (e instanceof IllegalStateException && e.getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage()))) {
+            if ((e.getCause() instanceof IllegalStateException &&
+                    e.getCause().getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage())) ||
+                    (e instanceof IllegalStateException &&
+                            e.getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage()))) {
                 LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
                 return Optional.empty();
             }
@@ -95,9 +98,19 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
                 .collect(Collectors.toList()));
         path.add(destinationId);
 
-        LOGGER.debug("The path found is: " + path);
+        List<ConceptId> fullPath = new ArrayList<>();
+        for (int index = 0; index < path.size() - 1; index++) {
+            fullPath.add(path.get(index));
+            ConceptId resourceRelationId = getResourceEdgeId(tx.get(), path.get(index), path.get(index + 1));
+            if (resourceRelationId != null) {
+                fullPath.add(resourceRelationId);
+            }
+        }
+        fullPath.add(destinationId);
+
+        LOGGER.debug("The path found is: " + fullPath);
         LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(path.stream().map(tx.get()::<Thing>getConcept).collect(Collectors.toList()));
+        return Optional.of(fullPath.stream().map(tx.get()::<Thing>getConcept).collect(Collectors.toList()));
     }
 
     @Override

@@ -24,7 +24,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
@@ -257,7 +256,7 @@ public class ResourceAtom extends Binary{
     @Override
     public int computePriority(Set<Var> subbedVars){
         int priority = super.computePriority(subbedVars);
-        Set<ValuePredicateAdmin> vps = getPredicates(ValuePredicate.class).map(ValuePredicate::getPredicate).collect(Collectors.toSet());
+        Set<ai.grakn.graql.ValuePredicate> vps = getPredicates(ValuePredicate.class).map(ValuePredicate::getPredicate).collect(Collectors.toSet());
         priority += ResolutionPlan.IS_RESOURCE_ATOM;
 
         if (vps.isEmpty()) {
@@ -269,7 +268,7 @@ public class ResourceAtom extends Binary{
             }
         } else {
             int vpsPriority = 0;
-            for (ValuePredicateAdmin vp : vps) {
+            for (ai.grakn.graql.ValuePredicate vp : vps) {
                 //vp with a value
                 if (vp.isSpecific() && !isSuperNode()) {
                     vpsPriority += ResolutionPlan.SPECIFIC_VALUE_PREDICATE;

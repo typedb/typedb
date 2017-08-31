@@ -24,6 +24,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.GraknTestSetup;
@@ -153,6 +154,60 @@ public class QueryTest {
         queryEquivalence(query, query2, true);
     }
 
+    @Test
+    public void testAlphaEquivalence_RelationsWithSubstitution(){
+        GraknTx graph = geoKB.tx();
+        String patternString = "{(role: $x, role: $y);$x id 'V666';}";
+        String patternString2 = "{(role: $x, role: $y);$y id 'V666';}";
+        String patternString3 = "{(role: $x, role: $y);$x id 'V666';$y id 'V667';}";
+        String patternString4 = "{(role: $x, role: $y);$y id 'V666';$x id 'V667';}";
+        String patternString5 = "{(entity-location: $x, geo-entity: $y);$x id 'V666';$y id 'V667';}";
+        String patternString6 = "{(entity-location: $x, geo-entity: $y);$y id 'V666';$x id 'V667';}";
+        String patternString7 = "{(role: $x, role: $y);$x id 'V666';$y id 'V666';}";
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern4 = conjunction(patternString4, graph);
+        Conjunction<VarPatternAdmin> pattern5 = conjunction(patternString5, graph);
+        Conjunction<VarPatternAdmin> pattern6 = conjunction(patternString6, graph);
+        Conjunction<VarPatternAdmin> pattern7 = conjunction(patternString7, graph);
+
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
+        ReasonerAtomicQuery query3 = ReasonerQueries.atomic(pattern3, graph);
+        ReasonerAtomicQuery query4 = ReasonerQueries.atomic(pattern4, graph);
+        ReasonerAtomicQuery query5 = ReasonerQueries.atomic(pattern5, graph);
+        ReasonerAtomicQuery query6 = ReasonerQueries.atomic(pattern6, graph);
+        ReasonerAtomicQuery query7 = ReasonerQueries.atomic(pattern7, graph);
+
+        queryEquivalence(query, query2, true);
+        queryEquivalence(query, query3, false);
+        queryEquivalence(query, query4, false);
+        queryEquivalence(query, query5, false);
+        queryEquivalence(query, query6, false);
+        queryEquivalence(query, query7, false);
+
+        queryEquivalence(query2, query3, false);
+        queryEquivalence(query2, query4, false);
+        queryEquivalence(query2, query5, false);
+        queryEquivalence(query2, query6, false);
+        queryEquivalence(query2, query7, false);
+
+        queryEquivalence(query3, query4, true);
+        queryEquivalence(query3, query5, false);
+        queryEquivalence(query3, query6, false);
+        queryEquivalence(query3, query7, false);
+
+        queryEquivalence(query4, query5, false);
+        queryEquivalence(query4, query6, false);
+        queryEquivalence(query4, query7, false);
+
+        queryEquivalence(query5, query6, false);
+        queryEquivalence(query5, query7, false);
+
+        queryEquivalence(query6, query7, false);
+    }
+
     //Bug #11150 Relations with resources as single VarPatternAdmin
     @Test //tests whether directly and indirectly reified relations are equivalent
     public void testAlphaEquivalence_reifiedRelation(){
@@ -167,6 +222,7 @@ public class QueryTest {
 
     private void queryEquivalence(ReasonerQueryImpl a, ReasonerQueryImpl b, boolean expectation){
         assertEquals(a.toString() + " =? " + b.toString(), a.equals(b), expectation);
+        assertEquals(b.toString() + " =? " + a.toString(), b.equals(a), expectation);
         //check hash additionally if need to be equal
         if (expectation) {
             assertEquals(a.toString() + " hash=? " + b.toString(), a.hashCode() == b.hashCode(), true);

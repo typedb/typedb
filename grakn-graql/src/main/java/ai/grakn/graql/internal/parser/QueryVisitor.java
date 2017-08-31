@@ -53,6 +53,7 @@ import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -118,8 +119,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public MatchQuery visitMatchSelect(GraqlParser.MatchSelectContext ctx) {
-        Set<Var> names = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
-        return visitMatchQuery(ctx.matchQuery()).select(names);
+        return visitMatchQuery(ctx.matchQuery()).select(visitVariables(ctx.variables()));
     }
 
     @Override
@@ -182,13 +182,18 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
-        Collection<VarPattern> getters = visitVarPatterns(ctx.varPatterns());
-        return visitMatchQuery(ctx.matchQuery()).delete(getters);
+        Collection<Var> vars = ctx.variables() != null ? visitVariables(ctx.variables()) : ImmutableSet.of();
+        return visitMatchQuery(ctx.matchQuery()).delete(vars);
     }
 
     @Override
     public ComputeQuery<?> visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
         return visitComputeMethod(ctx.computeMethod());
+    }
+
+    @Override
+    public Set<Var> visitVariables(GraqlParser.VariablesContext ctx) {
+        return ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
     }
 
     @Override

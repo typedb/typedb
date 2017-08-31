@@ -21,11 +21,9 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Role;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
@@ -33,18 +31,15 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -117,8 +112,8 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                shortcut(this, relationship().var(), edge1, start, Optional.empty()),
-                shortcut(this, relationship().var(), edge2, attribute().var(), Optional.empty()),
+                shortcut(this, relationship().var(), edge1, start, null),
+                shortcut(this, relationship().var(), edge2, attribute().var(), null),
                 neq(this, edge1, edge2)
         );
     }
@@ -146,29 +141,6 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         };
 
         return PropertyExecutor.builder(method).produces(relationship().var()).requires(var, attribute().var()).build();
-    }
-
-    @Override
-    public void delete(GraknTx graph, Concept concept) {
-        Optional<ValuePredicateAdmin> predicate =
-                attribute().getProperties(ValueProperty.class).map(ValueProperty::predicate).findAny();
-
-        Role owner = graph.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(type()));
-        Role value = graph.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(type()));
-
-        concept.asThing().relationships(owner)
-                .filter(relationship -> testPredicate(predicate, relationship, value))
-                .forEach(Concept::delete);
-    }
-
-    private boolean testPredicate(
-            Optional<ValuePredicateAdmin> optPredicate, Relationship relationship, Role attributeRole) {
-        Object value = relationship.rolePlayers(attributeRole).iterator().next().asAttribute().getValue();
-
-        return optPredicate
-                .flatMap(ValuePredicateAdmin::getPredicate)
-                .map(predicate -> predicate.test(value))
-                .orElse(true);
     }
 
     @Override

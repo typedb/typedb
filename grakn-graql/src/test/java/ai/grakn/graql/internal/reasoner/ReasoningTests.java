@@ -167,7 +167,6 @@ public class ReasoningTests {
         List<Answer> answers = qb.<GetQuery>parse(queryString).execute();
         List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
 
-
         assertEquals(1, answers.size());
         assertEquals(4, answers2.size());
         assertNotEquals(answers.size() * answers2.size(), 0);
@@ -331,7 +330,7 @@ public class ReasoningTests {
         VarPattern has = var("x").has(Label.of("res1"), var("y"), var("r"));
         List<Answer> answers = qb.match(has).get().execute();
         assertEquals(answers.size(), 2);
-        answers.forEach(a -> assertTrue(a.keySet().contains(var("r"))));
+        answers.forEach(a -> assertTrue(a.vars().contains(var("r"))));
     }
 
     @Test
@@ -611,7 +610,7 @@ public class ReasoningTests {
         List<Answer> answers2 = qb.<GetQuery>parse(queryString2).execute();
         assertEquals(answers2.size(), 2);
         Set<Var> vars = Sets.newHashSet(var("b"), var("p"), var("c"), var("rel1"), var("rel2"));
-        answers2.forEach(ans -> assertTrue(ans.keySet().containsAll(vars)));
+        answers2.forEach(ans -> assertTrue(ans.vars().containsAll(vars)));
     }
 
     @Test //Expected result: 2 relations obtained by correctly finding reified relations

@@ -18,8 +18,8 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -69,28 +69,28 @@ public class AnalyticsTest {
         factory = context.factoryWithNewKeyspace();
     }
 
-    @Ignore // No longer applicable
+    @Ignore
     @Test
-    public void testInferredResourceRelation() throws InvalidKBException {
+    public void testImplicitResourceRelation() throws InvalidKBException {
         try (GraknTx graph = factory.open(GraknTxType.WRITE)) {
-            Label resourceLabel = Label.of("degree");
-            AttributeType<Long> degree = graph.putAttributeType(resourceLabel, AttributeType.DataType.LONG);
+            Label resourceLabel = Label.of("someResource");
+            AttributeType<Long> someResource = graph.putAttributeType(resourceLabel, AttributeType.DataType.LONG);
             EntityType thingy = graph.putEntityType("thingy");
-            thingy.attribute(degree);
+            thingy.attribute(someResource);
 
             Entity thisThing = thingy.addEntity();
-            Attribute thisAttribute = degree.putAttribute(1L);
+            Attribute thisAttribute = someResource.putAttribute(1L);
             thisThing.attribute(thisAttribute);
             graph.commit();
         }
 
         try (GraknTx graph = factory.open(GraknTxType.READ)) {
             Map<Long, Set<String>> degrees;
-            degrees = graph.graql().compute().degree().of("thingy").in("thingy", "degree").execute();
+            degrees = graph.graql().compute().degree().of("thingy").in("someResource").execute();
             assertEquals(1, degrees.size());
             assertEquals(1, degrees.get(1L).size());
 
-            degrees = graph.graql().compute().degree().in("thingy", "degree").execute();
+            degrees = graph.graql().compute().degree().in("thingy", "someResource").execute();
             assertEquals(1, degrees.size());
             assertEquals(2, degrees.get(1L).size());
         }

@@ -151,7 +151,7 @@ public final class ResolutionPlan {
         ImmutableList<Fragment> fragments = graqlTraversal.fragments().iterator().next();
 
         LinkedList<Atom> atoms = fragments.stream()
-                .map(Fragment::getVarProperty)
+                .map(Fragment::varProperty)
                 .filter(Objects::nonNull)
                 .filter(properties::contains)
                 .distinct()

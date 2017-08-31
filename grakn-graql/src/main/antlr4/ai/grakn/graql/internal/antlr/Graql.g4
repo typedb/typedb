@@ -6,7 +6,7 @@ queryEOF       : query EOF ;
 query          : getQuery | insertQuery | defineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
 matchQuery     : MATCH patterns                                   # matchBase
-               | matchQuery 'select' VARIABLE (',' VARIABLE)* ';' # matchSelect
+               | matchQuery 'select' variables                ';' # matchSelect
                | matchQuery 'limit' INTEGER                   ';' # matchLimit
                | matchQuery 'offset' INTEGER                  ';' # matchOffset
                | matchQuery 'distinct'                        ';' # matchDistinct
@@ -16,9 +16,11 @@ matchQuery     : MATCH patterns                                   # matchBase
 getQuery       : matchQuery 'get' (VARIABLE (',' VARIABLE)*)? ';' ;
 insertQuery    : matchQuery? INSERT varPatterns ;
 defineQuery    : DEFINE varPatterns ;
-deleteQuery    : matchQuery 'delete' varPatterns ;
+deleteQuery    : matchQuery 'delete' variables? ';' ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
+
+variables      : VARIABLE (',' VARIABLE)* ;
 
 computeMethod  : min | max | median | mean | std | sum | count | path | cluster | degrees ;
 

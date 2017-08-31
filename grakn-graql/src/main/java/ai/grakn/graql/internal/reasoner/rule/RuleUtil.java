@@ -106,7 +106,7 @@ public class RuleUtil {
      * @param topTypes entry types in the rule graph
      * @return all rules that are reachable from the entry types
      */
-    public static Stream<Rule> getDependentRules(Set<Type> topTypes){
+    public static Set<Rule> getDependentRules(Set<Type> topTypes){
         Set<Rule> rules = new HashSet<>();
         Set<Type> visitedTypes = new HashSet<>();
         Stack<Type> types = new Stack<>();
@@ -122,14 +122,14 @@ public class RuleUtil {
                 visitedTypes.add(type);
             }
         }
-        return rules.stream();
+        return rules;
     }
 
     /**
      * @param query top query
      * @return all rules that are reachable from the entry types
      */
-    public static Stream<InferenceRule> getDependentRules(ReasonerQueryImpl query){
+    public static Set<InferenceRule> getDependentRules(ReasonerQueryImpl query){
         Set<InferenceRule> rules = new HashSet<>();
         Set<Atom> visitedAtoms = new HashSet<>();
         Stack<Atom> atoms = new Stack<>();
@@ -145,6 +145,6 @@ public class RuleUtil {
                 visitedAtoms.add(atom);
             }
         }
-        return rules.stream();
+        return rules;
     }
 }
