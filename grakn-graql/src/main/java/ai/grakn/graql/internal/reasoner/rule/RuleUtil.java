@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RuleType;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
@@ -50,8 +51,9 @@ public class RuleUtil {
      * @param graph of interest
      * @return set of inference rule contained in the graph
      */
-    public static Stream<Rule> getRules(GraknTx graph) {
-        return graph.admin().getMetaRuleInference().instances();
+    public static Stream<RuleType> getRules(GraknTx graph) {
+        return graph.admin().getMetaRuleType().subs().
+                filter(sub -> sub.equals(graph.admin().getMetaRuleType()));
     }
 
     /**
@@ -59,8 +61,8 @@ public class RuleUtil {
      * @return true if at least one inference rule is present in the graph
      */
     public static boolean hasRules(GraknTx graph) {
-        Label inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getLabel();
-        return graph.graql().infer(false).match(var("x").isa(Graql.label(inferenceRule))).iterator().hasNext();
+        Label rule = Schema.MetaSchema.RULE.getLabel();
+        return graph.graql().infer(false).match(var("x").isa(Graql.label(rule))).iterator().hasNext();
     }
 
     /**
@@ -68,7 +70,7 @@ public class RuleUtil {
      * @param graph of interest
      * @return rules containing specified type in the head
      */
-    public static Stream<Rule> getRulesWithType(SchemaConcept type, GraknTx graph){
+    public static Stream<RuleType> getRulesWithType(SchemaConcept type, GraknTx graph){
         return type != null ?
                 type.subs().flatMap(SchemaConcept::getRulesOfConclusion) :
                 getRules(graph);

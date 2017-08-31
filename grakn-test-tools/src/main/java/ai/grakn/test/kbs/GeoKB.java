@@ -22,9 +22,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
 
 import java.util.function.Consumer;
@@ -204,6 +203,6 @@ public class GeoKB extends TestKB {
                 "{(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;}");
         Pattern transitivity_RHS = tx.graql().parsePattern("{(geo-entity: $x, entity-location: $z) isa is-located-in;}");
-        tx.putRuleType(transitivity_LHS, transitivity_RHS);
+        tx.putRuleType("Geo Rule", transitivity_LHS, transitivity_RHS);
     }
 }

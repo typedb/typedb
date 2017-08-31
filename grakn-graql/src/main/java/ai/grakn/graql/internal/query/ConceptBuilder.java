@@ -362,7 +362,9 @@ public class ConceptBuilder {
             AttributeType.DataType<?> dataType = useOrDefault(DATA_TYPE, attributeType.getDataType());
             concept = executor.tx().putAttributeType(label, dataType);
         } else if (superConcept.isRuleType()) {
-            concept = executor.tx().putRuleType(label);
+            //TODO: FIX IT FELIX - I wonder if you will get the reference
+            //concept = executor.tx().putRuleType(label);
+            concept = null;
         } else {
             throw GraqlQueryException.insertMetaType(label, superConcept);
         }

@@ -289,12 +289,12 @@ public class MovieKB extends TestKB {
 
     @Override
     protected void buildRules(GraknTx tx) {
-        // These rules are totally made up for testing purposes and don't work!
-        aRuleType = tx.putRuleType("a-rule-type");
-        aRuleType.attribute(name);
-
         Pattern when = tx.graql().parsePattern("$x plays actor");
         Pattern then = tx.graql().parsePattern("$x isa person");
+
+        // These rules are totally made up for testing purposes and don't work!
+        aRuleType = tx.putRuleType("a-rule-type", when, then);
+        aRuleType.attribute(name);
 
         Rule expectation = aRuleType.putRule(when, then);
 
