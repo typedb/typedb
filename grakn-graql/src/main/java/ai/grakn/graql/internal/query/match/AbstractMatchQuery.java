@@ -86,11 +86,6 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final MatchQuery distinct() {
-        return new MatchQueryDistinct(this);
-    }
-
-    @Override
     public final <S> AggregateQuery<S> aggregate(Aggregate<? super Answer, S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
     }

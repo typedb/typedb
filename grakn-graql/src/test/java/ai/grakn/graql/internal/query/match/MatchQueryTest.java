@@ -224,7 +224,7 @@ public class MatchQueryTest {
 
     @Test
     public void testRoleOnlyQuery() {
-        GetQuery query = qb.match(var().rel("actor", x)).distinct().get();
+        GetQuery query = qb.match(var().rel("actor", x)).get();
 
         assertThat(query, variable(x, containsInAnyOrder(
                 marlonBrando, alPacino, missPiggy, kermitTheFrog, martinSheen, robertDeNiro, judeLaw, mirandaHeart,
@@ -234,7 +234,7 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryingForRole_ResultContainsAllValidRoles() {
-        GetQuery query = qb.match(var().rel(x, var().has("name", "Michael Corleone"))).distinct().get();
+        GetQuery query = qb.match(var().rel(x, var().has("name", "Michael Corleone"))).get();
 
         assertThat(query, variable(x, containsInAnyOrder(
                 role("role"), role("character-being-played"),
@@ -352,7 +352,7 @@ public class MatchQueryTest {
                 y.isa("movie"),
                 var().rel(y).rel(z),
                 z.isa("person").has("name", "Marlon Brando")
-        ).distinct().get(ImmutableSet.of(x));
+        ).get(ImmutableSet.of(x));
 
         assertThat(query, variable(x, containsInAnyOrder(marlonBrando, alPacino, martinSheen)));
     }
@@ -453,7 +453,7 @@ public class MatchQueryTest {
 
     @Test
     public void testVariableAsRoleType() {
-        GetQuery query = qb.match(var().rel(var().label("genre-of-production"), y)).distinct().get();
+        GetQuery query = qb.match(var().rel(var().label("genre-of-production"), y)).get();
 
         assertThat(query, variable(y, containsInAnyOrder(
                 crime, drama, war, action, comedy, family, musical, fantasy
@@ -1036,7 +1036,7 @@ public class MatchQueryTest {
                 x.isa("genre"),
                 x.isa("genre"),
                 x.isa("genre"),
-                y.isa("genre")).distinct().get().execute();
+                y.isa("genre")).get().execute();
         assertEquals(size, result1.size());
 
         List<Answer> result2 = movieKB.tx().graql().match(
@@ -1044,18 +1044,18 @@ public class MatchQueryTest {
                 var().isa("genre"),
                 var().isa("genre"),
                 var().isa("genre"),
-                var().isa("genre")).distinct().get().execute();
+                var().isa("genre")).get().execute();
         assertEquals(1, result2.size());
 
         List<Answer> result3 = movieKB.tx().graql().match(
                 x.isa("genre"),
-                y.isa("genre")).distinct().get().execute();
+                y.isa("genre")).get().execute();
         assertEquals(size, result3.size());
 
         List<Answer> result4 = movieKB.tx().graql().match(
                 var().isa("genre"),
                 x.isa("genre"),
-                y.isa("genre")).distinct().get().execute();
+                y.isa("genre")).get().execute();
         assertEquals(size, result4.size());
     }
 

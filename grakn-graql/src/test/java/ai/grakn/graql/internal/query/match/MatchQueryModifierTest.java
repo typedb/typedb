@@ -45,7 +45,6 @@ import static ai.grakn.matcher.GraknMatchers.variable;
 import static ai.grakn.matcher.MovieMatchers.containsAllMovies;
 import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -131,17 +130,6 @@ public class MatchQueryModifierTest {
         ).orderBy("t", desc).get(ImmutableSet.of(x));
 
         assertThat(query, variable(x, contains(MovieMatchers.heat, MovieMatchers.godfather, MovieMatchers.apocalypseNow)));
-    }
-
-    @Test
-    public void testDistinctQuery() {
-        GetQuery query = qb.match(
-                x.isa("person"),
-                y.has("title", "The Muppets"),
-                var().rel(x).rel(y)
-        ).distinct().get(ImmutableSet.of(x));
-
-        assertThat(query, variable(x, containsInAnyOrder(MovieMatchers.kermitTheFrog, MovieMatchers.missPiggy)));
     }
 
     @Test

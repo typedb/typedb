@@ -171,13 +171,6 @@ public interface MatchQuery extends Streamable<Answer> {
     MatchQuery offset(long offset);
 
     /**
-     * remove any duplicate results from the query
-     * @return a new MatchQuery without duplicate results
-     */
-    @CheckReturnValue
-    MatchQuery distinct();
-
-    /**
      * Aggregate results of a query.
      * @param aggregate the aggregate operation to apply
      * @param <S> the type of the aggregate result
