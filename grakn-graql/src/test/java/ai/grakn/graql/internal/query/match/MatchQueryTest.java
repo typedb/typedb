@@ -77,11 +77,9 @@ import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.matcher.GraknMatchers.concept;
-import static ai.grakn.matcher.GraknMatchers.constraintRule;
 import static ai.grakn.matcher.GraknMatchers.entity;
 import static ai.grakn.matcher.GraknMatchers.hasType;
 import static ai.grakn.matcher.GraknMatchers.hasValue;
-import static ai.grakn.matcher.GraknMatchers.inferenceRule;
 import static ai.grakn.matcher.GraknMatchers.isInstance;
 import static ai.grakn.matcher.GraknMatchers.isShard;
 import static ai.grakn.matcher.GraknMatchers.resource;
@@ -601,7 +599,7 @@ public class MatchQueryTest {
     public void testSelectRuleTypes() {
         MatchQuery query = qb.match(x.sub(RULE.getLabel().getValue()));
         assertThat(query, variable(x, containsInAnyOrder(
-                rule, aRuleType, inferenceRule, constraintRule
+                rule, aRuleType
         )));
     }
 

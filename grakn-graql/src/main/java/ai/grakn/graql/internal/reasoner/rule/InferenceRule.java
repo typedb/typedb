@@ -20,8 +20,9 @@ package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.RuleType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -29,16 +30,16 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
@@ -67,7 +68,7 @@ public class InferenceRule {
 
     private int priority = Integer.MAX_VALUE;
 
-    public InferenceRule(Rule rule, GraknTx tx){
+    public InferenceRule(RuleType rule, GraknTx tx){
         this.tx = tx;
         this.ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects

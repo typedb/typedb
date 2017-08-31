@@ -108,8 +108,8 @@ public class RuleUtil {
      * @param topTypes entry types in the rule graph
      * @return all rules that are reachable from the entry types
      */
-    public static Set<Rule> getDependentRules(Set<Type> topTypes){
-        Set<Rule> rules = new HashSet<>();
+    public static Set<RuleType> getDependentRules(Set<Type> topTypes){
+        Set<RuleType> rules = new HashSet<>();
         Set<Type> visitedTypes = new HashSet<>();
         Stack<Type> types = new Stack<>();
         topTypes.forEach(types::push);
@@ -118,7 +118,7 @@ public class RuleUtil {
             if (!visitedTypes.contains(type)){
                 type.getRulesOfConclusion()
                         .peek(rules::add)
-                        .flatMap(Rule::getHypothesisTypes)
+                        .flatMap(RuleType::getHypothesisTypes)
                         .filter(visitedTypes::contains)
                         .forEach(types::add);
                 visitedTypes.add(type);
