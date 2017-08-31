@@ -25,14 +25,14 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
+import ai.grakn.concept.RuleType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
-import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import ai.grakn.kb.internal.concept.RelationshipReified;
+import ai.grakn.kb.internal.concept.SchemaConceptImpl;
 import ai.grakn.kb.internal.concept.ThingImpl;
 import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.util.REST;
@@ -81,7 +81,7 @@ public class TxCache {
     private final Set<RelationshipType> modifiedRelationshipTypes = new HashSet<>();
     private final Set<Relationship> modifiedRelationships = new HashSet<>();
 
-    private final Set<Rule> modifiedRules = new HashSet<>();
+    private final Set<RuleType> modifiedRules = new HashSet<>();
 
     private final Set<Attribute> modifiedAttributes = new HashSet<>();
 
@@ -156,8 +156,8 @@ public class TxCache {
             modifiedRelationships.add(relationship);
             //Caching of relations in memory so they can be retrieved without needing a commit
             relationIndexCache.put(RelationshipReified.generateNewHash(relationship.type(), relationship.allRolePlayers()), relationship);
-        } else if (concept.isRule()){
-            modifiedRules.add(concept.asRule());
+        } else if (concept.isRuleType()){
+            modifiedRules.add(concept.asRuleType());
         } else if (concept.isAttribute()){
             modifiedAttributes.add(concept.asAttribute());
         }
@@ -374,7 +374,7 @@ public class TxCache {
         return modifiedRelationships;
     }
 
-    public Set<Rule> getModifiedRules() {
+    public Set<RuleType> getModifiedRules() {
         return modifiedRules;
     }
 

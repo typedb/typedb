@@ -20,28 +20,28 @@ package ai.grakn.kb.internal;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
+import ai.grakn.concept.RuleType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
-import ai.grakn.kb.internal.concept.RelationshipImpl;
-import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
-import ai.grakn.kb.internal.concept.SchemaConceptImpl;
-import ai.grakn.kb.internal.concept.RelationshipReified;
-import ai.grakn.kb.internal.concept.RuleImpl;
-import ai.grakn.kb.internal.concept.TypeImpl;
-import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.kb.internal.concept.RelationshipImpl;
+import ai.grakn.kb.internal.concept.RelationshipReified;
+import ai.grakn.kb.internal.concept.RelationshipTypeImpl;
+import ai.grakn.kb.internal.concept.RuleTypeImpl;
+import ai.grakn.kb.internal.concept.SchemaConceptImpl;
+import ai.grakn.kb.internal.concept.TypeImpl;
+import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -339,10 +339,10 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated
      * @return Error messages if the rule is not a valid Horn clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
-    static Set<String> validateRuleIsValidHornClause(GraknTx graph, Rule rule){
+    static Set<String> validateRuleIsValidHornClause(GraknTx graph, RuleType rule){
         Set<String> errors = new HashSet<>();
         if (rule.getWhen().admin().isDisjunction()){
-            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.type().getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.getId(), rule.getLabel()));
         }
         errors.addAll(checkRuleHeadInvalid(graph, rule, rule.getThen()));
         return errors;
@@ -354,7 +354,7 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated ontologically
      * @return Error messages if the rule has ontological inconsistencies
      */
-    static Set<String> validateRuleOntologically(GraknTx graph, Rule rule) {
+    static Set<String> validateRuleOntologically(GraknTx graph, RuleType rule) {
         Set<String> errors = new HashSet<>();
 
         //both body and head refer to the same graph and have to be valid with respect to the schema that governs it
@@ -375,21 +375,21 @@ class ValidateGlobalRules {
      * @param head head of the rule of interest
      * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain  illegal atomics and is ontologically valid
      */
-    private static Set<String> checkRuleHeadInvalid(GraknTx graph, Rule rule, Pattern head) {
+    private static Set<String> checkRuleHeadInvalid(GraknTx graph, RuleType rule, Pattern head) {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<VarPatternAdmin>> patterns = head.admin().getDisjunctiveNormalForm().getPatterns();
         if (patterns.size() != 1){
-            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getId(), rule.type().getLabel()));
+            errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.getId(), rule.getLabel()));
         } else {
             ReasonerQuery headQuery = patterns.iterator().next().toReasonerQuery(graph);
             Set<Atomic> allowed = headQuery.getAtoms().stream()
                     .filter(Atomic::isAllowedToFormRuleHead).collect(Collectors.toSet());
 
             if (allowed.size() > 1) {
-                errors.add(ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC.getMessage(rule.getId(), rule.type().getLabel()));
+                errors.add(ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC.getMessage(rule.getId(), rule.getLabel()));
             }
             else if (allowed.isEmpty()){
-                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getId(), rule.type().getLabel()));
+                errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD.getMessage(rule.getId(), rule.getLabel()));
             }
         }
         return errors;
@@ -400,7 +400,7 @@ class ValidateGlobalRules {
      * @param rule The rule to be validated
      * @return Error messages if the when or then of a rule refers to a non existent type
      */
-    static Set<String> validateRuleSchemaConceptExist(GraknTx graph, Rule rule){
+    static Set<String> validateRuleSchemaConceptExist(GraknTx graph, RuleType rule){
         Set<String> errors = new HashSet<>();
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_WHEN, rule.getWhen()));
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_THEN, rule.getThen()));
@@ -415,7 +415,7 @@ class ValidateGlobalRules {
      * @param pattern The pattern from which we will extract the types in the pattern
      * @return A list of errors if the pattern refers to any non-existent types in the graph
      */
-    private static Set<String> checkRuleSideInvalid(GraknTx graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
+    private static Set<String> checkRuleSideInvalid(GraknTx graph, RuleType rule, Schema.VertexProperty side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
         pattern.admin().varPatterns().stream()
@@ -423,15 +423,15 @@ class ValidateGlobalRules {
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
                     SchemaConcept schemaConcept = graph.getSchemaConcept(typeLabel);
                     if(schemaConcept == null){
-                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
+                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getLabel(), typeLabel));
                     } else {
                         if(Schema.VertexProperty.RULE_WHEN.equals(side)){
                             if (schemaConcept.isType()){
-                                RuleImpl.from(rule).addHypothesis(schemaConcept.asType());
+                                RuleTypeImpl.from(rule).addHypothesis(schemaConcept.asType());
                             }
                         } else if (Schema.VertexProperty.RULE_THEN.equals(side)){
                             if (schemaConcept.isType()) {
-                                RuleImpl.from(rule).addConclusion(schemaConcept.asType());
+                                RuleTypeImpl.from(rule).addConclusion(schemaConcept.asType());
                             }
                         } else {
                             throw GraknTxOperationException.invalidPropertyUse(rule, side);

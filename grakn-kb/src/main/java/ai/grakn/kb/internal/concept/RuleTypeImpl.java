@@ -20,6 +20,7 @@ package ai.grakn.kb.internal.concept;
 
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Pattern;
 import ai.grakn.kb.admin.GraknAdmin;
@@ -119,5 +120,10 @@ public class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
      */
     static String generateRuleIndex(RuleType type, Pattern when, Pattern then){
         return "RuleType_" + type.getLabel().getValue() + "_LHS:" + when.hashCode() + "_RHS:" + then.hashCode();
+    }
+
+    public static <X extends Type, Y extends Thing> RuleTypeImpl from(RuleType type){
+        //noinspection unchecked
+        return (RuleTypeImpl) type;
     }
 }
