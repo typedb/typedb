@@ -636,7 +636,7 @@ public class ReasoningTests {
         assertThat(qb.<MatchQuery>parse(queryString).execute(), empty());
     }
 
-    @Test //Expected result: no answers (if types were incorrectly inferred the query would yield answers)
+    @Test
     public void transRelationWithNeqPredicate(){
         QueryBuilder qb = testSet29.tx().graql().infer(true);
         String queryString = "match " +
@@ -653,6 +653,76 @@ public class ReasoningTests {
         List<Answer> answers2 = qb.<MatchQuery>parse(explicitString).execute();
         assertTrue(answers.containsAll(answers2));
         assertTrue(answers2.containsAll(answers));
+    }
+
+    @Test
+    public void transConjunctionWithNeqPredicate(){
+        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        String queryString = "match " +
+                "(role1: $x, role2: $y) isa relation1;" +
+                "(role1: $x, role2: $z) isa relation1;" +
+                "$x has name 'a';" +
+                "$y != $z;";
+
+        String explicitString = "match " +
+                "$x has name 'a';" +
+                "{$y has name 'a';$z has name 'b';} or " +
+                "{$y has name 'a';$z has name 'c';} or " +
+                "{$y has name 'b';$z has name 'a';} or" +
+                "{$y has name 'b';$z has name 'c';} or " +
+                "{$y has name 'c';$z has name 'a';} or " +
+                "{$y has name 'c';$z has name 'b';};";
+
+        List<Answer> answers = qb.<MatchQuery>parse(queryString).execute();
+        List<Answer> answers2 = qb.infer(false).<MatchQuery>parse(explicitString).execute();
+        System.out.println(answers.size());
+        assertTrue(answers.containsAll(answers2));
+        assertTrue(answers2.containsAll(answers));
+    }
+
+    @Test
+    public void transConjunctionWithNeqPredicate_loopVariant(){
+        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        String queryString = "match " +
+                "(role1: $x, role2: $y) isa relation1;" +
+                "(role1: $y, role2: $z) isa relation1;" +
+                "$x has name 'a';" +
+                "$x != $z;";
+
+        String explicitString = "match " +
+                "$x has name 'a';" +
+                "{$y has name 'a';$z has name 'b';} or " +
+                "{$y has name 'a';$z has name 'c';} or " +
+                "{$y has name 'b';$z has name 'c';} or " +
+                "{$y has name 'b';$z has name 'b';} or " +
+                "{$y has name 'c';$z has name 'c';} or " +
+                "{$y has name 'c';$z has name 'b';};";
+
+        List<Answer> answers = qb.<MatchQuery>parse(queryString).execute();
+        List<Answer> answers2 = qb.infer(false).<MatchQuery>parse(explicitString).execute();
+        assertTrue(answers.containsAll(answers2));
+        assertTrue(answers2.containsAll(answers));
+    }
+
+    @Test
+    public void transConjunctionWithNeqPredicate_SymmetricPattern(){
+        QueryBuilder qb = testSet29.tx().graql().infer(true);
+        String queryString = "match " +
+                "(role1: $x, role2: $y1) isa relation1;" +
+                "(role1: $x, role2: $z1) isa relation1;" +
+                "(role1: $x, role2: $y2) isa relation1;" +
+                "(role1: $x, role2: $z2) isa relation1;" +
+                "$x has name 'a';" +
+                "$y1 != $z1;" +
+                "$y2 != $z2;";
+
+        List<Answer> answers = qb.<MatchQuery>parse(queryString).execute();
+        assertEquals(answers.size(), 36);
+        answers.forEach(ans -> {
+            assertEquals(ans.size(), 5);
+            assertNotEquals(ans.get("y1"), ans.get("z1"));
+            assertNotEquals(ans.get("y2"), ans.get("z2"));
+        });
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {

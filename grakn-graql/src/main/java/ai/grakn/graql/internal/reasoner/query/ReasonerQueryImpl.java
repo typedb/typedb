@@ -549,7 +549,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public boolean requiresReiteration() {
         Set<InferenceRule> dependentRules = RuleUtil.getDependentRules(this);
-        return RuleUtil.subGraphHasLoopsWithNegativeFlux(dependentRules, tx())
-                || RuleUtil.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
+        return RuleUtil.subGraphHasLoops(dependentRules, tx())
+               || RuleUtil.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
     }
 }
