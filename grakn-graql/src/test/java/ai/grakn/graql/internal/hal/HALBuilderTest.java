@@ -28,7 +28,6 @@ import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.Schema;
 import mjson.Json;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static ai.grakn.graql.internal.hal.HALBuilder.HALExploreConcept;
@@ -121,7 +120,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenSelectInferredRelationWithSingleVar_EnsureValidExplanationHrefIsContainedInResponse(){
-        Json response = getHALRepresentation(genealogyKB.tx(), "match $x isa marriage; offset 0; limit 5;");
+        Json response = getHALRepresentation(genealogyKB.tx(), "match $x isa marriage; offset 0; limit 5; get;");
         assertEquals(5, response.asList().size());
         response.asJsonList().forEach(halObj -> {
             assertEquals("inferred-relation", halObj.at("_baseType").asString());
