@@ -140,7 +140,7 @@ public class MatchQueryModifierTest {
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y));
 
         //noinspection ResultOfMethodCallIgnored
-        query.get(y);
+        query.get(ImmutableSet.of(y));
     }
 
     private <T extends Comparable<T>> void assertResultsOrderedByValue(GetQuery query, Var var, boolean asc) {
