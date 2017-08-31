@@ -41,27 +41,6 @@ import java.util.stream.Stream;
 public interface MatchQuery extends Streamable<Answer> {
 
     /**
-     * @param vars an array of variable to select
-     * @return a new MatchQuery that selects the given variables
-     */
-    @CheckReturnValue
-    MatchQuery select(String... vars);
-
-    /**
-     * @param vars an array of variable to select
-     * @return a new MatchQuery that selects the given variables
-     */
-    @CheckReturnValue
-    MatchQuery select(Var... vars);
-
-    /**
-     * @param vars a set of variable to select
-     * @return a new MatchQuery that selects the given variables
-     */
-    @CheckReturnValue
-    MatchQuery select(Set<Var> vars);
-
-    /**
      * @param var a variable to get
      * @return a stream of concepts
      */

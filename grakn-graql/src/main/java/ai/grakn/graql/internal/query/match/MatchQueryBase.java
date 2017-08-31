@@ -128,7 +128,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Set<Var> getSelectedNames() {
+    public final Set<Var> getSelectedNames() {
         return pattern.commonVars();
     }
 

@@ -38,7 +38,6 @@ import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.util.AdminConverter;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,7 +49,6 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.Order.asc;
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 @SuppressWarnings("UnusedReturnValue")
 abstract class AbstractMatchQuery implements MatchQueryAdmin {
@@ -95,21 +93,6 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     @Override
     public final <S> AggregateQuery<S> aggregate(Aggregate<? super Answer, S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
-    }
-
-    @Override
-    public final MatchQuery select(String... vars) {
-        return select(Stream.of(vars).map(Graql::var).collect(toSet()));
-    }
-
-    @Override
-    public final MatchQuery select(Var... vars) {
-        return select(Sets.newHashSet(vars));
-    }
-
-    @Override
-    public final MatchQuery select(Set<Var> vars) {
-        return new MatchQuerySelect(this, ImmutableSet.copyOf(vars));
     }
 
     @Override

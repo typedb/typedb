@@ -63,7 +63,7 @@ abstract class MatchQueryModifier extends AbstractMatchQuery {
     }
 
     @Override
-    public Set<Var> getSelectedNames() {
+    public final Set<Var> getSelectedNames() {
         return inner.getSelectedNames();
     }
 
