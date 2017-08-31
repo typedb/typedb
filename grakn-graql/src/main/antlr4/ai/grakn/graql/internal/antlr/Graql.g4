@@ -6,7 +6,6 @@ queryEOF       : query EOF ;
 query          : getQuery | insertQuery | defineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
 matchQuery     : MATCH patterns                                   # matchBase
-               | matchQuery 'select' variables                ';' # matchSelect
                | matchQuery 'limit' INTEGER                   ';' # matchLimit
                | matchQuery 'offset' INTEGER                  ';' # matchOffset
                | matchQuery 'distinct'                        ';' # matchDistinct

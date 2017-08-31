@@ -118,11 +118,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public MatchQuery visitMatchSelect(GraqlParser.MatchSelectContext ctx) {
-        return visitMatchQuery(ctx.matchQuery()).select(visitVariables(ctx.variables()));
-    }
-
-    @Override
     public MatchQuery visitMatchOffset(GraqlParser.MatchOffsetContext ctx) {
         return visitMatchQuery(ctx.matchQuery()).offset(getInteger(ctx.INTEGER()));
     }
