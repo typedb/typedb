@@ -25,6 +25,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.RuleType;
@@ -32,6 +33,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
+import ai.grakn.graql.Pattern;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
 
@@ -120,12 +122,14 @@ public interface GraknTx extends AutoCloseable{
      * specified label.
      *
      * @param label A unique label for the {@link RuleType}
+     * @param when A string representing the when part of the {@link Rule}
+     * @param then A string representing the then part of the {@link Rule}
      * @return new or existing {@link RuleType} with the provided label.
      *
      * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RuleType}.
      */
-    RuleType putRuleType(String label);
+    RuleType putRuleType(String label, Pattern when, Pattern then);
 
     /**
      * Create a {@link RuleType} with super-type {@code rule}, or return a pre-existing {@link RuleType}, with the
@@ -137,7 +141,7 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link RuleType}.
      */
-    RuleType putRuleType(Label label);
+    RuleType putRuleType(Label label, Pattern when, Pattern then);
 
     /**
      * Create a {@link RelationshipType} with super-type {@code relation}, or return a pre-existing {@link RelationshipType},

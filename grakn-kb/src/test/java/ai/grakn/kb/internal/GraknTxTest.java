@@ -19,8 +19,8 @@
 package ai.grakn.kb.internal;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
@@ -28,9 +28,8 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.kb.internal.concept.EntityTypeImpl;
@@ -109,13 +108,11 @@ public class GraknTxTest extends TxTestBase {
         RelationshipType relationshipType = tx.putRelationshipType(relationTypeLabel);
         Role role = tx.putRole(roleTypeLabel);
         AttributeType attributeType = tx.putAttributeType(resourceTypeLabel, AttributeType.DataType.STRING);
-        RuleType ruleType = tx.putRuleType(ruleTypeLabel);
 
         assertEquals(entityType, tx.getEntityType(entityTypeLabel));
         assertEquals(relationshipType, tx.getRelationshipType(relationTypeLabel));
         assertEquals(role, tx.getRole(roleTypeLabel));
         assertEquals(attributeType, tx.getAttributeType(resourceTypeLabel));
-        assertEquals(ruleType, tx.getRuleType(ruleTypeLabel));
     }
 
     @Test

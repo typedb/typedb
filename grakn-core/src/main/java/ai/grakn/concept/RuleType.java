@@ -39,6 +39,41 @@ import java.util.stream.Stream;
  * @author fppt
  */
 public interface RuleType extends Type {
+    //------------------------------------- Accessors ----------------------------------
+    /**
+     * Retrieves the Left Hand Side of the rule.
+     * When this query is satisfied the "then" part of the rule is executed.
+     *
+     * @return A string representing the left hand side Graql query.
+     */
+    @CheckReturnValue
+    Pattern getWhen();
+
+    /**
+     * Retrieves the Right Hand Side of the rule.
+     * This query is executed when the "when" part of the rule is satisfied
+     *
+     * @return A string representing the right hand side Graql query.
+     */
+    @CheckReturnValue
+    Pattern getThen();
+
+    /**
+     * Retrieve a set of Types that constitute a part of the hypothesis of this Rule.
+     *
+     * @return A collection of Concept Types that constitute a part of the hypothesis of the Rule
+     */
+    @CheckReturnValue
+    Stream<Type> getHypothesisTypes();
+
+    /**
+     * Retrieve a set of Types that constitue a part of the conclusion of the Rule.
+     *
+     * @return A collection of Concept Types that constitute a part of the conclusion of the Rule
+     */
+    @CheckReturnValue
+    Stream<Type> getConclusionTypes();
+
     //------------------------------------- Modifiers ----------------------------------
     /**
      * Changes the {@link Label} of this {@link Concept} to a new one.

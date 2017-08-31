@@ -38,6 +38,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
+import ai.grakn.graql.Pattern;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.kb.internal.cache.GlobalCache;
 import ai.grakn.kb.internal.cache.TxCache;
@@ -543,14 +544,14 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public RuleType putRuleType(String label) {
-        return putRuleType(Label.of(label));
+    public RuleType putRuleType(String label, Pattern when, Pattern then) {
+        return putRuleType(Label.of(label), when, then);
     }
 
     @Override
-    public RuleType putRuleType(Label label) {
+    public RuleType putRuleType(Label label, Pattern when, Pattern then) {
         return putSchemaConcept(label, Schema.BaseType.RULE_TYPE,
-                v -> factory().buildRuleType(v, getMetaRuleType()));
+                v -> factory().buildRuleType(v, getMetaRuleType(), when, then));
     }
 
     //------------------------------------ Lookup
