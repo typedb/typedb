@@ -380,7 +380,9 @@ public class GraknEngineServer implements AutoCloseable {
         if (useSentinel) {
             builder.setMasterName(prop.tryProperty(REDIS_SENTINEL_MASTER).orElse("graknmaster"));
         }
-        return builder.build();
+        RedisWrapper redisWrapper = builder.build();
+        redisWrapper.testConnection();
+        return redisWrapper;
     }
 
     private void logStartMessage(String host, String port) {

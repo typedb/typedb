@@ -19,6 +19,7 @@
 package ai.grakn.exception;
 
 import ai.grakn.engine.TaskId;
+import static ai.grakn.util.ErrorMessage.ENGINE_STARTUP_ERROR;
 import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.io.IOException;
@@ -59,6 +60,10 @@ public class GraknBackendException extends GraknException {
      */
     public static GraknBackendException unknown(Exception e){
         return new GraknBackendException(BACKEND_EXCEPTION.getMessage(), e);
+    }
+
+    public static GraknBackendException serverStartupException(String message, Exception e){
+        return new GraknBackendException(ENGINE_STARTUP_ERROR.getMessage(message), e);
     }
 
     /**

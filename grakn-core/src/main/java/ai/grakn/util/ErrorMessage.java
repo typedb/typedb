@@ -168,6 +168,7 @@ public enum ErrorMessage {
 
     //Server Errors
     ENGINE_ERROR("Exception on Grakn engine"),
+    ENGINE_STARTUP_ERROR("Could not start Grakn engine: [%s]"),
     UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
     UNAVAILABLE_PROPERTY("Property requested [%s] has not been defined. See configuration file [%s] for configured properties."),
     MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
