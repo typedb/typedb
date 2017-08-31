@@ -300,7 +300,7 @@ public class InsertQueryTest {
         qb.insert(vars).execute();
 
         RuleType ruleType = movieKB.tx().getRuleType(ruleTypeId);
-        boolean found = ruleType.instances().
+        boolean found = ruleType.subs().
                 anyMatch(rule -> when.equals(rule.getWhen()) && then.equals(rule.getThen()));
 
         assertTrue("Unable to find rule with when [" + when + "] and then [" + then + "]", found);

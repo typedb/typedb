@@ -271,16 +271,6 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link Rule}.
-     *
-     * @return true if the {@link Concept} is a {@link Rule}
-     */
-    @CheckReturnValue
-    default boolean isRule(){
-        return false;
-    }
-
-    /**
      * Delete the Concept.
      *
      * @throws GraknTxOperationException Throws an exception if this is a type with incoming concepts.

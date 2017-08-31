@@ -87,8 +87,6 @@ public class HALUtils {
             return Schema.BaseType.RELATIONSHIP;
         } else if (thing.isAttribute()) {
             return Schema.BaseType.ATTRIBUTE;
-        } else if (thing.isRule()) {
-            return Schema.BaseType.RULE;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised base type of " + thing);
         }

@@ -24,7 +24,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
+import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.util.REST;
@@ -123,9 +123,9 @@ public class HALConceptData {
             generateRelationEmbedded(halResource, concept.asRelationship(), 1);
         }
 
-        if (concept.isRule()) {
-            generateRuleLHS(halResource, concept.asRule());
-            generateRuleRHS(halResource, concept.asRule());
+        if (concept.isRuleType()) {
+            generateRuleLHS(halResource, concept.asRuleType());
+            generateRuleRHS(halResource, concept.asRuleType());
         }
 
         if (separationDegree == 0) return;
@@ -149,7 +149,7 @@ public class HALConceptData {
 
     }
 
-    private void generateRuleRHS(Representation halResource, Rule rule) {
+    private void generateRuleRHS(Representation halResource, RuleType rule) {
         Representation RHS = factory.newRepresentation(resourceLinkPrefix + "RHS-" + rule.getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
                 .withLink(EXPLORE_CONCEPT_LINK, EXPLORE)
@@ -160,7 +160,7 @@ public class HALConceptData {
         halResource.withRepresentation("RHS", RHS);
     }
 
-    private void generateRuleLHS(Representation halResource, Rule rule) {
+    private void generateRuleLHS(Representation halResource, RuleType rule) {
         Representation LHS = factory.newRepresentation(resourceLinkPrefix + "LHS-" + rule.getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
                 .withLink(EXPLORE_CONCEPT_LINK, EXPLORE)

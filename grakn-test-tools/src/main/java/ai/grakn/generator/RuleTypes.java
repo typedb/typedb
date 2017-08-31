@@ -31,7 +31,7 @@ import java.util.Collection;
  *
  * @author Felix Chapman
  */
-public class RuleTypes extends AbstractTypeGenerator<RuleType> {
+public class RuleTypes extends AbstractSchemaConceptGenerator<RuleType> {
 
     public RuleTypes() {
         super(RuleType.class);

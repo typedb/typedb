@@ -22,7 +22,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -83,8 +82,8 @@ public class RuleUtil {
      */
     public static boolean subGraphHasLoopsWithNegativeFlux(Set<InferenceRule> rules, GraknTx graph){
         return rules.stream()
-                .map(r -> graph.<Rule>getConcept(r.getRuleId()))
-                .flatMap(Rule::getConclusionTypes)
+                .map(r -> graph.<RuleType>getConcept(r.getRuleId()))
+                .flatMap(RuleType::getConclusionTypes)
                 .distinct()
                 .filter(type -> {
                     long outflux = type.getRulesOfHypothesis().count();

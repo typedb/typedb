@@ -195,7 +195,7 @@ public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWL
         Map<Label, Label> roleMap = new HashMap<>();
         roleMap.put(migrator.namer().subjectRole(superRelation.getLabel()), migrator.namer().subjectRole(subRelation.getLabel()));
         roleMap.put(migrator.namer().objectRole(superRelation.getLabel()), migrator.namer().objectRole(subRelation.getLabel()));
-        ReasonerUtils.createSubPropertyRule(superRelation, subRelation, roleMap, migrator.tx());
+        ReasonerUtils.createSubPropertyRule("Sub Property Rule Between [" + superRelation.getLabel() + "] and [" + subRelation.getLabel() +  "]", superRelation, subRelation, roleMap, migrator.tx());
 
         migrator.subjectRole(subRelation).sup(migrator.subjectRole(superRelation));
         migrator.objectRole(subRelation).sup(migrator.objectRole(superRelation));
@@ -232,7 +232,7 @@ public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWL
                             migrator.namer().subjectRole(eqRelation.getLabel()));
                     roleMap.put(migrator.namer().objectRole(relation.getLabel()),
                             migrator.namer().objectRole(eqRelation.getLabel()));
-                    ReasonerUtils.createSubPropertyRule(relation, eqRelation, roleMap, migrator.tx());
+                    ReasonerUtils.createSubPropertyRule("Sub Property Rule Between [" + relation.getLabel() + "] and [" + eqRelation.getLabel() +  "]", relation, eqRelation, roleMap, migrator.tx());
                 }
             });
         }
@@ -250,12 +250,12 @@ public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWL
         Map<Label, Label> roleMapFD = new HashMap<>();
         roleMapFD.put(migrator.namer().subjectRole(relation.getLabel()), migrator.namer().objectRole(inverseRelation.getLabel()));
         roleMapFD.put(migrator.namer().objectRole(relation.getLabel()), migrator.namer().subjectRole(inverseRelation.getLabel()));
-        ReasonerUtils.createSubPropertyRule(relation, inverseRelation, roleMapFD, migrator.tx());
+        ReasonerUtils.createSubPropertyRule("Sub Property Rule Between [" + relation.getLabel() + "] and [" + inverseRelation.getLabel() +  "]", relation, inverseRelation, roleMapFD, migrator.tx());
 
         Map<Label, Label> roleMapBD = new HashMap<>();
         roleMapBD.put(migrator.namer().subjectRole(inverseRelation.getLabel()), migrator.namer().objectRole(relation.getLabel()));
         roleMapBD.put(migrator.namer().objectRole(inverseRelation.getLabel()), migrator.namer().subjectRole(relation.getLabel()));
-        ReasonerUtils.createSubPropertyRule(inverseRelation, relation, roleMapBD, migrator.tx());
+        ReasonerUtils.createSubPropertyRule("Sub Property Rule Between [" + inverseRelation.getLabel() + "] and [" + relation.getLabel() +  "]", inverseRelation, relation, roleMapBD, migrator.tx());
         return null;
     }
 
@@ -265,10 +265,13 @@ public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWL
             return null;
         }
         RelationshipType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
+        Label fromRoleLabel = migrator.namer().subjectRole(relation.getLabel());
+        Label toRoleLabel = migrator.namer().objectRole(relation.getLabel());
         ReasonerUtils.createTransitiveRule(
+                "Transitive Rule Between [" + relation.getLabel() + "], [" + fromRoleLabel + "] and [" + toRoleLabel +  "]",
                 relation,
-                migrator.namer().subjectRole(relation.getLabel()),
-                migrator.namer().objectRole(relation.getLabel()),
+                fromRoleLabel,
+                toRoleLabel,
                 migrator.tx());
         return null;
     }
@@ -279,10 +282,13 @@ public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWL
             return null;
         }
         RelationshipType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
+        Label fromRoleLabel = migrator.namer().subjectRole(relation.getLabel());
+        Label toRoleLabel = migrator.namer().objectRole(relation.getLabel());
         ReasonerUtils.createReflexiveRule(
+                "Reflexive Rule Between [" + fromRoleLabel + "] and [" + toRoleLabel +  "]",
                 relation,
-                migrator.namer().subjectRole(relation.getLabel()),
-                migrator.namer().objectRole(relation.getLabel()),
+                fromRoleLabel,
+                toRoleLabel,
                 migrator.tx());
         return null;
     }
@@ -301,8 +307,11 @@ public class OwlGraknTxStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWL
                     new Pair<>(migrator.namer().subjectRole(relation.getLabel()), migrator.namer().objectRole(relation.getLabel())));
         });
 
-        ReasonerUtils.createPropertyChainRule(superRelation, migrator.namer().subjectRole(superRelation.getLabel()),
-                migrator.namer().objectRole(superRelation.getLabel()), chain, migrator.tx());
+        Label fromRoleLabel = migrator.namer().subjectRole(superRelation.getLabel());
+        Label toRoleLabel = migrator.namer().objectRole(superRelation.getLabel());
+        ReasonerUtils.createPropertyChainRule("Chain Rule Between [" + superRelation.getLabel() + "], [" + fromRoleLabel + "], and [" + toRoleLabel + "]",
+                superRelation, fromRoleLabel,
+                toRoleLabel, chain, migrator.tx());
         return null;
     }
 

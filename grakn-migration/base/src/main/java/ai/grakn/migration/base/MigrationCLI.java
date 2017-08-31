@@ -136,9 +136,9 @@ public class MigrationCLI {
             builder.append("Graph schema contains:\n");
             builder.append("\t ").append(graph.admin().getMetaEntityType().instances().count()).append(" entity types\n");
             builder.append("\t ").append(graph.admin().getMetaRelationType().instances().count()).append(" relation types\n");
-            builder.append("\t ").append("0 role types\n");
+            builder.append("\t ").append(graph.admin().getMetaRole().subs().count()).append(" roles\n\n");
             builder.append("\t ").append(graph.admin().getMetaResourceType().instances().count()).append(" resource types\n");
-            builder.append("\t ").append(graph.admin().getMetaRuleType().instances().count()).append(" rule types\n\n");
+            builder.append("\t ").append(graph.admin().getMetaRuleType().subs().count()).append(" rules\n\n");
 
             builder.append("Graph data contains:\n");
             builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.ENTITY.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" entities\n");

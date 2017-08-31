@@ -186,21 +186,21 @@ public class GraknTxPutPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRuleType_CreateATypeWithSuperTypeRule(@Open GraknTx graph, @Unused Label label) {
-        RuleType ruleType = graph.putRuleType(label);
-        assertEquals(graph.admin().getMetaRuleType(), ruleType.sup());
+    public void whenCallingPutRuleType_CreateATypeWithSuperTypeRule(@Open GraknTx tx, @Unused Label label) {
+        RuleType ruleType = tx.putRuleType(label, tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
+        assertEquals(tx.admin().getMetaRuleType(), ruleType.sup());
     }
 
     @Property
     public void whenCallingPutRuleTypeWithAnExistingRuleTypeLabel_ItReturnsThatType(
-            @Open GraknTx graph, @FromTx RuleType ruleType) {
-        RuleType newType = graph.putRuleType(ruleType.getLabel());
+            @Open GraknTx tx, @FromTx RuleType ruleType) {
+        RuleType newType = tx.putRuleType(ruleType.getLabel(), tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
         assertEquals(ruleType, newType);
     }
 
     @Property
     public void whenCallingPutRuleTypeWithAnExistingNonRuleTypeLabel_Throw(
-            @Open GraknTx graph, @FromTx Type type) {
+            @Open GraknTx tx, @FromTx Type type) {
         assumeFalse(type.isRuleType());
 
         exception.expect(GraknTxOperationException.class);
@@ -210,14 +210,14 @@ public class GraknTxPutPropertyTest {
             exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
         }
 
-        graph.putRuleType(type.getLabel());
+        tx.putRuleType(type.getLabel(), tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
     }
 
     @Property
     public void whenCallingPutRelationType_CreateATypeWithSuperTypeRelation(
-            @Open GraknTx graph, @Unused Label label) {
-        RelationshipType relationshipType = graph.putRelationshipType(label);
-        assertEquals(graph.admin().getMetaRelationType(), relationshipType.sup());
+            @Open GraknTx tx, @Unused Label label) {
+        RelationshipType relationshipType = tx.putRelationshipType(label);
+        assertEquals(tx.admin().getMetaRelationType(), relationshipType.sup());
     }
 
     @Property

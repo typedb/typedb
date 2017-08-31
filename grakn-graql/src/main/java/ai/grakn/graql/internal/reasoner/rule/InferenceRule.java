@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.admin.Answer;

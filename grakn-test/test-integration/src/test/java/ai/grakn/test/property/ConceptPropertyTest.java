@@ -152,7 +152,6 @@ public class ConceptPropertyTest {
 
         if (concept.isAttribute()) assertEquals(concept, concept.asAttribute());
 
-        if (concept.isRule()) assertEquals(concept, concept.asRule());
     }
 
     @Property
@@ -241,14 +240,6 @@ public class ConceptPropertyTest {
         exception.expect(GraknTxOperationException.class);
         //noinspection ResultOfMethodCallIgnored
         concept.asAttribute();
-    }
-
-    @Property
-    public void whenConceptIsNotARule_TheConceptCannotBeConvertedToARule(Concept concept) {
-        assumeFalse(concept.isRule());
-        exception.expect(GraknTxOperationException.class);
-        //noinspection ResultOfMethodCallIgnored
-        concept.asRule();
     }
 
     private static void assumeDeletable(GraknTx graph, Concept concept) {
