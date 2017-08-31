@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Modifier that specifies the graph to execute the match query with.
+ * Modifier that specifies the graph to execute the {@link Match} with.
  */
 class MatchTx extends MatchModifier {
 

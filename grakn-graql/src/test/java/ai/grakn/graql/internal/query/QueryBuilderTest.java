@@ -103,11 +103,11 @@ public class QueryBuilderTest {
 
     @Test
     public void whenExecutingAMatchWithoutAGraph_Throw() {
-        Match query = match(x.isa("movie"));
+        Match match = match(x.isa("movie"));
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
         //noinspection ResultOfMethodCallIgnored
-        query.iterator();
+        match.iterator();
     }
 
     @Test
@@ -127,10 +127,10 @@ public class QueryBuilderTest {
 
     @Test
     public void whenGraphIsProvidedAndQueryExecutedWithNonexistentType_Throw() {
-        Match query = match(x.isa("not-a-thing"));
+        Match match = match(x.isa("not-a-thing"));
         exception.expect(GraqlQueryException.class);
         //noinspection ResultOfMethodCallIgnored
-        query.withTx(movieKB.tx()).stream();
+        match.withTx(movieKB.tx()).stream();
     }
 
     @Test

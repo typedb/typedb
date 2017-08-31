@@ -18,6 +18,9 @@
 
 package ai.grakn.exception;
 
+import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.Query;
+
 import static ai.grakn.util.ErrorMessage.AUTHENTICATION_FAILURE;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE_KEYSPACE;
 import static ai.grakn.util.ErrorMessage.ENGINE_ERROR;
@@ -30,9 +33,6 @@ import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
 import static ai.grakn.util.ErrorMessage.NO_CONCEPT_IN_KEYSPACE;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
-
-import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.Query;
 
 /**
  * <p>
@@ -123,7 +123,7 @@ public class GraknServerException extends GraknBackendException {
     }
 
     /**
-     * Thrown when asked to explain a non-match query
+     * Thrown when asked to explain a non-get query
      */
     public static GraknServerException invalidQueryExplaination(String query){
         return new GraknServerException(EXPLAIN_ONLY_MATCH.getMessage(query), 405);

@@ -94,7 +94,7 @@ public class QueryBuilderImpl implements QueryBuilder {
 
     /**
      * @param patterns an array of patterns to match in the graph
-     * @return a match query that will find matches of the given patterns
+     * @return a {@link Match} that will find matches of the given patterns
      */
     @Override
     public Match match(Pattern... patterns) {
@@ -103,14 +103,14 @@ public class QueryBuilderImpl implements QueryBuilder {
 
     /**
      * @param patterns a collection of patterns to match in the graph
-     * @return a match query that will find matches of the given patterns
+     * @return a {@link Match} that will find matches of the given patterns
      */
     @Override
     public Match match(Collection<? extends Pattern> patterns) {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
         MatchBase base = new MatchBase(conjunction);
-        Match query = infer ? base.infer(materialise).admin() : base;
-        return tx.map(query::withTx).orElse(query);
+        Match match = infer ? base.infer(materialise).admin() : base;
+        return tx.map(match::withTx).orElse(match);
     }
 
     /**

@@ -41,7 +41,7 @@ public class MatchBaseTest {
     ));
 
     @Test
-    public void matchQueriesContainingTheSamePatternAreEqual() {
+    public void matchesContainingTheSamePatternAreEqual() {
         MatchBase query1 = new MatchBase(pattern1);
         MatchBase query2 = new MatchBase(pattern1);
 
@@ -50,7 +50,7 @@ public class MatchBaseTest {
     }
 
     @Test
-    public void matchQueriesContainingDifferentPatternsAreNotEqual() {
+    public void matchesContainingDifferentPatternsAreNotEqual() {
         MatchBase query1 = new MatchBase(pattern1);
         MatchBase query2 = new MatchBase(pattern2);
 

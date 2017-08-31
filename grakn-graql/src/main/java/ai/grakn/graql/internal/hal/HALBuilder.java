@@ -85,7 +85,7 @@ public class HALBuilder {
             // Compute map on first answer in result, since it will be the same for all the answers
             roleTypes = computeRoleTypesFromQuery(getQuery, results.iterator().next());
         }
-        //Collect all the types explicitly asked in the match query
+        //Collect all the types explicitly asked in the get query
         Set<Label> typesAskedInQuery = getQuery.match().admin().getSchemaConcepts().stream().map(SchemaConcept::getLabel).collect(toSet());
 
         return buildHALRepresentations(results, typesAskedInQuery, roleTypes, keyspace, offset, limit, filterInstances);
@@ -198,7 +198,7 @@ public class HALBuilder {
             String relationId = "temp-assertion-" + idsList;
             String relationType = currentEntry.getValue().getValue();
             boolean isInferred = inferredRelations.containsKey(currentEntry.getKey()) && inferredRelations.get(currentEntry.getKey());
-            // This string contains the match query to execute when double clicking on the 'generated-relation' node from Dashboard
+            // This string contains the get query to execute when double clicking on the 'generated-relation' node from Dashboard
             // It will be an 'explain-query' if the current relation is inferred
             String relationHref = computeRelationHref(relationType, varNamesInCurrentRelation, resultLine, currentEntry.getValue().getKey(), keyspace, limit, isInferred);
             // Create HAL representation of generated relation

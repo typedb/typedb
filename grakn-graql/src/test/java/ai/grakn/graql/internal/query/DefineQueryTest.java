@@ -131,8 +131,8 @@ public class DefineQueryTest {
                 label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
         ).execute();
 
-        Match query = qb.match(var("x").label("my-type"));
-        AttributeType.DataType datatype = query.iterator().next().get("x").asAttributeType().getDataType();
+        Match match = qb.match(var("x").label("my-type"));
+        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().getDataType();
 
         Assert.assertEquals(AttributeType.DataType.LONG, datatype);
     }
@@ -144,8 +144,8 @@ public class DefineQueryTest {
                 label("sub-type").sub("my-type")
         ).execute();
 
-        Match query = qb.match(var("x").label("sub-type"));
-        AttributeType.DataType datatype = query.iterator().next().get("x").asAttributeType().getDataType();
+        Match match = qb.match(var("x").label("sub-type"));
+        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().getDataType();
 
         Assert.assertEquals(AttributeType.DataType.STRING, datatype);
     }

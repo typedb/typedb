@@ -20,7 +20,7 @@ the knowledge base." %}
 
 ## `match-insert`
 
-If a [match query](match-queries.html) is provided, the query will insert the given variable patterns for every result of the query.
+If a [match](matches.html) is provided, the query will insert the given variable patterns for every result of the query.
 The pattern describes [properties](#properties) to set on a particular concept and can optionally be bound to a variable or an ID.
 
 In the example below, we insert additional (fictional) information for a `person` entity who we have matched through `identifier` Mary Guthrie.

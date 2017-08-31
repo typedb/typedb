@@ -24,7 +24,7 @@ import ai.grakn.graql.admin.DeleteQueryAdmin;
 import javax.annotation.CheckReturnValue;
 
 /**
- * A query for deleting concepts from a match query.
+ * A query for deleting concepts from a {@link Match}.
  * <p>
  * A {@link DeleteQuery} is built from a {@link Match} and will perform a delete operation for every result of
  * the {@link Match}.

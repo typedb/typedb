@@ -812,12 +812,12 @@ public class MatchTest {
 
     @Test
     public void testMatchAllResourcesUsingResourceName() {
-        Match query = qb.match(var().has("title", "Godfather").has(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue(), x));
+        Match match = qb.match(var().has("title", "Godfather").has(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue(), x));
 
         Thing godfather = movieKB.tx().getAttributeType("title").getAttribute("Godfather").owner();
         Set<Attribute<?>> expected = godfather.attributes().collect(toSet());
 
-        Set<Attribute<?>> results = query.get(x).map(Concept::asAttribute).collect(toSet());
+        Set<Attribute<?>> results = match.get(x).map(Concept::asAttribute).collect(toSet());
 
         assertEquals(expected, results);
     }
@@ -994,9 +994,9 @@ public class MatchTest {
 
     @Test
     public void whenQueryingForAnImplicitRelationById_TheRelationIsReturned() {
-        Match query = qb.match(var("x").isa(label(Schema.ImplicitType.HAS.getLabel("name"))));
+        Match match = qb.match(var("x").isa(label(Schema.ImplicitType.HAS.getLabel("name"))));
 
-        Relationship relationship = query.get("x").findAny().get().asRelationship();
+        Relationship relationship = match.get("x").findAny().get().asRelationship();
 
         GetQuery queryById = qb.match(var("x").id(relationship.getId())).get();
 

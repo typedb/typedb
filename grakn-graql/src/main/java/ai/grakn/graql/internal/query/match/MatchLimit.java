@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * "Limit" modifier for match query that limits the results of a query.
+ * "Limit" modifier for {@link Match} that limits the results of a query.
  */
 class MatchLimit extends MatchModifier {
 

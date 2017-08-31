@@ -179,9 +179,9 @@ public class QueryErrorTest {
 
     @Test
     public void testGetNonExistentVariable() {
-        Match query = qb.match(var("x").isa("movie"));
+        Match match = qb.match(var("x").isa("movie"));
 
-        Stream<Concept> concepts = query.get("y");
+        Stream<Concept> concepts = match.get("y");
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("y")));

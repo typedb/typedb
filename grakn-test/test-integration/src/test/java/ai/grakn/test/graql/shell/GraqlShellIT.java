@@ -140,8 +140,8 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void whenUsingExecuteOptionAndPassingMatchQueriesWithoutVariables_PrintWarning() throws Exception {
-        ShellResponse response = runShell("", "-e", "match sub entity;");
+    public void whenUsingExecuteOptionAndPassingGetQueriesWithoutVariables_PrintWarning() throws Exception {
+        ShellResponse response = runShell("", "-e", "match sub entity; get;");
 
         // There should still be a result...
         assertThat(response.out(), containsString("{}"));
@@ -151,7 +151,7 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void whenUsingExecuteOptionAndPassingNonMatchQueriesWithoutVariables_DoNotPrintWarning() throws Exception {
+    public void whenUsingExecuteOptionAndPassingNonGetQueriesWithoutVariables_DoNotPrintWarning() throws Exception {
         // There should be no errors...
         String result = runShellWithoutErrors("", "-e", "define person sub entity;");
 
@@ -352,8 +352,8 @@ public class GraqlShellIT {
 
         String[] result = runShellWithoutErrors("insert E sub entity;\nrollback\nmatch $x label E;\n").split("\n");
 
-        // Make sure there are no results for match query
-        assertEquals(">>> match $x label E;", result[result.length-2]);
+        // Make sure there are no results for get query
+        assertEquals(">>> match $x label E; get;", result[result.length-2]);
         assertEquals(">>> ", result[result.length-1]);
     }
 
@@ -407,8 +407,8 @@ public class GraqlShellIT {
         );
         String[] lines = result.split("\n");
 
-        // Make sure there are no results for match query
-        assertEquals(result, ">>> match $x isa entity;", lines[lines.length-2]);
+        // Make sure there are no results for get query
+        assertEquals(result, ">>> match $x isa entity; get;", lines[lines.length-2]);
         assertEquals(result, ">>> ", lines[lines.length-1]);
     }
 

@@ -25,7 +25,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * "Order" modify that orders the underlying match query
+ * "Order" modify that orders the underlying {@link Match}
  */
 class MatchOrder extends MatchModifier {
 

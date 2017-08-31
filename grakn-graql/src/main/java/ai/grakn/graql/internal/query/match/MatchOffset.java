@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * "Offset" modifier for match query that offsets (skips) some number of results.
+ * "Offset" modifier for {@link Match} that offsets (skips) some number of results.
  */
 class MatchOffset extends MatchModifier {
 

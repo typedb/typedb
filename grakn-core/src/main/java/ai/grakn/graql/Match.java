@@ -83,36 +83,36 @@ public interface Match extends Streamable<Answer> {
     GetQuery get(Set<Var> vars);
 
     /**
-     * @param vars an array of variables to insert for each result of this match query
-     * @return an insert query that will insert the given variables for each result of this match query
+     * @param vars an array of variables to insert for each result of this {@link Match}
+     * @return an insert query that will insert the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
     InsertQuery insert(VarPattern... vars);
 
     /**
-     * @param vars a collection of variables to insert for each result of this match query
-     * @return an insert query that will insert the given variables for each result of this match query
+     * @param vars a collection of variables to insert for each result of this {@link Match}
+     * @return an insert query that will insert the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
     InsertQuery insert(Collection<? extends VarPattern> vars);
 
     /**
-     * @param vars an array of variables to delete for each result of this match query
-     * @return a delete query that will delete the given variables for each result of this match query
+     * @param vars an array of variables to delete for each result of this {@link Match}
+     * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
     DeleteQuery delete(String var, String... vars);
 
     /**
-     * @param vars an array of variables to delete for each result of this match query
-     * @return a delete query that will delete the given variables for each result of this match query
+     * @param vars an array of variables to delete for each result of this {@link Match}
+     * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
     DeleteQuery delete(Var... vars);
 
     /**
-     * @param vars a collection of variables to delete for each result of this match query
-     * @return a delete query that will delete the given variables for each result of this match query
+     * @param vars a collection of variables to delete for each result of this {@link Match}
+     * @return a delete query that will delete the given variables for each result of this {@link Match}
      */
     @CheckReturnValue
     DeleteQuery delete(Collection<? extends Var> vars);

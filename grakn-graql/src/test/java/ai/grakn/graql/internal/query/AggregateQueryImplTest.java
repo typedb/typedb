@@ -49,7 +49,7 @@ public class AggregateQueryImplTest {
     }
 
     @Test
-    public void aggregateQueriesWithDifferentMatchQueriesAreDifferent() {
+    public void aggregateQueriesWithDifferentMatchesAreDifferent() {
         AggregateQuery<?> query1 = new AggregateQueryImpl<>(match1, aggregate1);
         AggregateQuery<?> query2 = new AggregateQueryImpl<>(match2, aggregate1);
 

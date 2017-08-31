@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknTx;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -34,7 +35,7 @@ import java.util.stream.Stream;
 import static ai.grakn.util.CommonUtil.optionalOr;
 
 /**
- * Modifier that specifies the graph to execute the match query with.
+ * Modifier that specifies the graph to execute the {@link Match} with.
  */
 class MatchInfer extends MatchModifier {
 

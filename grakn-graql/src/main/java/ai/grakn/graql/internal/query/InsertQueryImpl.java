@@ -56,11 +56,11 @@ class InsertQueryImpl implements InsertQueryAdmin {
      * At least one of {@code tx} and {@code match} must be absent.
      *
      * @param vars a collection of Vars to insert
-     * @param match the match query to insert for each result
+     * @param match the {@link Match} to insert for each result
      * @param tx the graph to execute on
      */
     InsertQueryImpl(ImmutableCollection<VarPatternAdmin> vars, Optional<MatchAdmin> match, Optional<GraknTx> tx) {
-        // match query and graph should never both be present (should get graph from inner match query)
+        // match and graph should never both be present (should get graph from inner match)
         assert(!match.isPresent() || !tx.isPresent());
 
         if (vars.isEmpty()) {

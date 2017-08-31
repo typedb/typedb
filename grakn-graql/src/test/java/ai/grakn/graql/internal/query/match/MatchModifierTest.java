@@ -134,13 +134,13 @@ public class MatchModifierTest {
 
     @Test
     public void whenGettingAVarNotInQuery_Throw() {
-        Match query = qb.match(x.isa("movie"));
+        Match match = qb.match(x.isa("movie"));
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y));
 
         //noinspection ResultOfMethodCallIgnored
-        query.get(ImmutableSet.of(y));
+        match.get(ImmutableSet.of(y));
     }
 
     private <T extends Comparable<T>> void assertResultsOrderedByValue(GetQuery query, Var var, boolean asc) {

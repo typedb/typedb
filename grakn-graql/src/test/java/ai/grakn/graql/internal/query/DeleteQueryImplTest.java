@@ -50,7 +50,7 @@ public class DeleteQueryImplTest {
     }
 
     @Test
-    public void deleteQueriesWithDifferentMatchQueriesAreDifferent() {
+    public void deleteQueriesWithDifferentMatchesAreDifferent() {
         DeleteQuery query1 = DeleteQueryImpl.of(vars1, match1);
         DeleteQuery query2 = DeleteQueryImpl.of(vars1, match2);
 

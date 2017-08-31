@@ -99,7 +99,7 @@ private static void testConnection() {
         // open a tx (database transaction)
         try (GraknTx tx = session.open(GraknTxType.READ)) {
 
-            // construct a match query to find people
+            // construct a match to find people
             Match match = tx.graql().match(var("x").isa("person"));
 
             // execute the query

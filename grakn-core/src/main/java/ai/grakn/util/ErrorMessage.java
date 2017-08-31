@@ -175,7 +175,7 @@ public enum ErrorMessage {
     MISSING_REQUEST_BODY("Empty body- it should contain the Graql query to be executed."),
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
     INVALID_CONTENT_TYPE("Invalid combination of query [%s] and content type [%s]"),
-    EXPLAIN_ONLY_MATCH("Cannot get explanation for non-match query, given: [%s]"),
+    EXPLAIN_ONLY_MATCH("Cannot get explanation for non-get query, given: [%s]"),
     INVALID_QUERY_USAGE("Only %s queries are allowed."),
     MISSING_TASK_ID("Could not retrieve id %s"),
     TASK_STATE_RETRIEVAL_FAILURE("Could not get state from storage %s"),

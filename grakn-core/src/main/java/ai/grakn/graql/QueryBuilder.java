@@ -37,14 +37,14 @@ public interface QueryBuilder {
 
     /**
      * @param patterns an array of patterns to match in the graph
-     * @return a match query that will find matches of the given patterns
+     * @return a {@link Match} that will find matches of the given patterns
      */
     @CheckReturnValue
     Match match(Pattern... patterns);
 
     /**
      * @param patterns a collection of patterns to match in the graph
-     * @return a match query that will find matches of the given patterns
+     * @return a {@link Match} that will find matches of the given patterns
      */
     @CheckReturnValue
     Match match(Collection<? extends Pattern> patterns);

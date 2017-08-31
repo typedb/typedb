@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.match;
 
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -27,7 +28,7 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 
 /**
- * A class for handling ordering match queries.
+ * A class for handling ordering {@link Match}es.
  *
  * @author Felix Chapman
  */

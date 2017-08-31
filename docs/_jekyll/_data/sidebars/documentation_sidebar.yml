@@ -47,9 +47,12 @@ entries:
       - title: Graql Shell
         output: web
         url: /documentation/graql/graql-shell.html
-      - title: Match Queries
+      - title: Matches
         output: web
-        url: /documentation/graql/match-queries.html
+        url: /documentation/graql/matches.html
+      - title: Get Queries
+        output: web
+        url: /documentation/graql/get-queries.html
       - title: Delete Queries
         output: web
         url: /documentation/graql/delete-queries.html

@@ -60,7 +60,7 @@ public class AdminTest {
 
     @Test
     public void testGetTypesInQuery() {
-        Match query = qb.match(
+        Match match = qb.match(
                 var("x").isa(label("movie").sub("production")).has("tmdb-vote-count", 400),
                 var("y").isa("character"),
                 var().rel("production-with-cast", "x").rel("y").isa("has-cast")
@@ -70,21 +70,21 @@ public class AdminTest {
                 "movie", "production", "tmdb-vote-count", "character", "production-with-cast", "has-cast"
         ).map(t -> rule.tx().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
 
-        assertEquals(types, query.admin().getSchemaConcepts());
+        assertEquals(types, match.admin().getSchemaConcepts());
     }
 
     @Test
     public void testDefaultGetSelectedNamesInQuery() {
-        Match query = qb.match(var("x").isa(var("y")));
+        Match match = qb.match(var("x").isa(var("y")));
 
-        assertEquals(Sets.newHashSet(Graql.var("x"), Graql.var("y")), query.admin().getSelectedNames());
+        assertEquals(Sets.newHashSet(Graql.var("x"), Graql.var("y")), match.admin().getSelectedNames());
     }
 
     @Test
     public void testGetPatternInQuery() {
-        Match query = qb.match(var("x").isa("movie"), var("x").val("Bob"));
+        Match match = qb.match(var("x").isa("movie"), var("x").val("Bob"));
 
-        Conjunction<PatternAdmin> conjunction = query.admin().getPattern();
+        Conjunction<PatternAdmin> conjunction = match.admin().getPattern();
         assertNotNull(conjunction);
 
         Set<PatternAdmin> patterns = conjunction.getPatterns();
@@ -93,12 +93,12 @@ public class AdminTest {
 
     @Test
     public void testMutateMatch() {
-        Match query = qb.match(var("x").isa("movie"));
+        Match match = qb.match(var("x").isa("movie"));
 
-        Conjunction<PatternAdmin> pattern = query.admin().getPattern();
+        Conjunction<PatternAdmin> pattern = match.admin().getPattern();
         pattern.getPatterns().add(var("x").has("title", "Spy").admin());
 
-        assertEquals(1, query.stream().count());
+        assertEquals(1, match.stream().count());
     }
 
     @Test

@@ -79,7 +79,7 @@ import static java.lang.Boolean.parseBoolean;
  * @author Marco Scoppetta, alexandraorth
  */
 @Path("/graph/graql")
-@Api(value = "/graph/graql", description = "Endpoints used to query the graph by ID or Graql match query and build HAL objects.")
+@Api(value = "/graph/graql", description = "Endpoints used to query the graph by ID or Graql get query and build HAL objects.")
 @Produces({"application/json", "text/plain"})
 public class GraqlController {
 
@@ -109,7 +109,7 @@ public class GraqlController {
 
     @POST
     @Path("/execute")
-    @ApiOperation(value = "Execute an arbitrary Graql queryEndpoints used to query the graph by ID or Graql match query and build HAL objects.")
+    @ApiOperation(value = "Execute an arbitrary Graql queryEndpoints used to query the graph by ID or Graql get query and build HAL objects.")
     private Object executeGraql(Request request, Response response) {
         String queryString = mandatoryBody(request);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
@@ -133,7 +133,7 @@ public class GraqlController {
                     "Return type is determined by the provided accept type: application/graql+json, application/hal+json or application/text")
     @ApiImplicitParams({
             @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = QUERY,       value = "Match query to execute", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QUERY,       value = "Get query to execute", required = true, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = INFER,       value = "Should reasoner with the current query.", required = true, dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = MATERIALISE, value = "Should reasoner materialise results with the current query.", required = true, dataType = "boolean", paramType = "query")
     })
@@ -262,7 +262,7 @@ public class GraqlController {
     }
 
     /**
-     * Format a match query as HAL
+     * Format a query as HAL
      *
      * @param query query to format
      * @param numberEmbeddedComponents the number of embedded components for the HAL format, taken from the request

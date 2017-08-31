@@ -64,7 +64,7 @@ public class InsertQueryImplTest {
     }
 
     @Test
-    public void insertQueriesWithDifferentMatchQueriesAreDifferent() {
+    public void insertQueriesWithDifferentMatchesAreDifferent() {
         InsertQuery query1 = new InsertQueryImpl(vars1, match1, Optional.empty());
         InsertQuery query2 = new InsertQueryImpl(vars1, match2, Optional.empty());
 
