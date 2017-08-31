@@ -33,6 +33,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.collect.ImmutableList;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -181,10 +182,14 @@ public final class ResolutionPlan {
      * @param query for which the plan should be constructed
      * @return list of atoms in order they should be resolved using {@link GraqlTraversal}.
      */
-    private LinkedList<Atom> plan(ReasonerQueryImpl query){
-        return query.selectAtoms().stream()
-                .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
-                .collect(Collectors.toCollection(LinkedList::new));
+    @SuppressFBWarnings("UPM_UNCALLED_PRIVATE_METHOD")
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
+    private ImmutableList<Atom> plan(ReasonerQueryImpl query){
+        return ImmutableList.<Atom>builder().addAll(
+                query.selectAtoms().stream()
+                        .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
+                        .iterator())
+                .build();
     }
 
     /**
