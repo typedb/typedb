@@ -9,7 +9,7 @@ node {
     //Always wrap each test block in a timeout
     //This first block sets up engine within 15 minutes
     withEnv([
-            'PATH+EXTRA=' + workspace + '/grakn-package/bin'
+            'PATH+EXTRA=' + workspace + '/grakn-package'
             ]) {
       timeout(15) {
         stage('Build Grakn') {//Stages allow you to organise and group things within Jenkins
@@ -28,7 +28,7 @@ authored by - """ + user
           sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
           sh 'mkdir grakn-package'
           sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
-          sh 'grakn.sh start'
+          sh 'grakn server start'
         }
         stage('Test Connection') {
           sh 'graql.sh -e "match \\\$x;"' //Sanity check query. I.e. is everything working?
@@ -41,7 +41,7 @@ authored by - """ + user
              'KEYSPACE=snb',
              'ENGINE=localhost:4567',
              'ACTIVE_TASKS=1000',
-             'PATH+EXTRA=' + workspace + '/grakn-package/bin',
+             'PATH+EXTRA=' + workspace + '/grakn-package',
              'LDBC_DRIVER=' + workspace + '/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar',
              'LDBC_CONNECTOR=' + workspace + "/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar",
              'LDBC_VALIDATION_CONFIG=' + workspace + '/grakn-test/test-snb/src/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
@@ -85,7 +85,7 @@ authored by - """ + user
       stage('Tear Down Grakn') {
         sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
         archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
-        sh 'grakn-package/bin/grakn.sh stop'
+        sh 'grakn-package/grakn server stop'
         sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
       }
     }
