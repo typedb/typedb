@@ -297,7 +297,7 @@ public class GraqlShellIT {
                 anything(),
                 "insert has name 'felix' isa man;",
                 anything(),
-                "insert $my-rule isa inference-rule when {$x isa man;} then {$x isa person;};",
+                "insert my-rule sub rule when {$x isa man;} then {$x isa person;};",
                 anything(),
                 "commit",
                 "match isa person, has name $x;"
@@ -316,7 +316,7 @@ public class GraqlShellIT {
                 anything(),
                 "match isa person, has name $x;",
                 // No results
-                "insert $my-rule isa inference-rule when {$x isa man;} then {$x isa person;};",
+                "insert my-rule sub rule when {$x isa man;} then {$x isa person;};",
                 anything(),
                 "commit",
                 "match isa person, has name $x;",

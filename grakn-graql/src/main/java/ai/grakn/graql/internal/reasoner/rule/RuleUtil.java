@@ -52,7 +52,7 @@ public class RuleUtil {
      */
     public static Stream<Rule> getRules(GraknTx graph) {
         return graph.admin().getMetaRuleType().subs().
-                filter(sub -> sub.equals(graph.admin().getMetaRuleType()));
+                filter(sub -> !sub.equals(graph.admin().getMetaRuleType()));
     }
 
     /**

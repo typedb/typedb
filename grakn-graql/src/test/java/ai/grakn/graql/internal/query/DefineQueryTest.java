@@ -200,16 +200,6 @@ public class DefineQueryTest {
     }
 
     @Test
-    public void testDefineRuleType() {
-        assertDefine(var("x").label("my-inference-rule").sub(RULE.getLabel().getValue()));
-    }
-
-    @Test
-    public void testDefineRuleSub() {
-        assertDefine(var("x").label("an-sub-rule-type").sub("a-rule-type"));
-    }
-
-    @Test
     public void testHas() {
         String resourceType = "a-new-resource-type";
 
@@ -356,6 +346,20 @@ public class DefineQueryTest {
         );
 
         movies.tx().graql().define(label("my-type").sub("entity").datatype(BOOLEAN)).execute();
+    }
+
+    @Test
+    public void whenDefiningRuleWithoutWhen_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("when")));
+        qb.define(var().sub(label(RULE.getLabel())).then(var("x").isa("movie"))).execute();
+    }
+
+    @Test
+    public void whenDefiningRuleWithoutThen_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("then")));
+        qb.define(var().sub(label(RULE.getLabel())).when(var("x").isa("movie"))).execute();
     }
 
     @Test

@@ -515,20 +515,6 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testInsertRuleWithoutLhs() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("when")));
-        qb.insert(var().isa("inference-rule").then(var("x").isa("movie"))).execute();
-    }
-
-    @Test
-    public void testInsertRuleWithoutRhs() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("then")));
-        qb.insert(var().isa("inference-rule").when(var("x").isa("movie"))).execute();
-    }
-
-    @Test
     public void whenInsertingANonRuleWithAWhenPattern_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("unexpected property"), containsString("when")));
