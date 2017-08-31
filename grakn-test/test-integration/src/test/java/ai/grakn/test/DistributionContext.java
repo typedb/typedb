@@ -165,8 +165,8 @@ public class DistributionContext extends ExternalResource {
      * Get the class path of all the jars in the /lib folder
      */
     private String getClassPath(){
-        Stream<File> jars = Stream.of(new File(DIST_DIRECTORY + "/lib").listFiles(jarFiles));
-        File conf = new File(DIST_DIRECTORY + "/conf/main/");
+        Stream<File> jars = Stream.of(new File(DIST_DIRECTORY + "/services/lib").listFiles(jarFiles));
+        File conf = new File(DIST_DIRECTORY + "/conf/");
 
         return Stream.concat(jars, Stream.of(conf))
                 .filter(f -> !f.getName().contains("slf4j-log4j12"))
