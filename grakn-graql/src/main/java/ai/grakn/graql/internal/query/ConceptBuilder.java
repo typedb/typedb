@@ -336,8 +336,6 @@ public class ConceptBuilder {
             return type.asRelationshipType().addRelationship();
         } else if (type.isAttributeType()) {
             return type.asAttributeType().putAttribute(use(VALUE));
-        } else if (type.isRuleType()) {
-            return type.asRuleType().putRule(use(WHEN), use(THEN));
         } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
         } else {

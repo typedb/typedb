@@ -19,8 +19,9 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.RuleType;
+import ai.grakn.graql.QueryBuilder;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -38,8 +39,9 @@ public class RuleTypes extends AbstractTypeGenerator<RuleType> {
 
     @Override
     protected RuleType newSchemaConcept(Label label) {
-        //TODO: Get this going again
-        throw new UnsupportedOperationException("Cannot generate rules at this stage");
+        // TODO: generate more complicated rules
+        QueryBuilder graql = this.tx().graql();
+        return tx().putRuleType(label, graql.parsePattern("$x"), graql.parsePattern("$x"));
     }
 
     @Override

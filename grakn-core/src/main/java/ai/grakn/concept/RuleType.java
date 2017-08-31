@@ -18,7 +18,6 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.graql.Pattern;
 
 import javax.annotation.CheckReturnValue;
@@ -32,8 +31,6 @@ import java.util.stream.Stream;
  *
  * <p>
  *     An ontological element used to define different types of {@link Rule}.
- *     Currently supported rules include {@link GraknAdmin#getMetaRuleInference()}
- *     and {@link GraknAdmin#getMetaRuleConstraint()}
  * </p>
  *
  * @author fppt
@@ -81,16 +78,6 @@ public interface RuleType extends Type {
      * @return The {@link Concept} itself
      */
     RuleType setLabel(Label label);
-
-    /**
-     * Adds a new Rule if it does not exist otherwise returns the existing rule.
-     * @see Pattern
-     *
-     * @param when A string representing the when part of the {@link Rule}
-     * @param then A string representing the then part of the {@link Rule}
-     * @return a new Rule
-     */
-    Rule putRule(Pattern when, Pattern then);
 
     /**
      * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.

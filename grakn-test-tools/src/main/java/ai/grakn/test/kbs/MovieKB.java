@@ -24,7 +24,6 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
@@ -289,22 +288,14 @@ public class MovieKB extends TestKB {
 
     @Override
     protected void buildRules(GraknTx tx) {
+        // These rules are totally made up for testing purposes and don't work!
         Pattern when = tx.graql().parsePattern("$x plays actor");
         Pattern then = tx.graql().parsePattern("$x isa person");
-
-        // These rules are totally made up for testing purposes and don't work!
-        aRuleType = tx.putRuleType("a-rule-type", when, then);
-        aRuleType.attribute(name);
-
-        Rule expectation = aRuleType.putRule(when, then);
-
-        putResource(expectation, name, "expectation-rule");
+        tx.putRuleType("expectation-rule", when, then);
 
         when = tx.graql().parsePattern("$x has name 'materialize-when'");
         then = tx.graql().parsePattern("$x has name 'materialize-then'");
-        Rule materialize = aRuleType.putRule(when, then);
-
-        putResource(materialize, name, "materialize-rule");
+        tx.putRuleType("materialize-rule", when, then);
     }
 
     private static void hasCast(Thing movie, Thing person, Thing character) {
