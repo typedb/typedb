@@ -363,7 +363,7 @@ define
   subject-location sub role;
 
 insert
-  $transitive-location isa inference-rule,
+  transitive-location sub rule,
     when {
       ($x, $y) isa located-in;
       ($y, $z) isa located-in;

@@ -107,26 +107,26 @@ $eWitold isa tPerson;
 $eStefan isa tPerson;
 (owl-subject-op-isParentOf: $eStefan, owl-object-op-isParentOf: $eWitold) isa op-isParentOf;
 
-$inv-op-hasAncestor isa inference-rule,
+inv-op-hasAncestor sub rule,
 when {
 (owl-subject-op-hasAncestor: $x, owl-object-op-hasAncestor: $y) isa hasAncestor;},
 then {
 (owl-subject-op-isAncestorOf: $y, owl-object-op-isAncestorOf: $x) isa isAncestorOf;};
 
-$inv-op-isAncestorOf isa inference-rule,
+inv-op-isAncestorOf sub rule,
 when {
 (owl-subject-op-isAncestorOf: $x, owl-object-op-isAncestorOf: $y) isa isAncestorOf;},
 then {
 (owl-subject-op-hasAncestor: $y, owl-object-op-hasAncestor: $x) isa hasAncestor;};
 
-$trst-op-hasAncestor isa inference-rule,
+trst-op-hasAncestor sub rule,
 when {
 (owl-subject-op-hasParent: $x, owl-object-op-hasParent: $z) isa hasAncestor;
 (owl-subject-op-hasAncestor: $z, owl-object-op-hasAncestor: $y) isa hasAncestor;},
 then {
 (owl-subject-op-hasAncestor: $x, owl-object-op-hasAncestor: $y) isa hasAncestor;};
 
-$pch-op-hasAncestor isa inference-rule,
+pch-op-hasAncestor sub rule,
 when {
 (owl-subject-op-hasParent: $x, owl-object-op-hasParent: $z) isa hasParent;
 (owl-subject-op-hasAncestor: $z, owl-object-op-hasAncestor: $y) isa hasAncestor;},

@@ -253,7 +253,7 @@ Rule instances can be added to the knowledge base both through the Java API as w
 ```graql
 insert
 
-$R1 isa inference-rule,
+R1 sub rule,
 when {
     (parent: $p, child: $c) isa Parent;
 },
@@ -261,7 +261,7 @@ then {
     (ancestor: $p, descendant: $c) isa Ancestor;
 };
 
-$R2 isa inference-rule,
+R2 sub rule,
 when {
     (parent: $p, child: $c) isa Parent;
     (ancestor: $c, descendant: $d) isa Ancestor;
