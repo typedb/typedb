@@ -32,22 +32,15 @@ import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.IntStream;
-import org.antlr.v4.runtime.ListTokenSource;
-import org.antlr.v4.runtime.Token;
-import org.antlr.v4.runtime.TokenSource;
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.UnbufferedTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -69,9 +62,6 @@ public class QueryParser {
             "boolean", AttributeType.DataType.BOOLEAN,
             "date", AttributeType.DataType.DATE
     );
-
-    private static final Set<Integer> NEW_QUERY_TOKENS =
-            ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT, GraqlLexer.DEFINE);
 
     /**
      * Create a query parser with the specified graph
@@ -200,35 +190,6 @@ public class QueryParser {
         }
 
         return visit.apply(getQueryVisitor(), tree);
-    }
-
-    /**
-     * Consume a single query from the given token stream.
-     *
-     * @param tokenStream the {@link TokenStream} to consume
-     * @return a new {@link TokenSource} containing the tokens comprising the query
-     */
-    private TokenSource consumeOneQuery(TokenStream tokenStream) {
-        List<Token> tokens = new ArrayList<>();
-
-        boolean startedQuery = false;
-
-        while (true) {
-            Token token = tokenStream.LT(1);
-            boolean isNewQuery = NEW_QUERY_TOKENS.contains(token.getType());
-            boolean isEndOfTokenStream = token.getType() == IntStream.EOF;
-            boolean isEndOfFirstQuery = startedQuery && isNewQuery;
-
-            // Stop parsing tokens after reaching the end of the first query
-            if (isEndOfTokenStream || isEndOfFirstQuery) break;
-
-            if (isNewQuery) startedQuery = true;
-
-            tokens.add(token);
-            tokenStream.consume();
-        }
-
-        return new ListTokenSource(tokens);
     }
 
     private GraqlLexer getLexer(String queryString) {
