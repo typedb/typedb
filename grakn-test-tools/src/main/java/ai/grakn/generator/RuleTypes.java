@@ -38,7 +38,8 @@ public class RuleTypes extends AbstractTypeGenerator<RuleType> {
 
     @Override
     protected RuleType newSchemaConcept(Label label) {
-        return tx().putRuleType(label);
+        //TODO: Get this going again
+        throw new UnsupportedOperationException("Cannot generate rules at this stage");
     }
 
     @Override
@@ -48,6 +49,6 @@ public class RuleTypes extends AbstractTypeGenerator<RuleType> {
 
     @Override
     protected Collection<RuleType> otherMetaSchemaConcepts() {
-        return ImmutableSet.of(tx().admin().getMetaRuleInference(), tx().admin().getMetaRuleConstraint());
+        return ImmutableSet.of(tx().admin().getMetaRuleType());
     }
 }

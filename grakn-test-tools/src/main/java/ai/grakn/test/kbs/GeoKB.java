@@ -200,11 +200,10 @@ public class GeoKB extends TestKB {
 
     @Override
     public void buildRules(GraknTx tx) {
-        RuleType inferenceRule = tx.admin().getMetaRuleInference();
         Pattern transitivity_LHS = tx.graql().parsePattern(
                 "{(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;}");
         Pattern transitivity_RHS = tx.graql().parsePattern("{(geo-entity: $x, entity-location: $z) isa is-located-in;}");
-        inferenceRule.putRule(transitivity_LHS, transitivity_RHS);
+        tx.putRuleType(transitivity_LHS, transitivity_RHS);
     }
 }

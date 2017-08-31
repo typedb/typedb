@@ -43,7 +43,6 @@ public class PutTypeFunctions extends AbstractGenerator<BiFunction> {
         return random.choose(ImmutableList.of(
                 GraknTx::putEntityType,
                 (graph, label) -> graph.putAttributeType(label, gen(AttributeType.DataType.class)),
-                GraknTx::putRuleType,
                 GraknTx::putRelationshipType
         ));
     }
