@@ -15,6 +15,13 @@ fi
 
 # extract the data from a tar
 function extractArchData {
+
+    if [ -z ${CSV_DATA+x} ]; then
+        echo $CSV_DATA
+        echo "Environment Variable Not Set. Please run 'source local-env.sh'"
+        exit 1
+    fi
+
 	mkdir -p $CSV_DATA
 	case "$1" in
 		validate)
