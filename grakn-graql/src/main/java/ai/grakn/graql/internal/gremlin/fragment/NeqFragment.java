@@ -20,30 +20,26 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
-class NeqFragment extends Fragment {
+@AutoValue
+abstract class NeqFragment extends Fragment {
 
-    private final Var other;
-
-    NeqFragment(VarProperty varProperty, Var start, Var other) {
-        super(varProperty, start);
-        this.other = other;
-    }
+    abstract Var other();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
             GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
-        return traversal.where(P.neq(other.getValue()));
+        return traversal.where(P.neq(other().getValue()));
     }
 
     @Override
-    public String getName() {
-        return "[neq:" + other.shortName() + "]";
+    public String name() {
+        return "[neq:" + other().shortName() + "]";
     }
 
     @Override
@@ -53,25 +49,7 @@ class NeqFragment extends Fragment {
     }
 
     @Override
-    public ImmutableSet<Var> getDependencies() {
-        return ImmutableSet.of(other);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        NeqFragment that = (NeqFragment) o;
-
-        return other.equals(that.other);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + other.hashCode();
-        return result;
+    public ImmutableSet<Var> dependencies() {
+        return ImmutableSet.of(other());
     }
 }

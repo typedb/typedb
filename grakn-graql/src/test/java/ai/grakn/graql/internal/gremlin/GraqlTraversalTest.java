@@ -31,6 +31,9 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.pattern.property.IdProperty;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -169,10 +172,19 @@ public class GraqlTraversalTest {
 
     @Test
     public void testAllTraversalsSimpleQuery() {
-        VarPattern pattern = x.id(ConceptId.of("Titanic")).isa(y.id(ConceptId.of("movie")));
+        IdProperty titanicId = IdProperty.of(ConceptId.of("Titanic"));
+        IdProperty movieId = IdProperty.of(ConceptId.of("movie"));
+        IsaProperty isaProperty = IsaProperty.of(Patterns.varPattern(y, ImmutableSet.of(movieId)));
+
+        VarPattern pattern = Patterns.varPattern(x, ImmutableSet.of(titanicId, isaProperty));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());
+
+        Fragment xId = id(titanicId, x, ConceptId.of("Titanic"));
+        Fragment yId = id(movieId, y, ConceptId.of("movie"));
+        Fragment xIsaY = outIsa(isaProperty, x, y);
+        Fragment yTypeOfX = inIsa(isaProperty, y, x);
 
         Set<GraqlTraversal> expected = ImmutableSet.of(
                 traversal(xId, xIsaY, yId),
@@ -316,11 +328,11 @@ public class GraqlTraversalTest {
             Set<Var> visited = new HashSet<>();
 
             for (Fragment fragment : fragmentList) {
-                if (!visited.containsAll(fragment.getDependencies())) {
+                if (!visited.containsAll(fragment.dependencies())) {
                     return Optional.empty();
                 }
 
-                visited.addAll(fragment.getVariableNames());
+                visited.addAll(fragment.vars());
             }
         }
 
@@ -328,11 +340,11 @@ public class GraqlTraversalTest {
     }
 
     private static Fragment outShortcut(Var relation, Var rolePlayer) {
-        return Fragments.outShortcut(null, relation, a, rolePlayer, Optional.empty(), Optional.empty(), Optional.empty());
+        return Fragments.outShortcut(null, relation, a, rolePlayer, null, null, null);
     }
 
     private static Fragment inShortcut(Var rolePlayer, Var relation) {
-        return Fragments.inShortcut(null, rolePlayer, c, relation, Optional.empty(), Optional.empty(), Optional.empty());
+        return Fragments.inShortcut(null, rolePlayer, c, relation, null, null, null);
     }
 
     private static void assertNearlyOptimal(Pattern pattern) {

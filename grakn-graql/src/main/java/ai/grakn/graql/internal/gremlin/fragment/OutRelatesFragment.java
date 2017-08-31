@@ -20,11 +20,11 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
@@ -33,11 +33,11 @@ import java.util.Set;
 
 import static ai.grakn.util.Schema.EdgeLabel.RELATES;
 
-class OutRelatesFragment extends Fragment {
+@AutoValue
+abstract class OutRelatesFragment extends Fragment {
 
-    OutRelatesFragment(VarProperty varProperty, Var start, Var end) {
-        super(varProperty, start, end);
-    }
+    @Override
+    public abstract Var end();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
@@ -47,7 +47,7 @@ class OutRelatesFragment extends Fragment {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "-[relates]->";
     }
 
@@ -57,8 +57,8 @@ class OutRelatesFragment extends Fragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
-                                                              Map<Node, Map<Node, Fragment>> edges) {
-        return getDirectedEdges(NodeId.NodeType.RELATES, nodes, edges);
+    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
+                                                           Map<Node, Map<Node, Fragment>> edges) {
+        return directedEdges(NodeId.NodeType.RELATES, nodes, edges);
     }
 }

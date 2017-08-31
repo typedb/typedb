@@ -19,7 +19,7 @@ public class InPlaysFragmentTest {
 
     private final Var start = Graql.var();
     private final Var end = Graql.var();
-    private final InPlaysFragment fragment = new InPlaysFragment(null, start, end, false);
+    private final Fragment fragment = Fragments.inPlays(null, start, end, false);
 
     @Test
     @SuppressWarnings("unchecked")

@@ -22,17 +22,16 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,7 +39,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
-import static ai.grakn.util.CommonUtil.optionalToStream;
 
 /**
  * represents a graph traversal, with one start point and optionally an end point
@@ -97,79 +95,32 @@ public abstract class Fragment {
     static final double COST_DATA_TYPE = Math.log1p(2D / AttributeType.DataType.SUPPORTED_TYPES.size());
     static final double COST_UNSPECIFIC_PREDICATE = Math.log1p(0.5);
 
-    private final Var start;
-    private final Optional<Var> end;
-    private final ImmutableSet<Var> varNames;
-    private EquivalentFragmentSet equivalentFragmentSet = null;
-
-    private VarProperty varProperty; // For reasoner to map fragments to atoms
-
-    Fragment(VarProperty varProperty, Var start) {
-        this.varProperty = varProperty;
-        this.start = start;
-        this.end = Optional.empty();
-        this.varNames = ImmutableSet.of(start);
-    }
-
-    Fragment(VarProperty varProperty, Var start, Var end, Var... others) {
-        this.varProperty = varProperty;
-        this.start = start;
-        this.end = Optional.of(end);
-        this.varNames = ImmutableSet.<Var>builder().add(start).add(end).add(others).build();
-    }
-
-    Fragment(VarProperty varProperty, Var start, Var end, Var other, Var... others) {
-        this.varProperty = varProperty;
-        this.start = start;
-        this.end = Optional.of(end);
-        this.varNames = ImmutableSet.<Var>builder().add(start).add(end).add(other).add(others).build();
-    }
-
-    static Var[] optionalVarToArray(Optional<Var> var) {
-        return optionalToStream(var).toArray(Var[]::new);
-    }
-
     /**
-     * @return the EquivalentFragmentSet that contains this Fragment
+     * Get the corresponding property
      */
-    public final EquivalentFragmentSet getEquivalentFragmentSet() {
-        Preconditions.checkNotNull(equivalentFragmentSet, "Should not call getEquivalentFragmentSet before setEquivalentFragmentSet");
-        return equivalentFragmentSet;
-    }
-
-    /**
-     * @param equivalentFragmentSet the EquivalentFragmentSet that contains this Fragment
-     */
-    public final void setEquivalentFragmentSet(EquivalentFragmentSet equivalentFragmentSet) {
-        this.equivalentFragmentSet = equivalentFragmentSet;
-    }
+    public abstract @Nullable VarProperty varProperty();
 
     /**
      * @return the variable name that this fragment starts from in the query
      */
-    public final Var getStart() {
-        return start;
-    }
+    public abstract Var start();
 
     /**
      * @return the variable name that this fragment ends at in the query, if this query has an end variable
      */
-    public final Optional<Var> getEnd() {
-        return end;
+    public @Nullable Var end() {
+        return null;
+    }
+
+    ImmutableSet<Var> otherVars() {
+        return ImmutableSet.of();
     }
 
     /**
      * @return the variable names that this fragment requires to have already been visited
      */
-    public Set<Var> getDependencies() {
+    public Set<Var> dependencies() {
         return ImmutableSet.of();
-    }
-
-    /**
-         * Get all variable names in the fragment - the start and end (if present)
-         */
-    public Set<Var> getVariableNames() {
-        return varNames;
     }
 
     /**
@@ -179,78 +130,9 @@ public abstract class Fragment {
      * @param edges a mapping from edge(child, parent) to its corresponding fragment
      * @return a set of edges
      */
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
-                                                              Map<Node, Map<Node, Fragment>> edges) {
+    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
+                                                           Map<Node, Map<Node, Fragment>> edges) {
         return Collections.emptySet();
-    }
-
-    /**
-     * Get the corresponding property
-     */
-    public VarProperty getVarProperty() {
-        return varProperty;
-    }
-
-    @Override
-    public String toString() {
-        return start + getName() + end.map(Object::toString).orElse("");
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Fragment that = (Fragment) o;
-
-        if (start != null ? !start.equals(that.start) : that.start != null) return false;
-        if (end != null ? !end.equals(that.end) : that.end != null) return false;
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = start != null ? start.hashCode() : 0;
-        result = 31 * result + (end != null ? end.hashCode() : 0);
-        return result;
-    }
-
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(NodeId.NodeType nodeType,
-                                                              Map<NodeId, Node> nodes,
-                                                              Map<Node, Map<Node, Fragment>> edgeToFragment) {
-
-        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, getStart(), nodes);
-        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, getEnd().get(), nodes);
-        Node middle = Node.addIfAbsent(nodeType, Sets.newHashSet(getStart(), getEnd().get()), nodes);
-        middle.setInvalidStartingPoint();
-
-        addEdgeToFragmentMapping(middle, start, edgeToFragment);
-        return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
-                weighted(DirectedEdge.from(middle).to(end), 0));
-    }
-
-    public Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Var edge,
-                                                              Map<NodeId, Node> nodes,
-                                                              Map<Node, Map<Node, Fragment>> edgeToFragment) {
-
-        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, getStart(), nodes);
-        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, getEnd().get(), nodes);
-        Node middle = Node.addIfAbsent(NodeId.NodeType.VAR, edge, nodes);
-        middle.setInvalidStartingPoint();
-
-        addEdgeToFragmentMapping(middle, start, edgeToFragment);
-        return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
-                weighted(DirectedEdge.from(middle).to(end), 0));
-    }
-
-    private void addEdgeToFragmentMapping(Node child, Node parent, Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        if (!edgeToFragment.containsKey(child)) {
-            edgeToFragment.put(child, new HashMap<>());
-        }
-        edgeToFragment.get(child).put(parent, this);
     }
 
     /**
@@ -263,7 +145,7 @@ public abstract class Fragment {
     /**
      * The name of the fragment
      */
-    public abstract String getName();
+    public abstract String name();
 
     /**
      * A starting fragment is a fragment that can start a traversal.
@@ -292,5 +174,58 @@ public abstract class Fragment {
      */
     public boolean canOperateOnEdges() {
         return false;
+    }
+
+    /**
+     * Get all variables in the fragment including the start and end (if present)
+     */
+    public final Set<Var> vars() {
+        ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(start());
+        Var end = end();
+        if (end != null) builder.add(end);
+        builder.addAll(otherVars());
+        return builder.build();
+    }
+
+    @Override
+    public final String toString() {
+        return start() + name() + Optional.ofNullable(end()).map(Object::toString).orElse("");
+    }
+
+    final Set<Weighted<DirectedEdge<Node>>> directedEdges(NodeId.NodeType nodeType,
+                                                          Map<NodeId, Node> nodes,
+                                                          Map<Node, Map<Node, Fragment>> edgeToFragment) {
+
+        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, start(), nodes);
+        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, end(), nodes);
+        Node middle = Node.addIfAbsent(nodeType, Sets.newHashSet(start(), end()), nodes);
+        middle.setInvalidStartingPoint();
+
+        addEdgeToFragmentMapping(middle, start, edgeToFragment);
+        return Sets.newHashSet(
+                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
+                weighted(DirectedEdge.from(middle).to(end), 0));
+    }
+
+    final Set<Weighted<DirectedEdge<Node>>> directedEdges(Var edge,
+                                                          Map<NodeId, Node> nodes,
+                                                          Map<Node, Map<Node, Fragment>> edgeToFragment) {
+
+        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, start(), nodes);
+        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, end(), nodes);
+        Node middle = Node.addIfAbsent(NodeId.NodeType.VAR, edge, nodes);
+        middle.setInvalidStartingPoint();
+
+        addEdgeToFragmentMapping(middle, start, edgeToFragment);
+        return Sets.newHashSet(
+                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
+                weighted(DirectedEdge.from(middle).to(end), 0));
+    }
+
+    private void addEdgeToFragmentMapping(Node child, Node parent, Map<Node, Map<Node, Fragment>> edgeToFragment) {
+        if (!edgeToFragment.containsKey(child)) {
+            edgeToFragment.put(child, new HashMap<>());
+        }
+        edgeToFragment.get(child).put(parent, this);
     }
 }

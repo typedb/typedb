@@ -136,7 +136,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin rolePlayer) {
-        return Stream.of(shortcut(this, start, casting, rolePlayer.var(), Optional.empty()));
+        return Stream.of(shortcut(this, start, casting, rolePlayer.var(), null));
     }
 
     /**
@@ -145,7 +145,7 @@ public abstract class RelationProperty extends AbstractVarProperty implements Un
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
-        return Stream.of(shortcut(this, start, casting, rolePlayer.var(), Optional.of(roleType.var())));
+        return Stream.of(shortcut(this, start, casting, rolePlayer.var(), roleType.var()));
     }
 
     @Override

@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
@@ -31,30 +31,26 @@ import java.util.Set;
 import static ai.grakn.util.CommonUtil.optionalToStream;
 import static java.util.stream.Collectors.toSet;
 
-class ValueFragment extends Fragment {
+@AutoValue
+abstract class ValueFragment extends Fragment {
 
-    private final ValuePredicate predicate;
-
-    ValueFragment(VarProperty varProperty, Var start, ValuePredicate predicate) {
-        super(varProperty, start);
-        this.predicate = predicate;
-    }
+    abstract ValuePredicate predicate();
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
             GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
 
-        return predicate.applyPredicate(traversal);
+        return predicate().applyPredicate(traversal);
     }
 
     @Override
-    public String getName() {
-        return "[value:" + predicate + "]";
+    public String name() {
+        return "[value:" + predicate() + "]";
     }
 
     @Override
     public double fragmentCost() {
-        if (predicate.isSpecific()) {
+        if (predicate().isSpecific()) {
             return COST_RESOURCES_PER_VALUE;
         } else {
             // Assume approximately half of values will satisfy a filter
@@ -64,30 +60,11 @@ class ValueFragment extends Fragment {
 
     @Override
     public boolean hasFixedFragmentCost() {
-        return predicate.isSpecific() && getDependencies().isEmpty();
+        return predicate().isSpecific() && dependencies().isEmpty();
     }
 
     @Override
-    public Set<Var> getDependencies() {
-        return optionalToStream(predicate.getInnerVar()).map(VarPatternAdmin::var).collect(toSet());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        ValueFragment that = (ValueFragment) o;
-
-        return predicate != null ? predicate.equals(that.predicate) : that.predicate == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (predicate != null ? predicate.hashCode() : 0);
-        return result;
+    public Set<Var> dependencies() {
+        return optionalToStream(predicate().getInnerVar()).map(VarPatternAdmin::var).collect(toSet());
     }
 }
