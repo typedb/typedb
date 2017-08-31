@@ -171,7 +171,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "unchecked"})
 public class MatchQueryTest {
@@ -1029,15 +1028,6 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testDistinctEmpty() {
-        Set<Concept> result2 = movieKB.tx().graql().match(
-                x.isa("movie").has("title", y),
-                y.has("name", "xxx")).select(y).distinct().get(x)
-                .collect(Collectors.toSet());
-        assertTrue(result2.isEmpty());
-    }
-
-    @Test
     public void testDistinctTuple() {
         int size = movieKB.tx().graql().match(x.isa("genre")).get().execute().size();
         size *= size;
@@ -1074,21 +1064,6 @@ public class MatchQueryTest {
         expectedException.expect(GraqlQueryException.class);
         expectedException.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(x));
         movieKB.tx().graql().match(var()).get(ImmutableSet.of(x)).execute();
-    }
-
-    @Test(expected = Exception.class)
-    public void testVarNameEmptySet() {
-        movieKB.tx().graql().match(var()).select(Collections.EMPTY_SET).get().execute();
-    }
-
-    @Test(expected = Exception.class)
-    public void testVarNameNullSet() {
-        movieKB.tx().graql().match(var()).select((Set<Var>) null).get().execute();
-    }
-
-    @Test(expected = Exception.class)
-    public void testVarNameNullString() {
-        movieKB.tx().graql().match(var()).select((String) null).get().execute();
     }
 
     @Test(expected = Exception.class)

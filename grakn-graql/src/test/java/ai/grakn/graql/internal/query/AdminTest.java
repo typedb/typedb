@@ -81,13 +81,6 @@ public class AdminTest {
     }
 
     @Test
-    public void testExplicitGetSelectedNamesInQuery() {
-        MatchQuery query = qb.match(var("x").isa(var("y"))).select("x");
-
-        assertEquals(Sets.newHashSet(Graql.var("x")), query.admin().getSelectedNames());
-    }
-
-    @Test
     public void testGetPatternInQuery() {
         MatchQuery query = qb.match(var("x").isa("movie"), var("x").val("Bob"));
 

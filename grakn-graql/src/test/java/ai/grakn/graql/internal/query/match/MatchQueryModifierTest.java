@@ -145,14 +145,14 @@ public class MatchQueryModifierTest {
     }
 
     @Test
-    public void testSelectVariableNotInQuery() {
+    public void whenGettingAVarNotInQuery_Throw() {
         MatchQuery query = qb.match(x.isa("movie"));
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(y));
 
         //noinspection ResultOfMethodCallIgnored
-        query.select(y);
+        query.get(y);
     }
 
     private <T extends Comparable<T>> void assertResultsOrderedByValue(GetQuery query, Var var, boolean asc) {

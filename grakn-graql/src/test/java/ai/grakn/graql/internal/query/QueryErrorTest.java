@@ -28,7 +28,6 @@ import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.ErrorMessage;
@@ -122,14 +121,6 @@ public class QueryErrorTest {
         exception.expectMessage(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage("genre"));
         //noinspection ResultOfMethodCallIgnored
         qb.match(var("x").isa("movie").has("genre", "Drama")).stream();
-    }
-
-    @Test
-    public void testExceptionWhenNoSelectVariablesProvided() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage("select");
-        //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa("movie")).select(new Var[] {});
     }
 
     @Test
