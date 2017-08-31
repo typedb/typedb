@@ -27,7 +27,6 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
@@ -288,21 +287,6 @@ public class InsertQueryTest {
                 var("x").id(ConceptId.of("Godfather")).isa("movie"),
                 var("y").id(ConceptId.of("comedy")).isa("genre")
         ).execute();
-    }
-
-    @Test
-    public void testInsertRule() {
-        String ruleTypeId = "a-rule-type";
-        Pattern when = qb.parsePattern("$x isa entity");
-        Pattern then = qb.parsePattern("$x isa entity");
-        VarPattern vars = var("x").isa(ruleTypeId).when(when).then(then);
-        qb.insert(vars).execute();
-
-        Rule rule = movieKB.tx().getRuleType(ruleTypeId);
-        boolean found = rule.subs().
-                anyMatch(r -> when.equals(r.getWhen()) && then.equals(r.getThen()));
-
-        assertTrue("Unable to find rule with when [" + when + "] and then [" + then + "]", found);
     }
 
     @Test

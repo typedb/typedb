@@ -48,6 +48,8 @@ $c isa entity1, has name "c";
 (role1:$b, role2:$c) isa inferredRelation;
 
 
+define
+
 rule-1 sub rule
 	when {
 		(role1: $x, role2: $y) isa relation1;

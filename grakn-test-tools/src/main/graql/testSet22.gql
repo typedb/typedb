@@ -17,8 +17,6 @@ knows-trans sub relationship
 knows sub knows-trans
     relates friend;
 
-insert
-
 #Rules
 
 rule0 sub rule
@@ -29,6 +27,8 @@ rule0 sub rule
     then {
         (friend:$x, friend:$z) isa knows-trans;
     };
+
+insert
 
 #Data
 

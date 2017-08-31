@@ -26,6 +26,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -66,6 +67,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -287,6 +289,16 @@ public class DefineQueryTest {
         qb.define(label("a-new-type").sub("movie")).execute();
         
         assertEquals(movie, newType.sup());
+    }
+
+    @Test
+    public void whenDefiningARule_TheRuleIsInTheKB() {
+        Pattern when = qb.parsePattern("$x isa entity");
+        Pattern then = qb.parsePattern("$x isa entity");
+        VarPattern vars = label("my-rule").isa(label(RULE.getLabel())).when(when).then(then);
+        qb.define(vars).execute();
+
+        assertNotNull(movies.tx().getRuleType("my-rule"));
     }
 
     @Test

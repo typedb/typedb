@@ -10,8 +10,6 @@ sub-entity sub general-entity;
 res1 sub attribute datatype long;
 res2 sub attribute datatype boolean;
 
-insert
-
 #Rules
 
 rule-1 sub rule

@@ -87,7 +87,6 @@ import static ai.grakn.matcher.GraknMatchers.results;
 import static ai.grakn.matcher.GraknMatchers.role;
 import static ai.grakn.matcher.GraknMatchers.rule;
 import static ai.grakn.matcher.GraknMatchers.variable;
-import static ai.grakn.matcher.MovieMatchers.aRuleType;
 import static ai.grakn.matcher.MovieMatchers.action;
 import static ai.grakn.matcher.MovieMatchers.alPacino;
 import static ai.grakn.matcher.MovieMatchers.apocalypseNow;
@@ -100,6 +99,7 @@ import static ai.grakn.matcher.MovieMatchers.comedy;
 import static ai.grakn.matcher.MovieMatchers.containsAllMovies;
 import static ai.grakn.matcher.MovieMatchers.crime;
 import static ai.grakn.matcher.MovieMatchers.drama;
+import static ai.grakn.matcher.MovieMatchers.expectationRule;
 import static ai.grakn.matcher.MovieMatchers.family;
 import static ai.grakn.matcher.MovieMatchers.fantasy;
 import static ai.grakn.matcher.MovieMatchers.gender;
@@ -116,6 +116,7 @@ import static ai.grakn.matcher.MovieMatchers.keyNameOwner;
 import static ai.grakn.matcher.MovieMatchers.language;
 import static ai.grakn.matcher.MovieMatchers.marlonBrando;
 import static ai.grakn.matcher.MovieMatchers.martinSheen;
+import static ai.grakn.matcher.MovieMatchers.materializeRule;
 import static ai.grakn.matcher.MovieMatchers.mirandaHeart;
 import static ai.grakn.matcher.MovieMatchers.missPiggy;
 import static ai.grakn.matcher.MovieMatchers.movie;
@@ -599,7 +600,7 @@ public class MatchQueryTest {
     public void testSelectRuleTypes() {
         MatchQuery query = qb.match(x.sub(RULE.getLabel().getValue()));
         assertThat(query, variable(x, containsInAnyOrder(
-                rule, aRuleType
+                rule, materializeRule, expectationRule
         )));
     }
 
@@ -858,7 +859,7 @@ public class MatchQueryTest {
     public void testMatchHas() {
         MatchQuery query = qb.match(x.has("name"));
         assertThat(query, variable(x, containsInAnyOrder(
-                person, language, genre, aRuleType, cluster, character
+                person, language, genre, cluster, character
         )));
     }
 
