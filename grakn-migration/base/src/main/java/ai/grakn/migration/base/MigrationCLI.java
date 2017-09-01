@@ -168,7 +168,7 @@ public class MigrationCLI {
         // check file exists
         File configuration = new File(path);
         if(!configuration.exists()){
-            throw new RuntimeException("Could not find configuration file "+ path);
+            throw new IllegalArgumentException("Could not find configuration file "+ path);
         }
 
         try (InputStreamReader reader = new InputStreamReader(new FileInputStream(configuration), Charset.defaultCharset())){
