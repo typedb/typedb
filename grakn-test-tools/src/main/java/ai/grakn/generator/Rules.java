@@ -22,9 +22,6 @@ package ai.grakn.generator;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.QueryBuilder;
-import com.google.common.collect.ImmutableSet;
-
-import java.util.Collection;
 
 /**
  * A generator that produces random {@link Rule}s
@@ -47,10 +44,5 @@ public class Rules extends AbstractSchemaConceptGenerator<Rule> {
     @Override
     protected Rule metaSchemaConcept() {
         return tx().admin().getMetaRule();
-    }
-
-    @Override
-    protected Collection<Rule> otherMetaSchemaConcepts() {
-        return ImmutableSet.of(tx().admin().getMetaRule());
     }
 }

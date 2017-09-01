@@ -185,20 +185,20 @@ public class GraknTxPutPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRuleType_CreateATypeWithSuperTypeRule(@Open GraknTx tx, @Unused Label label) {
+    public void whenCallingPutRule_CreateATypeWithSuperTypeRule(@Open GraknTx tx, @Unused Label label) {
         Rule rule = tx.putRule(label, tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
         assertEquals(tx.admin().getMetaRule(), rule.sup());
     }
 
     @Property
-    public void whenCallingPutRuleTypeWithAnExistingRuleTypeLabel_ItReturnsThatType(
+    public void whenCallingPutRuleWithAnExistingRuleTypeLabel_ItReturnsThatType(
             @Open GraknTx tx, @FromTx Rule rule) {
         Rule newType = tx.putRule(rule.getLabel(), tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
         assertEquals(rule, newType);
     }
 
     @Property
-    public void whenCallingPutRuleTypeWithAnExistingNonRuleTypeLabel_Throw(
+    public void whenCallingPutRuleWithAnExistingNonRuleTypeLabel_Throw(
             @Open GraknTx tx, @FromTx Type type) {
         assumeFalse(type.isRule());
 

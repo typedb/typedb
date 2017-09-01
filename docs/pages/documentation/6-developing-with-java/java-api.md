@@ -291,8 +291,8 @@ rule2then = and(tx.graql().parsePatterns("(ancestor: $p, descendant: $d) isa Anc
 We conclude the rule creation with defining the rules from their constituent patterns:
 
 ```java
-Rule rule1 = tx.putRuleType("R1", rule1when, rule1then);
-Rule rule2 = tx.putRuleType("R2", rule2when, rule2then);
+Rule rule1 = tx.putRule("R1", rule1when, rule1then);
+Rule rule2 = tx.putRule("R2", rule2when, rule2then);
 ```
 
 

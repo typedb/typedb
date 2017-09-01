@@ -118,6 +118,14 @@ public class ConceptPropertyTest {
     }
 
     @Property
+    public void whenConceptIsNotARule_TheConceptCannotBeConvertedToARule(Concept concept) {
+        assumeFalse(concept.isRule());
+        exception.expect(GraknTxOperationException.class);
+        //noinspection ResultOfMethodCallIgnored
+        concept.asRule();
+    }
+
+    @Property
     public void whenCallingDelete_TheConceptIsNoLongerInTheGraph(
             @Open GraknTx graph, @NonMeta @FromTx Concept concept) {
         assumeDeletable(graph, concept);
