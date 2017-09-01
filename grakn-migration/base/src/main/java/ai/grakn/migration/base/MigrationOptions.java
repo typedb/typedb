@@ -52,6 +52,7 @@ public class MigrationOptions {
         options.addOption("n", "no", false, "Write to standard out.");
         options.addOption("c", "config", true, "Configuration file.");
         options.addOption("r", "retry", true, "Retry sending tasks if engine is not available");
+        options.addOption("d", "debug", false, "Immediately stop and fail migration if an error occurs");
     }
 
     public boolean isVerbose() {
@@ -64,6 +65,10 @@ public class MigrationOptions {
 
     public boolean isNo() {
         return command.hasOption("n");
+    }
+
+    public boolean isDebug(){
+        return command.hasOption("d");
     }
 
     public String getKeyspace() {

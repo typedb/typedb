@@ -18,21 +18,6 @@
 
 package ai.grakn.client;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
-import static ai.grakn.util.REST.Request.BATCH_NUMBER;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
-import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
-import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import com.github.rholder.retry.WaitStrategies;
-import static java.lang.String.format;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import static java.util.stream.Collectors.toList;
-
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.graql.Query;
@@ -41,6 +26,11 @@ import ai.grakn.util.REST;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
+import com.github.rholder.retry.WaitStrategies;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,15 +46,27 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static ai.grakn.util.REST.Request.BATCH_NUMBER;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
+import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Client to batch load qraql queries into Grakn that mutate the graph.
@@ -223,6 +225,7 @@ public class BatchMutatorClient {
      */
     public void waitToFinish(){
         flush();
+
         while(!futures.values().stream().allMatch(CompletableFuture::isDone)
                 && blocker.availablePermits() != blockerSize){
             try {
@@ -231,6 +234,15 @@ public class BatchMutatorClient {
                 LOG.error(e.getMessage());
             }
         }
+
+        for (CompletableFuture completableFuture : futures.values()) {
+            try {
+                completableFuture.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        }
+
         LOG.info("All tasks completed");
     }
 
@@ -281,10 +293,6 @@ public class BatchMutatorClient {
 
         CompletableFuture<Json> status = makeTaskCompletionFuture(taskId);
 
-        // Add this status to the set of completable futures
-        // TODO: use an async client
-        futures.put(status.hashCode(), status);
-
         status
         // Unblock and log errors when task completes
         .handle((result, error) -> {
@@ -298,18 +306,21 @@ public class BatchMutatorClient {
             return result;
         })
         // Execute registered completion function
-        .thenAcceptAsync(onCompletionOfTask)
+        .thenAcceptAsync(onCompletionOfTask);
         // Log errors in completion function
-        .exceptionally(t -> {
+        /*.exceptionally(t -> {
             LOG.error("Error in callback for mutator", t);
             throw new RuntimeException(t);
-        });
+        });*/
 
+        // Add this status to the set of completable futures
+        // TODO: use an async client
+        futures.put(status.hashCode(), status);
     }
 
     private void unblock(CompletableFuture<Json> status){
         blocker.release();
-        futures.remove(status.hashCode());
+        //futures.remove(status.hashCode());
     }
 
     /**

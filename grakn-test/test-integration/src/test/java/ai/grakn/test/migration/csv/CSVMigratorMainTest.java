@@ -20,6 +20,7 @@ package ai.grakn.test.migration.csv;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.SampleKBLoader;
@@ -29,6 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemErrRule;
 import org.junit.contrib.java.lang.system.SystemOutRule;
+import org.junit.rules.ExpectedException;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
@@ -43,6 +45,7 @@ public class CSVMigratorMainTest {
 
     private final String dataFile = getFile("csv", "pets/data/pets.csv").getAbsolutePath();
     private final String templateFile = getFile("csv", "pets/template.gql").getAbsolutePath();
+    private final String templateCorruptFile = getFile("csv", "pets/template-corrupt.gql").getAbsolutePath();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -53,12 +56,22 @@ public class CSVMigratorMainTest {
     @Rule
     public final SystemErrRule sysErr = new SystemErrRule().enableLog();
 
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
     @Before
     public void setup(){
         keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
 
         load(factory, getFile("csv", "pets/schema.gql"));
+    }
+
+    @Test
+    public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsSet_Throw(){
+        expectedException.expect(GraknBackendException.class);
+        run("-d", "-u", engine.uri(), "-input", dataFile, "-template", templateCorruptFile, "-keyspace", keyspace);
+        System.out.println();
     }
 
     @Test

@@ -31,14 +31,10 @@ import java.util.Optional;
 public class Main {
 
     public static void main(String[] args){
-        try{
-            MigrationCLI.init(args, KBWriterOptions::new).stream()
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .forEach(Main::runExport);
-        } catch (Throwable throwable){
-            System.err.println(throwable.getMessage());
-        }
+        MigrationCLI.init(args, KBWriterOptions::new).stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(Main::runExport);
     }
 
     private static void runExport(KBWriterOptions options) {
