@@ -143,6 +143,7 @@ public class GraknTxTest extends TxTestBase {
         Set<SchemaConcept> finalTypes = new HashSet<>();
         finalTypes.addAll(tx.getMetaConcept().subs().collect(Collectors.toSet()));
         finalTypes.add(tx.admin().getMetaRole());
+        finalTypes.add(tx.admin().getMetaRuleType());
 
         tx.abort();
 
