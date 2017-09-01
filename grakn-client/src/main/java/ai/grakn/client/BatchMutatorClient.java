@@ -235,12 +235,13 @@ public class BatchMutatorClient {
 
         for (CompletableFuture completableFuture : futures.values()) {
             try {
-                //TODO: Figure out why a null sometimes gets put in here
-                if(completableFuture != null) completableFuture.get();
+                completableFuture.get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
         }
+
+        futures.clear();
 
         System.out.println("All tasks completed");
     }
