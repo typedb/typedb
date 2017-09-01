@@ -65,6 +65,7 @@ import org.slf4j.LoggerFactory;
  * @author Felix Chapman, alexandraorth
  */
 public class TaskClient extends Client {
+
     private final Logger LOG = LoggerFactory.getLogger(TaskClient.class);
 
     private final HttpClient httpClient = HttpClients.createDefault();
@@ -88,7 +89,6 @@ public class TaskClient extends Client {
      * @param runAt Time at which the task should be executed
      * @param interval Interval at which the task should recur, can be null
      * @param configuration Data on which to execute the task
-     * @param wait
      * @return Identifier of the submitted task that will be executed on a server
      */
     public TaskId sendTask(Class<?> taskClass, String creator, Instant runAt, Duration interval,
@@ -97,9 +97,9 @@ public class TaskClient extends Client {
     }
 
     TaskId sendTask(String taskClass, String creator, Instant runAt, Duration interval,
-            Json configuration, long limit, boolean wait){
+            Json configuration, long limit, boolean wait) {
         try {
-            URIBuilder uri = new URIBuilder(TASKS )
+            URIBuilder uri = new URIBuilder(TASKS)
                     .setScheme(DEFAULT_SCHEME_NAME)
                     .setHost(host)
                     .setPort(port);
@@ -114,19 +114,22 @@ public class TaskClient extends Client {
                 taskBuilder.put(LIMIT_PARAM, Long.toString(limit));
             }
 
-            if (interval != null){
+            if (interval != null) {
                 taskBuilder.put(TASK_RUN_INTERVAL_PARAMETER, Long.toString(interval.toMillis()));
             }
 
             Json jsonTask = Json.make(taskBuilder.build());
             jsonTask.set(CONFIGURATION_PARAM, configuration);
 
-
             HttpPost httpPost = new HttpPost(uri.build());
             httpPost.setHeader(CONTENT_TYPE, APPLICATION_JSON.getMimeType());
             // This is a special case of sending a list of task
             // TODO update the client to support a list
-            httpPost.setEntity(new StringEntity(Json.object().set(TASK_RUN_WAIT_PARAMETER, String.valueOf(wait)).set(TASKS_PARAM, Json.array().add(jsonTask)).toString()));
+            httpPost.setEntity(new StringEntity(
+                    Json.object()
+                            .set(TASK_RUN_WAIT_PARAMETER, wait)
+                            .set(TASKS_PARAM, Json.array().add(jsonTask))
+                            .toString()));
 
             HttpResponse response = httpClient.execute(httpPost);
 
@@ -135,9 +138,9 @@ public class TaskClient extends Client {
             Json jsonResponse = asJsonHandler.handleResponse(response);
 
             return TaskId.of(jsonResponse.at(0).at("id").asString());
-        } catch (IOException e){
+        } catch (IOException e) {
             throw GraknBackendException.engineUnavailable(host, port, e);
-        } catch (URISyntaxException e){
+        } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }
@@ -149,7 +152,7 @@ public class TaskClient extends Client {
      * @return Status of the specified task
      * @throws GraknBackendException When the specified task has not yet been stored by the server
      */
-    public TaskStatus getStatus(TaskId id){
+    public TaskStatus getStatus(TaskId id) {
         try {
             URI uri = new URIBuilder(convert(GET, id))
                     .setScheme(DEFAULT_SCHEME_NAME)
@@ -162,7 +165,7 @@ public class TaskClient extends Client {
 
             // 404 Not found returned when task not yet stored
             boolean notFound = response.getStatusLine().getStatusCode() == SC_NOT_FOUND;
-            if(notFound){
+            if (notFound) {
                 throw GraknBackendException.stateStorage();
             }
 
@@ -171,15 +174,16 @@ public class TaskClient extends Client {
 
             Json jsonResponse = asJsonHandler.handleResponse(response);
             return TaskStatus.valueOf(jsonResponse.at("status").asString());
-        } catch (URISyntaxException e){
+        } catch (URISyntaxException e) {
             throw new RuntimeException(e);
-        } catch (IOException e){
+        } catch (IOException e) {
             throw GraknBackendException.engineUnavailable(host, port, e);
         }
     }
 
     /**
      * Stop a task using the given ID.
+     *
      * @param id the ID of the task to stop
      */
     public boolean stopTask(TaskId id) {
@@ -196,27 +200,28 @@ public class TaskClient extends Client {
 
             boolean isOk = isOk(response);
 
-            if(!isOk){
+            if (!isOk) {
                 LOG.error("Failed to stop task: " + asJsonHandler.handleResponse(response));
             }
 
             return isOk;
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
-        } catch (IOException e){
+        } catch (IOException e) {
             throw GraknBackendException.engineUnavailable(host, port, e);
         }
     }
 
-    private boolean isOk(HttpResponse response){
+    private boolean isOk(HttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();
         return statusCode == SC_OK || statusCode == SC_ACCEPTED;
     }
 
-    private void assertOk(HttpResponse response){
+    private void assertOk(HttpResponse response) {
         // 200 Only returned when request successfully completed
-        if(!isOk(response)){
-            throw new RuntimeException(format("Status %s returned from server", response.getStatusLine().getStatusCode()));
+        if (!isOk(response)) {
+            throw new RuntimeException(format("Status %s returned from server",
+                    response.getStatusLine().getStatusCode()));
         }
     }
 }

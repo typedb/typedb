@@ -57,7 +57,8 @@ import redis.clients.util.Pool;
  */
 public class RedisTaskManager implements TaskManager {
 
-    private final static Logger LOG = LoggerFactory.getLogger(RedisTaskManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RedisTaskManager.class);
+    private static final int TIMEOUT = 5;
     private final Redisq<Task> redisq;
     private final RedisTaskStorage taskStorage;
 
@@ -138,12 +139,13 @@ public class RedisTaskManager implements TaskManager {
 
     public void waitForTask(TaskId taskId)
             throws StateFutureInitializationException, ExecutionException, InterruptedException {
-        redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(), 1, TimeUnit.SECONDS).get();
+        redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(),
+                TIMEOUT, TimeUnit.SECONDS).get();
     }
 
     public void waitForTask(State state, TaskId taskId, long timeout, TimeUnit timeUnit)
             throws StateFutureInitializationException, ExecutionException, InterruptedException, TimeoutException {
-        redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(), 1, TimeUnit.SECONDS).get(timeout, timeUnit);
+        redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(), TIMEOUT, TimeUnit.SECONDS).get(timeout, timeUnit);
     }
 
     public Redisq getQueue() {

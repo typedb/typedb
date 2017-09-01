@@ -32,6 +32,7 @@ import ai.grakn.engine.util.ConcurrencyUtil;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
+import static ai.grakn.util.REST.Request.TASK_RUN_WAIT_PARAMETER;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.EXCEPTION;
 import static ai.grakn.util.REST.Response.Task.ID;
@@ -210,9 +211,9 @@ public class TasksController {
         }
         // TODO fix this in the client, it doesn't seem to work if it's passed as false
         boolean wait = true;
-//        if (requestBodyAsJson.has(TASK_RUN_WAIT_PARAMETER)) {
-//            wait = requestBodyAsJson.at(TASK_RUN_WAIT_PARAMETER).asBoolean();
-//        }
+        if (requestBodyAsJson.has(TASK_RUN_WAIT_PARAMETER)) {
+            wait = requestBodyAsJson.at(TASK_RUN_WAIT_PARAMETER).asBoolean();
+        }
         if (!requestBodyAsJson.has(REST.Request.TASKS_PARAM)) {
             LOG.error("Malformed request body: {}", requestBodyAsJson);
             throw GraknServerException.requestMissingBodyParameters(REST.Request.TASKS_PARAM);
