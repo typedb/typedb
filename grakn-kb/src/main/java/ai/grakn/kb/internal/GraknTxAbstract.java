@@ -266,15 +266,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATIONSHIP.getId(), Schema.MetaSchema.RELATIONSHIP.getLabel(), Schema.BaseType.RELATIONSHIP_TYPE);
             VertexElement resourceType = addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
             addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
-            VertexElement ruleType = addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
+            addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
 
             relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
             resourceType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-            ruleType.property(Schema.VertexProperty.IS_ABSTRACT, true);
             entityType.property(Schema.VertexProperty.IS_ABSTRACT, true);
 
             relationType.addEdge(type, Schema.EdgeLabel.SUB);
-            ruleType.addEdge(type, Schema.EdgeLabel.SUB);
             resourceType.addEdge(type, Schema.EdgeLabel.SUB);
             entityType.addEdge(type, Schema.EdgeLabel.SUB);
 
@@ -284,8 +282,9 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         //Copy entire schema to the graph cache. This may be a bad idea as it will slow down graph initialisation
         copyToCache(getMetaConcept());
 
-        //Role has to be copied separately due to not being connected to meta schema
+        //Role and rule have to be copied separately due to not being connected to meta schema
         copyToCache(getMetaRole());
+        copyToCache(getMetaRuleType());
 
         return schemaInitialised;
     }
@@ -638,7 +637,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public SchemaConcept getMetaConcept() {
+    public Type getMetaConcept() {
         return getSchemaConcept(Schema.MetaSchema.THING.getId());
     }
 

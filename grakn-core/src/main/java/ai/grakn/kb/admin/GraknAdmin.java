@@ -26,9 +26,9 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -90,7 +90,7 @@ public interface GraknAdmin {
      * @return The meta type -> type.
      */
     @CheckReturnValue
-    SchemaConcept getMetaConcept();
+    Type getMetaConcept();
 
     /**
      * Get the root of all {@link RelationshipType}.

@@ -312,9 +312,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
     }
 
     private Type type() {
-        // TODO: Revise this when meta concept is a type
-        Collection<? extends Type> candidates = tx.admin().getMetaConcept().subs().
-                map(Concept::asType).collect(toSet());
+        Collection<? extends Type> candidates = tx.admin().getMetaConcept().subs().collect(toSet());
         return random.choose(candidates);
     }
 
@@ -374,13 +372,12 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
         Set<SchemaConcept> allSchemaConcepts = new HashSet<>();
         allSchemaConcepts.addAll(graph.admin().getMetaConcept().subs().collect(toSet()));
         allSchemaConcepts.addAll(graph.admin().getMetaRole().subs().collect(toSet()));
+        allSchemaConcepts.addAll(graph.admin().getMetaRuleType().subs().collect(toSet()));
         return allSchemaConcepts;
     }
 
     public static Stream<? extends Thing> allInstancesFrom(GraknTx graph) {
-        // TODO: Revise this when meta concept is a type
-        return graph.admin().getMetaConcept().subs().
-                flatMap(element -> element.asType().instances());
+        return graph.admin().getMetaConcept().instances();
     }
 
     @Override
