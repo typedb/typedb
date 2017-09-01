@@ -83,7 +83,7 @@ public class TaskClientTest {
         TaskId identifier = client.sendTask(taskClass, creator, runAt, interval, configuration,
                 false);
 
-        verify(manager).addTask(argThat(argument ->
+        verify(manager).runTask(argThat(argument ->
                 argument.getId().equals(identifier)
                 && argument.taskClass().equals(taskClass)
                 && argument.schedule().runAt().equals(runAt)

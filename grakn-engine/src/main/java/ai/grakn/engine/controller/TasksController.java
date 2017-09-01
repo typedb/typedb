@@ -201,8 +201,6 @@ public class TasksController {
             @ApiImplicitParam(name = REST.Request.TASKS_PARAM, value = "JSON Array containing an ordered list of task parameters and comfigurations.", required = true, dataType = "List", paramType = "body")
     })
     private Json createTasks(Request request, Response response) {
-        String waitString = request.queryParams("wait");
-        boolean wait = waitString != null && waitString.equals("true");
 
         Json requestBodyAsJson = bodyAsJson(request);
         // This covers the previous behaviour. It looks like a quirk of the testing
@@ -210,6 +208,11 @@ public class TasksController {
         if (requestBodyAsJson.has("value")) {
             requestBodyAsJson = requestBodyAsJson.at("value");
         }
+        // TODO fix this in the client, it doesn't seem to work if it's passed as false
+        boolean wait = true;
+//        if (requestBodyAsJson.has(TASK_RUN_WAIT_PARAMETER)) {
+//            wait = requestBodyAsJson.at(TASK_RUN_WAIT_PARAMETER).asBoolean();
+//        }
         if (!requestBodyAsJson.has(REST.Request.TASKS_PARAM)) {
             LOG.error("Malformed request body: {}", requestBodyAsJson);
             throw GraknServerException.requestMissingBodyParameters(REST.Request.TASKS_PARAM);
@@ -223,7 +226,7 @@ public class TasksController {
         final Timer.Context context = createTasksTimer.time();
         try {
             List<TaskStateWithConfiguration> taskStates = parseTasks(taskJsonList);
-            CompletableFuture<List<Json>> completableFuture = saveTasksInQueue(taskStates, wait);
+            CompletableFuture<List<Json>> completableFuture = executeTasks(taskStates, wait);
             try {
                 return buildResponseForTasks(response, responseJson, completableFuture);
             } catch (TimeoutException | InterruptedException e) {
@@ -281,7 +284,7 @@ public class TasksController {
         return taskStates;
     }
 
-    private CompletableFuture<List<Json>> saveTasksInQueue(
+    private CompletableFuture<List<Json>> executeTasks(
             List<TaskStateWithConfiguration> taskStates, boolean wait) {
         // Put the tasks in a persistent queue
         List<CompletableFuture<Json>> futures = taskStates.stream()
@@ -310,12 +313,15 @@ public class TasksController {
     private Json addTaskToManager(TaskStateWithConfiguration taskState, boolean wait) {
         Json singleTaskReturnJson = Json.object().set("index", taskState.getIndex());
         try {
+            TaskState state = taskState.getTaskState();
             if (wait) {
-                manager.runTask(taskState.getTaskState(), TaskConfiguration.of(taskState.getConfiguration()));
+                LOG.debug("Running task {}", state.getId());
+                manager.runTask(state, TaskConfiguration.of(taskState.getConfiguration()));
             } else {
-                manager.addTask(taskState.getTaskState(), TaskConfiguration.of(taskState.getConfiguration()));
+                LOG.debug("Adding to queue task {}", state.getId());
+                manager.addTask(state, TaskConfiguration.of(taskState.getConfiguration()));
             }
-            singleTaskReturnJson.set("id", taskState.getTaskState().getId().getValue());
+            singleTaskReturnJson.set("id", state.getId().getValue());
             singleTaskReturnJson.set("code", HttpStatus.SC_OK);
         } catch (Exception e) {
             LOG.error("Server error while adding the task", e);

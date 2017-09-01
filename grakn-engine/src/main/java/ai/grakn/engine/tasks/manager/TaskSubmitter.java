@@ -44,14 +44,10 @@ public interface TaskSubmitter {
     static TaskSubmitter getNoopTaskSubmitter() {
         return new TaskSubmitter() {
             @Override
-            public void addTask(TaskState taskState, TaskConfiguration configuration) {
-
-            }
+            public void addTask(TaskState taskState, TaskConfiguration configuration) {}
 
             @Override
-            public void runTask(TaskState taskState, TaskConfiguration configuration) {
-
-            }
+            public void runTask(TaskState taskState, TaskConfiguration configuration) {}
         };
     }
 }

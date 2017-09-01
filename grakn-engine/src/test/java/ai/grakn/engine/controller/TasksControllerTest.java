@@ -98,7 +98,7 @@ public class TasksControllerTest {
     public void afterSendingTask_ItReceivedByStorage(){
         send();
 
-        verify(manager, atLeastOnce()).addTask(
+        verify(manager, atLeastOnce()).runTask(
                 argThat(argument -> argument.taskClass().equals(ShortExecutionMockTask.class)), any());
     }
 
@@ -124,7 +124,7 @@ public class TasksControllerTest {
         defaultParams.put(TASK_RUN_AT_PARAMETER, Long.toString(runAt.toEpochMilli()));
         send(Collections.emptyMap(), defaultParams);
 
-        verify(manager).addTask(argThat(argument -> argument.schedule().runAt().equals(runAt)), any());
+        verify(manager).runTask(argThat(argument -> argument.schedule().runAt().equals(runAt)), any());
     }
 
     @Test
@@ -150,8 +150,8 @@ public class TasksControllerTest {
                 )
         );
 
-        verify(manager).addTask(argThat(argument -> argument.schedule().interval().isPresent()), any());
-        verify(manager).addTask(argThat(argument -> argument.schedule().isRecurring()), any());
+        verify(manager).runTask(argThat(argument -> argument.schedule().interval().isPresent()), any());
+        verify(manager).runTask(argThat(argument -> argument.schedule().isRecurring()), any());
     }
 
     @Test
@@ -197,21 +197,21 @@ public class TasksControllerTest {
     public void afterSendingTaskWithMissingPriority_TaskSubmittedWithDefaultLowPriority(){
         send();
 
-        verify(manager).addTask(argThat(argument -> argument.priority().equals(TaskState.Priority.LOW)), any());
+        verify(manager).runTask(argThat(argument -> argument.priority().equals(TaskState.Priority.LOW)), any());
     }
 
     @Test
     public void afterSendingTaskWithLowPriority_TaskSubmittedWithLowPriority(){
         send(TaskState.Priority.LOW);
 
-        verify(manager).addTask(argThat(argument -> argument.priority().equals(TaskState.Priority.LOW)), any());
+        verify(manager).runTask(argThat(argument -> argument.priority().equals(TaskState.Priority.LOW)), any());
     }
 
     @Test
     public void afterSendingTaskWithHighPriority_TaskSubmittedWithHighPriority(){
         send(TaskState.Priority.HIGH);
 
-        verify(manager).addTask(argThat(argument -> argument.priority().equals(TaskState.Priority.HIGH)), any());
+        verify(manager).runTask(argThat(argument -> argument.priority().equals(TaskState.Priority.HIGH)), any());
     }
 
     @Test
@@ -271,7 +271,7 @@ public class TasksControllerTest {
         Response response = send(Collections.emptyMap(), params, nOfTasks);
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
         verify(manager, times(nOfTasks))
-                .addTask(argThat(argument -> argument.priority().equals(TaskState.Priority.LOW)),
+                .runTask(argThat(argument -> argument.priority().equals(TaskState.Priority.LOW)),
                         any());
         assertThat(Json.read(response.getBody().asString()).asJsonList().stream()
                 .allMatch(e -> e.at("code").asInteger() == HttpStatus.SC_OK), equalTo(true));

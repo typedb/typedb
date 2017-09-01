@@ -104,11 +104,6 @@ public class TaskClient extends Client {
                     .setHost(host)
                     .setPort(port);
 
-            if (wait) {
-                // This tells the taskController on the engine to wait for the task to be executed
-                uri.setParameter(TASK_RUN_WAIT_PARAMETER, "true");
-            }
-
             Builder<String, String> taskBuilder = ImmutableMap.builder();
             taskBuilder.put(TASK_CLASS_NAME_PARAMETER, taskClass);
             taskBuilder.put(TASK_CREATOR_PARAMETER, creator);
@@ -131,7 +126,7 @@ public class TaskClient extends Client {
             httpPost.setHeader(CONTENT_TYPE, APPLICATION_JSON.getMimeType());
             // This is a special case of sending a list of task
             // TODO update the client to support a list
-            httpPost.setEntity(new StringEntity(Json.object().set(TASKS_PARAM, Json.array().add(jsonTask)).toString()));
+            httpPost.setEntity(new StringEntity(Json.object().set(TASK_RUN_WAIT_PARAMETER, String.valueOf(wait)).set(TASKS_PARAM, Json.array().add(jsonTask)).toString()));
 
             HttpResponse response = httpClient.execute(httpPost);
 
