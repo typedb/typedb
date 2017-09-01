@@ -169,14 +169,13 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     public void delete(){
         if(deletionAllowed()){
             //Force load of linked concepts whose caches need to be updated
-            //noinspection unchecked
-            cachedSuperType.get();
+            T superConcept = cachedSuperType.get();
 
             deleteNode();
 
             //Update neighbouring caches
             //noinspection unchecked
-            ((SchemaConceptImpl<SchemaConcept>) cachedSuperType.get()).deleteCachedDirectedSubType(getThis());
+            ((SchemaConceptImpl<SchemaConcept>) superConcept).deleteCachedDirectedSubType(getThis());
 
             //Clear internal caching
             txCacheClear();

@@ -88,4 +88,9 @@ interface RelationshipStructure extends ContainsTxCache {
      * Deletes the {@link VertexElement} or {@link EdgeElement} used to represent this {@link Relationship}
      */
     void delete();
+
+    /**
+     * Return whether the relationship has been deleted.
+     */
+    boolean isDeleted();
 }

@@ -56,6 +56,11 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     }
 
     @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        throw GraqlQueryException.defineUnsupportedProperty(getName());
+    }
+
+    @Override
     public Stream<VarPatternAdmin> getTypes() {
         return Stream.empty();
     }

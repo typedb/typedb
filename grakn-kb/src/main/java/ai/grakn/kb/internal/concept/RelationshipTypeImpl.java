@@ -133,13 +133,12 @@ public class RelationshipTypeImpl extends TypeImpl<RelationshipType, Relationshi
 
     @Override
     public void delete(){
-        //Force load the cache
-        cachedRelates.get();
+        //load the cache before deleting the concept
+        Set<Role> roles = cachedRelates.get();
 
         super.delete();
 
-        //Update the cache of the connected role types
-        cachedRelates.get().forEach(r -> {
+        roles.forEach(r -> {
             RoleImpl role = ((RoleImpl) r);
             vertex().tx().txCache().trackForValidation(role);
             ((RoleImpl) r).deleteCachedRelationType(this);

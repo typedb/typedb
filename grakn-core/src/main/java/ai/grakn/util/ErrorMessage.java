@@ -154,8 +154,6 @@ public enum ErrorMessage {
     INSERT_ABSTRACT_NOT_TYPE("the concept [%s] is not a type and cannot be set to abstract"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
 
-    DELETE_UNSUPPORTED_PROPERTY("deleting property '%s' is not supported"),
-
     INVALID_STATMENT("Value [%s] not of type [%s] in data [%s]"),
 
     //Templating

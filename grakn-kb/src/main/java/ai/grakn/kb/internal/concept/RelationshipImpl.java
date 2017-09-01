@@ -204,6 +204,11 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     }
 
     @Override
+    public boolean isDeleted() {
+        return structure().isDeleted();
+    }
+
+    @Override
     public int compareTo(Concept o) {
         return getId().compareTo(o.getId());
     }

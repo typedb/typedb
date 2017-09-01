@@ -9,7 +9,7 @@ queryListElem : matchQuery | insertOnly | simpleQuery ;
 
 queryEOF       : query EOF ;
 query          : matchQuery | insertQuery | simpleQuery ;
-simpleQuery    : defineQuery | deleteQuery | aggregateQuery | computeQuery ;
+simpleQuery    : defineQuery | undefineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
 matchQuery     : MATCH patterns                                   # matchBase
                | matchQuery 'select' variables                ';' # matchSelect
@@ -23,6 +23,7 @@ insertQuery    : matchInsert | insertOnly ;
 insertOnly     : INSERT varPatterns ;
 matchInsert    : matchQuery INSERT varPatterns ;
 defineQuery    : DEFINE varPatterns ;
+undefineQuery  : UNDEFINE varPatterns ;
 deleteQuery    : matchQuery 'delete' variables? ';' ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
@@ -137,6 +138,7 @@ SIZE           : 'size' ;
 MATCH          : 'match' ;
 INSERT         : 'insert' ;
 DEFINE         : 'define' ;
+UNDEFINE       : 'undefine' ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
 ORDER          : 'asc' | 'desc' ;

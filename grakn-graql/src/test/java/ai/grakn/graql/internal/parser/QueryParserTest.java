@@ -32,6 +32,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -78,6 +79,7 @@ import static ai.grakn.graql.Graql.parsePatterns;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.select;
 import static ai.grakn.graql.Graql.std;
+import static ai.grakn.graql.Graql.undefine;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Graql.withoutGraph;
 import static ai.grakn.graql.Order.desc;
@@ -396,6 +398,29 @@ public class QueryParserTest {
         );
 
         DefineQuery parsed = parse("define " +
+                "'pokemon' sub entity;" +
+                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
+                "evolves-from sub role;" +
+                "label \"evolves-to\" sub role;" +
+                "evolution relates evolves-from, relates evolves-to;" +
+                "pokemon plays evolves-from plays evolves-to has name;"
+        );
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void whenParsingUndefineQuery_ResultIsSameAsJavaGraql() {
+        UndefineQuery expected = undefine(
+                label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
+                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
+                label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                label("evolution").relates("evolves-from").relates("evolves-to"),
+                label("pokemon").plays("evolves-from").plays("evolves-to").has("name")
+        );
+
+        UndefineQuery parsed = parse("undefine " +
                 "'pokemon' sub entity;" +
                 "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
                 "evolves-from sub role;" +

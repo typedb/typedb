@@ -166,6 +166,11 @@ public class RelationshipEdge implements RelationshipStructure {
     }
 
     @Override
+    public boolean isDeleted() {
+        return edgeElement.isDeleted();
+    }
+
+    @Override
     public String toString(){
         return "ID [" + getId() + "] Type [" + type().getLabel() + "] Roles and Role Players: \n" +
                 "Role [" + ownerRole().getLabel() + "] played by [" + owner().getId() + "] \n" +
