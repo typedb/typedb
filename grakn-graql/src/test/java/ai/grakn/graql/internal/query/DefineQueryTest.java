@@ -295,7 +295,7 @@ public class DefineQueryTest {
     public void whenDefiningARule_TheRuleIsInTheKB() {
         Pattern when = qb.parsePattern("$x isa entity");
         Pattern then = qb.parsePattern("$x isa entity");
-        VarPattern vars = label("my-rule").isa(label(RULE.getLabel())).when(when).then(then);
+        VarPattern vars = label("my-rule").sub(label(RULE.getLabel())).when(when).then(then);
         qb.define(vars).execute();
 
         assertNotNull(movies.tx().getRuleType("my-rule"));
@@ -364,14 +364,14 @@ public class DefineQueryTest {
     public void whenDefiningRuleWithoutWhen_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("when")));
-        qb.define(var().sub(label(RULE.getLabel())).then(var("x").isa("movie"))).execute();
+        qb.define(label("a-rule").sub(label(RULE.getLabel())).then(var("x").isa("movie"))).execute();
     }
 
     @Test
     public void whenDefiningRuleWithoutThen_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("then")));
-        qb.define(var().sub(label(RULE.getLabel())).when(var("x").isa("movie"))).execute();
+        qb.define(label("a-rule").sub(label(RULE.getLabel())).when(var("x").isa("movie"))).execute();
     }
 
     @Test
