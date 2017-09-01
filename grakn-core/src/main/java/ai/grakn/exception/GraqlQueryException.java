@@ -265,6 +265,10 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(reasonerQuery));
     }
 
+    public static GraqlQueryException nonGroundNeqPredicate(ReasonerQuery reasonerQuery) {
+        return new GraqlQueryException(ErrorMessage.NON_GROUND_NEQ_PREDICATE.getMessage(reasonerQuery));
+    }
+
     public static GraqlQueryException ruleCreationArityMismatch() {
         return new GraqlQueryException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
     }
