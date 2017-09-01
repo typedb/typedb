@@ -24,7 +24,6 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
@@ -48,7 +47,6 @@ public class MovieKB extends TestKB {
     private static Role productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
     private static Role genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
     private static Role work, author;
-    private static Rule aRule;
 
     private static Thing godfather, theMuppets, heat, apocalypseNow, hocusPocus, spy, chineseCoffee;
     private static Thing marlonBrando, alPacino, missPiggy, kermitTheFrog, martinSheen, robertDeNiro, judeLaw;
