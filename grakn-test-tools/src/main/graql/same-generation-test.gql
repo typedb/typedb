@@ -39,6 +39,8 @@ $peter isa person, has name "peter";
 (parent: $john, child: $peter) isa Parent;
 (parent: $john, child: $bill) isa Parent;
 
+define
+
 ####################################################
 ##################RULES#############################
 ####################################################

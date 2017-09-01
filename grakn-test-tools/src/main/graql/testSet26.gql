@@ -30,11 +30,9 @@ relation3 sub relationship
 res1 sub attribute datatype string;
 res2 sub attribute datatype string;
 
-insert
-
 #Rules
 
-rule sub rule
+my-rule sub rule
     when{
         $b isa entity2;
         $b has res1 'value';
@@ -55,6 +53,7 @@ dummyRule sub rule
         (role1: $p, role2: $c) isa relation1;
     };
 
+insert
 
 #Data
 

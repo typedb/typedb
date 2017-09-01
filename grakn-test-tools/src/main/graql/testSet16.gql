@@ -16,8 +16,6 @@ relation1 sub relationship
 #Resources
 res1 sub attribute datatype string;
 
-insert
-
 #Rules
 
 rule-1 sub rule
@@ -28,6 +26,8 @@ when {
 then {
     $z has res1 $y;
 };
+
+insert
 
 #Data
 

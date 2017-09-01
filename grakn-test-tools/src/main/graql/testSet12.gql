@@ -25,8 +25,6 @@ relation3 sub relationship
 	relates role1
 	relates role2;
 
-insert
-
 #Rules
 
 rule-1 sub rule
@@ -61,6 +59,8 @@ rule-4 sub rule
 	then {
 		(role1:$x, role2:$y) isa relation3;
 	};
+
+insert
 
 #Data
 

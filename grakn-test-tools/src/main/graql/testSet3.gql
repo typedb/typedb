@@ -5,8 +5,6 @@ define
 entity1 sub entity;
 entity2 sub entity;
 
-insert
-
 #Rules
 
 rule-1 sub rule
@@ -17,6 +15,7 @@ rule-1 sub rule
 		$y isa entity2;
 	};
 
+insert
 
 #Data
 

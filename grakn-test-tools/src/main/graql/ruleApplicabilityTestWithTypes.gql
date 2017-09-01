@@ -41,8 +41,6 @@ relation2 sub relationship
     relates role2
     relates role3;
 
-insert
-
 #Rules
 
 rule-1 sub rule

@@ -16,8 +16,6 @@ res-double sub attribute datatype double;
 res-long sub attribute datatype long;
 res-boolean sub attribute datatype boolean;
 
-insert
-
 #Rules
 
 rule-1 sub rule

@@ -23,8 +23,6 @@ holds sub relationship
 
 name sub attribute datatype string;
 
-insert
-
 rule-1 sub rule
     when {
         $st isa state;
@@ -35,6 +33,8 @@ rule-1 sub rule
     then{
         (related-state: $st) isa holds;
     };
+
+insert
 
 $s1 isa state, has name 's1';
 $s2 isa state, has name 's2';

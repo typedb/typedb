@@ -20,8 +20,6 @@ relation1 sub relationship
 	plays role1
 	plays role2;
 
-insert
-
 #Rules
 
 rule-1 sub rule
@@ -33,6 +31,8 @@ rule-1 sub rule
 		(role1:$x, role2:$z) isa relation1;
 	};
 
+
+insert
 
 #Data
 

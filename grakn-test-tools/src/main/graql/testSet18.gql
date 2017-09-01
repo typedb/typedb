@@ -6,8 +6,6 @@ entity1 sub entity
 #Resources
 res1 sub attribute datatype string;
 
-insert
-
 #Rules
 
 rule-1 sub rule
@@ -17,6 +15,8 @@ when {
 then {
     $x has res1 'value';
 };
+
+insert
 
 #Data
 $x isa entity1;

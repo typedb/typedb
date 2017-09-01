@@ -20,5 +20,7 @@ then {
     $x has res2 true;
 };
 
+insert
+
 #Data
 $x isa sub-entity has res1 1;

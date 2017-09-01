@@ -26,8 +26,6 @@ relation2 sub relationship
 
 name sub attribute datatype string;
 
-insert
-
 #Rules
 
 rule-1 sub rule
@@ -49,6 +47,9 @@ rule-2 sub rule
     then {
     	(role1:$x, role2:$y) isa relation2;
     };
+
+insert
+
 #Data
 
 $x isa subEntity1, has name "a";

@@ -6,8 +6,6 @@ entity1 sub entity
 #Resources
 res1 sub attribute datatype string;
 
-insert
-
 #Rules
 
 rule-1 sub rule
@@ -18,6 +16,8 @@ rule-1 sub rule
 	then {
 		$y has res1 $r1;
 	};
+
+insert
 
 #Data
 

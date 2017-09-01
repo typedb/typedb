@@ -20,8 +20,6 @@ relation1 sub relationship
 
 name sub attribute datatype string;
 
-insert
-
 #Rules
 
 rule-1 sub rule
@@ -32,6 +30,8 @@ rule-1 sub rule
 	then {
 		(role1:$x, role2:$y) isa relation1;
 	};
+
+insert
 
 #Data
 

@@ -21,8 +21,6 @@ rel-from sub role;
 rel-to sub role;
 name sub attribute datatype string;
 
-insert
-
 rule-1 sub rule
 when {
     (rel-from:$x, rel-to:$y) isa horizontal;

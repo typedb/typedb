@@ -28,8 +28,6 @@ message-succession sub relationship
 
 creation-date sub attribute datatype long;
 
-insert
-
 #Rules
 
 rule2 sub rule
@@ -43,6 +41,8 @@ rule2 sub rule
     then {
         (predecessor:$s, successor:$r) isa message-succession;
     };
+
+insert
 
 #Data
 

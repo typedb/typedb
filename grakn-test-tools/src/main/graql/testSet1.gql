@@ -27,8 +27,6 @@ relation2 sub relationship
 	relates role1
 	relates role2;
 
-insert
-
 #Rules
 
 rule-1 sub rule
@@ -47,6 +45,8 @@ rule-2 sub rule
     then {
         (role1: $c, role2: $op) isa relation1;
     };
+
+insert
 
 #Data
 

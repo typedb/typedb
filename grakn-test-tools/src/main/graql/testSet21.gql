@@ -6,8 +6,6 @@ entity1 sub entity;
 sub-entity1 sub entity1;
 entity2 sub entity;
 
-insert
-
 #Rules
 
 rule-1 sub rule
@@ -17,6 +15,8 @@ rule-1 sub rule
 	then {
 		$x isa sub-entity1;
 	};
+
+insert
 
 #Data
 
