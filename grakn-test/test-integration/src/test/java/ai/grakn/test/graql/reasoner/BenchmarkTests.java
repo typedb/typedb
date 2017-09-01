@@ -87,7 +87,7 @@ public class BenchmarkTests {
         GraknTx graph = sampleKB.tx();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
-        String queryString = "match (P-from: $x, P-to: $y) isa P;";
+        String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
         GetQuery query = iqb.parse(queryString);
 
         startTime = System.currentTimeMillis();
@@ -127,10 +127,10 @@ public class BenchmarkTests {
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
 
-        String queryString = "match (Q-from: $x, Q-to: $y) isa Q;";
+        String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
         GetQuery query = iqb.parse(queryString);
 
-        String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a';";
+        String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get;";
         GetQuery query2 = iqb.parse(queryString2);
 
         startTime = System.currentTimeMillis();
@@ -195,16 +195,16 @@ public class BenchmarkTests {
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
 
         //full result
-        String queryString = "match (Q-from: $x, Q-to: $y) isa Q;";
+        String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
         GetQuery query = iqb.parse(queryString);
 
         //with specific resource
-        String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a';";
+        String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get;";
         GetQuery query2 = iqb.parse(queryString2);
 
         //with substitution
-        Concept id = iqb.<GetQuery>parse("match $x has index 'a';").execute().iterator().next().get("x");
-        String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id '" + id.getId().getValue() + "';";
+        Concept id = iqb.<GetQuery>parse("match $x has index 'a'; get;").execute().iterator().next().get("x");
+        String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id '" + id.getId().getValue() + "'; get;";
         GetQuery query3 = iqb.parse(queryString3);
 
         startTime = System.currentTimeMillis();
@@ -265,7 +265,7 @@ public class BenchmarkTests {
         GraknTx graph = sampleKB.tx();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
-        String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal;";
+        String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
         GetQuery query = iqb.parse(queryString);
 
         startTime = System.currentTimeMillis();

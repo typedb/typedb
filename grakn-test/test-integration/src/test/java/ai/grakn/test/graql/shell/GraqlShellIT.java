@@ -213,11 +213,11 @@ public class GraqlShellIT {
     @Test
     public void testMatch() throws Exception {
         String[] result = runShellWithoutErrors(
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";\nexit"
+                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;\nexit"
         ).split("\r\n?|\n");
 
         // Make sure we find a few results (don't be too fussy about the output here)
-        assertEquals(">>> match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", result[4]);
+        assertEquals(">>> match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", result[4]);
         assertTrue(result.length > 5);
     }
 
@@ -284,7 +284,7 @@ public class GraqlShellIT {
 
     @Test
     public void testAutocompleteFill() throws Exception {
-        String result = runShellWithoutErrors("match $x sub thin\t;\n");
+        String result = runShellWithoutErrors("match $x sub thin\t; get;\n");
         assertThat(result, containsString(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()));
     }
 
@@ -300,7 +300,7 @@ public class GraqlShellIT {
                 "insert $my-rule isa inference-rule when {$x isa man;} then {$x isa person;};",
                 anything(),
                 "commit",
-                "match isa person, has name $x;"
+                "match isa person, has name $x; get;"
                 // No results
         );
     }
@@ -314,12 +314,12 @@ public class GraqlShellIT {
                 anything(),
                 "insert has name 'felix' isa man;",
                 anything(),
-                "match isa person, has name $x;",
+                "match isa person, has name $x; get;",
                 // No results
                 "insert $my-rule isa inference-rule when {$x isa man;} then {$x isa person;};",
                 anything(),
                 "commit",
-                "match isa person, has name $x;",
+                "match isa person, has name $x; get;",
                 containsString("felix") // Results after result is added
         );
     }
@@ -360,7 +360,7 @@ public class GraqlShellIT {
     @Test
     public void testLimit() throws Exception {
         assertShellMatches(
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; limit 1;",
+                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; limit 1; get;",
                 anything() // Only one result
         );
     }
@@ -368,7 +368,7 @@ public class GraqlShellIT {
     @Test
     public void testGraqlOutput() throws Exception {
         String result = runShellWithoutErrors(
-                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "graql"
+                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", "-o", "graql"
         );
         assertThat(result, allOf(containsString("$x"), containsString(Schema.MetaSchema.ENTITY.getLabel().getValue())));
     }
@@ -376,7 +376,7 @@ public class GraqlShellIT {
     @Test
     public void testJsonOutput() throws Exception {
         String[] result = runShellWithoutErrors(
-                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "json"
+                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", "-o", "json"
         ).split("\n");
         assertTrue("expected more than 5 results: " + Arrays.toString(result), result.length > 5);
         Json json = Json.read(result[0]);
@@ -388,7 +388,7 @@ public class GraqlShellIT {
     @Test
     public void testHALOutput() throws Exception {
         String[] result = runShellWithoutErrors(
-                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "hal"
+                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", "-o", "hal"
         ).split("\n");
         assertTrue("expected more than 5 results: " + Arrays.toString(result), result.length > 5);
         Json json = Json.read(result[0]);
@@ -450,7 +450,7 @@ public class GraqlShellIT {
                     "define X sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; insert val '" + value + "' isa X;",
                     anything(),
                     anything(),
-                    "match $x isa X;",
+                    "match $x isa X; get;",
                     allOf(containsString("$x"), containsString(value))
             );
         } finally {
@@ -495,7 +495,7 @@ public class GraqlShellIT {
                 "define X sub entity; R sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; X has R; insert isa X has R 'foo';",
                 anything(),
                 anything(),
-                "match $x isa X;",
+                "match $x isa X; get;",
                 allOf(containsString("id"), not(containsString("\"foo\"")))
         );
     }
@@ -507,7 +507,7 @@ public class GraqlShellIT {
                 anything(),
                 anything(),
                 "display R;",
-                "match $x isa X;",
+                "match $x isa X; get;",
                 allOf(containsString("id"), containsString("\"foo\""))
         );
     }
@@ -518,7 +518,7 @@ public class GraqlShellIT {
                 "define my-type sub entity;",
                 is("{}"),
                 "commit",
-                "match $x sub entity;",
+                "match $x sub entity; get;",
                 containsString("entity"),
                 containsString("entity"),
                 "clean",
@@ -526,10 +526,10 @@ public class GraqlShellIT {
                 is("Type 'confirm' to continue."),
                 "confirm",
                 is("Cleaning..."),
-                "match $x sub entity;",
+                "match $x sub entity; get;",
                 containsString("entity"),
                 "rollback",
-                "match $x sub entity;",
+                "match $x sub entity; get;",
                 containsString("entity")
         );
     }
@@ -539,7 +539,7 @@ public class GraqlShellIT {
         assertShellMatches(
                 "define my-type sub entity;",
                 is("{}"),
-                "match $x sub entity;",
+                "match $x sub entity; get;",
                 containsString("entity"),
                 containsString("entity"),
                 "clean",
@@ -547,7 +547,7 @@ public class GraqlShellIT {
                 is("Type 'confirm' to continue."),
                 "n",
                 is("Cancelling clean."),
-                "match $x sub entity;",
+                "match $x sub entity; get;",
                 containsString("entity"),
                 containsString("entity"),
                 "clean",
@@ -555,7 +555,7 @@ public class GraqlShellIT {
                 is("Type 'confirm' to continue."),
                 "no thanks bad idea thanks for warning me",
                 is("Cancelling clean."),
-                "match $x sub entity;",
+                "match $x sub entity; get;",
                 containsString("entity"),
                 containsString("entity")
         );
@@ -564,7 +564,7 @@ public class GraqlShellIT {
     @Test
     public void testExecuteMultipleQueries() throws Exception {
         assertShellMatches(
-                "define X sub entity; insert $x isa X; match $y isa X; match $y isa X; aggregate count;",
+                "define X sub entity; insert $x isa X; match $y isa X; get; match $y isa X; aggregate count;",
                 // Make sure we see results from all four queries
                 containsString("{}"),
                 containsString("$x"),
@@ -646,7 +646,7 @@ public class GraqlShellIT {
 
     @Test
     public void whenErrorDoesNotOccurs_Return0() throws Exception {
-        ShellResponse response = runShell("match $x sub entity;\n");
+        ShellResponse response = runShell("match $x sub entity; get;\n");
         assertEquals(0, response.exitCode());
     }
 
