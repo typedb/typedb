@@ -209,7 +209,7 @@ public class BatchMutatorClient {
     /**
      * Load any remaining batches in the queue.
      */
-    public void flush(){
+    private void flush(){
         sendQueriesWhenBatchLargerThanValue(0);
     }
 
@@ -226,6 +226,7 @@ public class BatchMutatorClient {
     public void waitToFinish(){
         flush();
 
+        //TODO: Check if this active block is actually required
         while(!futures.values().stream().allMatch(CompletableFuture::isDone)
                 && blocker.availablePermits() != blockerSize){
             try {
@@ -298,7 +299,7 @@ public class BatchMutatorClient {
         CompletableFuture<Void> newStatus = status
                 // Unblock and log errors when task completes
                 .handle((result, error) -> {
-                    unblock(status);
+                    unblock();
 
                     // Log any errors
                     if (error != null) {
@@ -312,17 +313,10 @@ public class BatchMutatorClient {
 
         // TODO: use an async client
         futures.put(newStatus.hashCode(), newStatus);
-
-        // Log errors in completion function
-        /*.exceptionally(t -> {
-            LOG.error("Error in callback for mutator", t);
-            throw new RuntimeException(t);
-        });*/
     }
 
-    private void unblock(CompletableFuture<Json> status){
+    private void unblock(){
         blocker.release();
-        //futures.remove(status.hashCode());
     }
 
     /**

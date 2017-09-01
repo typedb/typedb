@@ -25,6 +25,7 @@ usage: migration.sh owl -input <arg> -keyspace <arg> [-help] [-uri <arg>] [-verb
  -k,--keyspace <arg>   Grakn knowledge base. Required.
  -u,--uri <arg>        Location of Grakn Engine.
  -v,--verbose          Print counts of migrated data.
+ -d,--debug            Migration immediatly stops if any transaction fails
 ```
 
 Please note: `-no` and `-retry` are not supported by OWL at the moment.
