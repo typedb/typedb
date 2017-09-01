@@ -28,7 +28,6 @@ import java.util.List;
  *
  * @param <V> nodes
  * @author Jason Liu
- * @author sthomson@cs.cmu.edu
  */
 public class ExclusiveEdge<V> implements Comparable<ExclusiveEdge<V>> {
     public final DirectedEdge<V> edge;
