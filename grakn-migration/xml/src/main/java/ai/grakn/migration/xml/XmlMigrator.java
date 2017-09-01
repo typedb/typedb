@@ -20,9 +20,19 @@ package ai.grakn.migration.xml;
 
 import ai.grakn.migration.base.MigrationCLI;
 import ai.grakn.migration.xml.XmlSchema.TypeInfo;
-
 import com.google.common.collect.Sets;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FilenameFilter;
@@ -41,19 +51,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -68,8 +65,8 @@ public class XmlMigrator implements AutoCloseable {
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .forEach(XmlMigrator::runXml);
-        } catch (Throwable throwable){
-            System.err.println(throwable.getMessage());
+        } catch (IllegalArgumentException e){
+            System.err.println(e.getMessage());
         }
     }
     

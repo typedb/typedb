@@ -57,13 +57,13 @@ public class CSVMigrator implements AutoCloseable {
     private final Reader reader;
 
     public static void main(String[] args) {
-        try {
+        try{
             MigrationCLI.init(args, CSVMigrationOptions::new).stream()
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .forEach(CSVMigrator::runCSV);
-        } catch(Throwable e){
-            System.out.println("ERROR GOT HERE");
+        } catch (IllegalArgumentException e){
+            System.err.println(e.getMessage());
         }
     }
 

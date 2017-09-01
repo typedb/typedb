@@ -45,10 +45,14 @@ import static ai.grakn.migration.base.MigrationCLI.printWholeCompletionMessage;
 public class Main {
 
     public static void main(String[] args) {
-        MigrationCLI.init(args, OwlMigrationOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(Main::runOwl);
+        try{
+            MigrationCLI.init(args, OwlMigrationOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(Main::runOwl);
+        } catch (IllegalArgumentException e){
+            System.err.println(e.getMessage());
+        }
     }
 
     private static void runOwl(OwlMigrationOptions options){

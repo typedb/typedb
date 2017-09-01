@@ -134,7 +134,7 @@ public class MigrationOptions {
             command = parser.parse(options, args);
             numberOptions = command.getOptions().length;
         } catch (ParseException e){
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 

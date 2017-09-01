@@ -239,7 +239,7 @@ public class BatchMutatorClient {
             try {
                 completableFuture.get();
             } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }
 
@@ -293,29 +293,31 @@ public class BatchMutatorClient {
 
         CompletableFuture<Json> status = makeTaskCompletionFuture(taskId);
 
-        status
-        // Unblock and log errors when task completes
-        .handle((result, error) -> {
-            unblock(status);
+        // Add this status to the set of completable futures
 
-            // Log any errors
-            if(error != null){
-                LOG.error("Error while executing mutator", error);
-            }
+        CompletableFuture<Void> newStatus = status
+                // Unblock and log errors when task completes
+                .handle((result, error) -> {
+                    unblock(status);
 
-            return result;
-        })
-        // Execute registered completion function
-        .thenAcceptAsync(onCompletionOfTask);
+                    // Log any errors
+                    if (error != null) {
+                        LOG.error("Error while executing mutator", error);
+                    }
+
+                    return result;
+                })
+                // Execute registered completion function
+                .thenAcceptAsync(onCompletionOfTask);
+
+        // TODO: use an async client
+        futures.put(newStatus.hashCode(), newStatus);
+
         // Log errors in completion function
         /*.exceptionally(t -> {
             LOG.error("Error in callback for mutator", t);
             throw new RuntimeException(t);
         });*/
-
-        // Add this status to the set of completable futures
-        // TODO: use an async client
-        futures.put(status.hashCode(), status);
     }
 
     private void unblock(CompletableFuture<Json> status){
