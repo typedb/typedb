@@ -25,6 +25,7 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
+import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
@@ -35,7 +36,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.match;
+import static ai.grakn.graql.Graql.undefine;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.matcher.GraknMatchers.variable;
 import static ai.grakn.matcher.MovieMatchers.containsAllMovies;
@@ -89,6 +92,15 @@ public class QueryBuilderTest {
         query.execute();
 
         assertNotExists(movieKB.tx(), var().has("title", "123"));
+    }
+
+    @Test
+    public void whenBuildingUndefineQueryWithGraphLast_ItExecutes() {
+        movieKB.tx().graql().define(label("yes").sub("entity")).execute();
+
+        UndefineQuery query = undefine(label("yes").sub("entity")).withTx(movieKB.tx());
+        query.execute();
+        assertNotExists(movieKB.tx(), label("yes").sub("entity"));
     }
 
     @Test

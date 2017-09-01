@@ -118,6 +118,10 @@ public class QueryOperationExecutor {
         return create(patterns, graph, ExecutionType.DEFINE).insertAll(new QueryAnswer());
     }
 
+    static void undefineAll(ImmutableList<VarPatternAdmin> patterns, GraknTx tx) {
+        create(patterns, tx, ExecutionType.UNDEFINE).insertAll(new QueryAnswer());
+    }
+
     private static QueryOperationExecutor create(
             Collection<VarPatternAdmin> patterns, GraknTx graph, ExecutionType executionType
     ) {
@@ -457,6 +461,11 @@ public class QueryOperationExecutor {
         DEFINE {
             PropertyExecutor executor(VarPropertyInternal property, Var var) {
                 return property.define(var);
+            }
+        },
+        UNDEFINE {
+            PropertyExecutor executor(VarPropertyInternal property, Var var) {
+                return property.undefine(var);
             }
         };
 

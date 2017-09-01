@@ -3,7 +3,7 @@ grammar Graql;
 queryList : query* EOF ;
 
 queryEOF       : query EOF ;
-query          : getQuery | insertQuery | defineQuery | deleteQuery | aggregateQuery | computeQuery ;
+query          : getQuery | insertQuery | defineQuery | undefineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
 matchPart      : MATCH patterns                             # matchBase
                | matchPart 'limit' INTEGER              ';' # matchLimit
@@ -14,6 +14,7 @@ matchPart      : MATCH patterns                             # matchBase
 getQuery       : matchPart 'get' (VARIABLE (',' VARIABLE)*)? ';' ;
 insertQuery    : matchPart? INSERT varPatterns ;
 defineQuery    : DEFINE varPatterns ;
+undefineQuery  : UNDEFINE varPatterns ;
 deleteQuery    : matchPart 'delete' variables? ';' ;
 aggregateQuery : matchPart 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
@@ -128,6 +129,7 @@ SIZE           : 'size' ;
 MATCH          : 'match' ;
 INSERT         : 'insert' ;
 DEFINE         : 'define' ;
+UNDEFINE       : 'undefine' ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
 ORDER          : 'asc' | 'desc' ;

@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -90,6 +91,20 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
         PropertyExecutor.Method method = executor -> {
             Role role = executor.get(this.role().var()).asRole();
             executor.get(var).asType().plays(role);
+        };
+
+        return PropertyExecutor.builder(method).requires(var, role().var()).build();
+    }
+
+    @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Type type = executor.get(var).asType();
+            Role role = executor.get(this.role().var()).asRole();
+
+            if (!type.isDeleted() && !role.isDeleted()) {
+                type.deletePlays(role);
+            }
         };
 
         return PropertyExecutor.builder(method).requires(var, role().var()).build();

@@ -117,6 +117,24 @@ public class Graql {
     }
 
     /**
+     * @param varPatterns an array of {@link VarPattern}s undefining {@link SchemaConcept}s
+     * @return a {@link UndefineQuery} that will remove the changes described in the {@code patterns}
+     */
+    @CheckReturnValue
+    public static UndefineQuery undefine(VarPattern... varPatterns) {
+        return withoutGraph().undefine(varPatterns);
+    }
+
+    /**
+     * @param varPatterns a collection of {@link VarPattern}s undefining {@link SchemaConcept}s
+     * @return a {@link UndefineQuery} that will remove the changes described in the {@code patterns}
+     */
+    @CheckReturnValue
+    public static UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
+        return withoutGraph().undefine(varPatterns);
+    }
+
+    /**
      * @return a compute query builder without a specified graph
      */
     @CheckReturnValue
