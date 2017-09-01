@@ -53,7 +53,7 @@ public class GraknMatchers {
     public static final Matcher<MatchableConcept> concept = type(THING.getLabel());
     public static final Matcher<MatchableConcept> entity = type(ENTITY.getLabel());
     public static final Matcher<MatchableConcept> resource = type(ATTRIBUTE.getLabel());
-    public static final Matcher<MatchableConcept> rule = type(RULE.getLabel());
+    public static final Matcher<MatchableConcept> rule = rule(RULE.getLabel());
 
     /**
      * Create a matcher to test against the results of a Graql query.
@@ -235,6 +235,32 @@ public class GraknMatchers {
             Label transform(MatchableConcept item) {
                 Concept concept = item.get();
                 return concept.isRole() ? concept.asRole().getLabel() : null;
+            }
+        };
+    }
+
+    /**
+     * Create a matcher to test that the concept has the given type name.
+     */
+    public static Matcher<MatchableConcept> rule(String type) {
+        return rule(Label.of(type));
+    }
+
+    /**
+     * Create a matcher to test that the concept has the given type name.
+     */
+    public static Matcher<MatchableConcept> rule(Label expectedLabel) {
+        return new PropertyEqualsMatcher<MatchableConcept, Label>(expectedLabel) {
+
+            @Override
+            public String getName() {
+                return "rule";
+            }
+
+            @Override
+            Label transform(MatchableConcept item) {
+                Concept concept = item.get();
+                return concept.isRuleType() ? concept.asRuleType().getLabel() : null;
             }
         };
     }

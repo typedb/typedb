@@ -71,6 +71,8 @@ public class MatchableConcept {
             return "type(" + concept.asType().getLabel() + ")";
         } else if (concept.isRole()) {
             return "role(" + concept.asRole().getLabel() + ")";
+        } else if (concept.isRuleType()) {
+            return "rule(" + concept.asRuleType().getLabel() + ")";
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised concept " + concept);
         }
