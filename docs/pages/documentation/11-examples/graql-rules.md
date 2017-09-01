@@ -100,7 +100,7 @@ This is how reasoning in Graql works. It checks whether the statements in the fi
 As we saw above, it is possible for Grakn to infer the gender-specific roles (`mother`, `father`, `daughter`, `son`) that a `person` entity plays. It does this by applying the following rules:
 
 ```graql
-insert
+define
 
 genderizeParentships1 sub rule
 when
@@ -163,7 +163,7 @@ In the genealogy-knowledge-base example, there should be two results returned. W
 The *basic-genealogy* file contains a number of rules for setting up family relationships, such as siblings, cousins, in-laws and the following, which sets up a relationship called `grandparentship`:
 
 ```graql
-insert
+define
 
 parentsOfParentsAreGrandparents sub rule
 when
@@ -186,7 +186,7 @@ If so, the right hand side of the rules state that:
 Some additional rules can add more specifics to the `grandparentship` and assign the entities to the roles `grandson`, `granddaughter`, `grandmother` and `grandfather`:
 
 ```graql
-insert
+define
 
 grandParents1 sub rule
 when
@@ -247,7 +247,7 @@ In the genealogy-knowledge-base example, there should be three results returned.
 Another rule can be used to infer `person` entities who are cousins:
 
 ```
-insert
+define
 
 peopleWithSiblingsParentsAreCousins sub rule
 when

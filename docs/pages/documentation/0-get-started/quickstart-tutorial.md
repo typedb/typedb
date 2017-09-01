@@ -237,7 +237,7 @@ daughter sub child;
 Included in *basic-genealogy.gql* are a set of Graql rules to instruct Grakn's reasoner on how to label each parentship relationship:
 
 ```graql
-insert
+define
 
 genderizeParentships1 sub rule
 when

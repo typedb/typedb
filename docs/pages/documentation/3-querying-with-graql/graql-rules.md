@@ -84,7 +84,7 @@ In Graql the "when" of the rule is required to be a [conjunctive pattern](https:
 A classic reasoning example is the ancestor example. Yhe two Graql rules R1 and R2 stated below define the ancestor relationship, which can be understood as either happening between two generations directly between a parent and a child or between three generations when the first generation hop is expressed via a parentship relationship and the second generation hop is captured by an ancestor relationship.
 
 ```graql
-insert
+define
 
 R1 sub rule,
 when {

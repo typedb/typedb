@@ -107,6 +107,7 @@ $eWitold isa tPerson;
 $eStefan isa tPerson;
 (owl-subject-op-isParentOf: $eStefan, owl-object-op-isParentOf: $eWitold) isa op-isParentOf;
 
+define
 inv-op-hasAncestor sub rule,
 when {
 (owl-subject-op-hasAncestor: $x, owl-object-op-hasAncestor: $y) isa hasAncestor;},
