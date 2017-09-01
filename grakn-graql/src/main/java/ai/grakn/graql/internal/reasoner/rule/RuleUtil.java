@@ -19,11 +19,10 @@
 package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.Graql;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.Schema;
@@ -33,6 +32,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 
 /**
@@ -60,8 +60,8 @@ public class RuleUtil {
      * @return true if at least one inference rule is present in the graph
      */
     public static boolean hasRules(GraknTx graph) {
-        Label rule = Schema.MetaSchema.RULE.getLabel();
-        return graph.graql().infer(false).match(var("x").isa(Graql.label(rule))).iterator().hasNext();
+        VarPattern rule = label(Schema.MetaSchema.RULE.getLabel());
+        return graph.graql().infer(false).match(var("x").sub(rule).neq(rule)).iterator().hasNext();
     }
 
     /**
