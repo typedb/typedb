@@ -51,8 +51,8 @@ import java.util.stream.Collectors;
  */
 public class NeqComplementState extends AtomicState {
 
-    private final ReasonerAtomicQuery complementQuery;
-    private final AtomicState state;
+    private final Answer predicateSub;
+    private final AtomicState complementState;
     private boolean visited = false;
 
     private final Set<NeqPredicate> predicates;
@@ -60,30 +60,32 @@ public class NeqComplementState extends AtomicState {
     public NeqComplementState(ReasonerAtomicQuery q, Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache) {
         super(q, sub, u, parent, subGoals, cache);
 
-        this.complementQuery = ReasonerQueries.atomic(q.getAtom());
+        ReasonerAtomicQuery complementQuery = ReasonerQueries.atomic(q);
         this.predicates = complementQuery.getAtoms(NeqPredicate.class).collect(Collectors.toSet());
-        predicates.forEach(complementQuery::removeAtomic);
+        this.predicateSub = sub.filterVars(predicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
-        state = new AtomicState(complementQuery, sub, u, this, subGoals, cache);
+        predicates.forEach(complementQuery::removeAtomic);
+        complementQuery.addSubstitution(sub);
+        complementState = complementQuery.subGoal(sub, u, this, subGoals, cache);
     }
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        Answer answer = state.getAtomicAnswer(complementQuery, null, getUnifier(), getCache());
-        if (answer.isEmpty()) return null;
-        ResolutionState answerState =  new AnswerState(answer, getUnifier(), getParentState());
+        Answer fullAnswer = state.getSubstitution().merge(predicateSub);
 
         boolean isNeqSatisfied = !predicates.stream()
-                .filter(p -> !p.isSatisfied(answerState.getSubstitution()))
+                .filter(p -> !p.isSatisfied(fullAnswer))
                 .findFirst().isPresent();
-        return isNeqSatisfied? answerState : null;
+        return isNeqSatisfied?
+                new AnswerState(state.getSubstitution(), getUnifier(), getParentState()) :
+                null;
     }
 
     @Override
     public ResolutionState generateSubGoal() {
         if (!visited){
             visited = true;
-            return state;
+            return complementState;
         }
         return null;
     }

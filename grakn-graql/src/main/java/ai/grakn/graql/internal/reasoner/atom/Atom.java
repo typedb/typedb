@@ -190,7 +190,7 @@ public abstract class Atom extends AtomicBase {
      * @return set of predicates relevant to this atom
      */
     public Stream<Predicate> getPredicates() {
-        return getParentQuery().getAtoms(Predicate.class).filter(atom -> this.containsVar(atom.getVarName()));
+        return getPredicates(Predicate.class);
     }
 
     /**
@@ -199,7 +199,7 @@ public abstract class Atom extends AtomicBase {
      * @return stream of predicates relevant to this atom
      */
     public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
-        return getParentQuery().getAtoms(type).filter(atom -> this.containsVar(atom.getVarName()));
+        return getParentQuery().getAtoms(type).filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
     }
 
     /**

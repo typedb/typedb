@@ -73,6 +73,19 @@ public class RuleUtil {
 
     /**
      * @param rules set of rules of interest forming a rule subgraph
+     * @return true if the rule subgraph formed from provided rules contains loops
+     */
+    public static boolean subGraphHasLoops(Set<InferenceRule> rules, GraknTx graph){
+        return rules.stream()
+                .map(r -> graph.<Rule>getConcept(r.getRuleId()))
+                .flatMap(Rule::getConclusionTypes)
+                .distinct()
+                .filter(type -> type.getRulesOfHypothesis().findFirst().isPresent())
+                .findFirst().isPresent();
+    }
+
+    /**
+     * @param rules set of rules of interest forming a rule subgraph
      * @return true if the rule subgraph formed from provided rules contains loops with negative net flux (appears in more rule heads than bodies)
      */
     public static boolean subGraphHasLoopsWithNegativeFlux(Set<InferenceRule> rules, GraknTx graph){
