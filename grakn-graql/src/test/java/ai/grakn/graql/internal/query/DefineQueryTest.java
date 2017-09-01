@@ -375,6 +375,20 @@ public class DefineQueryTest {
     }
 
     @Test
+    public void whenDefiningANonRuleWithAWhenPattern_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(allOf(containsString("unexpected property"), containsString("when")));
+        qb.define(label("yes").sub(label(ENTITY.getLabel())).when(var("x"))).execute();
+    }
+
+    @Test
+    public void whenDefiningANonRuleWithAThenPattern_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(allOf(containsString("unexpected property"), containsString("then")));
+        qb.define(label("covfefe").sub(label(ENTITY.getLabel())).then(var("x"))).execute();
+    }
+
+    @Test
     public void whenDefiningAThing_Throw() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(IsaProperty.NAME).getMessage());

@@ -499,20 +499,6 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void whenInsertingANonRuleWithAWhenPattern_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("unexpected property"), containsString("when")));
-        qb.insert(var().isa("movie").when(var("x"))).execute();
-    }
-
-    @Test
-    public void whenInsertingANonRuleWithAThenPattern_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("unexpected property"), containsString("then")));
-        qb.insert(var().isa("movie").then(var("x"))).execute();
-    }
-
-    @Test
     public void whenInsertingMultipleRolePlayers_BothRolePlayersAreAdded() {
         List<Answer> results = qb.match(
                 var("g").has("title", "Godfather"),
