@@ -128,7 +128,7 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Rule}.
      */
-    Rule putRuleType(String label, Pattern when, Pattern then);
+    Rule putRule(String label, Pattern when, Pattern then);
 
     /**
      * Create a {@link Rule} with super-type {@code rule}, or return a pre-existing {@link Rule}, with the
@@ -140,7 +140,7 @@ public interface GraknTx extends AutoCloseable{
      * @throws GraknTxOperationException if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-{@link Rule}.
      */
-    Rule putRuleType(Label label, Pattern when, Pattern then);
+    Rule putRule(Label label, Pattern when, Pattern then);
 
     /**
      * Create a {@link RelationshipType} with super-type {@code relation}, or return a pre-existing {@link RelationshipType},

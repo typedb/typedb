@@ -41,7 +41,7 @@ public class Rules extends AbstractSchemaConceptGenerator<Rule> {
     protected Rule newSchemaConcept(Label label) {
         // TODO: generate more complicated rules
         QueryBuilder graql = this.tx().graql();
-        return tx().putRuleType(label, graql.parsePattern("$x"), graql.parsePattern("$x"));
+        return tx().putRule(label, graql.parsePattern("$x"), graql.parsePattern("$x"));
     }
 
     @Override

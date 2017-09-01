@@ -203,6 +203,6 @@ public class GeoKB extends TestKB {
                 "{(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;}");
         Pattern transitivity_RHS = tx.graql().parsePattern("{(geo-entity: $x, entity-location: $z) isa is-located-in;}");
-        tx.putRuleType("Geo Rule", transitivity_LHS, transitivity_RHS);
+        tx.putRule("Geo Rule", transitivity_LHS, transitivity_RHS);
     }
 }

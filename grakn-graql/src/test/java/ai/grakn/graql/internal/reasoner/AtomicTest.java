@@ -1236,7 +1236,7 @@ public class AtomicTest {
 
         String childPatternString = "(superRole1: $x, superRole2: $y) isa relation1";
         InferenceRule testRule = new InferenceRule(
-                graph.putRuleType("Checking Rewrite & Unification",
+                graph.putRule("Checking Rewrite & Unification",
                         graph.graql().parsePattern(childPatternString),
                         graph.graql().parsePattern(childPatternString)),
                 graph)
@@ -1268,7 +1268,7 @@ public class AtomicTest {
 
         PatternAdmin body = graph.graql().parsePattern("(role1: $z, role2: $b) isa relation1").admin();
         PatternAdmin head = graph.graql().parsePattern("(role1: $z, role2: $b) isa relation1").admin();
-        InferenceRule rule = new InferenceRule(graph.putRuleType("Rule: Checking Unification", body, head), graph);
+        InferenceRule rule = new InferenceRule(graph.putRule("Rule: Checking Unification", body, head), graph);
 
         Unifier unifier = rule.getUnifier(parent);
         Set<Var> vars = rule.getHead().getAtom().getVarNames();

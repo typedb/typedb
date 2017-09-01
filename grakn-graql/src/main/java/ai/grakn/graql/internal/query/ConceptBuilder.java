@@ -360,7 +360,7 @@ public class ConceptBuilder {
             AttributeType.DataType<?> dataType = useOrDefault(DATA_TYPE, attributeType.getDataType());
             concept = executor.tx().putAttributeType(label, dataType);
         } else if (superConcept.isRuleType()) {
-            concept = executor.tx().putRuleType(label, use(WHEN), use(THEN));
+            concept = executor.tx().putRule(label, use(WHEN), use(THEN));
         } else {
             throw GraqlQueryException.insertMetaType(label, superConcept);
         }

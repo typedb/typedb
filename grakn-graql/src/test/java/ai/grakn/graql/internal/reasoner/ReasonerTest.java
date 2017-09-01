@@ -116,7 +116,7 @@ public class ReasonerTest {
         Pattern body = and(tx.graql().parsePatterns("(subject-location: $x, located-subject: $x1) isa resides;"));
         Pattern head = and(tx.graql().parsePatterns("(member-location: $x, container-location: $x1) isa sublocate;"));
 
-        InferenceRule R2 = new InferenceRule(tx.putRuleType("Rule: Sub Property Creation", body, head), tx);
+        InferenceRule R2 = new InferenceRule(tx.putRule("Rule: Sub Property Creation", body, head), tx);
         Rule rule = ReasonerUtils.createSubPropertyRule("Rule: Sb Property Rule", parent, child, roleMap, tx);
         InferenceRule R = new InferenceRule(rule, tx);
 
@@ -140,7 +140,7 @@ public class ReasonerTest {
                 "(member-location: $z, container-location: $y) isa sublocate;"));
         Pattern head = and(tx.graql().parsePatterns("(member-location: $x, container-location: $y) isa sublocate;"));
 
-        InferenceRule R2 = new InferenceRule(tx.putRuleType("Another Rule", body, head), tx);
+        InferenceRule R2 = new InferenceRule(tx.putRule("Another Rule", body, head), tx);
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
@@ -159,7 +159,7 @@ public class ReasonerTest {
         Pattern body = and(tx.graql().parsePatterns("(acquaintance1: $x, acquaintance2: $y) isa knows;"));
         Pattern head = and(tx.graql().parsePatterns("(acquaintance1: $x, acquaintance2: $x) isa knows;"));
 
-        InferenceRule R2 = new InferenceRule(tx.putRuleType("Another Reflexive Rule", body, head), tx);
+        InferenceRule R2 = new InferenceRule(tx.putRule("Another Reflexive Rule", body, head), tx);
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
@@ -189,7 +189,7 @@ public class ReasonerTest {
                 "(member-location: $z, container-location: $y) isa sublocate;"));
         Pattern head = and(tx.graql().parsePatterns("(located-subject: $x, subject-location: $z) isa resides;"));
 
-        InferenceRule R2 = new InferenceRule(tx.putRuleType("Another Property Chain Rule", body, head), tx);
+        InferenceRule R2 = new InferenceRule(tx.putRule("Another Property Chain Rule", body, head), tx);
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
@@ -204,7 +204,7 @@ public class ReasonerTest {
                         "(geo-entity: $l1, entity-location: $l2) isa is-located-in;" +
                         "(geo-entity: $l2, entity-location: $l3) isa is-located-in;"));
         Pattern head2 = Graql.and(tx.graql().parsePatterns("(geo-entity: $l1, entity-location: $l3) isa is-located-in;"));
-        Rule rule2 = tx.putRuleType("Rule 2", body2, head2);
+        Rule rule2 = tx.putRule("Rule 2", body2, head2);
 
         InferenceRule R1 = new InferenceRule(rule1, tx);
         InferenceRule R2 = new InferenceRule(rule2, tx);
@@ -247,7 +247,7 @@ public class ReasonerTest {
         String queryString = "match $x has firstname $y;";
         Pattern body = and(snbKB.tx().graql().parsePatterns("$x isa person;$x has name 'Bob';"));
         Pattern head = and(snbKB.tx().graql().parsePatterns("$x has firstname 'Bob';"));
-        snbKB.tx().putRuleType("Rule 1000", body, head);
+        snbKB.tx().putRule("Rule 1000", body, head);
 
         snbKB.tx().commit();
         snbKB.tx(); //Reopen transaction

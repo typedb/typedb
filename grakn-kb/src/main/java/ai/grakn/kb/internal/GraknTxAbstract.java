@@ -530,12 +530,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public Rule putRuleType(String label, Pattern when, Pattern then) {
-        return putRuleType(Label.of(label), when, then);
+    public Rule putRule(String label, Pattern when, Pattern then) {
+        return putRule(Label.of(label), when, then);
     }
 
     @Override
-    public Rule putRuleType(Label label, Pattern when, Pattern then) {
+    public Rule putRule(Label label, Pattern when, Pattern then) {
         return putSchemaConcept(label, Schema.BaseType.RULE_TYPE,
                 v -> factory().buildRuleType(v, getMetaRuleType(), when, then));
     }

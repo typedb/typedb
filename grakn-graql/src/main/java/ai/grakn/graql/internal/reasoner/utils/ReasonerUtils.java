@@ -305,7 +305,7 @@ public class ReasonerUtils {
         VarPatternAdmin endVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "z").rel(Graql.label(toRoleLabel), "y").admin();
         VarPatternAdmin headVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y").admin();
         Pattern body = Patterns.conjunction(Sets.newHashSet(startVar, endVar));
-        return tx.putRuleType(label, body, headVar);
+        return tx.putRule(label, body, headVar);
     }
 
     /**
@@ -322,7 +322,7 @@ public class ReasonerUtils {
 
         VarPattern body = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y");
         VarPattern head = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "x");
-        return tx.putRuleType(label, body, head);
+        return tx.putRule(label, body, head);
     }
 
     /**
@@ -349,7 +349,7 @@ public class ReasonerUtils {
             parentVar = parentVar.rel(Graql.label(entry.getKey()), varName);
             childVar = childVar.rel(Graql.label(entry.getValue()), varName);
         }
-        return tx.putRuleType(label, childVar, parentVar);
+        return tx.putRule(label, childVar, parentVar);
     }
 
     /**
@@ -377,7 +377,7 @@ public class ReasonerUtils {
         });
 
         VarPattern headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), varNames.peek());
-        return tx.putRuleType(label, Patterns.conjunction(bodyVars), headVar);
+        return tx.putRule(label, Patterns.conjunction(bodyVars), headVar);
     }
 
     /**

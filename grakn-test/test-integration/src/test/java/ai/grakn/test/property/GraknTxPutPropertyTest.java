@@ -186,14 +186,14 @@ public class GraknTxPutPropertyTest {
 
     @Property
     public void whenCallingPutRuleType_CreateATypeWithSuperTypeRule(@Open GraknTx tx, @Unused Label label) {
-        Rule rule = tx.putRuleType(label, tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
+        Rule rule = tx.putRule(label, tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
         assertEquals(tx.admin().getMetaRuleType(), rule.sup());
     }
 
     @Property
     public void whenCallingPutRuleTypeWithAnExistingRuleTypeLabel_ItReturnsThatType(
             @Open GraknTx tx, @FromTx Rule rule) {
-        Rule newType = tx.putRuleType(rule.getLabel(), tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
+        Rule newType = tx.putRule(rule.getLabel(), tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
         assertEquals(rule, newType);
     }
 
@@ -209,7 +209,7 @@ public class GraknTxPutPropertyTest {
             exception.expectMessage(PropertyNotUniqueException.cannotCreateProperty(type, Schema.VertexProperty.SCHEMA_LABEL, type.getLabel()).getMessage());
         }
 
-        tx.putRuleType(type.getLabel(), tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
+        tx.putRule(type.getLabel(), tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
     }
 
     @Property

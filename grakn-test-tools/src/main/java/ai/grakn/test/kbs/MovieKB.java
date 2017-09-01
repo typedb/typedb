@@ -289,11 +289,11 @@ public class MovieKB extends TestKB {
         // These rules are totally made up for testing purposes and don't work!
         Pattern when = tx.graql().parsePattern("$x plays actor");
         Pattern then = tx.graql().parsePattern("$x isa person");
-        tx.putRuleType("expectation-rule", when, then);
+        tx.putRule("expectation-rule", when, then);
 
         when = tx.graql().parsePattern("$x has name 'materialize-when'");
         then = tx.graql().parsePattern("$x has name 'materialize-then'");
-        tx.putRuleType("materialize-rule", when, then);
+        tx.putRule("materialize-rule", when, then);
     }
 
     private static void hasCast(Thing movie, Thing person, Thing character) {
