@@ -198,17 +198,13 @@ public class ReasonerTest {
     public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
         GraknTx tx = testGeoKB.tx();
 
-        Pattern body1 = Graql.and(tx.graql().parsePatterns(
-                        "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                        "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
-        Pattern head1 = Graql.and(tx.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
-        Rule rule1 = tx.putRuleType("new-rule-1", body1, head1);
+        Rule rule1 = tx.getRuleType("Geo Rule");
 
         Pattern body2 = Graql.and(tx.graql().parsePatterns(
                         "(geo-entity: $l1, entity-location: $l2) isa is-located-in;" +
                         "(geo-entity: $l2, entity-location: $l3) isa is-located-in;"));
         Pattern head2 = Graql.and(tx.graql().parsePatterns("(geo-entity: $l1, entity-location: $l3) isa is-located-in;"));
-        Rule rule2 = tx.putRuleType("new-rule-2", body2, head2);
+        Rule rule2 = tx.putRuleType("Rule 2", body2, head2);
 
         InferenceRule R1 = new InferenceRule(rule1, tx);
         InferenceRule R2 = new InferenceRule(rule2, tx);
