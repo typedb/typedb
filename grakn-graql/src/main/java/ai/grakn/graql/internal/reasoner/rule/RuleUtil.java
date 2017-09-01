@@ -51,8 +51,8 @@ public class RuleUtil {
      * @return set of inference rule contained in the graph
      */
     public static Stream<Rule> getRules(GraknTx graph) {
-        return graph.admin().getMetaRuleType().subs().
-                filter(sub -> !sub.equals(graph.admin().getMetaRuleType()));
+        return graph.admin().getMetaRule().subs().
+                filter(sub -> !sub.equals(graph.admin().getMetaRule()));
     }
 
     /**

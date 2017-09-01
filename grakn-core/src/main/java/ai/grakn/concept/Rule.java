@@ -26,11 +26,12 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     An ontological element used to model and categorise different types of {@link Rule}.
+ *     A {@link SchemaConcept} used to model and categorise {@link Rule}s.
  * </p>
  *
  * <p>
- *     An ontological element used to define different types of {@link Rule}.
+ *     A {@link SchemaConcept} used to define different types of {@link Rule}.
+ *     A {@link Rule}
  * </p>
  *
  * @author fppt
@@ -38,7 +39,7 @@ import java.util.stream.Stream;
 public interface Rule extends SchemaConcept {
     //------------------------------------- Accessors ----------------------------------
     /**
-     * Retrieves the Left Hand Side of the rule.
+     * Retrieves the when part of the {@link Rule}
      * When this query is satisfied the "then" part of the rule is executed.
      *
      * @return A string representing the left hand side Graql query.
@@ -47,7 +48,7 @@ public interface Rule extends SchemaConcept {
     Pattern getWhen();
 
     /**
-     * Retrieves the Right Hand Side of the rule.
+     * Retrieves the then part of the {@link Rule}.
      * This query is executed when the "when" part of the rule is satisfied
      *
      * @return A string representing the right hand side Graql query.
@@ -56,17 +57,17 @@ public interface Rule extends SchemaConcept {
     Pattern getThen();
 
     /**
-     * Retrieve a set of Types that constitute a part of the hypothesis of this Rule.
+     * Retrieve a set of {@link Type}s that constitute a part of the hypothesis of this {@link Rule}.
      *
-     * @return A collection of Concept Types that constitute a part of the hypothesis of the Rule
+     * @return A collection of Concept {@link Type}s that constitute a part of the hypothesis of the {@link Rule}
      */
     @CheckReturnValue
     Stream<Type> getHypothesisTypes();
 
     /**
-     * Retrieve a set of Types that constitue a part of the conclusion of the Rule.
+     * Retrieve a set of {@link Type}s that constitue a part of the conclusion of the {@link Rule}.
      *
-     * @return A collection of Concept Types that constitute a part of the conclusion of the Rule
+     * @return A collection of {@link Type}s that constitute a part of the conclusion of the {@link Rule}
      */
     @CheckReturnValue
     Stream<Type> getConclusionTypes();
@@ -81,7 +82,7 @@ public interface Rule extends SchemaConcept {
 
     /**
      *
-     * @return The super type of this {@link Rule}
+     * @return The super of this {@link Rule}
      */
     @Override
     @Nonnull
@@ -89,22 +90,22 @@ public interface Rule extends SchemaConcept {
 
     /**
      *
-     * @param type The super type of this {@link Rule}
+     * @param superRule The super of this {@link Rule}
      * @return The {@link Rule} itself
      */
-    Rule sup(Rule type);
+    Rule sup(Rule superRule);
 
     /**
-     * Adds another subtype to this type
+     * Adds another subtype to this {@link Rule}
      *
-     * @param type The sub type of this {@link Rule}
-     * @return The Rule itself
+     * @param type The sub of this {@link Rule}
+     * @return The {@link Rule} itself
      */
     Rule sub(Rule type);
 
     /**
      *
-     * @return All the sub types of this {@link Rule}
+     * @return All the sub of this {@link Rule}
      */
     @Override
     Stream<Rule> subs();
@@ -113,14 +114,14 @@ public interface Rule extends SchemaConcept {
     @Deprecated
     @CheckReturnValue
     @Override
-    default Rule asRuleType(){
+    default Rule asRule(){
         return this;
     }
 
     @Deprecated
     @CheckReturnValue
     @Override
-    default boolean isRuleType(){
+    default boolean isRule(){
         return true;
     }
 }

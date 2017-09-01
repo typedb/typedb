@@ -85,7 +85,7 @@ public class KBWriter {
     private Stream<? extends SchemaConcept> types(){
         Stream<? extends Type> types = tx.admin().getMetaConcept().subs();
         Stream<Role> roles = tx.admin().getMetaRole().subs();
-        Stream<Rule> rules = tx.admin().getMetaRuleType().subs();
+        Stream<Rule> rules = tx.admin().getMetaRule().subs();
 
         return Stream.of(types, roles, rules)
                 .flatMap(Function.identity())

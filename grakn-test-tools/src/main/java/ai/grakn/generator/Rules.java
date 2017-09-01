@@ -46,11 +46,11 @@ public class Rules extends AbstractSchemaConceptGenerator<Rule> {
 
     @Override
     protected Rule metaSchemaConcept() {
-        return tx().admin().getMetaRuleType();
+        return tx().admin().getMetaRule();
     }
 
     @Override
     protected Collection<Rule> otherMetaSchemaConcepts() {
-        return ImmutableSet.of(tx().admin().getMetaRuleType());
+        return ImmutableSet.of(tx().admin().getMetaRule());
     }
 }

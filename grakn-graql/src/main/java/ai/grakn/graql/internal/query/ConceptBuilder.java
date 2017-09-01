@@ -359,7 +359,7 @@ public class ConceptBuilder {
             AttributeType attributeType = superConcept.asAttributeType();
             AttributeType.DataType<?> dataType = useOrDefault(DATA_TYPE, attributeType.getDataType());
             concept = executor.tx().putAttributeType(label, dataType);
-        } else if (superConcept.isRuleType()) {
+        } else if (superConcept.isRule()) {
             concept = executor.tx().putRule(label, use(WHEN), use(THEN));
         } else {
             throw GraqlQueryException.insertMetaType(label, superConcept);
@@ -384,8 +384,8 @@ public class ConceptBuilder {
             subConcept.asRole().sup(superConcept.asRole());
         } else if (superConcept.isAttributeType()) {
             subConcept.asAttributeType().sup(superConcept.asAttributeType());
-        } else if (superConcept.isRuleType()) {
-            subConcept.asRuleType().sup(superConcept.asRuleType());
+        } else if (superConcept.isRule()) {
+            subConcept.asRule().sup(superConcept.asRule());
         } else {
             throw GraqlQueryException.insertMetaType(subConcept.getLabel(), superConcept);
         }

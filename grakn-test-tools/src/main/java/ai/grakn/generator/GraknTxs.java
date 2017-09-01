@@ -333,7 +333,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
     }
 
     private Rule ruleType() {
-        return random.choose(tx.admin().getMetaRuleType().subs().collect(toSet()));
+        return random.choose(tx.admin().getMetaRule().subs().collect(toSet()));
     }
 
     private Thing instance() {
@@ -372,7 +372,7 @@ public class GraknTxs extends AbstractGenerator<GraknTx> implements MinimalCount
         Set<SchemaConcept> allSchemaConcepts = new HashSet<>();
         allSchemaConcepts.addAll(graph.admin().getMetaConcept().subs().collect(toSet()));
         allSchemaConcepts.addAll(graph.admin().getMetaRole().subs().collect(toSet()));
-        allSchemaConcepts.addAll(graph.admin().getMetaRuleType().subs().collect(toSet()));
+        allSchemaConcepts.addAll(graph.admin().getMetaRule().subs().collect(toSet()));
         return allSchemaConcepts;
     }
 

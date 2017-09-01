@@ -123,9 +123,9 @@ public class HALConceptData {
             generateRelationEmbedded(halResource, concept.asRelationship(), 1);
         }
 
-        if (concept.isRuleType()) {
-            generateRuleLHS(halResource, concept.asRuleType());
-            generateRuleRHS(halResource, concept.asRuleType());
+        if (concept.isRule()) {
+            generateRuleLHS(halResource, concept.asRule());
+            generateRuleRHS(halResource, concept.asRule());
         }
 
         if (separationDegree == 0) return;

@@ -130,7 +130,7 @@ public interface GraknAdmin {
      * @return The meta {@link Rule}
      */
     @CheckReturnValue
-    Rule getMetaRuleType();
+    Rule getMetaRule();
 
     //------------------------------------- Admin Specific Operations ----------------------------------
 

@@ -148,7 +148,7 @@ public class ConceptPropertyTest {
 
         if (concept.isAttributeType()) assertEquals(concept, concept.asAttributeType());
 
-        if (concept.isRuleType()) assertEquals(concept, concept.asRuleType());
+        if (concept.isRule()) assertEquals(concept, concept.asRule());
 
         if (concept.isThing()) assertEquals(concept, concept.asThing());
 
@@ -210,10 +210,10 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenConceptIsNotARuleType_TheConceptCannotBeConvertedToARuleType(Concept concept) {
-        assumeFalse(concept.isRuleType());
+        assumeFalse(concept.isRule());
         exception.expect(GraknTxOperationException.class);
         //noinspection ResultOfMethodCallIgnored
-        concept.asRuleType();
+        concept.asRule();
     }
 
     @Property

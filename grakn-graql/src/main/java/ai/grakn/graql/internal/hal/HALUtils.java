@@ -99,8 +99,8 @@ public class HALUtils {
             return Schema.BaseType.RELATIONSHIP_TYPE;
         } else if (schemaConcept.isAttributeType()) {
             return Schema.BaseType.ATTRIBUTE_TYPE;
-        } else if (schemaConcept.isRuleType()) {
-            return Schema.BaseType.RULE_TYPE;
+        } else if (schemaConcept.isRule()) {
+            return Schema.BaseType.RULE;
         } else if (schemaConcept.isRole()) {
             return Schema.BaseType.ROLE;
         } else if (schemaConcept.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {

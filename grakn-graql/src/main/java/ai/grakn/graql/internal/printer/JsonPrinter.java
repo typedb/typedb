@@ -56,9 +56,9 @@ class JsonPrinter implements Printer<Json> {
             json.set("value", concept.asAttribute().getValue());
         }
 
-        if (concept.isRuleType()) {
-            json.set("when", concept.asRuleType().getWhen().toString());
-            json.set("then", concept.asRuleType().getThen().toString());
+        if (concept.isRule()) {
+            json.set("when", concept.asRule().getWhen().toString());
+            json.set("then", concept.asRule().getThen().toString());
         }
 
         return json;

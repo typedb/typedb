@@ -260,7 +260,7 @@ public class GraknMatchers {
             @Override
             Label transform(MatchableConcept item) {
                 Concept concept = item.get();
-                return concept.isRuleType() ? concept.asRuleType().getLabel() : null;
+                return concept.isRule() ? concept.asRule().getLabel() : null;
             }
         };
     }

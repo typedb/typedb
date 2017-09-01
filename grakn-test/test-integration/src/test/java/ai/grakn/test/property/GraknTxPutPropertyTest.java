@@ -187,7 +187,7 @@ public class GraknTxPutPropertyTest {
     @Property
     public void whenCallingPutRuleType_CreateATypeWithSuperTypeRule(@Open GraknTx tx, @Unused Label label) {
         Rule rule = tx.putRule(label, tx.graql().parsePattern("$x"), tx.graql().parsePattern("$x"));
-        assertEquals(tx.admin().getMetaRuleType(), rule.sup());
+        assertEquals(tx.admin().getMetaRule(), rule.sup());
     }
 
     @Property
@@ -200,7 +200,7 @@ public class GraknTxPutPropertyTest {
     @Property
     public void whenCallingPutRuleTypeWithAnExistingNonRuleTypeLabel_Throw(
             @Open GraknTx tx, @FromTx Type type) {
-        assumeFalse(type.isRuleType());
+        assumeFalse(type.isRule());
 
         exception.expect(GraknTxOperationException.class);
         if(Schema.MetaSchema.isMetaLabel(type.getLabel())){

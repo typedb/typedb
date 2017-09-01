@@ -266,7 +266,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATIONSHIP.getId(), Schema.MetaSchema.RELATIONSHIP.getLabel(), Schema.BaseType.RELATIONSHIP_TYPE);
             VertexElement resourceType = addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
             addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
-            addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
+            addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE);
 
             relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
             resourceType.property(Schema.VertexProperty.IS_ABSTRACT, true);
@@ -284,7 +284,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
         //Role and rule have to be copied separately due to not being connected to meta schema
         copyToCache(getMetaRole());
-        copyToCache(getMetaRuleType());
+        copyToCache(getMetaRule());
 
         return schemaInitialised;
     }
@@ -536,8 +536,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        return putSchemaConcept(label, Schema.BaseType.RULE_TYPE,
-                v -> factory().buildRuleType(v, getMetaRuleType(), when, then));
+        return putSchemaConcept(label, Schema.BaseType.RULE,
+                v -> factory().buildRule(v, getMetaRule(), when, then));
     }
 
     //------------------------------------ Lookup
@@ -633,7 +633,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     @Override
     public Rule getRule(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.RULE_TYPE);
+        return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);
     }
 
     @Override
@@ -662,7 +662,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public Rule getMetaRuleType() {
+    public Rule getMetaRule() {
         return getSchemaConcept(Schema.MetaSchema.RULE.getId());
     }
 

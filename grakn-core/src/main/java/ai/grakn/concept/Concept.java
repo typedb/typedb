@@ -128,7 +128,7 @@ public interface Concept extends Comparable<Concept>{
      * @return A {@link Rule} if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
-    default Rule asRuleType(){
+    default Rule asRule(){
         throw GraknTxOperationException.invalidCasting(this, Rule.class);
     }
 
@@ -237,7 +237,7 @@ public interface Concept extends Comparable<Concept>{
      * @return true if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
-    default boolean isRuleType(){
+    default boolean isRule(){
         return false;
     }
 

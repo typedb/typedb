@@ -136,7 +136,7 @@ public final class ElementFactory {
     }
 
     // ----------------------------------------- Building Rules --------------------------------------------------
-    public RuleImpl buildRuleType(VertexElement vertex, Rule type, Pattern when, Pattern then){
+    public RuleImpl buildRule(VertexElement vertex, Rule type, Pattern when, Pattern then){
         return getOrBuildConcept(vertex, (v) -> new RuleImpl(v, type, when, then));
     }
 
@@ -196,7 +196,7 @@ public final class ElementFactory {
                 case ATTRIBUTE:
                     concept = new AttributeImpl<>(vertexElement);
                     break;
-                case RULE_TYPE:
+                case RULE:
                     concept = new RuleImpl(vertexElement);
                     break;
                 default:

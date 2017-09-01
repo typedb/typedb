@@ -125,7 +125,7 @@ public final class Schema {
         RELATIONSHIP_TYPE(RelationshipType.class),
         ATTRIBUTE_TYPE(AttributeType.class),
         ENTITY_TYPE(EntityType.class),
-        RULE_TYPE(Rule.class),
+        RULE(Rule.class),
 
         //Instances
         RELATIONSHIP(Relationship.class),
