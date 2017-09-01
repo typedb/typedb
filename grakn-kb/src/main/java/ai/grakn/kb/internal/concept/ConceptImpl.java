@@ -80,6 +80,11 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
         deleteNode();
     }
 
+    @Override
+    public boolean isDeleted() {
+        return vertex().isDeleted();
+    }
+
     /**
      * Deletes the node and adds it neighbours for validation
      */
@@ -170,10 +175,9 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
 
     @Override
     public final String toString(){
-        try {
-            vertex().tx().validVertex(vertex().element());
+        if (vertex().tx().validElement(vertex().element())) {
             return innerToString();
-        } catch (RuntimeException e){
+        } else {
             // Vertex is broken somehow. Most likely deleted.
             return "Id [" + getId() + "]";
         }

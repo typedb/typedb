@@ -163,7 +163,7 @@ public class GraqlControllerDeleteTest {
     @Test
     public void DELETEGraqlDeleteNotValid_ResponseStatusCodeIs422(){
         // Not allowed to delete roles with incoming edges
-        Response response = sendRequest("match $x label \"production-being-directed\"; delete $x;");
+        Response response = sendRequest("undefine production-being-directed sub work;");
 
         assertThat(response.statusCode(), equalTo(422));
     }
@@ -171,7 +171,7 @@ public class GraqlControllerDeleteTest {
     @Test
     public void DELETEGraqlDeleteNotValid_ResponseExceptionContainsValidationErrorMessage(){
         // Not allowed to delete roles with incoming edges
-        Response response = sendRequest("match $x label \"production-being-directed\"; delete $x;");
+        Response response = sendRequest("undefine production-being-directed sub work;");
 
         assertThat(exception(response), containsString("cannot be deleted"));
     }

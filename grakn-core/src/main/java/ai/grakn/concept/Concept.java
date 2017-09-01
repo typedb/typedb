@@ -20,6 +20,7 @@ package ai.grakn.concept;
 
 import ai.grakn.exception.GraknTxOperationException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 import javax.annotation.CheckReturnValue;
 
@@ -276,4 +277,13 @@ public interface Concept extends Comparable<Concept>{
      * @throws GraknTxOperationException Throws an exception if this is a type with incoming concepts.
      */
     void delete() throws GraknTxOperationException;
+
+    /**
+     * Return whether the concept has been deleted.
+     *
+     * <p>
+     *     Under some implementations, such as {@link TinkerGraph} this always returns false.
+     * </p>
+     */
+    boolean isDeleted();
 }

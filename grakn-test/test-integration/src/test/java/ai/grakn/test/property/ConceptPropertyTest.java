@@ -21,9 +21,9 @@ package ai.grakn.test.property;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.generator.AbstractSchemaConceptGenerator.NonMeta;
@@ -56,6 +56,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isA;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
@@ -124,6 +125,11 @@ public class ConceptPropertyTest {
         assertThat(allConceptsFrom(graph), hasItem(concept));
         concept.delete();
         assertThat(allConceptsFrom(graph), not(hasItem(concept)));
+    }
+
+    @Property
+    public void whenAConceptIsNotDeleted_CallingIsDeletedReturnsFalse(Concept concept) {
+        assertFalse(concept.isDeleted());
     }
 
     @Property

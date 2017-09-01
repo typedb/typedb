@@ -184,4 +184,8 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
     public String label(){
         return element().label();
     }
+
+    public final boolean isDeleted() {
+        return !tx().validElement(element());
+    }
 }

@@ -409,10 +409,8 @@ public class DefineQueryTest {
             assertExists(qb, var);
         }
 
-        // Delete all vars
-        for (VarPattern var : vars) {
-            qb.match(var).delete(var.admin().var()).execute();
-        }
+        // Undefine all vars
+        qb.undefine(vars).execute();
 
         // Make sure vars don't exist
         for (VarPattern var : vars) {

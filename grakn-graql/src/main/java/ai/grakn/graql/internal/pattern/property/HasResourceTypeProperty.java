@@ -154,6 +154,24 @@ public abstract class HasResourceTypeProperty extends AbstractVarProperty implem
     }
 
     @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Type type = executor.get(var).asType();
+            AttributeType<?> attributeType = executor.get(resourceType().var()).asAttributeType();
+
+            if (!type.isDeleted() && !attributeType.isDeleted()) {
+                if (required()) {
+                    type.deleteKey(attributeType);
+                } else {
+                    type.deleteAttribute(attributeType);
+                }
+            }
+        };
+
+        return PropertyExecutor.builder(method).requires(var, resourceType().var()).build();
+    }
+
+    @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
         Var varName = var.var().asUserDefined();
