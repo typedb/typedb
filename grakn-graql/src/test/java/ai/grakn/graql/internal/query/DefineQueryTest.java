@@ -298,7 +298,7 @@ public class DefineQueryTest {
         VarPattern vars = label("my-rule").sub(label(RULE.getLabel())).when(when).then(then);
         qb.define(vars).execute();
 
-        assertNotNull(movies.tx().getRuleType("my-rule"));
+        assertNotNull(movies.tx().getRule("my-rule"));
     }
 
     @Test

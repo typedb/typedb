@@ -632,7 +632,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public Rule getRuleType(String label) {
+    public Rule getRule(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RULE_TYPE);
     }
 

@@ -198,7 +198,7 @@ public class ReasonerTest {
     public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
         GraknTx tx = testGeoKB.tx();
 
-        Rule rule1 = tx.getRuleType("Geo Rule");
+        Rule rule1 = tx.getRule("Geo Rule");
 
         Pattern body2 = Graql.and(tx.graql().parsePatterns(
                         "(geo-entity: $l1, entity-location: $l2) isa is-located-in;" +

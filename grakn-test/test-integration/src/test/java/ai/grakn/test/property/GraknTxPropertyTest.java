@@ -238,7 +238,7 @@ public class GraknTxPropertyTest {
     public void whenCallingGetRule_TheResultIsTheSameAsGetSchemaConcept(
             @Open GraknTx graph, @FromTx Rule type) {
         Label label = type.getLabel();
-        assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRuleType(label.getValue()));
+        assertSameResult(() -> graph.getSchemaConcept(label), () -> graph.getRule(label.getValue()));
     }
 
     @Property

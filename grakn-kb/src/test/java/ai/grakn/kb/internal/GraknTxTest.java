@@ -102,7 +102,7 @@ public class GraknTxTest extends TxTestBase {
         assertNull(tx.getRelationshipType(relationTypeLabel));
         assertNull(tx.getRole(roleTypeLabel));
         assertNull(tx.getAttributeType(resourceTypeLabel));
-        assertNull(tx.getRuleType(ruleTypeLabel));
+        assertNull(tx.getRule(ruleTypeLabel));
 
         EntityType entityType = tx.putEntityType(entityTypeLabel);
         RelationshipType relationshipType = tx.putRelationshipType(relationTypeLabel);

@@ -301,7 +301,7 @@ public interface GraknTx extends AutoCloseable{
      */
     @CheckReturnValue
     @Nullable
-    Rule getRuleType(String label);
+    Rule getRule(String label);
 
     //------------------------------------- Utilities ----------------------------------
     // TODO: what does this do when the graph is closed?
