@@ -45,7 +45,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -59,6 +58,7 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.anything;
+import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.Assert.assertEquals;
@@ -82,6 +82,8 @@ public class GraqlShellIT {
     private static int keyspaceSuffix = 0;
 
     private static boolean showStdOutAndErr = true;
+
+    private final static int NUM_METATYPES = 4;
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -256,7 +258,7 @@ public class GraqlShellIT {
     public void testAggregateQuery() throws Exception {
         assertShellMatches(
                 "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate count;",
-                is("7") // Expect to see the whole meta-schema
+                is(Integer.toString(NUM_METATYPES))
         );
     }
 
@@ -297,7 +299,7 @@ public class GraqlShellIT {
                 anything(),
                 "insert has name 'felix' isa man;",
                 anything(),
-                "insert my-rule sub rule when {$x isa man;} then {$x isa person;};",
+                "define my-rule sub rule when {$x isa man;} then {$x isa person;};",
                 anything(),
                 "commit",
                 "match isa person, has name $x;"
@@ -316,7 +318,7 @@ public class GraqlShellIT {
                 anything(),
                 "match isa person, has name $x;",
                 // No results
-                "insert my-rule sub rule when {$x isa man;} then {$x isa person;};",
+                "define my-rule sub rule when {$x isa man;} then {$x isa person;};",
                 anything(),
                 "commit",
                 "match isa person, has name $x;",
@@ -378,7 +380,7 @@ public class GraqlShellIT {
         String[] result = runShellWithoutErrors(
                 "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "json"
         ).split("\n");
-        assertTrue("expected more than 5 results: " + Arrays.toString(result), result.length > 5);
+        assertThat(result, arrayWithSize(NUM_METATYPES));
         Json json = Json.read(result[0]);
         Json x = json.at("x");
         assertTrue(x.has("id"));
@@ -390,7 +392,7 @@ public class GraqlShellIT {
         String[] result = runShellWithoutErrors(
                 "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + ";", "-o", "hal"
         ).split("\n");
-        assertTrue("expected more than 5 results: " + Arrays.toString(result), result.length > 5);
+        assertThat(result, arrayWithSize(NUM_METATYPES));
         Json json = Json.read(result[0]);
         Json x = json.at("x");
         assertTrue(x.has("_id"));
