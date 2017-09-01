@@ -28,8 +28,6 @@ import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -78,9 +76,6 @@ import static java.util.stream.Collectors.toList;
  * @author alexandraorth
  */
 public class BatchMutatorClient {
-
-    private static final Logger LOG = LoggerFactory.getLogger(BatchMutatorClient.class);
-
     // Change in behaviour in v0.14 Previously infinite, now limited
     private static final int MAX_RETRIES = 100;
 
@@ -92,6 +87,7 @@ public class BatchMutatorClient {
     private final String uri;
     private final TaskClient taskClient;
     private final Retryer<Json> getStatusRetrier;
+    private final boolean debugOn;
 
     private Consumer<Json> onCompletionOfTask;
     private AtomicInteger batchNumber;
@@ -100,17 +96,18 @@ public class BatchMutatorClient {
     private int blockerSize;
     private boolean retry = false;
 
-    public BatchMutatorClient(String keyspace, String uri) {
-        this(keyspace, uri, (Json t) -> {});
+    public BatchMutatorClient(String keyspace, String uri, boolean debugOn) {
+        this(keyspace, uri, (Json t) -> {}, debugOn);
     }
 
-    public BatchMutatorClient(String keyspace, String uri, Consumer<Json> onCompletionOfTask) {
+    public BatchMutatorClient(String keyspace, String uri, Consumer<Json> onCompletionOfTask, boolean debugOn) {
         this.uri = uri;
         this.keyspace = keyspace;
         this.queries = new ArrayList<>();
         this.futures = new ConcurrentHashMap<>();
         this.onCompletionOfTask = onCompletionOfTask;
         this.batchNumber = new AtomicInteger(0);
+        this.debugOn = debugOn;
         // Some extra logic here since we don't provide a well formed URI by default
         if (uri.startsWith("http")) {
             try {
@@ -232,19 +229,20 @@ public class BatchMutatorClient {
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
-                LOG.error(e.getMessage());
+                printError(e.getMessage());
             }
         }
 
         for (CompletableFuture completableFuture : futures.values()) {
             try {
-                completableFuture.get();
+                //TODO: Figure out why a null sometimes gets put in here
+                if(completableFuture != null) completableFuture.get();
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
         }
 
-        LOG.info("All tasks completed");
+        System.out.println("All tasks completed");
     }
 
     /**
@@ -288,7 +286,7 @@ public class BatchMutatorClient {
         try {
             taskId = sendQueryRetry.call(callable);
         } catch (Exception e) {
-            LOG.error("Error while executing queries:\n{}", queries);
+            printError("Error while executing queries:\n{" + queries + "}");
             throw new RuntimeException(e);
         }
 
@@ -303,7 +301,8 @@ public class BatchMutatorClient {
 
                     // Log any errors
                     if (error != null) {
-                        LOG.error("Error while executing mutator", error);
+                        printError("Error while executing mutator: \n" + error);
+                        if(debugOn) throw new RuntimeException(error);
                     }
 
                     return result;
@@ -372,18 +371,22 @@ public class BatchMutatorClient {
                         }
                     } catch (IllegalArgumentException e) {
                         // Means the task has not yet been stored: we want to log the error, but continue looping
-                        LOG.warn(format("Task [%s] not found on server. Attempting to get status again.", id));
+                        printError(format("Task [%s] not found on server. Attempting to get status again.", id));
                         throw e;
                     } catch (HttpRetryException e){
-                        LOG.warn(format("Could not communicate with host %s for task [%s] ", uri, id));
+                        printError(format("Could not communicate with host %s for task [%s] ", uri, id));
                         throw e;
                     }
                 });
             } catch (Exception e) {
-                LOG.error("Error while executing queries:\n{}", queries);
+                printError("Error while executing queries: \n {" + queries + "}");
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    private void printError(String message){
+        if(debugOn) System.err.println(message);
     }
 
     /**

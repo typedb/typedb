@@ -124,7 +124,7 @@ public class Migrator {
         this.startTime = System.currentTimeMillis();
         this.batchSize = batchSize;
 
-        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates());
+        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates(), debug);
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
         loader.setRetryPolicy(retry);
