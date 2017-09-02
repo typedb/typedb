@@ -202,6 +202,10 @@ public abstract class Atom extends AtomicBase {
         return getParentQuery().getAtoms(type).filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
     }
 
+    public IdPredicate getIdPredicate(Var var){
+        return getPredicates(IdPredicate.class).filter(p -> p.getVarName().equals(var)).findFirst().orElse(null);
+    }
+
     /**
      * @return set of types relevant to this atom
      */

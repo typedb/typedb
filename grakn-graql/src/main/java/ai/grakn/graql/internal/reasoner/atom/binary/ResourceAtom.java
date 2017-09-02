@@ -57,6 +57,10 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint
  *
  * has($varName, $predicateVariable = resource variable), type($predicateVariable)
  *
+ * or in graql terms:
+ *
+ * $varName has <type> $predicateVariable; $predicateVariable isa <type>;
+ *
  * </p>
  *
  * @author Kasper Piskorski
@@ -122,18 +126,22 @@ public class ResourceAtom extends Binary{
 
     @Override
     protected boolean hasEquivalentPredicatesWith(Binary at) {
-        if (!(at instanceof ResourceAtom)) return false;
+        if (!(at instanceof ResourceAtom && super.hasEquivalentPredicatesWith(at))) return false;
+
         ResourceAtom atom = (ResourceAtom) at;
         if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
-        for (ValuePredicate predicate : getMultiPredicate()) {
+        for (ValuePredicate vp : getMultiPredicate()) {
             Iterator<ValuePredicate> objIt = atom.getMultiPredicate().iterator();
             boolean predicateHasEquivalent = false;
             while (objIt.hasNext() && !predicateHasEquivalent) {
-                predicateHasEquivalent = predicate.isEquivalent(objIt.next());
+                predicateHasEquivalent = vp.isEquivalent(objIt.next());
             }
             if (!predicateHasEquivalent) return false;
         }
-        return true;
+
+        IdPredicate thisPredicate = this.getIdPredicate(getPredicateVariable());
+        IdPredicate predicate = atom.getIdPredicate(atom.getPredicateVariable());
+        return thisPredicate == null && predicate == null || thisPredicate != null && thisPredicate.isEquivalent(predicate);
     }
 
     @Override

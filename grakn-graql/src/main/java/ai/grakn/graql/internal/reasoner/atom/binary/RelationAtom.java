@@ -195,7 +195,7 @@ public class RelationAtom extends IsaAtom {
                 && getRolePlayers().size() == a2.getRolePlayers().size()
                 && getRelationPlayers().size() == a2.getRelationPlayers().size()
                 && getRoleLabels().equals(a2.getRoleLabels())
-                //check constraints
+                //check bindings
                 && getRoleConceptIdMap().equals(a2.getRoleConceptIdMap())
                 && getRoleTypeMap().equals(a2.getRoleTypeMap());
     }
@@ -361,7 +361,7 @@ public class RelationAtom extends IsaAtom {
         roleVars.stream()
                 .filter(v -> v.var().isUserDefinedName())
                 .map(VarPatternAdmin::var)
-                .map(parent::getIdPredicate)
+                .map(this::getIdPredicate)
                 .filter(Objects::nonNull)
                 .map(Predicate::getPredicate)
                 .map(graph::<Role>getConcept)
@@ -409,7 +409,7 @@ public class RelationAtom extends IsaAtom {
      * @return list of relation types this atom can have ordered by the number of compatible role types
      */
     public List<RelationshipType> inferPossibleRelationTypes(Answer sub) {
-        if (getPredicate() != null) return Collections.singletonList(getSchemaConcept().asRelationshipType());
+        if (getTypePredicate() != null) return Collections.singletonList(getSchemaConcept().asRelationshipType());
 
         //look at available role types
         Multimap<RelationshipType, Role> compatibleTypesFromRoles = getCompatibleRelationTypesWithRoles(getExplicitRoleTypes(), new RoleTypeConverter());
@@ -451,7 +451,7 @@ public class RelationAtom extends IsaAtom {
      * @return either this if relation type can't be inferred or a fresh relation with inferred relation type
      */
     private RelationAtom inferRelationType(Answer sub){
-        if (getPredicate() != null) return this;
+        if (getTypePredicate() != null) return this;
 
         List<RelationshipType> relationshipTypes = inferPossibleRelationTypes(sub);
         if (relationshipTypes.size() == 1){
@@ -550,7 +550,7 @@ public class RelationAtom extends IsaAtom {
 
                 //try indirectly
                 if (roleType == null && role.var().isUserDefinedName()) {
-                    IdPredicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.var());
+                    IdPredicate rolePredicate = getIdPredicate(role.var());
                     if (rolePredicate != null) roleType = graph.getConcept(rolePredicate.getPredicate());
                 }
                 allocatedRelationPlayers.add(c);
@@ -605,7 +605,7 @@ public class RelationAtom extends IsaAtom {
                 });
 
         PatternAdmin newPattern = constructRelationVarPattern(getVarName(), getPredicateVariable(), rolePlayerMappings);
-        return new RelationAtom(newPattern.asVarPattern(), getPredicateVariable(), getPredicate(), getParentQuery());
+        return new RelationAtom(newPattern.asVarPattern(), getPredicateVariable(), getTypePredicate(), getParentQuery());
     }
 
     /**
@@ -625,7 +625,7 @@ public class RelationAtom extends IsaAtom {
                 Role roleType = typeLabel != null ? graph.getRole(typeLabel.getValue()) : null;
                 //try indirectly
                 if (roleType == null && role.var().isUserDefinedName()) {
-                    IdPredicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.var());
+                    IdPredicate rolePredicate = getIdPredicate(role.var());
                     if (rolePredicate != null) roleType = graph.getConcept(rolePredicate.getPredicate());
                 }
                 if (roleType != null) roleMap.put(roleType, varName);
@@ -794,6 +794,6 @@ public class RelationAtom extends IsaAtom {
                 relVar = relVar.rel(c.getRolePlayer());
             }
         }
-        return new RelationAtom(relVar.admin(), getPredicateVariable(), getPredicate(), getParentQuery());
+        return new RelationAtom(relVar.admin(), getPredicateVariable(), getTypePredicate(), getParentQuery());
     }
 }

@@ -87,7 +87,7 @@ public abstract class TypeAtom extends Binary{
 
     @Override
     public boolean isSelectable() {
-        return getPredicate() == null
+        return getTypePredicate() == null
                 //disjoint atom
                 || !this.getNeighbours().findFirst().isPresent()
                 || isRuleResolvable();
@@ -109,8 +109,8 @@ public abstract class TypeAtom extends Binary{
     @Nullable
     @Override
     public SchemaConcept getSchemaConcept() {
-        return getPredicate() != null ?
-                getParentQuery().tx().getConcept(getPredicate().getPredicate()) : null;
+        return getTypePredicate() != null ?
+                getParentQuery().tx().getConcept(getTypePredicate().getPredicate()) : null;
     }
 
     /**

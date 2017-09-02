@@ -85,7 +85,7 @@ public class QueryTest {
     }
 
     //TODO
-    @Ignore
+    //@Ignore
     @Test
     public void testAlphaEquivalence_chainTreeAndLoopStructure() {
         GraknTx graph = geoKB.tx();
