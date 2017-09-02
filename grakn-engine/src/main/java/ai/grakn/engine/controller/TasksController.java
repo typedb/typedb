@@ -209,7 +209,6 @@ public class TasksController {
         if (requestBodyAsJson.has("value")) {
             requestBodyAsJson = requestBodyAsJson.at("value");
         }
-        // TODO fix this in the client, it doesn't seem to work if it's passed as false
         boolean wait = true;
         if (requestBodyAsJson.has(TASK_RUN_WAIT_PARAMETER)) {
             wait = requestBodyAsJson.at(TASK_RUN_WAIT_PARAMETER).asBoolean();
