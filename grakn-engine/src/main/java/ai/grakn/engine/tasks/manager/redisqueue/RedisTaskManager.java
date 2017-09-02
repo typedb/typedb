@@ -30,7 +30,6 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.redisq.Redisq;
 import ai.grakn.redisq.RedisqBuilder;
-import ai.grakn.redisq.State;
 import static ai.grakn.redisq.State.DONE;
 import static ai.grakn.redisq.State.FAILED;
 import ai.grakn.redisq.exceptions.StateFutureInitializationException;
@@ -40,6 +39,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -137,13 +137,19 @@ public class RedisTaskManager implements TaskManager {
         }
     }
 
+    public Future<Void> subscribeToTask(TaskId taskId)
+            throws StateFutureInitializationException, ExecutionException, InterruptedException {
+        return redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(),
+                TIMEOUT, TimeUnit.SECONDS);
+    }
+
     public void waitForTask(TaskId taskId)
             throws StateFutureInitializationException, ExecutionException, InterruptedException {
         redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(),
                 TIMEOUT, TimeUnit.SECONDS).get();
     }
 
-    public void waitForTask(State state, TaskId taskId, long timeout, TimeUnit timeUnit)
+    public void waitForTask(TaskId taskId, long timeout, TimeUnit timeUnit)
             throws StateFutureInitializationException, ExecutionException, InterruptedException, TimeoutException {
         redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(), TIMEOUT, TimeUnit.SECONDS).get(timeout, timeUnit);
     }

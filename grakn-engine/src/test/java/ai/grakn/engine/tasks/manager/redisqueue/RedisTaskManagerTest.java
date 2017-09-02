@@ -32,7 +32,6 @@ import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.engine.tasks.manager.TaskState.Priority;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
-import static ai.grakn.redisq.State.DONE;
 import ai.grakn.redisq.exceptions.StateFutureInitializationException;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.util.EmbeddedRedis;
@@ -45,11 +44,13 @@ import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.google.common.collect.ImmutableSet;
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import static junit.framework.TestCase.assertEquals;
@@ -127,35 +128,38 @@ public class RedisTaskManagerTest {
     public void whenNotAddingTask_TastStateIsNotRetrievable()
             throws ExecutionException, RetryException, StateFutureInitializationException, InterruptedException, TimeoutException {
         TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), TaskSchedule.now(), Priority.LOW);
-        taskManager.waitForTask(DONE, state.getId(), 3, TimeUnit.SECONDS);
+        taskManager.waitForTask(state.getId(), 3, TimeUnit.SECONDS);
     }
 
     @Test
     public void whenConfigurationEmpty_TaskEventuallyFailed()
             throws ExecutionException, RetryException, InterruptedException, StateFutureInitializationException, TimeoutException {
         TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), TaskSchedule.now(), Priority.LOW);
+        Future<Void> s = taskManager.subscribeToTask(state.getId());
         taskManager.addTask(state, TaskConfiguration.of(Json.object()));
-        taskManager.waitForTask(ai.grakn.redisq.State.FAILED, state.getId(), 3, TimeUnit.SECONDS);
+        s.get();
         assertEquals(FAILED, taskManager.storage().getState(state.getId()).status());
     }
 
     @Test
-    public void whenSending100Tasks_AllTaskStatesRetrievable() throws ExecutionException, RetryException {
-        ArrayList<TaskState> states = new ArrayList<>();
+    public void whenSending10Tasks_AllTaskStatesRetrievable()
+            throws ExecutionException, RetryException, StateFutureInitializationException, InterruptedException {
+        Map<TaskId, Future<Void>> states = new HashMap<>();
         for(int i = 0; i < 10; i++) {
             TaskId generate = TaskId.generate();
             TaskState state = TaskState.of(ShortExecutionMockTask.class, RedisTaskManagerTest.class.getName(), TaskSchedule.now(), Priority.LOW);
-            states.add(state);
+            TaskId id = state.getId();
+            states.put(id, taskManager.subscribeToTask(id));
             taskManager.addTask(state, testConfig(generate));
         }
-        states.forEach(state -> {
+        states.forEach((id, state) -> {
             try {
-                System.out.println("Waiting for " + state.getId());
-                taskManager.waitForTask(state.getId());
+                System.out.println("Waiting for " + id);
+                state.get();
             } catch (Exception e) {
                 fail("Failed to retrieve task in time");
             }
-            assertTrue("Task retrieved but with unexpected state " + taskManager.storage().getState(state.getId()).status(), ImmutableSet.of(COMPLETED, RUNNING).contains(taskManager.storage().getState(state.getId()).status()));
+            assertTrue("Task retrieved but with unexpected state " + taskManager.storage().getState(id).status(), ImmutableSet.of(COMPLETED, RUNNING).contains(taskManager.storage().getState(id).status()));
         });
     }
 
