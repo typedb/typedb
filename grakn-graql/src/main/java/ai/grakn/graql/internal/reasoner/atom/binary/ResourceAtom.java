@@ -31,6 +31,7 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -66,7 +67,7 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint
  * @author Kasper Piskorski
  *
  */
-public class ResourceAtom extends Binary{
+public class ResourceAtom extends Binary {
     private final Set<ValuePredicate> multiPredicate = new HashSet<>();
 
     public ResourceAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
@@ -96,7 +97,7 @@ public class ResourceAtom extends Binary{
         int hashCode = 1;
         hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + this.getVarName().hashCode();
-        hashCode = hashCode * 37 + this.getPredicateVariable().hashCode();
+        hashCode = hashCode * 37 + this.getMultiPredicate().hashCode();
         return hashCode;
     }
 
@@ -104,10 +105,10 @@ public class ResourceAtom extends Binary{
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        Binary a2 = (Binary) obj;
+        ResourceAtom a2 = (ResourceAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName())
-                && this.getPredicateVariable().equals(a2.getPredicateVariable());
+                && this.getMultiPredicate().equals(a2.getMultiPredicate());
     }
 
     @Override
@@ -125,7 +126,7 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    protected boolean hasEquivalentPredicatesWith(Binary at) {
+    boolean hasEquivalentPredicatesWith(Binary at) {
         if (!(at instanceof ResourceAtom && super.hasEquivalentPredicatesWith(at))) return false;
 
         ResourceAtom atom = (ResourceAtom) at;
@@ -315,14 +316,8 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
-        if(type.equals(ValuePredicate.class)){
-            return Stream.concat(
-                    super.getPredicates(type),
-                    getMultiPredicate().stream()
-            ).map(type::cast);
-        }
-        return super.getPredicates(type);
+    protected Stream<Predicate> getInnerPredicates(){
+        return Stream.concat(super.getInnerPredicates(), getMultiPredicate().stream());
     }
 
     @Override

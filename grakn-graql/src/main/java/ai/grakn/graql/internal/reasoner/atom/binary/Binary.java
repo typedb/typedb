@@ -33,7 +33,9 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import com.google.common.collect.Sets;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Objects;
@@ -130,6 +132,11 @@ public abstract class Binary extends Atom {
         if (isUserDefinedName()) vars.add(getVarName());
         if (!predicateVariable.getValue().isEmpty()) vars.add(predicateVariable);
         return vars;
+    }
+
+    @Override
+    protected Stream<Predicate> getInnerPredicates(){
+        return Stream.of(typePredicate);
     }
 
     @Override

@@ -206,6 +206,8 @@ public abstract class Atom extends AtomicBase {
         return getPredicates(IdPredicate.class).filter(p -> p.getVarName().equals(var)).findFirst().orElse(null);
     }
 
+    protected abstract Stream<Predicate> getInnerPredicates();
+
     /**
      * @return set of types relevant to this atom
      */
@@ -216,10 +218,12 @@ public abstract class Atom extends AtomicBase {
     }
 
     /**
+     * @param type the class of {@link Predicate} to return
+     * @param <T> the type of neighbour {@link Atomic} to return
      * @return neighbours of this atoms, i.e. atoms connected to this atom via shared variable
      */
-    public Stream<Atom> getNeighbours(){
-        return getParentQuery().getAtoms(Atom.class)
+    public <T extends Atomic> Stream<T> getNeighbours(Class<T> type){
+        return getParentQuery().getAtoms(type)
                 .filter(at -> at != this)
                 .filter(at -> !Sets.intersection(this.getVarNames(), at.getVarNames()).isEmpty());
     }

@@ -88,7 +88,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
         this.tx = tx;
-        atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
+        AtomicFactory.createAtoms(pattern, this).forEach(atomSet::add);
         inferTypes();
     }
 
@@ -144,7 +144,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public int hashCode() {
         int hashCode = 1;
         SortedSet<Integer> hashes = new TreeSet<>();
-        getAtoms(Atom.class).forEach(atom -> hashes.add(atom.equivalenceHashCode()));
+        getAtoms().forEach(atom -> hashes.add(atom.equivalenceHashCode()));
         for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
         return hashCode;
     }
@@ -154,8 +154,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return true if two queries are alpha-equivalent
      */
     public boolean isEquivalent(ReasonerQueryImpl q) {
-        //return QueryEquivalence.assess(this, q);
-
+        return QueryEquivalence.assess(this, q);
+        /*
         Set<Atom> atoms = getAtoms(Atom.class).collect(Collectors.toSet());
         if(atoms.size() != q.getAtoms().stream().filter(Atomic::isAtom).count()) return false;
         for (Atom atom : atoms){
@@ -164,7 +164,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             }
         }
         return true;
-
+        */
     }
 
     /**
@@ -319,12 +319,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<Atom> orderedSelection = new LinkedHashSet<>();
 
         Atom atom = atomsToSelect.stream()
-                .filter(at -> at.getNeighbours().findFirst().isPresent())
+                .filter(at -> at.getNeighbours(Atom.class).findFirst().isPresent())
                 .findFirst().orElse(null);
         while(!atomsToSelect.isEmpty() && atom != null) {
             orderedSelection.add(atom);
             atomsToSelect.remove(atom);
-            atom = atom.getNeighbours()
+            atom = atom.getNeighbours(Atom.class)
                     .filter(atomsToSelect::contains)
                     .findFirst().orElse(null);
         }
