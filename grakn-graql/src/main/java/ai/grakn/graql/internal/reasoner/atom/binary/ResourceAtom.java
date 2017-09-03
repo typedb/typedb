@@ -39,6 +39,8 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -120,7 +122,9 @@ public class ResourceAtom extends Binary {
 
     private int multiPredicateEquivalenceHashCode(){
         int hashCode = 0;
-        for (Predicate aMultiPredicate : multiPredicate) hashCode += aMultiPredicate.equivalenceHashCode();
+        SortedSet<Integer> hashes = new TreeSet<>();
+        getMultiPredicate().forEach(atom -> hashes.add(atom.equivalenceHashCode()));
+        for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
         return hashCode;
     }
 
