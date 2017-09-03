@@ -740,7 +740,8 @@ public class AtomicQueryTest {
 
     private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, boolean atomExpectation){
         assertEquals("Query: " + a.toString() + " =? " + b.toString(), a.equals(b), queryExpectation);
-        assertEquals("Query: " + (b.toString() + " =? " + a.toString(), b.equals(a), queryExpectation);
+        assertEquals("Query: " + b.toString() + " =? " + a.toString(), b.equals(a), queryExpectation);
+
         //check hash additionally if need to be equal
         if (queryExpectation) {
             assertEquals(a.toString() + " hash=? " + b.toString(), a.hashCode() == b.hashCode(), true);
