@@ -25,6 +25,7 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
@@ -615,12 +616,24 @@ public class AtomicQueryTest {
         queryEquivalence(query6, query7, false);
     }
 
-    private void queryEquivalence(ReasonerQueryImpl a, ReasonerQueryImpl b, boolean expectation){
+    private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean expectation){
         assertEquals(a.toString() + " =? " + b.toString(), a.equals(b), expectation);
         assertEquals(b.toString() + " =? " + a.toString(), b.equals(a), expectation);
         //check hash additionally if need to be equal
         if (expectation) {
             assertEquals(a.toString() + " hash=? " + b.toString(), a.hashCode() == b.hashCode(), true);
+        }
+
+        atomicEquivalence(a.getAtom(), b.getAtom(), expectation);
+    }
+
+    private void atomicEquivalence(Atomic a, Atomic b, boolean expectation){
+        assertEquals(a.toString() + " =? " + b.toString(), a.isEquivalent(b), expectation);
+        assertEquals(b.toString() + " =? " + a.toString(), b.isEquivalent(a), expectation);
+
+        //check hash additionally if need to be equal
+        if (expectation) {
+            assertEquals(a.toString() + " hash=? " + b.toString(), a.equivalenceHashCode() == b.equivalenceHashCode(), true);
         }
     }
 

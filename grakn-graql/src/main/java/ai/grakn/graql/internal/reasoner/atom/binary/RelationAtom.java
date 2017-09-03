@@ -283,30 +283,6 @@ public class RelationAtom extends IsaAtom {
                 .filter(pred -> rolePlayers.contains(pred.getVarName()));
     }
 
-    private Multimap<Role, ConceptId> getRoleBindings(){
-        Set<Atomic> neighbours = getNeighbours(Atomic.class).collect(toSet());
-        getRelationPlayers().forEach( rp -> {
-            Var var = rp.getRolePlayer().var();
-            rp.getRole().ifPresent(role -> {
-                role.getTypeLabel().ifPresent(label -> {
-                    neighbours.stream()
-                            .filter(n -> n.getVarNames().contains(var))
-                            .map(n -> {
-                                if (n.isAtom()){
-                                    SchemaConcept scon = ((Atom) n).getSchemaConcept();
-                                    return scon != null? scon.getId() : null;
-                                } else {
-                                    ((IdPredicate) n).getPredicate();
-                                }
-                            })
-                            .filter(Objects::nonNull)
-                            
-                })
-            })
-                }
-        )
-    }
-
     /**
      * @return map of pairs role type - Id predicate describing the role player playing this role (substitution)
      */
@@ -331,7 +307,6 @@ public class RelationAtom extends IsaAtom {
         Multimap<Role, Var> roleMap = getRoleVarMap();
         Map<Var, SchemaConcept> varTypeMap = getParentQuery().getVarSchemaConceptMap();
 
-        varTypeMap.entrySet().iterator().next().getValue().
         roleMap.entries().stream()
                 .filter(e -> varTypeMap.containsKey(e.getValue()))
                 .sorted(Comparator.comparing(e -> varTypeMap.get(e.getValue()).getLabel()))

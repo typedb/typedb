@@ -85,7 +85,7 @@ public class QueryTest {
     }
 
     //TODO
-    //@Ignore
+    @Ignore
     @Test
     public void testAlphaEquivalence_chainTreeAndLoopStructure() {
         GraknTx graph = geoKB.tx();
@@ -110,8 +110,8 @@ public class QueryTest {
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(chainString, graph), graph);
         ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(treeString2, graph), graph);
         ReasonerQueryImpl query3 = ReasonerQueries.create(conjunction(loopString3, graph), graph);
-        //queryEquivalence(query, query2, false);
-        //queryEquivalence(query, query3, false);
+        queryEquivalence(query, query2, false);
+        queryEquivalence(query, query3, false);
         queryEquivalence(query2, query3, false);
     }
 

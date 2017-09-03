@@ -154,8 +154,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return true if two queries are alpha-equivalent
      */
     public boolean isEquivalent(ReasonerQueryImpl q) {
-        return QueryEquivalence.assess(this, q);
-        /*
         Set<Atom> atoms = getAtoms(Atom.class).collect(Collectors.toSet());
         if(atoms.size() != q.getAtoms().stream().filter(Atomic::isAtom).count()) return false;
         for (Atom atom : atoms){
@@ -164,7 +162,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             }
         }
         return true;
-        */
     }
 
     /**

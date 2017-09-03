@@ -31,7 +31,6 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
-import ai.grakn.graql.internal.reasoner.atom.binary.type.IsaAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
@@ -285,7 +284,7 @@ public class ResourceAtom extends Binary {
             priority += vpsPriority;
         }
 
-        boolean reifiesRelation =  getNeighbours()
+        boolean reifiesRelation =  getNeighbours(Atom.class)
                 .filter(Atom::isRelation)
                 .filter(at -> at.getVarName().equals(this.getVarName()))
                 .findFirst().isPresent();
