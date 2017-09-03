@@ -206,7 +206,16 @@ public abstract class Atom extends AtomicBase {
         return getPredicates(IdPredicate.class).filter(p -> p.getVarName().equals(var)).findFirst().orElse(null);
     }
 
-    protected abstract Stream<Predicate> getInnerPredicates();
+    public abstract Stream<Predicate> getInnerPredicates();
+
+    /**
+     * @param type the class of {@link Predicate} to return
+     * @param <T> the type of {@link Predicate} to return
+     * @return stream of predicates relevant to this atom
+     */
+    public <T extends Predicate> Stream<T> getInnerPredicates(Class<T> type){
+        return getInnerPredicates().filter(type::isInstance).map(type::cast);
+    }
 
     /**
      * @return set of types relevant to this atom

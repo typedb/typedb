@@ -177,7 +177,7 @@ public class InferenceRule {
         //only transfer value predicates if head has a user specified value variable
         Atom headAtom = head.getAtom();
         if(headAtom.isResource() && ((ResourceAtom) headAtom).getMultiPredicate().isEmpty()){
-            parentAtom.getPredicates(ValuePredicate.class)
+            parentAtom.getInnerPredicates(ValuePredicate.class)
                     .flatMap(vp -> vp.unify(unifier).stream())
                     .forEach(vp -> {
                         head.addAtomic(AtomicFactory.create(vp, head));

@@ -235,6 +235,13 @@ public class ResourceAtom extends Binary {
     @Override
     public boolean requiresMaterialisation(){ return true;}
 
+    @Override
+    public Set<Var> getVarNames(){
+        Set<Var> varNames = super.getVarNames();
+        multiPredicate.stream().flatMap(p -> p.getVarNames().stream()).forEach(varNames::add);
+        return varNames;
+    }
+
     private boolean isSuperNode(){
         return tx().graql().match(getCombinedPattern()).admin().stream()
                 .skip(ResolutionPlan.RESOURCE_SUPERNODE_SIZE)
@@ -315,7 +322,7 @@ public class ResourceAtom extends Binary {
     }
 
     @Override
-    protected Stream<Predicate> getInnerPredicates(){
+    public Stream<Predicate> getInnerPredicates(){
         return Stream.concat(super.getInnerPredicates(), getMultiPredicate().stream());
     }
 

@@ -8,13 +8,13 @@ $y isa product;$y has name 'Nocturnes';
 },
 then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
-#isa inference-rule,
-#when {$x isa person;
-#$t isa tag;$t has name 'Roger Waters';
-#($x, $t) isa tagging;
-#$y isa tag;$y has name 'Pink Floyd';
-#},
-#then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
+isa inference-rule,
+when {$x isa person;
+$t isa tag;$t has name 'Roger Waters';
+($x, $t) isa tagging;
+$y isa tag;$y has name 'Pink Floyd';
+},
+then {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 
 #isa inference-rule,
 #when {$x isa person;

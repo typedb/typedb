@@ -135,7 +135,7 @@ public abstract class Binary extends Atom {
     }
 
     @Override
-    protected Stream<Predicate> getInnerPredicates(){
+    public Stream<Predicate> getInnerPredicates(){
         return Stream.of(typePredicate);
     }
 
