@@ -36,8 +36,8 @@ public class Main {
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .forEach(Main::runExport);
-        } catch (Throwable throwable){
-            System.err.println(throwable.getMessage());
+        } catch (IllegalArgumentException e){
+            System.err.println(e.getMessage());
         }
     }
 

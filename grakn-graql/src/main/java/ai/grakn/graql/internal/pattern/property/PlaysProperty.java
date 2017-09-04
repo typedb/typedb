@@ -18,11 +18,9 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
@@ -30,7 +28,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.PlaysAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
@@ -90,20 +87,27 @@ public abstract class PlaysProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Role role = executor.get(this.role().var()).asRole();
-        executor.get(var).asType().plays(role);
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Role role = executor.get(this.role().var()).asRole();
+            executor.get(var).asType().plays(role);
+        };
+
+        return PropertyExecutor.builder(method).requires(var, role().var()).build();
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, role().var());
-    }
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Type type = executor.get(var).asType();
+            Role role = executor.get(this.role().var()).asRole();
 
-    @Override
-    public void delete(GraknTx graph, Concept concept) {
-        Label roleLabel = role().getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
-        concept.asType().deletePlays(graph.getSchemaConcept(roleLabel));
+            if (!type.isDeleted() && !role.isDeleted()) {
+                type.deletePlays(role);
+            }
+        };
+
+        return PropertyExecutor.builder(method).requires(var, role().var()).build();
     }
 
     @Override

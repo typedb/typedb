@@ -24,15 +24,15 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.graql.Pattern;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.structure.AbstractElement;
 import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -45,7 +45,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
-import static ai.grakn.util.Schema.BaseType.RULE_TYPE;
 
 /**
  * <p>
@@ -65,23 +64,23 @@ import static ai.grakn.util.Schema.BaseType.RULE_TYPE;
  */
 public final class ElementFactory {
     private final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
-    private final GraknTxAbstract graknGraph;
+    private final GraknTxAbstract tx;
 
-    public ElementFactory(GraknTxAbstract graknGraph){
-        this.graknGraph = graknGraph;
+    public ElementFactory(GraknTxAbstract tx){
+        this.tx = tx;
     }
 
     private <X extends Concept, E extends AbstractElement> X getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder){
-        if(!graknGraph.txCache().isConceptCached(conceptId)){
+        if(!tx.txCache().isConceptCached(conceptId)){
             X newConcept = conceptBuilder.apply(element);
-            graknGraph.txCache().cacheConcept(newConcept);
+            tx.txCache().cacheConcept(newConcept);
         }
 
-        X concept = graknGraph.txCache().getCachedConcept(conceptId);
+        X concept = tx.txCache().getCachedConcept(conceptId);
 
         //Only track concepts which have been modified.
-        if(graknGraph.isConceptModified(concept)) {
-            graknGraph.txCache().trackForValidation(concept);
+        if(tx.isConceptModified(concept)) {
+            tx.txCache().trackForValidation(concept);
         }
 
         return concept;
@@ -136,13 +135,8 @@ public final class ElementFactory {
         return getOrBuildConcept(vertex, (v) -> new EntityImpl(v, type));
     }
 
-    // ----------------------------------------- Building Rule Types  --------------------------------------------------
-    public RuleTypeImpl buildRuleType(VertexElement vertex, RuleType type){
-        return getOrBuildConcept(vertex, (v) -> new RuleTypeImpl(v, type));
-    }
-
-    // -------------------------------------------- Building Rules
-    RuleImpl buildRule(VertexElement vertex, RuleType type, Pattern when, Pattern then){
+    // ----------------------------------------- Building Rules --------------------------------------------------
+    public RuleImpl buildRule(VertexElement vertex, Rule type, Pattern when, Pattern then){
         return getOrBuildConcept(vertex, (v) -> new RuleImpl(v, type, when, then));
     }
 
@@ -175,7 +169,7 @@ public final class ElementFactory {
         }
 
         ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));
-        if(!graknGraph.txCache().isConceptCached(conceptId)){
+        if(!tx.txCache().isConceptCached(conceptId)){
             Concept concept;
             switch (type) {
                 case RELATIONSHIP:
@@ -205,15 +199,12 @@ public final class ElementFactory {
                 case RULE:
                     concept = new RuleImpl(vertexElement);
                     break;
-                case RULE_TYPE:
-                    concept = new RuleTypeImpl(vertexElement);
-                    break;
                 default:
                     throw GraknTxOperationException.unknownConcept(type.name());
             }
-            graknGraph.txCache().cacheConcept(concept);
+            tx.txCache().cacheConcept(concept);
         }
-        return graknGraph.txCache().getCachedConcept(conceptId);
+        return tx.txCache().getCachedConcept(conceptId);
     }
 
     /**
@@ -241,7 +232,7 @@ public final class ElementFactory {
 
 
         ConceptId conceptId = ConceptId.of(edgeElement.id().getValue());
-        if(!graknGraph.txCache().isConceptCached(conceptId)){
+        if(!tx.txCache().isConceptCached(conceptId)){
             Concept concept;
             switch (label) {
                 case RESOURCE:
@@ -250,9 +241,9 @@ public final class ElementFactory {
                 default:
                     throw GraknTxOperationException.unknownConcept(label.name());
             }
-            graknGraph.txCache().cacheConcept(concept);
+            tx.txCache().cacheConcept(concept);
         }
-        return graknGraph.txCache().getCachedConcept(conceptId);
+        return tx.txCache().getCachedConcept(conceptId);
     }
 
     /**
@@ -275,7 +266,6 @@ public final class ElementFactory {
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
                 if(label.equals(RELATIONSHIP_TYPE.name())) return Schema.BaseType.RELATIONSHIP;
                 if(label.equals(Schema.BaseType.ATTRIBUTE_TYPE.name())) return Schema.BaseType.ATTRIBUTE;
-                if(label.equals(RULE_TYPE.name())) return Schema.BaseType.RULE;
             }
         }
         throw new IllegalStateException("Could not determine the base type of vertex [" + vertex + "]");
@@ -283,7 +273,7 @@ public final class ElementFactory {
 
     // ---------------------------------------- Non Concept Construction -----------------------------------------------
     public EdgeElement buildEdgeElement(Edge edge){
-        return new EdgeElement(graknGraph, edge);
+        return new EdgeElement(tx, edge);
     }
 
     Casting buildCasting(Edge edge){
@@ -308,13 +298,11 @@ public final class ElementFactory {
 
     @Nullable
     public VertexElement buildVertexElement(Vertex vertex){
-        try {
-            graknGraph.validVertex(vertex);
-        } catch (IllegalStateException e){
-            LOG.warn("Invalid vertex [" + vertex + "] due to " + e.getMessage(), e);
+        if (!tx.validElement(vertex)) {
+            LOG.warn("Invalid vertex [" + vertex + "]");
             return null;
         }
 
-        return new VertexElement(graknGraph, vertex);
+        return new VertexElement(tx, vertex);
     }
 }

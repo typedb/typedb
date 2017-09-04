@@ -108,4 +108,11 @@ public class GraknBackendException extends GraknException {
     public static GraknBackendException noSuchKeyspace(String keyspace) {
         return new GraknBackendException("No such keyspace " + keyspace);
     }
+
+    /**
+     * Thrown when there is a migration failure due to a backend failure
+     */
+    public static GraknBackendException migrationFailure(String exception){
+        return new GraknBackendException("Error on backend has stopped migration: " + exception);
+    }
 }

@@ -83,7 +83,7 @@ public class GraknComputerImpl implements GraknComputer {
             applyFilters(types, includesShortcut);
             return graphComputer.submit().get();
         } catch (InterruptedException | ExecutionException e) {
-            throw asRuntimeException(e);
+            throw asRuntimeException(e.getCause());
         }
     }
 

@@ -30,7 +30,7 @@ import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import javafx.util.Pair;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -111,7 +111,7 @@ public class QueryAnswerStream {
 
     private static Answer joinOperator(Answer m1, Answer m2){
         boolean isCompatible = true;
-        Set<Var> joinVars = Sets.intersection(m1.keySet(), m2.keySet());
+        Set<Var> joinVars = Sets.intersection(m1.vars(), m2.vars());
         Iterator<Var> it = joinVars.iterator();
         while(it.hasNext() && isCompatible) {
             Var var = it.next();

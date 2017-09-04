@@ -52,8 +52,7 @@ public class ConjunctiveState extends QueryState {
     private final Iterator<Answer> dbIterator;
 
     private boolean visited = false;
-
-    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConjunctiveState.class);
 
     public ConjunctiveState(ReasonerQueryImpl q,
                             Answer sub,
@@ -62,10 +61,7 @@ public class ConjunctiveState extends QueryState {
                             Set<ReasonerAtomicQuery> subGoals,
                             QueryCache<ReasonerAtomicQuery> cache) {
         super(sub, u, parent, subGoals, cache);
-
-        this.query = ReasonerQueries
-                    .create(q)
-                    .addSubstitution(sub);
+        this.query = ReasonerQueries.create(q, sub);
 
         if (!query.isRuleResolvable()){
             dbIterator = query.getMatchQuery().stream()
@@ -74,7 +70,7 @@ public class ConjunctiveState extends QueryState {
             subQueries = new LinkedList<>();
         } else {
             dbIterator = Collections.emptyIterator();
-            subQueries = ResolutionPlan.getResolutionPlanFromTraversal(query);
+            subQueries = new ResolutionPlan(query).queryPlan();
 
             LOG.trace("CQ plan:\n" + subQueries.stream()
                     .map(aq -> aq.toString() + (aq.isRuleResolvable()? "*" : ""))
@@ -95,7 +91,7 @@ public class ConjunctiveState extends QueryState {
             return new AnswerState(dbIterator.next(), getUnifier(), getParentState());
         }
 
-        if (!visited) {
+        if (!subQueries.isEmpty() && !visited) {
             visited = true;
             return new CumulativeState(subQueries, new QueryAnswer(), getUnifier(), this, getSubGoals(), getCache());
         }

@@ -1,3 +1,6 @@
+#!groovy
+//This sets properties in the Jenkins server. In this case run every 8 hours
+properties([pipelineTriggers([cron('H H/8 * * *')])])
 node {
   //Everything is wrapped in a try catch so we can handle any test failures
   //If one test fails then all the others will stop. I.e. we fail fast
@@ -12,6 +15,10 @@ node {
         stage('Build Grakn') {//Stages allow you to organise and group things within Jenkins
           sh 'npm config set registry http://registry.npmjs.org/'
           checkout scm
+            def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
+          slackSend channel: "#github", message: """
+Build Started on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+authored by - """ + user
           sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
           sh "mvn versions:set -DnewVersion=${env.BRANCH_NAME} -DgenerateBackupPoms=false"
           sh 'mvn clean install -Dmaven.repo.local=' + workspace + '/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT'
@@ -28,44 +35,53 @@ node {
         }
       }
     }
-    //Sets up environmental variables which can be shared between multiple tests
-    withEnv(['VALIDATION_DATA=' + workspace + '/generate-SNB/readwrite_neo4j--validation_set.tar.gz',
-             'CSV_DATA=' + workspace + '/generate-SNB/social_network',
-             'KEYSPACE=snb',
-             'ENGINE=localhost:4567',
-             'ACTIVE_TASKS=1000',
-             'PATH+EXTRA=' + workspace + '/grakn-package/bin',
-             'LDBC_DRIVER=' + workspace + '/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar',
-             'LDBC_CONNECTOR=' + workspace + "/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar",
-             'LDBC_VALIDATION_CONFIG=' + workspace + '/grakn-test/test-snb/src/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
-//      timeout(180) {
-//        dir('generate-SNB') {
-//          stage('Load Validation Data') {
-//            sh 'wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz'
-//            sh '../grakn-test/test-snb/src/generate-SNB/load-SNB.sh arch validate'
-//          }
-//        }
-//        stage('Measure Size') {
-//          sh 'nodetool flush'
-//          sh 'du -hd 0 grakn-package/db/cassandra/data'
-//        }
-//      }
-      timeout(360) {
-        dir('grakn-test/test-snb/') {
-          stage('Build the SNB connectors') {
-            sh 'mvn clean package assembly:single -Dmaven.repo.local=' + workspace + '/maven -DskipTests -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
-          }
-        }
-//        dir('validate-snb') {
-//          stage('Validate Queries') {
-//            sh '../grakn-test/test-snb/src/validate-snb/validate.sh'
-//          }
-//        }
+    //Only run validation master/stable
+    if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
+      //Sets up environmental variables which can be shared between multiple tests
+      withEnv(['VALIDATION_DATA=' + workspace + '/generate-SNB/readwrite_neo4j--validation_set.tar.gz',
+	       'CSV_DATA=' + workspace + '/generate-SNB/social_network',
+	       'KEYSPACE=snb',
+	       'ENGINE=localhost:4567',
+	       'ACTIVE_TASKS=1000',
+	       'PATH+EXTRA=' + workspace + '/grakn-package/bin',
+	       'LDBC_DRIVER=' + workspace + '/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar',
+	       'LDBC_CONNECTOR=' + workspace + "/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar",
+	       'LDBC_VALIDATION_CONFIG=' + workspace + '/grakn-test/test-snb/src/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
+	timeout(180) {
+	  dir('generate-SNB') {
+	    stage('Load Validation Data') {
+	      sh 'wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz'
+	      sh '../grakn-test/test-snb/src/generate-SNB/load-SNB.sh arch validate'
+	    }
+	  }
+	  stage('Measure Size') {
+	    sh 'nodetool flush'
+	    sh 'du -hd 0 grakn-package/db/cassandra/data'
+	  }
+	}
+	timeout(360) {
+	  dir('grakn-test/test-snb/') {
+	    stage('Build the SNB connectors') {
+	      sh 'mvn clean package assembly:single -Dmaven.repo.local=' + workspace + '/maven -DskipTests -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
+	    }
+	  }
+	  dir('validate-snb') {
+	    stage('Validate Queries') {
+	      sh '../grakn-test/test-snb/src/validate-snb/validate.sh'
+	    }
+	  }
+	}
       }
+      def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
+      slackSend channel: "#github", color: "good", message: """
+  Periodic Build Success on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+  authored by - """ + user
     }
-    slackSend channel: "#github", message: "Periodic Build Success on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
   } catch (error) {
-    slackSend channel: "#github", message: "Periodic Build Failed on ${env.BRANCH_NAME}: ${env.BUILD_NUMBER} (<${env.BUILD_URL}flowGraphTable/|Open>)"
+    def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
+    slackSend channel: "#github", color: "danger", message: """
+Periodic Build Failed on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+authored by - """ + user
     throw error
   } finally { // Tears down test environment
     timeout(5) {

@@ -28,7 +28,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.ConceptBuilder;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.SubAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
@@ -88,26 +87,36 @@ public abstract class SubProperty extends AbstractVarProperty implements NamedPr
     }
 
     @Override
-    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        SchemaConcept superConcept = executor.get(superType().var()).asSchemaConcept();
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            SchemaConcept superConcept = executor.get(superType().var()).asSchemaConcept();
 
-        Optional<ConceptBuilder> builder = executor.tryBuilder(var);
+            Optional<ConceptBuilder> builder = executor.tryBuilder(var);
 
-        if (builder.isPresent()) {
-            builder.get().sub(superConcept);
-        } else {
-            ConceptBuilder.setSuper(executor.get(var).asSchemaConcept(), superConcept);
-        }
+            if (builder.isPresent()) {
+                builder.get().sub(superConcept);
+            } else {
+                ConceptBuilder.setSuper(executor.get(var).asSchemaConcept(), superConcept);
+            }
+        };
+
+        return PropertyExecutor.builder(method).requires(superType().var()).produces(var).build();
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(superType().var());
-    }
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            SchemaConcept concept = executor.get(var).asSchemaConcept();
 
-    @Override
-    public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
+            SchemaConcept expectedSuperConcept = executor.get(superType().var()).asSchemaConcept();
+            SchemaConcept actualSuperConcept = concept.sup();
+
+            if (!concept.isDeleted() && expectedSuperConcept.equals(actualSuperConcept)) {
+                concept.delete();
+            }
+        };
+
+        return PropertyExecutor.builder(method).requires(var, superType().var()).build();
     }
 
     @Override

@@ -1,4 +1,4 @@
-insert
+define
 
 #############################################################################
 #                                                                           #
@@ -6,7 +6,7 @@ insert
 #                                                                           #
 #############################################################################
 
-#$makeHighDegreeEventsHighConfidence isa inference-rule
+#makeHighDegreeEventsHighConfidence sub rule
 #when
 #{$e isa event has degree > 2;
 #}
@@ -20,7 +20,7 @@ insert
 #                                                                           #
 #############################################################################
 
- $materializePeopleNames isa inference-rule
+ materializePeopleNames sub rule
  when
  {$b isa birth has confidence "high" has firstname $name;
  $rel (happening: $b, protagonist: $p) isa event-protagonist;
@@ -28,7 +28,7 @@ insert
  then
  {$p has firstname $name;};
 
- $materializePeopleMiddleNames isa inference-rule
+ materializePeopleMiddleNames sub rule
  when
  {$b isa birth has confidence "high" has middlename $name;
  $rel (happening: $b, protagonist: $p) isa event-protagonist;
@@ -36,7 +36,7 @@ insert
  then
  {$p has middlename $name;};
 
- $materializePeopleSurnames isa inference-rule
+ materializePeopleSurnames sub rule
  when
  {$b isa birth has confidence "high" has surname $name;
  $rel (happening: $b, protagonist: $p) isa event-protagonist;
@@ -44,7 +44,7 @@ insert
  then
  {$p has surname $name;};
 
- $materializePeopleGender isa inference-rule
+ materializePeopleGender sub rule
  when
  {$b isa birth has confidence "high" has gender $gender;
  $rel (happening: $b, protagonist: $p) isa event-protagonist;
@@ -52,7 +52,7 @@ insert
  then
  {$p has gender $gender;};
 
- $materializePeopleBirthDates isa inference-rule
+ materializePeopleBirthDates sub rule
  when
  {$b isa birth has confidence "high" has birth-date $date;
  $rel (happening: $b, protagonist: $p) isa event-protagonist;
@@ -60,7 +60,7 @@ insert
  then
  {$p has birth-date $date;};
 
- $materializePeopleDeathDates isa inference-rule
+ materializePeopleDeathDates sub rule
  when
  {$b isa death has confidence "high" has death-date $date;
  $rel (happening: $b, protagonist: $p);
@@ -74,7 +74,7 @@ insert
 #                                                                           #
 #############################################################################
 
-$materializeParentChildRelations isa inference-rule
+materializeParentChildRelations sub rule
 when
 {
 $b isa birth has confidence "high";
@@ -91,7 +91,7 @@ then
 #                                                                           #
 #############################################################################
 
-$materializeMarriagesFromWeddings isa inference-rule
+materializeMarriagesFromWeddings sub rule
 when
 {$w isa wedding has confidence "high";
 $rel1 (happening: $w, protagonist: $s1) isa event-protagonist;
@@ -110,7 +110,7 @@ then
 #                                                                           #
 #############################################################################
 
-isa inference-rule
+rule-1 sub rule
 when
 {(grandparent: $x, grandchild: $y) isa grandparentship;
 $x has gender "female";
@@ -118,7 +118,7 @@ $x has gender "female";
 then
 {(grandmother: $x) isa grandparentship;};
 
-isa inference-rule
+rule-2 sub rule
 when
 {(grandparent: $x, grandchild: $y) isa grandparentship;
 $x has gender "male";
@@ -126,7 +126,7 @@ $x has gender "male";
 then
 {(grandfather: $x) isa grandparentship;};
 
-isa inference-rule
+rule-3 sub rule
 when
 {(grandchild: $x, grandparent: $y) isa grandparentship;
 $x has gender "male";
@@ -134,7 +134,7 @@ $x has gender "male";
 then
 {(grandson: $x) isa grandparentship;};
 
-isa inference-rule
+rule-4 sub rule
 when
 {(grandchild: $x, grandparent: $y) isa grandparentship;
 $x has gender "female";
@@ -142,7 +142,7 @@ $x has gender "female";
 then
 {(granddaughter: $x) isa grandparentship;};
 
-isa inference-rule
+rule-5 sub rule
 when
 {(parent: $x, child: $y) isa parentship;
 $x has gender "female";
@@ -150,7 +150,7 @@ $x has gender "female";
 then
 {(mother: $x) isa parentship;};
 
-isa inference-rule
+rule-6 sub rule
 when
 {(parent: $x, child: $y) isa parentship;
 $x has gender "male";
@@ -158,7 +158,7 @@ $x has gender "male";
 then
 {(father: $x) isa parentship;};
 
-isa inference-rule
+rule-7 sub rule
 when
 {(child: $x, parent: $y) isa parentship;
 $x has gender "female";
@@ -166,7 +166,7 @@ $x has gender "female";
 then
 {(daughter: $x) isa parentship;};
 
-isa inference-rule
+rule-8 sub rule
 when
 {(child: $x, parent: $y) isa parentship;
 $x has gender "male";
@@ -174,7 +174,7 @@ $x has gender "male";
 then
 {(son: $x) isa parentship;};
 
-isa inference-rule
+rule-9 sub rule
 when
 {($x, $y) isa marriage;
 $x has gender "female";
@@ -182,7 +182,7 @@ $y has gender "male";}
 then
 {(wife: $x, husband: $y) isa marriage;};
 
-isa inference-rule
+rule-10 sub rule
 when
 {(parent-in-law: $x, child-in-law: $y) isa in-laws;
 $x has gender "male";
@@ -190,7 +190,7 @@ $x has gender "male";
 then
 {(father-in-law: $x) isa in-laws;};
 
-isa inference-rule
+rule-11 sub rule
 when
 {(parent-in-law: $x, child-in-law: $y) isa in-laws;
 $x has gender "female";
@@ -198,7 +198,7 @@ $x has gender "female";
 then
 {(mother-in-law: $x) isa in-laws;};
 
-isa inference-rule
+rule-12 sub rule
 when
 {(child-in-law: $x, parent-in-law: $y) isa in-laws;
 $x has gender "male";
@@ -206,7 +206,7 @@ $x has gender "male";
 then
 {(son-in-law: $x) isa in-laws;};
 
-isa inference-rule
+rule-13 sub rule
 when
 {(child-in-law: $x, parent-in-law: $y) isa in-laws;
 $x has gender "female";
@@ -220,7 +220,7 @@ then
 #                                                                           #
 #############################################################################
 
-$parentsOfParentsAreGrandparents isa inference-rule
+parentsOfParentsAreGrandparents sub rule
 when
 {(parent:$p, child: $gc) isa parentship;
 (parent: $gp, child: $p) isa parentship;
@@ -228,7 +228,7 @@ when
 then
 {(grandparent: $gp, grandchild: $gc) isa grandparentship;};
 
-$peopleWithSameParentsAreSiblings isa inference-rule
+peopleWithSameParentsAreSiblings sub rule
 when
 {(parent: $m, child: $x) isa parentship;
 (parent: $m, child: $y) isa parentship;
@@ -241,7 +241,7 @@ $x != $y;
 then
 {(sibling1: $x, sibling2: $y) isa siblings;};
 
-$peopleWithSiblingsParentsAreCousins isa inference-rule
+peopleWithSiblingsParentsAreCousins sub rule
 when
 {
 (parent: $p, child: $c1) isa parentship;
@@ -252,14 +252,14 @@ $c1 != $c2;
 then
 {(cousin1: $c1, cousin2: $c2) isa cousins;};
 
-$parentsOfSpousesAreInLaws isa inference-rule
+parentsOfSpousesAreInLaws sub rule
 when
 {(spouse1: $x, spouse2: $y) isa marriage;
 (parent: $il, child: $y) isa parentship;}
 then
 {(parent-in-law: $il, child-in-law: $x) isa in-laws;};
 
-$parentsOfSpousesAreInLaws2 isa inference-rule
+parentsOfSpousesAreInLaws2 sub rule
 when
 {(spouse1: $x, spouse2: $y) isa marriage;
 (parent: $il, child: $x) isa parentship;}
@@ -267,7 +267,7 @@ then
 {(parent-in-law: $il, child-in-law: $y) isa in-laws;};
 
 #TODO: THIS IS HOW THE RULE SHOULD LOOK LIKE. FOR THE MOMENT I WILL USE TWO RULES INSTEAD
-#$parentsOfSpousesAreInLaws isa inference-rule
+#parentsOfSpousesAreInLaws sub rule
 #when
 #{($r1: $x, $r2: $y) isa marriage;
 #$r1 isa generic-spouse;

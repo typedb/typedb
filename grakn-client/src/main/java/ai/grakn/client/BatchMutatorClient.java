@@ -72,13 +72,10 @@ import org.slf4j.LoggerFactory;
  * @author alexandraorth
  */
 public class BatchMutatorClient {
-
     private static final Logger LOG = LoggerFactory.getLogger(BatchMutatorClient.class);
 
     // Change in behaviour in v0.14 Previously infinite, now limited
     private static final int MAX_RETRIES = 100;
-
-    private final MetricRegistry metricRegistry = new MetricRegistry();
 
     private final Set<Future<Void>> futures;
     private final Collection<Query> queries;
@@ -88,6 +85,7 @@ public class BatchMutatorClient {
     private final Timer batchSendToLoaderTimer;
     private final Timer batchSendToEngineTimer;
     private final Meter failureMeter;
+    private final boolean debugOn;
 
     private Consumer<TaskId> onCompletionOfTask;
     private AtomicInteger batchNumber;
@@ -95,24 +93,25 @@ public class BatchMutatorClient {
     private boolean retry = false;
     private ExecutorService threadPool;
 
-    public BatchMutatorClient(String keyspace, String uri) {
-        this(keyspace, uri, (TaskId t) -> {}, true);
+    public BatchMutatorClient(String keyspace, String uri, boolean debugOn) {
+        this(keyspace, uri, (TaskId t) -> {}, true, debugOn);
     }
 
-    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskId> onCompletionOfTask) {
-        this(keyspace, uri, onCompletionOfTask, false);
+    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskId> onCompletionOfTask, boolean debugOn) {
+        this(keyspace, uri, onCompletionOfTask, false, debugOn);
     }
 
-    public BatchMutatorClient(String keyspace, String uri, boolean reportStats) {
+    public BatchMutatorClient(String keyspace, String uri, boolean reportStats, boolean debugOn) {
         this(keyspace, uri, (TaskId t) -> {}, reportStats);
     }
 
-    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskId> onCompletionOfTask, boolean reportStats) {
+    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskId> onCompletionOfTask, boolean reportStats, boolean debugOn) {
         this.keyspace = keyspace;
         this.queries = new ArrayList<>();
         this.futures = new HashSet<>();
         this.onCompletionOfTask = onCompletionOfTask;
         this.batchNumber = new AtomicInteger(0);
+        this.debugOn = debugOn;
         // Some extra logic here since we don't provide a well formed URI by default
         if (uri.startsWith("http")) {
             try {
@@ -131,6 +130,7 @@ public class BatchMutatorClient {
         setBatchSize(25);
         setNumberActiveTasks(25);
 
+        MetricRegistry metricRegistry = new MetricRegistry();
         batchSendToLoaderTimer = metricRegistry
                 .timer(name(BatchMutatorClient.class, "batch_send_to_loader"));
         batchSendToEngineTimer = metricRegistry
@@ -221,7 +221,7 @@ public class BatchMutatorClient {
     /**
      * Load any remaining batches in the queue.
      */
-    public void flush(){
+    private void flush(){
         sendQueriesWhenBatchLargerThanValue(0);
     }
 
@@ -243,10 +243,12 @@ public class BatchMutatorClient {
             try {
                 f.get();
             } catch (InterruptedException|ExecutionException e) {
-                e.printStackTrace();
+                LOG.error("Error while waiting for termination", e);
+                printError(e.getMessage());
             }
         });
-        LOG.info("All tasks completed");
+        futures.clear();
+        System.out.println("All tasks completed");
     }
 
     /**
@@ -293,14 +295,21 @@ public class BatchMutatorClient {
             try {
                 TaskId taskId = sendQueryRetry.call(callable);
                 onCompletionOfTask.accept(taskId);
-                return null;
             } catch (Exception e) {
                 failureMeter.mark();
                 LOG.error("Error while executing queries:\n{}", queries, e);
-                throw new RuntimeException(e);
+                printError(e.getMessage());
+                if(debugOn) {
+                    throw new RuntimeException(e);
+                }
             }
+            return null;
         });
         futures.add(future);
+    }
+
+    private void printError(String message){
+        if(debugOn) System.err.println(message);
     }
 }
 

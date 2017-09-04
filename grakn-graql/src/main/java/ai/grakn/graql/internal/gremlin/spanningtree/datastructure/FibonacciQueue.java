@@ -30,7 +30,6 @@ import java.util.function.Function;
  * A PriorityQueue built on top of a FibonacciHeap
  *
  * @param <E> the type of the values stored
- * @author Sam Sam Thomson
  * @author Jason Liu
  */
 public class FibonacciQueue<E> extends AbstractQueue<E> {

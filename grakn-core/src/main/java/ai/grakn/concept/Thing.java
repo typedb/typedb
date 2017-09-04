@@ -72,15 +72,28 @@ public interface Thing extends Concept{
     Stream<Role> plays();
 
     /**
-     * Creates a relation from this instance to the provided {@link Attribute}.
-     *
-     * @param attribute The {@link Attribute} to which a relationship is created
+     * Creates a {@link Relationship} from this {@link Thing} to the provided {@link Attribute}.
+     * <p>
+     * This has the same effect as {@link #attributeRelationship(Attribute)}, but returns the instance itself to allow
+     * method chaining.
+     * </p>
+     * @param attribute The {@link Attribute} to which a {@link Relationship} is created
      * @return The instance itself
      */
     Thing attribute(Attribute attribute);
 
     /**
-     * Retrieves a collection of {@link Attribute} attached to this Instances
+     * Creates a {@link Relationship} from this instance to the provided {@link Attribute}.
+     * <p>
+     * This has the same effect as {@link #attribute(Attribute)}, but returns the new {@link Relationship}.
+     * </p>
+     * @param attribute The {@link Attribute} to which a {@link Relationship} is created
+     * @return The {@link Relationship} connecting the {@link Thing} and the {@link Attribute}
+     */
+    Relationship attributeRelationship(Attribute attribute);
+
+    /**
+     * Retrieves a collection of {@link Attribute} attached to this {@link Thing}
      * @see Attribute
      *
      * @param attributeTypes {@link AttributeType}s of the {@link Attribute}s attached to this entity
@@ -88,6 +101,13 @@ public interface Thing extends Concept{
      */
     @CheckReturnValue
     Stream<Attribute<?>> attributes(AttributeType... attributeTypes);
+
+    /**
+     * Removes the provided {@link Attribute} from this {@link Thing}
+     * @param attribute the {@link Attribute} to be removed
+     * @return The {@link Thing} itself
+     */
+    Thing deleteAttribute(Attribute attribute);
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

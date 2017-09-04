@@ -176,7 +176,7 @@ public class BatchMutatorClientTest {
             nameTag.attribute(nameTagId);
             graph.admin().commitNoLogs();
 
-            return spy(new BatchMutatorClient(graph.getKeyspace(), engine.uri(), (t) -> {}, false));
+            return spy(new BatchMutatorClient(graph.getKeyspace(), engine.uri(), true));
         }
     }
 

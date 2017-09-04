@@ -85,11 +85,13 @@ public class Migrator {
      *
      * Uses the default batch size and number of active tasks.
      *
+     * NOTE: Currently only used for testing purposes
+     *
      * @param template
      * @param converter
      */
     public void load(String template, Stream<Map<String, Object>> converter) {
-        load(template, converter, Migrator.BATCH_SIZE, Migrator.ACTIVE_TASKS, Migrator.RETRY);
+        load(template, converter, Migrator.BATCH_SIZE, Migrator.ACTIVE_TASKS, Migrator.RETRY, true);
     }
 
     /**
@@ -114,14 +116,24 @@ public class Migrator {
      * @param retry If the Loader should continue attempt to send tasks when Engine is not available
      */
     public void load(String template, Stream<Map<String, Object>> converter,
-                     int batchSize, int numberActiveTasks, boolean retry){
+                     int batchSize, int numberActiveTasks, boolean retry, boolean debug){
         this.startTime = System.currentTimeMillis();
         this.batchSize = batchSize;
 
-        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates(), true);
+        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates(), true, debug);
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
         loader.setRetryPolicy(retry);
+        // TODO: restore this when error condition is returned
+        //        loader.setTaskCompletionConsumer(json -> {
+        //            if (json.has(STACK_TRACE) && json.at(STACK_TRACE).isString()) {
+        //                if(debug){
+        //                    throw GraknBackendException.migrationFailure(json.at(STACK_TRACE).asString());
+        //                } else {
+        //                    System.err.println(json.at(STACK_TRACE).asString());
+        //                }
+        //            }
+        //        });
 
         converter
                 .flatMap(d -> template(template, d))

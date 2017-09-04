@@ -9,10 +9,10 @@ queryListElem : matchQuery | insertOnly | simpleQuery ;
 
 queryEOF       : query EOF ;
 query          : matchQuery | insertQuery | simpleQuery ;
-simpleQuery    : defineQuery | deleteQuery | aggregateQuery | computeQuery ;
+simpleQuery    : defineQuery | undefineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
 matchQuery     : MATCH patterns                                   # matchBase
-               | matchQuery 'select' VARIABLE (',' VARIABLE)* ';' # matchSelect
+               | matchQuery 'select' variables                ';' # matchSelect
                | matchQuery 'limit' INTEGER                   ';' # matchLimit
                | matchQuery 'offset' INTEGER                  ';' # matchOffset
                | matchQuery 'distinct'                        ';' # matchDistinct
@@ -23,9 +23,12 @@ insertQuery    : matchInsert | insertOnly ;
 insertOnly     : INSERT varPatterns ;
 matchInsert    : matchQuery INSERT varPatterns ;
 defineQuery    : DEFINE varPatterns ;
-deleteQuery    : matchQuery 'delete' varPatterns ;
+undefineQuery  : UNDEFINE varPatterns ;
+deleteQuery    : matchQuery 'delete' variables? ';' ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
+
+variables      : VARIABLE (',' VARIABLE)* ;
 
 computeMethod  : min | max | median | mean | std | sum | count | path | cluster | degrees ;
 
@@ -74,7 +77,7 @@ property       : 'isa' variable                     # isa
                | 'val' predicate                    # propValue
                | 'when' '{' patterns '}'            # propWhen
                | 'then' '{' varPatterns '}'         # propThen
-               | 'has' label (VARIABLE | predicate) # propHas
+               | 'has' label (resource=VARIABLE | predicate) ('as' relation=VARIABLE)?# propHas
                | 'has' variable                     # propResource
                | 'key' variable                     # propKey
                | '(' casting (',' casting)* ')'     # propRel
@@ -135,6 +138,7 @@ SIZE           : 'size' ;
 MATCH          : 'match' ;
 INSERT         : 'insert' ;
 DEFINE         : 'define' ;
+UNDEFINE       : 'undefine' ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
 ORDER          : 'asc' | 'desc' ;

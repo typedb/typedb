@@ -47,18 +47,16 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
         if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
 
         Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
         Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
 
-        String randomId = getRandomJobId();
-
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds, randomId),
+                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
                 new StdMapReduce(statisticsResourceLabelIds, dataType,
-                        DegreeVertexProgram.DEGREE + randomId),
+                        DegreeVertexProgram.DEGREE),
                 allSubLabelIds);
         Map<Serializable, Map<String, Double>> std = result.memory().get(StdMapReduce.class.getName());
         Map<String, Double> stdTuple = std.get(MapReduce.NullObject.instance());

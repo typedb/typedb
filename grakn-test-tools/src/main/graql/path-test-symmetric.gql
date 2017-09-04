@@ -25,13 +25,13 @@ start-vertex plays pathA, plays pathB;
 ##################RULES#############################
 ####################################################
 
-isa inference-rule,
+rule-1 sub rule,
 when {
 ($x, $y) isa arc;},
 then {
 ($x, $y) isa path;};
 
-isa inference-rule,
+rule-2 sub rule,
 when {
 ($x, $z) isa path;
 ($z, y) isa path;},

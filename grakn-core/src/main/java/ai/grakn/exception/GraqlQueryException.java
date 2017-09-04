@@ -18,16 +18,15 @@
 
 package ai.grakn.exception;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.macro.Macro;
 import ai.grakn.util.ErrorMessage;
 
@@ -92,10 +91,8 @@ public class GraqlQueryException extends GraknException{
         return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
     }
 
-    public static GraqlQueryException failDelete(VarProperty property) {
-        StringBuilder builder = new StringBuilder();
-        property.buildString(builder);
-        return new GraqlQueryException(ErrorMessage.DELETE_UNSUPPORTED_PROPERTY.getMessage(builder.toString()));
+    public static GraqlQueryException deleteSchemaConcept(SchemaConcept schemaConcept) {
+        return create("cannot delete schema concept %s. Use `undefine` instead.", schemaConcept);
     }
 
     public static GraqlQueryException insertUnsupportedProperty(String propertyName) {
@@ -266,6 +263,10 @@ public class GraqlQueryException extends GraknException{
 
     public static GraqlQueryException nonAtomicQuery(ReasonerQuery reasonerQuery) {
         return new GraqlQueryException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(reasonerQuery));
+    }
+
+    public static GraqlQueryException nonGroundNeqPredicate(ReasonerQuery reasonerQuery) {
+        return new GraqlQueryException(ErrorMessage.NON_GROUND_NEQ_PREDICATE.getMessage(reasonerQuery));
     }
 
     public static GraqlQueryException ruleCreationArityMismatch() {

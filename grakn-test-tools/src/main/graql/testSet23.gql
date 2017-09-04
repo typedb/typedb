@@ -20,17 +20,17 @@ knows sub knows-trans
     relates friend1
     relates friend2;
 
-insert
-
 #Rules
 
-$rule0 isa inference-rule
+rule0 sub rule
     when {
         (friend1:$x, friend2:$y);
         (friend1:$y, friend2:$z); }
     then {
         (friend1:$x, friend2:$z) isa knows-trans;
     };
+
+insert
 
 #Data
 

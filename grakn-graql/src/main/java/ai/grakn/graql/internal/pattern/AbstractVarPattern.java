@@ -181,7 +181,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
 
     @Override
     public final VarPattern val(ValuePredicate predicate) {
-        return addProperty(ValueProperty.of(predicate.admin()));
+        return addProperty(ValueProperty.of(predicate));
     }
 
     @Override
@@ -195,13 +195,18 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
     }
 
     @Override
-    public final VarPattern has(String type, VarPattern varPattern) {
-        return has(Label.of(type), varPattern);
+    public final VarPattern has(String type, VarPattern attribute) {
+        return has(Label.of(type), attribute);
     }
 
     @Override
-    public final VarPattern has(Label type, VarPattern varPattern) {
-        return addProperty(HasResourceProperty.of(type, varPattern.admin()));
+    public final VarPattern has(Label type, VarPattern attribute) {
+        return has(type, attribute, Graql.var());
+    }
+
+    @Override
+    public final VarPattern has(Label type, VarPattern attribute, VarPattern relationship) {
+        return addProperty(HasResourceProperty.of(type, attribute.admin(), relationship.admin()));
     }
 
     @Override

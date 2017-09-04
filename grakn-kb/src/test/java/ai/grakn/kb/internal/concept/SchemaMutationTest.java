@@ -140,15 +140,6 @@ public class SchemaMutationTest extends TxTestBase {
     }
 
     @Test
-    public void whenAddingRuleTypeUsingBatchLoadingGraph_Throw(){
-        expectedException.expect(GraknTxOperationException.class);
-        expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());
-
-        GraknTxAbstract<?> graknGraphBatch = switchToBatchGraph();
-        graknGraphBatch.putRuleType("This Will Fail");
-    }
-
-    @Test
     public void whenAddingRelationTypeUsingBatchLoadingGraph_Throw(){
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.schemaMutation().getMessage());

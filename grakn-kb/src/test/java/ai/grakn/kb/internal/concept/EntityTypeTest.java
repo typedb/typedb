@@ -212,7 +212,7 @@ public class EntityTypeTest extends TxTestBase {
 
     @Test
     public void whenSettingMetaTypeToAbstract_Throw(){
-        Type meta = tx.getMetaRuleType();
+        Type meta = tx.getMetaEntityType();
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.metaTypeImmutable(meta.getLabel()).getMessage());
@@ -222,7 +222,7 @@ public class EntityTypeTest extends TxTestBase {
 
     @Test
     public void whenAddingRoleToMetaType_Throw(){
-        Type meta = tx.getMetaRuleType();
+        Type meta = tx.getMetaEntityType();
         Role role = tx.putRole("A Role");
 
         expectedException.expect(GraknTxOperationException.class);
@@ -426,6 +426,37 @@ public class EntityTypeTest extends TxTestBase {
         expectedException.expectMessage(RESERVED_WORD.getMessage(reservedWord));
 
         tx.putEntityType(reservedWord);
+    }
+
+    @Test
+    public void whenRemovingAttributesFromAType_EnsureTheTypeNoLongerHasThoseAttributes(){
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.DataType.INTEGER);
+        EntityType person = tx.putEntityType("person").attribute(name).attribute(age);
+        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
+        person.deleteAttribute(name);
+        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(age));
+    }
+
+    @Test
+    public void whenRemovingKeysFromAType_EnsureKeysAreRemovedButAttributesAreNot(){
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        AttributeType<Integer> age = tx.putAttributeType("age", AttributeType.DataType.INTEGER);
+        AttributeType<Integer> id = tx.putAttributeType("id", AttributeType.DataType.INTEGER);
+        EntityType person = tx.putEntityType("person").attribute(name).attribute(age).key(id);
+
+        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
+        assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
+
+        //Nothing changes
+        person.deleteAttribute(id);
+        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
+        assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
+
+        //Key is removed
+        person.deleteKey(id);
+        assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age));
+        assertThat(person.keys().collect(toSet()), empty());
     }
 
 }

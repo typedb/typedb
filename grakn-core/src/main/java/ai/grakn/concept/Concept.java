@@ -20,6 +20,7 @@ package ai.grakn.concept;
 
 import ai.grakn.exception.GraknTxOperationException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 import javax.annotation.CheckReturnValue;
 
@@ -33,8 +34,8 @@ import javax.annotation.CheckReturnValue;
  *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
- *     ({@link EntityType}, {@link Role}, {@link RelationshipType}, {@link RuleType} or {@link AttributeType})
- *     or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Attribute}, {@link Rule}).
+ *     ({@link EntityType}, {@link Role}, {@link RelationshipType}, {@link Rule} or {@link AttributeType})
+ *     or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Attribute}).
  * </p>
  *
  * @author fppt
@@ -122,13 +123,13 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Return as a {@link RuleType} if the {@link Concept} is a {@link RuleType}.
+     * Return as a {@link Rule} if the {@link Concept} is a {@link Rule}.
      *
-     * @return A {@link RuleType} if the {@link Concept} is a {@link RuleType}
+     * @return A {@link Rule} if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
-    default RuleType asRuleType(){
-        throw GraknTxOperationException.invalidCasting(this, RuleType.class);
+    default Rule asRule(){
+        throw GraknTxOperationException.invalidCasting(this, Rule.class);
     }
 
     /**
@@ -158,16 +159,6 @@ public interface Concept extends Comparable<Concept>{
     @CheckReturnValue
     default <D> Attribute<D> asAttribute(){
         throw GraknTxOperationException.invalidCasting(this, Attribute.class);
-    }
-
-    /**
-     * Return as a {@link Rule} if the {@link Concept} is a {@link Rule} {@link Thing}.
-     *
-     * @return A {@link Rule} if the {@link Concept} is a {@link Rule}
-     */
-    @CheckReturnValue
-    default Rule asRule(){
-        throw GraknTxOperationException.invalidCasting(this, Rule.class);
     }
 
     /**
@@ -241,12 +232,12 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link RuleType}.
+     * Determine if the {@link Concept} is a {@link Rule}.
      *
-     * @return true if the {@link Concept} is a {@link RuleType}
+     * @return true if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
-    default boolean isRuleType(){
+    default boolean isRule(){
         return false;
     }
 
@@ -281,19 +272,18 @@ public interface Concept extends Comparable<Concept>{
     }
 
     /**
-     * Determine if the {@link Concept} is a {@link Rule}.
-     *
-     * @return true if the {@link Concept} is a {@link Rule}
-     */
-    @CheckReturnValue
-    default boolean isRule(){
-        return false;
-    }
-
-    /**
      * Delete the Concept.
      *
      * @throws GraknTxOperationException Throws an exception if this is a type with incoming concepts.
      */
     void delete() throws GraknTxOperationException;
+
+    /**
+     * Return whether the concept has been deleted.
+     *
+     * <p>
+     *     Under some implementations, such as {@link TinkerGraph} this always returns false.
+     * </p>
+     */
+    boolean isDeleted();
 }

@@ -27,7 +27,6 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
 import ai.grakn.util.StringUtil;
 import com.google.auto.value.AutoValue;
@@ -71,13 +70,24 @@ public abstract class RegexProperty extends AbstractVarProperty implements Uniqu
     }
 
     @Override
-    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.get(var).asAttributeType().setRegex(regex());
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.get(var).asAttributeType().setRegex(regex());
+        };
+
+        return PropertyExecutor.builder(method).requires(var).build();
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var);
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            AttributeType<Object> attributeType = executor.get(var).asAttributeType();
+            if (!attributeType.isDeleted() && regex().equals(attributeType.getRegex())) {
+                attributeType.setRegex(null);
+            }
+        };
+
+        return PropertyExecutor.builder(method).requires(var).build();
     }
 
     @Override
