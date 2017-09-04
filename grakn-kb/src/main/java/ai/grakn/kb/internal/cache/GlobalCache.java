@@ -33,14 +33,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * <p> Tracks Knowledge Base Specific Variables </p>
+ * <p>
+ *     Tracks Knowledge Base Specific Variables
+ * </p>
  *
- * <p> Caches Knowledge Base or Session specific data which is shared across transactions: <ol>
- * <li>Schema Cache - All the types which make up the schema. This cache expires</li> <li> Label
- * Cache - All the labels which make up the schema. This can never expire and is needed in order to
- * perform fast lookups. Essentially it is used for mapping labels to ids. </li> <ol/> </p>
+ * <p>
+ *     Caches Knowledge Base or Session specific data which is shared across transactions:
+ *     <ol>
+ *         <li>Schema Cache - All the types which make up the schema. This cache expires</li>
+ *         <li>
+ *             Label Cache - All the labels which make up the schema. This can never expire and is needed in order
+ *             to perform fast lookups. Essentially it is used for mapping labels to ids.
+ *         </li>
+ *     <ol/>
+ * </p>
  *
  * @author fppt
+ *
  */
 public class GlobalCache {
 

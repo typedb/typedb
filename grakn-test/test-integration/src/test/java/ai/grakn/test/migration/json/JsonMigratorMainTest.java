@@ -42,7 +42,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemErrRule;
@@ -109,7 +108,6 @@ public class JsonMigratorMainTest {
     }
 
     @Test
-    @Ignore
     public void whenMigrationFailsOnTheServer_ErrorIsPrintedToSystemErr(){
         run("-u", engine.uri(), "-input", dataFile, "-template", templateFile, "-keyspace", "wrong-keyspace");
         String expectedMessage = GraknBackendException.noSuchKeyspace("wrong-keyspace").getMessage();

@@ -19,7 +19,7 @@
 package ai.grakn.test.engine;
 
 import ai.grakn.client.TaskClient;
-import ai.grakn.engine.TaskId;
+import ai.grakn.client.TaskResult;
 import ai.grakn.engine.TaskStatus;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
@@ -97,7 +97,7 @@ public class GraknEngineFailoverIT {
     @Property(trials=10)
     public void whenSubmittingTasksToOneEngine_TheyComplete(List<TaskState> tasks1) throws Exception {
         // Create & Send tasks to rest api
-        Set<TaskId> tasks = sendTasks(engine1.port(), tasks1);
+        Set<TaskResult> tasks = sendTasks(engine1.port(), tasks1);
 
         // Wait for those tasks to complete
         waitForStatus(tasks, COMPLETED, FAILED);
@@ -112,10 +112,10 @@ public class GraknEngineFailoverIT {
     public void whenSubmittingTasksToTwoEngines_TheyComplete(
             List<TaskState> tasks1, List<TaskState> tasks2) throws Exception {
         // Create & Send tasks to rest api
-        Set<TaskId> taskIds1 = sendTasks(engine1.port(), tasks1);
-        Set<TaskId> taskIds2 = sendTasks(engine2.port(), tasks2);
+        Set<TaskResult> taskIds1 = sendTasks(engine1.port(), tasks1);
+        Set<TaskResult> taskIds2 = sendTasks(engine2.port(), tasks2);
 
-        Set<TaskId> allTasks = new HashSet<>();
+        Set<TaskResult> allTasks = new HashSet<>();
         allTasks.addAll(taskIds1);
         allTasks.addAll(taskIds2);
 
@@ -134,7 +134,7 @@ public class GraknEngineFailoverIT {
     public void whenSubmittingTasksToOneEngineAndRandomlyKillingTheOthers_TheyComplete(
             @Size(min=10000, max=20000) List<TaskState> tasks) throws Exception {
 
-        Set<TaskId> taskIds = sendTasks(engine1.port(), tasks);
+        Set<TaskResult> taskIds = sendTasks(engine1.port(), tasks);
 
         // Giving some time, the subscriptions to Redis are started asynchronously
         int interval = 3000;
@@ -154,8 +154,8 @@ public class GraknEngineFailoverIT {
         LOG.info("DONE");
     }
 
-    private void assertTasksCompletedWithCorrectStatus(Set<TaskId> tasks) {
-        tasks.stream().map(storage::getState).forEach(t -> {
+    private void assertTasksCompletedWithCorrectStatus(Set<TaskResult> tasks) {
+        tasks.stream().map(TaskResult::getTaskId).map(storage::getState).forEach(t -> {
             if (t.status() == null) {
                 fail("Found null status for " + t);
             }
@@ -166,7 +166,7 @@ public class GraknEngineFailoverIT {
         });
     }
 
-    private Set<TaskId> sendTasks(int port, List<TaskState> tasks) {
+    private Set<TaskResult> sendTasks(int port, List<TaskState> tasks) {
         TaskClient engineClient = TaskClient.of("localhost", port);
         return tasks.stream().map(t -> {
             try {
@@ -183,14 +183,14 @@ public class GraknEngineFailoverIT {
         }).filter(Objects::nonNull).collect(toSet());
     }
 
-    private static void waitForStatus(Set<TaskId> taskIds, TaskStatus... status) {
+    private static void waitForStatus(Set<TaskResult> taskIds, TaskStatus... status) {
         Set<TaskStatus> statusSet = Sets.newHashSet(status);
         taskIds.forEach(t -> BackgroundTaskTestUtils.waitForStatus(storage, t, statusSet));
     }
 
-    private static boolean isDone(TaskId taskId){
+    private static boolean isDone(TaskResult taskId){
         try {
-            TaskStatus status = storage.getState(taskId).status();
+            TaskStatus status = storage.getState(taskId.getTaskId()).status();
             if (status == FAILED || status == COMPLETED || status == STOPPED) {
                 return true;
             } else {

@@ -81,7 +81,7 @@ public class TaskClientTest {
         Json configuration = Json.nil();
 
         TaskId identifier = client.sendTask(taskClass, creator, runAt, interval, configuration,
-                true);
+                true).getTaskId();
 
         verify(manager).runTask(argThat(argument ->
                 argument.getId().equals(identifier)

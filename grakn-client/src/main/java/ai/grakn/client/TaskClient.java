@@ -30,6 +30,7 @@ import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_WAIT_PARAMETER;
+import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
@@ -91,12 +92,12 @@ public class TaskClient extends Client {
      * @param configuration Data on which to execute the task
      * @return Identifier of the submitted task that will be executed on a server
      */
-    public TaskId sendTask(Class<?> taskClass, String creator, Instant runAt, Duration interval,
+    public TaskResult sendTask(Class<?> taskClass, String creator, Instant runAt, Duration interval,
             Json configuration, boolean wait) {
         return sendTask(taskClass.getName(), creator, runAt, interval, configuration, -1, wait);
     }
 
-    TaskId sendTask(String taskClass, String creator, Instant runAt, Duration interval,
+    TaskResult sendTask(String taskClass, String creator, Instant runAt, Duration interval,
             Json configuration, long limit, boolean wait) {
         try {
             URIBuilder uri = new URIBuilder(TASKS)
@@ -137,7 +138,12 @@ public class TaskClient extends Client {
 
             Json jsonResponse = asJsonHandler.handleResponse(response);
 
-            return TaskId.of(jsonResponse.at(0).at("id").asString());
+            Json responseElement = jsonResponse.at(0);
+            return TaskResult.builder()
+                    .setTaskId(TaskId.of(responseElement.at("id").asString()))
+                    .setCode(responseElement.at("code").asString())
+                    .setStackTrace(responseElement.at(STACK_TRACE).asString())
+                    .build();
         } catch (IOException e) {
             throw GraknBackendException.engineUnavailable(host, port, e);
         } catch (URISyntaxException e) {

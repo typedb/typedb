@@ -18,7 +18,6 @@
 
 package ai.grakn.client;
 
-import ai.grakn.engine.TaskId;
 import ai.grakn.graql.Query;
 import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 import static ai.grakn.util.REST.Request.BATCH_NUMBER;
@@ -87,25 +86,21 @@ public class BatchMutatorClient {
     private final Meter failureMeter;
     private final boolean debugOn;
 
-    private Consumer<TaskId> onCompletionOfTask;
+    private Consumer<TaskResult> onCompletionOfTask;
     private AtomicInteger batchNumber;
     private int batchSize;
     private boolean retry = false;
     private ExecutorService threadPool;
 
     public BatchMutatorClient(String keyspace, String uri, boolean debugOn) {
-        this(keyspace, uri, (TaskId t) -> {}, true, debugOn);
+        this(keyspace, uri, (TaskResult t) -> {}, true, debugOn);
     }
 
-    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskId> onCompletionOfTask, boolean debugOn) {
+    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean debugOn) {
         this(keyspace, uri, onCompletionOfTask, false, debugOn);
     }
 
-    public BatchMutatorClient(String keyspace, String uri, boolean reportStats, boolean debugOn) {
-        this(keyspace, uri, (TaskId t) -> {}, reportStats);
-    }
-
-    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskId> onCompletionOfTask, boolean reportStats, boolean debugOn) {
+    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean reportStats, boolean debugOn) {
         this.keyspace = keyspace;
         this.queries = new ArrayList<>();
         this.futures = new HashSet<>();
@@ -164,7 +159,7 @@ public class BatchMutatorClient {
      * Provide a consumer function to execute upon task completion
      * @param onCompletionOfTask function applied to the last state of the task
      */
-    public BatchMutatorClient setTaskCompletionConsumer(Consumer<TaskId> onCompletionOfTask){
+    public BatchMutatorClient setTaskCompletionConsumer(Consumer<TaskResult> onCompletionOfTask){
         this.onCompletionOfTask = onCompletionOfTask;
         return this;
     }
@@ -275,7 +270,7 @@ public class BatchMutatorClient {
                 .set(TASK_LOADER_MUTATIONS,
                         queries.stream().map(Query::toString).collect(toList()));
 
-        Callable<TaskId> callable = () -> {
+        Callable<TaskResult> callable = () -> {
             try (Context ignored = batchSendToEngineTimer.time()) {
                 return taskClient
                         .sendTask("ai.grakn.engine.loader.MutatorTask",
@@ -284,7 +279,7 @@ public class BatchMutatorClient {
             }
         };
 
-        Retryer<TaskId> sendQueryRetry = RetryerBuilder.<TaskId>newBuilder()
+        Retryer<TaskResult> sendQueryRetry = RetryerBuilder.<TaskResult>newBuilder()
                 .retryIfExceptionOfType(IOException.class)
                 .retryIfRuntimeException()
                 .withStopStrategy(StopStrategies.stopAfterAttempt(retry ? MAX_RETRIES : 1))
@@ -293,7 +288,7 @@ public class BatchMutatorClient {
 
         Future<Void> future = threadPool.submit(() -> {
             try {
-                TaskId taskId = sendQueryRetry.call(callable);
+                TaskResult taskId = sendQueryRetry.call(callable);
                 onCompletionOfTask.accept(taskId);
             } catch (Exception e) {
                 failureMeter.mark();

@@ -65,10 +65,6 @@ public enum TaskStatus {
                 return State.DONE;
             case RUNNING:
                 return State.PROCESSING;
-            case SCHEDULED:
-                return State.NEW;
-            case CREATED:
-                return State.NEW;
             default:
                 return State.NEW;
         }
@@ -82,8 +78,6 @@ public enum TaskStatus {
                 return RUNNING;
             case DONE:
                 return COMPLETED;
-            case NEW:
-                return CREATED;
             default:
                 return CREATED;
         }

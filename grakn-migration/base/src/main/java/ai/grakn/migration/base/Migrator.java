@@ -19,7 +19,8 @@
 package ai.grakn.migration.base;
 
 import ai.grakn.client.BatchMutatorClient;
-import ai.grakn.engine.TaskId;
+import ai.grakn.client.TaskResult;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
@@ -124,16 +125,16 @@ public class Migrator {
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
         loader.setRetryPolicy(retry);
-        // TODO: restore this when error condition is returned
-        //        loader.setTaskCompletionConsumer(json -> {
-        //            if (json.has(STACK_TRACE) && json.at(STACK_TRACE).isString()) {
-        //                if(debug){
-        //                    throw GraknBackendException.migrationFailure(json.at(STACK_TRACE).asString());
-        //                } else {
-        //                    System.err.println(json.at(STACK_TRACE).asString());
-        //                }
-        //            }
-        //        });
+            loader.setTaskCompletionConsumer(taskResult -> {
+                String stackTrace = taskResult.getStackTrace();
+                if (stackTrace != null && !stackTrace.isEmpty()) {
+                    if(debug){
+                        throw GraknBackendException.migrationFailure(stackTrace);
+                    } else {
+                        System.err.println(stackTrace);
+                    }
+                }
+            });
 
         converter
                 .flatMap(d -> template(template, d))
@@ -168,8 +169,8 @@ public class Migrator {
      *
      * @return function that operates on completion of a task
      */
-    private Consumer<TaskId> recordMigrationStates(){
-        return (TaskId taskId) -> {
+    private Consumer<TaskResult> recordMigrationStates(){
+        return (TaskResult taskId) -> {
             numberBatchesCompleted.incrementAndGet();
 
             long timeElapsedSeconds = (System.currentTimeMillis() - startTime)/1000;

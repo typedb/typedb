@@ -21,6 +21,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
+import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.controller.util.Requests.mandatoryQueryParameter;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
@@ -36,6 +37,7 @@ import static ai.grakn.util.REST.Request.TASK_RUN_WAIT_PARAMETER;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.EXCEPTION;
 import static ai.grakn.util.REST.Response.Task.ID;
+import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
 import static ai.grakn.util.REST.Response.Task.STATUS;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
@@ -310,19 +312,26 @@ public class TasksController {
         }
     }
 
+    // TODO: move away from JSON and create API class
     private Json addTaskToManager(TaskStateWithConfiguration taskState, boolean wait) {
         Json singleTaskReturnJson = Json.object().set("index", taskState.getIndex());
         try {
             TaskState state = taskState.getTaskState();
+            TaskId id = state.getId();
             if (wait) {
                 LOG.debug("Running task {}", state.getId());
                 manager.runTask(state, TaskConfiguration.of(taskState.getConfiguration()));
+                TaskState stateAfterRun = manager.storage().getState(id);
+                if (stateAfterRun.status().equals(FAILED)) {
+                    singleTaskReturnJson.set("code", HttpStatus.SC_BAD_REQUEST);
+                    singleTaskReturnJson.set(STACK_TRACE, stateAfterRun.stackTrace());
+                }
             } else {
                 LOG.debug("Adding to queue task {}", state.getId());
                 manager.addTask(state, TaskConfiguration.of(taskState.getConfiguration()));
+                singleTaskReturnJson.set("code", HttpStatus.SC_OK);
             }
-            singleTaskReturnJson.set("id", state.getId().getValue());
-            singleTaskReturnJson.set("code", HttpStatus.SC_OK);
+            singleTaskReturnJson.set("id", id.getValue());
         } catch (Exception e) {
             LOG.error("Server error while adding the task", e);
             singleTaskReturnJson.set("code", HttpStatus.SC_INTERNAL_SERVER_ERROR);
