@@ -237,9 +237,9 @@ daughter sub child;
 Included in *basic-genealogy.gql* are a set of Graql rules to instruct Grakn's reasoner on how to label each parentship relationship:
 
 ```graql
-insert
+define
 
-$genderizeParentships1 isa inference-rule
+genderizeParentships1 sub rule
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
@@ -248,7 +248,7 @@ $c has gender "male";
 then
 {(father: $p, son: $c) isa parentship;};
 
-$genderizeParentships2 isa inference-rule
+genderizeParentships2 sub rule
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
@@ -257,7 +257,7 @@ $c has gender "female";
 then
 {(father: $p, daughter: $c) isa parentship;};
 
-$genderizeParentships3 isa inference-rule
+genderizeParentships3 sub rule
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";
@@ -266,7 +266,7 @@ $c has gender "male";
 then
 {(mother: $p, son: $c) isa parentship;};
 
-$genderizeParentships4 isa inference-rule
+genderizeParentships4 sub rule
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";

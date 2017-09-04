@@ -348,7 +348,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public AtomicState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return getAtoms(NeqPredicate.class).findFirst().isPresent()?
                 new NeqComplementState(this, sub, u, parent, subGoals, cache) :
                 new AtomicState(this, sub, u, parent, subGoals, cache);

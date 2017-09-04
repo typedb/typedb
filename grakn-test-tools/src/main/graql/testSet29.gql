@@ -20,11 +20,9 @@ relation1 sub relationship
 
 name sub attribute datatype string;
 
-insert
-
 #Rules
 
-isa inference-rule
+rule-1 sub rule
 	when {
 		(role1:$x, role2:$z) isa relation1;
 		(role1:$z, role2:$y) isa relation1;
@@ -32,6 +30,8 @@ isa inference-rule
 	then {
 		(role1:$x, role2:$y) isa relation1;
 	};
+
+insert
 
 #Data
 

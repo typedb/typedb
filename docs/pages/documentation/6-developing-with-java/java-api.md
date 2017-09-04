@@ -242,18 +242,12 @@ It is worth remembering that adding a type hierarchy allows you to create a more
 
 ## Rule Java API
 
-All rule instances are of type inference-rule which can be retrieved by:
-
-```java
-RuleType inferenceRule = tx.getMetaRuleInference();
-```
-
-Rule instances can be added to the knowledge base both through the Java API as well as through Graql. We will consider an example:
+Rules can be added to the knowledge base both through the Java API as well as through Graql. We will consider an example:
 
 ```graql
-insert
+define
 
-$R1 isa inference-rule,
+R1 sub rule,
 when {
     (parent: $p, child: $c) isa Parent;
 },
@@ -261,7 +255,7 @@ then {
     (ancestor: $p, descendant: $c) isa Ancestor;
 };
 
-$R2 isa inference-rule,
+R2 sub rule,
 when {
     (parent: $p, child: $c) isa Parent;
     (ancestor: $c, descendant: $d) isa Ancestor;
@@ -297,8 +291,8 @@ rule2then = and(tx.graql().parsePatterns("(ancestor: $p, descendant: $d) isa Anc
 We conclude the rule creation with defining the rules from their constituent patterns:
 
 ```java
-Rule rule1 = inferenceRule.putRule(rule1when, rule1then);
-Rule rule2 = inferenceRule.putRule(rule2when, rule2then);
+Rule rule1 = tx.putRule("R1", rule1when, rule1then);
+Rule rule2 = tx.putRule("R2", rule2when, rule2then);
 ```
 
 

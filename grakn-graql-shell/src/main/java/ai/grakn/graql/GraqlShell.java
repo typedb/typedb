@@ -88,7 +88,6 @@ import static ai.grakn.util.REST.RemoteShell.USERNAME;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static ai.grakn.util.Schema.BaseType.TYPE;
 import static ai.grakn.util.Schema.ImplicitType.HAS;
-import static ai.grakn.util.Schema.MetaSchema.INFERENCE_RULE;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
@@ -123,7 +122,7 @@ public class GraqlShell {
     private static final String LICENSE_COMMAND = "license";
     private static final String CLEAN_COMMAND = "clean";
     private static final String HI_POP_COMMAND =
-            HAS.name().substring(0, 1) + INFERENCE_RULE.name().substring(0, 1) +
+            HAS.name().substring(0, 1) + Integer.class.getSimpleName().substring(0, 1) +
             Strings.repeat(TYPE.name().substring(2, 3), 2) + Object.class.getSimpleName().substring(0, 1);
 
     private static final int QUERY_CHUNK_SIZE = 1000;

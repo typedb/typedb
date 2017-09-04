@@ -36,9 +36,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
-import static ai.grakn.util.Schema.MetaSchema.CONSTRAINT_RULE;
 import static ai.grakn.util.Schema.MetaSchema.ENTITY;
-import static ai.grakn.util.Schema.MetaSchema.INFERENCE_RULE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static ai.grakn.util.Schema.MetaSchema.THING;
 import static java.util.stream.Collectors.toList;
@@ -56,9 +54,7 @@ public class GraknMatchers {
     public static final Matcher<MatchableConcept> concept = type(THING.getLabel());
     public static final Matcher<MatchableConcept> entity = type(ENTITY.getLabel());
     public static final Matcher<MatchableConcept> resource = type(ATTRIBUTE.getLabel());
-    public static final Matcher<MatchableConcept> rule = type(RULE.getLabel());
-    public static final Matcher<MatchableConcept> inferenceRule = type(INFERENCE_RULE.getLabel());
-    public static final Matcher<MatchableConcept> constraintRule = type(CONSTRAINT_RULE.getLabel());
+    public static final Matcher<MatchableConcept> rule = rule(RULE.getLabel());
 
     /**
      * Create a matcher to test against the results of a Graql query.
@@ -240,6 +236,32 @@ public class GraknMatchers {
             Label transform(MatchableConcept item) {
                 Concept concept = item.get();
                 return concept.isRole() ? concept.asRole().getLabel() : null;
+            }
+        };
+    }
+
+    /**
+     * Create a matcher to test that the concept has the given type name.
+     */
+    public static Matcher<MatchableConcept> rule(String type) {
+        return rule(Label.of(type));
+    }
+
+    /**
+     * Create a matcher to test that the concept has the given type name.
+     */
+    public static Matcher<MatchableConcept> rule(Label expectedLabel) {
+        return new PropertyEqualsMatcher<MatchableConcept, Label>(expectedLabel) {
+
+            @Override
+            public String getName() {
+                return "rule";
+            }
+
+            @Override
+            Label transform(MatchableConcept item) {
+                Concept concept = item.get();
+                return concept.isRule() ? concept.asRule().getLabel() : null;
             }
         };
     }

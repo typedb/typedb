@@ -100,9 +100,9 @@ This is how reasoning in Graql works. It checks whether the statements in the fi
 As we saw above, it is possible for Grakn to infer the gender-specific roles (`mother`, `father`, `daughter`, `son`) that a `person` entity plays. It does this by applying the following rules:
 
 ```graql
-insert
+define
 
-$genderizeParentships1 isa inference-rule
+genderizeParentships1 sub rule
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
@@ -111,7 +111,7 @@ $c has gender "male";
 then
 {(father: $p, son: $c) isa parentship;};
 
-$genderizeParentships2 isa inference-rule
+genderizeParentships2 sub rule
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
@@ -120,7 +120,7 @@ $c has gender "female";
 then
 {(father: $p, daughter: $c) isa parentship;};
 
-$genderizeParentships3 isa inference-rule
+genderizeParentships3 sub rule
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";
@@ -129,7 +129,7 @@ $c has gender "male";
 then
 {(mother: $p, son: $c) isa parentship;};
 
-$genderizeParentships4 isa inference-rule
+genderizeParentships4 sub rule
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";
@@ -163,9 +163,9 @@ In the genealogy-knowledge-base example, there should be two results returned. W
 The *basic-genealogy* file contains a number of rules for setting up family relationships, such as siblings, cousins, in-laws and the following, which sets up a relationship called `grandparentship`:
 
 ```graql
-insert
+define
 
-$parentsOfParentsAreGrandparents isa inference-rule
+parentsOfParentsAreGrandparents sub rule
 when
 {(parent:$p, child: $gc) isa parentship;
 (parent: $gp, child: $p) isa parentship;
@@ -186,9 +186,9 @@ If so, the right hand side of the rules state that:
 Some additional rules can add more specifics to the `grandparentship` and assign the entities to the roles `grandson`, `granddaughter`, `grandmother` and `grandfather`:
 
 ```graql
-insert
+define
 
-$grandParents1 isa inference-rule
+grandParents1 sub rule
 when
 {($p, son: $gc) isa parentship;
 (father: $gp, $p) isa parentship;
@@ -196,7 +196,7 @@ when
 then
 {(grandfather: $gp, grandson: $gc) isa grandparentship;};
 
-$grandParents2 isa inference-rule
+grandParents2 sub rule
 when
 {($p, daughter: $gc) isa parentship;
 (father: $gp, $p) isa parentship;
@@ -204,7 +204,7 @@ when
 then
 {(grandfather: $gp, granddaughter: $gc) isa grandparentship;};
 
-$grandParents3 isa inference-rule
+grandParents3 sub rule
 when
 {($p, daughter: $gc) isa parentship;
 (mother: $gp, $p) isa parentship;
@@ -212,7 +212,7 @@ when
 then
 {(grandmother: $gp, granddaughter: $gc) isa grandparentship;};
 
-$grandParents4 isa inference-rule
+grandParents4 sub rule
 when
 {($p, son: $gc) isa parentship;
 (mother: $gp, $p) isa parentship;
@@ -247,9 +247,9 @@ In the genealogy-knowledge-base example, there should be three results returned.
 Another rule can be used to infer `person` entities who are cousins:
 
 ```
-insert
+define
 
-$peopleWithSiblingsParentsAreCousins isa inference-rule
+peopleWithSiblingsParentsAreCousins sub rule
 when
 {
 (parent: $p, child: $c1) isa parentship;

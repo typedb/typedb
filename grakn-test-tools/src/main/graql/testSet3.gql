@@ -5,11 +5,9 @@ define
 entity1 sub entity;
 entity2 sub entity;
 
-insert
-
 #Rules
 
-isa inference-rule 
+rule-1 sub rule
 	when {
 		$x isa entity1;
 	}
@@ -17,6 +15,7 @@ isa inference-rule
 		$y isa entity2;
 	};
 
+insert
 
 #Data
 

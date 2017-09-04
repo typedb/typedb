@@ -64,24 +64,18 @@ public class MigrationCLI {
     private static final String COULD_NOT_CONNECT  = "Could not connect to Grakn Engine. Have you run 'grakn.sh start'?";
 
     public static <T extends MigrationOptions> List<Optional<T>> init(String[] args, Function<String[], T> constructor) {
-        try {
-            // get the options from the command line
-            T baseOptions = constructor.apply(args);
+        // get the options from the command line
+        T baseOptions = constructor.apply(args);
 
-            // If there is configuration, create multiple options objects from the config
-            if (baseOptions.getConfiguration() != null) {
-                return extractOptionsFromConfiguration(baseOptions.getConfiguration(), args).stream()
-                        .map(constructor)
-                        .map(MigrationCLI::validate)
-                        .collect(Collectors.toList());
-            } else { // Otherwise, create options from the base options
-                return Collections.singletonList(validate(baseOptions));
-            }
-        } catch (Exception e){
-            System.err.println(e.getMessage());
+        // If there is configuration, create multiple options objects from the config
+        if (baseOptions.getConfiguration() != null) {
+            return extractOptionsFromConfiguration(baseOptions.getConfiguration(), args).stream()
+                    .map(constructor)
+                    .map(MigrationCLI::validate)
+                    .collect(Collectors.toList());
+        } else { // Otherwise, create options from the base options
+            return Collections.singletonList(validate(baseOptions));
         }
-
-        return Collections.emptyList();
     }
 
     private static <T extends MigrationOptions> Optional<T> validate(T options){
@@ -114,8 +108,7 @@ public class MigrationCLI {
             migrator.print(template, data);
         } else {
             printInitMessage(options);
-            migrator.load(template, data,
-                    options.getBatch(), options.getNumberActiveTasks(), options.getRetry());
+            migrator.load(template, data, options.getBatch(), options.getNumberActiveTasks(), options.getRetry(), options.isDebug());
             printWholeCompletionMessage(options);
         }
     }
@@ -139,9 +132,9 @@ public class MigrationCLI {
             builder.append("Graph schema contains:\n");
             builder.append("\t ").append(graph.admin().getMetaEntityType().instances().count()).append(" entity types\n");
             builder.append("\t ").append(graph.admin().getMetaRelationType().instances().count()).append(" relation types\n");
-            builder.append("\t ").append("0 role types\n");
+            builder.append("\t ").append(graph.admin().getMetaRole().subs().count()).append(" roles\n\n");
             builder.append("\t ").append(graph.admin().getMetaResourceType().instances().count()).append(" resource types\n");
-            builder.append("\t ").append(graph.admin().getMetaRuleType().instances().count()).append(" rule types\n\n");
+            builder.append("\t ").append(graph.admin().getMetaRule().subs().count()).append(" rules\n\n");
 
             builder.append("Graph data contains:\n");
             builder.append("\t ").append(qb.match(var("x").isa(label(ENTITY.getLabel()))).aggregate(count()).execute()).append(" entities\n");
@@ -178,7 +171,7 @@ public class MigrationCLI {
         // check file exists
         File configuration = new File(path);
         if(!configuration.exists()){
-            throw new RuntimeException("Could not find configuration file "+ path);
+            throw new IllegalArgumentException("Could not find configuration file "+ path);
         }
 
         try (InputStreamReader reader = new InputStreamReader(new FileInputStream(configuration), Charset.defaultCharset())){

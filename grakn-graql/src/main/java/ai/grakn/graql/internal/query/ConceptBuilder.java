@@ -24,8 +24,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
@@ -336,8 +336,6 @@ public class ConceptBuilder {
             return type.asRelationshipType().addRelationship();
         } else if (type.isAttributeType()) {
             return type.asAttributeType().putAttribute(use(VALUE));
-        } else if (type.isRuleType()) {
-            return type.asRuleType().putRule(use(WHEN), use(THEN));
         } else if (type.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {
             throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
         } else {
@@ -361,8 +359,8 @@ public class ConceptBuilder {
             AttributeType attributeType = superConcept.asAttributeType();
             AttributeType.DataType<?> dataType = useOrDefault(DATA_TYPE, attributeType.getDataType());
             concept = executor.tx().putAttributeType(label, dataType);
-        } else if (superConcept.isRuleType()) {
-            concept = executor.tx().putRuleType(label);
+        } else if (superConcept.isRule()) {
+            concept = executor.tx().putRule(label, use(WHEN), use(THEN));
         } else {
             throw GraqlQueryException.insertMetaType(label, superConcept);
         }
@@ -386,8 +384,8 @@ public class ConceptBuilder {
             subConcept.asRole().sup(superConcept.asRole());
         } else if (superConcept.isAttributeType()) {
             subConcept.asAttributeType().sup(superConcept.asAttributeType());
-        } else if (superConcept.isRuleType()) {
-            subConcept.asRuleType().sup(superConcept.asRuleType());
+        } else if (superConcept.isRule()) {
+            subConcept.asRule().sup(superConcept.asRule());
         } else {
             throw GraqlQueryException.insertMetaType(subConcept.getLabel(), superConcept);
         }

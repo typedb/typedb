@@ -19,8 +19,8 @@
 
 package ai.grakn.generator;
 
+import ai.grakn.concept.Label;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
 import ai.grakn.graql.QueryBuilder;
 
 /**
@@ -28,16 +28,21 @@ import ai.grakn.graql.QueryBuilder;
  *
  * @author Felix Chapman
  */
-public class Rules extends AbstractThingGenerator<Rule, RuleType> {
+public class Rules extends AbstractSchemaConceptGenerator<Rule> {
 
     public Rules() {
-        super(Rule.class, RuleTypes.class);
+        super(Rule.class);
     }
 
     @Override
-    protected Rule newInstance(RuleType type) {
+    protected Rule newSchemaConcept(Label label) {
         // TODO: generate more complicated rules
         QueryBuilder graql = this.tx().graql();
-        return type.putRule(graql.parsePattern("$x"), graql.parsePattern("$x"));
+        return tx().putRule(label, graql.parsePattern("$x"), graql.parsePattern("$x"));
+    }
+
+    @Override
+    protected Rule metaSchemaConcept() {
+        return tx().admin().getMetaRule();
     }
 }

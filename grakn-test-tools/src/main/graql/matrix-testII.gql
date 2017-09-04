@@ -27,26 +27,24 @@ entity2 plays Q-from plays Q-to;
 
 "index" sub attribute, datatype string;
 
-insert
-
 ####################################################
 ##################RULES#############################
 ####################################################
 
-isa inference-rule,
+rule-1 sub rule,
 when {
 (Q-from: $x, Q-to: $y) isa Q;},
 then {
 (P-from: $x, P-to: $y) isa P;};
 
-isa inference-rule,
+rule-2 sub rule,
 when {
 (Q-from: $x, Q-to: $z) isa Q;
 (P-from: $z, P-to: $y) isa P;},
 then {
 (P-from: $x, P-to: $y) isa P;};
 
-isa inference-rule,
+rule-3 sub rule,
 when {
 (P-from: $x, P-to: $y) isa P;},
 then {
