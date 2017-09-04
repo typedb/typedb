@@ -18,7 +18,13 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeId;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -27,7 +33,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+
+import static ai.grakn.graql.Graql.var;
 
 /**
  * Some helper methods for MapReduce and vertex program.
@@ -40,15 +49,27 @@ import java.util.Set;
 public class Utility {
     /**
      * The Grakn type property on a given Tinkerpop vertex.
+     * If the vertex is a {@link SchemaConcept}, return invalid {@link Label}.
      *
      * @param vertex the Tinkerpop vertex
      * @return the type
      */
-    static TypeId getVertexTypeId(Vertex vertex) {
-        if (vertex.property(Schema.ConceptProperty.INSTANCE_TYPE_ID.name()).isPresent()) {
-            return TypeId.of(vertex.value(Schema.ConceptProperty.INSTANCE_TYPE_ID.name()));
+    static LabelId getVertexTypeId(Vertex vertex) {
+        if (vertex.property(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()).isPresent()) {
+            return LabelId.of(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()));
         }
-        return TypeId.invalid();
+        return LabelId.invalid();
+    }
+
+    static boolean vertexHasSelectedTypeId(Vertex vertex, Set<LabelId> selectedTypeIds) {
+        return vertex.property(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()).isPresent() &&
+                selectedTypeIds.contains(LabelId.of(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name())));
+    }
+
+    static boolean vertexHasSelectedTypeId(Vertex vertex, Set<LabelId> selectedTypeId1, Set<LabelId> selectedTypeId2) {
+        return vertex.property(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()).isPresent() &&
+                selectedTypeId1.contains(LabelId.of(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()))) &&
+                selectedTypeId2.contains(LabelId.of(vertex.value(Schema.VertexProperty.THING_TYPE_LABEL_ID.name())));
     }
 
     /**
@@ -61,7 +82,7 @@ public class Utility {
         if (vertex == null) return false;
 
         try {
-            return vertex.property(Schema.ConceptProperty.ID.name()).isPresent();
+            return vertex.property(Schema.VertexProperty.ID.name()).isPresent();
         } catch (IllegalStateException e) {
             return false;
         }
@@ -94,5 +115,36 @@ public class Utility {
         Map<K, V> map = new HashMap<>();
         keyValues.forEachRemaining(pair -> map.put(pair.getKey(), pair.getValue()));
         return map;
+    }
+
+    /**
+     * Check whether it is possible that there is a resource edge between the two given concepts.
+     */
+    public static boolean mayHaveResourceEdge(GraknTx graknGraph, ConceptId conceptId1, ConceptId conceptId2) {
+        Concept concept1 = graknGraph.getConcept(conceptId1);
+        Concept concept2 = graknGraph.getConcept(conceptId2);
+        return concept1 != null && concept2 != null && (concept1.isAttribute() || concept2.isAttribute());
+    }
+
+    /**
+     * Get the resource edge id if there is one. Return null if not.
+     */
+    public static ConceptId getResourceEdgeId(GraknTx graph, ConceptId conceptId1, ConceptId conceptId2) {
+        if (mayHaveResourceEdge(graph, conceptId1, conceptId2)) {
+            Optional<Concept> firstConcept = graph.graql().match(
+                    var("x").id(conceptId1),
+                    var("y").id(conceptId2),
+                    var("z").rel(var("x")).rel(var("y")))
+                    .get("z")
+                    .filter(concept -> {
+                        Relationship relationship = (Relationship) concept;
+                        return relationship.type().isImplicit();
+                    })
+                    .findFirst();
+            if (firstConcept.isPresent()) {
+                return firstConcept.get().getId();
+            }
+        }
+        return null;
     }
 }

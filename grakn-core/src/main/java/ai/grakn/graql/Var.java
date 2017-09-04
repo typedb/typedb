@@ -19,26 +19,17 @@
 
 package ai.grakn.graql;
 
-import java.util.function.Function;
-
 /**
  * A variable in a Graql query
  *
  * @author Felix Chapman
  */
-public interface Var extends VarPatternBuilder {
+public interface Var extends VarPattern {
 
     /**
      * Get the string name of the variable (without prefixed "$")
      */
     String getValue();
-
-    /**
-     * Rename a variable (does not modify the original {@link Var})
-     * @param mapper a function to apply to the underlying variable name
-     * @return the new variable name
-     */
-    Var map(Function<String, String> mapper);
 
     /**
      * Whether the variable has been manually defined or automatically generated.

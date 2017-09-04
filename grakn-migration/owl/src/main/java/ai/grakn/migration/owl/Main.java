@@ -18,7 +18,7 @@
 package ai.grakn.migration.owl;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.migration.base.MigrationCLI;
 import org.semanticweb.owlapi.apibinding.OWLManager;
@@ -26,7 +26,6 @@ import org.semanticweb.owlapi.apibinding.OWLManager;
 import java.io.File;
 import java.util.Optional;
 
-import static ai.grakn.migration.base.MigrationCLI.die;
 import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
 import static ai.grakn.migration.base.MigrationCLI.printWholeCompletionMessage;
 
@@ -36,7 +35,7 @@ import static ai.grakn.migration.base.MigrationCLI.printWholeCompletionMessage;
  * arguments are an OWL file and a Grakn Engine URL. At a minimum an OWL file must be provided.
  * Note that the OWLAPI is not very good at intelligently resolving imports, such as looking in the
  * same folder etc. To import a large ontology made up of multiple imports scattered around in files, 
- * the easiest thing is to use protege to "merge" them into a single ontology file with all axioms 
+ * the easiest thing is to use protege to "merge" them into a single ontology file with all axioms
  * inside it.
  * </p>
  * 
@@ -46,30 +45,33 @@ import static ai.grakn.migration.base.MigrationCLI.printWholeCompletionMessage;
 public class Main {
 
     public static void main(String[] args) {
-        MigrationCLI.init(args, OwlMigrationOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(Main::runOwl);
+        try{
+            MigrationCLI.init(args, OwlMigrationOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(Main::runOwl);
+        } catch (IllegalArgumentException e){
+            System.err.println(e.getMessage());
+        }
     }
 
-    public static void runOwl(OwlMigrationOptions options){
+    private static void runOwl(OwlMigrationOptions options){
         File owlfile = new File(options.getInput());
         if (!owlfile.exists()) {
-            die("Cannot find file: " + options.getInput());
+            throw new IllegalArgumentException("Cannot find file: " + options.getInput());
         }
 
-        printInitMessage(options, owlfile.getPath());
+        printInitMessage(options);
 
         OWLMigrator migrator = new OWLMigrator();
-        try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE)) {
-            migrator.graph(graph)
+        try(GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE)) {
+            migrator.tx(graph)
                     .ontology(OWLManager.createOWLOntologyManager().loadOntologyFromOntologyDocument(owlfile))
                     .migrate();
 
             printWholeCompletionMessage(options);
-        }
-        catch (Throwable t) {
-            die(t);
+        } catch (Throwable t) {
+            System.err.println(t.getMessage());
         }
     }
 }

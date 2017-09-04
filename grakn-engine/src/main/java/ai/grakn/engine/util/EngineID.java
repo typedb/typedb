@@ -86,6 +86,6 @@ public class EngineID implements Serializable {
 
     @Override
     public String toString() {
-        return "EngineId.of(" + escapeJava(value) + ")";
+        return escapeJava(value);
     }
 }

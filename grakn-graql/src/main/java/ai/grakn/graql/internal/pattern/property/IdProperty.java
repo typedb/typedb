@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -28,6 +29,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.StringConverter;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -41,51 +43,60 @@ import java.util.Set;
  *
  * @author Felix Chapman
  */
-public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+@AutoValue
+public abstract class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
-    private final ConceptId id;
+    public static final String NAME = "id";
 
-    public IdProperty(ConceptId id) {
-        this.id = id;
+    public static IdProperty of(ConceptId id) {
+        return new AutoValue_IdProperty(id);
     }
 
-    public ConceptId getId() {
-        return id;
-    }
+    public abstract ConceptId id();
 
     @Override
     public String getName() {
-        return "id";
+        return NAME;
     }
 
     @Override
     public String getProperty() {
-        return StringConverter.idToString(id);
+        return StringConverter.idToString(id());
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.id(start, id));
+        return ImmutableSet.of(EquivalentFragmentSets.id(this, start, id()));
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).id(id());
+        };
 
-        IdProperty that = (IdProperty) o;
-
-        return id.equals(that.id);
-
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 
     @Override
-    public int hashCode() {
-        return id.hashCode();
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        // This property works in both insert and define queries, because it is only for look-ups
+        return insert(var);
+    }
+
+    @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        // This property works in undefine queries, because it is only for look-ups
+        return insert(var);
+    }
+
+    @Override
+    public boolean uniquelyIdentifiesConcept() {
+        return true;
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new IdPredicate(var.getVarName(), this, parent);
+        return new IdPredicate(var.var(), this, parent);
     }
 }

@@ -19,9 +19,7 @@
 package ai.grakn.graql.internal.util;
 
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.PatternBuilder;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarPatternBuilder;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 
@@ -40,15 +38,15 @@ public class AdminConverter {
      * @param patterns a collection of patterns to change to admin
      * @return a collection of Pattern.Admin from the given patterns
      */
-    public static Collection<PatternAdmin> getPatternAdmins(Collection<? extends PatternBuilder> patterns) {
-        return patterns.stream().map(PatternBuilder::pattern).map(Pattern::admin).collect(toList());
+    public static Collection<PatternAdmin> getPatternAdmins(Collection<? extends Pattern> patterns) {
+        return patterns.stream().map(Pattern::admin).collect(toList());
     }
 
     /**
      * @param patterns a collection of vars to change to admin
      * @return a collection of {@link VarPatternAdmin} from the given patterns
      */
-    public static Collection<VarPatternAdmin> getVarAdmins(Collection<? extends VarPatternBuilder> patterns) {
-        return patterns.stream().map(VarPatternBuilder::pattern).map(VarPattern::admin).collect(toList());
+    public static Collection<VarPatternAdmin> getVarAdmins(Collection<? extends VarPattern> patterns) {
+        return patterns.stream().map(VarPattern::admin).collect(toList());
     }
 }

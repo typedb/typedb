@@ -18,30 +18,29 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.graql.Var;
+import ai.grakn.GraknTx;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
-class IsAbstractFragment extends AbstractFragment {
+@AutoValue
+abstract class IsAbstractFragment extends Fragment {
 
-    IsAbstractFragment(Var start) {
-        super(start);
+    @Override
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
+
+        return traversal.has(Schema.VertexProperty.IS_ABSTRACT.name(), true);
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.has(Schema.ConceptProperty.IS_ABSTRACT.name(), true);
-    }
-
-    @Override
-    public String getName() {
+    public String name() {
         return "[is-abstract]";
     }
 
     @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost;
+    public double fragmentCost() {
+        return COST_SAME_AS_PREVIOUS;
     }
 }

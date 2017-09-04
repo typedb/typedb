@@ -18,20 +18,20 @@
 
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.stream.Collectors;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -42,10 +42,10 @@ import java.util.Set;
  * @author Kasper Piskorski
  *
  */
-public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
+public class ValuePredicate extends Predicate<ai.grakn.graql.ValuePredicate> {
 
     public ValuePredicate(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
-    public ValuePredicate(Var varName, ValuePredicateAdmin pred, ReasonerQuery par){
+    public ValuePredicate(Var varName, ai.grakn.graql.ValuePredicate pred, ReasonerQuery par){
         this(createValueVar(varName, pred), par);}
     private ValuePredicate(ValuePredicate pred) { super(pred);}
 
@@ -61,7 +61,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
                 vars.stream().map(v -> new ValuePredicate(v, getPredicate(), this.getParentQuery())).collect(Collectors.toSet());
     }
 
-    public static VarPatternAdmin createValueVar(Var name, ValuePredicateAdmin pred) {
+    public static VarPatternAdmin createValueVar(Var name, ai.grakn.graql.ValuePredicate pred) {
         return name.val(pred).admin();
     }
 
@@ -100,28 +100,25 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     }
 
     @Override
-    public boolean isValuePredicate(){ return true;}
-
-    @Override
     public String getPredicateValue() {
         return getPredicate().getPredicate().map(P::getValue).map(Object::toString).orElse("");
     }
 
     @Override
-    protected ValuePredicateAdmin extractPredicate(VarPatternAdmin pattern) {
+    protected ai.grakn.graql.ValuePredicate extractPredicate(VarPatternAdmin pattern) {
         Iterator<ValueProperty> properties = pattern.getProperties(ValueProperty.class).iterator();
         ValueProperty property = properties.next();
         if (properties.hasNext()) {
-            throw new IllegalStateException("Attempting creation of ValuePredicate atom with more than single predicate");
+            throw GraqlQueryException.valuePredicateAtomWithMultiplePredicates();
         }
-        return property.getPredicate();
+        return property.predicate();
     }
 
     @Override
     public Set<Var> getVarNames(){
         Set<Var> vars = super.getVarNames();
         VarPatternAdmin innerVar = getPredicate().getInnerVar().orElse(null);
-        if(innerVar != null && innerVar.getVarName().isUserDefinedName()) vars.add(innerVar.getVarName());
+        if(innerVar != null && innerVar.var().isUserDefinedName()) vars.add(innerVar.var());
         return vars;
     }
 }

@@ -18,7 +18,8 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeId;
+import ai.grakn.concept.LabelId;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.analytics.Utility.reduceSet;
+import static ai.grakn.graql.internal.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The MapReduce program for collecting the result of a degree query.
@@ -47,16 +49,16 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<String>> {
     public DegreeDistributionMapReduce() {
     }
 
-    public DegreeDistributionMapReduce(Set<TypeId> selectedTypeIds, String degreePropertyKey) {
-        super(selectedTypeIds);
+    public DegreeDistributionMapReduce(Set<LabelId> selectedLabelIds, String degreePropertyKey) {
+        super(selectedLabelIds);
         this.persistentProperties.put(DegreeVertexProgram.DEGREE, degreePropertyKey);
     }
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<String>> emitter) {
-        if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
+        if (selectedTypes.isEmpty() || vertexHasSelectedTypeId(vertex, selectedTypes)) {
             emitter.emit(vertex.value((String) persistentProperties.get(DegreeVertexProgram.DEGREE)),
-                    Collections.singleton(vertex.id().toString()));
+                    Collections.singleton(vertex.value(Schema.VertexProperty.ID.name())));
         } else {
             emitter.emit(NullObject.instance(), Collections.emptySet());
         }

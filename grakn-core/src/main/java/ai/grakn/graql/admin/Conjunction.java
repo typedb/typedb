@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.admin;
 
+import ai.grakn.GraknTx;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 
@@ -37,4 +38,10 @@ public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
 
     @Override
     Disjunction<Conjunction<VarPatternAdmin>> getDisjunctiveNormalForm();
+
+    /**
+     * @return the corresponding reasoner query
+     */
+    @CheckReturnValue
+    ReasonerQuery toReasonerQuery(GraknTx tx);
 }

@@ -18,8 +18,7 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 
@@ -27,7 +26,6 @@ import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 /**
@@ -37,12 +35,12 @@ import java.util.stream.Stream;
  */
 public interface VarPatternAdmin extends PatternAdmin, VarPattern {
     @Override
-    default boolean isVar() {
+    default boolean isVarPattern() {
         return true;
     }
 
     @Override
-    default VarPatternAdmin asVar() {
+    default VarPatternAdmin asVarPattern() {
         return this;
     }
 
@@ -50,13 +48,7 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
      * @return the variable name of this variable
      */
     @CheckReturnValue
-    Var getVarName();
-
-    /**
-     * @param name the new variable name of this variable
-     */
-    @CheckReturnValue
-    VarPatternAdmin setVarName(Var name);
+    Var var();
 
     /**
      * Get a stream of all properties on this variable
@@ -89,45 +81,29 @@ public interface VarPatternAdmin extends PatternAdmin, VarPattern {
     @CheckReturnValue
     <T extends VarProperty> boolean hasProperty(Class<T> type);
 
-    // TODO: If `VarPatternAdmin#setVarName` is removed, this may no longer be necessary
-    /**
-     * Return this {@link VarPattern} with instances of the given {@link VarProperty} modified.
-     * @param type the type of the {@link VarProperty}
-     * @param <T> the type of the {@link VarProperty}
-     * @return whether this {@link VarPattern} has a {@link VarProperty} of the given type
-     */
-    @CheckReturnValue
-    <T extends VarProperty> VarPatternAdmin mapProperty(Class<T> type, UnaryOperator<T> mapper);
-
-    /**
-     * @return the ID this variable represents, if it represents something with a specific ID
-     */
-    @CheckReturnValue
-    Optional<ConceptId> getId();
-
     /**
      * @return the name this variable represents, if it represents something with a specific name
      */
     @CheckReturnValue
-    Optional<TypeLabel> getTypeLabel();
+    Optional<Label> getTypeLabel();
 
     /**
      * @return all variables that this variable references
      */
     @CheckReturnValue
-    Collection<VarPatternAdmin> getInnerVars();
+    Collection<VarPatternAdmin> innerVarPatterns();
 
     /**
      * Get all inner variables, including implicit variables such as in a has property
      */
     @CheckReturnValue
-    Collection<VarPatternAdmin> getImplicitInnerVars();
+    Collection<VarPatternAdmin> implicitInnerVarPatterns();
 
     /**
      * @return all type names that this variable refers to
      */
     @CheckReturnValue
-    Set<TypeLabel> getTypeLabels();
+    Set<Label> getTypeLabels();
 
     /**
      * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')

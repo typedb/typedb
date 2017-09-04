@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.admin;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Type;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 
@@ -43,10 +43,10 @@ public interface ReasonerQuery{
     ReasonerQuery copy();
 
     /**
-     * @return GraknGraph associated with this reasoner query
+     * @return {@link GraknTx} associated with this reasoner query
      */
     @CheckReturnValue
-    GraknGraph graph();
+    GraknTx tx();
 
     /**
      * @return conjunctive pattern corresponding to this reasoner query
@@ -61,16 +61,30 @@ public interface ReasonerQuery{
     Set<Var> getVarNames();
 
     /**
-     * @return atom set constituting this reasoner query
+     * @return atom set defining this reasoner query
      */
     @CheckReturnValue
     Set<Atomic> getAtoms();
+
+    /**
+     * @param type the class of {@link Atomic} to return
+     * @param <T> the type of {@link Atomic} to return
+     * @return stream of atoms of specified type defined in this query
+     */
+    @CheckReturnValue
+    <T extends Atomic> Stream<T> getAtoms(Class<T> type);
 
     /**
      * @return corresponding MatchQuery
      */
     @CheckReturnValue
     MatchQuery getMatchQuery();
+
+    /**
+     * @return error messages indicating ontological inconsistencies of the query
+     */
+    @CheckReturnValue
+    Set<String> validateOntologically();
 
     /**
      * @return true if any of the atoms constituting the query can be resolved through a rule
@@ -88,15 +102,14 @@ public interface ReasonerQuery{
     /**
      * resolves the query
      * @param materialise materialisation flag
-     * @param explanation whether to provide explanation
      * @return stream of answers
      */
     @CheckReturnValue
-    Stream<Answer> resolve(boolean materialise, boolean explanation);
+    Stream<Answer> resolve(boolean materialise);
 
     /**
      * @return map of variable name - corresponding type pairs
      */
     @CheckReturnValue
-    Map<Var, Type> getVarTypeMap();
+    Map<Var, SchemaConcept> getVarSchemaConceptMap();
 }

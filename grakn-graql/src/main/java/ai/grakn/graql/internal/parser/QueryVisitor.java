@@ -18,13 +18,14 @@
 
 package ai.grakn.graql.internal.parser;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -49,11 +50,14 @@ import ai.grakn.graql.analytics.StdQuery;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
-import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.StringUtil;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -62,6 +66,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -79,6 +84,8 @@ import static java.util.stream.Collectors.toSet;
 // This class performs a lot of unchecked casts, because ANTLR's visit methods only return 'object'
 @SuppressWarnings("unchecked")
 class QueryVisitor extends GraqlBaseVisitor {
+
+    protected final Logger LOG = LoggerFactory.getLogger(QueryVisitor.class);
 
     private final QueryBuilder queryBuilder;
     private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
@@ -117,8 +124,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public MatchQuery visitMatchSelect(GraqlParser.MatchSelectContext ctx) {
-        Set<Var> names = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
-        return visitMatchQuery(ctx.matchQuery()).select(names);
+        return visitMatchQuery(ctx.matchQuery()).select(visitVariables(ctx.variables()));
     }
 
     @Override
@@ -150,36 +156,48 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public AskQuery visitAskQuery(GraqlParser.AskQueryContext ctx) {
-        return visitMatchQuery(ctx.matchQuery()).ask();
-    }
-
-    @Override
     public InsertQuery visitInsertQuery(GraqlParser.InsertQueryContext ctx) {
         return (InsertQuery) super.visitInsertQuery(ctx);
     }
 
     @Override
-    public Object visitInsertOnly(GraqlParser.InsertOnlyContext ctx) {
+    public InsertQuery visitInsertOnly(GraqlParser.InsertOnlyContext ctx) {
         Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
         return queryBuilder.insert(vars);
     }
 
     @Override
-    public Object visitMatchInsert(GraqlParser.MatchInsertContext ctx) {
+    public InsertQuery visitMatchInsert(GraqlParser.MatchInsertContext ctx) {
         Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
         return visitMatchQuery(ctx.matchQuery()).insert(vars);
     }
 
     @Override
+    public DefineQuery visitDefineQuery(GraqlParser.DefineQueryContext ctx) {
+        Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
+        return queryBuilder.define(vars);
+    }
+
+    @Override
+    public Object visitUndefineQuery(GraqlParser.UndefineQueryContext ctx) {
+        Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
+        return queryBuilder.undefine(vars);
+    }
+
+    @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
-        Collection<VarPattern> getters = visitVarPatterns(ctx.varPatterns());
-        return visitMatchQuery(ctx.matchQuery()).delete(getters);
+        Collection<Var> vars = ctx.variables() != null ? visitVariables(ctx.variables()) : ImmutableSet.of();
+        return visitMatchQuery(ctx.matchQuery()).delete(vars);
     }
 
     @Override
     public ComputeQuery<?> visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
         return visitComputeMethod(ctx.computeMethod());
+    }
+
+    @Override
+    public Set<Var> visitVariables(GraqlParser.VariablesContext ctx) {
+        return ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
     }
 
     @Override
@@ -322,17 +340,17 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Set<TypeLabel> visitInList(GraqlParser.InListContext ctx) {
+    public Set<Label> visitInList(GraqlParser.InListContext ctx) {
         return visitLabelList(ctx.labelList());
     }
 
     @Override
-    public Set<TypeLabel> visitOfList(GraqlParser.OfListContext ctx) {
+    public Set<Label> visitOfList(GraqlParser.OfListContext ctx) {
         return visitLabelList(ctx.labelList());
     }
 
     @Override
-    public Set<TypeLabel> visitLabelList(GraqlParser.LabelListContext ctx) {
+    public Set<Label> visitLabelList(GraqlParser.LabelListContext ctx) {
         return ctx.label().stream().map(this::visitLabel).collect(toSet());
     }
 
@@ -348,7 +366,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         Function<List<Object>, Aggregate> aggregateMethod = aggregateMethods.get(name);
 
         if (aggregateMethod == null) {
-            throw new IllegalArgumentException(ErrorMessage.UNKNOWN_AGGREGATE.getMessage(name));
+            throw GraqlQueryException.unknownAggregate(name);
         }
 
         List<Object> arguments = ctx.argument().stream().map(this::visit).collect(toList());
@@ -406,7 +424,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     public VarPattern visitVarPattern(GraqlParser.VarPatternContext ctx) {
         VarPattern var;
         if (ctx.VARIABLE() != null) {
-            var = getVariable(ctx.VARIABLE()).pattern();
+            var = getVariable(ctx.VARIABLE());
         } else {
             var = visitVariable(ctx.variable());
         }
@@ -429,21 +447,21 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<VarPattern> visitPropLhs(GraqlParser.PropLhsContext ctx) {
-        return var -> var.lhs(and(visitPatterns(ctx.patterns())));
+    public UnaryOperator<VarPattern> visitPropWhen(GraqlParser.PropWhenContext ctx) {
+        return var -> var.when(and(visitPatterns(ctx.patterns())));
     }
 
     @Override
-    public UnaryOperator<VarPattern> visitPropRhs(GraqlParser.PropRhsContext ctx) {
-        return var -> var.rhs(and(visitVarPatterns(ctx.varPatterns())));
+    public UnaryOperator<VarPattern> visitPropThen(GraqlParser.PropThenContext ctx) {
+        return var -> var.then(and(visitVarPatterns(ctx.varPatterns())));
     }
 
     @Override
     public UnaryOperator<VarPattern> visitPropHas(GraqlParser.PropHasContext ctx) {
-        TypeLabel type = visitLabel(ctx.label());
+        Label type = visitLabel(ctx.label());
 
-        Var resourceVar = ctx.VARIABLE() != null ? getVariable(ctx.VARIABLE()) : var();
-        VarPattern resource = resourceVar.pattern();
+        VarPattern relation = Optional.ofNullable(ctx.relation).map(this::getVariable).orElseGet(Graql::var);
+        VarPattern resource = Optional.ofNullable(ctx.resource).map(this::getVariable).orElseGet(Graql::var);
 
         if (ctx.predicate() != null) {
             resource = resource.val(visitPredicate(ctx.predicate()));
@@ -451,7 +469,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
         VarPattern finalResource = resource;
 
-        return var -> var.has(type, finalResource);
+        return var -> var.has(type, finalResource, relation);
     }
 
     @Override
@@ -519,13 +537,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<VarPattern> visitHasScope(GraqlParser.HasScopeContext ctx) {
-        return var -> var.hasScope(getVariable(ctx.VARIABLE()));
-    }
-
-    @Override
-    public TypeLabel visitLabel(GraqlParser.LabelContext ctx) {
-        return TypeLabel.of(visitIdentifier(ctx.identifier()));
+    public Label visitLabel(GraqlParser.LabelContext ctx) {
+        return Label.of(visitIdentifier(ctx.identifier()));
     }
 
     @Override
@@ -545,11 +558,11 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public VarPattern visitVariable(GraqlParser.VariableContext ctx) {
         if (ctx == null) {
-            return var().pattern();
+            return var();
         } else if (ctx.label() != null) {
             return Graql.label(visitLabel(ctx.label()));
         } else {
-            return getVariable(ctx.VARIABLE()).pattern();
+            return getVariable(ctx.VARIABLE());
         }
     }
 
@@ -600,7 +613,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public VarPattern visitValueVariable(GraqlParser.ValueVariableContext ctx) {
-        return getVariable(ctx.VARIABLE()).pattern();
+        return getVariable(ctx.VARIABLE());
     }
 
     @Override
@@ -629,7 +642,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Object visitValueDateTime(GraqlParser.ValueDateTimeContext ctx) {
+    public LocalDateTime visitValueDateTime(GraqlParser.ValueDateTimeContext ctx) {
         return LocalDateTime.parse(ctx.DATETIME().getText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 
@@ -658,6 +671,10 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     private Var getVariable(TerminalNode variable) {
+        return getVariable(variable.getSymbol());
+    }
+
+    private Var getVariable(Token variable) {
         // Remove '$' prefix
         return var(variable.getText().substring(1));
     }
@@ -670,7 +687,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     private String getString(TerminalNode string) {
         // Remove surrounding quotes
         String unquoted = string.getText().substring(1, string.getText().length() - 1);
-        return StringConverter.unescapeString(unquoted);
+        return StringUtil.unescapeString(unquoted);
     }
 
     /**
@@ -713,7 +730,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         }
     }
 
-    private ResourceType.DataType getDatatype(TerminalNode datatype) {
+    private AttributeType.DataType getDatatype(TerminalNode datatype) {
         return QueryParser.DATA_TYPES.get(datatype.getText());
     }
 }

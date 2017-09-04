@@ -1,0 +1,308 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
+package ai.grakn.kb.internal.concept;
+
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
+import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.graql.Pattern;
+import ai.grakn.kb.internal.GraknTxAbstract;
+import ai.grakn.kb.internal.structure.AbstractElement;
+import ai.grakn.kb.internal.structure.Casting;
+import ai.grakn.kb.internal.structure.EdgeElement;
+import ai.grakn.kb.internal.structure.Shard;
+import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import java.util.Optional;
+import java.util.function.Function;
+
+import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
+
+/**
+ * <p>
+ *     Constructs Concepts And Edges
+ * </p>
+ *
+ * <p>
+ *     This class turns Tinkerpop {@link Vertex} and {@link org.apache.tinkerpop.gremlin.structure.Edge}
+ *     into Grakn {@link Concept} and {@link EdgeElement}.
+ *
+ *     Construction is only successful if the vertex and edge properties contain the needed information.
+ *     A concept must include a label which is a {@link ai.grakn.util.Schema.BaseType}.
+ *     An edge must include a label which is a {@link ai.grakn.util.Schema.EdgeLabel}.
+ * </p>
+ *
+ * @author fppt
+ */
+public final class ElementFactory {
+    private final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
+    private final GraknTxAbstract tx;
+
+    public ElementFactory(GraknTxAbstract tx){
+        this.tx = tx;
+    }
+
+    private <X extends Concept, E extends AbstractElement> X getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder){
+        if(!tx.txCache().isConceptCached(conceptId)){
+            X newConcept = conceptBuilder.apply(element);
+            tx.txCache().cacheConcept(newConcept);
+        }
+
+        X concept = tx.txCache().getCachedConcept(conceptId);
+
+        //Only track concepts which have been modified.
+        if(tx.isConceptModified(concept)) {
+            tx.txCache().trackForValidation(concept);
+        }
+
+        return concept;
+    }
+
+    private <X extends Concept> X getOrBuildConcept(VertexElement element, Function<VertexElement, X> conceptBuilder){
+        ConceptId conceptId = ConceptId.of(element.property(Schema.VertexProperty.ID));
+        return getOrBuildConcept(element, conceptId, conceptBuilder);
+    }
+
+    private <X extends Concept> X getOrBuildConcept(EdgeElement element, Function<EdgeElement, X> conceptBuilder){
+        ConceptId conceptId = ConceptId.of(element.id().getValue());
+        return getOrBuildConcept(element, conceptId, conceptBuilder);
+    }
+
+    // ---------------------------------------- Building Attribute Types  -----------------------------------------------
+    public <V> AttributeTypeImpl<V> buildResourceType(VertexElement vertex, AttributeType<V> type, AttributeType.DataType<V> dataType){
+        return getOrBuildConcept(vertex, (v) -> new AttributeTypeImpl<>(v, type, dataType));
+    }
+
+    // ------------------------------------------ Building Resources
+    <V> AttributeImpl<V> buildResource(VertexElement vertex, AttributeType<V> type, Object persitedValue){
+        return getOrBuildConcept(vertex, (v) -> new AttributeImpl<>(v, type, persitedValue));
+    }
+
+    // ---------------------------------------- Building Relationship Types  -----------------------------------------------
+    public RelationshipTypeImpl buildRelationType(VertexElement vertex, RelationshipType type, Boolean isImplicit){
+        return getOrBuildConcept(vertex, (v) -> new RelationshipTypeImpl(v, type, isImplicit));
+    }
+
+    // -------------------------------------------- Building Relations
+    RelationshipImpl buildRelation(VertexElement vertex, RelationshipType type){
+        return getOrBuildConcept(vertex, (v) -> new RelationshipImpl(buildRelationReified(v, type)));
+    }
+    public RelationshipImpl buildRelation(EdgeElement edge, RelationshipType type, Role owner, Role value){
+        return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationshipEdge(type, owner, value, edge)));
+    }
+    RelationshipImpl buildRelation(EdgeElement edge){
+        return getOrBuildConcept(edge, (e) -> new RelationshipImpl(new RelationshipEdge(edge)));
+    }
+    RelationshipReified buildRelationReified(VertexElement vertex, RelationshipType type){
+        return new RelationshipReified(vertex, type);
+    }
+
+    // ----------------------------------------- Building Entity Types  ------------------------------------------------
+    public EntityTypeImpl buildEntityType(VertexElement vertex, EntityType type){
+        return getOrBuildConcept(vertex, (v) -> new EntityTypeImpl(v, type));
+    }
+
+    // ------------------------------------------- Building Entities
+    EntityImpl buildEntity(VertexElement vertex, EntityType type){
+        return getOrBuildConcept(vertex, (v) -> new EntityImpl(v, type));
+    }
+
+    // ----------------------------------------- Building Rules --------------------------------------------------
+    public RuleImpl buildRule(VertexElement vertex, Rule type, Pattern when, Pattern then){
+        return getOrBuildConcept(vertex, (v) -> new RuleImpl(v, type, when, then));
+    }
+
+    // ------------------------------------------ Building Roles  Types ------------------------------------------------
+    public RoleImpl buildRole(VertexElement vertex, Role type, Boolean isImplicit){
+        return getOrBuildConcept(vertex, (v) -> new RoleImpl(v, type, isImplicit));
+    }
+
+    /**
+     * Constructors are called directly because this is only called when reading a known vertex or concept.
+     * Thus tracking the concept can be skipped.
+     *
+     * @param v A vertex of an unknown type
+     * @return A concept built to the correct type
+     */
+    @Nullable
+    public <X extends Concept> X buildConcept(Vertex v){
+        return buildConcept(buildVertexElement(v));
+    }
+
+    @Nullable
+    public <X extends Concept> X buildConcept(VertexElement vertexElement){
+        Schema.BaseType type;
+
+        try {
+            type = getBaseType(vertexElement);
+        } catch (IllegalStateException e){
+            LOG.warn("Invalid vertex [" + vertexElement + "] due to " + e.getMessage(), e);
+            return null;
+        }
+
+        ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));
+        if(!tx.txCache().isConceptCached(conceptId)){
+            Concept concept;
+            switch (type) {
+                case RELATIONSHIP:
+                    concept = new RelationshipImpl(new RelationshipReified(vertexElement));
+                    break;
+                case TYPE:
+                    concept = new TypeImpl<>(vertexElement);
+                    break;
+                case ROLE:
+                    concept = new RoleImpl(vertexElement);
+                    break;
+                case RELATIONSHIP_TYPE:
+                    concept = new RelationshipTypeImpl(vertexElement);
+                    break;
+                case ENTITY:
+                    concept = new EntityImpl(vertexElement);
+                    break;
+                case ENTITY_TYPE:
+                    concept = new EntityTypeImpl(vertexElement);
+                    break;
+                case ATTRIBUTE_TYPE:
+                    concept = new AttributeTypeImpl<>(vertexElement);
+                    break;
+                case ATTRIBUTE:
+                    concept = new AttributeImpl<>(vertexElement);
+                    break;
+                case RULE:
+                    concept = new RuleImpl(vertexElement);
+                    break;
+                default:
+                    throw GraknTxOperationException.unknownConcept(type.name());
+            }
+            tx.txCache().cacheConcept(concept);
+        }
+        return tx.txCache().getCachedConcept(conceptId);
+    }
+
+    /**
+     * Constructors are called directly because this is only called when reading a known {@link Edge} or {@link Concept}.
+     * Thus tracking the concept can be skipped.
+     *
+     * @param edge A {@link Edge} of an unknown type
+     * @return A concept built to the correct type
+     */
+    @Nullable
+    public <X extends Concept> X buildConcept(Edge edge){
+        return buildConcept(buildEdgeElement(edge));
+    }
+
+    @Nullable
+    public <X extends Concept> X buildConcept(EdgeElement edgeElement){
+        Schema.EdgeLabel label;
+
+        try {
+            label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase());
+        } catch (IllegalStateException e){
+            LOG.warn("Invalid edge [" + edgeElement + "] due to " + e.getMessage(), e);
+            return null;
+        }
+
+
+        ConceptId conceptId = ConceptId.of(edgeElement.id().getValue());
+        if(!tx.txCache().isConceptCached(conceptId)){
+            Concept concept;
+            switch (label) {
+                case RESOURCE:
+                    concept = new RelationshipImpl(new RelationshipEdge(edgeElement));
+                    break;
+                default:
+                    throw GraknTxOperationException.unknownConcept(label.name());
+            }
+            tx.txCache().cacheConcept(concept);
+        }
+        return tx.txCache().getCachedConcept(conceptId);
+    }
+
+    /**
+     * This is a helper method to get the base type of a vertex.
+     * It first tried to get the base type via the label.
+     * If this is not possible it then tries to get the base type via the Shard Edge.
+     *
+     * @param vertex The vertex to build a concept from
+     * @return The base type of the vertex, if it is a valid concept.
+     */
+    private Schema.BaseType getBaseType(VertexElement vertex){
+        try {
+            return Schema.BaseType.valueOf(vertex.label());
+        } catch (IllegalArgumentException e){
+            //Base type appears to be invalid. Let's try getting the type via the shard edge
+            Optional<EdgeElement> type = vertex.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD).findAny();
+
+            if(type.isPresent()){
+                String label = type.get().target().label();
+                if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
+                if(label.equals(RELATIONSHIP_TYPE.name())) return Schema.BaseType.RELATIONSHIP;
+                if(label.equals(Schema.BaseType.ATTRIBUTE_TYPE.name())) return Schema.BaseType.ATTRIBUTE;
+            }
+        }
+        throw new IllegalStateException("Could not determine the base type of vertex [" + vertex + "]");
+    }
+
+    // ---------------------------------------- Non Concept Construction -----------------------------------------------
+    public EdgeElement buildEdgeElement(Edge edge){
+        return new EdgeElement(tx, edge);
+    }
+
+    Casting buildCasting(Edge edge){
+        return buildCasting(buildEdgeElement(edge));
+    }
+
+    public Casting buildCasting(EdgeElement edge) {
+        return new Casting(edge);
+    }
+
+    Shard buildShard(ConceptImpl shardOwner, VertexElement vertexElement){
+        return new Shard(shardOwner, vertexElement);
+    }
+
+    Shard buildShard(VertexElement vertexElement){
+        return new Shard(vertexElement);
+    }
+
+    Shard buildShard(Vertex vertex){
+        return new Shard(buildVertexElement(vertex));
+    }
+
+    @Nullable
+    public VertexElement buildVertexElement(Vertex vertex){
+        if (!tx.validElement(vertex)) {
+            LOG.warn("Invalid vertex [" + vertex + "]");
+            return null;
+        }
+
+        return new VertexElement(tx, vertex);
+    }
+}

@@ -19,10 +19,12 @@
 
 package ai.grakn.graql.internal.parser;
 
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -30,6 +32,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -40,7 +43,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -56,8 +58,10 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.Graql.ask;
 import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.count;
+import static ai.grakn.graql.Graql.define;
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.group;
 import static ai.grakn.graql.Graql.gt;
@@ -75,6 +79,7 @@ import static ai.grakn.graql.Graql.parsePatterns;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.select;
 import static ai.grakn.graql.Graql.std;
+import static ai.grakn.graql.Graql.undefine;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Graql.withoutGraph;
 import static ai.grakn.graql.Order.desc;
@@ -270,7 +275,7 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testOntologyQuery() {
+    public void testSchemaQuery() {
         MatchQuery expected = match(var("x").plays("actor")).orderBy("x");
         MatchQuery parsed = parse("match $x plays actor; order by $x asc;");
         assertEquals(expected, parsed);
@@ -323,16 +328,16 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testPositiveAskQuery() {
-        AskQuery expected = match(var("x").isa("movie").has("title", "Godfather")).ask();
-        AskQuery parsed = parse("match $x isa movie has title 'Godfather'; ask;");
+    public void whenComparingPositiveAskQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
+        AggregateQuery<Boolean> expected = match(var("x").isa("movie").has("title", "Godfather")).aggregate(ask());
+        AggregateQuery<Boolean> parsed = parse("match $x isa movie has title 'Godfather'; aggregate ask;");
         assertEquals(expected, parsed);
     }
 
     @Test
-    public void testNegativeAskQuery() {
-        AskQuery expected = match(var("x").isa("movie").has("title", "Dogfather")).ask();
-        AskQuery parsed = parse("match $x isa movie has title 'Dogfather'; ask;");
+    public void whenComparingNegativeAskQueryUsingGraqlAndJavaGraql_TheyAreEquivalent() {
+        AggregateQuery<Boolean> expected = match(var("x").isa("movie").has("title", "Dogfather")).aggregate(ask());
+        AggregateQuery<Boolean> parsed = parse("match $x isa movie has title 'Dogfather'; aggregate ask;");
         assertEquals(expected, parsed);
     }
 
@@ -344,21 +349,25 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testDeleteQuery() {
-        DeleteQuery expected = match(var("x").isa("movie").has("title", "The Title")).delete("x");
-        DeleteQuery parsed = parse("match $x isa movie has title 'The Title'; delete $x;");
+    public void whenParsingDeleteQuery_ResultIsSameAsJavaGraql() {
+        Var x = var("x");
+        Var y = var("y");
+
+        DeleteQuery expected = match(x.isa("movie").has("title", "The Title"), y.isa("movie")).delete(x, y);
+        DeleteQuery parsed = parse("match $x isa movie has title 'The Title'; $y isa movie; delete $x, $y;");
         assertEquals(expected, parsed);
     }
 
     @Test
-    public void testInsertOntologyQuery() {
+    public void whenParsingDeleteQueryWithNoArguments_ResultIsSameAsJavaGraql() {
+        DeleteQuery expected = match(var("x").isa("movie").has("title", "The Title"), var("y").isa("movie")).delete();
+        DeleteQuery parsed = parse("match $x isa movie has title 'The Title'; $y isa movie; delete;");
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void whenParsingInsertQuery_ResultIsSameAsJavaGraql() {
         InsertQuery expected = insert(
-                label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
-                label("evolution").sub(Schema.MetaSchema.RELATION.getLabel().getValue()),
-                label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolution").relates("evolves-from").relates("evolves-to"),
-                label("pokemon").plays("evolves-from").plays("evolves-to").has("name"),
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),
                 var("z").has("name", "Raichu").isa("pokemon"),
@@ -367,17 +376,57 @@ public class QueryParserTest {
         );
 
         InsertQuery parsed = parse("insert " +
-                "'pokemon' sub entity;" +
-                "evolution sub relation;" +
-                "evolves-from sub role;" +
-                "label \"evolves-to\" sub role;" +
-                "evolution relates evolves-from, relates evolves-to;" +
-                "pokemon plays evolves-from plays evolves-to has name;" +
                 "$x has name 'Pichu' isa pokemon;" +
                 "$y has name 'Pikachu' isa pokemon;" +
                 "$z has name 'Raichu' isa pokemon;" +
                 "(evolves-from: $x ,evolves-to: $y) isa evolution;" +
                 "(evolves-from: $y, evolves-to: $z) isa evolution;"
+        );
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void whenParsingDefineQuery_ResultIsSameAsJavaGraql() {
+        DefineQuery expected = define(
+                label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
+                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
+                label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                label("evolution").relates("evolves-from").relates("evolves-to"),
+                label("pokemon").plays("evolves-from").plays("evolves-to").has("name")
+        );
+
+        DefineQuery parsed = parse("define " +
+                "'pokemon' sub entity;" +
+                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
+                "evolves-from sub role;" +
+                "label \"evolves-to\" sub role;" +
+                "evolution relates evolves-from, relates evolves-to;" +
+                "pokemon plays evolves-from plays evolves-to has name;"
+        );
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void whenParsingUndefineQuery_ResultIsSameAsJavaGraql() {
+        UndefineQuery expected = undefine(
+                label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
+                label("evolution").sub(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()),
+                label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                label("evolution").relates("evolves-from").relates("evolves-to"),
+                label("pokemon").plays("evolves-from").plays("evolves-to").has("name")
+        );
+
+        UndefineQuery parsed = parse("undefine " +
+                "'pokemon' sub entity;" +
+                "evolution sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";" +
+                "evolves-from sub role;" +
+                "label \"evolves-to\" sub role;" +
+                "evolution relates evolves-from, relates evolves-to;" +
+                "pokemon plays evolves-from plays evolves-to has name;"
         );
 
         assertEquals(expected, parsed);
@@ -406,7 +455,7 @@ public class QueryParserTest {
 
     @Test
     public void testMatchDataTypeQuery() {
-        MatchQuery expected = match(var("x").datatype(ResourceType.DataType.DOUBLE));
+        MatchQuery expected = match(var("x").datatype(AttributeType.DataType.DOUBLE));
         MatchQuery parsed = parse("match $x datatype double;");
 
         assertEquals(expected, parsed);
@@ -414,7 +463,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingDateKeyword_ParseAsTheCorrectDataType() {
-        MatchQuery expected = match(var("x").datatype(ResourceType.DataType.DATE));
+        MatchQuery expected = match(var("x").datatype(AttributeType.DataType.DATE));
         MatchQuery parsed = parse("match $x datatype date;");
 
         assertEquals(expected, parsed);
@@ -422,7 +471,7 @@ public class QueryParserTest {
 
     @Test
     public void testInsertDataTypeQuery() {
-        InsertQuery expected = insert(label("my-type").sub("resource").datatype(ResourceType.DataType.LONG));
+        InsertQuery expected = insert(label("my-type").sub("resource").datatype(AttributeType.DataType.LONG));
         InsertQuery parsed = parse("insert my-type sub resource, datatype long;");
         assertEquals(expected, parsed);
     }
@@ -438,28 +487,28 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testComments() {
-        AskQuery expected = match(var("x").isa("movie")).ask();
-        AskQuery parsed = parse(
-                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; ask;"
+    public void whenParsingQueryWithComments_TheyAreIgnored() {
+        AggregateQuery<Boolean> expected = match(var("x").isa("movie")).aggregate(ask());
+        AggregateQuery<Boolean> parsed = parse(
+                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; aggregate ask;"
         );
         assertEquals(expected, parsed);
     }
 
     @Test
     public void testInsertRules() {
-        String lhs = "$x isa movie;";
-        String rhs = "id '123' isa movie;";
-        Pattern lhsPattern = and(parsePatterns(lhs));
-        Pattern rhsPattern = and(parsePatterns(rhs));
+        String when = "$x isa movie;";
+        String then = "id '123' isa movie;";
+        Pattern whenPattern = and(parsePatterns(when));
+        Pattern thenPattern = and(parsePatterns(then));
 
         InsertQuery expected = insert(
-                label("my-rule-thing").sub("rule"), var().isa("my-rule-thing").lhs(lhsPattern).rhs(rhsPattern)
+                label("my-rule-thing").sub("rule"), var().isa("my-rule-thing").when(whenPattern).then(thenPattern)
         );
 
         InsertQuery parsed = parse(
                 "insert 'my-rule-thing' sub rule; \n" +
-                "isa my-rule-thing, lhs {" + lhs + "}, rhs {" + rhs + "};"
+                "isa my-rule-thing, when {" + when + "}, then {" + then + "};"
         );
 
         assertEquals(expected, parsed);
@@ -598,8 +647,8 @@ public class QueryParserTest {
     }
 
     @Test
-    public void whenParseIncorrectSyntax_ThrowIllegalArgumentExceptionWithHelpfulError() {
-        exception.expect(IllegalArgumentException.class);
+    public void whenParseIncorrectSyntax_ThrowGraqlSyntaxExceptionWithHelpfulError() {
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage(allOf(
                 containsString("syntax error"), containsString("line 1"),
                 containsString("\nmatch $x isa "),
@@ -611,7 +660,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParseIncorrectSyntax_ErrorMessageShouldRetainWhitespace() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage(not(containsString("match$xisa")));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa ");
@@ -619,7 +668,7 @@ public class QueryParserTest {
 
     @Test
     public void testSyntaxErrorPointer() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage(allOf(
                 containsString("\nmatch $x is"),
                 containsString("\n         ^")
@@ -651,17 +700,12 @@ public class QueryParserTest {
     public void testParseBooleanType() {
         MatchQuery query = parse("match $x datatype boolean;");
 
-        VarPatternAdmin var = query.admin().getPattern().getVars().iterator().next();
+        VarPatternAdmin var = query.admin().getPattern().varPatterns().iterator().next();
 
         //noinspection OptionalGetWithoutIsPresent
         DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
 
-        Assert.assertEquals(ResourceType.DataType.BOOLEAN, property.getDataType());
-    }
-
-    @Test
-    public void testParseHasScope() {
-        assertEquals("match $x has-scope $y;", parse("match $x has-scope $y;").toString());
+        Assert.assertEquals(AttributeType.DataType.BOOLEAN, property.dataType());
     }
 
     @Test
@@ -760,7 +804,7 @@ public class QueryParserTest {
         int numQueries = 10_000;
         String matchInsertString = "match $x; insert $y;";
         String longQueryString = Strings.repeat(matchInsertString, numQueries);
-        Query<?> matchInsert = match(var("x")).insert(var("y").pattern());
+        Query<?> matchInsert = match(var("x")).insert(var("y"));
 
         List<Query<?>> queries = parseList(longQueryString).collect(toList());
 
@@ -787,15 +831,20 @@ public class QueryParserTest {
         assertEquals(bigNumber, count[0]);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testMultipleQueriesThrowsIllegalArgumentException() {
+    @Test
+    public void whenParsingAQueryWithReifiedAttributeRelationshipSyntax_ItIsEquivalentToJavaGraql() {
+        assertParseEquivalence("match $x has name $z as $x;");
+    }
+
+    @Test(expected = GraqlSyntaxException.class)
+    public void whenParsingMultipleQueriesLikeOne_Throw() {
         //noinspection ResultOfMethodCallIgnored
         parse("insert $x isa movie; insert $y isa movie");
     }
 
     @Test
     public void testMissingColon() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage("':'");
         //noinspection ResultOfMethodCallIgnored
         parse("match (actor $x, $y) isa has-cast;");
@@ -803,7 +852,7 @@ public class QueryParserTest {
 
     @Test
     public void testMissingComma() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage("','");
         //noinspection ResultOfMethodCallIgnored
         parse("match ($x $y) isa has-cast;");
@@ -811,7 +860,7 @@ public class QueryParserTest {
 
     @Test
     public void testLimitMistake() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlSyntaxException.class);
         exception.expectMessage("limit1");
         //noinspection ResultOfMethodCallIgnored
         parse("match ($x, $y); limit1;");
@@ -819,7 +868,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingAggregateWithWrongArgumentNumber_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("count", 0, 1));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate count $x;");
@@ -827,7 +876,7 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingAggregateWithWrongVariableArgumentNumber_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("group", "1-2", 0));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate group;");
@@ -835,14 +884,10 @@ public class QueryParserTest {
 
     @Test
     public void whenParsingAggregateWithWrongName_Throw() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.UNKNOWN_AGGREGATE.getMessage("hello"));
         //noinspection ResultOfMethodCallIgnored
         parse("match $x isa name; aggregate hello $x;");
-    }
-
-    public static void assertQueriesEqual(MatchQuery query, MatchQuery parsedQuery) {
-        assertEquals(Sets.newHashSet(query), Sets.newHashSet(parsedQuery));
     }
 
     private static void assertParseEquivalence(String query) {

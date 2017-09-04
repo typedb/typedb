@@ -17,13 +17,14 @@
  */
 package ai.grakn.migration.owl;
 
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.util.Schema;
 import org.semanticweb.owlapi.model.IRI;
 
 /**
  * <p>
- * A <code>Namer</code> provides functions to generate Grakn ontology names (IDs for
+ * A <code>Namer</code> provides functions to generate Grakn schema names (IDs for
  * types, relations, roles etc.) from OWL ontology elements. All methods have default
  * implementations.
  * </p>
@@ -68,7 +69,7 @@ public interface Namer {
         return "op-" + fromIri(propIri);
     }
     /**
-     * Make a name/id for the Grakn <code>RelationType</code> representing
+     * Make a name/id for the Grakn {@link RelationshipType} representing
      * a relation b/w an entity (OWL individual) and its resource (the OWL data property)
      */
     default String resourceRelation(IRI dataPropertyIRI) {
@@ -78,36 +79,36 @@ public interface Namer {
      * Make a name for the role type corresponding to the object (i.e. range) of an OWL object
      * property.
      *  
-     * @param relationLabel The label of the Grakn <code>RelationType</code>.
+     * @param relationLabel The label of the Grakn {@link RelationshipType}.
      */
-    default TypeLabel objectRole(TypeLabel relationLabel) {
+    default Label objectRole(Label relationLabel) {
         return relationLabel.map(relation -> OwlModel.OBJECT.owlname() + "-" + relation);
     }
     /**
      * Make a name for the role type corresponding to the subject (i.e. domain) of an OWL object
      * property.
      *  
-     * @param relationLabel The label of the Grakn <code>RelationType</code>.
+     * @param relationLabel The label of the Grakn {@link RelationshipType}.
      */
-    default TypeLabel subjectRole(TypeLabel relationLabel) {
+    default Label subjectRole(Label relationLabel) {
         return relationLabel.map(relation -> OwlModel.SUBJECT.owlname() + "-" + relation);
     }
     /**
      * The name of the entity role type in an entity-role relation representing an OWL data property
      */
-    default TypeLabel entityRole(TypeLabel resourceTypeLabel) {
-        return Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeLabel);
+    default Label entityRole(Label resourceLabel) {
+        return Schema.ImplicitType.HAS_OWNER.getLabel(resourceLabel);
     }
     /**
      * Make a name for a resource relation type representing the value of an OWL data property.
      */
-    default TypeLabel resourceRelation(TypeLabel resourceTypeLabel) {
-        return Schema.ImplicitType.HAS.getLabel(resourceTypeLabel);
+    default Label resourceRelation(Label resourceLabel) {
+        return Schema.ImplicitType.HAS.getLabel(resourceLabel);
     }
     /**
      * Make a name for a resource role player representing the value of an OWL data property.
      */
-    default TypeLabel resourceRole(TypeLabel resourceTypeLabel) {
-        return Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeLabel);
+    default Label resourceRole(Label resourceLabel) {
+        return Schema.ImplicitType.HAS_VALUE.getLabel(resourceLabel);
     }
 }

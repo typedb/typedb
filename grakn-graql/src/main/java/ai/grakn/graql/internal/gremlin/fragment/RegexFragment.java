@@ -18,54 +18,33 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.graql.Var;
+import ai.grakn.GraknTx;
+import ai.grakn.util.StringUtil;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
-import static ai.grakn.graql.internal.util.StringConverter.valueToString;
-import static ai.grakn.util.Schema.ConceptProperty.REGEX;
+import static ai.grakn.util.Schema.VertexProperty.REGEX;
 
-class RegexFragment extends AbstractFragment {
+@AutoValue
+abstract class RegexFragment extends Fragment {
 
-    private final String regex;
+    abstract String regex();
 
-    RegexFragment(Var start, String regex) {
-        super(start);
-        this.regex = regex;
+    @Override
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
+
+        return traversal.has(REGEX.name(), regex());
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.has(REGEX.name(), regex);
+    public String name() {
+        return "[regex:" + StringUtil.valueToString(regex()) + "]";
     }
 
     @Override
-    public String getName() {
-        return "[regex:" + valueToString(regex) + "]";
-    }
-
-    @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        RegexFragment that = (RegexFragment) o;
-
-        return regex != null ? regex.equals(that.regex) : that.regex == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (regex != null ? regex.hashCode() : 0);
-        return result;
+    public double fragmentCost() {
+        return COST_SAME_AS_PREVIOUS;
     }
 }

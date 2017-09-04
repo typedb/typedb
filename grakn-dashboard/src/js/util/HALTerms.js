@@ -42,7 +42,7 @@ export const GENERATED_RELATION_TYPE = 'generated-relation';
 export const INFERRED_RELATION_TYPE = 'inferred-relation';
 
 
-export const ROOT_CONCEPT = 'concept';
+export const ROOT_CONCEPT = 'thing';
 
 export const KEY_EMPTY_ROLE_NAME = 'EMPTY-GRAKN-ROLE';
 export const KEY_ID = '_id';
@@ -56,6 +56,7 @@ export const KEY_SELF = 'self';
 export const KEY_LINKS = '_links';
 export const KEY_HREF = 'href';
 export const KEY_DIRECTION = '_direction';
+export const KEY_IMPLICIT = '_implicit';
 
 export const SHELL_REQUEST = 'shell';
 export const HAL_REQUEST = 'hal';

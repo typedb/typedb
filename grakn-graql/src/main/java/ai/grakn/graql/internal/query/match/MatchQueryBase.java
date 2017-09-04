@@ -18,10 +18,11 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -30,13 +31,14 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
-import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,14 +65,13 @@ public class MatchQueryBase extends AbstractMatchQuery {
     protected final Logger LOG = LoggerFactory.getLogger(MatchQueryBase.class);
 
     private final Conjunction<PatternAdmin> pattern;
-    private ImmutableSet<TypeLabel> typeLabels;
 
     /**
      * @param pattern a pattern to match in the graph
      */
     public MatchQueryBase(Conjunction<PatternAdmin> pattern) {
         if (pattern.getPatterns().size() == 0) {
-            throw new IllegalArgumentException(ErrorMessage.NO_PATTERNS.getMessage());
+            throw GraqlQueryException.noPatterns();
         }
 
         this.pattern = pattern;
@@ -79,22 +80,18 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
 
     @Override
-    public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
-        GraknGraph graph = optionalGraph.orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
-        );
+    public Stream<Answer> stream(Optional<GraknTx> optionalGraph) {
+        GraknTx graph = optionalGraph.orElseThrow(GraqlQueryException::noTx);
 
-        this.typeLabels = getAllTypeLabels(graph);
-
-        for (VarPatternAdmin var : pattern.getVars()) {
+        for (VarPatternAdmin var : pattern.varPatterns()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
 
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, graph);
         LOG.trace("Created query plan");
         LOG.trace(graqlTraversal.toString());
-        GraphTraversal<Vertex, Map<String, Vertex>> traversal = graqlTraversal.getGraphTraversal(graph);
+        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(graph);
 
-        String[] selectedNames = pattern.commonVarNames().stream().map(Var::getValue).toArray(String[]::new);
+        String[] selectedNames = pattern.commonVars().stream().map(Var::getValue).toArray(String[]::new);
 
         // Must provide three arguments in order to pass an array to .select
         // If ordering, select the variable to order by as well
@@ -103,25 +100,24 @@ public class MatchQueryBase extends AbstractMatchQuery {
         }
 
         return traversal.toStream()
-                .map(vertices -> makeResults(graph, vertices))
-                .filter(result -> shouldShowResult(graph, result))
+                .map(elements -> makeResults(graph, elements))
                 .sequential()
                 .map(QueryAnswer::new);
     }
 
     @Override
-    public Set<Type> getTypes(GraknGraph graph) {
-        return pattern.getVars().stream()
-                .flatMap(v -> v.getInnerVars().stream())
+    public Set<SchemaConcept> getSchemaConcepts(GraknTx tx) {
+        return pattern.varPatterns().stream()
+                .flatMap(v -> v.innerVarPatterns().stream())
                 .flatMap(v -> v.getTypeLabels().stream())
-                .map(graph::<Type>getType)
+                .map(tx::<SchemaConcept>getSchemaConcept)
                 .filter(Objects::nonNull)
                 .collect(toSet());
     }
 
     @Override
-    public Set<Type> getTypes() {
-        throw new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage());
+    public Set<SchemaConcept> getSchemaConcepts() {
+        throw GraqlQueryException.noTx();
     }
 
     @Override
@@ -130,13 +126,13 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Optional<GraknGraph> getGraph() {
+    public Optional<GraknTx> tx() {
         return Optional.empty();
     }
 
     @Override
     public Set<Var> getSelectedNames() {
-        return pattern.commonVarNames();
+        return pattern.commonVars();
     }
 
     @Override
@@ -148,53 +144,24 @@ public class MatchQueryBase extends AbstractMatchQuery {
         return new MatchQueryInfer(this, materialise);
     }
 
-    private ImmutableSet<TypeLabel> getAllTypeLabels(GraknGraph graph) {
-        Stream<TypeLabel> explicitTypeLabels = pattern.getVars().stream()
-                .flatMap(var -> var.getInnerVars().stream())
-                .map(VarPatternAdmin::getTypeLabel)
-                .flatMap(Streams::stream);
-
-        Stream<TypeLabel> typeLabelsFromIds = pattern.getVars().stream()
-                .flatMap(var -> var.getInnerVars().stream())
-                .map(var -> var.getProperty(IdProperty.class))
-                .flatMap(Streams::stream)
-                .map(IdProperty::getId)
-                .flatMap(id -> Streams.stream(Optional.ofNullable(graph.<Concept>getConcept(id))))
-                .filter(Concept::isType)
-                .map(Concept::asType)
-                .map(Type::getLabel);
-
-        return Stream.concat(explicitTypeLabels, typeLabelsFromIds).collect(toImmutableSet());
-    }
-
     /**
      * @param graph the graph to get results from
-     * @param vertices a map of vertices where the key is the variable name
+     * @param elements a map of vertices and edges where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private Map<Var, Concept> makeResults(GraknGraph graph, Map<String, Vertex> vertices) {
-        return pattern.commonVarNames().stream().collect(Collectors.<Var, Var, Concept>toMap(
+    private Map<Var, Concept> makeResults(GraknTx graph, Map<String, Element> elements) {
+        return pattern.commonVars().stream().collect(Collectors.<Var, Var, Concept>toMap(
                 Function.identity(),
-                name -> graph.admin().buildConcept(vertices.get(name.getValue()))
+                name -> buildConcept(graph.admin(), elements.get(name.getValue()))
         ));
     }
 
-    /**
-     * Only show results if all concepts in them should be shown
-     */
-    private boolean shouldShowResult(GraknGraph graph, Map<Var, Concept> result) {
-        return result.values().stream().allMatch(concept -> shouldShowConcept(graph, concept));
-    }
-
-    /**
-     * Only show a concept if it not an implicit type and not explicitly mentioned
-     */
-    private boolean shouldShowConcept(GraknGraph graph, Concept concept) {
-        if (graph.implicitConceptsVisible() || !concept.isType()) return true;
-
-        Type type = concept.asType();
-
-        return !type.isImplicit() || typeLabels.contains(type.getLabel());
+    private Concept buildConcept(GraknAdmin graph, Element element) {
+        if (element instanceof Vertex) {
+            return graph.buildConcept((Vertex) element);
+        } else {
+            return graph.buildConcept((Edge) element);
+        }
     }
 
     @Override

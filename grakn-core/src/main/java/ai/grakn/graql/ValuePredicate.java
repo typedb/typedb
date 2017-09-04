@@ -18,9 +18,12 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarPatternAdmin;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Optional;
 
 /**
  * a atom on a value in a query.
@@ -34,9 +37,44 @@ import javax.annotation.CheckReturnValue;
 public interface ValuePredicate {
 
     /**
-     * @return an Admin class allowing inspection of this atom
+     * @return whether this predicate is specific (e.g. "eq" is specific, "regex" is not)
      */
     @CheckReturnValue
-    ValuePredicateAdmin admin();
+    default boolean isSpecific() {
+        return false;
+    }
 
+    /**
+     * @param predicate to be compared in terms of compatibility
+     * @return true if compatible
+     */
+    @CheckReturnValue
+    boolean isCompatibleWith(ValuePredicate predicate);
+
+    /**
+     * @return the value comparing against, if this is an "equality" predicate, otherwise nothing
+     */
+    @CheckReturnValue
+    default Optional<Object> equalsValue() {
+        return Optional.empty();
+    }
+
+    /**
+     * @return the gremlin predicate object this ValuePredicate wraps
+     */
+    @CheckReturnValue
+    Optional<P<Object>> getPredicate();
+
+    /**
+     * Get the inner variable that this predicate refers to, if one is present
+     * @return the inner variable that this predicate refers to, if one is present
+     */
+    @CheckReturnValue
+    Optional<VarPatternAdmin> getInnerVar();
+
+    /**
+     * Apply the predicate to the gremlin traversal, so the traversal will filter things that don't meet the predicate
+     * @param traversal the traversal to apply the predicate to
+     */
+    <S, E> GraphTraversal<S, E> applyPredicate(GraphTraversal<S, E> traversal);
 }

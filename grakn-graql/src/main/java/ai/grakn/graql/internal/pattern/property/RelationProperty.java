@@ -18,16 +18,16 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarPatternBuilder;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
@@ -35,9 +35,10 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.query.QueryOperationExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.RelationAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.util.ErrorMessage;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -51,43 +52,44 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
-
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Represents the relation property (e.g. {@code ($x, $y)} or {@code (wife: $x, husband: $y)}) on a {@link Relation}.
+ * Represents the relation property (e.g. {@code ($x, $y)} or {@code (wife: $x, husband: $y)}) on a {@link Relationship}.
  *
  * This property can be queried and inserted.
  *
  * This propert is comprised of instances of {@link RelationPlayer}, which represents associations between a
- * role-player {@link Instance} and an optional {@link RoleType}.
+ * role-player {@link Thing} and an optional {@link Role}.
  *
  * @author Felix Chapman
  */
-public class RelationProperty extends AbstractVarProperty implements UniqueVarProperty {
+@AutoValue
+public abstract class RelationProperty extends AbstractVarProperty implements UniqueVarProperty {
 
-    private final ImmutableMultiset<RelationPlayer> relationPlayers;
-
-    public RelationProperty(ImmutableMultiset<RelationPlayer> relationPlayers) {
-        this.relationPlayers = relationPlayers;
+    public static RelationProperty of(ImmutableMultiset<RelationPlayer> relationPlayers) {
+        return new AutoValue_RelationProperty(relationPlayers);
     }
 
-    public Stream<RelationPlayer> getRelationPlayers() {
-        return relationPlayers.stream();
+    public abstract ImmutableMultiset<RelationPlayer> relationPlayers();
+
+    @Override
+    String getName() {
+        return "relationship";
     }
 
     @Override
     public void buildString(StringBuilder builder) {
-        builder.append("(").append(relationPlayers.stream().map(Object::toString).collect(joining(", "))).append(")");
+        builder.append("(").append(relationPlayers().stream().map(Object::toString).collect(joining(", "))).append(")");
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
         Collection<Var> castingNames = new HashSet<>();
 
-        ImmutableSet<EquivalentFragmentSet> traversals = relationPlayers.stream().flatMap(relationPlayer -> {
+        ImmutableSet<EquivalentFragmentSet> traversals = relationPlayers().stream().flatMap(relationPlayer -> {
 
             Var castingName = Graql.var();
             castingNames.add(castingName);
@@ -98,7 +100,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         ImmutableSet<EquivalentFragmentSet> distinctCastingTraversals = castingNames.stream().flatMap(
                 castingName -> castingNames.stream()
                         .filter(otherName -> !otherName.equals(castingName))
-                        .map(otherName -> EquivalentFragmentSets.neq(castingName, otherName))
+                        .map(otherName -> EquivalentFragmentSets.neq(this, castingName, otherName))
         ).collect(toImmutableSet());
 
         return Sets.union(traversals, distinctCastingTraversals);
@@ -106,21 +108,21 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return relationPlayers.stream().map(RelationPlayer::getRoleType).flatMap(Streams::stream);
+        return relationPlayers().stream().map(RelationPlayer::getRole).flatMap(Streams::stream);
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
-        return relationPlayers.stream().flatMap(relationPlayer -> {
+    public Stream<VarPatternAdmin> innerVarPatterns() {
+        return relationPlayers().stream().flatMap(relationPlayer -> {
             Stream.Builder<VarPatternAdmin> builder = Stream.builder();
             builder.add(relationPlayer.getRolePlayer());
-            relationPlayer.getRoleType().ifPresent(builder::add);
+            relationPlayer.getRole().ifPresent(builder::add);
             return builder.build();
         });
     }
 
     private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(Var start, Var castingName, RelationPlayer relationPlayer) {
-        Optional<VarPatternAdmin> roleType = relationPlayer.getRoleType();
+        Optional<VarPatternAdmin> roleType = relationPlayer.getRole();
 
         if (roleType.isPresent()) {
             return addRelatesPattern(start, castingName, roleType.get(), relationPlayer.getRolePlayer());
@@ -130,11 +132,11 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     /**
-     * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relation
+     * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relationship
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin rolePlayer) {
-        return Stream.of(shortcut(start, casting, rolePlayer.getVarName(), Optional.empty()));
+        return Stream.of(shortcut(this, start, casting, rolePlayer.var(), null));
     }
 
     /**
@@ -143,94 +145,91 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
     private Stream<EquivalentFragmentSet> addRelatesPattern(Var start, Var casting, VarPatternAdmin roleType, VarPatternAdmin rolePlayer) {
-        return Stream.of(shortcut(start, casting, rolePlayer.getVarName(), Optional.of(roleType.getVarName())));
+        return Stream.of(shortcut(this, start, casting, rolePlayer.var(), roleType.var()));
     }
 
     @Override
-    public void checkValidProperty(GraknGraph graph, VarPatternAdmin var) throws IllegalStateException {
+    public void checkValidProperty(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException {
 
-        Set<TypeLabel> roleTypes = relationPlayers.stream()
-                .map(RelationPlayer::getRoleType).flatMap(Streams::stream)
+        Set<Label> roleTypes = relationPlayers().stream()
+                .map(RelationPlayer::getRole).flatMap(Streams::stream)
                 .map(VarPatternAdmin::getTypeLabel).flatMap(Streams::stream)
                 .collect(toSet());
 
-        Optional<TypeLabel> maybeLabel =
-                var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarPatternAdmin::getTypeLabel);
+        Optional<Label> maybeLabel =
+                var.getProperty(IsaProperty.class).map(IsaProperty::type).flatMap(VarPatternAdmin::getTypeLabel);
 
         maybeLabel.ifPresent(label -> {
-            Type type = graph.getType(label);
+            SchemaConcept schemaConcept = graph.getSchemaConcept(label);
 
-            if (type == null || !type.isRelationType()) {
-                throw new IllegalStateException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(label));
+            if (schemaConcept == null || !schemaConcept.isRelationshipType()) {
+                throw GraqlQueryException.notARelationType(label);
             }
         });
 
         // Check all role types exist
         roleTypes.forEach(roleId -> {
-            Type type = graph.getType(roleId);
-            if (type == null || !type.isRoleType()) {
-                throw new IllegalStateException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(roleId, roleId));
+            SchemaConcept schemaConcept = graph.getSchemaConcept(roleId);
+            if (schemaConcept == null || !schemaConcept.isRole()) {
+                throw GraqlQueryException.notARoleType(roleId);
             }
         });
     }
 
     @Override
-    public void checkInsertable(VarPatternAdmin var) throws IllegalStateException {
+    public void checkInsertable(VarPatternAdmin var) throws GraqlQueryException {
         if (!var.hasProperty(IsaProperty.class)) {
-            throw new IllegalStateException(ErrorMessage.INSERT_RELATION_WITHOUT_ISA.getMessage());
+            throw GraqlQueryException.insertRelationWithoutType();
         }
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
-        Relation relation = concept.asRelation();
-        relationPlayers.forEach(relationPlayer -> addRoleplayer(insertQueryExecutor, relation, relationPlayer));
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Relationship relationship = executor.get(var).asRelationship();
+            relationPlayers().forEach(relationPlayer -> addRoleplayer(executor, relationship, relationPlayer));
+        };
+
+        return PropertyExecutor.builder(method).requires(requiredVars(var)).build();
     }
 
     /**
-     * Add a roleplayer to the given relation
-     * @param relation the concept representing the relation
+     * Add a roleplayer to the given {@link Relationship}
+     * @param relationship the concept representing the {@link Relationship}
      * @param relationPlayer a casting between a role type and role player
      */
-    private void addRoleplayer(InsertQueryExecutor insertQueryExecutor, Relation relation, RelationPlayer relationPlayer) {
-        VarPatternAdmin roleVar = relationPlayer.getRoleType().orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage())
-        );
+    private void addRoleplayer(QueryOperationExecutor executor, Relationship relationship, RelationPlayer relationPlayer) {
+        VarPatternAdmin roleVar = getRole(relationPlayer);
 
-        RoleType roleType = insertQueryExecutor.getConcept(roleVar).asRoleType();
-        Instance roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asInstance();
-        relation.addRolePlayer(roleType, roleplayer);
+        Role role = executor.get(roleVar.var()).asRole();
+        Thing roleplayer = executor.get(relationPlayer.getRolePlayer().var()).asThing();
+        relationship.addRolePlayer(role, roleplayer);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    private Set<Var> requiredVars(Var var) {
+        Stream<Var> relationPlayers = this.relationPlayers().stream()
+                .flatMap(relationPlayer -> Stream.of(relationPlayer.getRolePlayer(), getRole(relationPlayer)))
+                .map(VarPatternAdmin::var);
 
-        RelationProperty that = (RelationProperty) o;
-
-        return relationPlayers.equals(that.relationPlayers);
-
+        return Stream.concat(relationPlayers, Stream.of(var)).collect(toImmutableSet());
     }
 
-    @Override
-    public int hashCode() {
-        return relationPlayers.hashCode();
+    private VarPatternAdmin getRole(RelationPlayer relationPlayer) {
+        return relationPlayer.getRole().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
     }
-
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        //keep varName if reified, reified if contains more properties than the RelationProperty itself and potential IsaProperty
+        //set varName as user defined if reified
+        //reified if contains more properties than the RelationProperty itself and potential IsaProperty
         boolean isReified = var.getProperties()
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .filter(prop -> !IsaProperty.class.isInstance(prop))
-                .count() > 0;
-        VarPatternBuilder relVar = (var.getVarName().isUserDefinedName() || isReified)? var.getVarName().asUserDefined() : Graql.var();
-        Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(toSet());
+                .findFirst().isPresent();
+        VarPattern relVar = isReified? var.var().asUserDefined() : var.var();
 
-        for (RelationPlayer rp : relationPlayers) {
-            VarPatternAdmin role = rp.getRoleType().orElse(null);
+        for (RelationPlayer rp : relationPlayers()) {
+            VarPatternAdmin role = rp.getRole().orElse(null);
             VarPatternAdmin rolePlayer = rp.getRolePlayer();
             if (role != null) relVar = relVar.rel(role, rolePlayer);
             else relVar = relVar.rel(rolePlayer);
@@ -239,21 +238,23 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         //id part
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
         IdPredicate predicate = null;
+
+        //if no isa property present generate type variable
+        Var typeVariable = isaProp != null? isaProp.type().var().asUserDefined() : Graql.var().asUserDefined();
+
         //Isa present
         if (isaProp != null) {
-            VarPatternAdmin isaVar = isaProp.getType();
-            TypeLabel typeLabel = isaVar.getTypeLabel().orElse(null);
-            Var typeVariable = typeLabel == null ? isaVar.getVarName() : Graql.var().asUserDefined();
-            relVar = relVar.isa(typeVariable);
-            if (typeLabel != null) {
-                GraknGraph graph = parent.graph();
-                VarPatternAdmin idVar = typeVariable.id(graph.getType(typeLabel).getId()).admin();
+            VarPatternAdmin isaVar = isaProp.type();
+            Label label = isaVar.getTypeLabel().orElse(null);
+            if (label != null) {
+                VarPatternAdmin idVar = typeVariable.id(parent.tx().getSchemaConcept(label).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
             } else {
+                typeVariable = isaVar.var();
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
             }
         }
-        return new ai.grakn.graql.internal.reasoner.atom.binary.Relation(relVar.pattern().admin(), predicate, parent);
+        relVar = relVar.isa(typeVariable);
+        return new RelationAtom(relVar.admin(), typeVariable, predicate, parent);
     }
-
 }

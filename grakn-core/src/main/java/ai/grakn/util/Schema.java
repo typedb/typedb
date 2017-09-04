@@ -18,20 +18,23 @@
 
 package ai.grakn.util;
 
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
+
+import static ai.grakn.util.ErrorMessage.INVALID_IMPLICIT_TYPE;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created
@@ -39,6 +42,9 @@ import javax.annotation.CheckReturnValue;
  * @author Filipe Teixeira
  */
 public final class Schema {
+    public final static String PREFIX_VERTEX = "V";
+    public final static String PREFIX_EDGE = "E";
+
     private Schema() {
         throw new UnsupportedOperationException();
     }
@@ -51,10 +57,10 @@ public final class Schema {
         SUB("sub"),
         RELATES("relates"),
         PLAYS("plays"),
-        HAS_SCOPE("has-scope"),
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
         SHORTCUT("shortcut"),
+        RESOURCE("resource"),
         SHARD("shard");
 
         private final String label;
@@ -67,52 +73,40 @@ public final class Schema {
         public String getLabel() {
             return label;
         }
-
-        @CheckReturnValue
-        public static EdgeLabel getEdgeLabel(String label) {
-            for (EdgeLabel edgeLabel : EdgeLabel.values()) {
-                if (edgeLabel.getLabel().equals(label)) {
-                    return edgeLabel;
-                }
-            }
-            return null;
-        }
     }
 
     /**
      * The concepts which represent our internal schema
      */
     public enum MetaSchema {
-        CONCEPT("concept", 1),
+        THING("thing", 1),
         ENTITY("entity", 2),
         ROLE("role", 3),
-        RESOURCE("resource", 4),
-        RELATION("relation", 5),
-        RULE("rule", 6),
-        INFERENCE_RULE("inference-rule", 7),
-        CONSTRAINT_RULE("constraint-rule", 8);
+        ATTRIBUTE("attribute", 4),
+        RELATIONSHIP("relationship", 5),
+        RULE("rule", 6);
 
 
-        private final TypeLabel label;
-        private final TypeId id;
+        private final Label label;
+        private final LabelId id;
 
         MetaSchema(String s, int i) {
-            label = TypeLabel.of(s);
-            id = TypeId.of(i);
+            label = Label.of(s);
+            id = LabelId.of(i);
         }
 
         @CheckReturnValue
-        public TypeLabel getLabel() {
+        public Label getLabel() {
             return label;
         }
 
         @CheckReturnValue
-        public TypeId getId(){
+        public LabelId getId(){
             return id;
         }
 
         @CheckReturnValue
-        public static boolean isMetaLabel(TypeLabel label) {
+        public static boolean isMetaLabel(Label label) {
             for (MetaSchema metaSchema : MetaSchema.values()) {
                 if (metaSchema.getLabel().equals(label)) return true;
             }
@@ -124,19 +118,22 @@ public final class Schema {
      * Base Types reflecting the possible objects in the concept
      */
     public enum BaseType {
-        //Types
+        //Schema Concepts
+        SCHEMA_CONCEPT(SchemaConcept.class),
         TYPE(Type.class),
-        ROLE_TYPE(RoleType.class),
-        RELATION_TYPE(RelationType.class),
-        RESOURCE_TYPE(ResourceType.class),
+        ROLE(Role.class),
+        RELATIONSHIP_TYPE(RelationshipType.class),
+        ATTRIBUTE_TYPE(AttributeType.class),
         ENTITY_TYPE(EntityType.class),
-        RULE_TYPE(RuleType.class),
+        RULE(Rule.class),
 
         //Instances
-        RELATION(Relation.class),
+        RELATIONSHIP(Relationship.class),
         ENTITY(Entity.class),
-        RESOURCE(Resource.class),
-        RULE(Rule.class);
+        ATTRIBUTE(Attribute.class),
+
+        //Internal
+        SHARD(Vertex.class);
 
         private final Class classType;
 
@@ -153,14 +150,14 @@ public final class Schema {
     /**
      * An enum which defines the non-unique mutable properties of the concept.
      */
-    public enum ConceptProperty {
+    public enum VertexProperty {
         //Unique Properties
-        TYPE_LABEL(String.class), INDEX(String.class), ID(String.class), TYPE_ID(Integer.class),
+        SCHEMA_LABEL(String.class), INDEX(String.class), ID(String.class), LABEL_ID(Integer.class),
 
         //Other Properties
-        INSTANCE_TYPE_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_SHARD(Boolean.class),
-        REGEX(String.class), DATA_TYPE(String.class), SHARD_COUNT(Long.class), CURRENT_TYPE_ID(Integer.class),
-        RULE_LHS(String.class), RULE_RHS(String.class), CURRENT_SHARD(String.class),
+        THING_TYPE_LABEL_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
+        REGEX(String.class), DATA_TYPE(String.class), SHARD_COUNT(Long.class), CURRENT_LABEL_ID(Integer.class),
+        RULE_WHEN(String.class), RULE_THEN(String.class), CURRENT_SHARD(String.class),
 
         //Supported Data Types
         VALUE_STRING(String.class), VALUE_LONG(Long.class),
@@ -170,7 +167,7 @@ public final class Schema {
 
         private final Class dataType;
 
-        ConceptProperty(Class dataType) {
+        VertexProperty(Class dataType) {
             this.dataType = dataType;
         }
 
@@ -184,8 +181,10 @@ public final class Schema {
      * A property enum defining the possible labels that can go on the edge label.
      */
     public enum EdgeProperty {
-        ROLE_TYPE_ID(Integer.class),
-        RELATION_TYPE_ID(Integer.class),
+        RELATIONSHIP_ROLE_OWNER_LABEL_ID(Integer.class),
+        RELATIONSHIP_ROLE_VALUE_LABEL_ID(Integer.class),
+        ROLE_LABEL_ID(Integer.class),
+        RELATIONSHIP_TYPE_LABEL_ID(Integer.class),
         REQUIRED(Boolean.class);
 
         private final Class dataType;
@@ -201,26 +200,26 @@ public final class Schema {
     }
 
     /**
-     * This stores the schema which is required when implicitly creating roles for the has-resource methods
+     * This stores the schema which is required when implicitly creating roles for the has-{@link Attribute} methods
      */
     public enum ImplicitType {
         /**
-         * The label of the generic has-resource relationship, used for attaching resources to instances with the 'has' syntax
+         * The label of the generic has-{@link Attribute} relationship, used for attaching {@link Attribute}s to instances with the 'has' syntax
          */
         HAS("has-%s"),
 
         /**
-         * The label of a role in has-resource, played by the owner of the resource
+         * The label of a role in has-{@link Attribute}, played by the owner of the {@link Attribute}
          */
         HAS_OWNER("has-%s-owner"),
 
         /**
-         * The label of a role in has-resource, played by the resource
+         * The label of a role in has-{@link Attribute}, played by the {@link Attribute}
          */
         HAS_VALUE("has-%s-value"),
 
         /**
-         * The label of the generic key relationship, used for attaching resources to instances with the 'has' syntax and additionally constraining them to be unique
+         * The label of the generic key relationship, used for attaching {@link Attribute}s to instances with the 'has' syntax and additionally constraining them to be unique
          */
         KEY("key-%s"),
 
@@ -230,7 +229,7 @@ public final class Schema {
         KEY_OWNER("key-%s-owner"),
 
         /**
-         * The label of a role in key, played by the resource
+         * The label of a role in key, played by the {@link Attribute}
          */
         KEY_VALUE("key-%s-value");
 
@@ -241,13 +240,33 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public TypeLabel getLabel(TypeLabel resourceType) {
-            return resourceType.map(resource -> String.format(label, resource));
+        public Label getLabel(Label attributeType) {
+            return attributeType.map(attribute -> String.format(label, attribute));
         }
 
         @CheckReturnValue
-        public TypeLabel getLabel(String resourceType) {
-            return TypeLabel.of(String.format(label, resourceType));
+        public Label getLabel(String attributeType) {
+            return Label.of(String.format(label, attributeType));
+        }
+
+        /**
+         * Helper method which converts the implicit type label back into the original label from which is was built.
+         *
+         * @param implicitType the implicit type label
+         * @return The original label which was used to build this type
+         */
+        @CheckReturnValue
+        public static Label explicitLabel(Label implicitType){
+            if(!implicitType.getValue().startsWith("key") && implicitType.getValue().startsWith("has")){
+                throw new IllegalArgumentException(INVALID_IMPLICIT_TYPE.getMessage(implicitType));
+            }
+
+            int endIndex = implicitType.getValue().length();
+            if(implicitType.getValue().endsWith("-value") || implicitType.getValue().endsWith("-owner")) {
+                endIndex = implicitType.getValue().lastIndexOf("-");
+            }
+
+            return Label.of(implicitType.getValue().substring(4, endIndex));
         }
     }
 
@@ -266,19 +285,19 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public TypeLabel getLabel() {
-            return TypeLabel.of(label);
+        public Label getLabel() {
+            return Label.of(label);
         }
     }
 
     /**
      *
-     * @param typeLabel The resource type label
-     * @param value The value of the resource
-     * @return A unique id for the resource
+     * @param label The {@link AttributeType} label
+     * @param value The value of the {@link Attribute}
+     * @return A unique id for the {@link Attribute}
      */
     @CheckReturnValue
-    public static String generateResourceIndex(TypeLabel typeLabel, String value){
-        return Schema.BaseType.RESOURCE.name() + "-" + typeLabel + "-" + value;
+    public static String generateAttributeIndex(Label label, String value){
+        return Schema.BaseType.ATTRIBUTE.name() + "-" + label + "-" + value;
     }
 }

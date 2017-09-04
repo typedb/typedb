@@ -18,8 +18,9 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 import javax.annotation.CheckReturnValue;
 
@@ -33,8 +34,8 @@ import javax.annotation.CheckReturnValue;
  *     A concept which can represent anything in the graph which wraps a tinkerpop {@link Vertex}.
  *     This class forms the basis of assuring the graph follows the Grakn object model.
  *     It provides methods to retrieve information about the Concept, and determine if it is a {@link Type}
- *     ({@link EntityType}, {@link RoleType}, {@link RelationType}, {@link RuleType} or {@link ResourceType})
- *     or an {@link Instance} ({@link Entity}, {@link Relation} , {@link Resource}, {@link Rule}).
+ *     ({@link EntityType}, {@link Role}, {@link RelationshipType}, {@link Rule} or {@link AttributeType})
+ *     or an {@link Thing} ({@link Entity}, {@link Relationship} , {@link Attribute}).
  * </p>
  *
  * @author fppt
@@ -51,186 +52,238 @@ public interface Concept extends Comparable<Concept>{
     ConceptId getId();
 
     //------------------------------------- Other ---------------------------------
-
     /**
-     * Return as a Type if the Concept is a Type.
+     * Return as a {@link SchemaConcept} if the {@link Concept} is a {@link SchemaConcept}.
      *
-     * @return A Type if the concept is a Type
+     * @return A {@link SchemaConcept} if the {@link Concept} is a {@link SchemaConcept}
      */
     @CheckReturnValue
-    Type asType();
+    default SchemaConcept asSchemaConcept(){
+        throw GraknTxOperationException.invalidCasting(this, SchemaConcept.class);
+    }
 
     /**
-     * Return as an Instance if the Concept is an Instance.
+     * Return as a {@link Type} if the {@link Concept} is a {@link Type}.
      *
-     * @return An Instance if the concept is an Instance
+     * @return A {@link Type} if the {@link Concept} is a {@link Type}
      */
     @CheckReturnValue
-    Instance asInstance();
+    default Type asType(){
+        throw GraknTxOperationException.invalidCasting(this, Type.class);
+    }
 
     /**
-     * Return as an EntityType if the Concept is an Entity Type.
+     * Return as an {@link Thing} if the {@link Concept} is an {@link Thing}.
      *
-     * @return A Entity Type if the concept is an Entity Type
+     * @return An {@link Thing} if the {@link Concept} is an {@link Thing}
      */
     @CheckReturnValue
-    EntityType asEntityType();
+    default Thing asThing(){
+        throw GraknTxOperationException.invalidCasting(this, Thing.class);
+    }
 
     /**
-     * Return as a RoleType if the Concept is a Role Type.
+     * Return as an {@link EntityType} if the {@link Concept} is an {@link EntityType}.
      *
-     * @return A Role Type if the concept is a Role Type
+     * @return A {@link EntityType} if the {@link Concept} is an {@link EntityType}
      */
     @CheckReturnValue
-    RoleType asRoleType();
+    default EntityType asEntityType(){
+        throw GraknTxOperationException.invalidCasting(this, EntityType.class);
+    }
 
     /**
-     * Return as a Relation Type if the concept is a Relation Type.
+     * Return as a {@link Role} if the {@link Concept} is a {@link Role}.
      *
-     * @return A Relation Type if the concept is a Relation Type
+     * @return A {@link Role} if the {@link Concept} is a {@link Role}
      */
     @CheckReturnValue
-    RelationType asRelationType();
+    default Role asRole(){
+        throw GraknTxOperationException.invalidCasting(this, Role.class);
+    }
 
     /**
-     * Return as a Resource Type if the Concept is a Resource Type.
+     * Return as a {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}.
      *
-     * @return A Resource Type if the concept is a Resource Type
+     * @return A {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
-    <D> ResourceType<D> asResourceType();
+    default RelationshipType asRelationshipType(){
+        throw GraknTxOperationException.invalidCasting(this, RelationshipType.class);
+    }
 
     /**
-     * Return as a Rule Type if the Concept is a Rule Type.
+     * Return as a {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
      *
-     * @return A Rule Type if the concept is a Rule Type
+     * @return A {@link RelationshipType} if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
-    RuleType asRuleType();
+    default <D> AttributeType<D> asAttributeType(){
+        throw GraknTxOperationException.invalidCasting(this, AttributeType.class);
+    }
 
     /**
-     * Return as an Entity, if the Concept is an Entity Instance.
-     * @return An Entity if the concept is an Instance
-     */
-    @CheckReturnValue
-    Entity asEntity();
-
-    /**
-     * Return as a Relation if the Concept is a Relation Instance.
+     * Return as a {@link Rule} if the {@link Concept} is a {@link Rule}.
      *
-     * @return A Relation if the concept is a Relation
+     * @return A {@link Rule} if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
-    Relation asRelation();
+    default Rule asRule(){
+        throw GraknTxOperationException.invalidCasting(this, Rule.class);
+    }
 
     /**
-     * Return as a Resource if the Concept is a Resource Instance.
-     *
-     * @return A Resource if the concept is a Resource
+     * Return as an {@link Entity}, if the {@link Concept} is an {@link Entity} {@link Thing}.
+     * @return An {@link Entity} if the {@link Concept} is a {@link Thing}
      */
     @CheckReturnValue
-    <D> Resource<D> asResource();
+    default Entity asEntity(){
+        throw GraknTxOperationException.invalidCasting(this, Entity.class);
+    }
 
     /**
-     * Return as a Rule if the Concept is a Rule Instance.
+     * Return as a {@link Relationship} if the {@link Concept} is a {@link Relationship} {@link Thing}.
      *
-     * @return A Rule if the concept is a Rule
+     * @return A {@link Relationship}  if the {@link Concept} is a {@link Relationship}
      */
     @CheckReturnValue
-    Rule asRule();
+    default Relationship asRelationship(){
+        throw GraknTxOperationException.invalidCasting(this, Relationship.class);
+    }
 
     /**
-     * Determine if the Concept is a Type.
+     * Return as a {@link Attribute}  if the {@link Concept} is a {@link Attribute} {@link Thing}.
      *
-     * @return true if the concept is a Type
+     * @return A {@link Attribute} if the {@link Concept} is a {@link Attribute}
      */
     @CheckReturnValue
-    boolean isType();
+    default <D> Attribute<D> asAttribute(){
+        throw GraknTxOperationException.invalidCasting(this, Attribute.class);
+    }
 
     /**
-     * Determine if the Concept is an Instance.
+     * Determine if the {@link Concept} is a {@link SchemaConcept}
      *
-     * @return true if the concept is an Instance
+     * @return true if the{@link Concept} concept is a {@link SchemaConcept}
      */
     @CheckReturnValue
-    boolean isInstance();
+    default boolean isSchemaConcept(){
+        return false;
+    }
 
     /**
-     * Determine if the Concept is an Entity Type.
+     * Determine if the {@link Concept} is a {@link Type}.
      *
-     * @return true if the concept is an Entity Type
+     * @return true if the{@link Concept} concept is a {@link Type}
      */
     @CheckReturnValue
-    boolean isEntityType();
+    default boolean isType(){
+        return false;
+    }
 
     /**
-     * Determine if the Concept is a Role Type.
+     * Determine if the {@link Concept} is an {@link Thing}.
      *
-     * @return true if the concept is a Role Type
+     * @return true if the {@link Concept} is an {@link Thing}
      */
     @CheckReturnValue
-    boolean isRoleType();
+    default boolean isThing(){
+        return false;
+    }
 
     /**
-     * Determine if the Concept is a Relation Type.
+     * Determine if the {@link Concept} is an {@link EntityType}.
      *
-     * @return true if the concept is a Relation Type
+     * @return true if the {@link Concept} is an {@link EntityType}.
      */
     @CheckReturnValue
-    boolean isRelationType();
+    default boolean isEntityType(){
+        return false;
+    }
 
     /**
-     * Determine if the Concept is a Resource Type.
+     * Determine if the {@link Concept} is a {@link Role}.
      *
-     * @return true if the concept is a Resource Type
+     * @return true if the {@link Concept} is a {@link Role}
      */
     @CheckReturnValue
-    boolean isResourceType();
+    default boolean isRole(){
+        return false;
+    }
 
     /**
-     * Determine if the Concept is a Rule Type.
+     * Determine if the {@link Concept} is a {@link RelationshipType}.
      *
-     * @return true if the concept is a Rule Type
+     * @return true if the {@link Concept} is a {@link RelationshipType}
      */
     @CheckReturnValue
-    boolean isRuleType();
+    default boolean isRelationshipType(){
+        return false;
+    }
 
     /**
-     * Determine if the Concept is an Entity.
+     * Determine if the {@link Concept} is a {@link AttributeType}.
      *
-     * @return true if the concept is a Entity
+     * @return true if the{@link Concept} concept is a {@link AttributeType}
      */
     @CheckReturnValue
-    boolean isEntity();
+    default boolean isAttributeType(){
+        return false;
+    }
 
     /**
-     * Determine if the Concept is a Relation.
+     * Determine if the {@link Concept} is a {@link Rule}.
      *
-     * @return true if the concept is a Relation
+     * @return true if the {@link Concept} is a {@link Rule}
      */
     @CheckReturnValue
-    boolean isRelation();
+    default boolean isRule(){
+        return false;
+    }
 
     /**
-     * Determine if the Concept is a Resource.
+     * Determine if the {@link Concept} is an {@link Entity}.
      *
-     * @return true if the concept is a Resource
+     * @return true if the {@link Concept} is a {@link Entity}
      */
     @CheckReturnValue
-    boolean isResource();
+    default boolean isEntity(){
+        return false;
+    }
 
     /**
-     * Determine if the Concept is a Rule.
+     * Determine if the {@link Concept} is a {@link Relationship}.
      *
-     * @return true if the concept is a Rule
+     * @return true if the {@link Concept} is a {@link Relationship}
      */
     @CheckReturnValue
-    boolean isRule();
+    default boolean isRelationship(){
+        return false;
+    }
+
+    /**
+     * Determine if the {@link Concept} is a {@link Attribute}.
+     *
+     * @return true if the {@link Concept} is a {@link Attribute}
+     */
+    @CheckReturnValue
+    default boolean isAttribute(){
+        return false;
+    }
 
     /**
      * Delete the Concept.
      *
-     * @throws GraphOperationException Throws an exception if this is a type with incoming concepts.
+     * @throws GraknTxOperationException Throws an exception if this is a type with incoming concepts.
      */
-    void delete() throws GraphOperationException;
+    void delete() throws GraknTxOperationException;
+
+    /**
+     * Return whether the concept has been deleted.
+     *
+     * <p>
+     *     Under some implementations, such as {@link TinkerGraph} this always returns false.
+     * </p>
+     */
+    boolean isDeleted();
 }

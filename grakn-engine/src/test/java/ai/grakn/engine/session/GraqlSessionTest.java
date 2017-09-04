@@ -19,7 +19,7 @@
 
 package ai.grakn.engine.session;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.graql.QueryBuilder;
@@ -45,7 +45,7 @@ public class GraqlSessionTest {
         Session jettySesssion = mock(Session.class, RETURNS_DEEP_STUBS);
 
         GraknSession factory = mock(GraknSession.class);
-        GraknGraph graph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        GraknTx graph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
         QueryBuilder qb = mock(QueryBuilder.class);
         CountQuery count = mock(CountQuery.class);
 
@@ -55,7 +55,7 @@ public class GraqlSessionTest {
         when(qb.materialise(false)).thenReturn(qb);
         when(qb.parseList("compute count;")).thenReturn(Stream.of(count));
 
-        GraqlSession session = new GraqlSession(jettySesssion, factory, "json", false, false, false);
+        GraqlSession session = new GraqlSession(jettySesssion, factory, "json", false, false);
         session.receiveQuery(Json.object(QUERY, "compute count;"));
         session.executeQuery().get();
 

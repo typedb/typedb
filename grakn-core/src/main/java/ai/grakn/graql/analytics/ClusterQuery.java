@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -57,16 +57,16 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
     ClusterQuery<T> in(String... subTypeLabels);
 
     /**
-     * @param subTypeLabels a collection of types to include in the subgraph
-     * @return a ClusterQuery with the subTypeLabels set
+     * @param subLabels a collection of types to include in the subgraph
+     * @return a ClusterQuery with the subLabels set
      */
     @Override
-    ClusterQuery<T> in(Collection<TypeLabel> subTypeLabels);
+    ClusterQuery<T> in(Collection<Label> subLabels);
 
     /**
-     * @param graph the graph to execute the query on
+     * @param tx the graph to execute the query on
      * @return a ClusterQuery with the graph set
      */
     @Override
-    ClusterQuery<T> withGraph(GraknGraph graph);
+    ClusterQuery<T> withTx(GraknTx tx);
 }

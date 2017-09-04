@@ -19,20 +19,20 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
 import ai.grakn.concept.Type;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.hal.HALUtils.DIRECTION_PROPERTY;
-import static ai.grakn.graql.internal.hal.HALUtils.HAS_RESOURCE_EDGE;
-import static ai.grakn.graql.internal.hal.HALUtils.HAS_ROLE_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.HAS_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.INBOUND_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
-import static ai.grakn.graql.internal.hal.HALUtils.PLAYS_ROLE_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.PLAYS_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.RELATES_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.SUB_EDGE;
 
 
@@ -57,18 +57,18 @@ class HALExploreType extends HALExploreConcept{
         // Subtypes
         attachSubTypes(halResource, type);
 
-        if (type.isRelationType()) {
-            // Role types that make up this RelationType
-            relationTypeRoles(halResource, type.asRelationType());
-        } else if (type.isRoleType()) {
-            // Types that can play this role && Relation types this role can take part in.
-            roleTypeOntology(halResource, type.asRoleType());
+        if (type.isRelationshipType()) {
+            // Role types that make up this RelationshipType
+            relationTypeRoles(halResource, type.asRelationshipType());
+        } else if (type.isRole()) {
+            // Types that can play this role && Relationship types this role can take part in.
+            roleTypeSchema(halResource, type.asRole());
         }
 
     }
 
     private void attachSubTypes(Representation halResource, Type conceptType) {
-        conceptType.subTypes().forEach(instance -> {
+        conceptType.subs().forEach(instance -> {
             // let's not put the current type in its own embedded
             if (!instance.getId().equals(conceptType.getId())) {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams())
@@ -80,53 +80,53 @@ class HALExploreType extends HALExploreConcept{
     }
 
 
-    private void roleTypeOntology(Representation halResource, RoleType roleType) {
-        roleType.playedByTypes().forEach(type -> {
+    private void roleTypeSchema(Representation halResource, Role role) {
+        role.playedByTypes().forEach(type -> {
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + type.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, type);
-            halResource.withRepresentation(PLAYS_ROLE_EDGE, roleRepresentation);
+            halResource.withRepresentation(PLAYS_EDGE, roleRepresentation);
         });
 
-        roleType.relationTypes().forEach(relType -> {
+        role.relationTypes().forEach(relType -> {
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + relType.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, relType);
-            halResource.withRepresentation(HAS_ROLE_EDGE, roleRepresentation);
+            halResource.withRepresentation(RELATES_EDGE, roleRepresentation);
         });
     }
 
-    private void relationTypeRoles(Representation halResource, RelationType relationType) {
-        relationType.relates().forEach(role -> {
+    private void relationTypeRoles(Representation halResource, RelationshipType relationshipType) {
+        relationshipType.relates().forEach(role -> {
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + role.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, role);
             //We always return roles with in embedded the entities that play that role.
-            roleTypeOntology(roleRepresentation, role);
-            halResource.withRepresentation(HAS_ROLE_EDGE, roleRepresentation);
+            roleTypeSchema(roleRepresentation, role);
+            halResource.withRepresentation(RELATES_EDGE, roleRepresentation);
         });
     }
 
     private void attachTypeResources(Representation halResource, Type conceptType) {
-        conceptType.resources().forEach(currentResourceType -> {
+        conceptType.attributes().forEach(currentResourceType -> {
             Representation embeddedResource = factory
                     .newRepresentation(resourceLinkPrefix + currentResourceType.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(embeddedResource, currentResourceType);
-            halResource.withRepresentation(HAS_RESOURCE_EDGE, embeddedResource);
+            halResource.withRepresentation(HAS_EDGE, embeddedResource);
         });
     }
 
-    private void attachRolesPlayed(Representation halResource, Collection<RoleType> roles) {
+    private void attachRolesPlayed(Representation halResource, Stream<Role> roles) {
         roles.forEach(role -> {
             Representation roleRepresentation = factory
                     .newRepresentation(resourceLinkPrefix + role.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, role);
             //We always return roles with in embedded the relations they play in.
-            roleTypeOntology(roleRepresentation, role);
+            roleTypeSchema(roleRepresentation, role);
 
-            halResource.withRepresentation(PLAYS_ROLE_EDGE, roleRepresentation);
+            halResource.withRepresentation(PLAYS_EDGE, roleRepresentation);
         });
     }
 

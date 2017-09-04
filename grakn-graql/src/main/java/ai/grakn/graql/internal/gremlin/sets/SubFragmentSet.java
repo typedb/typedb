@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
@@ -28,7 +29,7 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
  */
 class SubFragmentSet extends EquivalentFragmentSet {
 
-    SubFragmentSet(Var subType, Var superType) {
-        super(Fragments.outSub(subType, superType), Fragments.inSub(superType, subType));
+    SubFragmentSet(VarProperty varProperty, Var subType, Var superType) {
+        super(Fragments.outSub(varProperty, subType, superType), Fragments.inSub(varProperty, superType, subType));
     }
 }

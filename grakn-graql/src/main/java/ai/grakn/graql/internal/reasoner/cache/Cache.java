@@ -24,7 +24,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
-import javafx.util.Pair;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,11 +47,8 @@ import java.util.stream.Stream;
  */
 public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>{
 
-    protected final boolean explanation;
     protected final Map<Q, Pair<Q, T>> cache = new HashMap<>();
 
-    public Cache(){ this.explanation = false;}
-    public Cache(boolean explanation){ this.explanation = explanation;}
     public boolean contains(Q query){ return cache.containsKey(query);}
     public Set<Q> getQueries(){ return cache.keySet();}
 

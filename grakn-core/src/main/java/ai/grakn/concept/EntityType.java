@@ -18,13 +18,15 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.exception.GraphOperationException;
+import ai.grakn.exception.GraknTxOperationException;
 
-import java.util.Collection;
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nonnull;
+import java.util.stream.Stream;
 
 /**
  * <p>
- *     Ontology element used to represent categories.
+ *     {@link SchemaConcept} used to represent categories.
  * </p>
  *
  * <p>
@@ -37,6 +39,13 @@ import java.util.Collection;
  */
 public interface EntityType extends Type{
     //------------------------------------- Modifiers ----------------------------------
+    /**
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
+     */
+    EntityType setLabel(Label label);
+
     /**
      * Sets the EntityType to be abstract - which prevents it from having any instances.
      *
@@ -53,10 +62,10 @@ public interface EntityType extends Type{
      * @param type The supertype of this EntityType
      * @return The EntityType itself
      *
-     * @throws GraphOperationException if this is a meta type
-     * @throws GraphOperationException if the given supertype is already an indirect subtype of this type
+     * @throws GraknTxOperationException if this is a meta type
+     * @throws GraknTxOperationException if the given supertype is already an indirect subtype of this type
      */
-    EntityType superType(EntityType type);
+    EntityType sup(EntityType type);
 
     /**
      * Adds another subtype to this type
@@ -64,28 +73,46 @@ public interface EntityType extends Type{
      * @param type The sub type of this entity type
      * @return The EntityType itself
      *
-     * @throws GraphOperationException if the sub type is a meta type
-     * @throws GraphOperationException if the given subtype is already an indirect supertype of this type
+     * @throws GraknTxOperationException if the sub type is a meta type
+     * @throws GraknTxOperationException if the given subtype is already an indirect supertype of this type
      */
-    EntityType subType(EntityType type);
+    EntityType sub(EntityType type);
 
     /**
-     * Sets the RoleType which instances of this EntityType may play.
+     * Sets the Role which instances of this EntityType may play.
      *
-     * @param roleType The Role Type which the instances of this EntityType are allowed to play.
+     * @param role The Role Type which the instances of this EntityType are allowed to play.
      * @return The EntityType itself
      */
     @Override
-    EntityType plays(RoleType roleType);
+    EntityType plays(Role role);
 
     /**
-     * Removes the RoleType to prevent instances of this EntityType from playing it.
+     * Removes the ability of this {@link EntityType} to play a specific {@link Role}
      *
-     * @param roleType The Role Type which the instances of this EntityType should no longer be allowed to play.
-     * @return The EntityType itself
+     * @param role The {@link Role} which the {@link Thing}s of this {@link EntityType} should no longer be allowed to play.
+     * @return The {@link EntityType} itself.
      */
     @Override
-    EntityType deletePlays(RoleType roleType);
+    EntityType deletePlays(Role role);
+
+    /**
+     * Removes the ability for {@link Thing}s of this {@link EntityType} to have {@link Attribute}s of type {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link EntityType} can no longer have
+     * @return The {@link EntityType} itself.
+     */
+    @Override
+    EntityType deleteAttribute(AttributeType attributeType);
+
+    /**
+     * Removes {@link AttributeType} as a key to this {@link EntityType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link EntityType} can no longer have as a key
+     * @return The {@link EntityType} itself.
+     */
+    @Override
+    EntityType deleteKey(AttributeType attributeType);
 
     /**
      * Creates and returns a new Entity instance, whose direct type will be this type.
@@ -93,45 +120,27 @@ public interface EntityType extends Type{
      *
      * @return a new empty entity.
      *
-     * @throws GraphOperationException if this is a meta type
+     * @throws GraknTxOperationException if this is a meta type
      */
     Entity addEntity();
 
     /**
-     * Classifies the type to a specific scope. This allows you to optionally categorise types.
+     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
-     * @param scope The category of this Type
+     * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    EntityType scope(Instance scope);
+    EntityType key(AttributeType attributeType);
 
     /**
-     * Delete the scope specified.
+     * Creates a {@link RelationshipType} which allows this type and a resource type to be linked.
      *
-     * @param scope The Instances that is currently scoping this Type.
-     * @return The Type itself
-     */
-    @Override
-    EntityType deleteScope(Instance scope);
-
-    /**
-     * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
-     *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param attributeType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
     @Override
-    EntityType key(ResourceType resourceType);
-
-    /**
-     * Creates a RelationType which allows this type and a resource type to be linked.
-     *
-     * @param resourceType The resource type which instances of this type should be allowed to play.
-     * @return The Type itself.
-     */
-    @Override
-    EntityType resource(ResourceType resourceType);
+    EntityType attribute(AttributeType attributeType);
 
     //------------------------------------- Accessors ----------------------------------
     /**
@@ -140,7 +149,8 @@ public interface EntityType extends Type{
      * @return The supertype of this EntityType
      */
     @Override
-    EntityType superType();
+    @Nonnull
+    EntityType sup();
 
     /**
      * Returns a collection of subtypes of this EntityType.
@@ -148,7 +158,7 @@ public interface EntityType extends Type{
      * @return All the sub classes of this EntityType
      */
     @Override
-    Collection<EntityType> subTypes();
+    Stream<EntityType> subs();
 
     /**
      * Returns a collection of all Entity instances for this EntityType.
@@ -158,5 +168,20 @@ public interface EntityType extends Type{
      * @return All the instances of this EntityType.
      */
     @Override
-    Collection<Entity> instances();
+    Stream<Entity> instances();
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default EntityType asEntityType(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isEntityType(){
+        return true;
+    }
 }

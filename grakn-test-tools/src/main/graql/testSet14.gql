@@ -1,0 +1,25 @@
+define
+
+entity1 sub entity
+	has res1;
+
+#Resources
+res1 sub attribute datatype string;
+
+#Rules
+
+rule-1 sub rule
+	when {
+		$x isa entity1 has res1 $r1;
+		$y isa entity1;
+	}
+	then {
+		$y has res1 $r1;
+	};
+
+insert
+
+#Data
+
+$x isa entity1 has res1 "value";
+$y isa entity1;

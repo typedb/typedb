@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * <p>
  *     An instance of Entity Type {@link EntityType}
@@ -25,13 +27,13 @@ package ai.grakn.concept;
  *
  * <p>
  *     This represents an entity in the graph.
- *     Entities are objects which are defined by their {@link Resource} and their links to
- *     other entities via {@link Relation}
+ *     Entities are objects which are defined by their {@link Attribute} and their links to
+ *     other entities via {@link Relationship}
  * </p>
  *
  * @author fppt
  */
-public interface Entity extends Instance{
+public interface Entity extends Thing {
     //------------------------------------- Accessors ----------------------------------
 
     /**
@@ -43,11 +45,34 @@ public interface Entity extends Instance{
     EntityType type();
 
     /**
-     * Creates a relation from this instance to the provided resource.
+     * Creates a relation from this instance to the provided {@link Attribute}.
      *
-     * @param resource The resource to which a relationship is created
+     * @param attribute The {@link Attribute} to which a relationship is created
      * @return The instance itself
      */
     @Override
-    Entity resource(Resource resource);
+    Entity attribute(Attribute attribute);
+
+    /**
+     * Removes the provided {@link Attribute} from this {@link Entity}
+     * @param attribute the {@link Attribute} to be removed
+     * @return The {@link Entity} itself
+     */
+    @Override
+    Entity deleteAttribute(Attribute attribute);
+
+    //------------------------------------- Other ---------------------------------
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default Entity asEntity(){
+        return this;
+    }
+
+    @Deprecated
+    @CheckReturnValue
+    @Override
+    default boolean isEntity(){
+        return true;
+    }
 }

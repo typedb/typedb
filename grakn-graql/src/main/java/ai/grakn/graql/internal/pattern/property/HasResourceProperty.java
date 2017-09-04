@@ -18,161 +18,138 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
-import javax.annotation.CheckReturnValue;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Represents the {@code has} property on an {@link Instance}.
+ * Represents the {@code has} property on an {@link Thing}.
  *
  * This property can be queried, inserted or deleted.
  *
- * The property is defined as a relationship between an {@link Instance} and a {@link Resource}, where the
- * {@link Resource} is of a particular type.
+ * The property is defined as a {@link Relationship} between an {@link Thing} and a {@link Attribute}, where the
+ * {@link Attribute} is of a particular type.
  *
- * When matching, shortcut edges are used to speed up the traversal. The type of the relationship does not matter.
+ * When matching, shortcut edges are used to speed up the traversal. The type of the {@link Relationship} does not
+ * matter.
  *
- * When inserting, an implicit relation is created between the instance and the resource, using type labels derived from
- * the label of the resource type.
+ * When inserting, an implicit {@link Relationship} is created between the instance and the {@link Attribute}, using
+ * type labels derived from the label of the {@link AttributeType}.
  *
  * @author Felix Chapman
  */
-public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
+@AutoValue
+public abstract class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final TypeLabel resourceType;
-    private final VarPatternAdmin resource;
+    public static final String NAME = "has";
 
-    private HasResourceProperty(TypeLabel resourceType, VarPatternAdmin resource) {
-        this.resourceType = resourceType;
-        this.resource = resource;
+    public static HasResourceProperty of(Label attributeType, VarPatternAdmin attribute, VarPatternAdmin relationship) {
+        attribute = attribute.isa(label(attributeType)).admin();
+        return new AutoValue_HasResourceProperty(attributeType, attribute, relationship);
     }
 
-    public static HasResourceProperty of(TypeLabel resourceType, VarPatternAdmin resource) {
-        resource = resource.isa(label(resourceType)).admin();
-        return new HasResourceProperty(resourceType, resource);
-    }
-
-    public TypeLabel getType() {
-        return resourceType;
-    }
-
-    public VarPatternAdmin getResource() {
-        return resource;
-    }
-
-    // TODO: If `VarPatternAdmin#setVarName` is removed, this may no longer be necessary
-    @CheckReturnValue
-    public HasResourceProperty setResource(VarPatternAdmin resource) {
-        return new HasResourceProperty(resourceType, resource);
-    }
+    public abstract Label type();
+    public abstract VarPatternAdmin attribute();
+    public abstract VarPatternAdmin relationship();
 
     @Override
     public String getName() {
-        return "has";
+        return NAME;
     }
 
     @Override
     public String getProperty() {
         Stream.Builder<String> repr = Stream.builder();
 
-        repr.add(typeLabelToString(resourceType));
+        repr.add(typeLabelToString(type()));
 
-        if (resource.getVarName().isUserDefinedName()) {
-            repr.add(resource.getPrintableName());
+        if (attribute().var().isUserDefinedName()) {
+            repr.add(attribute().var().toString());
         } else {
-            resource.getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.getPredicate().toString()));
+            attribute().getProperties(ValueProperty.class).forEach(prop -> repr.add(prop.predicate().toString()));
         }
+
+        if (hasReifiedRelationship()) {
+            // TODO: Replace with actual reification syntax
+            repr.add("as").add(relationship().getPrintableName());
+        }
+
         return repr.build().collect(joining(" "));
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        Var relation = Graql.var();
         Var edge1 = Graql.var();
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                shortcut(relation, edge1, start, Optional.empty()),
-                shortcut(relation, edge2, resource.getVarName(), Optional.empty()),
-                neq(edge1, edge2)
+                shortcut(this, relationship().var(), edge1, start, null),
+                shortcut(this, relationship().var(), edge2, attribute().var(), null),
+                neq(this, edge1, edge2)
         );
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
-        return Stream.of(resource);
+    public Stream<VarPatternAdmin> innerVarPatterns() {
+        return Stream.of(attribute(), relationship());
     }
 
     @Override
-    void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
-        Type type = graph.getType(resourceType);
-        if(type == null || !type.isResourceType()) {
-            throw new IllegalStateException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
+    void checkValidProperty(GraknTx graph, VarPatternAdmin var) {
+        SchemaConcept schemaConcept = graph.getSchemaConcept(type());
+        if(schemaConcept == null || !schemaConcept.isAttributeType()) {
+            throw GraqlQueryException.mustBeResourceType(type());
         }
     }
 
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
-        Resource resourceConcept = insertQueryExecutor.getConcept(resource).asResource();
-        Instance instance = concept.asInstance();
-        instance.resource(resourceConcept);
-    }
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Attribute attributeConcept = executor.get(attribute().var()).asAttribute();
+            Thing thing = executor.get(var).asThing();
+            ConceptId relationshipId = thing.attributeRelationship(attributeConcept).getId();
+            executor.builder(relationship().var()).id(relationshipId);
+        };
 
-    @Override
-    public void delete(GraknGraph graph, Concept concept) {
-        Optional<ValuePredicateAdmin> predicate =
-                resource.getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
-
-        RoleType owner = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceType));
-        RoleType value = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceType));
-
-        concept.asInstance().relations(owner).stream()
-                .filter(relation -> testPredicate(predicate, relation, value))
-                .forEach(Concept::delete);
-    }
-
-    private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relation relation, RoleType resourceRole) {
-        Object value = relation.rolePlayers(resourceRole).iterator().next().asResource().getValue();
-
-        return optPredicate
-                .flatMap(ValuePredicateAdmin::getPredicate)
-                .map(predicate -> predicate.test(value))
-                .orElse(true);
+        return PropertyExecutor.builder(method).produces(relationship().var()).requires(var, attribute().var()).build();
     }
 
     @Override
     public Stream<VarPatternAdmin> getTypes() {
-        return Stream.of(label(resourceType).admin());
+        return Stream.of(label(type()).admin());
+    }
+
+    private boolean hasReifiedRelationship() {
+        return relationship().getProperties().findAny().isPresent() || relationship().var().isUserDefinedName();
     }
 
     @Override
@@ -182,27 +159,46 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         HasResourceProperty that = (HasResourceProperty) o;
 
-        return resourceType.equals(that.resourceType) && resource.equals(that.resource);
+        if (!type().equals(that.type())) return false;
+        if (!attribute().equals(that.attribute())) return false;
 
+        // TODO: Having to check this is pretty dodgy
+        // This check is necessary for `equals` and `hashCode` because `VarPattern` equality is defined
+        // s.t. `var() != var()`, but `var().label("movie") == var().label("movie")`
+        // i.e., a `Var` is compared by name, but a `VarPattern` ignores the name if the var is not user-defined
+        return !hasReifiedRelationship() || relationship().equals(that.relationship());
     }
 
     @Override
     public int hashCode() {
-        int result = resourceType.hashCode();
-        result = 31 * result + resource.hashCode();
+        int result = type().hashCode();
+        result = 31 * result + attribute().hashCode();
+
+        // TODO: Having to check this is pretty dodgy, explanation in #equals
+        if (hasReifiedRelationship()) {
+            result = 31 * result + relationship().hashCode();
+        }
+
         return result;
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        Var varName = var.getVarName().asUserDefined();
-        TypeLabel type = this.getType();
-        VarPatternAdmin valueVar = this.getResource();
-        Var valueVariable = valueVar.getVarName().asUserDefined();
-        Set<ValuePredicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
+        //NB: HasResourceProperty always has (type) label specified
+        Var varName = var.var().asUserDefined();
+
+        Var relationVariable = relationship().var();
+        Var attributeVariable = attribute().var().asUserDefined();
+        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, attribute(), vars, parent);
+
+        IsaProperty isaProp = attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
+        VarPatternAdmin typeVar = isaProp != null? isaProp.type() : null;
+        IdPredicate idPredicate = typeVar != null? getIdPredicate(attributeVariable, typeVar, vars, parent) : null;
 
         //add resource atom
-        VarPatternAdmin resVar = varName.has(type, valueVariable).admin();
-        return new ai.grakn.graql.internal.reasoner.atom.binary.Resource(resVar, predicates, parent);
+        VarPatternAdmin resVar = relationVariable.isUserDefinedName()?
+                varName.has(type(), attributeVariable, relationVariable).admin() :
+                varName.has(type(), attributeVariable).admin();
+        return new ResourceAtom(resVar, attributeVariable, relationVariable, idPredicate, predicates, parent);
     }
 }

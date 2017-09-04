@@ -19,28 +19,31 @@ package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.reasoner.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import com.google.common.collect.Sets;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesCompatible;
+import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkCompatible;
 
 /**
  *
@@ -53,48 +56,55 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkTypesCom
  */
 public abstract class Atom extends AtomicBase {
 
-    private Type type = null;
-    protected ConceptId typeId = null;
     private int basePriority = Integer.MAX_VALUE;
-    protected Set<InferenceRule> applicableRules = null;
+    private Set<InferenceRule> applicableRules = null;
 
-    protected Atom(VarPatternAdmin pattern, ReasonerQuery par) { super(pattern, par);}
+    protected Atom(VarPatternAdmin pattern, ReasonerQuery par) {
+        super(pattern, par);
+    }
     protected Atom(Atom a) {
         super(a);
-        this.type = a.type;
-        this.typeId = a.typeId;
         this.applicableRules = a.applicableRules;
     }
 
     @Override
     public boolean isAtom(){ return true;}
 
-    /**
-     * @return true if the atom corresponds to a atom
-     * */
-    public boolean isType(){ return false;}
+    @Override
+    public boolean isRuleResolvable() {
+        return getApplicableRules().findFirst().isPresent();
+    }
+
+    @Override
+    public boolean isRecursive(){
+        if (isResource() || getSchemaConcept() == null) return false;
+        SchemaConcept schemaConcept = getSchemaConcept();
+        return getApplicableRules()
+                .filter(rule -> rule.getBody().selectAtoms().stream()
+                        .filter(at -> Objects.nonNull(at.getSchemaConcept()))
+                        .filter(at -> checkCompatible(schemaConcept, at.getSchemaConcept())).findFirst().isPresent())
+                .filter(this::isRuleApplicable)
+                .findFirst().isPresent();
+    }
 
     /**
-     * @return true if the atom corresponds to a non-unary atom
-     * */
-    public boolean isRelation(){return false;}
-
-    /**
-     * @return true if the atom corresponds to a resource atom
-     * */
-    public boolean isResource(){ return false;}
+     * @return var properties this atom (its pattern) contains
+     */
+    public Set<VarProperty> getVarProperties() {
+        return getPattern().asVarPattern().getProperties().collect(Collectors.toSet());
+    }
 
     /**
      * @return partial substitutions for this atom (NB: instances)
      */
-    public Set<IdPredicate> getPartialSubstitutions(){ return new HashSet<>();}
+    protected Stream<IdPredicate> getPartialSubstitutions(){ return Stream.empty();}
 
     /**
      * compute base resolution priority of this atom
      * @return priority value
      */
-    public int computePriority(){
-        return computePriority(getPartialSubstitutions().stream().map(IdPredicate::getVarName).collect(Collectors.toSet()));
+    private int computePriority(){
+        return computePriority(getPartialSubstitutions().map(IdPredicate::getVarName).collect(Collectors.toSet()));
     }
 
     /**
@@ -104,16 +114,21 @@ public abstract class Atom extends AtomicBase {
      */
     public int computePriority(Set<Var> subbedVars){
         int priority = 0;
-        priority += Sets.intersection(getVarNames(), subbedVars).size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
-        priority += isRuleResolvable()? ResolutionStrategy.RULE_RESOLVABLE_ATOM : 0;
-        priority += isRecursive()? ResolutionStrategy.RECURSIVE_ATOM : 0;
+        priority += Sets.intersection(getVarNames(), subbedVars).size() * ResolutionPlan.PARTIAL_SUBSTITUTION;
+        priority += isRuleResolvable()? ResolutionPlan.RULE_RESOLVABLE_ATOM : 0;
+        priority += isRecursive()? ResolutionPlan.RECURSIVE_ATOM : 0;
 
-        priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
+        priority += getTypeConstraints().count() * ResolutionPlan.GUARD;
         Set<Var> otherVars = getParentQuery().getAtoms().stream()
                 .filter(a -> a != this)
                 .flatMap(at -> at.getVarNames().stream())
                 .collect(Collectors.toSet());
-        priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
+        priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionPlan.BOUND_VARIABLE;
+
+        //inequality predicates with unmapped variable
+        priority += getPredicates(NeqPredicate.class)
+                .map(Predicate::getPredicate)
+                .filter(v -> !subbedVars.contains(v)).count() * ResolutionPlan.INEQUALITY_PREDICATE;
         return priority;
     }
 
@@ -127,52 +142,29 @@ public abstract class Atom extends AtomicBase {
         return basePriority;
     }
 
-    public abstract boolean isRuleApplicable(InferenceRule child);
+    protected abstract boolean isRuleApplicable(InferenceRule child);
 
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
-    private Set<Rule> getPotentialRules(){
-        Type type = getType();
-        return type != null ?
-                type.subTypes().stream().flatMap(t -> t.getRulesOfConclusion().stream()).collect(Collectors.toSet()) :
-                ReasonerUtils.getRules(graph());
+    private Stream<Rule> getPotentialRules(){
+        return RuleUtil.getRulesWithType(getSchemaConcept(), tx());
     }
 
     /**
      * @return set of applicable rules - does detailed (slow) check for applicability
      */
-    public Set<InferenceRule> getApplicableRules() {
+    public Stream<InferenceRule> getApplicableRules() {
         if (applicableRules == null) {
-            applicableRules = getPotentialRules().stream()
-                    .map(rule -> new InferenceRule(rule, graph()))
+            applicableRules = new HashSet<>();
+            return getPotentialRules()
+                    .map(rule -> new InferenceRule(rule, tx()))
                     .filter(this::isRuleApplicable)
-                    .collect(Collectors.toSet());
+                    .map(r -> r.rewriteToUserDefined(this))
+                    .peek(applicableRules::add);
         }
-        return applicableRules;
+        return applicableRules.stream();
     }
-
-    @Override
-    public boolean isRuleResolvable() {
-        return !getApplicableRules().isEmpty();
-    }
-
-    @Override
-    public boolean isRecursive(){
-        if (isResource() || getType() == null) return false;
-        Type type = getType();
-        return getApplicableRules().stream()
-                .filter(rule -> rule.getBody().selectAtoms().stream()
-                        .filter(at -> Objects.nonNull(at.getType()))
-                        .filter(at -> checkTypesCompatible(type, at.getType())).findFirst().isPresent())
-                .filter(this::isRuleApplicable)
-                .findFirst().isPresent();
-    }
-
-    /**
-     * @return true if the atom can constitute a head of a rule
-     */
-    public boolean isAllowedToFormRuleHead(){ return false; }
 
     /**
      * @return true if the atom requires materialisation in order to be referenced
@@ -182,72 +174,48 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return corresponding type if any
      */
-    public Type getType(){
-        if (type == null && typeId != null) {
-            type = getParentQuery().graph().getConcept(typeId).asType();
-        }
-        return type;
-    }
+    public abstract SchemaConcept getSchemaConcept();
 
     /**
      * @return type id of the corresponding type if any
      */
-    public ConceptId getTypeId(){ return typeId;}
+    public abstract ConceptId getTypeId();
 
     /**
      * @return value variable name
      */
-    public Var getValueVariable() {
-        throw new IllegalArgumentException("getValueVariable called on Atom object " + getPattern());
-    }
+    public abstract Var getPredicateVariable();
 
     /**
      * @return set of predicates relevant to this atom
      */
-    public Set<Predicate> getPredicates() {
-        Set<Predicate> predicates = new HashSet<>();
-        predicates.addAll(getValuePredicates());
-        predicates.addAll(getIdPredicates());
-        return predicates;
+    public Stream<Predicate> getPredicates() {
+        return getPredicates(Predicate.class);
     }
 
     /**
-     * @return set of id predicates relevant to this atom
+     * @param type the class of {@link Predicate} to return
+     * @param <T> the type of {@link Predicate} to return
+     * @return stream of predicates relevant to this atom
      */
-    public Set<IdPredicate> getIdPredicates() {
-        return ((ReasonerQueryImpl) getParentQuery()).getIdPredicates().stream()
-                .filter(atom -> containsVar(atom.getVarName()))
-                .collect(Collectors.toSet());
-    }
-
-    /**
-     * @return set of value predicates relevant to this atom
-     */
-    public Set<ValuePredicate> getValuePredicates(){
-        return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
-                .filter(atom -> atom.getVarName().equals(getValueVariable()))
-                .collect(Collectors.toSet());
+    public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
+        return getParentQuery().getAtoms(type).filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
     }
 
     /**
      * @return set of types relevant to this atom
      */
-    public Set<TypeAtom> getTypeConstraints(){
-        Set<TypeAtom> relevantTypes = new HashSet<>();
-        //ids from indirect types
-        ((ReasonerQueryImpl) getParentQuery()).getTypeConstraints().stream()
+    public Stream<TypeAtom> getTypeConstraints(){
+        return getParentQuery().getAtoms(TypeAtom.class)
                 .filter(atom -> atom != this)
-                .filter(atom -> containsVar(atom.getVarName()))
-                .forEach(relevantTypes::add);
-        return relevantTypes;
+                .filter(atom -> containsVar(atom.getVarName()));
     }
 
     /**
      * @return neighbours of this atoms, i.e. atoms connected to this atom via shared variable
      */
     public Stream<Atom> getNeighbours(){
-        return getParentQuery().getAtoms().stream()
-                .filter(Atomic::isAtom).map(at -> (Atom) at)
+        return getParentQuery().getAtoms(Atom.class)
                 .filter(at -> at != this)
                 .filter(at -> !Sets.intersection(this.getVarNames(), at.getVarNames()).isEmpty());
     }
@@ -255,22 +223,23 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of constraints of this atom (predicates + types) that are not selectable
      */
-    public Set<Atomic> getNonSelectableConstraints() {
-        Set<Atom> types = getTypeConstraints().stream()
-                .filter(at -> !at.isSelectable())
-                .collect(Collectors.toSet());
-        return Sets.union(types, getPredicates());
+    public Stream<Atomic> getNonSelectableConstraints() {
+        return Stream.concat(
+                getPredicates(),
+                getTypeConstraints().filter(at -> !at.isSelectable())
+                );
     }
 
-    public Set<IdPredicate> getUnmappedIdPredicates(){ return new HashSet<>();}
-    public Set<TypeAtom> getUnmappedTypeConstraints(){ return new HashSet<>();}
-    public Set<TypeAtom> getMappedTypeConstraints() { return new HashSet<>();}
-    public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
+    /**
+     * @return set of type atoms that describe specific role players or resource owner
+     */
+    public Set<TypeAtom> getSpecificTypeConstraints() { return new HashSet<>();}
 
     /**
-     * infers types (type, role types) fo the atom if applicable/possible
+     * @param headAtom unification reference atom
+     * @return set of permutation unifiers that guarantee all variants of role assignments are performed and hence the results are complete
      */
-    public void inferTypes(){}
+    public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return Collections.singleton(new UnifierImpl());}
 
     /**
      * rewrites the atom to one with user defined name
@@ -283,5 +252,5 @@ public abstract class Atom extends AtomicBase {
      * @param parentAtom atom to be unified with
      * @return unifier
      */
-    public abstract Unifier getUnifier(Atomic parentAtom);
+    public abstract Unifier getUnifier(Atom parentAtom);
 }

@@ -18,6 +18,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.macro.Macro;
 
 import javax.annotation.CheckReturnValue;
@@ -39,28 +40,56 @@ public interface QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     @CheckReturnValue
-    MatchQuery match(PatternBuilder... patterns);
+    MatchQuery match(Pattern... patterns);
 
     /**
      * @param patterns a collection of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
     @CheckReturnValue
-    MatchQuery match(Collection<? extends PatternBuilder> patterns);
+    MatchQuery match(Collection<? extends Pattern> patterns);
 
     /**
      * @param vars an array of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
     @CheckReturnValue
-    InsertQuery insert(VarPatternBuilder... vars);
+    InsertQuery insert(VarPattern... vars);
 
     /**
      * @param vars a collection of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
     @CheckReturnValue
-    InsertQuery insert(Collection<? extends VarPatternBuilder> vars);
+    InsertQuery insert(Collection<? extends VarPattern> vars);
+
+    /**
+     * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
+     */
+    @CheckReturnValue
+    DefineQuery define(VarPattern... varPatterns);
+
+    /**
+     * @param varPatterns a collection of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
+     */
+    @CheckReturnValue
+    DefineQuery define(Collection<? extends VarPattern> varPatterns);
+
+    /**
+     * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s to undefine
+     * @return an {@link UndefineQuery} that will remove the changes described in the {@code varPatterns}
+     */
+    @CheckReturnValue
+    UndefineQuery undefine(VarPattern... varPatterns);
+
+    /**
+     * @param varPatterns a collection of {@link VarPattern}s defining {@link SchemaConcept}s to undefine
+     * @return an {@link UndefineQuery} that will remove the changes described in the {@code varPatterns}
+     */
+    @CheckReturnValue
+    UndefineQuery undefine(Collection<? extends VarPattern> varPatterns);
 
     /**
      * @return a compute query builder for building analytics query

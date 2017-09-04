@@ -21,18 +21,18 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <div v-if="showTypeInstances" class="types-panel">
         <div class="tabs-row z-depth-1">
             <div class="inline-div">
-              <button @click="$emit('load-ontology','entity')" class="btn norightmargin">Entities</button>
+              <button @click="$emit('load-schema','entity')" class="btn norightmargin">Entities</button>
               <button @click="updateCurrentTab('entities')" :class="{'active':currentTab==='entities'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
             </div>
             <div class="inline-div">
-              <button @click="$emit('load-ontology','resource')" class="btn norightmargin">Resources</button>
+              <button @click="$emit('load-schema','resource')" class="btn norightmargin">Resources</button>
               <button @click="updateCurrentTab('resources')" :class="{'active':currentTab==='resources'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
             </div>
             <div class="inline-div">
-              <button @click="$emit('load-ontology','relation')" class="btn norightmargin">Relations</button>
+              <button @click="$emit('load-schema','relation')" class="btn norightmargin">Relations</button>
               <button @click="updateCurrentTab('relations')" :class="{'active':currentTab==='relations'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
             </div>
-            <button @click="$emit('load-ontology','concept')" class="btn" style="margin-left:auto;">All Types</button>
+            <button @click="$emit('load-schema','thing')" class="btn" style="margin-left:auto;">All Types</button>
         </div>
         <transition name="fade-in" v-for="k in Object.keys(typeInstances)">
             <div v-bind:id="k+'-tab'" class="tab-pane" v-show="currentTab===k">

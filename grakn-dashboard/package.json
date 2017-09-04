@@ -5,7 +5,7 @@
     "url": "https://github.com/graknlabs/grakn.git"
   },
   "name": "grakn-dashboard",
-  "version": "0.14.0-SNAPSHOT",
+  "version": "0.17.0-SNAPSHOT",
   "description": "Grakn Web Dashboard",
   "author": "Grakn Labs",
   "bugs": {
@@ -35,7 +35,7 @@
     "babel-plugin-transform-runtime": "^6.12.0",
     "babel-preset-es2015": "^6.13.2",
     "babelify": "^7.3.0",
-    "browserify": "^13.1.0",
+    "browserify": "^13.3.0",
     "canvas-prebuilt": "^1.6.5-prerelease.1",
     "eslint": "^3.13.1",
     "eslint-config-airbnb-base": "^11.0.0",
@@ -49,7 +49,7 @@
     "jest-vue-preprocessor": "^0.2.0",
     "nyc": "^10.0.0",
     "vue-eslint-parser": "^1.0.0",
-    "vueify": "^9.0",
+    "vueify": "^9.4.1",
     "watchify": "^3.7.0",
     "xhr-mock": "^1.8.0"
   },
@@ -76,6 +76,10 @@
     "moduleFileExtensions": [
       "js",
       "vue"
+    ],
+    "testPathIgnorePatterns":[
+      "/node_modules/",
+      "/test/visualiser*"
     ],
     "transform": {
       "^.+\\.js$": "<rootDir>/node_modules/babel-jest",

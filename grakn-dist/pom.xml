@@ -24,11 +24,15 @@
         <artifactId>grakn-test-profiles</artifactId>
         <relativePath>../grakn-test-profiles</relativePath>
         <groupId>ai.grakn</groupId>
-        <version>0.14.0-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>grakn-dist</artifactId>
+
+    <properties>
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
+    </properties>
 
     <dependencies>
         <!--Logging dependencies: Compile scope needed to override parent test scope-->
@@ -42,6 +46,13 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <!--Jaino used for conditionals in log files-->
+        <dependency>
+            <groupId>org.codehaus.janino</groupId>
+            <artifactId>janino</artifactId>
+            <version>${janino.version}</version>
             <scope>compile</scope>
         </dependency>
 
@@ -105,7 +116,7 @@
         <!-- Factories -->
         <dependency>
             <groupId>ai.grakn</groupId>
-            <artifactId>titan-factory</artifactId>
+            <artifactId>janus-factory</artifactId>
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
@@ -171,7 +182,7 @@
                         <configuration>
                             <url>https://github.com/burukuru/redis-prebuilt/archive/redis-3.2.9.tar.gz</url>
                             <unpack>true</unpack>
-                            <outputDirectory>${main.basedir}/grakn-dist/target</outputDirectory>
+                            <outputDirectory>${project.basedir}/target</outputDirectory>
                         </configuration>
                     </execution>
                     <execution>
@@ -183,7 +194,7 @@
                         <configuration>
                             <url>https://github.com/burukuru/shunit2/archive/master.zip</url>
                             <unpack>true</unpack>
-                            <outputDirectory>${main.basedir}/grakn-dist/target/lib</outputDirectory>
+                            <outputDirectory>${project.basedir}/target/lib</outputDirectory>
                             <skip>${skipTests}</skip>
                         </configuration>
                     </execution>
@@ -202,8 +213,8 @@
                         </goals>
                         <configuration>
                             <skip>${skipTests}</skip>
-                            <workingDirectory>${main.basedir}/grakn-dist/src/test/bash</workingDirectory>
-                            <executable>${main.basedir}/grakn-dist/src/test/bash/bash-startup-test.sh</executable>
+                            <workingDirectory>${project.basedir}/src/test/bash</workingDirectory>
+                            <executable>${project.basedir}/src/test/bash/bash-startup-test.sh</executable>
                         </configuration>
                     </execution>
                 </executions>

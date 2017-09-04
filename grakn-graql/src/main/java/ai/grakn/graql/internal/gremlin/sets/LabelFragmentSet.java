@@ -19,10 +19,15 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+
+import java.util.Collection;
 
 /**
  * @author Felix Chapman
@@ -30,10 +35,10 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 class LabelFragmentSet extends EquivalentFragmentSet {
 
     private final Var type;
-    private TypeLabel label;
+    private Label label;
 
-    LabelFragmentSet(Var type, TypeLabel label) {
-        super(Fragments.label(type, label));
+    LabelFragmentSet(VarProperty varProperty, Var type, Label label) {
+        super(Fragments.label(varProperty, type, label));
         this.type = type;
         this.label = label;
     }
@@ -42,7 +47,47 @@ class LabelFragmentSet extends EquivalentFragmentSet {
         return type;
     }
 
-    TypeLabel label() {
+    Label label() {
         return label;
+    }
+
+    /**
+     * Optimise away any redundant {@link LabelFragmentSet}s. A {@link LabelFragmentSet} is considered redundant if:
+     * <ol>
+     *   <li>It refers to a type that exists in the graph
+     *   <li>It is not associated with a user-defined variable
+     *   <li>The variable it is associated with is not referred to in any other fragment
+     *   <li>The fragment set is not the only remaining fragment set</li>
+     * </ol>
+     */
+    static boolean applyRedundantLabelEliminationOptimisation(
+            Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
+
+        if (fragmentSets.size() <= 1) return false;
+
+        Iterable<LabelFragmentSet> labelFragments =
+                EquivalentFragmentSets.fragmentSetOfType(LabelFragmentSet.class, fragmentSets)::iterator;
+
+        for (LabelFragmentSet labelSet : labelFragments) {
+
+            boolean hasUserDefinedVar = labelSet.type().isUserDefinedName();
+            if (hasUserDefinedVar) continue;
+
+            boolean existsInGraph = graph.getSchemaConcept(labelSet.label()) != null;
+            if (!existsInGraph) continue;
+
+            boolean varReferredToInOtherFragment = fragmentSets.stream()
+                    .filter(set -> !set.equals(labelSet))
+                    .flatMap(set -> set.fragments().stream())
+                    .map(Fragment::vars)
+                    .anyMatch(vars -> vars.contains(labelSet.type()));
+
+            if (!varReferredToInOtherFragment) {
+                fragmentSets.remove(labelSet);
+                return true;
+            }
+        }
+
+        return false;
     }
 }

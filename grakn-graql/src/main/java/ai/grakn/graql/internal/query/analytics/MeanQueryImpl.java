@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.LabelId;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
@@ -37,8 +37,8 @@ import java.util.Set;
 
 class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements MeanQuery {
 
-    MeanQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    MeanQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
@@ -47,16 +47,16 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceTypeLabels);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
-        Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
-
-        String randomId = getRandomJobId();
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
+        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
+        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
+        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypeIds, statisticsResourceTypeIds, randomId),
-                new MeanMapReduce(statisticsResourceTypeIds, dataType, DegreeVertexProgram.DEGREE + randomId));
+                new DegreeStatisticsVertexProgram(statisticsResourceLabelIds),
+                new MeanMapReduce(statisticsResourceLabelIds, dataType,
+                        DegreeVertexProgram.DEGREE),
+                allSubLabelIds);
         Map<Serializable, Map<String, Double>> mean = result.memory().get(MeanMapReduce.class.getName());
         Map<String, Double> meanPair = mean.get(MapReduce.NullObject.instance());
 
@@ -73,8 +73,8 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
     }
 
     @Override
-    public MeanQuery of(Collection<TypeLabel> resourceTypeLabels) {
-        return (MeanQuery) setStatisticsResourceType(resourceTypeLabels);
+    public MeanQuery of(Collection<Label> resourceLabels) {
+        return (MeanQuery) setStatisticsResourceType(resourceLabels);
     }
 
     @Override
@@ -83,13 +83,13 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
     }
 
     @Override
-    public MeanQuery in(Collection<TypeLabel> subTypeLabels) {
-        return (MeanQuery) super.in(subTypeLabels);
+    public MeanQuery in(Collection<Label> subLabels) {
+        return (MeanQuery) super.in(subLabels);
     }
 
     @Override
-    public MeanQuery withGraph(GraknGraph graph) {
-        return (MeanQuery) super.withGraph(graph);
+    public MeanQuery withTx(GraknTx tx) {
+        return (MeanQuery) super.withTx(tx);
     }
 
     @Override

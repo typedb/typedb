@@ -18,13 +18,11 @@
 package ai.grakn.migration.export;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.migration.base.MigrationCLI;
 
 import java.util.Optional;
-
-import static ai.grakn.migration.base.MigrationCLI.die;
 
 /**
  * Export data from a Grakn graph to Graql statements - prints to System.out
@@ -33,26 +31,26 @@ import static ai.grakn.migration.base.MigrationCLI.die;
 public class Main {
 
     public static void main(String[] args){
-        MigrationCLI.init(args, GraphWriterOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(Main::runExport);
+        try{
+            MigrationCLI.init(args, KBWriterOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(Main::runExport);
+        } catch (IllegalArgumentException e){
+            System.err.println(e.getMessage());
+        }
     }
 
-    public static void runExport(GraphWriterOptions options) {
-        if(!options.exportOntology() && !options.exportData()) {
-            System.out.println("Missing arguments -ontology and/or -data");
-            die("");
+    private static void runExport(KBWriterOptions options) {
+        if(!options.exportSchema() && !options.exportData()) {
+            throw new IllegalArgumentException("Missing arguments -schema and/or -data");
         }
 
-        System.out.println("Writing graph " + options.getKeyspace() + " using Grakn Engine " +
-                options.getUri() + " to System.out");
+        try(GraknTx graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.READ)) {
+            KBWriter graphWriter = new KBWriter(graph);
 
-        try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE)) {
-            GraphWriter graphWriter = new GraphWriter(graph);
-
-            if (options.exportOntology()) {
-                System.out.println(graphWriter.dumpOntology());
+            if (options.exportSchema()) {
+                System.out.println(graphWriter.dumpSchema());
             }
 
             if (options.exportData()) {

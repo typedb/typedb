@@ -107,7 +107,7 @@ export default {
              */
   graqlShell(query:string) {
     return this.request({
-      url: `/graph/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
+      url: `/kb/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
       contentType: 'application/text',
       accepts: 'application/text',
     });
@@ -118,7 +118,7 @@ export default {
   graqlHAL(query:string) {
       // In match queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
     return this.request({
-      url: `/graph/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}&limitEmbedded=${User.getQueryLimit()}`,
+      url: `/kb/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}&limitEmbedded=${User.getQueryLimit()}`,
     });
   },
             /**
@@ -126,7 +126,7 @@ export default {
              */
   graqlAnalytics(query:string) {
     return this.request({
-      url: `/graph/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=false&materialise=false`,
+      url: `/kb/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=false&materialise=false`,
       accepts: 'application/text',
     });
   },
@@ -139,17 +139,19 @@ export default {
     });
   },
             /**
-             * Get meta ontology type instances.
+             * Get meta schema type instances.
              */
   getMetaTypes() {
     return this.request({
-      url: `/graph/ontology?keyspace=${User.getCurrentKeySpace()}`,
+      url: `/kb/schema?keyspace=${User.getCurrentKeySpace()}`,
+      accepts: 'application/json',
     });
   },
 
   getConceptTypes(id:string) {
     return this.request({
       url: `/dashboard/types/${id}?keyspace=${User.getCurrentKeySpace()}&limitEmbedded=${User.getQueryLimit()}`,
+      accepts: 'application/json',
     });
   },
 

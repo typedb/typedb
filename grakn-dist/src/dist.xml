@@ -32,7 +32,7 @@
             <includes>
                 <include>CHANGELOG</include>
                 <include>LICENSE.txt</include>
-                <include>readme.html</include>
+                <include>README.md</include>
             </includes>
         </fileSet>
         <fileSet>
@@ -47,7 +47,7 @@
                 <include>grakn-dashboard/**</include>
                 <include>grakn-dist/**</include>
                 <include>grakn-engine/**</include>
-                <include>grakn-graph/**</include>
+                <include>grakn-kb/**</include>
                 <include>grakn-graql/**</include>
                 <include>grakn-graql-shell/**</include>
                 <include>grakn-migration/**</include>

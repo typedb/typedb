@@ -1,0 +1,52 @@
+define
+
+#Roles
+
+role1 sub role;
+role2 sub role;
+superRole1 sub role1;
+anotherSuperRole1 sub role1;
+superRole2 sub role2;
+anotherSuperRole2 sub role2;
+
+#Entities
+
+entity1 sub entity
+    has res1
+    plays role1
+    plays role2
+    plays superRole1
+    plays anotherSuperRole1
+    plays superRole2
+    plays anotherSuperRole2;
+
+superEntity1 sub entity1;
+
+relation1 sub relationship
+    has res1
+	relates role1
+	relates role2
+	relates superRole1
+    relates superRole2
+    relates anotherSuperRole1
+    relates anotherSuperRole2;
+
+#Resources
+
+res1 sub attribute datatype string;
+
+insert
+
+#Instances
+
+$f isa entity1, has res1 'f';
+$m isa entity1, has res1 'm';
+$d isa entity1, has res1 'd';
+$s isa entity1, has res1 's';
+
+(superRole1: $f, superRole2: $s) isa relation1;
+(anotherSuperRole1: $m, superRole2: $s) isa relation1;
+(superRole1: $f, anotherSuperRole2: $d) isa relation1;
+(anotherSuperRole1: $m, anotherSuperRole2: $d) isa relation1;
+
+

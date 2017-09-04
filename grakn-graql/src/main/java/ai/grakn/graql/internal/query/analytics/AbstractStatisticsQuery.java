@@ -18,42 +18,39 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.Pattern;
 import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 
 abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
-    Set<TypeLabel> statisticsResourceTypeLabels = new HashSet<>();
-    private final Map<TypeLabel, ResourceType.DataType> resourceTypesDataTypeMap = new HashMap<>();
+    Set<Label> statisticsResourceLabels = new HashSet<>();
+    Set<Type> statisticsResourceTypes = new HashSet<>();
 
     AbstractStatisticsQuery<T> setStatisticsResourceType(String... statisticsResourceTypeLabels) {
-        this.statisticsResourceTypeLabels = Arrays.stream(statisticsResourceTypeLabels).map(TypeLabel::of).collect(Collectors.toSet());
+        this.statisticsResourceLabels =
+                Arrays.stream(statisticsResourceTypeLabels).map(Label::of).collect(Collectors.toSet());
         return this;
     }
 
-    AbstractStatisticsQuery<T> setStatisticsResourceType(Collection<TypeLabel> statisticsResourceTypeLabels) {
-        this.statisticsResourceTypeLabels = Sets.newHashSet(statisticsResourceTypeLabels);
+    AbstractStatisticsQuery<T> setStatisticsResourceType(Collection<Label> statisticsResourceLabels) {
+        this.statisticsResourceLabels = Sets.newHashSet(statisticsResourceLabels);
         return this;
     }
 
@@ -65,7 +62,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     @Override
     void initSubGraph() {
         super.initSubGraph();
-        getResourceTypes(graph.get());
+        getResourceTypes(tx.get());
     }
 
     @Override
@@ -76,84 +73,79 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     abstract String getName();
 
     private String resourcesString() {
-        return " of " + statisticsResourceTypeLabels.stream()
+        return " of " + statisticsResourceLabels.stream()
                 .map(StringConverter::typeLabelToString).collect(joining(", "));
     }
 
-    private void getResourceTypes(GraknGraph graph) {
-        if (statisticsResourceTypeLabels.isEmpty()) {
-            throw new IllegalStateException(ErrorMessage.RESOURCE_TYPE_NOT_SPECIFIED.getMessage());
+    private void getResourceTypes(GraknTx graph) {
+        if (statisticsResourceLabels.isEmpty()) {
+            throw GraqlQueryException.statisticsResourceTypesNotSpecified();
         }
 
-        Set<Type> statisticsResourceTypes = statisticsResourceTypeLabels.stream().map((label) -> {
-            Type type = graph.getType(label);
-            if (type == null) throw new IllegalArgumentException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
-            return type;
-        }).collect(Collectors.toSet());
-        for (Type type : statisticsResourceTypes) {
-            type.subTypes().forEach(subtype -> this.statisticsResourceTypeLabels.add(subtype.getLabel()));
-        }
-
-        ResourceType<?> metaResourceType = graph.admin().getMetaResourceType();
-        metaResourceType.subTypes().stream()
-                .filter(type -> !type.equals(metaResourceType))
-                .forEach(type -> resourceTypesDataTypeMap
-                        .put(type.asType().getLabel(), type.asResourceType().getDataType()));
+        statisticsResourceTypes = statisticsResourceLabels.stream()
+                .map((label) -> {
+                    Type type = graph.getSchemaConcept(label);
+                    if (type == null) throw GraqlQueryException.labelNotFound(label);
+                    if (!type.isAttributeType()) throw GraqlQueryException.mustBeResourceType(type.getLabel());
+                    return type;
+                })
+                .flatMap(Type::subs)
+                .collect(Collectors.toSet());
+        statisticsResourceLabels = statisticsResourceTypes.stream()
+                .map(SchemaConcept::getLabel)
+                .collect(Collectors.toSet());
     }
 
-    ResourceType.DataType getDataTypeOfSelectedResourceTypes(Set<TypeLabel> resourceTypes) {
-        if (resourceTypes == null || resourceTypes.isEmpty()) {
-            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                    .getMessage(this.getClass().toString()));
-        }
-
-        ResourceType.DataType dataType = null;
-        for (TypeLabel resourceType : resourceTypes) {
+    @Nullable
+    AttributeType.DataType getDataTypeOfSelectedResourceTypes() {
+        AttributeType.DataType dataType = null;
+        for (Type type : statisticsResourceTypes) {
             // check if the selected type is a resource-type
-            if (!resourceTypesDataTypeMap.containsKey(resourceType)) {
-                throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                        .getMessage(this.getClass().toString()));
-            }
-
+            if (!type.isAttributeType()) throw GraqlQueryException.mustBeResourceType(type.getLabel());
+            AttributeType resourceType = (AttributeType) type;
             if (dataType == null) {
                 // check if the resource-type has data-type LONG or DOUBLE
-                dataType = resourceTypesDataTypeMap.get(resourceType);
-
-                if (!dataType.equals(ResourceType.DataType.LONG) &&
-                        !dataType.equals(ResourceType.DataType.DOUBLE)) {
-                    throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                            .getMessage(this.getClass().toString()));
+                dataType = resourceType.getDataType();
+                if (!dataType.equals(AttributeType.DataType.LONG) &&
+                        !dataType.equals(AttributeType.DataType.DOUBLE)) {
+                    throw GraqlQueryException.resourceMustBeANumber(dataType, resourceType.getLabel());
                 }
 
             } else {
                 // check if all the resource-types have the same data-type
-                if (!dataType.equals(resourceTypesDataTypeMap.get(resourceType))) {
-                    throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                            .getMessage(this.getClass().toString()));
+                if (!dataType.equals(resourceType.getDataType())) {
+                    throw GraqlQueryException.resourcesWithDifferentDataTypes(statisticsResourceLabels);
                 }
             }
         }
         return dataType;
     }
 
-    boolean selectedResourceTypesHaveInstance(Set<TypeLabel> statisticsResourceTypes) {
-        List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
-                .map(type -> var("x").has(type, var())).collect(Collectors.toList());
-        List<Pattern> checkSubtypes = subTypeLabels.stream()
-                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
-
-        if (graph.isPresent()) {
-            return graph.get().graql().infer(false).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
-        } else {
-            throw new RuntimeException("Cannot compute the instnces of a type without a graph");
+    boolean selectedResourceTypesHaveInstance(Set<Label> statisticsResourceTypes) {
+        for (Label resourceType : statisticsResourceTypes) {
+            for (Label type : subLabels) {
+                Boolean patternExist = tx.get().graql().infer(false).match(
+                        var("x").has(resourceType, var()),
+                        var("x").isa(Graql.label(type))
+                ).iterator().hasNext();
+                if (patternExist) return true;
+            }
         }
+        return false;
+        //TODO: should use the following ask query when ask query is even lazier
+//        List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
+//                .map(type -> var("x").has(type, var())).collect(Collectors.toList());
+//        List<Pattern> checkSubtypes = subLabels.stream()
+//                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
+//
+//        return tx.get().graql().infer(false)
+//                .match(or(checkResourceTypes), or(checkSubtypes)).aggregate(ask()).execute();
     }
 
-    Set<TypeLabel> getCombinedSubTypes() {
-        Set<TypeLabel> allSubTypes = statisticsResourceTypeLabels.stream()
-                .map(Schema.ImplicitType.HAS::getLabel).collect(Collectors.toSet());
-        allSubTypes.addAll(subTypeLabels);
-        allSubTypes.addAll(statisticsResourceTypeLabels);
+    Set<Label> getCombinedSubTypes() {
+        Set<Label> allSubTypes = getHasResourceRelationLabels(statisticsResourceTypes);
+        allSubTypes.addAll(subLabels);
+        allSubTypes.addAll(statisticsResourceLabels);
         return allSubTypes;
     }
 
@@ -165,15 +157,13 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
         AbstractStatisticsQuery<?> that = (AbstractStatisticsQuery<?>) o;
 
-        return statisticsResourceTypeLabels.equals(that.statisticsResourceTypeLabels) &&
-                resourceTypesDataTypeMap.equals(that.resourceTypesDataTypeMap);
+        return statisticsResourceLabels.equals(that.statisticsResourceLabels);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + statisticsResourceTypeLabels.hashCode();
-        result = 31 * result + resourceTypesDataTypeMap.hashCode();
+        result = 31 * result + statisticsResourceLabels.hashCode();
         return result;
     }
 }

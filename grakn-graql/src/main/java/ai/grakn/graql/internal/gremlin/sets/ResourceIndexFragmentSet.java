@@ -19,13 +19,15 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.stream.Stream;
 
@@ -34,12 +36,12 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDir
 
 /**
  * A query can use a more-efficient resource index traversal when the following criteria are met:
- *
+ * <p>
  * 1. There is an {@link IsaFragmentSet} and a {@link ValueFragmentSet} referring to the same instance {@link Var}.
  * 2. The {@link IsaFragmentSet} refers to a type {@link Var} with a {@link LabelFragmentSet}.
  * 3. The {@link LabelFragmentSet} refers to a type in the graph without direct sub-types.
  * 4. The {@link ValueFragmentSet} is an equality predicate referring to a literal value.
- *
+ * <p>
  * When all these criteria are met, the fragments representing the {@link IsaFragmentSet} and the
  * {@link ValueFragmentSet} can be replaced with a {@link ResourceIndexFragmentSet} that will use the resource index to
  * perform a unique lookup in constant time.
@@ -48,12 +50,12 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDir
  */
 class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
-    private ResourceIndexFragmentSet(Var start, TypeLabel typeLabel, Object value) {
-        super(Fragments.resourceIndex(start, typeLabel, value));
+    private ResourceIndexFragmentSet(@Nullable VarProperty varProperty, Var start, Label label, Object value) {
+        super(Fragments.resourceIndex(varProperty, start, label, value));
     }
 
     static boolean applyResourceIndexOptimisation(
-            Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+            Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
 
         Iterable<ValueFragmentSet> valueSets = equalsValueFragments(fragmentSets)::iterator;
 
@@ -68,9 +70,9 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
             LabelFragmentSet nameSet = EquivalentFragmentSets.typeLabelOf(type, fragmentSets);
             if (nameSet == null) continue;
 
-            TypeLabel typeLabel = nameSet.label();
+            Label label = nameSet.label();
 
-            if (!hasDirectSubTypes(graph, typeLabel)) {
+            if (!hasDirectSubTypes(graph, label)) {
                 optimise(fragmentSets, valueSet, isaSet, nameSet.label());
                 return true;
             }
@@ -81,7 +83,7 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
     private static void optimise(
             Collection<EquivalentFragmentSet> fragmentSets, ValueFragmentSet valueSet, IsaFragmentSet isaSet,
-            TypeLabel typeLabel
+            Label label
     ) {
         // Remove fragment sets we are going to replace
         fragmentSets.remove(valueSet);
@@ -90,14 +92,16 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         // Add a new fragment set to replace the old ones
         Var resource = valueSet.resource();
         Object value = valueSet.predicate().equalsValue().get();
-        ResourceIndexFragmentSet indexFragmentSet = new ResourceIndexFragmentSet(resource, typeLabel, value);
+
+        ResourceIndexFragmentSet indexFragmentSet = new ResourceIndexFragmentSet(null, resource, label, value);
+
         fragmentSets.add(indexFragmentSet);
     }
 
     private static Stream<ValueFragmentSet> equalsValueFragments(Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSetOfType(ValueFragmentSet.class, fragmentSets)
                 .filter(valueFragmentSet -> {
-                    ValuePredicateAdmin predicate = valueFragmentSet.predicate();
+                    ValuePredicate predicate = valueFragmentSet.predicate();
                     return predicate.equalsValue().isPresent() && !predicate.getInnerVar().isPresent();
                 });
     }

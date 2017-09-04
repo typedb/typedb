@@ -18,40 +18,49 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.concept.Concept;
+import ai.grakn.GraknTx;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Streams;
+import ai.grakn.util.CommonUtil;
 
 import java.util.stream.Stream;
 
 abstract class AbstractVarProperty implements VarPropertyInternal {
 
     @Override
-    public final void checkValid(GraknGraph graph, VarPatternAdmin var) throws IllegalStateException {
+    public final void checkValid(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException {
         checkValidProperty(graph, var);
 
-        getInnerVars().map(VarPatternAdmin::getTypeLabel).flatMap(Streams::stream).forEach(label -> {
-            if (graph.getType(label) == null) {
-                throw new IllegalStateException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
+        innerVarPatterns().map(VarPatternAdmin::getTypeLabel).flatMap(Streams::stream).forEach(label -> {
+            if (graph.getSchemaConcept(label) == null) {
+                throw GraqlQueryException.labelNotFound(label);
             }
         });
     }
 
-    void checkValidProperty(GraknGraph graph, VarPatternAdmin var) {
+    void checkValidProperty(GraknTx graph, VarPatternAdmin var) {
 
     }
 
+    abstract String getName();
+
     @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        throw GraqlQueryException.insertUnsupportedProperty(getName());
     }
 
     @Override
-    public void delete(GraknGraph graph, Concept concept) {
-        throw failDelete(this);
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        throw GraqlQueryException.defineUnsupportedProperty(getName());
+    }
+
+    @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        throw GraqlQueryException.defineUnsupportedProperty(getName());
     }
 
     @Override
@@ -60,13 +69,12 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     }
 
     @Override
-    public Stream<VarPatternAdmin> getImplicitInnerVars() {
-        return getInnerVars();
+    public Stream<VarPatternAdmin> implicitInnerVarPatterns() {
+        return innerVarPatterns();
     }
 
-    static IllegalStateException failDelete(VarProperty property) {
-        StringBuilder builder = new StringBuilder();
-        property.buildString(builder);
-        return new IllegalStateException(ErrorMessage.DELETE_UNSUPPORTED_PROPERTY.getMessage(builder.toString()));
+    @Override
+    public final String toString() {
+        return graqlString();
     }
 }

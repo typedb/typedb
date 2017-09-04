@@ -33,9 +33,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static ai.grakn.migration.base.MigrationCLI.die;
-import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
-
 /**
  * The SQL migrator will execute the given SQL query and then apply the given template to those results.
  * @author alexandraorth
@@ -45,22 +42,25 @@ public class SQLMigrator {
     private final Stream<Record> records;
 
     public static void main(String[] args) {
-        MigrationCLI.init(args, SQLMigrationOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(SQLMigrator::runSQL);
+        try {
+            MigrationCLI.init(args, SQLMigrationOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(SQLMigrator::runSQL);
+        } catch (IllegalArgumentException e){
+            System.err.println(e.getMessage());
+        }
     }
 
-    public static void runSQL(SQLMigrationOptions options) {
-        File sqlTemplate = new File(options.getTemplate());
-
-        if(!sqlTemplate.exists()){
-            die("Cannot find file: " + options.getTemplate());
-        }
-
-        printInitMessage(options, options.getLocation() + " using " + options.getQuery());
-
+    private static void runSQL(SQLMigrationOptions options) {
         try {
+            File sqlTemplate = new File(options.getTemplate());
+
+            if(!sqlTemplate.exists()){
+                System.err.println("Cannot find file: " + options.getTemplate());
+                return;
+            }
+
             if(options.hasDriver()) {
                 DriverManager.registerDriver(options.getDriver());
             }
@@ -72,9 +72,8 @@ public class SQLMigrator {
 
                 MigrationCLI.loadOrPrint(sqlTemplate, sqlMigrator.convert(), options);
             }
-
         } catch (Throwable throwable){
-            die(throwable);
+            System.err.println(throwable.getMessage());
         }
     }
 

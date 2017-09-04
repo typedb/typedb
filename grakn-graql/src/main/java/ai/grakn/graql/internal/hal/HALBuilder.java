@@ -19,7 +19,9 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
+import ai.grakn.concept.Thing;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -30,11 +32,12 @@ import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.util.REST;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
-import javafx.util.Pair;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,8 +48,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.DIRECTION_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.HAS_EMPTY_ROLE_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.INFERRED_RELATION;
+import static ai.grakn.graql.internal.hal.HALUtils.LINKS_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.buildInferredRelationsMap;
 import static ai.grakn.graql.internal.hal.HALUtils.computeRoleTypesFromQuery;
@@ -70,7 +76,7 @@ public class HALBuilder {
     }
 
     public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Answer> results, int offset, int limit, boolean filterInstances) {
-        String keyspace = matchQuery.admin().getGraph().get().getKeyspace();
+        String keyspace = matchQuery.admin().tx().get().getKeyspace();
 
         //For each VarPatterAdmin containing a relation we store a map containing varNames associated to RoleTypes
         Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
@@ -79,7 +85,7 @@ public class HALBuilder {
             roleTypes = computeRoleTypesFromQuery(matchQuery, results.iterator().next());
         }
         //Collect all the types explicitly asked in the match query
-        Set<TypeLabel> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getLabel()).collect(toSet());
+        Set<Label> typesAskedInQuery = matchQuery.admin().getSchemaConcepts().stream().map(SchemaConcept::getLabel).collect(toSet());
 
         return buildHALRepresentations(results, typesAskedInQuery, roleTypes, keyspace, offset, limit, filterInstances);
     }
@@ -88,10 +94,11 @@ public class HALBuilder {
         return new HALConceptData(concept, separationDegree, false, new HashSet<>(), keyspace, offset, limit).render();
     }
 
+    @Nullable
     public static String HALExploreConcept(Concept concept, String keyspace, int offset, int limit) {
         String renderedHAL = null;
 
-        if (concept.isInstance()) {
+        if (concept.isThing()) {
             renderedHAL = new HALExploreInstance(concept, keyspace, offset, limit).render();
         }
         if (concept.isType()) {
@@ -119,14 +126,14 @@ public class HALBuilder {
         return conceptsArray;
     }
 
-    private static Json buildHALRepresentations(Collection<Answer> graqlResultsList, Set<TypeLabel> typesAskedInQuery, Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, String keyspace, int offset, int limit, boolean filterInstances) {
+    private static Json buildHALRepresentations(Collection<Answer> graqlResultsList, Set<Label> typesAskedInQuery, Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, String keyspace, int offset, int limit, boolean filterInstances) {
         final Json lines = Json.array();
         graqlResultsList.forEach(answer -> {
             Map<VarPatternAdmin, Boolean> inferredRelations = buildInferredRelationsMap(answer);
             Map<Var, Representation> mapFromVarNameToHALObject = new HashMap<>();
             Stream<Map.Entry<Var, Concept>> entriesStream = answer.map().entrySet().stream();
             // Filter to work only with Instances when building HAL for explanation tree from Reasoner
-            if (filterInstances) entriesStream = entriesStream.filter(entry -> entry.getValue().isInstance());
+            if (filterInstances) entriesStream = entriesStream.filter(entry -> entry.getValue().isThing());
             entriesStream.forEach(currentMapEntry -> {
                 Concept currentConcept = currentMapEntry.getValue();
 
@@ -134,10 +141,18 @@ public class HALBuilder {
                 Representation currentHal = new HALConceptData(currentConcept, MATCH_QUERY_FIXED_DEGREE, true,
                         typesAskedInQuery, keyspace, offset, limit).getRepresentation();
 
+
                 // Local map that will allow us to fetch HAL representation of RolePlayers when populating _embedded of the generated relation (in loopThroughRelations)
                 mapFromVarNameToHALObject.put(currentMapEntry.getKey(), currentHal);
 
-                lines.add(Json.read(currentHal.toString(RepresentationFactory.HAL_JSON)));
+                Json jsonRepresentation = Json.read(currentHal.toString(RepresentationFactory.HAL_JSON));
+                // If current concept is a relation obtained with inference (and we are not building an explanation response) override Explore URL and BaseType
+                if(!answer.getExplanation().isEmpty() && currentConcept.isRelationship() && !filterInstances){
+                    jsonRepresentation.set(BASETYPE_PROPERTY,INFERRED_RELATION);
+                    jsonRepresentation.at(LINKS_PROPERTY).set("self",Json.object().set("href", computeHrefInferred(currentConcept, keyspace, limit)));
+                }
+
+                lines.add(jsonRepresentation);
             });
             // All the variables of current map have an HAL representation. Add _direction OUT
             mapFromVarNameToHALObject.values().forEach(hal -> hal.withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE));
@@ -148,10 +163,32 @@ public class HALBuilder {
         return lines;
     }
 
+    private static String computeHrefInferred(Concept currentConcept, String keyspace, int limit){
+        Set<Thing> thingSet = new HashSet<>();
+        currentConcept.asRelationship().allRolePlayers().values().forEach(set -> set.forEach(thingSet::add));
+        String isaString =  "isa " + currentConcept.asRelationship().type().getLabel();
+        StringBuilder stringBuilderVarsWithIds = new StringBuilder();
+        StringBuilder stringBuilderParenthesis = new StringBuilder().append('(');
+        char currentVarLetter = 'a';
+        for (Thing var : thingSet) {
+            stringBuilderVarsWithIds.append(" $").append(currentVarLetter).append(" id '").append(var.getId().getValue()).append("';");
+            stringBuilderParenthesis.append("$").append(currentVarLetter++).append(",");
+        }
+        String varsWithIds = stringBuilderVarsWithIds.toString();
+        String parenthesis = stringBuilderParenthesis.deleteCharAt(stringBuilderParenthesis.length() - 1).append(')').toString();
+
+        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, "", parenthesis, isaString, "", limit);
+
+        String URL = REST.WebPath.Dashboard.EXPLAIN;
+
+        return URL + withoutUrl;
+
+    }
+
     private static Collection<Representation> loopThroughRelations(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Map<Var, Representation> mapFromVarNameToHALObject, Map<Var, Concept> resultLine, String keyspace, int limit, Map<VarPatternAdmin, Boolean> inferredRelations) {
 
         final Collection<Representation> generatedRelations = new ArrayList<>();
-        // For each relation (VarPatternAdmin key in roleTypes) we fetch all the role-players representations and embed them in the generated-relation's HAL representation.
+        // For each relation (VarPatternAdmin key in roleTypes) we fetch all the role-players representations and embed them in the generated-relationship's HAL representation.
         roleTypes.entrySet().forEach(currentEntry -> {
             Collection<Var> varNamesInCurrentRelation = currentEntry.getValue().getKey().keySet();
             // Chain Concept ids (sorted alphabetically) corresponding to varNames in current relation
@@ -192,7 +229,7 @@ public class HALBuilder {
 
         String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, dollarR, parenthesis, isaString, selectR, limit);
 
-        String URL = (isInferred) ? REST.WebPath.Dashboard.EXPLAIN : REST.WebPath.Graph.GRAQL;
+        String URL = (isInferred) ? REST.WebPath.Dashboard.EXPLAIN : REST.WebPath.KB.GRAQL;
 
         return URL + withoutUrl;
     }

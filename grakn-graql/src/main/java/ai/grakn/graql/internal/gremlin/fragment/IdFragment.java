@@ -18,60 +18,67 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
 
-class IdFragment extends AbstractFragment {
+@AutoValue
+abstract class IdFragment extends Fragment {
 
-    private final ConceptId id;
+    abstract ConceptId id();
 
-    IdFragment(Var start, ConceptId id) {
-        super(start);
-        this.id = id;
+    @Override
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
+        if (canOperateOnEdges()) {
+            // Handle both edges and vertices
+            return traversal.or(
+                    edgeTraversal(),
+                    vertexTraversal(__.identity())
+            );
+        } else {
+            return vertexTraversal(traversal);
+        }
+    }
+
+    private GraphTraversal<Element, Vertex> vertexTraversal(GraphTraversal<Element, ? extends Element> traversal) {
+        // A vertex should always be looked up by vertex property, not the actual vertex ID which may be incorrect.
+        // This is because a vertex may represent a reified relation, which will use the original edge ID as an ID.
+        
+        // We know only vertices have this property, so the cast is safe
+        //noinspection unchecked
+        return (GraphTraversal<Element, Vertex>) traversal.has(Schema.VertexProperty.ID.name(), id().getValue());
+    }
+
+    private GraphTraversal<Edge, Edge> edgeTraversal() {
+        return __.hasId(id().getValue().substring(1));
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.has(Schema.ConceptProperty.ID.name(), id.getValue());
+    public String name() {
+        return "[id:" + idToString(id()) + "]";
     }
 
     @Override
-    public String getName() {
-        return "[id:" + idToString(id) + "]";
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        IdFragment that = (IdFragment) o;
-
-        return id != null ? id.equals(that.id) : that.id == null;
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (id != null ? id.hashCode() : 0);
-        return result;
-    }
-
-    @Override
-    public double fragmentCost(double previousCost) {
-        return 1;
+    public double fragmentCost() {
+        return COST_INDEX;
     }
 
     @Override
     public boolean hasFixedFragmentCost() {
         return true;
+    }
+
+    @Override
+    public boolean canOperateOnEdges() {
+        return id().getValue().startsWith(Schema.PREFIX_EDGE);
     }
 }

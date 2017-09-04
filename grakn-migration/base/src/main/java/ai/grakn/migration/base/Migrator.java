@@ -19,24 +19,23 @@
 package ai.grakn.migration.base;
 
 import ai.grakn.client.BatchMutatorClient;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.macro.Macro;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
 import static java.lang.String.format;
-import static java.util.stream.Collectors.toList;
 
 /**
  * <p>
@@ -55,7 +54,7 @@ public class Migrator {
     private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
     public static final int BATCH_SIZE = 25;
     public static final int ACTIVE_TASKS = 25;
-    public static final boolean RETRY = false;
+    private static final boolean RETRY = false;
 
     private final String uri;
     private final String keyspace;
@@ -90,11 +89,13 @@ public class Migrator {
      *
      * Uses the default batch size and number of active tasks.
      *
+     * NOTE: Currently only used for testing purposes
+     *
      * @param template
      * @param converter
      */
     public void load(String template, Stream<Map<String, Object>> converter) {
-        load(template, converter, Migrator.BATCH_SIZE, Migrator.ACTIVE_TASKS, Migrator.RETRY);
+        load(template, converter, Migrator.BATCH_SIZE, Migrator.ACTIVE_TASKS, Migrator.RETRY, true);
     }
 
     /**
@@ -103,7 +104,7 @@ public class Migrator {
      * @param converter
      */
     public void print(String template, Stream<Map<String, Object>> converter){
-        converter.flatMap(d -> template(template, d).stream())
+        converter.flatMap(d -> template(template, d))
                  .forEach(System.out::println);
     }
 
@@ -119,17 +120,26 @@ public class Migrator {
      * @param retry If the Loader should continue attempt to send tasks when Engine is not available
      */
     public void load(String template, Stream<Map<String, Object>> converter,
-                     int batchSize, int numberActiveTasks, boolean retry){
+                     int batchSize, int numberActiveTasks, boolean retry, boolean debug){
         this.startTime = System.currentTimeMillis();
         this.batchSize = batchSize;
 
-        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates());
+        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates(), debug);
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
         loader.setRetryPolicy(retry);
+        loader.setTaskCompletionConsumer(json -> {
+            if (json.has(STACK_TRACE) && json.at(STACK_TRACE).isString()) {
+                if(debug){
+                    throw GraknBackendException.migrationFailure(json.at(STACK_TRACE).asString());
+                } else {
+                    System.err.println(json.at(STACK_TRACE).asString());
+                }
+            }
+        });
 
         converter
-                .flatMap(d -> template(template, d).stream())
+                .flatMap(d -> template(template, d))
                 .forEach(q -> {
                     numberQueriesSubmitted.incrementAndGet();
                     loader.add(q);
@@ -142,17 +152,16 @@ public class Migrator {
      * @param data data used in the template
      * @return an insert query
      */
-    protected List<InsertQuery> template(String template, Map<String, Object> data){
+    protected Stream<Query> template(String template, Map<String, Object> data){
         try {
-            return queryBuilder.<InsertQuery>parseTemplate(template, data).collect(toList());
+            return queryBuilder.parseTemplate(template, data);
 
             //TODO Graql should throw a GraqlParsingException so we do not need to catch IllegalArgumentException
         } catch (GraqlSyntaxException | IllegalArgumentException e){
-            LOG.warn("Query was not sent to loader- " + e.getMessage());
-            LOG.warn("See the Grakn engine logs for more detail about loading status and any resulting stacktraces");
+            LOG.warn("Query not sent to server: " + e.getMessage());
         }
 
-        return Collections.emptyList();
+        return Stream.empty();
     }
 
     /**

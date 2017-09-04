@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.AskQueryAdmin;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
@@ -43,13 +43,6 @@ public class Queries {
     }
 
     /**
-     * @param matchQuery the match query that the ask query will search for in the graph
-     */
-    public static AskQueryAdmin ask(MatchQuery matchQuery) {
-        return new AskQueryImpl(matchQuery);
-    }
-
-    /**
      * @param vars       a collection of Vars to insert
      * @param matchQuery the match query to insert for each result
      */
@@ -57,8 +50,8 @@ public class Queries {
         return new InsertQueryImpl(vars, Optional.of(matchQuery), Optional.empty());
     }
 
-    public static DeleteQueryAdmin delete(Collection<VarPatternAdmin> deleters, MatchQuery matchQuery) {
-        return new DeleteQueryImpl(deleters, matchQuery);
+    public static DeleteQueryAdmin delete(Collection<? extends Var> vars, MatchQuery matchQuery) {
+        return DeleteQueryImpl.of(vars, matchQuery);
     }
 
     public static <T> AggregateQuery<T> aggregate(MatchQueryAdmin matchQuery, Aggregate<? super Answer, T> aggregate) {

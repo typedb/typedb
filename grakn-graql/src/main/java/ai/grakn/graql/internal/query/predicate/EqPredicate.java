@@ -18,8 +18,9 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
-import ai.grakn.graql.internal.util.StringConverter;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+
+import ai.grakn.util.StringUtil;
 
 import java.util.Optional;
 
@@ -57,7 +58,7 @@ class EqPredicate extends ComparatorPredicate {
 
     @Override
     public String toString() {
-        return StringConverter.valueToString(value);
+        return StringUtil.valueToString(value);
     }
 
     @Override

@@ -19,23 +19,24 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.RelationshipType;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.util.Schema;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Optional;
-import java.util.Set;
 
-import static ai.grakn.util.CommonUtil.withImplicitConceptsVisible;
-import static java.util.stream.Collectors.toSet;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 /**
  * Describes the edge connecting a relation to a role-player.
@@ -49,23 +50,25 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
     private final Var relation;
     private final Var edge;
     private final Var rolePlayer;
-    private final Optional<Var> roleType;
-    private final Optional<Set<TypeLabel>> roleTypeLabels;
-    private final Optional<Set<TypeLabel>> relationTypeLabels;
+    private final @Nullable Var role;
+    private final @Nullable ImmutableSet<Label> roleTypeLabels;
+    private final @Nullable ImmutableSet<Label> relationTypeLabels;
+    private final VarProperty varProperty;
 
-    ShortcutFragmentSet(
-            Var relation, Var edge, Var rolePlayer, Optional<Var> roleType,
-            Optional<Set<TypeLabel>> roleTypeLabels, Optional<Set<TypeLabel>> relationTypeLabels) {
+    ShortcutFragmentSet(VarProperty varProperty,
+                        Var relation, Var edge, Var rolePlayer, @Nullable Var role,
+                        @Nullable ImmutableSet<Label> roleLabels, @Nullable ImmutableSet<Label> relationTypeLabels) {
         super(
-                Fragments.inShortcut(rolePlayer, edge, relation, roleType, roleTypeLabels, relationTypeLabels),
-                Fragments.outShortcut(relation, edge, rolePlayer, roleType, roleTypeLabels, relationTypeLabels)
+                Fragments.inShortcut(varProperty, rolePlayer, edge, relation, role, roleLabels, relationTypeLabels),
+                Fragments.outShortcut(varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels)
         );
         this.relation = relation;
         this.edge = edge;
         this.rolePlayer = rolePlayer;
-        this.roleType = roleType;
-        this.roleTypeLabels = roleTypeLabels;
+        this.role = role;
+        this.roleTypeLabels = roleLabels;
         this.relationTypeLabels = relationTypeLabels;
+        this.varProperty = varProperty;
     }
 
     /**
@@ -80,26 +83,40 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * <p>
      * {@code $r-[shortcut:$e roles:foo ...]->$p}
      * <p>
-     *
+     * In the special case where the role is specified as the meta {@code role}, no labels are added and the role
+     * variable is detached from the shortcut edge.
+     * <p>
      * However, we must still retain the {@link LabelFragmentSet} because it is possible it is selected as a result or
      * referred to elsewhere in the query.
      */
-    static boolean applyShortcutRoleTypeOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+    static boolean applyShortcutRoleOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
         Iterable<ShortcutFragmentSet> shortcuts = EquivalentFragmentSets.fragmentSetOfType(ShortcutFragmentSet.class, fragmentSets)::iterator;
 
         for (ShortcutFragmentSet shortcut : shortcuts) {
-            Optional<Var> roleVar = shortcut.roleType;
+            Var roleVar = shortcut.role;
 
-            if (!roleVar.isPresent()) continue;
+            if (roleVar == null) continue;
 
-            @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar.get(), fragmentSets);
+            @Nullable LabelFragmentSet roleLabel = EquivalentFragmentSets.typeLabelOf(roleVar, fragmentSets);
 
-            if (roleLabel != null) {
-                RoleType roleType = graph.getType(roleLabel.label());
+            if (roleLabel == null) continue;
 
+            @Nullable ShortcutFragmentSet newShortcut = null;
+
+            if (roleLabel.label().equals(Schema.MetaSchema.ROLE.getLabel())) {
+                newShortcut = shortcut.removeRoleVar();
+            } else {
+                SchemaConcept schemaConcept = graph.getSchemaConcept(roleLabel.label());
+
+                if (schemaConcept != null && schemaConcept.isRole()) {
+                    Role role = schemaConcept.asRole();
+                    newShortcut = shortcut.substituteRoleTypeLabel(role);
+                }
+            }
+
+            if (newShortcut != null) {
                 fragmentSets.remove(shortcut);
-                fragmentSets.add(shortcut.substituteRoleTypeLabel(graph, roleType));
-
+                fragmentSets.add(newShortcut);
                 return true;
             }
         }
@@ -129,12 +146,12 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
      * it can help with performance: there are some instances where it makes sense to navigate from the relation-type
      * {@code foo} to all instances. In order to do that, the {@link IsaFragmentSet} must be present.
      */
-    static boolean applyShortcutRelationTypeOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+    static boolean applyShortcutRelationTypeOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknTx graph) {
         Iterable<ShortcutFragmentSet> shortcuts = EquivalentFragmentSets.fragmentSetOfType(ShortcutFragmentSet.class, fragmentSets)::iterator;
 
         for (ShortcutFragmentSet shortcut : shortcuts) {
 
-            if (shortcut.relationTypeLabels.isPresent()) continue;
+            if (shortcut.relationTypeLabels != null) continue;
 
             @Nullable IsaFragmentSet isa = EquivalentFragmentSets.typeInformationOf(shortcut.relation, fragmentSets);
 
@@ -142,11 +159,15 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
             @Nullable LabelFragmentSet relationLabel = EquivalentFragmentSets.typeLabelOf(isa.type(), fragmentSets);
 
-            if (relationLabel != null) {
-                RelationType relationType = graph.getType(relationLabel.label());
+            if (relationLabel == null) continue;
+
+            SchemaConcept schemaConcept = graph.getSchemaConcept(relationLabel.label());
+
+            if (schemaConcept != null && schemaConcept.isRelationshipType()) {
+                RelationshipType relationshipType = schemaConcept.asRelationshipType();
 
                 fragmentSets.remove(shortcut);
-                fragmentSets.add(shortcut.addRelationTypeLabel(graph, relationType));
+                fragmentSets.add(shortcut.addRelationTypeLabel(relationshipType));
 
                 return true;
             }
@@ -157,36 +178,40 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
     /**
      * Apply an optimisation where we check the role-type property instead of navigating to the role-type directly.
-     * @param roleType the role-type that this shortcut fragment must link to
+     * @param role the role-type that this shortcut fragment must link to
      * @return a new {@link ShortcutFragmentSet} with the same properties excepting role-types
      */
-    private ShortcutFragmentSet substituteRoleTypeLabel(GraknGraph graph, RoleType roleType) {
-        Preconditions.checkState(this.roleType.isPresent());
-        Preconditions.checkState(!roleTypeLabels.isPresent());
+    private ShortcutFragmentSet substituteRoleTypeLabel(Role role) {
+        Preconditions.checkNotNull(this.role);
+        Preconditions.checkState(roleTypeLabels == null);
 
-        Collection<RoleType> subTypes = withImplicitConceptsVisible(graph, roleType::subTypes);
+        ImmutableSet<Label> newRoleLabels = role.subs().map(SchemaConcept::getLabel).collect(toImmutableSet());
 
-        Set<TypeLabel> newRoleTypeLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
-
-        return new ShortcutFragmentSet(
-                relation, edge, rolePlayer, Optional.empty(), Optional.of(newRoleTypeLabels), relationTypeLabels
+        return new ShortcutFragmentSet(varProperty,
+                relation, edge, rolePlayer, null, newRoleLabels, relationTypeLabels
         );
     }
 
     /**
      * Apply an optimisation where we check the relation-type property.
-     * @param relationType the relation-type that this shortcut fragment must link to
+     * @param relationshipType the relation-type that this shortcut fragment must link to
      * @return a new {@link ShortcutFragmentSet} with the same properties excepting relation-type labels
      */
-    private ShortcutFragmentSet addRelationTypeLabel(GraknGraph graph, RelationType relationType) {
-        Preconditions.checkState(!relationTypeLabels.isPresent());
+    private ShortcutFragmentSet addRelationTypeLabel(RelationshipType relationshipType) {
+        Preconditions.checkState(relationTypeLabels == null);
 
-        Collection<RelationType> subTypes = withImplicitConceptsVisible(graph, relationType::subTypes);
+        ImmutableSet<Label> newRelationLabels = relationshipType.subs().map(Type::getLabel).collect(toImmutableSet());
 
-        Set<TypeLabel> newRelationTypeLabels = subTypes.stream().map(Type::getLabel).collect(toSet());
-
-        return new ShortcutFragmentSet(
-                relation, edge, rolePlayer, roleType, roleTypeLabels, Optional.of(newRelationTypeLabels)
+        return new ShortcutFragmentSet(varProperty,
+                relation, edge, rolePlayer, role, roleTypeLabels, newRelationLabels
         );
+    }
+
+    /**
+     * Remove any specified role variable
+     */
+    private ShortcutFragmentSet removeRoleVar() {
+        Preconditions.checkNotNull(role);
+        return new ShortcutFragmentSet(varProperty, relation, edge, rolePlayer, null, roleTypeLabels, relationTypeLabels);
     }
 }

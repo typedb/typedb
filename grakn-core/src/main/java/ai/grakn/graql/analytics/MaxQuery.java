@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.analytics;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -39,10 +39,10 @@ public interface MaxQuery extends ComputeQuery<Optional<Number>> {
     MaxQuery of(String... resourceTypeLabels);
 
     /**
-     * @param resourceTypeLabels a collection of types of resources to execute the query on
+     * @param resourceLabels a collection of types of resources to execute the query on
      * @return a MaxQuery with the subTypeLabels set
      */
-    MaxQuery of(Collection<TypeLabel> resourceTypeLabels);
+    MaxQuery of(Collection<Label> resourceLabels);
 
     /**
      * @param subTypeLabels an array of types to include in the subgraph
@@ -52,11 +52,11 @@ public interface MaxQuery extends ComputeQuery<Optional<Number>> {
     MaxQuery in(String... subTypeLabels);
 
     /**
-     * @param subTypeLabels a collection of types to include in the subgraph
-     * @return a MaxQuery with the subTypeLabels set
+     * @param subLabels a collection of types to include in the subgraph
+     * @return a MaxQuery with the subLabels set
      */
     @Override
-    MaxQuery in(Collection<TypeLabel> subTypeLabels);
+    MaxQuery in(Collection<Label> subLabels);
 
     /**
      * Execute the query.
@@ -67,9 +67,9 @@ public interface MaxQuery extends ComputeQuery<Optional<Number>> {
     Optional<Number> execute();
 
     /**
-     * @param graph the graph to execute the query on
+     * @param tx the graph to execute the query on
      * @return a MaxQuery with the graph set
      */
     @Override
-    MaxQuery withGraph(GraknGraph graph);
+    MaxQuery withTx(GraknTx tx);
 }

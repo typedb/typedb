@@ -19,6 +19,7 @@
 package ai.grakn.exception;
 
 import static ai.grakn.util.ErrorMessage.AUTHENTICATION_FAILURE;
+import static ai.grakn.util.ErrorMessage.CANNOT_DELETE_KEYSPACE;
 import static ai.grakn.util.ErrorMessage.ENGINE_ERROR;
 import static ai.grakn.util.ErrorMessage.EXPLAIN_ONLY_MATCH;
 import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
@@ -26,9 +27,11 @@ import static ai.grakn.util.ErrorMessage.INVALID_QUERY_USAGE;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_BODY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_REQUEST_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.MISSING_REQUEST_BODY;
+import static ai.grakn.util.ErrorMessage.NO_CONCEPT_IN_KEYSPACE;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Query;
 
 /**
@@ -131,6 +134,20 @@ public class GraknServerException extends GraknBackendException {
      */
     public static GraknServerException authenticationFailure(){
         return new GraknServerException(AUTHENTICATION_FAILURE.getMessage(), 401);
+    }
+
+    /**
+     * Thrown when engine cannot delete a keyspace as expected
+     */
+    public static GraknServerException couldNotDelete(String keyspace){
+        return new GraknServerException(CANNOT_DELETE_KEYSPACE.getMessage(keyspace), 500);
+    }
+
+    /**
+     * Thrown when requested concept is not found in the graph
+     */
+    public static GraknServerException noConceptFound(ConceptId conceptId, String keyspace){
+        return new GraknServerException(NO_CONCEPT_IN_KEYSPACE.getMessage(conceptId, keyspace), 404);
     }
 
     /**

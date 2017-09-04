@@ -18,15 +18,16 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.concept.Attribute;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
-import ai.grakn.util.ErrorMessage;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 
@@ -35,7 +36,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Represents the {@code value} property on a {@link ai.grakn.concept.Resource}.
+ * Represents the {@code value} property on a {@link Attribute}.
  *
  * This property can be queried or inserted.
  *
@@ -43,63 +44,55 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public class ValueProperty extends AbstractVarProperty implements NamedProperty {
+@AutoValue
+public abstract class ValueProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final ValuePredicateAdmin predicate;
+    public static final String NAME = "val";
 
-    public ValueProperty(ValuePredicateAdmin predicate) {
-        this.predicate = predicate;
+    public static ValueProperty of(ValuePredicate predicate) {
+        return new AutoValue_ValueProperty(predicate);
     }
 
-    public ValuePredicateAdmin getPredicate() {
-        return predicate;
-    }
+    public abstract ValuePredicate predicate();
 
     @Override
     public String getName() {
-        return "val";
+        return NAME;
     }
 
     @Override
     public String getProperty() {
-        return predicate.toString();
+        return predicate().toString();
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(Var start) {
-        return ImmutableSet.of(EquivalentFragmentSets.value(start, predicate));
+        return ImmutableSet.of(EquivalentFragmentSets.value(this, start, predicate()));
+    }
+
+    @Override
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).value(predicate().equalsValue().get()); // TODO
+        };
+
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 
     @Override
     public void checkInsertable(VarPatternAdmin var) {
-        if (!predicate.equalsValue().isPresent()) {
-            throw new IllegalStateException(ErrorMessage.INSERT_PREDICATE.getMessage());
+        if (!predicate().equalsValue().isPresent()) {
+            throw GraqlQueryException.insertPredicate();
         }
     }
 
     @Override
-    public Stream<VarPatternAdmin> getInnerVars() {
-        return Streams.stream(predicate.getInnerVar());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ValueProperty that = (ValueProperty) o;
-
-        return predicate.equals(that.predicate);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return predicate.hashCode();
+    public Stream<VarPatternAdmin> innerVarPatterns() {
+        return Streams.stream(predicate().getInnerVar());
     }
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new ValuePredicate(var.getVarName(), this.getPredicate(), parent);
+        return new ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate(var.var(), this.predicate(), parent);
     }
 }

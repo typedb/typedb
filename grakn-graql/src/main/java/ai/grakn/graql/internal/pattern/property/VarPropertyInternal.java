@@ -18,19 +18,18 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
+import ai.grakn.GraknTx;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 
 import java.util.Collection;
 import java.util.stream.Stream;
 
 /**
- * Internal interface for {@link VarProperty}, providing additional methods to match, insert or delete the property.
+ * Internal interface for {@link VarProperty}, providing additional methods to match, insert or define the property.
  *
  * @author Felix Chapman
  */
@@ -39,12 +38,12 @@ public interface VarPropertyInternal extends VarProperty {
     /**
      * Check if the given property can be used in a match query
      */
-    void checkValid(GraknGraph graph, VarPatternAdmin var) throws IllegalStateException;
+    void checkValid(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException;
 
     /**
      * Check if the given property can be inserted
      */
-    default void checkInsertable(VarPatternAdmin var) throws IllegalStateException {
+    default void checkInsertable(VarPatternAdmin var) throws GraqlQueryException {
     }
 
     /**
@@ -53,21 +52,33 @@ public interface VarPropertyInternal extends VarProperty {
     Collection<EquivalentFragmentSet> match(Var start);
 
     /**
-     * Insert the given property into the graph, if possible.
-     * @param insertQueryExecutor the instance handling the insert query
-     * @param concept the concept to insert a property on
+     * Returns a {@link PropertyExecutor} that describes how to insert the given {@link VarProperty} into.
+     *
+     * @throws GraqlQueryException if this {@link VarProperty} cannot be inserted
      */
-    void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException;
+    PropertyExecutor insert(Var var) throws GraqlQueryException;
+
+    PropertyExecutor define(Var var) throws GraqlQueryException;
+
+    PropertyExecutor undefine(Var var) throws GraqlQueryException;
 
     /**
-     * Delete the given property from the graph, if possible.
-     * @param graph the graph to operate on
-     * @param concept the concept to delete properties of
+     * Whether this property will uniquely identify a concept in the graph, if one exists.
+     * This is used for recognising equivalent variables in insert queries.
      */
-    void delete(GraknGraph graph, Concept concept) throws IllegalStateException;
+    default boolean uniquelyIdentifiesConcept() {
+        return false;
+    }
 
     @Override
-    default Stream<VarPatternAdmin> getInnerVars() {
+    default Stream<VarPatternAdmin> innerVarPatterns() {
         return Stream.empty();
+    }
+
+    /**
+     * Helper method to perform the safe cast into this internal type
+     */
+    static VarPropertyInternal from(VarProperty varProperty) {
+        return (VarPropertyInternal) varProperty;
     }
 }

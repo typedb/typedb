@@ -25,9 +25,7 @@ import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
-import com.google.common.collect.ImmutableSet;
 
-import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 
@@ -43,35 +41,26 @@ public class Patterns {
     private Patterns() {}
 
     public static <T extends PatternAdmin> Conjunction<T> conjunction(Set<T> patterns) {
-        return new ConjunctionImpl<>(patterns);
+        return new AutoValue_ConjunctionImpl<>(patterns);
     }
 
     public static <T extends PatternAdmin> Disjunction<T> disjunction(Set<T> patterns) {
-        return new DisjunctionImpl<>(patterns);
-    }
-
-    public static VarPatternAdmin mergeVars(Collection<VarPatternAdmin> vars) {
-        VarPatternAdmin first = vars.iterator().next();
-        Var name = first.getVarName();
-        ImmutableSet.Builder<VarProperty> properties = ImmutableSet.builder();
-
-        for (VarPatternAdmin var : vars) {
-            if (var.getVarName().isUserDefinedName()) {
-                name = var.getVarName();
-            }
-
-            properties.addAll(var.getProperties().iterator());
-        }
-
-        return new VarPatternImpl(name, properties.build());
+        return new AutoValue_DisjunctionImpl<>(patterns);
     }
 
     public static Var var() {
-        return new VarImpl(UUID.randomUUID().toString(), false);
+        return new AutoValue_VarImpl(UUID.randomUUID().toString(), false);
     }
 
     public static Var var(String value) {
-        return new VarImpl(value, true);
+        return new AutoValue_VarImpl(value, true);
     }
 
+    public static VarPatternAdmin varPattern(Var name, Set<VarProperty> properties) {
+        if (properties.isEmpty()) {
+            return name.admin();
+        } else {
+            return new AutoValue_VarPatternImpl(name, properties);
+        }
+    }
 }

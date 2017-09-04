@@ -37,8 +37,10 @@ public class REST {
         /**
          * URIs to visualiser controller
          */
-        public static class Graph {
-            public static final String GRAQL = "/graph/graql";
+        public static class KB {
+            @Deprecated
+            public static final String GRAQL = "/kb/graql";
+            public static final String ANY_GRAQL = "/kb/graql/execute";
         }
 
         /**
@@ -54,7 +56,11 @@ public class REST {
          * URIs to System Controller endpoints
          */
         public static class System {
+            public static final String DELETE_KEYSPACE = "/deleteKeyspace";
+            public static final String INITIALISE = "/initialise";
+            public static final String STATUS = "/status";
             public static final String CONFIGURATION = "/configuration";
+            public static final String METRICS = "/metrics";
             public static final String KEYSPACES = "/keyspaces";
         }
 
@@ -62,8 +68,8 @@ public class REST {
          * URIs to concept controller endpoints
          */
         public static class Concept {
-            public static final String CONCEPT = "/graph/concept/";
-            public static final String ONTOLOGY = "/graph/ontology";
+            public static final String CONCEPT = "/kb/concept/";
+            public static final String SCHEMA = "/kb/schema";
         }
 
         /**
@@ -72,8 +78,7 @@ public class REST {
         public static class Dashboard {
             public static final String TYPES = "/dashboard/types/";
             public static final String EXPLORE = "/dashboard/explore/";
-            public static final String EXPLAIN = "/dashboard/explain/";
-            public static final String PRECOMPUTE = "/dashboard/precomputeInferences";
+            public static final String EXPLAIN = "/dashboard/explain";
         }
 
         public static final String NEW_SESSION_URI="/auth/session/";
@@ -93,7 +98,7 @@ public class REST {
         // Request parameters
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
-        public static final String GRAPH_CONFIG_PARAM = "graphConfig";
+        public static final String CONFIG_PARAM = "config";
         public static final String TASK_STATUS_PARAMETER = "status";
         public static final String TASK_CLASS_NAME_PARAMETER = "className";
         public static final String TASK_CREATOR_PARAMETER = "creator";
@@ -107,6 +112,7 @@ public class REST {
         public static final String TASKS_PARAM = "tasks";
         public static final String CONFIGURATION_PARAM = "configuration";
         public static final String KEYSPACE = "keyspace";
+        public static final String FORMAT = "format";
         public static final String UUID_PARAMETER = "uuid";
 
         //Commit Logs
@@ -135,9 +141,9 @@ public class REST {
     }
 
     /**
-     * Class listing possible graph configuration options.
+     * Class listing possible knowledge base configuration options.
      */
-    public static class GraphConfig{
+    public static class KBConfig {
         public static final String DEFAULT = "default";
         public static final String COMPUTER = "computer";
     }
@@ -146,10 +152,6 @@ public class REST {
      * Class listing various HTTP connection strings.
      */
     public static class HttpConn{
-        public static final int OK = 200;
-        public static final String UTF8 = "UTF8";
-        public static final String CONTENT_LENGTH = "Content-Length";
-        public static final String CONTENT_TYPE = "Content-Type";
         public static final String POST_METHOD = "POST";
         public static final String DELETE_METHOD = "DELETE";
         public static final String GET_METHOD = "GET";
@@ -170,6 +172,7 @@ public class REST {
             public static final String APPLICATION_JSON = "application/json";
             public static final String APPLICATION_TEXT = "application/text";
             public static final String APPLICATION_HAL ="application/hal+json";
+            public static final String APPLICATION_ALL ="*/*";
         }
 
         /**
@@ -190,6 +193,22 @@ public class REST {
             public static final String ROLES_JSON_FIELD = "roles";
             public static final String RELATIONS_JSON_FIELD = "relations";
             public static final String RESOURCES_JSON_FIELD = "resources";
+        }
+
+        /**
+         * Json fields used to describe tasks
+         */
+        public static class Task {
+            public static final String STACK_TRACE = "stackTrace";
+            public static final String EXCEPTION = "exception";
+            public static final String RECURRING = "recurring";
+            public static final String INTERVAL = "interval";
+            public static final String ENGINE_ID = "engineID";
+            public static final String ID = "id";
+            public static final String STATUS = "status";
+            public static final String CREATOR = "creator";
+            public static final String CLASS_NAME = "className";
+            public static final String RUN_AT = "runAt";
         }
     }
 
@@ -213,7 +232,6 @@ public class REST {
         public static final String PASSWORD = "password";
         public static final String KEYSPACE = "keyspace";
         public static final String OUTPUT_FORMAT = "outputFormat";
-        public static final String IMPLICIT = "implicit";
         public static final String INFER = "infer";
         public static final String MATERIALISE = "materialise";
         public static final String QUERY = "query";

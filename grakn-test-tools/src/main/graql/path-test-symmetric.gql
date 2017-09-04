@@ -1,0 +1,39 @@
+insert
+
+###################################################
+####################Schema######################
+#################################################
+
+"start-vertex" sub entity
+has index;
+"vertex" sub entity
+has index;
+
+"arcA" sub role;
+"arcB" sub role;
+"arc" sub relationship, relates arcA, relates arcB;
+vertex plays arcA, plays arcB;
+start-vertex plays arcA, plays arcB;
+
+"pathA" sub role;
+"pathB" sub role;
+"path" sub relationship, relates pathA, relates pathB;
+vertex plays pathA, plays pathB;
+start-vertex plays pathA, plays pathB;
+
+####################################################
+##################RULES#############################
+####################################################
+
+rule-1 sub rule,
+when {
+($x, $y) isa arc;},
+then {
+($x, $y) isa path;};
+
+rule-2 sub rule,
+when {
+($x, $z) isa path;
+($z, y) isa path;},
+then {
+($x, $y) isa path;};

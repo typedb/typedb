@@ -22,7 +22,7 @@ import static ai.grakn.util.ErrorMessage.LOCKING_EXCEPTION;
 
 /**
  * <p>
- *     Graph Mutation Exception
+ *     Mutation Exception
  * </p>
  *
  * <p>

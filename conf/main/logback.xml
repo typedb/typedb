@@ -21,37 +21,51 @@
     <property name="graknLogFileName" value="grakn.log"/>
     <property name="graknPPLogFileName" value="grakn-postprocessing.log"/>
 
+    <!--Configure a properties file (located on the classpath) from which values can be referenced-->
     <property resource="grakn.properties"/>
 
+    <!--Extract the directory of the grakn logs from the properties file. If the path is relative it
+    will be appended to the directory containing grakn (system property grakn.dir). Otherwise the absolute
+    path is used. -->
+    <if condition='property("log.dirs").startsWith("/")'>
+        <then>
+            <property name="configuredLogDir" value="${log.dirs}" />
+        </then>
+        <else>
+            <property name="configuredLogDir" value="${grakn.dir}/${log.dirs}" />
+        </else>
+    </if>
+
+    <!--Configure the standard out appender used to print the Grakn logo-->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%msg%n</pattern>
         </encoder>
     </appender>
 
+    <!--Configure the "main" appender used for all non-post processing Grakn logs. Logs are kept for
+        60 days and each file is capped at 50MB, but at most 1GB -->
     <appender name="MAIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.dirs}/${graknLogFileName}</file>
+        <file>${configuredLogDir}/${graknLogFileName}</file>
         <encoder>
-            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%date{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <!-- rollover at the beginning of each month (add '-dd' to have a daily rollover)-->
-            <!-- improve this by handling only log path without name included-->
-            <fileNamePattern>${graknLogFileName}-%d{yyyy-MM}.%i.log</fileNamePattern>
-            <!-- each file should be at most 50MB, keep 60 days worth of history, but at most 1GB -->
+            <fileNamePattern>${graknLogFileName}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
     </appender>
 
+    <!--Configure the post processing appender used for logs in the post processing package-->
     <appender name="POST-PROCESSING" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${log.dirs}/${graknPPLogFileName}</file>
+        <file>${configuredLogDir}/${graknPPLogFileName}</file>
         <encoder>
-            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%date{ISO8601} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${graknPPLogFileName}-%d{yyyy-MM}.%i.log</fileNamePattern>
+            <fileNamePattern>${graknPPLogFileName}-%d{yyyy-MM}.%i.log.gz</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>

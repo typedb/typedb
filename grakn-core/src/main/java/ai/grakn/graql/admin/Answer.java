@@ -43,7 +43,7 @@ public interface Answer {
     Answer copy();
 
     @CheckReturnValue
-    Set<Var> keySet();
+    Set<Var> vars();
 
     @CheckReturnValue
     Collection<Concept> values();
@@ -54,9 +54,19 @@ public interface Answer {
     @CheckReturnValue
     Set<Map.Entry<Var, Concept>> entrySet();
 
+    /**
+     * Return the {@link Concept} bound to the given variable name.
+     *
+     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link Answer}
+     */
     @CheckReturnValue
     Concept get(String var);
 
+    /**
+     * Return the {@link Concept} bound to the given {@link Var}.
+     *
+     * @throws ai.grakn.exception.GraqlQueryException if the {@link Var} is not in this {@link Answer}
+     */
     @CheckReturnValue
     Concept get(Var var);
 
@@ -73,6 +83,9 @@ public interface Answer {
 
     @CheckReturnValue
     boolean containsKey(Var var);
+
+    @CheckReturnValue
+    boolean containsAll(Answer ans);
 
     @CheckReturnValue
     boolean isEmpty();
@@ -115,6 +128,7 @@ public interface Answer {
      * @param vars variables to be retained
      * @return answer with filtered variables
      */
+    // TODO: Consider renaming this to `project`
     @CheckReturnValue
     Answer filterVars(Set<Var> vars);
 
@@ -161,4 +175,12 @@ public interface Answer {
      */
     @CheckReturnValue
     Set<AnswerExplanation> getExplanations();
+
+    /**
+     * @param parent query context
+     * @return (partial) set of predicates corresponding to this answer
+     */
+    @CheckReturnValue
+    Set<Atomic> toPredicates(ReasonerQuery parent);
+
 }

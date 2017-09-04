@@ -25,10 +25,10 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import javax.annotation.Nullable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static ai.grakn.migration.base.MigrationCLI.die;
 import static java.lang.Integer.parseInt;
 
 /**
@@ -39,7 +39,6 @@ public class MigrationOptions {
 
     private static final String batch = Integer.toString(Migrator.BATCH_SIZE);
     private static final String active = Integer.toString(Migrator.ACTIVE_TASKS);
-    private static final String uri = Grakn.DEFAULT_URI;
     private int numberOptions;
 
     protected final Options options = new Options();
@@ -53,6 +52,7 @@ public class MigrationOptions {
         options.addOption("n", "no", false, "Write to standard out.");
         options.addOption("c", "config", true, "Configuration file.");
         options.addOption("r", "retry", true, "Retry sending tasks if engine is not available");
+        options.addOption("d", "debug", false, "Immediately stop and fail migration if an error occurs");
     }
 
     public boolean isVerbose() {
@@ -67,20 +67,25 @@ public class MigrationOptions {
         return command.hasOption("n");
     }
 
+    public boolean isDebug(){
+        return command.hasOption("d");
+    }
+
     public String getKeyspace() {
         if(!command.hasOption("k")){
-            die("Keyspace missing (-k)");
+            throw new IllegalArgumentException("Keyspace missing (-k)");
         }
 
         return command.getOptionValue("k");
     }
 
+    @Nullable
     public String getConfiguration() {
         return command.hasOption("c") ? command.getOptionValue("c") : null;
     }
 
     public String getUri() {
-        return command.hasOption("u") ? command.getOptionValue("u") : uri;
+        return command.hasOption("u") ? command.getOptionValue("u") : Grakn.DEFAULT_URI;
     }
 
     public Options getOptions(){
@@ -93,15 +98,19 @@ public class MigrationOptions {
 
     public String getInput() {
         if(!command.hasOption("i")){
-            die("Data file missing (-i)");
+            throw new IllegalArgumentException("Data file missing (-i)");
         }
 
         return resolvePath(command.getOptionValue("i"));
     }
 
+    public boolean hasInput(){
+        return command.hasOption("i");
+    }
+
     public String getTemplate() {
         if(!command.hasOption("t")){
-            die("Template file missing (-t)");
+            throw new IllegalArgumentException("Template file missing (-t)");
         }
 
         return resolvePath(command.getOptionValue("t"));
@@ -125,7 +134,7 @@ public class MigrationOptions {
             command = parser.parse(options, args);
             numberOptions = command.getOptions().length;
         } catch (ParseException e){
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
     }
 

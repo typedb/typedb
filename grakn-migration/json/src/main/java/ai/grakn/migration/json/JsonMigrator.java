@@ -35,8 +35,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.migration.base.MigrationCLI.die;
-import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -48,30 +46,30 @@ public class JsonMigrator implements AutoCloseable {
     private final Set<Reader> readers;
 
     public static void main(String[] args) {
-        MigrationCLI.init(args, JsonMigrationOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(JsonMigrator::runJson);
+        try{
+            MigrationCLI.init(args, JsonMigrationOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach(JsonMigrator::runJson);
+        } catch (IllegalArgumentException e){
+            System.err.println(e.getMessage());
+        }
     }
 
-    public static void runJson(JsonMigrationOptions options){
+    private static void runJson(JsonMigrationOptions options){
         File jsonDataFile = new File(options.getInput());
         File jsonTemplateFile = new File(options.getTemplate());
 
         if(!jsonDataFile.exists()){
-            die("Cannot find file: " + options.getInput());
+            throw new IllegalArgumentException("Cannot find file: " + options.getInput());
         }
 
         if(!jsonTemplateFile.exists() || jsonTemplateFile.isDirectory()){
-            die("Cannot find file: " + options.getTemplate());
+            throw new IllegalArgumentException("Cannot find file: " + options.getTemplate());
         }
-
-        printInitMessage(options, jsonDataFile.getPath());
 
         try(JsonMigrator jsonMigrator = new JsonMigrator(jsonDataFile)){
             MigrationCLI.loadOrPrint(jsonTemplateFile, jsonMigrator.convert(), options);
-        } catch (Throwable throwable){
-            die(throwable);
         }
     }
 

@@ -19,24 +19,25 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Type;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
-import javafx.util.Pair;
 
 /**
  *
@@ -76,10 +77,10 @@ public class QueryAnswerStream {
         return true;
     }
 
-    static boolean nonEqualsFilter(Answer answer, Set<NotEquals> atoms) {
+    static boolean nonEqualsFilter(Answer answer, Set<NeqPredicate> atoms) {
         if(atoms.isEmpty()) return true;
-        for (NotEquals atom : atoms) {
-            if (!NotEquals.notEqualsOperator(answer, atom)) {
+        for (NeqPredicate atom : atoms) {
+            if (!NeqPredicate.notEqualsOperator(answer, atom)) {
                 return false;
             }
         }
@@ -100,8 +101,8 @@ public class QueryAnswerStream {
         if (types.isEmpty()) return true;
         for (TypeAtom type : types){
             Var var = type.getVarName();
-            Type t = type.getType();
-            if(!t.subTypes().contains(answer.get(var).asInstance().type())){
+            SchemaConcept t = type.getSchemaConcept();
+            if (t.subs().noneMatch(sub -> sub.equals(answer.get(var).asThing().type()))) {
                 return false;
             }
         }
@@ -110,7 +111,7 @@ public class QueryAnswerStream {
 
     private static Answer joinOperator(Answer m1, Answer m2){
         boolean isCompatible = true;
-        Set<Var> joinVars = Sets.intersection(m1.keySet(), m2.keySet());
+        Set<Var> joinVars = Sets.intersection(m1.vars(), m2.vars());
         Iterator<Var> it = joinVars.iterator();
         while(it.hasNext() && isCompatible) {
             Var var = it.next();
@@ -163,7 +164,7 @@ public class QueryAnswerStream {
      * @param joinVars intersection on variables of two streams
      * @return joined stream
      */
-    public static Stream<Answer> join(Stream<Answer> stream, Stream<Answer> stream2, ImmutableSet<Var> joinVars, boolean explanation) {
+    public static Stream<Answer> join(Stream<Answer> stream, Stream<Answer> stream2, ImmutableSet<Var> joinVars) {
         LazyAnswerIterator l2 = new LazyAnswerIterator(stream2);
         return stream.flatMap(a1 -> {
             Stream<Answer> answerStream = l2.stream();
@@ -175,7 +176,7 @@ public class QueryAnswerStream {
                 }
                 return true;
             });
-            return answerStream.map(a -> a.merge(a1, explanation));
+            return answerStream.map(a -> a.merge(a1));
         });
     }
 
@@ -187,14 +188,13 @@ public class QueryAnswerStream {
      * @param joinVars intersection on variables of two streams
      * @return joined stream
      */
-    public static Stream<Answer> joinWithInverse(Stream<Answer> stream,
-                                                                Stream<Answer> stream2,
-                                                                Map<Pair<Var, Concept>, Set<Answer>> stream2InverseMap,
-                                                                ImmutableSet<Var> joinVars,
-                                                                boolean explanation) {
+    static Stream<Answer> joinWithInverse(Stream<Answer> stream,
+                                          Stream<Answer> stream2,
+                                          Map<Pair<Var, Concept>, Set<Answer>> stream2InverseMap,
+                                          ImmutableSet<Var> joinVars) {
         if (joinVars.isEmpty()){
             LazyAnswerIterator l2 = new LazyAnswerIterator(stream2);
-            return stream.flatMap(a1 -> l2.stream().map(a -> a.merge(a1, explanation)));
+            return stream.flatMap(a1 -> l2.stream().map(a -> a.merge(a1)));
         }
         return stream.flatMap(a1 -> {
             Iterator<Var> vit = joinVars.iterator();
@@ -202,7 +202,7 @@ public class QueryAnswerStream {
             while(vit.hasNext()){
                 matchAnswers = Sets.intersection(matchAnswers, findMatchingAnswers(a1, stream2InverseMap, vit.next()));
             }
-            return matchAnswers.stream().map(a -> a.merge(a1, explanation));
+            return matchAnswers.stream().map(a -> a.merge(a1));
         });
     }
 }

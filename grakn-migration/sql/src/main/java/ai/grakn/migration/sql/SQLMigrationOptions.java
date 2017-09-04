@@ -22,7 +22,6 @@ import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.MigrationOptions;
 import java.sql.Driver;
 
-import static ai.grakn.migration.base.MigrationCLI.die;
 import static java.lang.Integer.parseInt;
 
 /**
@@ -54,11 +53,11 @@ public class SQLMigrationOptions extends MigrationOptions {
             try {
                 return (Driver) Class.forName(command.getOptionValue("driver")).newInstance();
             } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                throw die(e);
+                throw new IllegalArgumentException(e.getMessage());
             }
         }
 
-        throw die("No driver specified (-driver)");
+        throw new IllegalArgumentException("No driver specified (-driver)");
     }
 
     public boolean hasDriver(){
@@ -70,7 +69,7 @@ public class SQLMigrationOptions extends MigrationOptions {
             return command.getOptionValue("location");
         }
 
-        throw die("No db specified (-location)");
+        throw new IllegalArgumentException("No db specified (-location)");
     }
 
     public String getUsername() {
@@ -78,7 +77,7 @@ public class SQLMigrationOptions extends MigrationOptions {
             return command.getOptionValue("user");
         }
 
-        throw die("No username specified (-user)");
+        throw new IllegalArgumentException("No username specified (-user)");
     }
 
     public String getPassword() {
@@ -86,7 +85,7 @@ public class SQLMigrationOptions extends MigrationOptions {
             return command.getOptionValue("pass");
         }
 
-        throw die("No password specified (-pass)");
+        throw new IllegalArgumentException("No password specified (-pass)");
     }
 
     public String getQuery() {
@@ -94,7 +93,7 @@ public class SQLMigrationOptions extends MigrationOptions {
             return command.getOptionValue("query");
         }
 
-        throw die("No SQL query specified (-query)");
+        throw new IllegalArgumentException("No SQL query specified (-query)");
     }
 
     public int getBatch() {

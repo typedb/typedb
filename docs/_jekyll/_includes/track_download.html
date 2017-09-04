@@ -1,0 +1,10 @@
+<script>
+    $('#download-btn').on('click',function(){
+        ga('send', {
+          hitType: 'event',
+          eventCategory: 'Download_get_started',
+          eventLabel: encodeURIComponent(document.referrer)
+        });
+        }
+    );
+</script>

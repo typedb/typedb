@@ -17,21 +17,20 @@
  */
 package ai.grakn.migration.export;
 
+import ai.grakn.concept.Attribute;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Rule;
+import ai.grakn.concept.Relationship;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Thing;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarPatternBuilder;
+import ai.grakn.util.CommonUtil;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
 
@@ -42,23 +41,20 @@ import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
 public class InstanceMapper {
 
     /**
-     * Map an Instance to the equivalent Graql representation
-     * @param instance instance to be mapped
-     * @return Graql representation of given instance
+     * Map an Thing to the equivalent Graql representation
+     * @param thing thing to be mapped
+     * @return Graql representation of given thing
      */
-    public static VarPattern map(Instance instance){
-        VarPatternBuilder mapped = var();
-        if(instance.isEntity()){
-            mapped = map(instance.asEntity());
-        } else if(instance.isResource()){
-            mapped = map(instance.asResource());
-        } else if(instance.isRelation()){
-            mapped = map(instance.asRelation());
-        } else if(instance.isRule()){
-            mapped = map(instance.asRule());
+    public static VarPattern map(Thing thing){
+        if(thing.isEntity()){
+            return map(thing.asEntity());
+        } else if(thing.isAttribute()){
+            return map(thing.asAttribute());
+        } else if(thing.isRelationship()){
+            return map(thing.asRelationship());
+        } else {
+            throw CommonUtil.unreachableStatement("Unrecognised thing " + thing);
         }
-
-        return mapped.pattern();
     }
 
     /**
@@ -72,100 +68,87 @@ public class InstanceMapper {
     }
 
     /**
-     * Map a relation to a var, along with all of the roleplayers
+     * Map a {@link Relationship} to a var, along with all of the roleplayers
      * Exclude any relations that are mapped to an encountered resource
-     * @param relation relation to be mapped
+     * @param relationship {@link Relationship} to be mapped
      * @return var patterns representing the given instance
      */
     //TODO resources on relations
-    private static VarPattern map(Relation relation){
-        if(relation.type().isImplicit()){
-            return var().pattern();
+    private static VarPattern map(Relationship relationship){
+        if(relationship.type().isImplicit()){
+            return var();
         }
 
-        VarPattern var = base(relation);
-        var = roleplayers(var, relation);
+        VarPattern var = base(relationship);
+        var = roleplayers(var, relationship);
         return var;
     }
 
     /**
-     * Map a Resource to a var IF it is not attached in a has relation to another instance
-     * @param resource resource to be mapped
+     * Map a {@link Attribute} to a var IF it is not attached in a has relation to another instance
+     * @param attribute {@link Attribute} to be mapped
      * @return var patterns representing the given instance
      */
-    private static VarPattern map(Resource resource){
-        if(isHasResourceResource(resource)){
-            return var().pattern();
+    private static VarPattern map(Attribute attribute){
+        if(isHasResourceResource(attribute)){
+            return var();
         }
 
-        VarPattern var = base(resource);
-        var = var.val(resource.getValue());
-        return var;
-    }
-
-    /**
-     * Map a Rule to a var
-     * @param rule rule to be mapped
-     * @return var patterns representing the given instance
-     */
-    //TODO hypothesis, conclusion, isMaterialize, etc
-    private static VarPattern map(Rule rule){
-        VarPattern var = base(rule);
-        var = var.lhs(and(rule.getLHS()));
-        var = var.rhs(and(rule.getRHS()));
+        VarPattern var = base(attribute);
+        var = var.val(attribute.getValue());
         return var;
     }
 
     /**
      * Add the resources of an entity
      * @param var var representing the entity
-     * @param instance instance containing resource information
+     * @param thing thing containing resource information
      * @return var pattern with resources
      */
-    private static VarPattern hasResources(VarPattern var, Instance instance){
-        for(Resource resource:instance.resources()){
-           var = var.has(resource.type().getLabel(), var().val(resource.getValue()));
+    private static VarPattern hasResources(VarPattern var, Thing thing){
+        for(Attribute attribute : thing.attributes().collect(Collectors.toSet())){
+           var = var.has(attribute.type().getLabel(), var().val(attribute.getValue()));
         }
         return var;
     }
 
     /**
-     * Add the roleplayers of a relation to the relation var
-     * @param var var representing the relation
-     * @param relation relation that contains roleplayer data
+     * Add the roleplayers of a {@link Relationship} to the relationship var
+     * @param var var representing the relationship
+     * @param relationship {@link Relationship} that contains roleplayer data
      * @return var pattern with roleplayers
      */
-    private static VarPattern roleplayers(VarPattern var, Relation relation){
-        for(Map.Entry<RoleType, Set<Instance>> entry:relation.allRolePlayers().entrySet()){
-            RoleType role = entry.getKey();
-            for (Instance instance : entry.getValue()) {
-                var = var.rel(Graql.label(role.getLabel()), instance.getId().getValue());
+    private static VarPattern roleplayers(VarPattern var, Relationship relationship){
+        for(Map.Entry<Role, Set<Thing>> entry: relationship.allRolePlayers().entrySet()){
+            Role role = entry.getKey();
+            for (Thing thing : entry.getValue()) {
+                var = var.rel(Graql.label(role.getLabel()), thing.getId().getValue());
             }
         }
         return var;
     }
 
     /**
-     * Given an instance, return a var with the type.
-     * @param instance instance to map
-     * @return var patterns representing given instance
+     * Given an thing, return a var with the type.
+     * @param thing thing to map
+     * @return var patterns representing given thing
      */
-    private static VarPattern base(Instance instance){
-        VarPattern var = var(instance.getId().getValue()).isa(Graql.label(instance.type().getLabel()));
-        return hasResources(var, instance);
+    private static VarPattern base(Thing thing){
+        VarPattern var = var(thing.getId().getValue()).isa(Graql.label(thing.type().getLabel()));
+        return hasResources(var, thing);
     }
 
     /**
-     * Check if the given resource conforms to the has syntax and structural requirements
-     * @param resource resource to check
-     * @return true if the resource is target of has relation
+     * Check if the given {@link Attribute} conforms to the has syntax and structural requirements
+     * @param attribute {@link Attribute} to check
+     * @return true if the {@link Attribute} is target of has relation
      */
-    private static boolean isHasResourceResource(Resource resource){
-        ResourceType resourceType = resource.type();
+    private static boolean isHasResourceResource(Attribute attribute){
+        AttributeType attributeType = attribute.type();
 
         // TODO: Make sure this is tested
-        boolean plays = resourceType.plays().stream().map(RoleType::getLabel)
-                .allMatch(c -> c.equals(HAS_VALUE.getLabel(resourceType.getLabel())));
-        return !resource.ownerInstances().isEmpty() && plays;
+        boolean plays = attributeType.plays().map(Role::getLabel)
+                .allMatch(c -> c.equals(HAS_VALUE.getLabel(attributeType.getLabel())));
+        return attribute.ownerInstances().findAny().isPresent() && plays;
     }
 }

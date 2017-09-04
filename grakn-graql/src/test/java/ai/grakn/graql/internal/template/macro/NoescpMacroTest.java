@@ -18,13 +18,15 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import com.google.common.collect.ImmutableList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static ai.grakn.graql.internal.template.macro.MacroTestUtilities.assertParseEquals;
 import static org.junit.Assert.assertEquals;
@@ -38,7 +40,7 @@ public class NoescpMacroTest {
 
     @Test
     public void applyNoescpMacroToNoArguments_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         noescpMacro.apply(Collections.emptyList());
@@ -46,7 +48,7 @@ public class NoescpMacroTest {
 
     @Test
     public void applyNoescpMacroToMoreThanOneArgument_ExceptionIsThrown(){
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(GraqlQueryException.class);
         exception.expectMessage("Wrong number of arguments");
 
         noescpMacro.apply(ImmutableList.of("1.0", "2.0"));
@@ -73,6 +75,18 @@ public class NoescpMacroTest {
     }
 
     @Test
+    public void whenUsingNoescpMacroToConcatenateValues_ResultingStringIsConcatenated(){
+        String template = "insert $x isa @noescp(<first>)-@noescp(<last>);";
+        String expected = "insert $x0 isa one-two;";
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", "one");
+        data.put("last", "two");
+
+        assertParseEquals(template, data, expected);
+    }
+
+    @Test
     public void whenUsingNoescpMacroInTemplateMultiple_ResultIsAsExpected(){
         String template = "insert $x has fn @noescp(<firstname>) has ln @noescp(<lastname>);";
         String expected = "insert $x0 has fn 4 has ln 5;";
@@ -80,6 +94,18 @@ public class NoescpMacroTest {
         Map<String, Object> data = new HashMap<>();
         data.put("firstname", "4");
         data.put("lastname", "5");
+
+        assertParseEquals(template, data, expected);
+    }
+
+    @Test
+    public void whenUsingNoescpMacroInVariableConcatenatedWithString_ResultIsAsExpected(){
+        String template = "insert $@noescp(<pokemon_id>)-pokemon isa pokemon;\n$@noescp(<type_id>)-type isa pokemon-type;";
+        String expected = "insert $124-pokemon isa pokemon;\n$124-type isa pokemon-type;";
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("pokemon_id", 124);
+        data.put("type_id", 124);
 
         assertParseEquals(template, data, expected);
     }

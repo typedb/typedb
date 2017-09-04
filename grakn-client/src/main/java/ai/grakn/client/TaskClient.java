@@ -160,7 +160,7 @@ public class TaskClient extends Client {
             // 404 Not found returned when task not yet stored
             boolean notFound = response.getStatusLine().getStatusCode() == SC_NOT_FOUND;
             if(notFound){
-                throw GraknBackendException.stateStorage(exceptionFrom(response));
+                throw GraknBackendException.stateStorage();
             }
 
             // 200 Only returned when request successfully completed

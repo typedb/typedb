@@ -19,7 +19,8 @@
 package ai.grakn.graql;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -66,7 +67,7 @@ public class Graql {
      * @return a match query that will find matches of the given patterns
      */
     @CheckReturnValue
-    public static MatchQuery match(PatternBuilder... patterns) {
+    public static MatchQuery match(Pattern... patterns) {
         return withoutGraph().match(patterns);
     }
 
@@ -75,7 +76,7 @@ public class Graql {
      * @return a match query that will find matches of the given patterns
      */
     @CheckReturnValue
-    public static MatchQuery match(Collection<? extends PatternBuilder> patterns) {
+    public static MatchQuery match(Collection<? extends Pattern> patterns) {
         return withoutGraph().match(patterns);
     }
 
@@ -84,7 +85,7 @@ public class Graql {
      * @return an insert query that will insert the given variable patterns into the graph
      */
     @CheckReturnValue
-    public static InsertQuery insert(VarPatternBuilder... varPatterns) {
+    public static InsertQuery insert(VarPattern... varPatterns) {
         return withoutGraph().insert(varPatterns);
     }
 
@@ -93,8 +94,44 @@ public class Graql {
      * @return an insert query that will insert the given variable patterns into the graph
      */
     @CheckReturnValue
-    public static InsertQuery insert(Collection<? extends VarPatternBuilder> varPatterns) {
+    public static InsertQuery insert(Collection<? extends VarPattern> varPatterns) {
         return withoutGraph().insert(varPatterns);
+    }
+
+    /**
+     * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
+     */
+    @CheckReturnValue
+    public static DefineQuery define(VarPattern... varPatterns) {
+        return withoutGraph().define(varPatterns);
+    }
+
+    /**
+     * @param varPatterns a collection of {@link VarPattern}s defining {@link SchemaConcept}s
+     * @return a {@link DefineQuery} that will apply the changes described in the {@code patterns}
+     */
+    @CheckReturnValue
+    public static DefineQuery define(Collection<? extends VarPattern> varPatterns) {
+        return withoutGraph().define(varPatterns);
+    }
+
+    /**
+     * @param varPatterns an array of {@link VarPattern}s undefining {@link SchemaConcept}s
+     * @return a {@link UndefineQuery} that will remove the changes described in the {@code patterns}
+     */
+    @CheckReturnValue
+    public static UndefineQuery undefine(VarPattern... varPatterns) {
+        return withoutGraph().undefine(varPatterns);
+    }
+
+    /**
+     * @param varPatterns a collection of {@link VarPattern}s undefining {@link SchemaConcept}s
+     * @return a {@link UndefineQuery} that will remove the changes described in the {@code patterns}
+     */
+    @CheckReturnValue
+    public static UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
+        return withoutGraph().undefine(varPatterns);
     }
 
     /**
@@ -168,7 +205,7 @@ public class Graql {
      * @return a variable pattern that identifies a concept by label
      */
     @CheckReturnValue
-    public static VarPattern label(TypeLabel label) {
+    public static VarPattern label(Label label) {
         return var().label(label);
     }
 
@@ -186,7 +223,7 @@ public class Graql {
      * @return a pattern that will match only when all contained patterns match
      */
     @CheckReturnValue
-    public static Pattern and(PatternBuilder... patterns) {
+    public static Pattern and(Pattern... patterns) {
         return and(Arrays.asList(patterns));
     }
 
@@ -195,7 +232,7 @@ public class Graql {
      * @return a pattern that will match only when all contained patterns match
      */
     @CheckReturnValue
-    public static Pattern and(Collection<? extends PatternBuilder> patterns) {
+    public static Pattern and(Collection<? extends Pattern> patterns) {
         Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
         return Patterns.conjunction(Sets.newHashSet(patternAdmins));
     }
@@ -205,7 +242,7 @@ public class Graql {
      * @return a pattern that will match when any contained pattern matches
      */
     @CheckReturnValue
-    public static Pattern or(PatternBuilder... patterns) {
+    public static Pattern or(Pattern... patterns) {
         return or(Arrays.asList(patterns));
     }
 
@@ -214,13 +251,21 @@ public class Graql {
      * @return a pattern that will match when any contained pattern matches
      */
     @CheckReturnValue
-    public static Pattern or(Collection<? extends PatternBuilder> patterns) {
+    public static Pattern or(Collection<? extends Pattern> patterns) {
         Collection<PatternAdmin> patternAdmins = AdminConverter.getPatternAdmins(patterns);
         return Patterns.disjunction(Sets.newHashSet(patternAdmins));
     }
 
 
     // AGGREGATES
+
+    /**
+     * Create an aggregate that will check if there are any results
+     */
+    @CheckReturnValue
+    public static Aggregate<Object, Boolean> ask() {
+        return Aggregates.ask();
+    }
 
     /**
      * Create an aggregate that will count the results of a query.
@@ -345,7 +390,7 @@ public class Graql {
      * @return a predicate that is true when a value equals the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate eq(VarPatternBuilder varPattern) {
+    public static ValuePredicate eq(VarPattern varPattern) {
         Objects.requireNonNull(varPattern);
         return Predicates.eq(varPattern);
     }
@@ -365,7 +410,7 @@ public class Graql {
      * @return a predicate that is true when a value does not equal the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate neq(VarPatternBuilder varPattern) {
+    public static ValuePredicate neq(VarPattern varPattern) {
         Objects.requireNonNull(varPattern);
         return Predicates.neq(varPattern);
     }
@@ -385,7 +430,7 @@ public class Graql {
      * @return a predicate that is true when a value is strictly greater than the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate gt(VarPatternBuilder varPattern) {
+    public static ValuePredicate gt(VarPattern varPattern) {
         Objects.requireNonNull(varPattern);
         return Predicates.gt(varPattern);
     }
@@ -405,7 +450,7 @@ public class Graql {
      * @return a predicate that is true when a value is greater or equal to the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate gte(VarPatternBuilder varPattern) {
+    public static ValuePredicate gte(VarPattern varPattern) {
         Objects.requireNonNull(varPattern);
         return Predicates.gte(varPattern);
     }
@@ -425,7 +470,7 @@ public class Graql {
      * @return a predicate that is true when a value is strictly less than the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate lt(VarPatternBuilder varPattern) {
+    public static ValuePredicate lt(VarPattern varPattern) {
         Objects.requireNonNull(varPattern);
         return Predicates.lt(varPattern);
     }
@@ -445,7 +490,7 @@ public class Graql {
      * @return a predicate that is true when a value is less or equal to the specified value
      */
     @CheckReturnValue
-    public static ValuePredicate lte(VarPatternBuilder varPattern) {
+    public static ValuePredicate lte(VarPattern varPattern) {
         Objects.requireNonNull(varPattern);
         return Predicates.lte(varPattern);
     }
@@ -475,8 +520,8 @@ public class Graql {
      * @return a predicate that returns true when a value contains the given substring
      */
     @CheckReturnValue
-    public static ValuePredicate contains(VarPatternBuilder varPattern) {
+    public static ValuePredicate contains(VarPattern varPattern) {
         Objects.requireNonNull(varPattern);
-        return Predicates.contains(varPattern.pattern().admin());
+        return Predicates.contains(varPattern.admin());
     }
 }

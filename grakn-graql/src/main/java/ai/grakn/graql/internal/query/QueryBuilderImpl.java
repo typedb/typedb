@@ -19,16 +19,17 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.ComputeQueryBuilder;
+import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.PatternBuilder;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarPatternBuilder;
+import ai.grakn.graql.UndefineQuery;
+import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -53,7 +54,7 @@ import java.util.stream.Stream;
 /**
  * A starting point for creating queries.
  * <p>
- * A {@code QueryBuiler} is constructed with a {@code GraknGraph}. All operations are performed using this
+ * A {@code QueryBuiler} is constructed with a {@code GraknTx}. All operations are performed using this
  * graph. The user must explicitly commit or rollback changes after executing queries.
  * <p>
  * {@code QueryBuilderImpl} also provides static methods for creating {@code Vars}.
@@ -62,20 +63,20 @@ import java.util.stream.Stream;
  */
 public class QueryBuilderImpl implements QueryBuilder {
 
-    private final Optional<GraknGraph> graph;
+    private final Optional<GraknTx> tx;
     private final QueryParser queryParser;
     private final TemplateParser templateParser;
     private boolean infer = false;
     private boolean materialise = false;
 
     public QueryBuilderImpl() {
-        this.graph = Optional.empty();
+        this.tx = Optional.empty();
         queryParser = QueryParser.create(this);
         templateParser = TemplateParser.create();
     }
 
-    public QueryBuilderImpl(GraknGraph graph) {
-        this.graph = Optional.of(graph);
+    public QueryBuilderImpl(GraknTx tx) {
+        this.tx = Optional.of(tx);
         queryParser = QueryParser.create(this);
         templateParser = TemplateParser.create();
     }
@@ -97,7 +98,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     @Override
-    public MatchQuery match(PatternBuilder... patterns) {
+    public MatchQuery match(Pattern... patterns) {
         return match(Arrays.asList(patterns));
     }
 
@@ -106,11 +107,11 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     @Override
-    public MatchQuery match(Collection<? extends PatternBuilder> patterns) {
+    public MatchQuery match(Collection<? extends Pattern> patterns) {
         Conjunction<PatternAdmin> conjunction = Patterns.conjunction(Sets.newHashSet(AdminConverter.getPatternAdmins(patterns)));
         MatchQueryBase base = new MatchQueryBase(conjunction);
         MatchQuery query = infer ? base.infer(materialise).admin() : base;
-        return graph.map(query::withGraph).orElse(query);
+        return tx.map(query::withTx).orElse(query);
     }
 
     /**
@@ -118,7 +119,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return an insert query that will insert the given variables into the graph
      */
     @Override
-    public InsertQuery insert(VarPatternBuilder... vars) {
+    public InsertQuery insert(VarPattern... vars) {
         return insert(Arrays.asList(vars));
     }
 
@@ -127,9 +128,31 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return an insert query that will insert the given variables into the graph
      */
     @Override
-    public InsertQuery insert(Collection<? extends VarPatternBuilder> vars) {
+    public InsertQuery insert(Collection<? extends VarPattern> vars) {
         ImmutableList<VarPatternAdmin> varAdmins = ImmutableList.copyOf(AdminConverter.getVarAdmins(vars));
-        return new InsertQueryImpl(varAdmins, Optional.empty(), graph);
+        return new InsertQueryImpl(varAdmins, Optional.empty(), tx);
+    }
+
+    @Override
+    public DefineQuery define(VarPattern... varPatterns) {
+        return define(Arrays.asList(varPatterns));
+    }
+
+    @Override
+    public DefineQuery define(Collection<? extends VarPattern> varPatterns) {
+        ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
+        return DefineQueryImpl.of(admins, tx.orElse(null));
+    }
+
+    @Override
+    public UndefineQuery undefine(VarPattern... varPatterns) {
+        return undefine(Arrays.asList(varPatterns));
+    }
+
+    @Override
+    public UndefineQuery undefine(Collection<? extends VarPattern> varPatterns) {
+        ImmutableList<VarPatternAdmin> admins = ImmutableList.copyOf(AdminConverter.getVarAdmins(varPatterns));
+        return UndefineQueryImpl.of(admins, tx.orElse(null));
     }
 
     /**
@@ -137,7 +160,7 @@ public class QueryBuilderImpl implements QueryBuilder {
      */
     @Override
     public ComputeQueryBuilder compute(){
-        return new ComputeQueryBuilderImpl(graph);
+        return new ComputeQueryBuilderImpl(tx);
     }
 
     /**
@@ -189,6 +212,6 @@ public class QueryBuilderImpl implements QueryBuilder {
 
     @Override
     public void registerMacro(Macro macro){
-        templateParser.registerMacro(macro.name(), macro);
+        templateParser.registerMacro(macro);
     }
 }

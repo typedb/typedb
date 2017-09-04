@@ -19,12 +19,10 @@
 
 package ai.grakn.util;
 
-import ai.grakn.GraknGraph;
-import com.google.common.collect.Streams;
-
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -38,31 +36,52 @@ public class CommonUtil {
 
     private CommonUtil() {}
 
-    public static void withImplicitConceptsVisible(GraknGraph graph, Runnable function) {
-        withImplicitConceptsVisible(graph, g -> {
-            function.run();
-            return null;
-        });
-    }
-
-    public static <T> T withImplicitConceptsVisible(GraknGraph graph, Supplier<T> function) {
-        return withImplicitConceptsVisible(graph, g -> function.get());
-    }
-
-    public static <T> T withImplicitConceptsVisible(GraknGraph graph, Function<GraknGraph, T> function) {
-        boolean implicitFlag = graph.implicitConceptsVisible();
-        graph.showImplicitConcepts(true);
-        T result;
-        try {
-            result = function.apply(graph);
-        } finally {
-            graph.showImplicitConcepts(implicitFlag);
-        }
-        return result;
+    /**
+     * @param optional the optional to change into a stream
+     * @param <T> the type in the optional
+     * @return a stream of one item if the optional has an element, else an empty stream
+     */
+    public static <T> Stream<T> optionalToStream(Optional<T> optional) {
+        return optional.map(Stream::of).orElseGet(Stream::empty);
     }
 
     @SafeVarargs
     public static <T> Optional<T> optionalOr(Optional<T>... options) {
-        return Stream.of(options).flatMap(Streams::stream).findFirst();
+        return Stream.of(options).flatMap(CommonUtil::optionalToStream).findFirst();
+    }
+
+    /**
+     * Helper which lazily checks if a {@link Stream} contains the number specified
+     * WARNING: This consumes the stream rendering it unusable afterwards
+     *
+     * @param stream the {@link Stream} to check the count against
+     * @param size the expected number of elements in the stream
+     * @return true if the expected size is found
+     */
+    public static boolean containsOnly(Stream stream, long size){
+        long count = 0L;
+        Iterator it = stream.iterator();
+
+        while(it.hasNext()){
+            it.next();
+            if(++count > size) return false;
+        }
+
+        return size == count;
+    }
+
+    @CheckReturnValue
+    public static RuntimeException unreachableStatement(Throwable cause) {
+        return unreachableStatement(null, cause);
+    }
+
+    @CheckReturnValue
+    public static RuntimeException unreachableStatement(String message) {
+        return unreachableStatement(message, null);
+    }
+
+    @CheckReturnValue
+    public static RuntimeException unreachableStatement(@Nullable String message, Throwable cause) {
+        return new RuntimeException("Statement expected to be unreachable: " + message, cause);
     }
 }

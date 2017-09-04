@@ -7,9 +7,7 @@ GRAKN_DIST_BIN=${GRAKN_DIST_TMP}/bin/
 
 startEngine(){
   echo "Starting!"
-  "${GRAKN_DIST_BIN}/grakn.sh" start
-  sleep 10
-  echo "exit" | "${GRAKN_DIST_BIN}"/graql.sh # Waiting for Engine
+  _JAVA_OPTIONS="-Dcassandra.log.appender=STDOUT" "${GRAKN_DIST_BIN}/grakn.sh" start
 }
 
 loadData(){

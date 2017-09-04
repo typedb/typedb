@@ -18,13 +18,12 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
 import java.util.Optional;
 import java.util.stream.Stream;
-
-import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
 
 /**
  * "Offset" modifier for match query that offsets (skips) some number of results.
@@ -36,13 +35,13 @@ class MatchQueryOffset extends MatchQueryModifier {
     MatchQueryOffset(AbstractMatchQuery inner, long offset) {
         super(inner);
         if (offset < 0) {
-            throw new IllegalArgumentException(NEGATIVE_OFFSET.getMessage(offset));
+            throw GraqlQueryException.negativeOffset(offset);
         }
         this.offset = offset;
     }
 
     @Override
-    public Stream<Answer> stream(Optional<GraknGraph> graph) {
+    public Stream<Answer> stream(Optional<GraknTx> graph) {
         return inner.stream(graph).skip(offset);
     }
 

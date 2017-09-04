@@ -18,7 +18,9 @@
 
 package ai.grakn.graql.internal.parser;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -30,7 +32,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
@@ -66,15 +67,16 @@ public class QueryParser {
     private final QueryBuilder queryBuilder;
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
 
-    public static final ImmutableBiMap<String, ResourceType.DataType> DATA_TYPES = ImmutableBiMap.of(
-            "long", ResourceType.DataType.LONG,
-            "double", ResourceType.DataType.DOUBLE,
-            "string", ResourceType.DataType.STRING,
-            "boolean", ResourceType.DataType.BOOLEAN,
-            "date", ResourceType.DataType.DATE
+    public static final ImmutableBiMap<String, AttributeType.DataType> DATA_TYPES = ImmutableBiMap.of(
+            "long", AttributeType.DataType.LONG,
+            "double", AttributeType.DataType.DOUBLE,
+            "string", AttributeType.DataType.STRING,
+            "boolean", AttributeType.DataType.BOOLEAN,
+            "date", AttributeType.DataType.DATE
     );
 
-    private static final Set<Integer> NEW_QUERY_TOKENS = ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT);
+    private static final Set<Integer> NEW_QUERY_TOKENS =
+            ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT, GraqlLexer.DEFINE, GraqlLexer.UNDEFINE);
 
     /**
      * Create a query parser with the specified graph
@@ -103,9 +105,7 @@ public class QueryParser {
             String name, int minArgs, int maxArgs, Function<List<Object>, Aggregate> aggregateMethod) {
         aggregateMethods.put(name, args -> {
             if (args.size() < minArgs || args.size() > maxArgs) {
-                String expectedArgs = (minArgs == maxArgs) ? Integer.toString(minArgs) : minArgs + "-" + maxArgs;
-                String message = ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage(name, expectedArgs, args.size());
-                throw new IllegalArgumentException(message);
+                throw GraqlQueryException.incorrectAggregateArgumentNumber(name, minArgs, maxArgs, args);
             }
             return aggregateMethod.apply(args);
         });
@@ -151,6 +151,7 @@ public class QueryParser {
             @Nullable
             T previous = null;
 
+            @Nullable
             @Override
             protected T computeNext() {
                 if (tokenStream.LA(1) == GraqlLexer.EOF) {
@@ -175,14 +176,15 @@ public class QueryParser {
                 }
             }
 
-            private T swapPrevious(T newPrevious) {
+            @Nullable
+            private T swapPrevious(@Nullable T newPrevious) {
                 T oldPrevious = previous;
                 previous = newPrevious;
                 return oldPrevious;
             }
 
             private InsertQuery joinMatchInsert(MatchQuery match, InsertQuery insert) {
-                return match.insert(insert.admin().getVars());
+                return match.insert(insert.admin().varPatterns());
             }
         };
 
@@ -240,7 +242,7 @@ public class QueryParser {
         S tree = parseRule.apply(parser);
 
         if (errorListener.hasErrors()) {
-            throw new IllegalArgumentException(errorListener.toString());
+            throw GraqlSyntaxException.parsingError(errorListener.toString());
         }
 
         return visit.apply(getQueryVisitor(), tree);
@@ -292,6 +294,7 @@ public class QueryParser {
     @SuppressWarnings("unchecked")
     private void registerDefaultAggregates() {
         registerAggregate("count", 0, args -> Graql.count());
+        registerAggregate("ask", 0, args -> Graql.ask());
         registerAggregate("sum", 1, args -> Aggregates.sum((Var) args.get(0)));
         registerAggregate("max", 1, args -> Aggregates.max((Var) args.get(0)));
         registerAggregate("min", 1, args -> Aggregates.min((Var) args.get(0)));

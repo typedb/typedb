@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeId;
-import ai.grakn.concept.TypeLabel;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.Label;
+import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.LabelId;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.internal.analytics.MedianVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
@@ -32,8 +32,8 @@ import java.util.Set;
 
 class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements MedianQuery {
 
-    MedianQueryImpl(Optional<GraknGraph> graph) {
-        this.graph = graph;
+    MedianQueryImpl(Optional<GraknTx> graph) {
+        this.tx = graph;
     }
 
     @Override
@@ -42,15 +42,14 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        ResourceType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceTypeLabels);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
-        Set<TypeId> allSubTypeIds = convertLabelsToIds(getCombinedSubTypes());
-        Set<TypeId> statisticsResourceTypeIds = convertLabelsToIds(statisticsResourceTypeLabels);
-
-        String randomId = getRandomJobId();
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
+        if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
+        Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
+        Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
 
         ComputerResult result = getGraphComputer().compute(
-                new MedianVertexProgram(allSubTypeIds, statisticsResourceTypeIds, dataType, randomId));
+                new MedianVertexProgram(statisticsResourceLabelIds, dataType),
+                null, allSubLabelIds);
 
         Number finalResult = result.memory().get(MedianVertexProgram.MEDIAN);
         LOGGER.debug("Median = " + finalResult);
@@ -65,8 +64,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
     }
 
     @Override
-    public MedianQuery of(Collection<TypeLabel> resourceTypeLabels) {
-        return (MedianQuery) setStatisticsResourceType(resourceTypeLabels);
+    public MedianQuery of(Collection<Label> resourceLabels) {
+        return (MedianQuery) setStatisticsResourceType(resourceLabels);
     }
 
     @Override
@@ -75,13 +74,13 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
     }
 
     @Override
-    public MedianQuery in(Collection<TypeLabel> subTypeLabels) {
-        return (MedianQuery) super.in(subTypeLabels);
+    public MedianQuery in(Collection<Label> subLabels) {
+        return (MedianQuery) super.in(subLabels);
     }
 
     @Override
-    public MedianQuery withGraph(GraknGraph graph) {
-        return (MedianQuery) super.withGraph(graph);
+    public MedianQuery withTx(GraknTx tx) {
+        return (MedianQuery) super.withTx(tx);
     }
 
     @Override

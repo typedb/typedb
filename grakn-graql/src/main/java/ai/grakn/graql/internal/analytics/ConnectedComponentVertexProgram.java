@@ -18,11 +18,14 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeId;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
+import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -41,22 +44,19 @@ import java.util.Set;
 public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> {
 
     private static final int MAX_ITERATION = 100;
-    // element key
-    public static final String CLUSTER_LABEL = "connectedComponentVertexProgram.clusterLabel";
 
-    // memory key
+    public static final String CLUSTER_LABEL = "connectedComponentVertexProgram.clusterLabel";
     private static final String VOTE_TO_HALT = "connectedComponentVertexProgram.voteToHalt";
 
-    private static final Set<String> MEMORY_COMPUTE_KEYS = Collections.singleton(VOTE_TO_HALT);
+    private static final Set<MemoryComputeKey> MEMORY_COMPUTE_KEYS =
+            Collections.singleton(MemoryComputeKey.of(VOTE_TO_HALT, Operator.and, false, true));
 
     private String clusterLabel;
 
     public ConnectedComponentVertexProgram() {
     }
 
-    public ConnectedComponentVertexProgram(Set<TypeId> selectedTypes, String randomId) {
-        this.selectedTypes = selectedTypes;
-
+    public ConnectedComponentVertexProgram(String randomId) {
         clusterLabel = CLUSTER_LABEL + randomId;
         this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
     }
@@ -68,12 +68,12 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     }
 
     @Override
-    public Set<String> getElementComputeKeys() {
-        return Collections.singleton(clusterLabel);
+    public Set<VertexComputeKey> getVertexComputeKeys() {
+        return Collections.singleton(VertexComputeKey.of(clusterLabel, false));
     }
 
     @Override
-    public Set<String> getMemoryComputeKeys() {
+    public Set<MemoryComputeKey> getMemoryComputeKeys() {
         return MEMORY_COMPUTE_KEYS;
     }
 
@@ -87,17 +87,13 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public void safeExecute(final Vertex vertex, Messenger<String> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                    String id = vertex.id().toString();
-                    vertex.property(clusterLabel, id);
-                    messenger.sendMessage(messageScopeShortcutIn, id);
-                    messenger.sendMessage(messageScopeShortcutOut, id);
-                }
+                String id = vertex.value(Schema.VertexProperty.ID.name());
+                vertex.property(clusterLabel, id);
+                messenger.sendMessage(messageScopeIn, id);
+                messenger.sendMessage(messageScopeOut, id);
                 break;
             default:
-                if (selectedTypes.contains(Utility.getVertexTypeId(vertex))) {
-                    update(vertex, messenger, memory);
-                }
+                update(vertex, messenger, memory);
                 break;
         }
     }
@@ -108,9 +104,9 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
                 (a, b) -> a.compareTo(b) > 0 ? a : b);
         if (max.compareTo(currentMax) > 0) {
             vertex.property(clusterLabel, max);
-            messenger.sendMessage(messageScopeShortcutIn, max);
-            messenger.sendMessage(messageScopeShortcutOut, max);
-            memory.and(VOTE_TO_HALT, false);
+            messenger.sendMessage(messageScopeIn, max);
+            messenger.sendMessage(messageScopeOut, max);
+            memory.add(VOTE_TO_HALT, false);
         }
     }
 
@@ -123,11 +119,11 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
         }
         if (memory.getIteration() == MAX_ITERATION) {
             LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
-            throw new IllegalStateException(ErrorMessage.MAX_ITERATION_REACHED
-                    .getMessage(this.getClass().toString()));
+            throw GraqlQueryException.maxIterationsReached(this.getClass());
         }
 
-        memory.or(VOTE_TO_HALT, true);
+        memory.set(VOTE_TO_HALT, true);
         return false;
     }
+
 }

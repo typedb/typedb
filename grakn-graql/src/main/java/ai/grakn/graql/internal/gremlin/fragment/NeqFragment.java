@@ -18,58 +18,38 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.graql.Var;
+import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 
-class NeqFragment extends AbstractFragment {
+@AutoValue
+abstract class NeqFragment extends Fragment {
 
-    private final Var other;
+    abstract Var other();
 
-    NeqFragment(Var start, Var other) {
-        super(start);
-        this.other = other;
+    @Override
+    public GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
+        return traversal.where(P.neq(other().getValue()));
     }
 
     @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal, GraknGraph graph) {
-        traversal.where(P.neq(other.getValue()));
+    public String name() {
+        return "[neq:" + other().shortName() + "]";
     }
 
     @Override
-    public String getName() {
-        return "[neq:" + other.shortName() + "]";
-    }
-
-    @Override
-    public double fragmentCost(double previousCost) {
+    public double fragmentCost() {
         // This is arbitrary - we imagine about half the results are filtered out
-        return previousCost / 2.0;
+        return COST_NEQ;
     }
 
     @Override
-    public ImmutableSet<Var> getDependencies() {
-        return ImmutableSet.of(other);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        NeqFragment that = (NeqFragment) o;
-
-        return other.equals(that.other);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + other.hashCode();
-        return result;
+    public ImmutableSet<Var> dependencies() {
+        return ImmutableSet.of(other());
     }
 }

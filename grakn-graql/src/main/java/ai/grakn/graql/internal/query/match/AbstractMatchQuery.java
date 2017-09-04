@@ -18,11 +18,11 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
-import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -31,7 +31,6 @@ import ai.grakn.graql.Order;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
-import ai.grakn.graql.VarPatternBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
@@ -39,6 +38,7 @@ import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.util.AdminConverter;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,7 +48,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Order.asc;
-import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -80,7 +79,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
      * @param graph the graph to use to execute the query
      * @return a stream of results
      */
-    public abstract Stream<Answer> stream(Optional<GraknGraph> graph);
+    public abstract Stream<Answer> stream(Optional<GraknTx> graph);
 
     @Override
     public final Stream<Answer> stream() {
@@ -88,8 +87,8 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final MatchQuery withGraph(GraknGraph graph) {
-        return new MatchQueryGraph(graph, this);
+    public final MatchQuery withTx(GraknTx tx) {
+        return new MatchQueryTx(tx, this);
     }
 
     @Override
@@ -113,56 +112,60 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final MatchQuery select(String... names) {
-        return select(Stream.of(names).map(Graql::var).collect(toSet()));
+    public final MatchQuery select(String... vars) {
+        return select(Stream.of(vars).map(Graql::var).collect(toSet()));
     }
 
     @Override
-    public final MatchQuery select(Set<Var> names) {
-        return new MatchQuerySelect(this, ImmutableSet.copyOf(names));
+    public final MatchQuery select(Var... vars) {
+        return select(Sets.newHashSet(vars));
     }
 
     @Override
-    public final Stream<Concept> get(String name) {
-        Var var = Graql.var(name);
+    public final MatchQuery select(Set<Var> vars) {
+        return new MatchQuerySelect(this, ImmutableSet.copyOf(vars));
+    }
+
+    @Override
+    public final Stream<Concept> get(String var) {
+        return get(Graql.var(var));
+    }
+
+    @Override
+    public final Stream<Concept> get(Var var) {
         return stream().map(result -> {
             if (!result.containsKey(var)) {
-                throw new IllegalArgumentException(VARIABLE_NOT_IN_QUERY.getMessage(Graql.var(name)));
+                throw GraqlQueryException.varNotInQuery(var);
             }
             return result.get(var);
         });
     }
 
     @Override
-    public final AskQuery ask() {
-        return Queries.ask(this);
-    }
-
-    @Override
-    public final InsertQuery insert(VarPatternBuilder... vars) {
+    public final InsertQuery insert(VarPattern... vars) {
         return insert(Arrays.asList(vars));
     }
 
     @Override
-    public final InsertQuery insert(Collection<? extends VarPatternBuilder> vars) {
+    public final InsertQuery insert(Collection<? extends VarPattern> vars) {
         ImmutableMultiset<VarPatternAdmin> varAdmins = ImmutableMultiset.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(varAdmins, admin());
     }
 
     @Override
-    public final DeleteQuery delete(VarPatternBuilder... deleters) {
-        return delete(Arrays.asList(deleters));
+    public final DeleteQuery delete(String var, String... vars) {
+        List<Var> varList = Stream.concat(Stream.of(var), Arrays.stream(vars)).map(Graql::var).collect(toList());
+        return delete(varList);
     }
 
     @Override
-    public final DeleteQuery delete(String... names) {
-        List<VarPattern> deleters = Arrays.stream(names).map(Graql::var).map(Var::pattern).collect(toList());
-        return delete(deleters);
+    public final DeleteQuery delete(Var... vars) {
+        return delete(Arrays.asList(vars));
     }
 
     @Override
-    public final DeleteQuery delete(Collection<? extends VarPatternBuilder> deleters) {
-        return Queries.delete(AdminConverter.getVarAdmins(deleters), this);
+    public final DeleteQuery delete(Collection<? extends Var> vars) {
+        return Queries.delete(vars, this);
     }
 
     @Override

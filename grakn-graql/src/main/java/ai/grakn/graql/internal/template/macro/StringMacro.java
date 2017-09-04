@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.template.macro;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.macro.Macro;
 
 import java.util.List;
@@ -38,7 +39,7 @@ public class StringMacro implements Macro<String> {
     @Override
     public String apply(List<Object> values) {
         if(values.size() != numberArguments){
-            throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
+            throw GraqlQueryException.wrongNumberOfMacroArguments(this, values);
         }
 
         return values.get(0).toString();

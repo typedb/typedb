@@ -18,17 +18,17 @@
 
 package ai.grakn.engine.postprocessing;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.factory.EngineGraknGraphFactory;
-import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.manager.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskSchedule;
+import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import com.codahale.metrics.Timer.Context;
+import com.google.common.base.Preconditions;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +39,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * <p>
@@ -57,29 +59,35 @@ public class PostProcessingTask extends BackgroundTask {
     private static final String LOCK_KEY = "/post-processing-lock";
 
     /**
-     * Apply CASTING and RESOURCE post processing jobs the concept ids in the provided configuration
+     * Apply {@link ai.grakn.concept.Attribute} post processing jobs the concept ids in the provided configuration
      *
      * @return True if successful.
      */
     @Override
     public boolean start() {
-        EngineGraknGraphFactory factory = EngineGraknGraphFactory.create(engineConfiguration().getProperties());
-        Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.RESOURCE, configuration());
+        try (Context context = metricRegistry()
+                .timer(name(PostProcessingTask.class, "execution")).time()) {
+            Map<String, Set<ConceptId>> allToPostProcess = getPostProcessingJobs(Schema.BaseType.ATTRIBUTE, configuration());
 
-        allToPostProcess.entrySet().forEach(e -> {
-            String conceptIndex = e.getKey();
-            Set<ConceptId> conceptIds = e.getValue();
+            allToPostProcess.forEach((conceptIndex, conceptIds) -> {
+                Context contextSingle = metricRegistry()
+                        .timer(name(PostProcessingTask.class, "execution-single")).time();
+                try {
+                    String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+                    int maxRetry = engineConfiguration()
+                            .getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 
-            String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
-            int maxRetry = engineConfiguration().getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
+                    GraknTxMutators.runMutationWithRetry(factory(), keyspace, maxRetry,
+                            (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
+                } finally {
+                    contextSingle.stop();
+                }
+            });
 
-            GraphMutators.runGraphMutationWithRetry(factory, keyspace, maxRetry,
-                    (graph) -> runPostProcessingMethod(graph, conceptIndex, conceptIds));
-        });
+            LOG.debug(JOB_FINISHED, Schema.BaseType.ATTRIBUTE.name(), allToPostProcess);
 
-        LOG.debug(JOB_FINISHED, Schema.BaseType.RESOURCE.name(), allToPostProcess);
-
-        return true;
+            return true;
+        }
     }
 
     /**
@@ -92,7 +100,7 @@ public class PostProcessingTask extends BackgroundTask {
     private static Map<String,Set<ConceptId>> getPostProcessingJobs(Schema.BaseType type, TaskConfiguration configuration) {
         return configuration.json().at(REST.Request.COMMIT_LOG_FIXING).at(type.name()).asJsonMap().entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
-                e -> e.getValue().asList().stream().map(ConceptId::of).collect(Collectors.toSet())
+                e -> e.getValue().asList().stream().map(o -> ConceptId.of(o.toString())).collect(Collectors.toSet())
         ));
     }
 
@@ -103,13 +111,13 @@ public class PostProcessingTask extends BackgroundTask {
      * @param conceptIndex
      * @param conceptIds
      */
-    private void runPostProcessingMethod(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
-
+    private void runPostProcessingMethod(GraknTx graph, String conceptIndex, Set<ConceptId> conceptIds){
+        Preconditions.checkNotNull(this.getLockProvider(), "Lock provider was null, possible race condition in initialisation");
         if(graph.admin().duplicateResourcesExist(conceptIndex, conceptIds)){
 
             // Acquire a lock when you post process on an index to prevent race conditions
             // Lock is acquired after checking for duplicates to reduce runtime
-            Lock indexLock = LockProvider.getLock(PostProcessingTask.LOCK_KEY + "/" + conceptIndex);
+            Lock indexLock = this.getLockProvider().getLock(PostProcessingTask.LOCK_KEY + "/" + conceptIndex);
             indexLock.lock();
 
             try {
@@ -139,7 +147,7 @@ public class PostProcessingTask extends BackgroundTask {
      * @param conceptIds The concpet ids which should only return 1 valid concept
      * @return An error if one of the above rules are not satisfied.
      */
-    private Optional<String> validateMerged(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
+    private Optional<String> validateMerged(GraknTx graph, String conceptIndex, Set<ConceptId> conceptIds){
         //Check number of valid concept Ids
         int numConceptFound = 0;
         for (ConceptId conceptId : conceptIds) {
@@ -156,7 +164,7 @@ public class PostProcessingTask extends BackgroundTask {
         }
 
         //Check index
-        if(graph.admin().getConcept(Schema.ConceptProperty.INDEX, conceptIndex) == null){
+        if(graph.admin().getConcept(Schema.VertexProperty.INDEX, conceptIndex) == null){
             return Optional.of("The concept index [" + conceptIndex + "] did not return any concept");
         }
 

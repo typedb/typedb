@@ -18,14 +18,14 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknTx;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
-import ai.grakn.graql.internal.reasoner.utils.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 
 import java.util.Iterator;
 import java.util.Optional;
@@ -46,21 +46,19 @@ class MatchQueryInfer extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
-        GraknGraph graph = optionalOr(optionalGraph, inner.getGraph()).orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
-        );
+    public Stream<Answer> stream(Optional<GraknTx> optionalGraph) {
+        GraknTx graph = optionalOr(optionalGraph, inner.tx()).orElseThrow(GraqlQueryException::noTx);
 
-        if (!ReasonerUtils.hasRules(graph)) return inner.stream(optionalGraph);
+        if (!RuleUtil.hasRules(graph)) return inner.stream(optionalGraph);
 
         Iterator<Conjunction<VarPatternAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         Conjunction<VarPatternAdmin> conj = conjIt.next();
-        ReasonerQueryImpl conjQuery = ReasonerQueries.create(conj, graph);
-        Stream<Answer> answerStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise, true) : graph.graql().match(conj).stream();
+        ReasonerQuery conjQuery = ReasonerQueries.create(conj, graph);
+        Stream<Answer> answerStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise) : graph.graql().match(conj).stream();
         while(conjIt.hasNext()) {
             conj = conjIt.next();
             conjQuery = ReasonerQueries.create(conj, graph);
-            Stream<Answer> localStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise, true) : graph.graql().match(conj).stream();
+            Stream<Answer> localStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise) : graph.graql().match(conj).stream();
             answerStream = Stream.concat(answerStream, localStream);
         }
         return answerStream.map(result -> result.filterVars(getSelectedNames()));
