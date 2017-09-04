@@ -29,16 +29,17 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Pattern;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.kb.internal.cache.GlobalCache;
 import ai.grakn.kb.internal.cache.TxCache;
@@ -265,25 +266,15 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             VertexElement relationType = addTypeVertex(Schema.MetaSchema.RELATIONSHIP.getId(), Schema.MetaSchema.RELATIONSHIP.getLabel(), Schema.BaseType.RELATIONSHIP_TYPE);
             VertexElement resourceType = addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
             addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
-            VertexElement ruleType = addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
-            VertexElement inferenceRuleType = addTypeVertex(Schema.MetaSchema.INFERENCE_RULE.getId(), Schema.MetaSchema.INFERENCE_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
-            VertexElement constraintRuleType = addTypeVertex(Schema.MetaSchema.CONSTRAINT_RULE.getId(), Schema.MetaSchema.CONSTRAINT_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
+            addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE);
 
             relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
             resourceType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-            ruleType.property(Schema.VertexProperty.IS_ABSTRACT, true);
             entityType.property(Schema.VertexProperty.IS_ABSTRACT, true);
 
             relationType.addEdge(type, Schema.EdgeLabel.SUB);
-            ruleType.addEdge(type, Schema.EdgeLabel.SUB);
             resourceType.addEdge(type, Schema.EdgeLabel.SUB);
             entityType.addEdge(type, Schema.EdgeLabel.SUB);
-            inferenceRuleType.addEdge(ruleType, Schema.EdgeLabel.SUB);
-            constraintRuleType.addEdge(ruleType, Schema.EdgeLabel.SUB);
-
-            //Manual creation of shards on meta types which have instances
-            createMetaShard(inferenceRuleType);
-            createMetaShard(constraintRuleType);
 
             schemaInitialised = true;
         }
@@ -291,17 +282,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         //Copy entire schema to the graph cache. This may be a bad idea as it will slow down graph initialisation
         copyToCache(getMetaConcept());
 
-        //Role has to be copied separately due to not being connected to meta schema
+        //Role and rule have to be copied separately due to not being connected to meta schema
         copyToCache(getMetaRole());
+        copyToCache(getMetaRule());
 
         return schemaInitialised;
     }
 
-    private void createMetaShard(VertexElement metaNode) {
-        VertexElement metaShard = addVertex(Schema.BaseType.SHARD);
-        metaShard.addEdge(metaNode, Schema.EdgeLabel.SHARD);
-        metaNode.property(Schema.VertexProperty.CURRENT_SHARD, metaShard.id().toString());
-    }
 
     /**
      * Copies the {@link SchemaConcept} and it's subs into the {@link TxCache}.
@@ -543,14 +530,14 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public RuleType putRuleType(String label) {
-        return putRuleType(Label.of(label));
+    public Rule putRule(String label, Pattern when, Pattern then) {
+        return putRule(Label.of(label), when, then);
     }
 
     @Override
-    public RuleType putRuleType(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.RULE_TYPE,
-                v -> factory().buildRuleType(v, getMetaRuleType()));
+    public Rule putRule(Label label, Pattern when, Pattern then) {
+        return putSchemaConcept(label, Schema.BaseType.RULE,
+                v -> factory().buildRule(v, getMetaRule(), when, then));
     }
 
     //------------------------------------ Lookup
@@ -645,12 +632,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public RuleType getRuleType(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.RULE_TYPE);
+    public Rule getRule(String label) {
+        return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);
     }
 
     @Override
-    public SchemaConcept getMetaConcept() {
+    public Type getMetaConcept() {
         return getSchemaConcept(Schema.MetaSchema.THING.getId());
     }
 
@@ -675,18 +662,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public RuleType getMetaRuleType() {
+    public Rule getMetaRule() {
         return getSchemaConcept(Schema.MetaSchema.RULE.getId());
-    }
-
-    @Override
-    public RuleType getMetaRuleInference() {
-        return getSchemaConcept(Schema.MetaSchema.INFERENCE_RULE.getId());
-    }
-
-    @Override
-    public RuleType getMetaRuleConstraint() {
-        return getSchemaConcept(Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
     public void putShortcutEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {

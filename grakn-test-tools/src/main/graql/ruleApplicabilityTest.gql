@@ -59,11 +59,9 @@ relation3 sub relationship
 #Resources
    res1 sub attribute datatype string;
 
-insert
-
 #Rules
 
-isa inference-rule
+rule-1 sub rule
 	when {
 		(role1: $x, role2: $y) isa binary;
 		(role1: $y, role2: $z) isa binary;
@@ -72,7 +70,7 @@ isa inference-rule
 		(role1:$x, role2:$y, role3: $z) isa relation1;
 	};
 
-isa inference-rule
+rule-2 sub rule
 	when {
 		(role1: $x, role2: $y) isa binary;
 		(role1: $y, role2: $z) isa binary;
@@ -81,7 +79,7 @@ isa inference-rule
 		(role1:$x, role2:$y, role2: $z) isa relation2;
 	};
 
-isa inference-rule
+rule-3 sub rule
     when {
     	$r1 (role1: $x, role2: $y) isa reified-relationship;
     	$r2 (role1: $y, role2: $z) isa reified-relationship;
@@ -90,7 +88,7 @@ isa inference-rule
     	(role1:$r1, role2:$r2) isa relation3;
     };
 
-isa inference-rule
+rule-4 sub rule
     when {
     	$x isa entity2;
     	$y isa entity2;

@@ -19,14 +19,12 @@
 package ai.grakn.graql.internal.reasoner.inference;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.RuleType;
-import ai.grakn.test.kbs.CWKB;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.SampleKBContext;
-
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.CWKB;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -206,17 +204,16 @@ public class CWInferenceTest {
 
     @Test
     public void testGraphCase() {
-        GraknTx localGraph = cwKB2.tx();
-        QueryBuilder lqb = localGraph.graql().infer(false);
-        QueryBuilder ilqb = localGraph.graql().infer(true);
-        RuleType inferenceRule = localGraph.getRuleType("inference-rule");
+        GraknTx tx = cwKB2.tx();
+        QueryBuilder lqb = tx.graql().infer(false);
+        QueryBuilder ilqb = tx.graql().infer(true);
 
-        localGraph.putEntityType("region");
+        tx.putEntityType("region");
 
-        Pattern R6_LHS = and(localGraph.graql().parsePatterns("$x isa region;"));
-        Pattern R6_RHS = and(localGraph.graql().parsePatterns("$x isa country;"));
-        inferenceRule.putRule(R6_LHS, R6_RHS);
-        localGraph.admin().commitNoLogs();
+        Pattern R6_LHS = and(tx.graql().parsePatterns("$x isa region;"));
+        Pattern R6_RHS = and(tx.graql().parsePatterns("$x isa country;"));
+        tx.putRule("R6: If something is a region it is a country", R6_LHS, R6_RHS);
+        tx.admin().commitNoLogs();
 
         String queryString = "match $x isa criminal;";
         String explicitQuery = "match " +

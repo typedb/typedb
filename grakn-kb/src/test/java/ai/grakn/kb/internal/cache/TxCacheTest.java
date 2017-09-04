@@ -20,15 +20,14 @@ package ai.grakn.kb.internal.cache;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Attribute;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.TxTestBase;
@@ -65,11 +64,10 @@ public class TxCacheTest extends TxTestBase {
     @Test
     public void whenNewAddingTypesToTheGraph_EnsureTheConceptLogContainsThem() {
         // add concepts to rootGraph in as many ways as possible
-        EntityType t1 = tx.putEntityType("1");
+        tx.putEntityType("1");
         RelationshipType t2 = tx.putRelationshipType("2");
         Role t3 = tx.putRole("3");
-        RuleType t4 = tx.putRuleType("4");
-        AttributeType t5 = tx.putAttributeType("5", AttributeType.DataType.STRING);
+        tx.putAttributeType("4", AttributeType.DataType.STRING);
 
         // verify the concepts that we expected are returned in the set
         assertThat(tx.txCache().getModifiedRoles(), containsInAnyOrder(t3));

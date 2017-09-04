@@ -1,6 +1,6 @@
 insert
 
-$rootPost isa inference-rule
+rootPost sub rule
 when {
   $p isa post;
 }
@@ -8,7 +8,7 @@ then {
   (parent-message: $p, child-message: $p) isa original-post;
 };
 
-$childComments isa inference-rule
+childComments sub rule
 when {
   (reply: $c, original: $m) isa reply-of;
   (child-message: $m, parent-message: $op) isa original-post;
@@ -17,7 +17,7 @@ then {
   (child-message: $c, parent-message: $op) isa original-post;
 };
 
-$forumOfComments isa inference-rule
+forumOfComments sub rule
 when {
   (child-message: $m, parent-message: $op) isa original-post;
   (contained: $op, container: $forum) isa container-of;

@@ -87,15 +87,15 @@ public enum ErrorMessage {
     VALIDATION_RELATION_DUPLICATE("You have created one or more relationships with the following roles and role player [%s] \n"),
     VALIDATION_REQUIRED_RELATION("The role player [%s] of type [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),
 
-    VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] of type [%s] refers to type [%s] which does not exist in the graph \n"),
+    VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] refers to type [%s] which does not exist in the graph \n"),
 
-    VALIDATION_RULE_DISJUNCTION_IN_BODY("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a disjunction in the body\n"),
+    VALIDATION_RULE_DISJUNCTION_IN_BODY("The rule [%s] does not form a valid Horn clause, as it contains a disjunction in the body\n"),
 
-    VALIDATION_RULE_DISJUNCTION_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a disjunction in the head\n"),
+    VALIDATION_RULE_DISJUNCTION_IN_HEAD("The rule [%s] does not form a valid Horn clause, as it contains a disjunction in the head\n"),
 
-    VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] of type [%s] does not form a valid Horn clause, as it contains a multi-atom head\n"),
+    VALIDATION_RULE_HEAD_NON_ATOMIC("The rule [%s] does not form a valid Horn clause, as it contains a multi-atom head\n"),
 
-    VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("The rule [%s] of type [%s] does not form a valid Horn clause, as its head contains illegal atomics\n"),
+    VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD("The rule [%s] does not form a valid Horn clause, as its head contains illegal atomics\n"),
 
     VALIDATION_RULE_INVALID_RELATION_TYPE("Attempting to define a rule containing a relation pattern with type [%s] which is not a relation type\n"),
 

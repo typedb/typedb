@@ -26,6 +26,7 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -66,6 +67,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -200,16 +202,6 @@ public class DefineQueryTest {
     }
 
     @Test
-    public void testDefineRuleType() {
-        assertDefine(var("x").label("my-inference-rule").sub(RULE.getLabel().getValue()));
-    }
-
-    @Test
-    public void testDefineRuleSub() {
-        assertDefine(var("x").label("an-sub-rule-type").sub("a-rule-type"));
-    }
-
-    @Test
     public void testHas() {
         String resourceType = "a-new-resource-type";
 
@@ -300,6 +292,16 @@ public class DefineQueryTest {
     }
 
     @Test
+    public void whenDefiningARule_TheRuleIsInTheKB() {
+        Pattern when = qb.parsePattern("$x isa entity");
+        Pattern then = qb.parsePattern("$x isa entity");
+        VarPattern vars = label("my-rule").sub(label(RULE.getLabel())).when(when).then(then);
+        qb.define(vars).execute();
+
+        assertNotNull(movies.tx().getRule("my-rule"));
+    }
+
+    @Test
     public void testErrorResourceTypeWithoutDataType() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(
@@ -356,6 +358,34 @@ public class DefineQueryTest {
         );
 
         movies.tx().graql().define(label("my-type").sub("entity").datatype(BOOLEAN)).execute();
+    }
+
+    @Test
+    public void whenDefiningRuleWithoutWhen_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("when")));
+        qb.define(label("a-rule").sub(label(RULE.getLabel())).then(var("x").isa("movie"))).execute();
+    }
+
+    @Test
+    public void whenDefiningRuleWithoutThen_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("then")));
+        qb.define(label("a-rule").sub(label(RULE.getLabel())).when(var("x").isa("movie"))).execute();
+    }
+
+    @Test
+    public void whenDefiningANonRuleWithAWhenPattern_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(allOf(containsString("unexpected property"), containsString("when")));
+        qb.define(label("yes").sub(label(ENTITY.getLabel())).when(var("x"))).execute();
+    }
+
+    @Test
+    public void whenDefiningANonRuleWithAThenPattern_Throw() {
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage(allOf(containsString("unexpected property"), containsString("then")));
+        qb.define(label("covfefe").sub(label(ENTITY.getLabel())).then(var("x"))).execute();
     }
 
     @Test
