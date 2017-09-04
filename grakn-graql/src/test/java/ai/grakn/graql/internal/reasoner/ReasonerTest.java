@@ -506,11 +506,11 @@ public class ReasonerTest {
                 "{$type label 'region' or $type label 'geoObject';};" +
                 "}; select $x, $y, $type;";
         MatchQuery query = graph.graql().infer(true).parse(queryString);
-//        MatchQuery query2 = graph.graql().infer(false).parse(explicitQuery);
+        MatchQuery query2 = graph.graql().infer(false).parse(explicitQuery);
         QueryAnswers answers = queryAnswers(query);
         System.out.println(answers);
-//        QueryAnswers answers2 = queryAnswers(query2);
-//        assertEquals(answers, answers2);
+        QueryAnswers answers2 = queryAnswers(query2);
+        assertEquals(answers, answers2);
     }
 
     @Test

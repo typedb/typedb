@@ -142,7 +142,7 @@ public class TaskClient extends Client {
             return TaskResult.builder()
                     .setTaskId(TaskId.of(responseElement.at("id").asString()))
                     .setCode(responseElement.at("code").asString())
-                    .setStackTrace(responseElement.at(STACK_TRACE).asString())
+                    .setStackTrace(responseElement.has(STACK_TRACE) ? responseElement.at(STACK_TRACE).asString() : "")
                     .build();
         } catch (IOException e) {
             throw GraknBackendException.engineUnavailable(host, port, e);
