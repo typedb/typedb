@@ -668,13 +668,13 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     public void putShortcutEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {
         boolean exists = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
-                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), roleType.getLabelId().getValue()).inV().
                 has(Schema.VertexProperty.ID.name(), toThing.getId()).hasNext();
 
         if (!exists) {
-            EdgeElement edge = fromRelation.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.SHORTCUT);
+            EdgeElement edge = fromRelation.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
             edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, fromRelation.type().getLabelId().getValue());
             edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, roleType.getLabelId().getValue());
             txCache().trackForValidation(factory().buildCasting(edge));
