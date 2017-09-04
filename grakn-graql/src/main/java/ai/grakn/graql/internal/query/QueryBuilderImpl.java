@@ -55,7 +55,7 @@ import java.util.stream.Stream;
  * A starting point for creating queries.
  * <p>
  * A {@code QueryBuiler} is constructed with a {@code GraknTx}. All operations are performed using this
- * graph. The user must explicitly commit or rollback changes after executing queries.
+ * transaction. The user must explicitly commit or rollback changes after executing queries.
  * <p>
  * {@code QueryBuilderImpl} also provides static methods for creating {@code Vars}.
  *
@@ -94,7 +94,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     /**
-     * @param patterns an array of patterns to match in the graph
+     * @param patterns an array of patterns to match in the knowledge base
      * @return a {@link Match} that will find matches of the given patterns
      */
     @Override
@@ -103,7 +103,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     /**
-     * @param patterns a collection of patterns to match in the graph
+     * @param patterns a collection of patterns to match in the knowledge base
      * @return a {@link Match} that will find matches of the given patterns
      */
     @Override
@@ -115,8 +115,8 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     /**
-     * @param vars an array of variables to insert into the graph
-     * @return an insert query that will insert the given variables into the graph
+     * @param vars an array of variables to insert into the knowledge base
+     * @return an insert query that will insert the given variables into the knowledge base
      */
     @Override
     public InsertQuery insert(VarPattern... vars) {
@@ -124,8 +124,8 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     /**
-     * @param vars a collection of variables to insert into the graph
-     * @return an insert query that will insert the given variables into the graph
+     * @param vars a collection of variables to insert into the knowledge base
+     * @return an insert query that will insert the given variables into the knowledge base
      */
     @Override
     public InsertQuery insert(Collection<? extends VarPattern> vars) {

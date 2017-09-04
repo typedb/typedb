@@ -28,12 +28,12 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * a query used for finding data in a graph that matches the given patterns.
+ * a query used for finding data in a knowledge base that matches the given patterns.
  * <p>
- * The {@link GetQuery} is a pattern-matching query. The patterns are described in a declarative fashion, forming a
- * subgraph, then the {@link GetQuery} will traverse the graph in an efficient fashion to find any matching subgraphs.
+ * The {@link GetQuery} is a pattern-matching query. The patterns are described in a declarative fashion,
+ * then the {@link GetQuery} will traverse the knowledge base in an efficient fashion to find any matching answers.
  * <p>
- * Each matching subgraph will produce a map, where keys are variable names and values are concepts in the graph.
+ * @see Answer
  *
  * @author Felix Chapman
  */

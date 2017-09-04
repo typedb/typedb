@@ -29,13 +29,12 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * a part of a query used for finding data in a graph that matches the given patterns.
+ * a part of a query used for finding data in a knowledge base that matches the given patterns.
  * <p>
  * The {@link Match} is the pattern-matching part of a query. The patterns are described in a declarative fashion,
- * forming a subgraph, then the {@link Match} will traverse the graph in an efficient fashion to find any matching
- * subgraphs.
+ * then the {@link Match} will traverse the knowledge base in an efficient fashion to find any matching answers.
  * <p>
- * Each matching subgraph will produce a map, where keys are variables and values are concepts in the graph.
+ * @see Answer
  *
  * @author Felix Chapman
  */

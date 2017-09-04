@@ -44,7 +44,7 @@ import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 /**
- * A traversal over a Grakn graph, representing one of many ways to execute a {@link Match}.
+ * A traversal over a Grakn knowledge base, representing one of many ways to execute a {@link Match}.
  * Comprised of ordered {@code Fragment}s which are used to construct a TinkerPop {@code GraphTraversal}, which can be
  * retrieved and executed.
  *
