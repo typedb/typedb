@@ -125,14 +125,14 @@ public class GraknComputerImpl implements GraknComputer {
         return graph.compute(this.graphComputerClass);
     }
 
-    private void applyFilters(Set<LabelId> types, boolean includesShortcut) {
+    private void applyFilters(Set<LabelId> types, boolean includesRolePlayerEdge) {
         if (types == null || types.isEmpty()) return;
         Set<Integer> labelIds = types.stream().map(LabelId::getValue).collect(Collectors.toSet());
 
         Traversal<Vertex, Vertex> vertexFilter =
                 __.has(Schema.VertexProperty.THING_TYPE_LABEL_ID.name(), P.within(labelIds));
 
-        Traversal<Vertex, Edge> edgeFilter = includesShortcut ?
+        Traversal<Vertex, Edge> edgeFilter = includesRolePlayerEdge ?
                 __.union(
                         __.bothE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()),
                         __.bothE(Schema.EdgeLabel.RESOURCE.getLabel())

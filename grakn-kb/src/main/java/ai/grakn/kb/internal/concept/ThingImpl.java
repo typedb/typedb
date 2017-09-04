@@ -137,7 +137,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     public Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
         Set<ConceptId> resourceTypesIds = Arrays.stream(attributeTypes).map(Concept::getId).collect(Collectors.toSet());
-        return resources(getShortcutNeighbours(), resourceTypesIds);
+        return resources(getRolePlayerNeighbours(), resourceTypesIds);
     }
 
     /**
@@ -169,8 +169,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 map(edge -> vertex().tx().factory().buildCasting(edge));
     }
 
-    <X extends Thing> Stream<X> getShortcutNeighbours(){
-        GraphTraversal<Object, Vertex> shortcutTraversal = __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+    <X extends Thing> Stream<X> getRolePlayerNeighbours(){
+        GraphTraversal<Object, Vertex> rolePlayerTraversal = __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 as("edge").
                 outV().
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
@@ -182,7 +182,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         //noinspection unchecked
         return vertex().tx().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
-                union(shortcutTraversal, resourceEdgeTraversal).toStream().
+                union(rolePlayerTraversal, resourceEdgeTraversal).toStream().
                 map(vertex -> vertex().tx().buildConcept(vertex));
     }
 
