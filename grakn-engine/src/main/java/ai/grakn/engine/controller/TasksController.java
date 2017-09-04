@@ -318,14 +318,16 @@ public class TasksController {
         try {
             TaskState state = taskState.getTaskState();
             TaskId id = state.getId();
+            singleTaskReturnJson.set("code", HttpStatus.SC_OK);
             if (wait) {
                 LOG.debug("Running task {}", state.getId());
                 manager.runTask(state, TaskConfiguration.of(taskState.getConfiguration()));
                 TaskState stateAfterRun = manager.storage().getState(id);
-                if (stateAfterRun.status().equals(FAILED)) {
+                if (stateAfterRun != null &&stateAfterRun.status().equals(FAILED)) {
                     singleTaskReturnJson.set("code", HttpStatus.SC_BAD_REQUEST);
                     singleTaskReturnJson.set(STACK_TRACE, stateAfterRun.stackTrace());
                 }
+                // TODO handle the case where the task returned is null
             } else {
                 LOG.debug("Adding to queue task {}", state.getId());
                 manager.addTask(state, TaskConfiguration.of(taskState.getConfiguration()));
