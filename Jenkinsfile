@@ -143,7 +143,6 @@ authored by - """ + user
     slackSend channel: "#github", message: """
   Bigtable tests success on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
   authored by - """ + user
-    }
   } catch (error) {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
     slackSend channel: "#github", message: """
@@ -156,6 +155,7 @@ authored by - """ + user
       sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
       // junit
       sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
+      }
     }
   }
 }
