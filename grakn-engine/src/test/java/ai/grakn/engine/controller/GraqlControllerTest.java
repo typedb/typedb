@@ -160,7 +160,7 @@ public class GraqlControllerTest {
 
     @Test
     public void whenRunningQueryWithLimitEmbedded_HalResponseIsTheSameAsJava() {
-        String queryString = "match $x isa movie;";
+        String queryString = "match $x isa movie; get;";
         int limitEmbedded = 42;
         Response resp = sendQuery(queryString, APPLICATION_HAL, false, false, limitEmbedded);
         Printer printer = Printers.hal(sampleKB.tx().getKeyspace(), limitEmbedded);
