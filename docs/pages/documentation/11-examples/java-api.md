@@ -155,7 +155,7 @@ theMarriage.attribute(marriageDate);
 The `runSampleQueries()` method shows how to run a simple query using the `GraknTx` API. For example, take the query "What are the instances of type person?". In Graql, this is simply:
 
 ```graql
-match $x isa person;
+match $x isa person; get;
 ```
 
 In Java:

@@ -221,7 +221,7 @@ private static void persistClusters(Map<String, Set<String>> results) {
 We can now switch to the visualiser, by browsing to [localhost:4567](http://localhost:4567), and execute this query:
 
 ```graql
-match $x isa cluster;
+match $x isa cluster; get;
 ```
 
 If you explore the results you can now see the entities that are members of a given cluster, similar to the image shown below.

@@ -54,7 +54,7 @@ The main pane of your knowledge base will be empty at this point. You can submit
 
 
 ```graql
-match $x isa person, has firstname "John"; 
+match $x isa person, has firstname "John"; get;
 ```
 
 ![John query](/images/john-query.png)
@@ -64,7 +64,7 @@ You can zoom the display in and out, and move the nodes around for better visibi
 Alternatively, for simple visualisation, you can click the Types dropdown in the top menu to list out what is in the schema. For our example, go to the Entities dropdown and choose `person`. The query specific to your selection will be displayed in the form with a default offset and result limit, which is applied by the visualiser (`offset 0; limit 30`). 
 
 ```graql
-match $x isa person; offset 0; limit 30;
+match $x isa person; offset 0; limit 30; get;
 ```
 
 You can change the offset and limit on the number of results as [described below](#query-limit). 
@@ -153,7 +153,7 @@ NEEDS UPDATING
 The first step is to clear the knowledge base, then choose two people from the genealogy dataset, to determine the shortest path between them. For example, use the following query, and enter it into the form in the visualiser, to bring up two nodes:
 
 ```graql
-match $x isa person has firstname "Susan" has surname "Dudley"; $y isa person has firstname "Barbara" has surname "Herchelroth";
+match $x isa person has firstname "Susan" has surname "Dudley"; $y isa person has firstname "Barbara" has surname "Herchelroth"; get;
 ```
 
 1. Submit the query by pressing '>' (or *Enter*) to visualise the knowledge base. The two people in question (Susan Dudley and Barbara Herchelroth) should be shown. 
@@ -177,7 +177,7 @@ Submit the query as usual by clicking '>' (or *Enter*) and the knowledge base wi
 The Query Builder menu that is brought up from a right click of the mouse also has an "Explore Relations" option. This option allows you to determine the relationships between nodes. To illustrate that, clear and submit a query as follows:
 
 ```graql
-match $x isa person has surname "Niesz"; offset 0; limit 100; # Find everyone with surname Niesz
+match $x isa person has surname "Niesz"; offset 0; limit 100; get; # Find everyone with surname Niesz
 ```
 
 1. Select any two people with surname Niesz (it doesn't matter who) by single left clicking on two nodes while holding down the *control* key.
@@ -185,7 +185,7 @@ match $x isa person has surname "Niesz"; offset 0; limit 100; # Find everyone wi
 3. The submission form will now contain a query for those two nodes, for example:
 
 ```graql
-match $x id "651472"; $y id "889000"; $r ($x, $y);
+match $x id "651472"; $y id "889000"; $r ($x, $y); get;
 ```
 
 Submit the query as usual by clicking '>' or *Enter* and the display will show the relationships, and nodes, that connect the two. The visualiser will display the relationships between the two nodes you selected (e.g. siblings).

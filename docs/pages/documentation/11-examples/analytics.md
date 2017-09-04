@@ -107,16 +107,16 @@ Some sample queries:
 
 ```graql
 # Cars where the model name contains "Merc"
-match $x has model contains "Merc";
+match $x has model contains "Merc"; get;
 
 # Cars with more than 4 gears
-match $x has gear > 4;
+match $x has gear > 4; get;
 
 # Japanese-made cars that are manual
-match $x isa manual-car has model $s; $y isa japanese-maker; (made: $x, maker:$y);
+match $x isa manual-car has model $s; $y isa japanese-maker; (made: $x, maker:$y); get;
 
 # European cars that are automatic
-match $x isa automatic-car has model $s; $y isa european-maker; (made: $x, maker:$y);
+match $x isa automatic-car has model $s; $y isa european-maker; (made: $x, maker:$y); get;
 
 ```
 
