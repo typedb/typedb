@@ -67,7 +67,7 @@ public class QueryToStringTest {
                 ),
                 var("y").has("name", var("n"))
         ).orderBy("n").limit(8).offset(4).get("x", "y");
-        assertSameResults(query);
+        assertEquivalent(query, query.toString());
     }
 
     @Test
