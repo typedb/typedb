@@ -65,6 +65,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Stream;
 
+import static com.google.common.collect.ImmutableMultiset.toImmutableMultiset;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -364,7 +365,7 @@ public abstract class AbstractVarPattern extends AbstractPattern implements VarP
                 .orElse(ImmutableMultiset.of());
 
         ImmutableMultiset<RelationPlayer> relationPlayers =
-                Stream.concat(oldCastings.stream(), Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
+                Stream.concat(oldCastings.stream(), Stream.of(relationPlayer)).collect(toImmutableMultiset());
 
         RelationProperty newProperty = RelationProperty.of(relationPlayers);
 

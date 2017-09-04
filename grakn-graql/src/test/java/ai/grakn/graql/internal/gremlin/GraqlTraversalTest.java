@@ -38,6 +38,7 @@ import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 import org.hamcrest.Matcher;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -317,7 +318,7 @@ public class GraqlTraversalTest {
         return lists.stream()
                 .map(Sets::newHashSet)
                 .map(GraqlTraversalTest::createTraversal)
-                .flatMap(CommonUtil::optionalToStream);
+                .flatMap(Streams::stream);
     }
 
     // Returns a traversal only if the fragment ordering is valid

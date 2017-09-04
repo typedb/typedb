@@ -51,7 +51,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 /**
  * Class for generating greedy traversal plans

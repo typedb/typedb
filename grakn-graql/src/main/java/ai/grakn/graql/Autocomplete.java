@@ -31,8 +31,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static ai.grakn.graql.internal.util.StringConverter.GRAQL_KEYWORDS;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 /**
  * An autocomplete result suggesting keywords, types and variables that the user may wish to type

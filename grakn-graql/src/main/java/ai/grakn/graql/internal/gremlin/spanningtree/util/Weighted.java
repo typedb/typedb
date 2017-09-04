@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.spanningtree.util;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.collect.ComparisonChain;
 
@@ -72,7 +73,7 @@ public class Weighted<T> implements Comparable<Weighted<T>> {
 
     @Override
     public String toString() {
-        return Objects.toStringHelper(this)
+        return MoreObjects.toStringHelper(this)
                 .add("val", val)
                 .add("weight", weight).toString();
     }

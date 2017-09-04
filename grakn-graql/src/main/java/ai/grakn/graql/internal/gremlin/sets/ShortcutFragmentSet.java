@@ -36,7 +36,7 @@ import com.google.common.collect.ImmutableSet;
 import javax.annotation.Nullable;
 import java.util.Collection;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 /**
  * Describes the edge connecting a relation to a role-player.

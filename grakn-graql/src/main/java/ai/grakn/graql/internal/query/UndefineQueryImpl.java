@@ -29,7 +29,7 @@ import com.google.common.collect.ImmutableList;
 import javax.annotation.Nullable;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableList;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 /**
  * @author Felix Chapman

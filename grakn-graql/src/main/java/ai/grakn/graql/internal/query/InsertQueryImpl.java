@@ -30,8 +30,8 @@ import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import ai.grakn.util.CommonUtil;
 import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.Streams;
 
 import java.util.Collection;
 import java.util.List;
@@ -40,7 +40,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableList;
+import static com.google.common.collect.ImmutableList.toImmutableList;
 
 /**
  * A query that will insert a collection of variables into a graph
@@ -132,7 +132,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
         Set<SchemaConcept> types = vars.stream()
                 .flatMap(v -> v.innerVarPatterns().stream())
                 .map(VarPatternAdmin::getTypeLabel)
-                .flatMap(CommonUtil::optionalToStream)
+                .flatMap(Streams::stream)
                 .map(theGraph::<Type>getSchemaConcept)
                 .collect(Collectors.toSet());
 

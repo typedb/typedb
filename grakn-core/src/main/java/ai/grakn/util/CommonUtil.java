@@ -19,20 +19,10 @@
 
 package ai.grakn.util;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMultiset;
-import com.google.common.collect.ImmutableSet;
-
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 /**
@@ -93,92 +83,5 @@ public class CommonUtil {
     @CheckReturnValue
     public static RuntimeException unreachableStatement(@Nullable String message, Throwable cause) {
         return new RuntimeException("Statement expected to be unreachable: " + message, cause);
-    }
-
-    public static <T> Collector<T, ?, ImmutableSet<T>> toImmutableSet() {
-        return new Collector<T, ImmutableSet.Builder<T>, ImmutableSet<T>>() {
-            @Override
-            public Supplier<ImmutableSet.Builder<T>> supplier() {
-                return ImmutableSet::builder;
-            }
-
-            @Override
-            public BiConsumer<ImmutableSet.Builder<T>, T> accumulator() {
-                return ImmutableSet.Builder::add;
-            }
-
-            @Override
-            public BinaryOperator<ImmutableSet.Builder<T>> combiner() {
-                return (b1, b2) -> b1.addAll(b2.build());
-            }
-
-            @Override
-            public Function<ImmutableSet.Builder<T>, ImmutableSet<T>> finisher() {
-                return ImmutableSet.Builder::build;
-            }
-
-            @Override
-            public Set<Characteristics> characteristics() {
-                return ImmutableSet.of();
-            }
-        };
-    }
-
-    public static <T> Collector<T, ?, ImmutableList<T>> toImmutableList() {
-        return new Collector<T, ImmutableList.Builder<T>, ImmutableList<T>>() {
-            @Override
-            public Supplier<ImmutableList.Builder<T>> supplier() {
-                return ImmutableList::builder;
-            }
-
-            @Override
-            public BiConsumer<ImmutableList.Builder<T>, T> accumulator() {
-                return ImmutableList.Builder::add;
-            }
-
-            @Override
-            public BinaryOperator<ImmutableList.Builder<T>> combiner() {
-                return (b1, b2) -> b1.addAll(b2.build());
-            }
-
-            @Override
-            public Function<ImmutableList.Builder<T>, ImmutableList<T>> finisher() {
-                return ImmutableList.Builder::build;
-            }
-
-            @Override
-            public Set<Characteristics> characteristics() {
-                return ImmutableSet.of();
-            }
-        };
-    }
-
-    public static <T> Collector<T, ?, ImmutableMultiset<T>> toImmutableMultiset() {
-        return new Collector<T, ImmutableMultiset.Builder<T>, ImmutableMultiset<T>>() {
-            @Override
-            public Supplier<ImmutableMultiset.Builder<T>> supplier() {
-                return ImmutableMultiset::builder;
-            }
-
-            @Override
-            public BiConsumer<ImmutableMultiset.Builder<T>, T> accumulator() {
-                return ImmutableMultiset.Builder::add;
-            }
-
-            @Override
-            public BinaryOperator<ImmutableMultiset.Builder<T>> combiner() {
-                return (b1, b2) -> b1.addAll(b2.build());
-            }
-
-            @Override
-            public Function<ImmutableMultiset.Builder<T>, ImmutableMultiset<T>> finisher() {
-                return ImmutableMultiset.Builder::build;
-            }
-
-            @Override
-            public Set<Characteristics> characteristics() {
-                return ImmutableSet.of();
-            }
-        };
     }
 }

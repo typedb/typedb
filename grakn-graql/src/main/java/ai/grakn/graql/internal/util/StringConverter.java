@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.HashSet;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.CommonUtil.toImmutableSet;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
 
 /**
  * Class for converting Graql strings, used in the parser and for toString methods
