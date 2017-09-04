@@ -189,13 +189,13 @@ Manipulation, such as insertions into the knowledge base.
 This is best for advanced querying where traversals are involved. For example “Who is married to Homer?” is too complex a query for the Java API. Using a `QueryBuilder`:
 
 ```java
-List<Map<String, Concept>> results = tx.graql().match(
+GetQuery query = tx.graql().match(
   var("x").has("firstname", "John").isa("person"),
   var("y").has("firstname", var("y_name")).isa("person"),
   var().isa("marriage").
   rel("husband", "x").
-  rel("wife", "y")).execute();
-for (Map<String, Concept> result : results) {
+  rel("wife", "y")).get();
+for (Map<String, Concept> result : query) {
   System.out.println(" " + result.get("y_name"));
 }
 
