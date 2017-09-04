@@ -34,6 +34,14 @@
                 <include>graql</include>
             </includes>
         </fileSet>
+        <!-- changelog license readme -->
+        <fileSet>
+            <outputDirectory>/</outputDirectory>
+            <directory>${main.basedir}</directory>
+            <includes>
+                <include>LICENSE.txt</include>
+            </includes>
+        </fileSet>
         <fileSet>
             <outputDirectory>services</outputDirectory>
             <directory>${basedir}/src/services/</directory>
