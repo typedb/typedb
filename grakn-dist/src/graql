@@ -14,7 +14,7 @@ case "$1" in
   *|help)
     case "$2" in
       migrate)
-        echo ""
+        "${GRAKN_HOME}/services/migration.sh" help
         ;;
 
       *)

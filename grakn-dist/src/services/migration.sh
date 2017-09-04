@@ -33,5 +33,5 @@ elif [ "$1" == "xml" ]
 then
   java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.xml.XmlMigrator ${1+"$@"}
 else
-  echo "usage: ./migration.sh {owl, csv, json, export, sql, xml} <params>"
+  echo "usage: graql migrate {owl, csv, json, export, sql, xml} <params>"
 fi
