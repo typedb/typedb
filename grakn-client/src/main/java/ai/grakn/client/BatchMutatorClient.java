@@ -96,10 +96,6 @@ public class BatchMutatorClient {
     private int blockerSize;
     private boolean retry = false;
 
-    public BatchMutatorClient(String keyspace, String uri) {
-        this(keyspace, uri, (Json t) -> {}, false);
-    }
-
     public BatchMutatorClient(String keyspace, String uri, boolean debugOn) {
         this(keyspace, uri, (Json t) -> {}, debugOn);
     }
