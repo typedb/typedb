@@ -270,6 +270,14 @@ public class MatchQueryTest {
     }
 
     @Test
+    public void whenExecutingContainsPredicateWithVariable_ReturnExpectedResults() {
+        MatchQuery query = qb.match(x.val("Sarah Jessica Parker").val(contains(z)), y.has("name", z));
+        query.admin().resultsString(Printers.graql(false)).forEach(System.out::println);
+
+        assertThat(query, variable(y, containsInAnyOrder(sarah, sarahJessicaParker)));
+    }
+
+    @Test
     public void whenQueryingForResourcesWithEqualValues_ResultsAreCorrect() {
         MatchQuery query = qb.match(x.val(y));
 
