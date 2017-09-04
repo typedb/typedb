@@ -8,7 +8,7 @@ fi
 
 case "$1" in
   migrate)
-    "${GRAKN_HOME}/services/migrate.sh" "${@:2}"
+    "${GRAKN_HOME}/services/migration.sh" "${@:2}"
     ;;
 
   help)
