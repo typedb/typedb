@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
@@ -112,8 +112,8 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                shortcut(this, relationship().var(), edge1, start, null),
-                shortcut(this, relationship().var(), edge2, attribute().var(), null),
+                rolePlayer(this, relationship().var(), edge1, start, null),
+                rolePlayer(this, relationship().var(), edge2, attribute().var(), null),
                 neq(this, edge1, edge2)
         );
     }

@@ -58,18 +58,18 @@ public class Fragments {
     private Fragments() {
     }
 
-    public static Fragment inShortcut(VarProperty varProperty,
-                                      Var rolePlayer, Var edge, Var relation, @Nullable Var role,
-                                      @Nullable ImmutableSet<Label> roleLabels,
-                                      @Nullable ImmutableSet<Label> relationTypeLabels) {
+    public static Fragment inRolePlayer(VarProperty varProperty,
+                                        Var rolePlayer, Var edge, Var relation, @Nullable Var role,
+                                        @Nullable ImmutableSet<Label> roleLabels,
+                                        @Nullable ImmutableSet<Label> relationTypeLabels) {
         return new AutoValue_InShortcutFragment(
                 varProperty, rolePlayer, relation, edge, role, roleLabels, relationTypeLabels);
     }
 
-    public static Fragment outShortcut(VarProperty varProperty,
-                                       Var relation, Var edge, Var rolePlayer, @Nullable Var role,
-                                       @Nullable ImmutableSet<Label> roleLabels,
-                                       @Nullable ImmutableSet<Label> relationTypeLabels) {
+    public static Fragment outRolePlayer(VarProperty varProperty,
+                                         Var relation, Var edge, Var rolePlayer, @Nullable Var role,
+                                         @Nullable ImmutableSet<Label> roleLabels,
+                                         @Nullable ImmutableSet<Label> relationTypeLabels) {
         return new AutoValue_OutShortcutFragment(
                 varProperty, relation, rolePlayer, edge, role, roleLabels, relationTypeLabels);
     }

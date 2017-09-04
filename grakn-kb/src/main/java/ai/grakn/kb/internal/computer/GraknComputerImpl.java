@@ -76,11 +76,11 @@ public class GraknComputerImpl implements GraknComputer {
 
     @Override
     public ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
-                                  @Nullable Set<LabelId> types, Boolean includesShortcut) {
+                                  @Nullable Set<LabelId> types, Boolean includesRolePlayerEdges) {
         try {
             if (program != null) graphComputer = getGraphComputer().program(program);
             if (mapReduce != null) graphComputer = graphComputer.mapReduce(mapReduce);
-            applyFilters(types, includesShortcut);
+            applyFilters(types, includesRolePlayerEdges);
             return graphComputer.submit().get();
         } catch (InterruptedException | ExecutionException e) {
             throw asRuntimeException(e.getCause());

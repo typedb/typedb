@@ -155,17 +155,17 @@ public class GraqlTraversalTest {
     @Test
     public void testResourceWithTypeFasterFromType() {
         GraqlTraversal fromInstance =
-                traversal(outIsa(null, x, xx), id(null, xx, ConceptId.of("_")), inShortcut(x, z), outShortcut(z, y));
+                traversal(outIsa(null, x, xx), id(null, xx, ConceptId.of("_")), inRolePlayer(x, z), outRolePlayer(z, y));
         GraqlTraversal fromType =
-                traversal(id(null, xx, ConceptId.of("_")), inIsa(null, xx, x), inShortcut(x, z), outShortcut(z, y));
+                traversal(id(null, xx, ConceptId.of("_")), inIsa(null, xx, x), inRolePlayer(x, z), outRolePlayer(z, y));
         assertFaster(fromType, fromInstance);
     }
 
     @Ignore //TODO: No longer applicable. Think of a new test to replace this.
     @Test
     public void valueFilteringIsBetterThanANonFilteringOperation() {
-        GraqlTraversal valueFilterFirst = traversal(value(null, x, gt(1)), inShortcut(x, b), outShortcut(b, y), outIsa(null, y, z));
-        GraqlTraversal shortcutFirst = traversal(outIsa(null, y, z), inShortcut(y, b), outShortcut(b, x), value(null, x, gt(1)));
+        GraqlTraversal valueFilterFirst = traversal(value(null, x, gt(1)), inRolePlayer(x, b), outRolePlayer(b, y), outIsa(null, y, z));
+        GraqlTraversal shortcutFirst = traversal(outIsa(null, y, z), inRolePlayer(y, b), outRolePlayer(b, x), value(null, x, gt(1)));
 
         assertFaster(valueFilterFirst, shortcutFirst);
     }
@@ -228,7 +228,7 @@ public class GraqlTraversalTest {
 
     @Ignore // TODO: This is now super-slow
     @Test
-    public void makeSureTypeIsCheckedBeforeFollowingAShortcut() {
+    public void makeSureTypeIsCheckedBeforeFollowingARolePlayer() {
         assertNearlyOptimal(and(
                 x.id(ConceptId.of("xid")),
                 var().rel(x).rel(y),
@@ -279,7 +279,7 @@ public class GraqlTraversalTest {
     }
 
     @Test
-    public void testShortcutOptimisationWithRoles() {
+    public void testRolePlayerOptimisationWithRoles() {
         VarPattern rel = var("x").rel("y").rel("wife", "z");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
@@ -339,12 +339,12 @@ public class GraqlTraversalTest {
         return Optional.of(GraqlTraversal.create(fragments));
     }
 
-    private static Fragment outShortcut(Var relation, Var rolePlayer) {
-        return Fragments.outShortcut(null, relation, a, rolePlayer, null, null, null);
+    private static Fragment outRolePlayer(Var relation, Var rolePlayer) {
+        return Fragments.outRolePlayer(null, relation, a, rolePlayer, null, null, null);
     }
 
-    private static Fragment inShortcut(Var rolePlayer, Var relation) {
-        return Fragments.inShortcut(null, rolePlayer, c, relation, null, null, null);
+    private static Fragment inRolePlayer(Var rolePlayer, Var relation) {
+        return Fragments.inRolePlayer(null, rolePlayer, c, relation, null, null, null);
     }
 
     private static void assertNearlyOptimal(Pattern pattern) {
