@@ -11,7 +11,7 @@ case "$1" in
     "${GRAKN_HOME}/services/migration.sh" "${@:2}"
     ;;
 
-  help)
+  *|help)
     case "$2" in
       migrate)
         echo ""
