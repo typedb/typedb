@@ -104,7 +104,7 @@ node {
             'PATH+EXTRA=' + workspace + '/grakn-package/bin'
             ]) {
       timeout(15) {
-        stage('Build Grakn') {//Stages allow you to organise and group things within Jenkins
+        stage('Checkout Grakn') {//Stages allow you to organise and group things within Jenkins
           sh 'npm config set registry http://registry.npmjs.org/'
           checkout scm
             def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
@@ -114,16 +114,6 @@ authored by - """ + user
           sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
           sh "mvn versions:set -DnewVersion=${env.BRANCH_NAME} -DgenerateBackupPoms=false"
           sh 'mvn clean install -Dmaven.repo.local=' + workspace + '/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT'
-          archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
-        }
-        stage('Init Grakn') {
-          sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
-          sh 'mkdir grakn-package'
-          sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
-          sh 'grakn.sh start'
-        }
-        stage('Test Connection') {
-          sh 'graql.sh -e "match \\\$x;"' //Sanity check query. I.e. is everything working?
         }
       }
     }
