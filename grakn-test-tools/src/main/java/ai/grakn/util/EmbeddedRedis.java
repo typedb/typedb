@@ -54,7 +54,7 @@ public class EmbeddedRedis {
      *
      * @param port The port to start redis on
      */
-    public static void start(int port){
+    public static void start(int port, boolean force){
         try {
             LOG.info("Starting redis...");
             redisServer = RedisServer.builder()
@@ -62,7 +62,7 @@ public class EmbeddedRedis {
                     // We have short running tests and sometimes we kill the connections
                     .setting("timeout 360")
                     .build();
-            if (!redisServer.isActive()) {
+            if (force || !redisServer.isActive()) {
                 try {
                     redisServer.start();
                 } catch (EmbeddedRedisException e) {
@@ -79,6 +79,14 @@ public class EmbeddedRedis {
         }
     }
 
+    public static void start(int port){
+        start(port, false);
+    }
+
+    public static void forceStart(int port){
+        start(port, true);
+    }
+
     /**
      * Stops the embedded redis
      */
@@ -89,21 +97,6 @@ public class EmbeddedRedis {
             LOG.info("Redis stopped.");
         } catch (Exception e) {
             LOG.warn("Failure while stopping redis", e);
-        }
-    }
-
-    public static void forceStart(int redisPort) {
-        redisServer = RedisServer.builder()
-                .port(redisPort)
-                // We have short running tests and sometimes we kill the connections
-                .setting("timeout 360")
-                .build();
-        try {
-            redisServer.start();
-        } catch (EmbeddedRedisException e) {
-            LOG.warn("Unexpected Redis instance already running on port {}", redisPort, e);
-        } catch (Exception e) {
-            LOG.warn("Exception while trying to start Redis on port {}. Will attempt to continue.", redisPort, e);
         }
     }
 }
