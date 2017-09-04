@@ -75,7 +75,7 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
     /**
      * A query can use the role-type labels on a {@link Schema.EdgeLabel#ROLE_PLAYER} edge when the following criteria are met:
      * <ol>
-     *     <li>There is a {@link RolePlayerFragmentSet} {@code $r-[shortcut:$e role:$R ...]->$p}
+     *     <li>There is a {@link RolePlayerFragmentSet} {@code $r-[role-player:$e role:$R ...]->$p}
      *     <li>There is a {@link LabelFragmentSet} {@code $R[label:foo]}
      * </ol>
      *

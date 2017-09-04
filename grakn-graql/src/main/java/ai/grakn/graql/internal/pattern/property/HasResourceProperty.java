@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.reasoner.atom.binary.ResourceAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 
@@ -59,7 +60,7 @@ import static java.util.stream.Collectors.joining;
  * The property is defined as a {@link Relationship} between an {@link Thing} and a {@link Attribute}, where the
  * {@link Attribute} is of a particular type.
  *
- * When matching, shortcut edges are used to speed up the traversal. The type of the {@link Relationship} does not
+ * When matching, {@link Schema.EdgeLabel#ROLE_PLAYER} edges are used to speed up the traversal. The type of the {@link Relationship} does not
  * matter.
  *
  * When inserting, an implicit {@link Relationship} is created between the instance and the {@link Attribute}, using

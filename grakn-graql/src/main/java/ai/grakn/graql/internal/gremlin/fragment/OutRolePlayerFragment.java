@@ -43,12 +43,12 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
  * A fragment representing traversing a {@link ai.grakn.util.Schema.EdgeLabel#ROLE_PLAYER} edge from the relation to the
  * role-player.
  * <p>
- * Part of a {@link ai.grakn.graql.internal.gremlin.EquivalentFragmentSet}, along with {@link InShortcutFragment}.
+ * Part of a {@link ai.grakn.graql.internal.gremlin.EquivalentFragmentSet}, along with {@link InRolePlayerFragment}.
  *
  * @author Felix Chapman
  */
 @AutoValue
-abstract class OutShortcutFragment extends AbstractShortcutFragment {
+abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(

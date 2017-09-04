@@ -144,7 +144,7 @@ public class EquivalentFragmentSets {
         return new RegexFragmentSet(varProperty, resourceType, regex);
     }
 
-    // TODO: Move shortcut edge optimisation here
+    // TODO: Move role-player edge optimisation here
 
     /**
      * Modify the given collection of {@link EquivalentFragmentSet} to introduce certain optimisations, such as the

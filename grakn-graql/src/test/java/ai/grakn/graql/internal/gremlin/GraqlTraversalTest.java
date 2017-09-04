@@ -35,6 +35,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.util.CommonUtil;
+import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -96,7 +97,7 @@ public class GraqlTraversalTest {
     public static void setUp() {
         tx = mock(GraknTx.class);
 
-        // We have to mock out the `subTypes` call because the shortcut edge optimisation checks it
+        // We have to mock out the `subTypes` call because the role-player edge optimisation checks it
 
         Label wifeLabel = Label.of("wife");
         Role wife = mock(Role.class);
@@ -165,9 +166,9 @@ public class GraqlTraversalTest {
     @Test
     public void valueFilteringIsBetterThanANonFilteringOperation() {
         GraqlTraversal valueFilterFirst = traversal(value(null, x, gt(1)), inRolePlayer(x, b), outRolePlayer(b, y), outIsa(null, y, z));
-        GraqlTraversal shortcutFirst = traversal(outIsa(null, y, z), inRolePlayer(y, b), outRolePlayer(b, x), value(null, x, gt(1)));
+        GraqlTraversal rolePlayerFirst = traversal(outIsa(null, y, z), inRolePlayer(y, b), outRolePlayer(b, x), value(null, x, gt(1)));
 
-        assertFaster(valueFilterFirst, shortcutFirst);
+        assertFaster(valueFilterFirst, rolePlayerFirst);
     }
 
     @Test
@@ -238,7 +239,7 @@ public class GraqlTraversalTest {
     }
 
     @Test
-    public void whenPlanningSimpleUnaryRelation_ApplyShortcutOptimisation() {
+    public void whenPlanningSimpleUnaryRelation_ApplyRolePlayerOptimisation() {
         VarPattern rel = var("x").rel("y");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
@@ -246,35 +247,35 @@ public class GraqlTraversalTest {
         // I know this is horrible, unfortunately I can't think of a better way...
         // The issue is that some things we want to inspect are not public, mainly:
         // 1. The variable name assigned to the casting
-        // 2. The shortcut fragment classes
+        // 2. The role-player fragment classes
         // Both of these things should not be made public if possible, so I see this regex as the lesser evil
         assertThat(graqlTraversal, anyOf(
-                matches("\\{\\$x-\\[shortcut:\\$.*]->\\$y}"),
-                matches("\\{\\$y<-\\[shortcut:\\$.*]-\\$x}")
+                matches("\\{\\$x-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.*]->\\$y}"),
+                matches("\\{\\$y<-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.*]-\\$x}")
         ));
     }
 
     @Test
-    public void whenPlanningSimpleBinaryRelationQuery_ApplyShortcutOptimisation() {
+    public void whenPlanningSimpleBinaryRelationQuery_ApplyRolePlayerOptimisation() {
         VarPattern rel = var("x").rel("y").rel("z");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
-                matches("\\{\\$x-\\[shortcut:\\$.*]->\\$.* \\$x-\\[shortcut:\\$.*]->\\$.* \\$.*\\[neq:\\$.*]}"),
-                matches("\\{\\$.*<-\\[shortcut:\\$.*]-\\$x-\\[shortcut:\\$.*]->\\$.* \\$.*\\[neq:\\$.*]}")
+                matches("\\{\\$x-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.*]->\\$.* \\$x-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.*]->\\$.* \\$.*\\[neq:\\$.*]}"),
+                matches("\\{\\$.*<-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.*]-\\$x-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.*]->\\$.* \\$.*\\[neq:\\$.*]}")
         ));
     }
 
     @Test
-    public void whenPlanningBinaryRelationQueryWithType_ApplyShortcutOptimisation() {
+    public void whenPlanningBinaryRelationQueryWithType_ApplyRolePlayerOptimisation() {
         VarPattern rel = var("x").rel("y").rel("z").isa("marriage");
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
-                matches(".*\\$x-\\[shortcut:\\$.* rels:marriage]->\\$.* \\$x-\\[shortcut:\\$.* rels:marriage]->\\$.* \\$.*\\[neq:\\$.*].*"),
-                matches(".*\\$.*<-\\[shortcut:\\$.* rels:marriage]-\\$x-\\[shortcut:\\$.* rels:marriage]->\\$.* \\$.*\\[neq:\\$.*].*")
+                matches(".*\\$x-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.* rels:marriage]->\\$.* \\$x-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.* rels:marriage]->\\$.* \\$.*\\[neq:\\$.*].*"),
+                matches(".*\\$.*<-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.* rels:marriage]-\\$x-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.* rels:marriage]->\\$.* \\$.*\\[neq:\\$.*].*")
         ));
     }
 
@@ -285,8 +286,8 @@ public class GraqlTraversalTest {
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
-                matches(".*\\$x-\\[shortcut:\\$.* roles:wife]->\\$.* \\$x-\\[shortcut:\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*"),
-                matches(".*\\$.*<-\\[shortcut:\\$.* roles:wife]-\\$x-\\[shortcut:\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*")
+                matches(".*\\$x-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.* roles:wife]->\\$.* \\$x-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*"),
+                matches(".*\\$.*<-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.* roles:wife]-\\$x-\\[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":\\$.*]->\\$.* \\$.*\\[neq:\\$.*].*")
         ));
     }
 

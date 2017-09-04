@@ -126,7 +126,7 @@ public class RelationshipTest extends TxTestBase {
         relationship.addRolePlayer(role3, entity4r3);
         relationship.addRolePlayer(role3, entity6r1r2r3);
 
-        //Check the structure of the NEW shortcut edges
+        //Check the structure of the NEW role-player edges
         assertThat(followRolePlayerEdgesToNeighbours(tx, entity1r1),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
         assertThat(followRolePlayerEdgesToNeighbours(tx, entity2r1),

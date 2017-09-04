@@ -62,7 +62,7 @@ public class Fragments {
                                         Var rolePlayer, Var edge, Var relation, @Nullable Var role,
                                         @Nullable ImmutableSet<Label> roleLabels,
                                         @Nullable ImmutableSet<Label> relationTypeLabels) {
-        return new AutoValue_InShortcutFragment(
+        return new AutoValue_InRolePlayerFragment(
                 varProperty, rolePlayer, relation, edge, role, roleLabels, relationTypeLabels);
     }
 
@@ -70,7 +70,7 @@ public class Fragments {
                                          Var relation, Var edge, Var rolePlayer, @Nullable Var role,
                                          @Nullable ImmutableSet<Label> roleLabels,
                                          @Nullable ImmutableSet<Label> relationTypeLabels) {
-        return new AutoValue_OutShortcutFragment(
+        return new AutoValue_OutRolePlayerFragment(
                 varProperty, relation, rolePlayer, edge, role, roleLabels, relationTypeLabels);
     }
 

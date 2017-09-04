@@ -524,7 +524,7 @@ public class MatchQueryTest {
 
     @Test
     public void testRobertDeNiroNotRelatedToSelfWhenMetaRoleIsSpecified() {
-        // This can go wrong because one role-player may use a shortcut edge and the other may not
+        // This can go wrong because one role-player may use a role-player edge and the other may not
         MatchQuery query = qb.match(
                 var().rel("role", x).rel("actor", y).isa("has-cast"),
                 y.has("name", "Robert de Niro")
@@ -563,7 +563,7 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryingForSuperRolesAndRelationsWithOneRolePlayer_TheResultsAreTheSame() {
-        // This is a special case which can cause comparisons between shortcut edges and castings
+        // This is a special case which can cause comparisons between role-player edges and castings
         assertEquals(
                 Sets.newHashSet(qb.match(x.rel(y).rel("author", "z").isa("authored-by"))),
                 Sets.newHashSet(qb.match(x.rel(y).rel("director", "z").isa("directed-by")))
