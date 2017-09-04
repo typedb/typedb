@@ -69,10 +69,8 @@ public abstract class Fragment {
     // TODO: Find a better way to represent these values (either abstractly, or better estimates)
 
     private static final long NUM_INSTANCES_PER_TYPE = 100;
-    private static final long NUM_INSTANCES_PER_SCOPE = 100;
     private static final long NUM_SUBTYPES_PER_TYPE = 3;
     private static final long NUM_RELATIONS_PER_INSTANCE = 30;
-    private static final long NUM_SCOPES_PER_INSTANCE = 3;
     private static final long NUM_TYPES_PER_ROLE = 3;
     private static final long NUM_ROLES_PER_TYPE = 3;
     private static final long NUM_ROLE_PLAYERS_PER_RELATION = 2;
@@ -80,10 +78,8 @@ public abstract class Fragment {
     private static final long NUM_RESOURCES_PER_VALUE = 2;
 
     static final double COST_INSTANCES_PER_TYPE = Math.log1p(NUM_INSTANCES_PER_TYPE);
-    static final double COST_INSTANCES_PER_SCOPE = Math.log1p(NUM_INSTANCES_PER_SCOPE);
     static final double COST_SUBTYPES_PER_TYPE = Math.log1p(NUM_SUBTYPES_PER_TYPE);
     static final double COST_RELATIONS_PER_INSTANCE = Math.log1p(NUM_RELATIONS_PER_INSTANCE);
-    static final double COST_SCOPES_PER_INSTANCE = Math.log1p(NUM_SCOPES_PER_INSTANCE);
     static final double COST_TYPES_PER_ROLE = Math.log1p(NUM_TYPES_PER_ROLE);
     static final double COST_ROLES_PER_TYPE = Math.log1p(NUM_ROLES_PER_TYPE);
     static final double COST_ROLE_PLAYERS_PER_RELATION = Math.log1p(NUM_ROLE_PLAYERS_PER_RELATION);

@@ -243,8 +243,10 @@ public class GreedyTraversalPlan {
 
         Set<Node> reachableNodes = Sets.newHashSet(root);
         while (!reachableNodes.isEmpty()) {
-            Node nodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
-                    getEdgeFragmentCost(node, arborescence, edgeFragmentChildToParent))).get();
+            Node nodeWithMinCost = reachableNodes.stream().min(Comparator
+                    .comparingDouble(node -> getEdgeFragmentCost((Node) node, arborescence, edgeFragmentChildToParent))
+                    .thenComparingInt(node -> ((Node) node).getFragmentsWithoutDependency().size() +
+                            ((Node) node).getFragmentsWithDependencyVisited().size())).get();
 
             // add edge fragment first, then node fragments
             getEdgeFragment(nodeWithMinCost, arborescence, edgeFragmentChildToParent).ifPresent(plan::add);
