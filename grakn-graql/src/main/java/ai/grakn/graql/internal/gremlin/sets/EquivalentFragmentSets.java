@@ -29,7 +29,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.util.CommonUtil;
-import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableList;
 
 import javax.annotation.Nullable;
@@ -61,7 +60,7 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a {@link Schema.EdgeLabel#ROLE_PLAYER} edge between two role-players.
+     * An {@link EquivalentFragmentSet} that indicates a {@link ai.grakn.util.Schema.EdgeLabel#ROLE_PLAYER} edge between two role-players.
      */
     public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, @Nullable Var role) {
         return new RolePlayerFragmentSet(varProperty, relation, edge, rolePlayer, role, null, null);
