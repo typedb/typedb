@@ -26,11 +26,9 @@ relation2 sub relationship
 
 name sub attribute datatype string;
 
-insert
-
 #Rules
 
-isa inference-rule
+rule-1 sub rule
 	when {
 	    $x isa subEntity1;
 	    $y isa entity1;
@@ -40,6 +38,7 @@ isa inference-rule
 		(role1:$x, role2:$y) isa relation1;
 	};
 
+insert
 
 #Data
 

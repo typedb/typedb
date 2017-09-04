@@ -38,7 +38,6 @@ import java.util.stream.Stream;
  * @see Role
  * @see RelationshipType
  * @see AttributeType
- * @see RuleType
  *
  * @author fppt
  *

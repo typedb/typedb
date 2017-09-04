@@ -46,13 +46,13 @@ public class JsonMigrator implements AutoCloseable {
     private final Set<Reader> readers;
 
     public static void main(String[] args) {
-        try {
+        try{
             MigrationCLI.init(args, JsonMigrationOptions::new).stream()
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .forEach(JsonMigrator::runJson);
-        } catch (Throwable throwable){
-            System.err.println(throwable.getMessage());
+        } catch (IllegalArgumentException e){
+            System.err.println(e.getMessage());
         }
     }
 

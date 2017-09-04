@@ -24,15 +24,15 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.exception.GraknTxOperationException;
+import ai.grakn.graql.Pattern;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.structure.AbstractElement;
 import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
-import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -45,7 +45,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
-import static ai.grakn.util.Schema.BaseType.RULE_TYPE;
 
 /**
  * <p>
@@ -136,13 +135,8 @@ public final class ElementFactory {
         return getOrBuildConcept(vertex, (v) -> new EntityImpl(v, type));
     }
 
-    // ----------------------------------------- Building Rule Types  --------------------------------------------------
-    public RuleTypeImpl buildRuleType(VertexElement vertex, RuleType type){
-        return getOrBuildConcept(vertex, (v) -> new RuleTypeImpl(v, type));
-    }
-
-    // -------------------------------------------- Building Rules
-    RuleImpl buildRule(VertexElement vertex, RuleType type, Pattern when, Pattern then){
+    // ----------------------------------------- Building Rules --------------------------------------------------
+    public RuleImpl buildRule(VertexElement vertex, Rule type, Pattern when, Pattern then){
         return getOrBuildConcept(vertex, (v) -> new RuleImpl(v, type, when, then));
     }
 
@@ -204,9 +198,6 @@ public final class ElementFactory {
                     break;
                 case RULE:
                     concept = new RuleImpl(vertexElement);
-                    break;
-                case RULE_TYPE:
-                    concept = new RuleTypeImpl(vertexElement);
                     break;
                 default:
                     throw GraknTxOperationException.unknownConcept(type.name());
@@ -275,7 +266,6 @@ public final class ElementFactory {
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
                 if(label.equals(RELATIONSHIP_TYPE.name())) return Schema.BaseType.RELATIONSHIP;
                 if(label.equals(Schema.BaseType.ATTRIBUTE_TYPE.name())) return Schema.BaseType.ATTRIBUTE;
-                if(label.equals(RULE_TYPE.name())) return Schema.BaseType.RULE;
             }
         }
         throw new IllegalStateException("Could not determine the base type of vertex [" + vertex + "]");

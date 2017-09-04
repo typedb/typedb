@@ -19,8 +19,8 @@
 package ai.grakn.test.migration.csv;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
@@ -35,6 +35,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.util.stream.Stream;

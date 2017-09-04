@@ -19,11 +19,10 @@
 package ai.grakn.kb.internal.concept;
 
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.graql.Pattern;
+import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -31,54 +30,50 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- *     A rule which defines how implicit knowledge can extracted.
+ *     An ontological element used to model and categorise different types of {@link Rule}.
  * </p>
  *
  * <p>
- *     It can behave like any other {@link Thing} but primarily serves as a way of extracting
- *     implicit data from the graph. By defining the LHS (if statment) and RHS (then conclusion) it is possible to
- *     automatically materialise new concepts based on these rules.
+ *     An ontological element used to define different types of {@link Rule}.
  * </p>
  *
  * @author fppt
- *
  */
-public class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
+public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
     RuleImpl(VertexElement vertexElement) {
         super(vertexElement);
     }
 
-    RuleImpl(VertexElement vertexElement, RuleType type, Pattern when, Pattern then) {
+    RuleImpl(VertexElement vertexElement, Rule type, Pattern when, Pattern then) {
         super(vertexElement, type);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, getWhen(), Pattern::toString);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, getThen(), Pattern::toString);
-        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(type(), when, then));
+        vertex().propertyUnique(Schema.VertexProperty.INDEX, generateRuleIndex(sup(), when, then));
     }
 
-    /**
-     *
-     * @return A string representing the left hand side GraQL query.
-     */
+    @Override
+    void trackRolePlayers() {
+        //TODO: CLean this up
+    }
+
     @Override
     public Pattern getWhen() {
         return parsePattern(vertex().property(Schema.VertexProperty.RULE_WHEN));
     }
 
-    /**
-     *
-     * @return A string representing the right hand side GraQL query.
-     */
     @Override
     public Pattern getThen() {
         return parsePattern(vertex().property(Schema.VertexProperty.RULE_THEN));
     }
 
-    private Pattern parsePattern(String value){
-        if(value == null) {
-            return null;
-        } else {
-            return vertex().tx().graql().parsePattern(value);
-        }
+    @Override
+    public Stream<Type> getHypothesisTypes() {
+        return neighbours(Direction.OUT, Schema.EdgeLabel.HYPOTHESIS);
+    }
+
+    @Override
+    public Stream<Type> getConclusionTypes() {
+        return neighbours(Direction.OUT, Schema.EdgeLabel.CONCLUSION);
     }
 
     /**
@@ -97,32 +92,23 @@ public class RuleImpl extends ThingImpl<Rule, RuleType> implements Rule {
         putEdge(ConceptVertex.from(type), Schema.EdgeLabel.CONCLUSION);
     }
 
-    /**
-     *
-     * @return A collection of Concept Types that constitute a part of the hypothesis of the rule
-     */
-    @Override
-    public Stream<Type> getHypothesisTypes() {
-        return neighbours(Direction.OUT, Schema.EdgeLabel.HYPOTHESIS);
-    }
-
-    /**
-     *
-     * @return A collection of Concept Types that constitute a part of the conclusion of the rule
-     */
-    @Override
-    public Stream<Type> getConclusionTypes() {
-        return neighbours(Direction.OUT, Schema.EdgeLabel.CONCLUSION);
+    private Pattern parsePattern(String value){
+        if(value == null) {
+            return null;
+        } else {
+            return vertex().tx().graql().parsePattern(value);
+        }
     }
 
     /**
      * Generate the internal hash in order to perform a faster lookups and ensure rules are unique
      */
-    static String generateRuleIndex(RuleType type, Pattern when, Pattern then){
+    static String generateRuleIndex(Rule type, Pattern when, Pattern then){
         return "RuleType_" + type.getLabel().getValue() + "_LHS:" + when.hashCode() + "_RHS:" + then.hashCode();
     }
 
-    public static RuleImpl from(Rule rule){
-        return (RuleImpl) rule;
+    public static <X extends Type, Y extends Thing> RuleImpl from(Rule type){
+        //noinspection unchecked
+        return (RuleImpl) type;
     }
 }

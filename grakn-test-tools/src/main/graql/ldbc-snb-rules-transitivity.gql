@@ -1,13 +1,13 @@
 insert
 
-"R1" isa inference-rule,
+"R1" sub rule,
 when {
 ($x, $y) isa resides;
 (member-location $y, container-location $z) isa sublocate},
 then {($x, $z) isa resides};
 
 # transitivity of sublocate
-"R2" isa inference-rule,
+"R2" sub rule,
 when {
 (member-location $x, container-location $y) isa sublocate;
 (member-location $y, container-location $z) isa sublocate},

@@ -22,9 +22,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.Thing;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Thing;
 import ai.grakn.graql.Pattern;
 
 import java.util.function.Consumer;
@@ -200,11 +199,10 @@ public class GeoKB extends TestKB {
 
     @Override
     public void buildRules(GraknTx tx) {
-        RuleType inferenceRule = tx.admin().getMetaRuleInference();
         Pattern transitivity_LHS = tx.graql().parsePattern(
                 "{(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;}");
         Pattern transitivity_RHS = tx.graql().parsePattern("{(geo-entity: $x, entity-location: $z) isa is-located-in;}");
-        inferenceRule.putRule(transitivity_LHS, transitivity_RHS);
+        tx.putRule("Geo Rule", transitivity_LHS, transitivity_RHS);
     }
 }

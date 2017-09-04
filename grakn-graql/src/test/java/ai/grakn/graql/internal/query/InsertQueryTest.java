@@ -27,7 +27,6 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
@@ -50,7 +49,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
@@ -95,7 +93,7 @@ public class InsertQueryTest {
 
     private static final Label title = Label.of("title");
 
-    @Rule
+    @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
@@ -289,21 +287,6 @@ public class InsertQueryTest {
                 var("x").id(ConceptId.of("Godfather")).isa("movie"),
                 var("y").id(ConceptId.of("comedy")).isa("genre")
         ).execute();
-    }
-
-    @Test
-    public void testInsertRule() {
-        String ruleTypeId = "a-rule-type";
-        Pattern when = qb.parsePattern("$x isa entity");
-        Pattern then = qb.parsePattern("$x isa entity");
-        VarPattern vars = var("x").isa(ruleTypeId).when(when).then(then);
-        qb.insert(vars).execute();
-
-        RuleType ruleType = movieKB.tx().getRuleType(ruleTypeId);
-        boolean found = ruleType.instances().
-                anyMatch(rule -> when.equals(rule.getWhen()) && then.equals(rule.getThen()));
-
-        assertTrue("Unable to find rule with when [" + when + "] and then [" + then + "]", found);
     }
 
     @Test
@@ -513,34 +496,6 @@ public class InsertQueryTest {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(allOf(containsString("isa")));
         qb.insert(var().has("name", "Bob")).execute();
-    }
-
-    @Test
-    public void testInsertRuleWithoutLhs() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("when")));
-        qb.insert(var().isa("inference-rule").then(var("x").isa("movie"))).execute();
-    }
-
-    @Test
-    public void testInsertRuleWithoutRhs() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("then")));
-        qb.insert(var().isa("inference-rule").when(var("x").isa("movie"))).execute();
-    }
-
-    @Test
-    public void whenInsertingANonRuleWithAWhenPattern_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("unexpected property"), containsString("when")));
-        qb.insert(var().isa("movie").when(var("x"))).execute();
-    }
-
-    @Test
-    public void whenInsertingANonRuleWithAThenPattern_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(allOf(containsString("unexpected property"), containsString("then")));
-        qb.insert(var().isa("movie").then(var("x"))).execute();
     }
 
     @Test

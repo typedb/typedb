@@ -18,22 +18,22 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.reasoner.UnifierImpl;
-import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import com.google.common.collect.Sets;
 
 import java.util.Collections;
@@ -190,7 +190,7 @@ public abstract class Atom extends AtomicBase {
      * @return set of predicates relevant to this atom
      */
     public Stream<Predicate> getPredicates() {
-        return getParentQuery().getAtoms(Predicate.class).filter(atom -> this.containsVar(atom.getVarName()));
+        return getPredicates(Predicate.class);
     }
 
     /**
@@ -199,7 +199,7 @@ public abstract class Atom extends AtomicBase {
      * @return stream of predicates relevant to this atom
      */
     public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
-        return getParentQuery().getAtoms(type).filter(atom -> this.containsVar(atom.getVarName()));
+        return getParentQuery().getAtoms(type).filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
     }
 
     /**

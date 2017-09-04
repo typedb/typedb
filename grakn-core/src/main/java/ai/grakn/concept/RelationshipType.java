@@ -160,8 +160,8 @@ public interface RelationshipType extends Type {
     /**
      * Removes the ability of this {@link RelationshipType} to play a specific {@link Role}
      *
-     * @param role The {@link Role} which the {@link Thing}s of this {@link RuleType} should no longer be allowed to play.
-     * @return The {@link RuleType} itself.
+     * @param role The {@link Role} which the {@link Thing}s of this {@link Rule} should no longer be allowed to play.
+     * @return The {@link Rule} itself.
      */
     @Override
     RelationshipType deletePlays(Role role);

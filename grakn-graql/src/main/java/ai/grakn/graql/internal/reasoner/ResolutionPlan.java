@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.VarProperty;
@@ -26,13 +27,17 @@ import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomicBase;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +49,8 @@ import java.util.stream.Stream;
 /**
  *
  * <p>
- * Class defining the resolution plan in terms of different weights applicable to certain {@link Atom} configurations.
+ * Class defining the resolution plan for a given {@link ReasonerQueryImpl}.
+ * The plan is constructed either using the {@link GraqlTraversal} or in terms of different weights applicable to certain {@link Atom} configurations.
  * </p>
  *
  * @author Kasper Piskorski
@@ -132,65 +138,123 @@ public final class ResolutionPlan {
      */
     public static final int COMPARISON_VARIABLE_VALUE_PREDICATE = - 1000;
 
+    final private ImmutableList<Atom> plan;
+    final private GraknTx tx;
+
+    public ResolutionPlan(ReasonerQueryImpl query){
+        this.tx =  query.tx();
+        this.plan = planFromTraversal(query);
+        if (!isValid()) {
+            throw GraqlQueryException.nonGroundNeqPredicate(query);
+        }
+    }
+
+    @Override
+    public String toString(){
+        return plan.stream().map(AtomicBase::toString).collect(Collectors.joining("\n"));
+    }
 
     /**
-     * compute the resolution plan - list of atomic queries ordered by their cost as computed by the graql traversal planner
-     * @return list of prioritised queries
+     * @param query for which the plan should be constructed
+     * @return list of atoms in order they should be resolved using {@link GraqlTraversal}.
      */
-    public static LinkedList<ReasonerQueryImpl> getResolutionPlanFromTraversal(ReasonerQueryImpl query){
-        LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
-        GraknTx graph = query.tx();
-
+    private ImmutableList<Atom> planFromTraversal(ReasonerQueryImpl query){
         Map<VarProperty, Atom> propertyMap = new HashMap<>();
         query.getAtoms(Atom.class)
                 .filter(Atomic::isSelectable)
                 .forEach(at -> at.getVarProperties().forEach(p -> propertyMap.put(p, at)));
         Set<VarProperty> properties = propertyMap.keySet();
 
-        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(query.getPattern(), graph);
+        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(query.getPattern(), tx);
         ImmutableList<Fragment> fragments = graqlTraversal.fragments().iterator().next();
 
-        LinkedList<Atom> atoms = fragments.stream()
-                .map(Fragment::varProperty)
-                .filter(Objects::nonNull)
-                .filter(properties::contains)
-                .distinct()
-                .map(propertyMap::get)
-                .distinct()
-                .collect(Collectors.toCollection(LinkedList::new));
+        return ImmutableList.<Atom>builder().addAll(
+                fragments.stream()
+                        .map(Fragment::varProperty)
+                        .filter(Objects::nonNull)
+                        .filter(properties::contains)
+                        .distinct()
+                        .map(propertyMap::get)
+                        .distinct()
+                        .iterator())
+                .build();
+    }
+
+    /**
+     * @param query for which the plan should be constructed
+     * @return list of atoms in order they should be resolved using {@link GraqlTraversal}.
+     */
+    @SuppressFBWarnings("UPM_UNCALLED_PRIVATE_METHOD")
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
+    private ImmutableList<Atom> plan(ReasonerQueryImpl query){
+        return ImmutableList.<Atom>builder().addAll(
+                query.selectAtoms().stream()
+                        .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
+                        .iterator())
+                .build();
+    }
+
+    /**
+     * @return true if the plan doesn't lead to any non-ground neq predicate
+     */
+    private boolean isValid() {
+        //check for neq groundness
+        Set<NeqPredicate> nonGroundPredicates = new HashSet<>();
+        Set<Var> mappedVars = new HashSet<>();
+        for(Atom atom : plan){
+            mappedVars.addAll(atom.getVarNames());
+            atom.getPredicates(NeqPredicate.class)
+                    .forEach(neq -> {
+                        //look for non-local non-ground predicates
+                        if (!mappedVars.containsAll(neq.getVarNames())
+                                && !atom.getVarNames().containsAll(neq.getVarNames())){
+                            nonGroundPredicates.add(neq);
+                        } else{
+                            //if this is ground for this atom but non-ground for another it is ground
+                            if (nonGroundPredicates.contains(neq)) nonGroundPredicates.remove(neq);
+                        }
+                    });
+        }
+        return nonGroundPredicates.isEmpty();
+    }
+
+    /**
+     * compute the query resolution plan - list of queries ordered by their cost as computed by the graql traversal planner
+     * @return list of prioritised queries
+     */
+    public LinkedList<ReasonerQueryImpl> queryPlan(){
+        LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
+        LinkedList<Atom> atoms = new LinkedList<>(plan);
 
         List<Atom> nonResolvableAtoms = new ArrayList<>();
         while (!atoms.isEmpty()) {
             Atom top = atoms.remove();
             if (top.isRuleResolvable()) {
                 if (!nonResolvableAtoms.isEmpty()) {
-                    queries.add(ReasonerQueries.create(nonResolvableAtoms, graph));
+                    queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
                     nonResolvableAtoms.clear();
                 }
                 queries.add(ReasonerQueries.atomic(top));
             } else {
                 nonResolvableAtoms.add(top);
-                if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, graph));
+                if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
             }
         }
         return queries;
     }
 
     /**
-     * compute the resolution plan - list of atomic queries ordered by their resolution priority
+     * compute the local query resolution plan - list of queries ordered by their resolution priority
      * @return list of prioritised queries
      */
-    public static LinkedList<ReasonerQueryImpl> getResolutionPlan(ReasonerQueryImpl query){
+    public LinkedList<ReasonerQueryImpl> localQueryPlan(){
         LinkedList<ReasonerQueryImpl> queries = new LinkedList<>();
-        GraknTx graph = query.tx();
-
-        LinkedList<Atom> atoms = query.selectAtoms().stream()
-                .sorted(Comparator.comparing(at -> -at.baseResolutionPriority()))
-                .collect(Collectors.toCollection(LinkedList::new));
+        LinkedList<Atom> atoms = new LinkedList<>(plan);
 
         Atom top = atoms.getFirst();
         List<Atom> nonResolvableAtoms = new ArrayList<>();
-        Set<Var> subbedVars = query.getAtoms(IdPredicate.class).map(IdPredicate::getVarName).collect(Collectors.toSet());
+        Set<Var> subbedVars = top.getParentQuery().getAtoms(IdPredicate.class).map(IdPredicate::getVarName).collect(Collectors.toSet());
+
         while (!atoms.isEmpty()) {
 
             subbedVars.addAll(top.getVarNames());
@@ -198,13 +262,13 @@ public final class ResolutionPlan {
 
             if (top.isRuleResolvable()) {
                 if (!nonResolvableAtoms.isEmpty()){
-                    queries.add(ReasonerQueries.create(nonResolvableAtoms, graph));
+                    queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
                     nonResolvableAtoms.clear();
                 }
                 queries.add(ReasonerQueries.atomic(top));
             } else {
                 nonResolvableAtoms.add(top);
-                if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, graph));
+                if (atoms.isEmpty()) queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
             }
 
             //look at neighbours up to two hops away

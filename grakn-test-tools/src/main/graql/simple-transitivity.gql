@@ -16,13 +16,11 @@ define
 
 "index" sub attribute, datatype string;
 
-insert
-
 ####################################################
 ##################RULES#############################
 ####################################################
 
-isa inference-rule,
+rule-1 sub rule,
 when {
 (Q-from: $x, Q-to: $z) isa Q;
 (Q-from: $z, Q-to: $y) isa Q;},
