@@ -178,8 +178,8 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
     }
 
     /**
-     * Apply an optimisation where we check the role-type property instead of navigating to the role-type directly.
-     * @param role the role-type that this shortcut fragment must link to
+     * Apply an optimisation where we check the {@link Role} property instead of navigating to the {@link Role} directly.
+     * @param role the {@link Role} that this role-player fragment must link to
      * @return a new {@link RolePlayerFragmentSet} with the same properties excepting role-types
      */
     private RolePlayerFragmentSet substituteRoleTypeLabel(Role role) {
@@ -194,8 +194,8 @@ class RolePlayerFragmentSet extends EquivalentFragmentSet {
     }
 
     /**
-     * Apply an optimisation where we check the relation-type property.
-     * @param relationshipType the relation-type that this shortcut fragment must link to
+     * Apply an optimisation where we check the {@link RelationshipType} property.
+     * @param relationshipType the {@link RelationshipType} that this role-player fragment must link to
      * @return a new {@link RolePlayerFragmentSet} with the same properties excepting relation-type labels
      */
     private RolePlayerFragmentSet addRelationTypeLabel(RelationshipType relationshipType) {
