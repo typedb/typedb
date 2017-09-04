@@ -41,15 +41,6 @@
                 <include>**</include>
             </includes>
         </fileSet>
-        <!-- cassandra configs
-        <fileSet>
-            <outputDirectory>conf</outputDirectory>
-            <directory>${basedir}/src/conf/main</directory>
-            <includes>
-                <include>**</include>
-            </includes>
-        </fileSet>
-        -->
         <!-- grakn.properties -->
         <fileSet>
             <outputDirectory>conf</outputDirectory>
