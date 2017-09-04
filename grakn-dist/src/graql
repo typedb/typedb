@@ -20,10 +20,10 @@ case "$1" in
       *)
         echo "
 Usage:
-  graql            Starts a REPL console for running Graql queries. Defaults to connecting to localhost
-  graql [command]  Initiates other functionalities depending on the command
+  graql          Starts a REPL console for running Graql queries. Defaults to connecting to localhost
+  graql COMMAND  Initiates other functionalities depending on the command
 
-Available commands:
+COMMAND:
   migrate  Runs migration from a file
   help     Prints this message"
         ;;

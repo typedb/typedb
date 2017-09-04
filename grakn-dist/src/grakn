@@ -24,9 +24,9 @@ Usage:
       *)
         echo "
 Usage:
-    grakn <command>
+    grakn COMMAND
 
-Available commands:
+COMMAND:
   server  start a new grakn server
   help    print this message
 
