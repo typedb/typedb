@@ -96,8 +96,8 @@ public class MatchBase extends AbstractMatch {
         }
 
         return traversal.toStream()
-                .distinct()
                 .map(elements -> makeResults(graph, elements))
+                .distinct()
                 .sequential()
                 .map(QueryAnswer::new);
     }
