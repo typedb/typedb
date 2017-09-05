@@ -66,7 +66,7 @@ start)
         echo ""
         "${GRAKN_HOME}"/services/cassandra/cassandra -p $CASSANDRA_PS
 
-        if ! wait_for_cassandra ; then exit 1 ; fi
+        if ! wait_for_cassandra ; then exit 1 ; fi # TODO: also check the return value of cassandra execution
     fi
     ;;
 

@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # <http://www.gnu.org/licenses/gpl.txt>.
 
+REDIS_STARTUP_TIMEOUT_S=10
+SLEEP_INTERVAL_S=2
 REDIS_PS=/tmp/grakn-redis.pid
 
 if [ -z "${GRAKN_HOME}" ]; then
@@ -28,6 +30,25 @@ fi
 redisRunning()
 {
     echo $(ps -ef | grep "redis-server" | grep -v grep | awk '{ print $2}')
+}
+
+waitForRedis() {
+    local now_s=`date '+%s'`
+    local stop_s=$(( $now_s + $REDIS_STARTUP_TIMEOUT_S ))
+
+    while [ $now_s -le $stop_s ]; do
+        echo -n .
+        # The \r\n deletion bit is necessary for Cygwin compatibility
+        if [ $(redisRunning) ]; then
+            echo
+            return 0
+        fi
+        sleep $SLEEP_INTERVAL_S
+        now_s=`date '+%s'`
+    done
+
+    echo " timeout exceeded ($REDIS_STARTUP_TIMEOUT_S seconds)" >&2
+    return 1
 }
 
 executeRedisServer(){
@@ -47,13 +68,13 @@ executeRedisCli(){
 }
 
 case "$1" in
-
 start)
     if [ $(redisRunning) ] ; then
         echo "Redis is already running"
     else
         echo "Starting Redis"
-        executeRedisServer "${GRAKN_HOME}/services/redis/redis.conf"
+        if ! executeRedisServer "${GRAKN_HOME}/services/redis/redis.conf" ; then exit 1 ; fi
+        if ! waitForRedis ; then exit 1 ; fi
     fi
     ;;
 stop)
