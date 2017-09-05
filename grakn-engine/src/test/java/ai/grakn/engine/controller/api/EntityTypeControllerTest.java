@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.graph;
+package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -31,8 +31,6 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.Map;
 
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static com.jayway.restassured.RestAssured.with;
@@ -53,41 +51,39 @@ import static org.mockito.Mockito.when;
  */
 
 public class EntityTypeControllerTest {
-    private static GraknTx mockGraph;
+    private static GraknTx mockTx;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        MetricRegistry metricRegistry = new MetricRegistry();
-
         new EntityTypeController(mockFactory, spark);
     });
 
     @Before
     public void setupMock(){
-        mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
 
-        when(mockGraph.putEntityType(anyString())).thenAnswer(invocation ->
-            graphContext.tx().putEntityType((String) invocation.getArgument(0)));
-        when(mockGraph.getEntityType(anyString())).thenAnswer(invocation ->
-            graphContext.tx().getEntityType(invocation.getArgument(0)));
-        when(mockGraph.getAttributeType(anyString())).thenAnswer(invocation ->
-            graphContext.tx().getAttributeType(invocation.getArgument(0)));
+        when(mockTx.putEntityType(anyString())).thenAnswer(invocation ->
+            sampleKB.tx().putEntityType((String) invocation.getArgument(0)));
+        when(mockTx.getEntityType(anyString())).thenAnswer(invocation ->
+            sampleKB.tx().getEntityType(invocation.getArgument(0)));
+        when(mockTx.getAttributeType(anyString())).thenAnswer(invocation ->
+            sampleKB.tx().getAttributeType(invocation.getArgument(0)));
 
-        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
-        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
+        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
     public void getEntityTypeFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .get("/graph/entityType/production");
+            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .get("/api/entityType/production");
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -101,9 +97,9 @@ public class EntityTypeControllerTest {
         Json body = Json.object("entityType", Json.object("label", "newEntityType"));
 
         Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace())
             .body(body.toString())
-            .post("/graph/entityType");
+            .post("/api/entityType");
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -125,8 +121,8 @@ public class EntityTypeControllerTest {
             );
 
         Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .put("/graph/entityType/production/attribute/runtime");
+            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .put("/api/entityType/production/attribute/runtime");
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }

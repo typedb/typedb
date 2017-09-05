@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package ai.grakn.engine.controller.graph;
+package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -50,8 +50,8 @@ public class RuleTypeController {
 
     public RuleTypeController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
-        spark.get("/graph/ruleType/:ruleTypeLabel", this::getRuleType);
-        spark.post("/graph/ruleType", this::postRuleType);
+        spark.get("/api/ruleType/:ruleTypeLabel", this::getRuleType);
+        spark.post("/api/ruleType", this::postRuleType);
     }
 
     private Json getRuleType(Request request, Response response) {
@@ -59,8 +59,8 @@ public class RuleTypeController {
         String ruleTypeLabel = mandatoryPathParameter(request, "ruleTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getRuleType - attempting to find rule " + ruleTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.READ)) {
-            Optional<RuleType> ruleType = Optional.ofNullable(graph.getRuleType(ruleTypeLabel));
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
+            Optional<RuleType> ruleType = Optional.ofNullable(tx.getRuleType(ruleTypeLabel));
             if (ruleType.isPresent()) {
                 String jsonConceptId = ruleType.get().getId().getValue();
                 String jsonRuleTypeLabel = ruleType.get().getLabel().getValue();
@@ -82,9 +82,9 @@ public class RuleTypeController {
         String ruleTypeLabel = requestBody.at("ruleType").at("label").asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postRuleType - attempting to add a new ruleType " + ruleTypeLabel + " on keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
-            RuleType ruleType = graph.putRuleType(ruleTypeLabel);
-            graph.commit();
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+            RuleType ruleType = tx.putRuleType(ruleTypeLabel);
+            tx.commit();
             String jsonConceptId = ruleType.getId().getValue();
             String jsonRuleTypeLabel = ruleType.getLabel().getValue();
             LOG.info("postRuleType - ruleType " + jsonRuleTypeLabel + " with id " + jsonConceptId + " added. request processed.");

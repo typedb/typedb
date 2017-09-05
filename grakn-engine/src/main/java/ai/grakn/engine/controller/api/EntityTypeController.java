@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.graph;
+package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -54,16 +54,16 @@ public class EntityTypeController {
     public EntityTypeController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.get("/graph/entityType/:entityTypeLabel", this::getEntityType);
-        spark.post("/graph/entityType", this::postEntityType);
+        spark.get("/api/entityType/:entityTypeLabel", this::getEntityType);
+        spark.post("/api/entityType", this::postEntityType);
         // TODO: implement it after operation has been supported in the Graph API
-//        spark.delete("/graph/entityType/:entityTypeLabel", this::deleteEntityType);
-        spark.put("/graph/entityType/:entityTypeLabel/attribute/:attributeTypeLabel", this::assignAttributeTypeToEntityType);
+//        spark.delete("/api/entityType/:entityTypeLabel", this::deleteEntityType);
+        spark.put("/api/entityType/:entityTypeLabel/attribute/:attributeTypeLabel", this::assignAttributeTypeToEntityType);
         // TODO: implement it after operation has been supported in the Graph API
-//        spark.delete("/graph/entityType/:entityTypeId/attribute/:attributeTypeId", this::deleteAttributeTypeToEntitiyTypeAssignment);
-        spark.put("/graph/entityType/:entityTypeId/plays/:roleTypeId", this::assignRoleToEntityType);
+//        spark.delete("/api/entityType/:entityTypeId/attribute/:attributeTypeId", this::deleteAttributeTypeToEntitiyTypeAssignment);
+        spark.put("/api/entityType/:entityTypeId/plays/:roleTypeId", this::assignRoleToEntityType);
         // TODO: implement it after operation has been supported in the Graph API
-//        spark.delete("/graph/entityType/:entityTypeId/plays/:roleTypeId", this::deleteRoleToEntitiyTypeAssignment);
+//        spark.delete("/api/entityType/:entityTypeId/plays/:roleTypeId", this::deleteRoleToEntitiyTypeAssignment);
     }
 
     private Json getEntityType(Request request, Response response) {
@@ -71,8 +71,8 @@ public class EntityTypeController {
         String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getEntityType - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.READ)) {
-            Optional<EntityType> entityType = Optional.ofNullable(graph.getEntityType(entityTypeLabel));
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
+            Optional<EntityType> entityType = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
             if (entityType.isPresent()) {
                 String jsonConceptId = entityType.get().getId().getValue();
                 String jsonEntityTypeLabel = entityType.get().getLabel().getValue();
@@ -94,9 +94,9 @@ public class EntityTypeController {
         String entityTypeLabel = requestBody.at("entityType").at("label").asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postEntityType - attempting to add entityType " + entityTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
-            EntityType entityType = graph.putEntityType(entityTypeLabel);
-            graph.commit();
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+            EntityType entityType = tx.putEntityType(entityTypeLabel);
+            tx.commit();
             response.status(HttpStatus.SC_OK);
             String jsonConceptId = entityType.getId().getValue();
             String jsonEntityTypeLabel = entityType.getLabel().getValue();
@@ -116,15 +116,15 @@ public class EntityTypeController {
         String attributeTypeLabel = mandatoryPathParameter(request, "attributeTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("assignAttributeTypeToEntityType - attempting to assign attributeType " + attributeTypeLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
-            Optional<EntityType> entityTypeOptional = Optional.ofNullable(graph.getEntityType(entityTypeLabel));
-            Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(graph.getAttributeType(attributeTypeLabel));
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+            Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
+            Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));
             if (entityTypeOptional.isPresent() && attributeTypeOptional.isPresent()) {
 
                 EntityType entityType = entityTypeOptional.get();
                 AttributeType attributeType = attributeTypeOptional.get();
                 entityType.attribute(attributeType);
-                graph.commit();
+                tx.commit();
                 LOG.info("assignAttributeTypeToEntityType - attributeType " + attributeTypeLabel  + " assigned to entityType " + entityTypeLabel + ". request processed.");
                 response.status(HttpStatus.SC_OK);
                 return Json.nil();
@@ -146,15 +146,15 @@ public class EntityTypeController {
         String roleLabel = mandatoryPathParameter(request, "roleLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("assignAttributeTypeToEntityType - attempting to assign roleLabel " + roleLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
-            Optional<EntityType> entityTypeOptional = Optional.ofNullable(graph.getEntityType(entityTypeLabel));
-            Optional<Role> roleOptional = Optional.ofNullable(graph.getRole(roleLabel));
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+            Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
+            Optional<Role> roleOptional = Optional.ofNullable(tx.getRole(roleLabel));
 
             if (entityTypeOptional.isPresent() && roleOptional.isPresent()) {
                 EntityType entityType = entityTypeOptional.get();
                 Role role = roleOptional.get();
                 entityType.plays(role);
-                graph.commit();
+                tx.commit();
 
                 response.status(HttpStatus.SC_OK);
                 return Json.nil();

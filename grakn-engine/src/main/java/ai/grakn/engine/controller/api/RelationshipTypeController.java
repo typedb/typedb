@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.graph;
+package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -53,9 +53,9 @@ public class RelationshipTypeController {
     public RelationshipTypeController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.get("/graph/relationshipType/:relationshipTypeLabel", this::getRelationshipType);
-        spark.post("/graph/relationshipType", this::postRelationshipType);
-        spark.post("/graph/relationshipType/:relationshipTypeLabel/relates/:roleLabel", null);
+        spark.get("/api/relationshipType/:relationshipTypeLabel", this::getRelationshipType);
+        spark.post("/api/relationshipType", this::postRelationshipType);
+        spark.post("/api/relationshipType/:relationshipTypeLabel/relates/:roleLabel", null);
     }
 
     private Json getRelationshipType(Request request, Response response) {
@@ -63,8 +63,8 @@ public class RelationshipTypeController {
         String relationshipTypeLabel = mandatoryPathParameter(request, "relationshipTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getRelationshipType - attempting to find role " + relationshipTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.READ)) {
-            Optional<RelationshipType> relationshipType = Optional.ofNullable(graph.getRelationshipType(relationshipTypeLabel));
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
+            Optional<RelationshipType> relationshipType = Optional.ofNullable(tx.getRelationshipType(relationshipTypeLabel));
             if (relationshipType.isPresent()) {
                 String jsonConceptId = relationshipType.get().getId().getValue();
                 String jsonRelationshipTypeLabel = relationshipType.get().getLabel().getValue();
@@ -88,15 +88,15 @@ public class RelationshipTypeController {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
 
         LOG.info("postRelationshipType - attempting to add a new relationshipType " + relationshipTypeLabel + " on keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
-            RelationshipType relationshipType = graph.putRelationshipType(relationshipTypeLabel);
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+            RelationshipType relationshipType = tx.putRelationshipType(relationshipTypeLabel);
 
             roleLabels.forEach(roleLabel -> {
-                Role role = graph.putRole(roleLabel);
+                Role role = tx.putRole(roleLabel);
                 relationshipType.relates(role);
             });
 
-            graph.commit();
+            tx.commit();
             String jsonConceptId = relationshipType.getId().getValue();
             String jsonRelationshipTypeLabel = relationshipType.getLabel().getValue();
             LOG.info("postRelationshipType - relationshipType " + jsonRelationshipTypeLabel + " with id " + jsonConceptId + " added. request processed.");

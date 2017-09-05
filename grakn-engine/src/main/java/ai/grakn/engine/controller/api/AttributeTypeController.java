@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.graph;
+package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -52,8 +52,8 @@ public class AttributeTypeController {
 
     public AttributeTypeController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
-        spark.post("/graph/attributeType", this::postAttributeType);
-        spark.get("/graph/attributeType/:attributeTypeLabel", this::getAttributeType);
+        spark.post("/api/attributeType", this::postAttributeType);
+        spark.get("/api/attributeType/:attributeTypeLabel", this::getAttributeType);
     }
 
     private Json postAttributeType(Request request, Response response) {
@@ -64,9 +64,9 @@ public class AttributeTypeController {
         AttributeType.DataType<?> attributeTypeDataType = fromString(attributeTypeDataTypeRaw);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postAttributeType - attempting to add new attributeType " + attributeTypeLabel + " of type " + attributeTypeDataTypeRaw);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
-            AttributeType attributeType = graph.putAttributeType(attributeTypeLabel, attributeTypeDataType);
-            graph.commit();
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+            AttributeType attributeType = tx.putAttributeType(attributeTypeLabel, attributeTypeDataType);
+            tx.commit();
             String jsonConceptId = attributeType.getId().getValue();
             String jsonAttributeTypeLabel = attributeType.getLabel().getValue();
             String jsonAttributeTypeDataType = toString(attributeType.getDataType());
@@ -83,8 +83,8 @@ public class AttributeTypeController {
         String attributeTypeLabel = mandatoryPathParameter(request, "attributeTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getAttributeType - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.READ)) {
-            Optional<AttributeType> attributeType = Optional.ofNullable(graph.getAttributeType(attributeTypeLabel));
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
+            Optional<AttributeType> attributeType = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));
             if (attributeType.isPresent()) {
                 String jsonConceptId = attributeType.get().getId().getValue();
                 String jsonAttributeTypeLabel = attributeType.get().getLabel().getValue();

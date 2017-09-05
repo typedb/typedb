@@ -16,24 +16,20 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.graph;
+package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
-import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.Map;
 
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static com.jayway.restassured.RestAssured.with;
@@ -55,42 +51,40 @@ import static org.mockito.Mockito.when;
  */
 
 public class EntityControllerTest {
-    private static GraknTx mockGraph;
+    private static GraknTx mockTx;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        MetricRegistry metricRegistry = new MetricRegistry();
-
         new AttributeController(mockFactory, spark);
         new EntityController(mockFactory, spark);
     });
 
     @Before
     public void setupMock(){
-        mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
 
-        when(mockGraph.getEntityType(anyString())).thenAnswer(invocation ->
-            graphContext.tx().getEntityType(invocation.getArgument(0)));
-        when(mockGraph.getAttributeType(anyString())).thenAnswer(invocation ->
-            graphContext.tx().getAttributeType(invocation.getArgument(0)));
-        when(mockGraph.getConcept(any())).thenAnswer(invocation ->
-            graphContext.tx().getConcept(invocation.getArgument(0)));
+        when(mockTx.getEntityType(anyString())).thenAnswer(invocation ->
+            sampleKB.tx().getEntityType(invocation.getArgument(0)));
+        when(mockTx.getAttributeType(anyString())).thenAnswer(invocation ->
+            sampleKB.tx().getAttributeType(invocation.getArgument(0)));
+        when(mockTx.getConcept(any())).thenAnswer(invocation ->
+            sampleKB.tx().getConcept(invocation.getArgument(0)));
 
-        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
-        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
+        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
     public void postEntityShouldExecuteSuccessfully() {
         Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .post("/graph/entityType/production");
+            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .post("/api/entityType/production");
 
         Json responseBody = Json.read(response.body().asString());
 
@@ -102,14 +96,14 @@ public class EntityControllerTest {
     public void assignAttributeToEntityShouldExecuteSuccessfully() {
         // add an entity
         Response addEntityResponse = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .post("/graph/entityType/person");
+            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .post("/api/entityType/person");
 
         // add an attribute
         Response addAttributeResponse = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace())
             .body(Json.object("value", "attributeValue").toString())
-            .post("/graph/attributeType/real-name");
+            .post("/api/attributeType/real-name");
 
         // get their ids
         String entityConceptId = Json.read(addEntityResponse.body().asString()).at("entity").at("conceptId").asString();
@@ -117,8 +111,8 @@ public class EntityControllerTest {
 
         // assign the attribute to the entity
         Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .put("/graph/entity/" + entityConceptId + "/attribute/" + attributeConceptId);
+            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .put("/api/entity/" + entityConceptId + "/attribute/" + attributeConceptId);
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
     }

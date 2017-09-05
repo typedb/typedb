@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.graph;
+package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -51,7 +51,7 @@ public class RoleController {
     public RoleController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.get("/graph/role/:roleLabel", this::getRole);
+        spark.get("/api/role/:roleLabel", this::getRole);
     }
 
     private Json getRole(Request request, Response response) {
@@ -59,8 +59,8 @@ public class RoleController {
         String roleLabel = mandatoryPathParameter(request, "roleLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getRole - attempting to find role " + roleLabel + " in keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.READ)) {
-            Optional<Role> role = Optional.ofNullable(graph.getRole(roleLabel));
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
+            Optional<Role> role = Optional.ofNullable(tx.getRole(roleLabel));
             if (role.isPresent()) {
                 String jsonConceptId = role.get().getId().getValue();
                 String jsonRoleLabel = role.get().getLabel().getValue();

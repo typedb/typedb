@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.graph;
+package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -27,11 +27,10 @@ import ai.grakn.test.kbs.MovieKB;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.Map;
 
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static com.jayway.restassured.RestAssured.with;
@@ -51,45 +50,44 @@ import static org.mockito.Mockito.when;
  * @author Ganeshwara Herawan Hananda
  */
 
-public class RoleControllerTest {
-    private static GraknTx mockGraph;
+public class AttributeControllerTest {
+    private static GraknTx mockTx;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKBContext = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        MetricRegistry metricRegistry = new MetricRegistry();
-
-        new RoleController(mockFactory, spark);
+        new AttributeController(mockFactory, spark);
     });
 
     @Before
     public void setupMock(){
-        mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
 
-        when(mockGraph.putRole(anyString())).thenAnswer(invocation ->
-            graphContext.tx().putRole((String) invocation.getArgument(0)));
-        when(mockGraph.getRole(anyString())).thenAnswer(invocation ->
-            graphContext.tx().getRole(invocation.getArgument(0)));
+        when(mockTx.getAttributeType(anyString())).thenAnswer(invocation ->
+            sampleKBContext.tx().getAttributeType(invocation.getArgument(0)));
 
-        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
-        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
+        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
-    public void getRoleFromMovieGraphShouldExecuteSuccessfully() {
+    public void postAttributeShouldExecuteSuccessfully() {
+        Json requestBody = Json.object("value", "attributeValue");
         Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .get("/graph/role/production-with-cluster");
+            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .body(requestBody.toString())
+            .post("/api/attributeType/real-name");
 
-        Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();
+        Json responseBody = Json.read(response.body().asString());
 
-        assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.get("conceptId"), notNullValue());
-        assertThat(responseBody.get("roleLabel"), equalTo("production-with-cluster"));
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+        assertThat(responseBody.at("attribute").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("attribute").at("value").asString(), equalTo("attributeValue"));
     }
+
 }

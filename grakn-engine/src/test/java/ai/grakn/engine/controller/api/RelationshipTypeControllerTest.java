@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.graph;
+package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -31,8 +31,6 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.Map;
 
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static com.jayway.restassured.RestAssured.with;
@@ -52,18 +50,16 @@ import static org.mockito.Mockito.when;
  * @author Ganeshwara Herawan Hananda
  */
 
-public class AttributeControllerTest {
+public class RelationshipTypeControllerTest {
     private static GraknTx mockTx;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext sampleKBContext = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        MetricRegistry metricRegistry = new MetricRegistry();
-
-        new AttributeController(mockFactory, spark);
+        new RelationshipTypeController(mockFactory, spark);
     });
 
     @Before
@@ -72,26 +68,52 @@ public class AttributeControllerTest {
 
         when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
 
-        when(mockTx.getAttributeType(anyString())).thenAnswer(invocation ->
-            sampleKBContext.tx().getAttributeType(invocation.getArgument(0)));
+        when(mockTx.putRelationshipType(anyString())).thenAnswer(invocation ->
+            sampleKB.tx().putRelationshipType((String) invocation.getArgument(0)));
+        when(mockTx.getRelationshipType(anyString())).thenAnswer(invocation ->
+            sampleKB.tx().getRelationshipType(invocation.getArgument(0)));
+
+        when(mockTx.putRole(anyString())).thenAnswer(invocation ->
+            sampleKB.tx().putRole((String) invocation.getArgument(0)));
+        when(mockTx.getRole(anyString())).thenAnswer(invocation ->
+            sampleKB.tx().getRole(invocation.getArgument(0)));
+
 
         when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
         when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
-    public void postAttributeShouldExecuteSuccessfully() {
-        Json requestBody = Json.object("value", "attributeValue");
+    public void postRelationshipTypeShouldExecuteSuccessfully() {
+        Json body = Json.object(
+            "relationshipType", Json.object(
+                "label", "newRelationshipType",
+                "roles", Json.array("role1", "role2")
+            )
+        );
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace())
-            .body(requestBody.toString())
-            .post("/graph/attributeType/real-name");
+            .body(body.toString())
+            .post("/api/relationshipType");
 
         Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
-        assertThat(responseBody.at("attribute").at("conceptId").asString(), notNullValue());
-        assertThat(responseBody.at("attribute").at("value").asString(), equalTo("attributeValue"));
+        assertThat(responseBody.at("relationshipType").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("relationshipType").at("label").asString(), equalTo("newRelationshipType"));
+
     }
 
+    @Test
+    public void getRelationshipTypeFromMovieGraphShouldExecuteSuccessfully() {
+        Response response = with()
+            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .get("/api/relationshipType/has-genre");
+
+        Json responseBody = Json.read(response.body().asString());
+
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
+        assertThat(responseBody.at("relationshipType").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("relationshipType").at("label").asString(), equalTo("has-genre"));
+    }
 }
