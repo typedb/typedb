@@ -273,7 +273,7 @@ public abstract class Atom extends AtomicBase {
      * rewrites the atom to one with user defined name
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
-    public Atom rewriteToUserDefined(){ return this;}
+    public Atom rewriteToUserDefined(Atom parentAtom){ return this;}
 
     /**
      * find unifier with parent atom

@@ -20,6 +20,8 @@ package ai.grakn.graql.internal.reasoner.inference;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.VarPattern;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.graql.Graql;
@@ -29,10 +31,14 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.SampleKBContext;
 
 import ai.grakn.test.GraknTestSetup;
+import com.google.common.collect.Sets;
+import java.util.List;
+import java.util.Set;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -165,12 +171,12 @@ public class GeoInferenceTest {
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(Graql.var("y")).getId().getValue(), poland.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), poland.getId().getValue()));
         assertEquals(answers.size(), 6);
 
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
         answers2.forEach(ans -> assertEquals(ans.size(), 2));
-        answers2.forEach(ans -> assertEquals(ans.get(Graql.var("y")).getId().getValue(), europe.getId().getValue()));
+        answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), europe.getId().getValue()));
         assertEquals(answers2.size(), 21);
     }
 
@@ -190,13 +196,13 @@ public class GeoInferenceTest {
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(Graql.var("y")).getId().getValue(), poland.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), poland.getId().getValue()));
         assertEquals(answers.size(), 6);
 
 
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
         answers2.forEach(ans -> assertEquals(ans.size(), 2));
-        answers2.forEach(ans -> assertEquals(ans.get(Graql.var("y")).getId().getValue(), europe.getId().getValue()));
+        answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), europe.getId().getValue()));
         assertEquals(answers2.size(), 21);
     }
 
@@ -216,7 +222,7 @@ public class GeoInferenceTest {
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         assertEquals(answers.size(), 5);
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(Graql.var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
         assertEquals(answers.size(), answers2.size());
     }
@@ -237,7 +243,7 @@ public class GeoInferenceTest {
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(Graql.var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
         assertEquals(answers.size(), 5);
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
         assertEquals(answers.size(), answers2.size());
@@ -261,6 +267,25 @@ public class GeoInferenceTest {
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        assertEquals(answers.size(), 102);
+        assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testTransitiveClosureQuery_VariableRoles() {
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
+        String queryString = "match ($r1: $x, $r2: $y) isa is-located-in;";
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+
+        VarPattern rel = var()
+                .rel(var("r1").label("role"), var("x"))
+                .rel(var("r2").label("role"), var("y")).isa("is-located-in");
+        List<Answer> execute = iqb.infer(false).match(rel).execute();
+
+        Set<Answer> collect = answers.stream().map(a -> a.filterVars(Sets.newHashSet(var("x"), var("y")))).collect(toSet());
+
         assertEquals(answers.size(), 102);
         assertEquals(answers, answers2);
     }
@@ -307,7 +332,7 @@ public class GeoInferenceTest {
     }
 
     private Concept getConcept(GraknTx graph, String typeName, Object val){
-        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
+        return graph.graql().match(var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {

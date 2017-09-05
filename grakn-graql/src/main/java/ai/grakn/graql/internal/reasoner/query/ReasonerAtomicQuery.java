@@ -377,6 +377,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     public Iterator<RuleTuple> getRuleIterator(){
         return getAtom().getApplicableRules()
+
                 .map(r -> {
                     Unifier ruleUnifier = r.getUnifier(getAtom());
                     Unifier ruleUnifierInv = ruleUnifier.inverse();
@@ -385,6 +386,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                             ruleUnifier,
                                             new UnifierImpl());
                 })
+
                 /*
                 .flatMap(r -> {
                     Unifier ruleUnifier = r.getUnifier(getAtom());

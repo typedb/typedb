@@ -89,7 +89,8 @@ public class AtomicState extends QueryState{
     ResolutionState propagateAnswer(AnswerState state){
         Answer answer = state.getAnswer();
         if (answer.isEmpty()) return null;
-
+        return new AnswerState(answer, getUnifier(), getParentState());
+        /*
         if (currentRule != null){
             Set<Unifier> permutationUnifiers = query.getAtom().getPermutationUnifiers(currentRule.getHead().getAtom());
             return permutationUnifiers.size() == 1?
@@ -98,6 +99,7 @@ public class AtomicState extends QueryState{
         }
 
         return new AnswerState(answer, getUnifier(), getParentState());
+        */
     }
 
     @Override
@@ -128,7 +130,6 @@ public class AtomicState extends QueryState{
                 .unify(uInv);
 
         Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
-
         return currentRule.getBody().subGoal(partialSubPrime, combinedUnifier, this, getSubGoals(), getCache());
     }
 }
