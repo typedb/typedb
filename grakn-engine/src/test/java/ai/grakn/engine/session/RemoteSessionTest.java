@@ -55,6 +55,7 @@ import static org.junit.Assert.assertNull;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import static org.mockito.ArgumentMatchers.any;
 import org.mockito.Mockito;
 import static org.mockito.Mockito.doAnswer;
@@ -75,12 +76,14 @@ public class RemoteSessionTest {
     );
 
     @ClassRule
-    public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        EmbeddedCassandra.start();
+    public static RuleChain ruleChain = RuleChain
+            .outerRule(new EmbeddedCassandra())
+            .around( SparkContext.withControllers(spark -> {
+
         Properties properties = GraknEngineConfig.create().getProperties();
         EngineGraknTxFactory factory = EngineGraknTxFactory.createAndLoadSystemSchema(properties);
         new SystemController(factory, spark, new GraknEngineStatus(), new MetricRegistry());
-    }).port(4567);
+    }).port(4567));
 
     private final BlockingQueue<Json> responses = new LinkedBlockingDeque<>();
     private final RemoteEndpoint remoteEndpoint = mock(RemoteEndpoint.class);

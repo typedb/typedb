@@ -1,8 +1,6 @@
 package ai.grakn.engine;
 
 import ai.grakn.engine.util.SimpleURI;
-import ai.grakn.test.GraknTestSetup;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 
@@ -17,17 +15,17 @@ import java.net.ServerSocket;
  *
  */
 public class EngineTestHelper {
-    
+
     private static volatile GraknEngineConfig config = null;
-    
+
     public static int findAvailablePort() {
         try (ServerSocket socket = new ServerSocket(0)) {
-            return socket.getLocalPort();            
+            return socket.getLocalPort();
         } catch (IOException e) {
             throw new RuntimeException(e);
-        }        
+        }
     }
-    
+
     /**
      * Create (once only, statically) the GraknEngineConfig as per configuration file and return it.
      */
@@ -36,51 +34,10 @@ public class EngineTestHelper {
             return config;
         }
         config = GraknEngineConfig.create();
-        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(findAvailablePort()));
+        config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER,
+                String.valueOf(findAvailablePort()));
+        config.setConfigProperty(GraknEngineConfig.REDIS_HOST,
+                new SimpleURI("localhost", findAvailablePort()).toString());
         return config;
-    }
-    
-    private static volatile GraknEngineServer server = null;
-    
-    /**
-     * <p>
-     * Creates and initializes all components for running a self-contained, embedded engine server.
-     * </p>
-     * <p>
-     * Make sure it's invoked before any test that needs to access engine components. It's an 
-     * idempotent operation - it can be invoked many times without repercussions.
-     * </p> 
-     */
-    public static synchronized void engine() {
-        if (server != null) {
-            return;
-        }
-        GraknTestSetup.startRedisIfNeeded(new SimpleURI(config().getProperty(GraknEngineConfig.REDIS_HOST)).getPort());
-        server = new GraknEngineServer(config());
-        server.start();
-    }
-
-    /**
-     * Similarly to {@link EngineTestHelper#engine()} it creates a test engine with the ability to write {@link ai.grakn.GraknTx} to a
-     * persistent backend if needed
-     */
-    public static synchronized void engineWithKBs() {
-        GraknTestSetup.startCassandraIfNeeded();
-        engine();
-    }
-
-    /**
-     * Shutdown the engine server.
-     */
-    public static synchronized void noEngine() {
-        if (server == null) {
-            return;
-        }
-        try {
-            server.close();
-        }
-        finally {
-            server = null;
-        }
     }
 }

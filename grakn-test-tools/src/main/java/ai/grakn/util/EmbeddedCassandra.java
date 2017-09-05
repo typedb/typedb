@@ -18,9 +18,11 @@
 
 package ai.grakn.util;
 
+import ai.grakn.test.GraknTestSetup;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
+import org.junit.rules.ExternalResource;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -39,18 +41,36 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author fppt
  *
  */
-public class EmbeddedCassandra {
+public class EmbeddedCassandra extends ExternalResource {
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(EmbeddedCassandra.class);
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
+
+    private final boolean checkJanusProfile;
+
+    public EmbeddedCassandra() {
+        this(true);
+    }
+
+    public EmbeddedCassandra(boolean checkJanus) {
+        this.checkJanusProfile = checkJanus;
+    }
+
+
 
     /**
      * Starts an embedded version of cassandra
      */
-    public static void start(){
-        if(CASSANDRA_RUNNING.compareAndSet(false, true)) {
+    @Override
+    public void before(){
+        start();
+    }
+
+    public void start() {
+        if((!checkJanusProfile || GraknTestSetup.usingJanus()) && CASSANDRA_RUNNING.compareAndSet(false, true)) {
             try {
                 LOG.info("starting cassandra...");
-                EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml", 30_000L);
+                EmbeddedCassandraServerHelper
+                        .startEmbeddedCassandra("cassandra-embedded.yaml", 30_000L);
                 EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
                 //This thread sleep is to give time for cass to startup
                 //TODO: Determine if this is still needed

@@ -33,6 +33,8 @@ import ai.grakn.exception.GraknBackendException;
 import ai.grakn.test.DistributionContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
+import ai.grakn.util.EmbeddedCassandra;
+import ai.grakn.util.Redis;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
@@ -52,6 +54,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,15 +68,18 @@ public class GraknEngineFailoverIT {
     private static TaskStateStorage storage;
     private static JedisPool jedisPool;
     private static SimpleURI redisURI = new SimpleURI("localhost", 5511);
+    private static final DistributionContext engine1 = DistributionContext.startSingleQueueEngineProcess().port(7890).redisPort(redisURI.getPort());
+    private static final DistributionContext engine2 = DistributionContext.startSingleQueueEngineProcess().port(5678).redisPort(redisURI.getPort());
+    private static final DistributionContext engine3 = DistributionContext.startSingleQueueEngineProcess().port(6789).redisPort(redisURI.getPort());
 
     @ClassRule
-    public static final DistributionContext engine1 = DistributionContext.startSingleQueueEngineProcess().port(7890).redisPort(redisURI.getPort());
+    public static RuleChain chain = RuleChain
+            .outerRule(new EmbeddedCassandra())
+            .around(Redis.redis(redisURI.getPort(), false))
+            .around(engine1)
+            .around(engine2)
+            .around(engine3);
 
-    @ClassRule
-    public static final DistributionContext engine2 = DistributionContext.startSingleQueueEngineProcess().port(5678).redisPort(redisURI.getPort());
-
-    @ClassRule
-    public static final DistributionContext engine3 = DistributionContext.startSingleQueueEngineProcess().port(6789).redisPort(redisURI.getPort());
 
     @Before
     public void getStorage() {

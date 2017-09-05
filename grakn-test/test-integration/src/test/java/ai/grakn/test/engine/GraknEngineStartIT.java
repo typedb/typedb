@@ -27,18 +27,19 @@ import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.SimpleURI;
-import ai.grakn.test.GraknTestSetup;
-import ai.grakn.util.EmbeddedRedis;
+import ai.grakn.util.EmbeddedCassandra;
+import ai.grakn.util.Redis;
 import com.google.common.base.StandardSystemProperty;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
-import org.junit.AfterClass;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 @RunWith(JUnitQuickcheck.class)
@@ -47,16 +48,14 @@ public class GraknEngineStartIT {
     private static final int[] PORTS = {50120, 50121, 50122};
     public static final int REDIS_PORT = 50123;
 
+    @ClassRule
+    public static RuleChain chain = RuleChain
+            .outerRule(new EmbeddedCassandra())
+            .around(Redis.redis(REDIS_PORT, true));
+
     @BeforeClass
     public static void setUpClass() {
-        EmbeddedRedis.start(REDIS_PORT);
-        GraknTestSetup.startCassandraIfNeeded();
         GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-        EmbeddedRedis.stop();
     }
 
     @Test

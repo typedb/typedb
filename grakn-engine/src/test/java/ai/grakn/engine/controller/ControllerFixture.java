@@ -17,17 +17,18 @@
  */
 package ai.grakn.engine.controller;
 
+import ai.grakn.engine.EngineTestHelper;
+import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.test.GraknTestSetup;
+import ai.grakn.util.MockRedis;
+import ai.grakn.util.TestResourceUtil;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.builder.RequestSpecBuilder;
 import java.util.ArrayList;
-
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.builder.RequestSpecBuilder;
-
-import ai.grakn.engine.EngineTestHelper;
-import ai.grakn.engine.GraknEngineConfig;
 
 /**
  * Setup and cleanup for controller tests. 
@@ -54,14 +55,18 @@ public class ControllerFixture implements TestRule {
             public void evaluate() throws Throwable {
                 final String currentURI = RestAssured.baseURI;
                 restAssuredSetup();
-                EngineTestHelper.engineWithKBs();
+                GraknTestSetup.startCassandraIfNeeded();
+                MockRedis redis = new MockRedis(TestResourceUtil.getEphemeralPort());
+                GraknEngineServer server = new GraknEngineServer(EngineTestHelper.config());
+                server.start();
                 try {
                     base.evaluate();
                 }
                 finally {
                     doCleanup();
                     RestAssured.baseURI = currentURI;
-                    RestAssured.requestSpecification = new RequestSpecBuilder().build(); 
+                    RestAssured.requestSpecification = new RequestSpecBuilder().build();
+                    redis.stop();
                 }
             }            
         };

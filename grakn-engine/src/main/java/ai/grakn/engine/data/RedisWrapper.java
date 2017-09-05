@@ -111,6 +111,7 @@ public class RedisWrapper {
                 SimpleURI simpleURI = SimpleURI.withDefaultPort(uri, DEFAULT_PORT);
                 jedisPool = new JedisPool(poolConfig, simpleURI.getHost(), simpleURI.getPort(), TIMEOUT);
             }
+            Preconditions.checkState(!jedisPool.isClosed());
             return new RedisWrapper(jedisPool);
         }
     }

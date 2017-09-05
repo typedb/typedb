@@ -26,11 +26,8 @@ import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.util.JWTHandler;
 import static ai.grakn.graql.Graql.var;
-import ai.grakn.util.EmbeddedRedis;
+import ai.grakn.util.TestResourceUtil;
 import com.jayway.restassured.RestAssured;
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
 import org.slf4j.LoggerFactory;
@@ -58,7 +55,7 @@ public abstract class GraknTestEngineSetup {
     static GraknEngineConfig createTestConfig() {
         GraknEngineConfig config = GraknEngineConfig.create();
 
-        Integer serverPort = getEphemeralPort();
+        Integer serverPort = TestResourceUtil.getEphemeralPort();
 
         config.setConfigProperty(GraknEngineConfig.SERVER_PORT_NUMBER, String.valueOf(serverPort));
 
@@ -90,14 +87,6 @@ public abstract class GraknTestEngineSetup {
         LOG.info("engine started.");
 
         return server;
-    }
-
-    static void startRedis(int port) throws URISyntaxException {
-        EmbeddedRedis.start(port);
-    }
-
-    static void stopRedis(){
-        EmbeddedRedis.stop();
     }
 
     static void stopEngine(GraknEngineServer server) throws Exception {
@@ -141,13 +130,5 @@ public abstract class GraknTestEngineSetup {
 
     static void setRestAssuredUri(GraknEngineConfig config) {
         RestAssured.baseURI = "http://" + config.uri();
-    }
-
-    private static int getEphemeralPort() {
-        try (ServerSocket socket = new ServerSocket(0)) {
-            return socket.getLocalPort();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }
