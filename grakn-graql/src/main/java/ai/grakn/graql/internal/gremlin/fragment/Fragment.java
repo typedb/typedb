@@ -96,7 +96,8 @@ public abstract class Fragment {
     /**
      * Get the corresponding property
      */
-    public abstract @Nullable VarProperty varProperty();
+    public abstract @Nullable
+    VarProperty varProperty();
 
     /**
      * @return the variable name that this fragment starts from in the query
@@ -106,7 +107,8 @@ public abstract class Fragment {
     /**
      * @return the variable name that this fragment ends at in the query, if this query has an end variable
      */
-    public @Nullable Var end() {
+    public @Nullable
+    Var end() {
         return null;
     }
 
