@@ -63,7 +63,7 @@ public class GraknEngineConfig {
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
 
-    public static final String REDIS_HOST = "redis.host";
+    public static final String REDIS_HOST = "queue.host";
     public static final String REDIS_SENTINEL_HOST = "redis.sentinel.host";
     public static final String REDIS_SENTINEL_MASTER = "redis.sentinel.master";
     public static final String REDIS_POOL_SIZE = "redis.pool-size";
