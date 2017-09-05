@@ -22,6 +22,7 @@ import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.shaded.minlog.Log;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.Properties;
@@ -46,13 +47,20 @@ public class FactoryBuilder {
     public static final String FACTORY_TYPE = "knowledge-base.mode";
     private static final Map<String, TxFactory<?>> openFactories = new ConcurrentHashMap<>();
 
+    //This is used to map grakn value properties into the underlaying properties
+    private static final Map<String, String> factoryMapper = new HashMap<>();
+    static{
+        factoryMapper.put("in-memory", "ai.grakn.factory.TxFactoryTinker");
+        factoryMapper.put("production", "ai.grakn.factory.TxFactoryJanus");
+    }
+
     private FactoryBuilder(){
         throw new UnsupportedOperationException();
     }
 
     public static TxFactory<?> getFactory(String keyspace, String engineUrl, Properties properties){
         try{
-            String factoryType = properties.get(FACTORY_TYPE).toString();
+            String factoryType = factoryMapper.get(properties.get(FACTORY_TYPE).toString());
             return getFactory(factoryType, keyspace, engineUrl, properties);
         } catch(MissingResourceException e){
             throw new IllegalArgumentException(ErrorMessage.MISSING_FACTORY_DEFINITION.getMessage());

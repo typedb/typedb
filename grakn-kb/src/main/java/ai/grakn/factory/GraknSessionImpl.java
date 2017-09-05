@@ -33,8 +33,6 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
 import static ai.grakn.util.EngineCommunicator.contactEngine;
@@ -59,24 +57,13 @@ import static mjson.Json.read;
  * @author fppt
  */
 public class GraknSessionImpl implements GraknSession {
-    private final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
     private final String location;
     private final String keyspace;
 
     //References so we don't have to open a tx just to check the count of the transactions
     private GraknTxAbstract<?> tx = null;
     private GraknTxAbstract<?> txBatch = null;
-
-    //This is used to map grakn key properties into the underlaying properties
-    //private static final Map<String, String> keyMapper = new HashMap<>();
-
-
-    //This is used to map grakn value properties into the underlaying properties
-    private static final Map<String, String> valueMapper = new HashMap<>();
-    static{
-        valueMapper.put("in-memory", "ai.grakn.factory.TxFactoryTinker");
-        valueMapper.put("production", "ai.grakn.factory.TxFactoryJanus");
-    }
 
     //This constructor must remain public because it is accessed via reflection
     public GraknSessionImpl(String keyspace, String location){
@@ -159,17 +146,6 @@ public class GraknSessionImpl implements GraknSession {
 
         //Get Specific Configs
         properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());
-
-        properties.entrySet().forEach(entry -> {
-            String key = entry.getKey().toString();
-            String value = entry.getValue().toString();
-
-            //Fix the value
-            if(valueMapper.containsKey(value)){
-                properties.put(key, valueMapper.get(value));
-            }
-        });
-
         return FactoryBuilder.getFactory(keyspace, engineUrl, properties);
     }
 
