@@ -43,6 +43,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -67,8 +69,9 @@ import static java.util.Arrays.stream;
 final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusGraph> {
     private final static Logger LOG = LoggerFactory.getLogger(TxFactoryJanus.class);
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
-    public static final Properties DEFAULT_PROPERTIES;
 
+    //These properties are loaded in by default and can optionally be overritten
+    static final Properties DEFAULT_PROPERTIES;
     static {
         String DEFAULT_CONFIG = "default-configs";
         DEFAULT_PROPERTIES = new Properties();
@@ -78,6 +81,13 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         } catch (IOException e) {
             throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
         }
+    }
+
+    //This maps the storage backend to the needed value
+    private static final Map<String, String> storageBackendMapper = new HashMap<>();
+    static{
+        //TODO: BIG TABLE WILL HAVE A VALUE HERE
+        storageBackendMapper.put("grakn-production", "cassandra");
     }
 
     TxFactoryJanus(String keyspace, String engineUrl, Properties properties) {
@@ -125,11 +135,16 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
                 set("storage.cassandra.keyspace", name).
                 set("storage.batch-loading", batchLoading);
 
+        //Overwrite storage
+        String storageBackend = "storage.backend";
+        properties.put(storageBackend, storageBackendMapper.get(properties.getProperty(storageBackend)));
+
         //Load Defaults
         DEFAULT_PROPERTIES.forEach((key, value) -> builder.set(key.toString(), value));
 
         //Load Passed in properties
         properties.forEach((key, value) -> builder.set(key.toString(), value));
+
         LOG.debug("Opening graph on {}", address);
         return builder.open();
     }

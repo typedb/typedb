@@ -158,7 +158,7 @@ public class GraknSessionImpl implements GraknSession {
         Properties inMemoryProperties = new Properties();
         inMemoryProperties.put(GraknTxAbstract.SHARDING_THRESHOLD, 100_000);
         inMemoryProperties.put(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS, 30_000);
-        inMemoryProperties.put(FactoryBuilder.FACTORY_TYPE, TxFactoryTinker.class.getName());
+        inMemoryProperties.put(FactoryBuilder.KB_MODE, TxFactoryTinker.class.getName());
 
         return FactoryBuilder.getFactory(TxFactoryTinker.class.getName(), keyspace, Grakn.IN_MEMORY, inMemoryProperties);
     }
