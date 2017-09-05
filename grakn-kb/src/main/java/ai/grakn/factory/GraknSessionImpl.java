@@ -73,6 +73,12 @@ public class GraknSessionImpl implements GraknSession {
         //propertyMapper.put()
     }
 
+    //This is used to store config options which should not be exposed
+    private static final Map<String, String> hardConfigs = new HashMap<>();
+    static{
+
+    }
+
     //This constructor must remain public because it is accessed via reflection
     public GraknSessionImpl(String keyspace, String location){
         this.location = location;

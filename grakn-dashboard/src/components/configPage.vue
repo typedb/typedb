@@ -51,7 +51,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td>Graph Sharding Threshold</td>
-                        <td>{{configuration['graph.sharding-threshold']}}</td>
+                        <td>{{configuration['knowledge-base.sharding-threshold']}}</td>
                     </tr>
                     <tr>
                         <td>Server Executor Threads</td>

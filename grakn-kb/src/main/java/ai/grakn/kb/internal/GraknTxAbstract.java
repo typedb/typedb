@@ -107,8 +107,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     //TODO: Is this the correct place for these config paths
     //----------------------------- Config Paths
-    public static final String SHARDING_THRESHOLD = "graph.sharding-threshold";
-    public static final String NORMAL_CACHE_TIMEOUT_MS = "graph.schema-cache-timeout-ms";
+    public static final String SHARDING_THRESHOLD = "knowledge-base.sharding-threshold";
+    public static final String NORMAL_CACHE_TIMEOUT_MS = "knowledge-base.schema-cache-timeout-ms";
 
     //----------------------------- Shared Variables
     private final String keyspace;
