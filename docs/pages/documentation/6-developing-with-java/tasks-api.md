@@ -64,7 +64,7 @@ Duration interval = Duration.ofSeconds(1);
 Json configuration = Json.nil();
 boolean wait = false;
 
-TaskId identifier = client.sendTask(taskClass, creator, runAt, interval, configuration, wait);
+TaskId identifier = client.sendTask(taskClass, creator, runAt, interval, configuration, wait).getTaskId();
 ```
 
 This function will execute a `POST` request against the server that will then run the specified task asynchronously. The client is responsible for checking on the status of the task (see below).
