@@ -1,4 +1,4 @@
-package ai.grakn.engine.controller.graph;
+package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -14,8 +14,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Map;
-
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -27,37 +25,35 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class RelationshipControllerTest {
-    private static GraknTx mockGraph;
+    private static GraknTx mockTx;
     private static EngineGraknTxFactory mockFactory = mock(EngineGraknTxFactory.class);
 
     @ClassRule
-    public static SampleKBContext graphContext = SampleKBContext.preLoad(MovieKB.get());
+    public static SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        MetricRegistry metricRegistry = new MetricRegistry();
-
         new RelationshipController(mockFactory, spark);
     });
 
     @Before
     public void setupMock(){
-        mockGraph = mock(GraknTx.class, RETURNS_DEEP_STUBS);
+        mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
 
-        when(mockGraph.getRelationshipType(anyString())).thenAnswer(invocation ->
-            graphContext.tx().getRelationshipType(invocation.getArgument(0)));
+        when(mockTx.getRelationshipType(anyString())).thenAnswer(invocation ->
+            sampleKB.tx().getRelationshipType(invocation.getArgument(0)));
 
-        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
-        when(mockFactory.tx(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
+        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
+        when(mockFactory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
     public void postRelationshipShouldExecuteSuccessfully() {
         Response response = with()
-            .queryParam(KEYSPACE, mockGraph.getKeyspace())
-            .post("/graph/relationshipType/directed-by");
+            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .post("/api/relationshipType/directed-by");
 
         Json responseBody = Json.read(response.body().asString());
 

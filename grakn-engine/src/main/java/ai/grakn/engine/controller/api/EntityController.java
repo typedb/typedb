@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.graph;
+package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -54,11 +54,11 @@ public class EntityController {
     public EntityController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.post("/graph/entityType/:entityTypeLabel", this::postEntity);
-        spark.put("/graph/entity/:entityConceptId/attribute/:attributeConceptId", this::assignAttributeToEntity);
+        spark.post("/api/entityType/:entityTypeLabel", this::postEntity);
+        spark.put("/api/entity/:entityConceptId/attribute/:attributeConceptId", this::assignAttributeToEntity);
 
         // TODO: implement it after operation has been supported in the Graph API
-//        spark.delete("/graph/entity/:entityConceptId/attribute/:attributeConceptId", this::deleteAttributeToEntityAssignment);
+//        spark.delete("/api/entity/:entityConceptId/attribute/:attributeConceptId", this::deleteAttributeToEntityAssignment);
     }
 
     private Json postEntity(Request request, Response response) {
@@ -66,13 +66,13 @@ public class EntityController {
         String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postEntity - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
-            Optional<EntityType> entityTypeOptional = Optional.ofNullable(graph.getEntityType(entityTypeLabel));
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+            Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
             if (entityTypeOptional.isPresent()) {
                 LOG.info("postEntity - entityType " + entityTypeLabel + " found.");
                 EntityType entityType = entityTypeOptional.get();
                 Entity entity = entityType.addEntity();
-                graph.commit();
+                tx.commit();
                 String jsonConceptId = entity.getId().getValue();
                 LOG.info("postEntity - entity " + jsonConceptId + " of entityType " + entityTypeLabel + " added. request processed");
                 response.status(HttpStatus.SC_OK);
@@ -90,17 +90,17 @@ public class EntityController {
         String entityConceptId = mandatoryPathParameter(request, "entityConceptId");
         String attributeConceptId = mandatoryPathParameter(request, "attributeConceptId");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
             LOG.info("assignAttributeToEntity - attempting to find attributeConceptId " + attributeConceptId + " and entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
-            Optional<Entity> entityOptional = Optional.ofNullable(graph.getConcept(ConceptId.of(entityConceptId)));
-            Optional<Attribute> attributeOptional = Optional.ofNullable(graph.getConcept(ConceptId.of(attributeConceptId)));
+            Optional<Entity> entityOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(entityConceptId)));
+            Optional<Attribute> attributeOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(attributeConceptId)));
 
             if (entityOptional.isPresent() && attributeOptional.isPresent()) {
                 LOG.info("assignAttributeToEntity - entity and attribute found. attempting to assign attributeConceptId " + attributeConceptId + " to entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
                 Entity entity = entityOptional.get();
                 Attribute attribute = attributeOptional.get();
                 entity.attribute(attribute);
-                graph.commit();
+                tx.commit();
                 LOG.info("assignAttributeToEntity - assignment succeeded. request processed.");
                 Json responseBody = Json.object();
                 response.status(HttpStatus.SC_OK);
@@ -115,7 +115,7 @@ public class EntityController {
 
     // TODO: implement it after operation has been supported in the Graph API
 //    private Json deleteAttributeToEntityAssignment(Request request, Response response) {
-//        throw new UnsupportedOperationException("Unsupported operation: DELETE /graph/entity/:conceptId/attribute/:conceptId");
+//        throw new UnsupportedOperationException("Unsupported operation: DELETE /api/entity/:conceptId/attribute/:conceptId");
 //    }
 
     private Json entityJson(String conceptId) {

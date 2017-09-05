@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.graph;
+package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -53,7 +53,7 @@ public class AttributeController {
     public AttributeController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.post("/graph/attributeType/:attributeTypeLabel", this::postAttribute);
+        spark.post("/api/attributeType/:attributeTypeLabel", this::postAttribute);
     }
 
     private Json postAttribute(Request request, Response response) {

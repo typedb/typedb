@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.controller.graph;
+package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
@@ -55,10 +55,10 @@ public class RelationshipController {
     public RelationshipController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.post("/graph/relationshipType/:relationshipTypeLabel", this::postRelationship);
-        spark.put("/graph/relationship/:relationshipConceptId/role/:roleConceptId", this::assignEntityAndRoleToRelationship);
+        spark.post("/api/relationshipType/:relationshipTypeLabel", this::postRelationship);
+        spark.put("/api/relationship/:relationshipConceptId/role/:roleConceptId", this::assignEntityAndRoleToRelationship);
         // TODO: implement it after operation has been supported in the Graph API
-//        spark.delete("/graph/relationship/:relationshipConceptId/role/:roleConceptId/entity/:entityConceptId", this::deleteEntityAndRoleToRelationshipAssignment);
+//        spark.delete("/api/relationship/:relationshipConceptId/role/:roleConceptId/entity/:entityConceptId", this::deleteEntityAndRoleToRelationshipAssignment);
     }
 
     private Json postRelationship(Request request, Response response) {
@@ -66,8 +66,8 @@ public class RelationshipController {
         String relationshipTypeLabel = mandatoryPathParameter(request, "relationshipTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postRelationship - attempting to find entityType " + relationshipTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
-            Optional<RelationshipType> relationshipTypeOptional = Optional.ofNullable(graph.getRelationshipType(relationshipTypeLabel));
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+            Optional<RelationshipType> relationshipTypeOptional = Optional.ofNullable(tx.getRelationshipType(relationshipTypeLabel));
             if (relationshipTypeOptional.isPresent()) {
                 LOG.info("postRelationship - relationshipType " + relationshipTypeLabel + " found.");
                 RelationshipType relationshipType = relationshipTypeOptional.get();
@@ -90,11 +90,11 @@ public class RelationshipController {
         String roleConceptId = mandatoryPathParameter(request, "roleConceptId");
         String entityConceptId = mandatoryPathParameter(request, "entityConceptId");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
             LOG.info("assignEntityAndRoleToRelationship - attempting to find roleConceptId " + roleConceptId + " and relationshipConceptId " + relationshipConceptId + ", in keyspace " + keyspace);
-            Optional<Relationship> relationshipOptional = Optional.ofNullable(graph.getConcept(ConceptId.of(relationshipConceptId)));
-            Optional<Role> roleOptional = Optional.ofNullable(graph.getConcept(ConceptId.of(roleConceptId)));
-            Optional<Entity> entityOptional = Optional.ofNullable(graph.getConcept(ConceptId.of(entityConceptId)));
+            Optional<Relationship> relationshipOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(relationshipConceptId)));
+            Optional<Role> roleOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(roleConceptId)));
+            Optional<Entity> entityOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(entityConceptId)));
 
             if (relationshipOptional.isPresent() && roleOptional.isPresent() && entityOptional.isPresent()) {
                 LOG.info("assignEntityAndRoleToRelationship - relationship, role and entity found. attempting to assign entity " + entityConceptId + " and role  " + roleConceptId + " to relationship " + relationshipConceptId);
@@ -102,7 +102,7 @@ public class RelationshipController {
                 Role role = roleOptional.get();
                 Entity entity = entityOptional.get();
                 relationship.addRolePlayer(role, entity);
-                graph.commit();
+                tx.commit();
                 LOG.info("assignEntityAndRoleToRelationship - assignment succeeded. request processed.");
                 Json responseBody = Json.object();
                 response.status(HttpStatus.SC_OK);
@@ -116,7 +116,7 @@ public class RelationshipController {
     }
 
 //    private Json deleteEntityAndRoleToRelationshipAssignment(Request request, Response response) {
-//        throw new UnsupportedOperationException("Unsupported operation: DELETE /graph/entity/:conceptId/resource/:conceptId");
+//        throw new UnsupportedOperationException("Unsupported operation: DELETE /api/entity/:conceptId/resource/:conceptId");
 //    }
 
     private Json relationshipJson(String conceptId) {
