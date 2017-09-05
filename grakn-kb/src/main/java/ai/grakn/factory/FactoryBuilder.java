@@ -43,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author fppt
  */
 public class FactoryBuilder {
-    public static final String FACTORY_TYPE = "factory.internal";
+    public static final String FACTORY_TYPE = "knowledge-base.mode";
     private static final Map<String, TxFactory<?>> openFactories = new ConcurrentHashMap<>();
 
     private FactoryBuilder(){

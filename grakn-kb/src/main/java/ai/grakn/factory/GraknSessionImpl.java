@@ -67,12 +67,18 @@ public class GraknSessionImpl implements GraknSession {
     private GraknTxAbstract<?> tx = null;
     private GraknTxAbstract<?> txBatch = null;
 
-    //This is used to map grakn properties into the underlaying properties
-    private static final Map<String, String> propertyMapper = new HashMap<>();
+    //This is used to map grakn key properties into the underlaying properties
+    private static final Map<String, String> keyMapper = new HashMap<>();
     static{
         //propertyMapper.put()
     }
 
+    //This is used to map grakn value properties into the underlaying properties
+    private static final Map<String, String> valueMapper = new HashMap<>();
+    static{
+        valueMapper.put("in-memory", "ai.grakn.factory.TxFactoryTinker");
+        valueMapper.put("production", "ai.grakn.factory.TxFactoryJanus");
+    }
 
     //This constructor must remain public because it is accessed via reflection
     public GraknSessionImpl(String keyspace, String location){
@@ -155,6 +161,16 @@ public class GraknSessionImpl implements GraknSession {
 
         //Get Specific Configs
         properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());
+
+        properties.entrySet().forEach(entry -> {
+            String key = entry.getKey().toString();
+            String value = entry.getValue().toString();
+
+            //Fix the value
+            if(valueMapper.containsKey(value)){
+                properties.put(key, valueMapper.get(value));
+            }
+        });
 
         return FactoryBuilder.getFactory(keyspace, engineUrl, properties);
     }
