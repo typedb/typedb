@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.QueryBuilder;
@@ -73,37 +72,37 @@ public class MatchModifierTest {
 
     @Test
     public void testOffsetQuery() {
-        GetQuery query = qb.match(x.isa("movie").has("name", n)).orderBy(n, desc).offset(4).get();
+        Match match = qb.match(x.isa("movie").has("name", n)).orderBy(n, desc).offset(4);
 
-        assertResultsOrderedByValue(query, n, false);
+        assertResultsOrderedByValue(match, n, false);
     }
 
     @Test
     public void testLimitQuery() {
         Var t = var("t");
-        GetQuery query = qb.match(x.isa("movie").has("title", t)).orderBy(t, asc).offset(1).limit(3).get();
+        Match match = qb.match(x.isa("movie").has("title", t)).orderBy(t, asc).offset(1).limit(3);
 
-        assertResultsOrderedByValue(query, t, true);
-        assertEquals(3, query.stream().count());
+        assertResultsOrderedByValue(match, t, true);
+        assertEquals(3, match.stream().count());
     }
 
     @Test
     public void testOrPatternOrderByResource() {
-        GetQuery query = qb.match(
+        Match match = qb.match(
                 x.isa("movie").has("tmdb-vote-count", var("v")),
                 var().rel(x).rel(y),
                 or(
                         y.isa("person").has("name", "Marlon Brando"),
                         y.isa("genre").has("name", "crime")
                 )
-        ).orderBy("v", desc).get();
+        ).orderBy("v", desc);
 
-        assertThat(query, variable(x, contains(MovieMatchers.godfather, MovieMatchers.godfather, MovieMatchers.apocalypseNow)));
+        assertThat(match, variable(x, contains(MovieMatchers.godfather, MovieMatchers.godfather, MovieMatchers.apocalypseNow)));
     }
 
     @Test
     public void testOrPatternOrderByUnselected() {
-        Match query = qb.match(
+        Match match = qb.match(
                 x.isa("movie"),
                 var().rel(x).rel(y),
                 or(
@@ -113,41 +112,41 @@ public class MatchModifierTest {
                 y.has("name", n)
         ).orderBy(n);
 
-        assertResultsOrderedByValue(query, n, true);
+        assertResultsOrderedByValue(match, n, true);
     }
 
     @Test
     public void testValueOrderedQuery() {
         Var theMovie = var("the-movie");
-        GetQuery query = qb.match(theMovie.isa("movie").has("title", n)).orderBy(n, desc).get();
+        Match match = qb.match(theMovie.isa("movie").has("title", n)).orderBy(n, desc);
 
-        assertResultsOrderedByValue(query, n, false);
+        assertResultsOrderedByValue(match, n, false);
 
         // Make sure all results are included
-        assertThat(query, variable(theMovie, containsAllMovies));
+        assertThat(match, variable(theMovie, containsAllMovies));
     }
 
     @Test
     public void testVoteCountOrderedQuery() {
         Var z = var("z");
-        GetQuery query = qb.match(z.isa("movie").has("tmdb-vote-count", var("v"))).orderBy("v", desc).get();
+        Match match = qb.match(z.isa("movie").has("tmdb-vote-count", var("v"))).orderBy("v", desc);
 
         // Make sure movies are in the correct order
-        assertThat(query, variable(z, contains(MovieMatchers.godfather, MovieMatchers.hocusPocus, MovieMatchers.apocalypseNow, MovieMatchers.theMuppets, MovieMatchers.chineseCoffee)));
+        assertThat(match, variable(z, contains(MovieMatchers.godfather, MovieMatchers.hocusPocus, MovieMatchers.apocalypseNow, MovieMatchers.theMuppets, MovieMatchers.chineseCoffee)));
     }
 
     @Test
     public void testOrPatternDistinct() {
-        GetQuery query = qb.match(
+        Match match = qb.match(
                 x.isa("movie").has("title", var("t")),
                 var().rel(x).rel(y),
                 or(
                         y.isa("genre").has("name", "crime"),
                         y.isa("person").has("name", "Marlon Brando")
                 )
-        ).orderBy("t", desc).get(ImmutableSet.of(x));
+        ).orderBy("t", desc);
 
-        assertThat(query, variable(x, contains(MovieMatchers.heat, MovieMatchers.godfather, MovieMatchers.apocalypseNow)));
+        assertThat(match, variable(x, contains(MovieMatchers.heat, MovieMatchers.godfather, MovieMatchers.apocalypseNow)));
     }
 
     @Test
@@ -161,8 +160,9 @@ public class MatchModifierTest {
         match.get(ImmutableSet.of(y));
     }
 
-    private <T extends Comparable<T>> void assertResultsOrderedByValue(Streamable<Answer> query, Var var, boolean asc) {
-        Stream<T> values = query.stream().map(result -> result.get(var).<T>asAttribute().getValue());
+    private <T extends Comparable<T>> void assertResultsOrderedByValue(
+            Streamable<Answer> streamable, Var var, boolean asc) {
+        Stream<T> values = streamable.stream().map(result -> result.get(var).<T>asAttribute().getValue());
         assertResultsOrdered(values, asc);
     }
 
