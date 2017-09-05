@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.neq;
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getIdPredicate;
 import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.getValuePredicates;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
@@ -59,7 +59,7 @@ import static java.util.stream.Collectors.joining;
  * The property is defined as a {@link Relationship} between an {@link Thing} and a {@link Attribute}, where the
  * {@link Attribute} is of a particular type.
  *
- * When matching, shortcut edges are used to speed up the traversal. The type of the {@link Relationship} does not
+ * When matching, {@link  ai.grakn.util.Schema.EdgeLabel#ROLE_PLAYER} edges are used to speed up the traversal. The type of the {@link Relationship} does not
  * matter.
  *
  * When inserting, an implicit {@link Relationship} is created between the instance and the {@link Attribute}, using
@@ -112,8 +112,8 @@ public abstract class HasResourceProperty extends AbstractVarProperty implements
         Var edge2 = Graql.var();
 
         return ImmutableSet.of(
-                shortcut(this, relationship().var(), edge1, start, null),
-                shortcut(this, relationship().var(), edge2, attribute().var(), null),
+                rolePlayer(this, relationship().var(), edge1, start, null),
+                rolePlayer(this, relationship().var(), edge2, attribute().var(), null),
                 neq(this, edge1, edge2)
         );
     }

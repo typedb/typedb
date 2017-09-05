@@ -38,7 +38,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Felix Chapman
  */
-public class ShortcutFragmentSetTest {
+public class RolePlayerFragmentSetTest {
 
     @ClassRule
     public static final SampleKBContext sampleKB = SampleKBContext.preLoad(MovieKB.get());
@@ -52,14 +52,14 @@ public class ShortcutFragmentSetTest {
         EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null, d, author);
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
-                EquivalentFragmentSets.shortcut(null, a, b, c, d),
+                EquivalentFragmentSets.rolePlayer(null, a, b, c, d),
                 authorLabelFragmentSet
         );
 
-        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, sampleKB.tx());
+        RolePlayerFragmentSet.applyRolePlayerRoleOptimisation(fragmentSets, sampleKB.tx());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
-                new ShortcutFragmentSet(null, a, b, c, null, ImmutableSet.of(author, director), null),
+                new RolePlayerFragmentSet(null, a, b, c, null, ImmutableSet.of(author, director), null),
                 authorLabelFragmentSet
         );
 
@@ -71,13 +71,13 @@ public class ShortcutFragmentSetTest {
         Label magician = Label.of("magician");
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
-                EquivalentFragmentSets.shortcut(null, a, b, c, d),
+                EquivalentFragmentSets.rolePlayer(null, a, b, c, d),
                 EquivalentFragmentSets.label(null, d, magician)
         );
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, sampleKB.tx());
+        RolePlayerFragmentSet.applyRolePlayerRoleOptimisation(fragmentSets, sampleKB.tx());
 
         assertEquals(expected, fragmentSets);
     }
@@ -87,13 +87,13 @@ public class ShortcutFragmentSetTest {
         Label movie = Label.of("movie");
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
-                EquivalentFragmentSets.shortcut(null, a, b, c, d),
+                EquivalentFragmentSets.rolePlayer(null, a, b, c, d),
                 EquivalentFragmentSets.label(null, d, movie)
         );
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, sampleKB.tx());
+        RolePlayerFragmentSet.applyRolePlayerRoleOptimisation(fragmentSets, sampleKB.tx());
 
         assertEquals(expected, fragmentSets);
     }
@@ -104,14 +104,14 @@ public class ShortcutFragmentSetTest {
         EquivalentFragmentSet authorLabelFragmentSet = EquivalentFragmentSets.label(null, d, role);
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
-                EquivalentFragmentSets.shortcut(null, a, b, c, d),
+                EquivalentFragmentSets.rolePlayer(null, a, b, c, d),
                 authorLabelFragmentSet
         );
 
-        ShortcutFragmentSet.applyShortcutRoleOptimisation(fragmentSets, sampleKB.tx());
+        RolePlayerFragmentSet.applyRolePlayerRoleOptimisation(fragmentSets, sampleKB.tx());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
-                new ShortcutFragmentSet(null, a, b, c, null, null, null),
+                new RolePlayerFragmentSet(null, a, b, c, null, null, null),
                 authorLabelFragmentSet
         );
 
@@ -123,14 +123,14 @@ public class ShortcutFragmentSetTest {
         Label magician = Label.of("magician");
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
-                EquivalentFragmentSets.shortcut(null, a, b, c, null),
+                EquivalentFragmentSets.rolePlayer(null, a, b, c, null),
                 EquivalentFragmentSets.isa(null, a, d),
                 EquivalentFragmentSets.label(null, d, magician)
         );
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        ShortcutFragmentSet.applyShortcutRelationTypeOptimisation(fragmentSets, sampleKB.tx());
+        RolePlayerFragmentSet.applyRolePlayerRelationTypeOptimisation(fragmentSets, sampleKB.tx());
 
         assertEquals(expected, fragmentSets);
     }
@@ -140,14 +140,14 @@ public class ShortcutFragmentSetTest {
         Label movie = Label.of("movie");
 
         Collection<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(
-                EquivalentFragmentSets.shortcut(null, a, b, c, null),
+                EquivalentFragmentSets.rolePlayer(null, a, b, c, null),
                 EquivalentFragmentSets.isa(null, a, d),
                 EquivalentFragmentSets.label(null, d, movie)
         );
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        ShortcutFragmentSet.applyShortcutRelationTypeOptimisation(fragmentSets, sampleKB.tx());
+        RolePlayerFragmentSet.applyRolePlayerRelationTypeOptimisation(fragmentSets, sampleKB.tx());
 
         assertEquals(expected, fragmentSets);
     }
