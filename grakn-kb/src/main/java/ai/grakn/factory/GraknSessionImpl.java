@@ -33,6 +33,8 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import static ai.grakn.util.EngineCommunicator.contactEngine;
@@ -64,6 +66,12 @@ public class GraknSessionImpl implements GraknSession {
     //References so we don't have to open a tx just to check the count of the transactions
     private GraknTxAbstract<?> tx = null;
     private GraknTxAbstract<?> txBatch = null;
+
+    //This is used to map grakn properties into the underlaying properties
+    private static final Map<String, String> propertyMapper = new HashMap<>();
+    static{
+        //propertyMapper.put()
+    }
 
     //This constructor must remain public because it is accessed via reflection
     public GraknSessionImpl(String keyspace, String location){

@@ -49,7 +49,7 @@ public class GraknEngineConfig {
 
     public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn.properties";
 
-    public static final String DEFAULT_KEYSPACE_PROPERTY = "graph.default-keyspace";
+    public static final String DEFAULT_KEYSPACE_PROPERTY = "knowledge-base.default-keyspace";
 
     public static final String NUM_THREADS_PROPERTY = "loader.threads";
     public static final String JWT_SECRET_PROPERTY = "JWT.secret";

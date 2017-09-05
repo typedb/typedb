@@ -47,7 +47,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td>Default Keyspace</td>
-                        <td>{{configuration['graph.default-keyspace']}}</td>
+                        <td>{{configuration['knowledge-base.default-keyspace']}}</td>
                     </tr>
                     <tr>
                         <td>Graph Sharding Threshold</td>
@@ -75,7 +75,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td>Default Keyspace</td>
-                        <td>{{configuration['graph.default-keyspace']}}</td>
+                        <td>{{configuration['knowledge-base.default-keyspace']}}</td>
                     </tr>
                     <tr>
                         <td>Repeat Commits</td>

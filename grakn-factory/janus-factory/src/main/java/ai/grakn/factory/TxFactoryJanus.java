@@ -67,7 +67,6 @@ import static java.util.Arrays.stream;
 final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusGraph> {
     private final static Logger LOG = LoggerFactory.getLogger(TxFactoryJanus.class);
     private final static String DEFAULT_CONFIG = "backend-default";
-
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
 
     TxFactoryJanus(String keyspace, String engineUrl, Properties properties) {
