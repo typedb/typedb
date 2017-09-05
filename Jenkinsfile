@@ -3,41 +3,36 @@
 properties([pipelineTriggers([cron('H H/8 * * *')])])
 
 def buildGrakn = {
-    sh 'npm config set registry http://registry.npmjs.org/'
     checkout scm
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
     slackSend channel: "#github", message: """
 Build Started on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
 authored by - ${user}"""
-    sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
-    sh "mvn versions:set -DnewVersion=${env.BRANCH_NAME} -DgenerateBackupPoms=false"
-    sh "mvn clean install -Dmaven.repo.local=${workspace}/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
+
+    sh "grakn-test/src/test/bash/build-grakn.sh ${workspace} ${env.BRACH_NAME}"
+
     archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 }
 
 def initGrakn = {
-    sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
-    sh 'mkdir grakn-package'
-    sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
-    sh 'grakn.sh start'
+    sh 'grakn-test/src/test/bash/init-grakn.sh'
 }
 
 def testConnection = {
-    sh 'graql.sh -e "match \\\$x;"' //Sanity check query. I.e. is everything working?
+    sh 'grakn-test/src/test/bash/test-connection.sh'
 }
 
 def loadValidationData = {
-    sh 'wget https://github.com/ldbc/ldbc_snb_interactive_validation/raw/master/neo4j/readwrite_neo4j--validation_set.tar.gz'
+    sh '../grakn-test/test-snb/src/generate-SNB/download-SNB.sh'
     sh '../grakn-test/test-snb/src/generate-SNB/load-SNB.sh arch validate'
 }
 
 def measureSize = {
-    sh 'nodetool flush'
-    sh 'du -hd 0 grakn-package/db/cassandra/data'
+    sh 'grakn-test/src/test/bash/measure-size.sh'
 }
 
 def buildSnbConnectors = {
-    sh "mvn clean package assembly:single -Dmaven.repo.local=${workspace}/maven -DskipTests -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
+    sh "../grakn-test/test-snb/src/generate-SNB/build-snb-connectors.sh ${workspace}"
 }
 
 def validateQueries = {
@@ -45,10 +40,8 @@ def validateQueries = {
 }
 
 def tearDownGrakn = {
-    sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
     archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
-    sh 'grakn-package/bin/grakn.sh stop'
-    sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
+    sh 'grakn-test/src/test/bash/tear-down.sh'
 }
 
 node {
