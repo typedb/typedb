@@ -134,7 +134,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
                 set("storage.hostname", address).
                 set("storage.cassandra.keyspace", name).
                 set("storage.batch-loading", batchLoading);
-        
+
         String storageBackend = "storage.backend";
 
         //Load Defaults
