@@ -73,9 +73,9 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     //These properties are loaded in by default and can optionally be overwritten
     static final Properties DEFAULT_PROPERTIES;
     static {
-        String DEFAULT_CONFIG = "default-configs";
+        String DEFAULT_CONFIG = "default-configs.properties";
         DEFAULT_PROPERTIES = new Properties();
-        try (InputStream in = TxFactoryJanus.class.getResourceAsStream(DEFAULT_CONFIG)) {
+        try (InputStream in = TxFactoryJanus.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
             DEFAULT_PROPERTIES.load(in);
             in.close();
         } catch (IOException e) {
@@ -134,16 +134,22 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
                 set("storage.hostname", address).
                 set("storage.cassandra.keyspace", name).
                 set("storage.batch-loading", batchLoading);
-
-        //Overwrite storage
+        
         String storageBackend = "storage.backend";
-        properties.put(storageBackend, storageBackendMapper.get(properties.getProperty(storageBackend)));
 
         //Load Defaults
         DEFAULT_PROPERTIES.forEach((key, value) -> builder.set(key.toString(), value));
 
         //Load Passed in properties
-        properties.forEach((key, value) -> builder.set(key.toString(), value));
+        properties.forEach((key, value) -> {
+
+            //Overwrite storage
+            if(key.equals(storageBackend)){
+                value = storageBackendMapper.get(value);
+            }
+
+            builder.set(key.toString(), value);
+        });
 
         LOG.debug("Opening graph on {}", address);
         return builder.open();
