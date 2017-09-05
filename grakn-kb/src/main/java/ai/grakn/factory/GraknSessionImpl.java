@@ -136,11 +136,11 @@ public class GraknSessionImpl implements GraknSession {
      *
      * @param keyspace The keyspace of the tx
      * @param engineUrl The url of engine to get the tx factory config from
-     * @param graphType The type of tx to produce, default, batch, or compute
+     * @param type The type of tx to produce, default, batch, or compute
      * @return A new or existing grakn tx factory with the defined name connecting to the specified remote location
      */
-    private static TxFactory<?> configureGraphFactoryRemote(String keyspace, String engineUrl, String graphType){
-        String restFactoryUri = engineUrl + INITIALISE + "?" + CONFIG_PARAM + "=" + graphType + "&" + KEYSPACE_PARAM + "=" + keyspace;
+    private static TxFactory<?> configureGraphFactoryRemote(String keyspace, String engineUrl, String type){
+        String restFactoryUri = engineUrl + INITIALISE + "?" + CONFIG_PARAM + "=" + type + "&" + KEYSPACE_PARAM + "=" + keyspace;
 
         Properties properties = new Properties();
 

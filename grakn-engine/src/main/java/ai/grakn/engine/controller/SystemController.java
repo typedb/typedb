@@ -168,35 +168,35 @@ public class SystemController {
 
     @GET
     @Path("/configuration")
-    @ApiOperation(value = "Get config which is used to build graphs")
-    @ApiImplicitParam(name = "graphConfig", value = "The type of graph config to return", required = true, dataType = "string", paramType = "path")
+    @ApiOperation(value = "Get config which is used to build transactions")
+    @ApiImplicitParam(name = CONFIG_PARAM, value = "The type of config to return", required = true, dataType = "string", paramType = "path")
     private String getConfiguration(Request request, Response response) {
-        String graphConfig = request.queryParams(CONFIG_PARAM);
+        String config = request.queryParams(CONFIG_PARAM);
 
         // Make a copy of the properties object
         Properties properties = new Properties();
         properties.putAll(factory.properties());
 
         // Get the correct factory based on the request
-        switch ((graphConfig != null) ? graphConfig : DEFAULT) {
+        switch ((config != null) ? config : DEFAULT) {
             case DEFAULT:
                 break; // Factory is already correctly set
             case COMPUTER:
                 properties.setProperty(KB_MODE, properties.get(KB_ANALYTICS).toString());
                 break;
             default:
-                throw GraknServerException.internalError("Unrecognised graph config: " + graphConfig);
+                throw GraknServerException.internalError("Unrecognised config: " + config);
         }
 
         // Turn the properties into a Json object
-        Json config = Json.make(properties);
+        Json jsonConfig = Json.make(properties);
 
         // Remove the JWT Secret
-        if(config.has(GraknEngineConfig.JWT_SECRET_PROPERTY)) {
-            config.delAt(GraknEngineConfig.JWT_SECRET_PROPERTY);
+        if(jsonConfig.has(GraknEngineConfig.JWT_SECRET_PROPERTY)) {
+            jsonConfig.delAt(GraknEngineConfig.JWT_SECRET_PROPERTY);
         }
 
-        return config.toString();
+        return jsonConfig.toString();
     }
 
     @GET
