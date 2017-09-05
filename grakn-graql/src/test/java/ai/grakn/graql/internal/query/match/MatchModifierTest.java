@@ -25,7 +25,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Streamable;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.matcher.MovieMatchers;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import com.google.common.collect.ImmutableSet;
@@ -44,7 +43,13 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Order.asc;
 import static ai.grakn.graql.Order.desc;
 import static ai.grakn.matcher.GraknMatchers.variable;
+import static ai.grakn.matcher.MovieMatchers.apocalypseNow;
+import static ai.grakn.matcher.MovieMatchers.chineseCoffee;
 import static ai.grakn.matcher.MovieMatchers.containsAllMovies;
+import static ai.grakn.matcher.MovieMatchers.godfather;
+import static ai.grakn.matcher.MovieMatchers.heat;
+import static ai.grakn.matcher.MovieMatchers.hocusPocus;
+import static ai.grakn.matcher.MovieMatchers.theMuppets;
 import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
@@ -97,7 +102,7 @@ public class MatchModifierTest {
                 )
         ).orderBy("v", desc);
 
-        assertThat(match, variable(x, contains(MovieMatchers.godfather, MovieMatchers.godfather, MovieMatchers.apocalypseNow)));
+        assertThat(match, variable(x, contains(godfather, godfather, apocalypseNow)));
     }
 
     @Test
@@ -132,7 +137,7 @@ public class MatchModifierTest {
         Match match = qb.match(z.isa("movie").has("tmdb-vote-count", var("v"))).orderBy("v", desc);
 
         // Make sure movies are in the correct order
-        assertThat(match, variable(z, contains(MovieMatchers.godfather, MovieMatchers.hocusPocus, MovieMatchers.apocalypseNow, MovieMatchers.theMuppets, MovieMatchers.chineseCoffee)));
+        assertThat(match, variable(z, contains(godfather, hocusPocus, apocalypseNow, theMuppets, chineseCoffee)));
     }
 
     @Test
@@ -146,7 +151,7 @@ public class MatchModifierTest {
                 )
         ).orderBy("t", desc);
 
-        assertThat(match, variable(x, contains(MovieMatchers.heat, MovieMatchers.godfather, MovieMatchers.apocalypseNow)));
+        assertThat(match, variable(x, contains(heat, godfather, godfather, apocalypseNow)));
     }
 
     @Test
