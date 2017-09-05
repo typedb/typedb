@@ -14,7 +14,7 @@ comment_issue_id: 25
 
 ## Windows Support
 
-GRAKN is currently not supported natively on Windows. This is due to beta status of [Cassandra 2.1 on Windows](https://issues.apache.org/jira/browse/CASSANDRA-10673).
+GRAKN is currently not supported natively on Windows. 
 
 Your current options are:
 - a virtual machine with Ubuntu (eg. [VirtualBox](https://www.virtualbox.org/wiki/Downloads)) 

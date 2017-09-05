@@ -76,4 +76,4 @@ The visualiser is a way to show relationships structures of specific portions of
 
 ### Can you support a high volume of data?
 
-[Apache Cassandra](http://cassandra.apache.org) is the distributed database behind Facebook, Netflix, and other giant systems, which says a lot about its scalability. GRAKN.AI scales completely horizontally with Cassandra under-the-hood: we shard and replicate data easily, unlike some other DBs. We will publish some benchmark data soon!
+GRAKN.AI scales completely horizontally: we shard and replicate data easily, unlike some other DBs. We will publish some benchmark data soon!
