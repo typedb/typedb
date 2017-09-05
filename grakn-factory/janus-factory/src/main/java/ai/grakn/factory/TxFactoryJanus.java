@@ -20,7 +20,6 @@ package ai.grakn.factory;
 
 import ai.grakn.GraknTx;
 import ai.grakn.kb.internal.GraknTxJanus;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
@@ -41,8 +40,6 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -66,7 +63,6 @@ import static java.util.Arrays.stream;
  */
 final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusGraph> {
     private final static Logger LOG = LoggerFactory.getLogger(TxFactoryJanus.class);
-    private final static String DEFAULT_CONFIG = "backend-default";
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
 
     TxFactoryJanus(String keyspace, String engineUrl, Properties properties) {
@@ -109,18 +105,6 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     }
 
     private JanusGraph configureGraph(String name, String address, Properties properties, boolean batchLoading){
-        //Load default properties if none provided
-        if(properties == null){
-            properties = new Properties();
-            try (InputStream in = getClass().getResourceAsStream(DEFAULT_CONFIG)) {
-                properties.load(in);
-                in.close();
-            } catch (IOException e) {
-                throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
-            }
-        }
-
-
         JanusGraphFactory.Builder builder = JanusGraphFactory.build().
                 set("storage.hostname", address).
                 set("storage.cassandra.keyspace", name).
