@@ -26,6 +26,7 @@ import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.GraknVersion;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
@@ -61,11 +62,22 @@ public class GraknEngineServerTest {
     @Rule
     public final SystemOutRule stdout = new SystemOutRule();
 
+    private final GraknEngineConfig conf = GraknEngineConfig.create();
+    private static final String VERSION_KEY = "info:version";
+
+    private final RedisWrapper redisWrapper = mock(RedisWrapper.class);
+    private final Jedis jedis = mock(Jedis.class);
+
+    @Before
+    public void setUp() {
+        Pool<Jedis> jedisPool = mock(JedisPool.class);
+        when(redisWrapper.getJedisPool()).thenReturn(jedisPool);
+        when(jedisPool.getResource()).thenReturn(jedis);
+    }
 
     @Test
     public void whenEnginePropertiesIndicatesStandaloneTM_StandaloneTmIsStarted() {
         // Should start engine with in-memory server
-        GraknEngineConfig conf = GraknEngineConfig.create();
         conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
 
         // Start Engine
@@ -79,7 +91,6 @@ public class GraknEngineServerTest {
     public void whenEnginePropertiesIndicatesSingleQueueTM_SingleQueueTmIsStarted() {
         // Should start engine with distributed server, which means we will get a cannot
         // connect to Zookeeper exception (that has not been started)
-        GraknEngineConfig conf = GraknEngineConfig.create();
         conf.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
 
         // Start Engine
@@ -93,7 +104,6 @@ public class GraknEngineServerTest {
     public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded(){
         GraknTestSetup.startCassandraIfNeeded();
 
-        GraknEngineConfig conf = GraknEngineConfig.create();
         try (GraknEngineServer server = GraknEngineServer.create(conf)) {
             server.start();
             assertNotNull(server.factory().systemKeyspace());
@@ -108,89 +118,47 @@ public class GraknEngineServerTest {
 
     @Test
     public void whenEngineServerIsStartedTheFirstTime_TheVersionIsRecordedInRedis() {
-        String versionKey = "info:version";
-
-        GraknEngineConfig conf = GraknEngineConfig.create();
-
-        RedisWrapper redisWrapper = mock(RedisWrapper.class);
-        Pool<Jedis> jedisPool = mock(JedisPool.class);
-        Jedis jedis = mock(Jedis.class);
-
-        when(redisWrapper.getJedisPool()).thenReturn(jedisPool);
-        when(jedisPool.getResource()).thenReturn(jedis);
-        when(jedis.get(versionKey)).thenReturn(null);
+        when(jedis.get(VERSION_KEY)).thenReturn(null);
 
         try (GraknEngineServer server = GraknEngineServer.create(conf, redisWrapper)) {
             server.start();
         }
 
-        verify(jedis).set(versionKey, GraknVersion.VERSION);
+        verify(jedis).set(VERSION_KEY, GraknVersion.VERSION);
     }
 
     @Test
     public void whenEngineServerIsStartedASecondTime_TheVersionIsNotChanged() {
-        String versionKey = "info:version";
-
-        GraknEngineConfig conf = GraknEngineConfig.create();
-
-        RedisWrapper redisWrapper = mock(RedisWrapper.class);
-        Pool<Jedis> jedisPool = mock(JedisPool.class);
-        Jedis jedis = mock(Jedis.class);
-
-        when(redisWrapper.getJedisPool()).thenReturn(jedisPool);
-        when(jedisPool.getResource()).thenReturn(jedis);
-        when(jedis.get(versionKey)).thenReturn(GraknVersion.VERSION);
+        when(jedis.get(VERSION_KEY)).thenReturn(GraknVersion.VERSION);
 
         try (GraknEngineServer server = GraknEngineServer.create(conf, redisWrapper)) {
             server.start();
         }
 
-        verify(jedis, never()).set(eq(versionKey), any());
+        verify(jedis, never()).set(eq(VERSION_KEY), any());
     }
 
     @Test
     public void whenEngineServerIsStartedWithDifferentVersion_PrintWarning() {
-        String versionKey = "info:version";
-
-        GraknEngineConfig conf = GraknEngineConfig.create();
-
-        RedisWrapper redisWrapper = mock(RedisWrapper.class);
-        Pool<Jedis> jedisPool = mock(JedisPool.class);
-        Jedis jedis = mock(Jedis.class);
-
-        when(redisWrapper.getJedisPool()).thenReturn(jedisPool);
-        when(jedisPool.getResource()).thenReturn(jedis);
-        when(jedis.get(versionKey)).thenReturn(OLD_VERSION);
-
+        when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
         stdout.enableLog();
 
         try (GraknEngineServer server = GraknEngineServer.create(conf, redisWrapper)) {
             server.start();
         }
 
-        verify(jedis).get(versionKey);
-
+        verify(jedis).get(VERSION_KEY);
         assertThat(stdout.getLog(), containsString(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, OLD_VERSION)));
     }
 
     @Test
     public void whenEngineServerIsStartedWithDifferentVersion_TheVersionIsNotChanged() {
-        String versionKey = "info:version";
-
-        GraknEngineConfig conf = GraknEngineConfig.create();
-
-        RedisWrapper redisWrapper = mock(RedisWrapper.class);
-        Pool<Jedis> jedisPool = mock(JedisPool.class);
-        Jedis jedis = mock(Jedis.class);
-
-        when(redisWrapper.getJedisPool()).thenReturn(jedisPool);
-        when(jedisPool.getResource()).thenReturn(jedis);
-        when(jedis.get(versionKey)).thenReturn("0.0.1-ontoit-alpha");
+        when(jedis.get(VERSION_KEY)).thenReturn(OLD_VERSION);
 
         try (GraknEngineServer server = GraknEngineServer.create(conf, redisWrapper)) {
             server.start();
         }
 
-        verify(jedis, never()).set(eq(versionKey), any());
+        verify(jedis, never()).set(eq(VERSION_KEY), any());
     }
 }

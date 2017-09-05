@@ -86,6 +86,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  */
 public class GraknEngineServer implements AutoCloseable {
 
+    private static final String REDIS_VERSION_KEY = "info:version";
+
     private static final String LOAD_SYSTEM_SCHEMA_LOCK_NAME = "load-system-schema";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
@@ -154,9 +156,9 @@ public class GraknEngineServer implements AutoCloseable {
 
     private void checkVersion() {
         Jedis jedis = redisWrapper.getJedisPool().getResource();
-        String storedVersion = jedis.get("info:version");
+        String storedVersion = jedis.get(REDIS_VERSION_KEY);
         if (storedVersion == null) {
-            jedis.set("info:version", GraknVersion.VERSION);
+            jedis.set(REDIS_VERSION_KEY, GraknVersion.VERSION);
         } else if (!storedVersion.equals(GraknVersion.VERSION)) {
             LOG.warn(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, storedVersion));
         }
