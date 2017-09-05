@@ -19,8 +19,9 @@ package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.graql.Pattern;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
@@ -38,66 +39,73 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 
 /**
  * <p>
- *     RuleType endpoints
+ *     Rule endpoints
  * </p>
  *
  * @author Ganeshwara Herawan Hananda
  */
 
-public class RuleTypeController {
+public class RuleController {
     private final EngineGraknTxFactory factory;
-    private static final Logger LOG = LoggerFactory.getLogger(RuleTypeController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RuleController.class);
 
-    public RuleTypeController(EngineGraknTxFactory factory, Service spark) {
+    public RuleController(EngineGraknTxFactory factory, Service spark) {
         this.factory = factory;
-        spark.get("/api/ruleType/:ruleTypeLabel", this::getRuleType);
-        spark.post("/api/ruleType", this::postRuleType);
+        spark.get("/api/rule/:ruleLabel", this::getRule);
+        spark.post("/api/rule", this::postRule);
     }
 
-    private Json getRuleType(Request request, Response response) {
-        LOG.info("getRuleType - request received.");
-        String ruleTypeLabel = mandatoryPathParameter(request, "ruleTypeLabel");
+    private Json getRule(Request request, Response response) {
+        LOG.info("getRule - request received.");
+        String ruleLabel = mandatoryPathParameter(request, "ruleLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("getRuleType - attempting to find rule " + ruleTypeLabel + " in keyspace " + keyspace);
+        LOG.info("getRule - attempting to find rule " + ruleLabel + " in keyspace " + keyspace);
         try (GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
-            Optional<RuleType> ruleType = Optional.ofNullable(tx.getRuleType(ruleTypeLabel));
-            if (ruleType.isPresent()) {
-                String jsonConceptId = ruleType.get().getId().getValue();
-                String jsonRuleTypeLabel = ruleType.get().getLabel().getValue();
+            Optional<Rule> rule = Optional.ofNullable(tx.getRule(ruleLabel));
+            if (rule.isPresent()) {
+                String jsonConceptId = rule.get().getId().getValue();
+                String jsonRuleLabel = rule.get().getLabel().getValue();
                 response.status(HttpStatus.SC_OK);
-                Json responseBody = ruleTypeJson(jsonConceptId, jsonRuleTypeLabel);
-                LOG.info("getRuleType - ruleType found - " + jsonConceptId + ", " + jsonRuleTypeLabel + ". request processed.");
+                Json responseBody = ruleJson(jsonConceptId, jsonRuleLabel);
+                LOG.info("getRule - rule found - " + jsonConceptId + ", " + jsonRuleLabel + ". request processed.");
                 return responseBody;
             } else {
                 response.status(HttpStatus.SC_BAD_REQUEST);
-                LOG.info("getRuleType - ruleType NOT found. request processed.");
+                LOG.info("getRule - rule NOT found. request processed.");
                 return Json.nil();
             }
         }
     }
 
-    private Json postRuleType(Request request, Response response) {
-        LOG.info("postRuleType - request received.");
+    private Json postRule(Request request, Response response) {
+        LOG.info("postRule - request received.");
         Json requestBody = Json.read(mandatoryBody(request));
-        String ruleTypeLabel = requestBody.at("ruleType").at("label").asString();
+        String ruleLabel = requestBody.at("rule").at("label").asString();
+        String when = requestBody.at("rule").at("when").asString();
+        String then = requestBody.at("rule").at("then").asString();
+
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        LOG.info("postRuleType - attempting to add a new ruleType " + ruleTypeLabel + " on keyspace " + keyspace);
+        LOG.info("postRule - attempting to add a new rule " + ruleLabel + " on keyspace " + keyspace);
         try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
-            RuleType ruleType = tx.putRuleType(ruleTypeLabel);
+            Rule rule = tx.putRule(
+                ruleLabel,
+                tx.graql().parsePattern(when),
+                tx.graql().parsePattern(then)
+            );
             tx.commit();
-            String jsonConceptId = ruleType.getId().getValue();
-            String jsonRuleTypeLabel = ruleType.getLabel().getValue();
-            LOG.info("postRuleType - ruleType " + jsonRuleTypeLabel + " with id " + jsonConceptId + " added. request processed.");
+            String jsonConceptId = rule.getId().getValue();
+            String jsonRuleLabel = rule.getLabel().getValue();
+            LOG.info("postRule - rule " + jsonRuleLabel + " with id " + jsonConceptId + " added. request processed.");
             response.status(HttpStatus.SC_OK);
-            Json responseBody = ruleTypeJson(jsonConceptId, ruleTypeLabel);
+            Json responseBody = ruleJson(jsonConceptId, ruleLabel);
 
             return responseBody;
         }
     }
 
-    private Json ruleTypeJson(String conceptId, String label) {
+    private Json ruleJson(String conceptId, String label) {
         return Json.object(
-            "ruleType", Json.object(
+            "rule", Json.object(
                 "conceptId", conceptId, "label", label
             )
         );

@@ -24,7 +24,6 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
-import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.junit.Before;
@@ -36,12 +35,13 @@ import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class RuleTypeControllerTest {
+public class RuleControllerTest {
     private static GraknTx mockTx;
     private static EngineGraknTxFactory factory = mock(EngineGraknTxFactory.class);
 
@@ -50,7 +50,7 @@ public class RuleTypeControllerTest {
 
     @ClassRule
     public static SparkContext sparkContext = SparkContext.withControllers(spark -> {
-        new RuleTypeController(factory, spark);
+        new RuleController(factory, spark);
     });
 
     @Before
@@ -59,40 +59,49 @@ public class RuleTypeControllerTest {
 
         when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
 
-        when(mockTx.putRuleType(anyString())).thenAnswer(invocation ->
-            sampleKB.tx().putRuleType((String) invocation.getArgument(0)));
-        when(mockTx.getRuleType(anyString())).thenAnswer(invocation ->
-            sampleKB.tx().getRuleType(invocation.getArgument(0)));
+        when(mockTx.putRule(anyString(), any(), any())).thenAnswer(invocation ->
+            sampleKB.tx().putRule(
+                (String) invocation.getArgument(0),
+                mockTx.graql().parsePattern((String) invocation.getArgument(1)),
+                mockTx.graql().parsePattern((String) invocation.getArgument(2))
+            )
+        );
+        when(mockTx.getRule(anyString())).thenAnswer(invocation ->
+            sampleKB.tx().getRule(invocation.getArgument(0)));
 
         when(factory.tx(mockTx.getKeyspace(), GraknTxType.READ)).thenReturn(mockTx);
         when(factory.tx(mockTx.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockTx);
     }
 
     @Test
-    public void getRuleTypeFromMovieGraphShouldExecuteSuccessfully() {
+    public void getRuleFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace())
-            .get("/api/ruleType/a-rule-type");
+            .get("/api/rule/a-rule-type");
 
         Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.at("ruleType").at("conceptId").asString(), notNullValue());
-        assertThat(responseBody.at("ruleType").at("label").asString(), equalTo("a-rule-type"));
+        assertThat(responseBody.at("rule").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("rule").at("label").asString(), equalTo("a-rule-type"));
     }
 
     @Test
-    public void postRuleTypeShouldExecuteSuccessfully() {
-        Json body = Json.object("ruleType", Json.object("label", "newRuleType"));
+    public void postRuleShouldExecuteSuccessfully() {
+        Json body = Json.object("rule", Json.object(
+            "label", "newRule",
+            "when", "(parent: $p, child: $c) isa Parent;",
+            "then", "(ancestor: $p, descendant: $c) isa Ancestor;"
+        ));
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace())
             .body(body.toString())
-            .post("/api/ruleType");
+            .post("/api/rule");
 
         Json responseBody = Json.read(response.body().asString());
 
         assertThat(response.statusCode(), equalTo(200));
-        assertThat(responseBody.at("ruleType").at("conceptId").asString(), notNullValue());
-        assertThat(responseBody.at("ruleType").at("label").asString(), equalTo("newRuleType"));
+        assertThat(responseBody.at("rule").at("conceptId").asString(), notNullValue());
+        assertThat(responseBody.at("rule").at("label").asString(), equalTo("newRule"));
     }
 }

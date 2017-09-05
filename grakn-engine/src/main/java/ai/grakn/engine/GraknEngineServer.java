@@ -38,7 +38,7 @@ import ai.grakn.engine.controller.api.RelationshipTypeController;
 import ai.grakn.engine.controller.api.AttributeController;
 import ai.grakn.engine.controller.api.AttributeTypeController;
 import ai.grakn.engine.controller.api.RoleController;
-import ai.grakn.engine.controller.api.RuleTypeController;
+import ai.grakn.engine.controller.api.RuleController;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.data.RedisWrapper.Builder;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -246,7 +246,7 @@ public class GraknEngineServer implements AutoCloseable {
         new AttributeController(factory, spark);
         new AttributeTypeController(factory, spark);
         new RoleController(factory, spark);
-        new RuleTypeController(factory, spark);
+        new RuleController(factory, spark);
 
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();
