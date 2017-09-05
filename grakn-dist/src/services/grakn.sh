@@ -55,13 +55,14 @@ clean_grakn() {
     "${GRAKN_HOME}/services/grakn-redis.sh" clean
 }
 
-
-
 case "$1" in
 
 start)
 
-    "${GRAKN_HOME}/services/grakn-redis.sh" start
+    if ! "${GRAKN_HOME}/services/grakn-redis.sh" start ; then
+      echo "Unable to start Redis!"
+      exit 1
+    fi
     if [ "$USE_CASSANDRA" ]; then
         "${GRAKN_HOME}/services/grakn-cassandra.sh" start
     fi
