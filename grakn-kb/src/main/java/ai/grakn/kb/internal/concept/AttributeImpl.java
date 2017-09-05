@@ -69,7 +69,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     @Override
     public Stream<Thing> ownerInstances() {
         //Get Owner via implicit structure
-        Stream<Thing> implicitOwners = getShortcutNeighbours();
+        Stream<Thing> implicitOwners = getRolePlayerNeighbours();
         //Get owners via edges
         Stream<Thing> edgeOwners = neighbours(Direction.IN, Schema.EdgeLabel.RESOURCE);
 
