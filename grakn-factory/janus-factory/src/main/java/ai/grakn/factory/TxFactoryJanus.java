@@ -70,7 +70,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     private final static Logger LOG = LoggerFactory.getLogger(TxFactoryJanus.class);
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
 
-    //These properties are loaded in by default and can optionally be overritten
+    //These properties are loaded in by default and can optionally be overwritten
     static final Properties DEFAULT_PROPERTIES;
     static {
         String DEFAULT_CONFIG = "default-configs";
