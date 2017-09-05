@@ -22,6 +22,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -84,8 +85,16 @@ public class ConjunctiveState extends QueryState {
     }
 
     @Override
-    public ResolutionState propagateAnswer(AnswerState state) {
-        return new AnswerState(state.getSubstitution(), getUnifier(), getParentState());
+    ReasonerQueryImpl getQuery(){return query;}
+
+    @Override
+    Unifier getCacheUnifier() {
+        return new UnifierImpl();
+    }
+
+    ResolutionState propagateAnswer(AnswerState state){
+        Answer answer = state.getAnswer();
+        return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState()) : null;
     }
 
     @Override

@@ -47,8 +47,8 @@ public class AtomicState extends QueryState{
     private final Iterator<Answer> dbIterator;
     private final Iterator<RuleTuple> ruleIterator;
 
-    private final Unifier cacheUnifier;
     private InferenceRule currentRule = null;
+    private final Unifier cacheUnifier;
 
     public AtomicState(ReasonerAtomicQuery q,
                        Answer sub,
@@ -84,9 +84,20 @@ public class AtomicState extends QueryState{
     }
 
     @Override
-    public ResolutionState propagateAnswer(AnswerState state) {
-        Answer answer = state.getAtomicAnswer(query, currentRule, cacheUnifier, getCache());
-        return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState()) : null;
+    boolean isAtomicState(){ return true;}
+
+    ResolutionState propagateAnswer(AnswerState state){
+        Answer answer = state.getAnswer();
+        if (answer.isEmpty()) return null;
+
+        if (currentRule != null){
+            Set<Unifier> permutationUnifiers = query.getAtom().getPermutationUnifiers(currentRule.getHead().getAtom());
+            return permutationUnifiers.size() == 1?
+                    new AnswerState(answer, getUnifier(), getParentState()) :
+                    new PermutationState(answer, getUnifier(), getParentState(), permutationUnifiers);
+        }
+
+        return new AnswerState(answer, getUnifier(), getParentState());
     }
 
     @Override
@@ -95,6 +106,14 @@ public class AtomicState extends QueryState{
         if (ruleIterator.hasNext()) return generateSubGoalFromRule(ruleIterator.next());
         return null;
     }
+
+    @Override
+    ReasonerAtomicQuery getQuery(){return query;}
+
+    @Override
+    Unifier getCacheUnifier(){ return cacheUnifier;}
+
+    InferenceRule getCurrentRule(){ return currentRule;}
 
     private ResolutionState generateSubGoalFromRule(RuleTuple ruleTuple){
         currentRule = ruleTuple.getRule();

@@ -253,10 +253,15 @@ public abstract class Atom extends AtomicBase {
     public Set<TypeAtom> getSpecificTypeConstraints() { return new HashSet<>();}
 
     /**
+     * computes a set of permutation unifiers that define swapping operation between role players
+     * NB: returns an identity unifier by default
      * @param headAtom unification reference atom
      * @return set of permutation unifiers that guarantee all variants of role assignments are performed and hence the results are complete
      */
-    public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return Collections.singleton(new UnifierImpl());}
+    public Set<Unifier> getPermutationUnifiers(Atom headAtom){
+        //return Collections.emptySet();
+        return Collections.singleton(new UnifierImpl());
+    }
 
     /**
      * infers types (type, role types) fo the atom if applicable/possible

@@ -52,19 +52,22 @@ class AnswerState extends ResolutionState {
         return getParentState().propagateAnswer(this);
     }
 
-
-    Answer getAtomicAnswer(ReasonerAtomicQuery query, InferenceRule rule, Unifier cacheUnifier, QueryCache<ReasonerAtomicQuery> cache){
-        Answer answer;
-        if (rule == null){
-            answer = getSubstitution();
-        } else {
-            answer = rule.requiresMaterialisation(query.getAtom()) ?
-                    getMaterialisedAnswer(query, rule, cache) :
-                    getRuleAnswer(query, rule);
+    Answer getAnswer(){
+        if (!getParentState().isAtomicState()) return getSubstitution();
+        else{
+            Answer answer;
+            AtomicState parent = (AtomicState) getParentState();
+            ReasonerAtomicQuery query = parent.getQuery();
+            InferenceRule rule = parent.getCurrentRule();
+            QueryCache<ReasonerAtomicQuery> cache = parent.getCache();
+            if (rule == null) answer = getSubstitution();
+            else{
+                answer = rule.requiresMaterialisation(query.getAtom()) ?
+                        getMaterialisedAnswer(query, rule, cache) :
+                        getRuleAnswer(query, rule);
+            }
+            return cache.recordAnswerWithUnifier(query, answer, parent.getCacheUnifier());
         }
-
-        if (answer.isEmpty()) return answer;
-        return cache.recordAnswerWithUnifier(query, answer, cacheUnifier);
     }
 
     private Answer getRuleAnswer(ReasonerAtomicQuery query, InferenceRule rule){

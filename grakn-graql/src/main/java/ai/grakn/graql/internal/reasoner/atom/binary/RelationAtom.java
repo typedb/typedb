@@ -508,19 +508,22 @@ public class RelationAtom extends IsaAtom {
 
     @Override
     public Set<Unifier> getPermutationUnifiers(Atom headAtom) {
+        //if (!headAtom.isRelation()) return Collections.emptySet();
         if (!headAtom.isRelation()) return Collections.singleton(new UnifierImpl());
 
         //if this atom is a match all atom, add type from rule head and find unmapped roles
         RelationAtom relAtom = getPredicateVariable().getValue().isEmpty() ? this.addType(headAtom.getSchemaConcept()) : this;
         List<Var> permuteVars = new ArrayList<>(relAtom.getNonSpecificRolePlayers());
+
+        //if (permuteVars.isEmpty()) return Collections.emptySet();
         if (permuteVars.isEmpty()) return Collections.singleton(new UnifierImpl());
 
-        List<List<Var>> varPermutations = getListPermutations(
-                new ArrayList<>(permuteVars)).stream()
-                .filter(l -> !l.isEmpty())
-                .collect(Collectors.toList()
-                );
-        return getUnifiersFromPermutations(permuteVars, varPermutations);
+        List<List<Var>> varPermutations =
+                getListPermutations(new ArrayList<>(permuteVars))
+                        .stream()
+                        .collect(Collectors.toList());
+        Set<Unifier> unifiersFromPermutations = getUnifiersFromPermutations(permuteVars, varPermutations);
+        return unifiersFromPermutations;
     }
 
     /**
