@@ -23,7 +23,9 @@ import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Streamable;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.matcher.MovieMatchers;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
@@ -37,6 +39,7 @@ import org.junit.rules.ExpectedException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Order.asc;
@@ -99,6 +102,21 @@ public class MatchModifierTest {
     }
 
     @Test
+    public void testOrPatternOrderByUnselected() {
+        Match query = qb.match(
+                x.isa("movie"),
+                var().rel(x).rel(y),
+                or(
+                        y.isa("person"),
+                        y.isa("genre").val(neq("crime"))
+                ),
+                y.has("name", n)
+        ).orderBy(n);
+
+        assertResultsOrderedByValue(query, n, true);
+    }
+
+    @Test
     public void testValueOrderedQuery() {
         Var theMovie = var("the-movie");
         GetQuery query = qb.match(theMovie.isa("movie").has("title", n)).orderBy(n, desc).get();
@@ -143,7 +161,7 @@ public class MatchModifierTest {
         match.get(ImmutableSet.of(y));
     }
 
-    private <T extends Comparable<T>> void assertResultsOrderedByValue(GetQuery query, Var var, boolean asc) {
+    private <T extends Comparable<T>> void assertResultsOrderedByValue(Streamable<Answer> query, Var var, boolean asc) {
         Stream<T> values = query.stream().map(result -> result.get(var).<T>asAttribute().getValue());
         assertResultsOrdered(values, asc);
     }
