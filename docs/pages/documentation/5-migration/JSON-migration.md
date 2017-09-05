@@ -7,7 +7,6 @@ summary: "This document will teach you how to migrate JSON data into Grakn."
 sidebar: documentation_sidebar
 permalink: /documentation/migration/JSON-migration.html
 folder: documentation
-comment_issue_id: 32
 ---
 
 ## Introduction

@@ -7,7 +7,6 @@ summary: "Learn how to use the Java API to model a schema"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/java-api-example.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 This example shows how to use Java in a basic example that can be extended as a template for your own projects. It shows how to get set up, then how to build up a schema, add data and how to make some queries. The example we will build is very simple: it's based on the genealogy dataset we have used throughout the GRAKN.AI documentation. We have kept it very simple (as close to a Hello World as you can get while still being useful as a template for creating and querying a knowledge base). You can find it in our sample-projects repository on [Github](https://github.com/graknlabs/sample-projects/tree/master/example-java-api-genealogy).

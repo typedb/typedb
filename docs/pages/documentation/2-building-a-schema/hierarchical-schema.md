@@ -7,7 +7,6 @@ summary: "How to build a hierarchical schema"
 sidebar: documentation_sidebar
 permalink: /documentation/building-a-schema/hierarchical-schema.html
 folder: documentation
-comment_issue_id: 22
 ---
 
 {% include warning.html content="Please note that this page is in progress and subject to revision." %}

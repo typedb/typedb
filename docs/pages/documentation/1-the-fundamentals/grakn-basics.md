@@ -7,7 +7,6 @@ summary: "Introducing the basics of the Grakn object model."
 sidebar: documentation_sidebar
 permalink: /documentation/the-fundamentals/grakn-basics.html
 folder: documentation
-comment_issue_id: 17
 ---
 
 <!-- This page is ready to be filled in - I've removed all the previous content as it was superseded by the Knowledge Model document -->

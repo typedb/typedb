@@ -7,7 +7,6 @@ summary: "This document will teach you how to set up a Grakn environment, start 
 sidebar: documentation_sidebar
 permalink: /documentation/get-started/setup-guide.html
 folder: documentation
-comment_issue_id: 16
 ---
 
 ## First: Download GRAKN.AI

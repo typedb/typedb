@@ -7,7 +7,6 @@ summary: "This document will work through a simple example using the Graql shell
 sidebar: documentation_sidebar
 permalink: /documentation/get-started/quickstart-tutorial.html
 folder: documentation
-comment_issue_id: 17
 ---
 
 ## Summary

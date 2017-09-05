@@ -5,7 +5,6 @@ tags: [graql, java, java-api]
 sidebar: documentation_sidebar
 permalink: /documentation/api-reference/api-reference.html
 toc: false
-comment_issue_id: 19
 ---
 
 Welcome to the API Reference landing page. From here, you can find the latest, and all previous, versions of our API reference.

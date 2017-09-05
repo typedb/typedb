@@ -7,7 +7,6 @@ summary: "A short example to illustrate Graql queries"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/modern.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 If you have not yet set up the Grakn environment, please see the [Setup guide](../get-started/setup-guide.html). For a comprehensive guide to all Graql keywords, please see the [Graql documentation](https://grakn.ai/pages/documentation/graql/graql-overview.html).

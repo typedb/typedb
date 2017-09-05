@@ -7,7 +7,6 @@ summary: "An example to illustrate inference using genealogy data."
 sidebar: documentation_sidebar
 permalink: /documentation/examples/graql-reasoning.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 ## Introduction

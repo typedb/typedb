@@ -7,7 +7,6 @@ summary: "Landing page for documentation about loading data in different formats
 sidebar: documentation_sidebar
 permalink: /documentation/migration/migration-overview.html
 folder: documentation
-comment_issue_id: 32
 ---
 
 ## Introduction

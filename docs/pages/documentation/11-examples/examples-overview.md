@@ -7,7 +7,6 @@ summary: "Landing page for Grakn examples."
 sidebar: documentation_sidebar
 permalink: /documentation/examples/examples-overview.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 

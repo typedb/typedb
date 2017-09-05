@@ -6,7 +6,6 @@ summary: "This page introduces the connected components algorithm and explains h
 sidebar: documentation_sidebar
 permalink: /documentation/graql-analytics/analytics-connected-components.html
 folder: documentation
-comment_issue_id: 71
 ---
 
 The connected components algorithm can be used to find clusters of instances in the knowledge base that are connected.

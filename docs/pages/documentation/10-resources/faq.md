@@ -7,7 +7,6 @@ summary: "Frequently asked questions about Grakn."
 sidebar: documentation_sidebar
 permalink: /documentation/resources/faq.html
 folder: documentation
-comment_issue_id: 25
 ---
 
 {% include note.html content="This page contains some of the questions were are mostly commonly asked, and is updated regularly. There is also a separate [Contributor FAQ](../../contributors/contributor-faq.html) for those collaborating with us on GRAKN.AI. You may find an answer here but, if you do not, please feel free to use our [discussion forums](http://discuss.grakn.ai) to ask us for help or advice." %}

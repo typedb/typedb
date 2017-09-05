@@ -7,7 +7,6 @@ summary: "An example to illustrate migration of JSON to Grakn"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/JSON-migration.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 

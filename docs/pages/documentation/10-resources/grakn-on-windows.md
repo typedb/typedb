@@ -7,7 +7,6 @@ summary: "A guide to setting up GRAKN.AI on Windows."
 sidebar: documentation_sidebar
 permalink: /documentation/resources/grakn-on-windows.html
 folder: documentation
-comment_issue_id: 25
 ---
 
 {% include warning.html content="**Please note that there is no official support for Windows, although we expect it to be added later to GRAKN.AI. This is a suggested workaround.**" %}

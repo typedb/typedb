@@ -7,7 +7,6 @@ summary: "A guide to setting up a production deployment of GRAKN.AI."
 sidebar: documentation_sidebar
 permalink: /documentation/deploy-grakn/grakn-deployment-guide.html
 folder: documentation
-comment_issue_id: 24
 ---
 
 

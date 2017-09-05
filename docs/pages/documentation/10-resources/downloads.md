@@ -8,7 +8,6 @@ This is a list of Grakn releases. It's the place to come to download the most re
 sidebar: documentation_sidebar
 permalink: /documentation/resources/downloads.html
 folder: documentation
-comment_issue_id: 25
 ---
 
 

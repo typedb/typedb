@@ -7,7 +7,6 @@ summary: "A short example to illustrate migration of OWL to Grakn"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/OWL-migration.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 For a comprehensive guide to migration, please see both our [Migration Tutorial](../migration/migration-overview.html) and our additional documentation specific to [OWL Migration](../migration/OWL-migration.html).

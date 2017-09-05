@@ -7,7 +7,6 @@ summary: "How to use Grakn for statistical analysis"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/analytics.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 

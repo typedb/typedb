@@ -7,7 +7,6 @@ summary: "An example to illustrate migration of CSV to Grakn"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/CSV-migration.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 

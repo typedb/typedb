@@ -7,7 +7,6 @@ summary: "This document will teach you how to load OWL into Grakn."
 sidebar: documentation_sidebar
 permalink: /documentation/migration/OWL-migration.html
 folder: documentation
-comment_issue_id: 32
 ---
 
 ## Introduction

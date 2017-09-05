@@ -7,7 +7,6 @@ summary: "Resources to help you learn more about databases."
 sidebar: documentation_sidebar
 permalink: /documentation/resources/resources-overview.html
 folder: documentation
-comment_issue_id: 25
 ---
 
 This page lists useful resources for learning about Grakn and Graph Databases.

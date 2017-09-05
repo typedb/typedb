@@ -7,7 +7,6 @@ summary: "How to use the Grakn Visualiser."
 sidebar: documentation_sidebar
 permalink: /documentation/grakn-dashboard/visualiser.html
 folder: documentation
-comment_issue_id: 17
 ---
 
 {% include note.html content="These instructions refer to the <b>[0.12.1](https://github.com/graknlabs/grakn/releases/tag/v0.12.1)</b> release of GRAKN.AI. Later versions of the product may include some changes to the user experience, and you may find that some instructions become out-dated. We will endeavour to update information on this page as soon after a release as is possible. The instructions here refer to use of the visualiser on macOS, and screen grabs were taken in Safari." %}

@@ -6,7 +6,6 @@ summary: "This page introduces the computation of degrees in a graph."
 sidebar: documentation_sidebar
 permalink: /documentation/graql-analytics/analytics-degrees.html
 folder: documentation
-comment_issue_id: 71
 ---
 
 What is the most important instance in a graph? Given no more context than this, `degrees` can provide an answer of

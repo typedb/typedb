@@ -7,7 +7,6 @@ summary: "Demonstrates how to create a basic schema"
 sidebar: documentation_sidebar
 permalink: /documentation/building-a-schema/basic-schema.html
 folder: documentation
-comment_issue_id: 22
 ---
 
 {% include warning.html content="Please note that this page is in progress and subject to revision." %}

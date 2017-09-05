@@ -6,7 +6,6 @@ summary: "This page introduces the shortest path functionality of analytics."
 sidebar: documentation_sidebar
 permalink: /documentation/graql-analytics/analytics-shortest-path.html
 folder: documentation
-comment_issue_id: 71
 ---
 
 ## How are two instances in the knowledge base related?

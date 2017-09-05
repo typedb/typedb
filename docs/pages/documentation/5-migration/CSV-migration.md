@@ -7,7 +7,6 @@ summary: "This document will teach you how to migrate CSV data into Grakn."
 sidebar: documentation_sidebar
 permalink: /documentation/migration/CSV-migration.html
 folder: documentation
-comment_issue_id: 32
 ---
 
 ## Introduction
