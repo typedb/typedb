@@ -198,6 +198,3 @@ graql.sh -e "match \$x isa movie;"
 Notice that you have to escape the dollars to stop the shell interpreting them. You can then pipe the output into a command or a file.
 
 {% include links.html %}
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/25" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

@@ -288,6 +288,3 @@ insert $plant0 isa plant has common "Marsh Marigold" has botanical "Caltha palus
 You can find further documentation about migration in our API reference documentation (which is in the */docs* directory of the distribution zip file, and also online [here](https://grakn.ai/javadocs.html). An example of JSON migration using the Java API can be found on [Github](https://github.com/graknlabs/sample-projects/tree/master/example-json-migration-giphy).
 
 {% include links.html %}
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/32" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

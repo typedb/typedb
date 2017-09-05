@@ -97,8 +97,3 @@ It is possible to extract data from Grakn and use it as a data science tool for 
 If you are interested in writing an example on Grakn, maybe as a way of trying it out, please take a look at the [Example Projects](./projects.html) page, which lists some ideas that we have for potential examples or research projects.
 
 {% include links.html %}
-
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/27" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
-

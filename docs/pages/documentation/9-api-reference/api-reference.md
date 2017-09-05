@@ -743,6 +743,3 @@ Server: Jetty(9.3.6.v20151106)
 
 ## Feedback
 We hope you find our documentation helpful, but if you need more information, please don't hesitate to contact us using our [discussion forums](http://discuss.grakn.ai) or through our main [website](http://www.grakn.ai).
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/19" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

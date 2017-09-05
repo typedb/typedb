@@ -336,6 +336,3 @@ Exporting data or the schema from Grakn, into Graql, will always redirect to sta
 This example has illustrated how to migrate CSV data into Grakn. Having read it, you may want to further study our documentation about [CSV migration](../migration/CSV-migration.html) and [Graql templating](https://grakn.ai/pages/documentation/graql/graql-templating.html).  
 
 {% include links.html %}
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/27" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

@@ -217,6 +217,3 @@ This opens a separate tab in your browser and points it to the Grakn documentati
 Now you have started getting to grips with Grakn, please explore our additional [example code](../examples/examples-overview.html) and documentation. We are always adding more and welcome ideas and improvement suggestions. Please [get in touch](https://grakn.ai/community.html)!
 
 {% include links.html %}
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/17" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

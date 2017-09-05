@@ -46,6 +46,3 @@ compute path from "id1" to "id2" in person, parentship;
 ![Shortest path between people](/images/analytics_path_parentship.png)
 
 {% include links.html %}
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/71" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of this page.

@@ -286,7 +286,4 @@ This example has illustrated the basics of the inference rules used by Graql. Ha
 
 We will be using the genealogy data throughout our documentation. For an overview, please see our [Family Matters](https://blog.grakn.ai/family-matters-1bb639396a24#.uelgekrn2) blog post.
 
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/27" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
-
 {% include links.html %}

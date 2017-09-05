@@ -48,6 +48,3 @@ You can find an additional repo on Github containing our [example code](https://
 Please see our [FAQ](../resources/faq.html) page if you encounter any problems when installing and running Grakn. If our guide doesn't cover the issue, please do get in touch on our [discussion forums](http://discuss.grakn.ai), on [Stack Overflow](http://www.stackoverflow.com) or via our [Slack channels](https://grakn.ai/slack.html).
 
 {% include links.html %}
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/25" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
