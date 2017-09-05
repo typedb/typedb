@@ -22,17 +22,19 @@ import ai.grakn.GraknSystemProperty;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.StandardSystemProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.FileInputStream;
 import java.io.IOException;
-import static java.lang.Math.min;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static java.lang.Math.min;
 
 
 /**
@@ -44,8 +46,8 @@ public class GraknEngineConfig {
 
     public static final String GRAKN_VERSION_KEY = "grakn.version";
 
-    public static final String FACTORY_INTERNAL = "factory.internal";
-    public static final String FACTORY_ANALYTICS = "factory.analytics";
+    public static final String KB_MODE = "knowledge-base.mode";
+    public static final String KB_ANALYTICS = "knowledge-base.analytics";
 
     public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn.properties";
 

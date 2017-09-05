@@ -62,8 +62,8 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static ai.grakn.engine.GraknEngineConfig.FACTORY_ANALYTICS;
-import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
+import static ai.grakn.engine.GraknEngineConfig.KB_ANALYTICS;
+import static ai.grakn.engine.GraknEngineConfig.KB_MODE;
 import static ai.grakn.util.REST.KBConfig.COMPUTER;
 import static ai.grakn.util.REST.KBConfig.DEFAULT;
 import static ai.grakn.util.REST.Request.FORMAT;
@@ -182,7 +182,7 @@ public class SystemController {
             case DEFAULT:
                 break; // Factory is already correctly set
             case COMPUTER:
-                properties.setProperty(FACTORY_INTERNAL, properties.get(FACTORY_ANALYTICS).toString());
+                properties.setProperty(KB_MODE, properties.get(KB_ANALYTICS).toString());
                 break;
             default:
                 throw GraknServerException.internalError("Unrecognised graph config: " + graphConfig);

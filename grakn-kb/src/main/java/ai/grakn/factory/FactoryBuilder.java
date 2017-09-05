@@ -52,6 +52,7 @@ public class FactoryBuilder {
     static{
         factoryMapper.put("in-memory", "ai.grakn.factory.TxFactoryTinker");
         factoryMapper.put("production", "ai.grakn.factory.TxFactoryJanus");
+        factoryMapper.put("distributed", "ai.grakn.factory.TxFactoryJanusHadoop");
     }
 
     private FactoryBuilder(){
