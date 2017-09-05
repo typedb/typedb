@@ -7,7 +7,6 @@ summary: "An example which demonstrates key Grakn concepts in a practical settin
 sidebar: documentation_sidebar
 permalink: /documentation/examples/working-with-tweets.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 # Working With Tweets

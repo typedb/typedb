@@ -7,7 +7,6 @@ summary: "This document will teach you how to set up a Grakn environment, start 
 sidebar: documentation_sidebar
 permalink: /documentation/get-started/setup-guide.html
 folder: documentation
-comment_issue_id: 16
 ---
 
 ## First: Download GRAKN.AI
@@ -93,8 +92,5 @@ Our [Quickstart Tutorial](./quickstart-tutorial.html) will go into more detail a
 You can find additional example code and documentation on this portal. We are always adding more and welcome ideas and improvement suggestions. [Please get in touch](https://grakn.ai/community.html)!
 
 {% include links.html %}
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/16" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
 
 {% include track_download.html %}

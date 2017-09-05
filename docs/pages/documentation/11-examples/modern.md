@@ -7,7 +7,6 @@ summary: "A short example to illustrate Graql queries"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/modern.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 If you have not yet set up the Grakn environment, please see the [Setup guide](../get-started/setup-guide.html). For a comprehensive guide to all Graql keywords, please see the [Graql documentation](https://grakn.ai/pages/documentation/graql/graql-overview.html).
@@ -250,8 +249,3 @@ programming sub relationship
 
 
 {% include links.html %}
-
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/27" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
-

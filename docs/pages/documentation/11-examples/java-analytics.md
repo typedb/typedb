@@ -7,7 +7,6 @@ summary: "How to use Graql analytics methods in Java"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/java-analytics.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 In this example, we are going to introduce the analytics package using the basic genealogy example. We will use Java APIs to determine clusters and degrees in the data - specifically we will determine clusters of people who are related by marriage and how large those clusters are using two graph algorithms:
