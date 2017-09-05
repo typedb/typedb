@@ -68,10 +68,8 @@ public class GraknSessionImpl implements GraknSession {
     private GraknTxAbstract<?> txBatch = null;
 
     //This is used to map grakn key properties into the underlaying properties
-    private static final Map<String, String> keyMapper = new HashMap<>();
-    static{
-        //propertyMapper.put()
-    }
+    //private static final Map<String, String> keyMapper = new HashMap<>();
+
 
     //This is used to map grakn value properties into the underlaying properties
     private static final Map<String, String> valueMapper = new HashMap<>();
