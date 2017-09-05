@@ -23,7 +23,6 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Rule;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.util.CommonUtil;
@@ -32,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
 
@@ -54,8 +52,6 @@ public class InstanceMapper {
             return map(thing.asAttribute());
         } else if(thing.isRelationship()){
             return map(thing.asRelationship());
-        } else if(thing.isRule()){
-            return map(thing.asRule());
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised thing " + thing);
         }
@@ -100,19 +96,6 @@ public class InstanceMapper {
 
         VarPattern var = base(attribute);
         var = var.val(attribute.getValue());
-        return var;
-    }
-
-    /**
-     * Map a Rule to a var
-     * @param rule rule to be mapped
-     * @return var patterns representing the given instance
-     */
-    //TODO hypothesis, conclusion, isMaterialize, etc
-    private static VarPattern map(Rule rule){
-        VarPattern var = base(rule);
-        var = var.when(and(rule.getWhen()));
-        var = var.then(and(rule.getThen()));
         return var;
     }
 

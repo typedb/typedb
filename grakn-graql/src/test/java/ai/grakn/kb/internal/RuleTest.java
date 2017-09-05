@@ -19,14 +19,13 @@
 package ai.grakn.kb.internal;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
@@ -37,6 +36,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -70,14 +70,8 @@ public class RuleTest {
 
     @Test
     public void whenCreatingRulesWithNullValues_Throw() throws Exception {
-        RuleType conceptType = graknTx.putRuleType("A Thing");
-        Rule rule = conceptType.putRule(when, then);
-        assertEquals(when, rule.getWhen());
-        assertEquals(then, rule.getThen());
-
         expectedException.expect(NullPointerException.class);
-
-        conceptType.putRule(null, null);
+        graknTx.putRule("A Thing", null, null);
     }
 
     @Test
@@ -86,11 +80,11 @@ public class RuleTest {
 
         when = graknTx.graql().parsePattern("$x isa Your-Type");
         then = graknTx.graql().parsePattern("$x isa My-Type");
-        Rule rule = graknTx.admin().getMetaRuleInference().putRule(when, then);
+        Rule rule = graknTx.putRule("My-Sad-Rule-Type", when, then);
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
-                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(Schema.VertexProperty.RULE_WHEN.name(), rule.getId(), rule.type().getLabel(), "Your-Type"));
+                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(Schema.VertexProperty.RULE_WHEN.name(), rule.getLabel(), "Your-Type"));
 
         graknTx.commit();
     }
@@ -183,11 +177,6 @@ public class RuleTest {
         validateIllegalRule(
                 graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
                 graknTx.graql().parsePattern("$x has res1"),
-                ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
-        );
-        validateIllegalRule(
-                graknTx.graql().parsePattern("(role1: $x, role2: $y) isa relation1"),
-                graknTx.graql().parsePattern("$x has-scope $y"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
     }
@@ -316,7 +305,7 @@ public class RuleTest {
 
     private void validateOntologicallyIllegalRule(Pattern when, Pattern then, String message){
         initTx(graknTx);
-        graknTx.admin().getMetaRuleInference().putRule(when, then);
+        graknTx.putRule(UUID.randomUUID().toString(), when, then);
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(message);
@@ -326,11 +315,11 @@ public class RuleTest {
     
     private void validateIllegalRule(Pattern when, Pattern then, ErrorMessage message){
         initTx(graknTx);
-        Rule rule = graknTx.admin().getMetaRuleInference().putRule(when, then);
+        Rule rule = graknTx.putRule(UUID.randomUUID().toString(), when, then);
 
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(
-                message.getMessage(rule.getId(), rule.type().getLabel()));
+                message.getMessage(rule.getLabel()));
 
         graknTx.commit();
     }
@@ -362,7 +351,7 @@ public class RuleTest {
         when = graknTx.graql().parsePattern("$x isa type1");
         then = graknTx.graql().parsePattern("$x isa type2");
 
-        Rule rule = graknTx.admin().getMetaRuleInference().putRule(when, then);
+        Rule rule = graknTx.putRule("My-Happy-Rule", when, then);
         assertThat(rule.getHypothesisTypes().collect(Collectors.toSet()), empty());
         assertThat(rule.getConclusionTypes().collect(Collectors.toSet()), empty());
 
@@ -378,21 +367,21 @@ public class RuleTest {
         when = graknTx.graql().parsePattern("$x isa type1");
         then = graknTx.graql().parsePattern("$x isa type1");
 
-        Rule rule1 = graknTx.admin().getMetaRuleInference().putRule(when, then);
-        Rule rule2 = graknTx.admin().getMetaRuleInference().putRule(when, then);
+        Rule rule1 = graknTx.putRule("My-Angry-Rule", when, then);
+        Rule rule2 = graknTx.putRule("My-Angry-Rule", when, then);
 
         assertEquals(rule1, rule2);
     }
 
-    @Ignore //This is ignored because we currently have no way to determine if patterns with different variables name are equivalent
+    @Ignore("This is ignored because we currently have no way to determine if patterns with different variables name are equivalent")
     @Test
     public void whenAddingDuplicateRulesOfTheSameTypeWithDifferentPatternVariables_ReturnTheSameRule(){
         graknTx.putEntityType("type1");
         when = graknTx.graql().parsePattern("$x isa type1");
         then = graknTx.graql().parsePattern("$y isa type1");
 
-        Rule rule1 = graknTx.admin().getMetaRuleInference().putRule(when, then);
-        Rule rule2 = graknTx.admin().getMetaRuleInference().putRule(when, then);
+        Rule rule1 = graknTx.putRule("My-Angry-Rule", when, then);
+        Rule rule2 = graknTx.putRule("My-Angry-Rule", when, then);
 
         assertEquals(rule1, rule2);
     }

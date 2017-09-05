@@ -15,6 +15,13 @@ fi
 
 # extract the data from a tar
 function extractArchData {
+
+    if [ -z ${CSV_DATA+x} ]; then
+        echo $CSV_DATA
+        echo "Environment Variable Not Set. Please run 'source local-env.sh'"
+        exit 1
+    fi
+
 	mkdir -p $CSV_DATA
 	case "$1" in
 		validate)
@@ -109,7 +116,7 @@ do
         echo "Dynamic batch size: $BATCH_SIZE"
 
         tail -n +2 $CSV_DATA/${DATA_FILE} | wc -l
-        time migration.sh csv -s \| -t $GRAQL/${TEMPLATE_FILE} -i $CSV_DATA/${DATA_FILE} -k $KEYSPACE -u $ENGINE -a ${ACTIVE_TASKS:-25} -b ${BATCH_SIZE}
+        time migration.sh csv -s \| -t $GRAQL/${TEMPLATE_FILE} -i $CSV_DATA/${DATA_FILE} -d -k $KEYSPACE -u $ENGINE -a ${ACTIVE_TASKS:-25} -b ${BATCH_SIZE}
 done < $SCRIPTPATH/migrationsToRun.txt
 
 # confirm there were no errors

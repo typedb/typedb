@@ -42,15 +42,13 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes(statisticsResourceLabels);
+        AttributeType.DataType dataType = getDataTypeOfSelectedResourceTypes();
         if (!selectedResourceTypesHaveInstance(statisticsResourceLabels)) return Optional.empty();
         Set<LabelId> allSubLabelIds = convertLabelsToIds(getCombinedSubTypes());
         Set<LabelId> statisticsResourceLabelIds = convertLabelsToIds(statisticsResourceLabels);
 
-        String randomId = getRandomJobId();
-
         ComputerResult result = getGraphComputer().compute(
-                new MedianVertexProgram(statisticsResourceLabelIds, dataType, randomId),
+                new MedianVertexProgram(statisticsResourceLabelIds, dataType),
                 null, allSubLabelIds);
 
         Number finalResult = result.memory().get(MedianVertexProgram.MEDIAN);

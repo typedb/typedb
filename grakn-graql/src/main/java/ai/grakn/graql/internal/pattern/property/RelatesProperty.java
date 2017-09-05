@@ -18,9 +18,6 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.Label;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -30,7 +27,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.type.RelatesAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.auto.value.AutoValue;
@@ -88,20 +84,27 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     }
 
     @Override
-    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        Role role = executor.get(this.role().var()).asRole();
-        executor.get(var).asRelationshipType().relates(role);
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            Role role = executor.get(this.role().var()).asRole();
+            executor.get(var).asRelationshipType().relates(role);
+        };
+
+        return PropertyExecutor.builder(method).requires(var, role().var()).build();
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of(var, this.role().var());
-    }
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            RelationshipType relationshipType = executor.get(var).asRelationshipType();
+            Role role = executor.get(this.role().var()).asRole();
 
-    @Override
-    public void delete(GraknTx graph, Concept concept) {
-        Label roleLabel = role().getTypeLabel().orElseThrow(() -> GraqlQueryException.failDelete(this));
-        concept.asRelationshipType().deleteRelates(graph.getSchemaConcept(roleLabel));
+            if (!relationshipType.isDeleted() && !role.isDeleted()) {
+                relationshipType.deleteRelates(role);
+            }
+        };
+
+        return PropertyExecutor.builder(method).requires(var, role().var()).build();
     }
 
     @Override

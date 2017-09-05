@@ -77,13 +77,13 @@ class ConjunctionQuery {
         Set<Var> names = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
                 .filter(fragment -> !fragment.isStartingFragment())
-                .flatMap(fragment -> fragment.getVariableNames().stream())
+                .flatMap(fragment -> fragment.vars().stream())
                 .collect(toImmutableSet());
 
         // Get all dependencies fragments have on certain variables existing
         Set<Var> dependencies = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
-                .flatMap(fragment -> fragment.getDependencies().stream())
+                .flatMap(fragment -> fragment.dependencies().stream())
                 .collect(toImmutableSet());
 
         Set<Var> validNames = Sets.difference(names, dependencies);
@@ -91,7 +91,7 @@ class ConjunctionQuery {
         // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
         Set<EquivalentFragmentSet> initialEquivalentFragmentSets = fragmentSets.stream()
                 .filter(set -> set.stream().anyMatch(
-                        fragment -> !fragment.isStartingFragment() || !validNames.contains(fragment.getStart())
+                        fragment -> !fragment.isStartingFragment() || !validNames.contains(fragment.start())
                 ))
                 .collect(toSet());
 

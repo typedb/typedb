@@ -25,11 +25,10 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -58,7 +57,6 @@ public final class Schema {
         SUB("sub"),
         RELATES("relates"),
         PLAYS("plays"),
-        HAS_SCOPE("has-scope"),
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
         SHORTCUT("shortcut"),
@@ -86,9 +84,7 @@ public final class Schema {
         ROLE("role", 3),
         ATTRIBUTE("attribute", 4),
         RELATIONSHIP("relationship", 5),
-        RULE("rule", 6),
-        INFERENCE_RULE("inference-rule", 7),
-        CONSTRAINT_RULE("constraint-rule", 8);
+        RULE("rule", 6);
 
 
         private final Label label;
@@ -129,13 +125,12 @@ public final class Schema {
         RELATIONSHIP_TYPE(RelationshipType.class),
         ATTRIBUTE_TYPE(AttributeType.class),
         ENTITY_TYPE(EntityType.class),
-        RULE_TYPE(RuleType.class),
+        RULE(Rule.class),
 
         //Instances
         RELATIONSHIP(Relationship.class),
         ENTITY(Entity.class),
         ATTRIBUTE(Attribute.class),
-        RULE(Rule.class),
 
         //Internal
         SHARD(Vertex.class);

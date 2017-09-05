@@ -36,6 +36,7 @@ usage: migration.sh sql -template <arg> -driver <arg> -user <arg> -pass <arg> -l
  -u,--uri <arg>        Location of Grakn Engine.
  -user <arg>           JDBC username
  -v,--verbose          Print counts of migrated data.
+ -d,--debug            Migration immediatly stops if any transaction fails
 ```
 
 Grakn relies on the JDBC API to connect to any RDBMS that uses the SQL language. The example that follows is written in MySQL, but SQL to Grakn migration will work with any database it can connect to using a JDBC driver. This has been tested on MySQL, Oracle and PostgresQL.

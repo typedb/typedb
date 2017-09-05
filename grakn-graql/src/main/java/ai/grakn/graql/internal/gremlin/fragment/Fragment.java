@@ -19,19 +19,26 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarProperty;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
+import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+
+import static ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted.weighted;
 
 /**
  * represents a graph traversal, with one start point and optionally an end point
@@ -55,91 +62,170 @@ import java.util.Set;
  *
  * @author Felix Chapman
  */
-public interface Fragment {
+public abstract class Fragment {
+
+    // TODO: Find a better way to represent these values (either abstractly, or better estimates)
+
+    private static final long NUM_INSTANCES_PER_TYPE = 100;
+    private static final long NUM_INSTANCES_PER_SCOPE = 100;
+    private static final long NUM_SUBTYPES_PER_TYPE = 3;
+    private static final long NUM_RELATIONS_PER_INSTANCE = 30;
+    private static final long NUM_SCOPES_PER_INSTANCE = 3;
+    private static final long NUM_TYPES_PER_ROLE = 3;
+    private static final long NUM_ROLES_PER_TYPE = 3;
+    private static final long NUM_ROLE_PLAYERS_PER_RELATION = 2;
+    private static final long NUM_ROLE_PLAYERS_PER_ROLE = 1;
+    private static final long NUM_RESOURCES_PER_VALUE = 2;
+
+    static final double COST_INSTANCES_PER_TYPE = Math.log1p(NUM_INSTANCES_PER_TYPE);
+    static final double COST_INSTANCES_PER_SCOPE = Math.log1p(NUM_INSTANCES_PER_SCOPE);
+    static final double COST_SUBTYPES_PER_TYPE = Math.log1p(NUM_SUBTYPES_PER_TYPE);
+    static final double COST_RELATIONS_PER_INSTANCE = Math.log1p(NUM_RELATIONS_PER_INSTANCE);
+    static final double COST_SCOPES_PER_INSTANCE = Math.log1p(NUM_SCOPES_PER_INSTANCE);
+    static final double COST_TYPES_PER_ROLE = Math.log1p(NUM_TYPES_PER_ROLE);
+    static final double COST_ROLES_PER_TYPE = Math.log1p(NUM_ROLES_PER_TYPE);
+    static final double COST_ROLE_PLAYERS_PER_RELATION = Math.log1p(NUM_ROLE_PLAYERS_PER_RELATION);
+    static final double COST_ROLE_PLAYERS_PER_ROLE = Math.log1p(NUM_ROLE_PLAYERS_PER_ROLE);
+
+    static final double COST_INDEX = 0.05D; // arbitrary small number
+    static final double COST_RESOURCES_PER_VALUE = Math.log1p(COST_INDEX * NUM_RESOURCES_PER_VALUE);
+
+    static final double COST_SAME_AS_PREVIOUS = Math.log1p(1);
+    static final double COST_NEQ = Math.log1p(0.5);
+    static final double COST_DATA_TYPE = Math.log1p(2D / AttributeType.DataType.SUPPORTED_TYPES.size());
+    static final double COST_UNSPECIFIC_PREDICATE = Math.log1p(0.5);
 
     /**
-     * @return the EquivalentFragmentSet that contains this Fragment
+     * Get the corresponding property
      */
-    EquivalentFragmentSet getEquivalentFragmentSet();
+    public abstract @Nullable VarProperty varProperty();
 
     /**
-     * @param equivalentFragmentSet the EquivalentFragmentSet that contains this Fragment
+     * @return the variable name that this fragment starts from in the query
      */
-    void setEquivalentFragmentSet(EquivalentFragmentSet equivalentFragmentSet);
+    public abstract Var start();
+
+    /**
+     * @return the variable name that this fragment ends at in the query, if this query has an end variable
+     */
+    public @Nullable Var end() {
+        return null;
+    }
+
+    ImmutableSet<Var> otherVars() {
+        return ImmutableSet.of();
+    }
+
+    /**
+     * @return the variable names that this fragment requires to have already been visited
+     */
+    public Set<Var> dependencies() {
+        return ImmutableSet.of();
+    }
+
+    /**
+     * Convert the fragment to a set of weighted edges for query planning
+     *
+     * @param nodes all nodes in the query
+     * @param edges a mapping from edge(child, parent) to its corresponding fragment
+     * @return a set of edges
+     */
+    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
+                                                           Map<Node, Map<Node, Fragment>> edges) {
+        return Collections.emptySet();
+    }
 
     /**
      * @param traversal the traversal to extend with this Fragment
      * @param graph     the graph to execute the traversal on
      */
-    GraphTraversal<Element, ? extends Element> applyTraversal(
+    public abstract GraphTraversal<Element, ? extends Element> applyTraversal(
             GraphTraversal<Element, ? extends Element> traversal, GraknTx graph);
 
     /**
      * The name of the fragment
      */
-    String getName();
-
-    /**
-     * @return the variable name that this fragment starts from in the query
-     */
-    Var getStart();
-
-    /**
-     * @return the variable name that this fragment ends at in the query, if this query has an end variable
-     */
-    Optional<Var> getEnd();
-
-    /**
-     * @return the variable names that this fragment requires to have already been visited
-     */
-    Set<Var> getDependencies();
-
-    /**
-     * Get all variable names in the fragment - the start and end (if present)
-     */
-    Set<Var> getVariableNames();
-
-    /**
-     * Get the corresponding property
-     */
-    VarProperty getVarProperty();
+    public abstract String name();
 
     /**
      * A starting fragment is a fragment that can start a traversal.
      * If any other fragment is present that refers to the same variable, the starting fragment can be omitted.
      */
-    default boolean isStartingFragment() {
+    public boolean isStartingFragment() {
         return false;
     }
 
     /**
      * Get the cost for executing the fragment.
      */
-    double fragmentCost();
+    public abstract double fragmentCost();
 
     /**
      * If a fragment has fixed cost, the traversal is done using index. This makes the fragment a good starting point.
      * A plan should always start with these fragments when possible.
      */
-    default boolean hasFixedFragmentCost() {
+    public boolean hasFixedFragmentCost() {
         return false;
     }
-
-    /**
-     * Convert the fragment to a set of weighted edges for query planning
-     *
-     * @param nodes          all nodes in the query
-     * @param edgeToFragment a mapping from edge(child, parent) to its corresponding fragment
-     * @return a set of edges
-     */
-    Set<Weighted<DirectedEdge<Node>>> getDirectedEdges(Map<NodeId, Node> nodes,
-                                                       Map<Node, Map<Node, Fragment>> edgeToFragment);
 
     /**
      * Indicates whether the fragment can be used on an {@link org.apache.tinkerpop.gremlin.structure.Edge} as well as
      * a {@link org.apache.tinkerpop.gremlin.structure.Vertex}.
      */
-    default boolean canOperateOnEdges() {
+    public boolean canOperateOnEdges() {
         return false;
+    }
+
+    /**
+     * Get all variables in the fragment including the start and end (if present)
+     */
+    public final Set<Var> vars() {
+        ImmutableSet.Builder<Var> builder = ImmutableSet.<Var>builder().add(start());
+        Var end = end();
+        if (end != null) builder.add(end);
+        builder.addAll(otherVars());
+        return builder.build();
+    }
+
+    @Override
+    public final String toString() {
+        return start() + name() + Optional.ofNullable(end()).map(Object::toString).orElse("");
+    }
+
+    final Set<Weighted<DirectedEdge<Node>>> directedEdges(NodeId.NodeType nodeType,
+                                                          Map<NodeId, Node> nodes,
+                                                          Map<Node, Map<Node, Fragment>> edgeToFragment) {
+
+        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, start(), nodes);
+        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, end(), nodes);
+        Node middle = Node.addIfAbsent(nodeType, Sets.newHashSet(start(), end()), nodes);
+        middle.setInvalidStartingPoint();
+
+        addEdgeToFragmentMapping(middle, start, edgeToFragment);
+        return Sets.newHashSet(
+                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
+                weighted(DirectedEdge.from(middle).to(end), 0));
+    }
+
+    final Set<Weighted<DirectedEdge<Node>>> directedEdges(Var edge,
+                                                          Map<NodeId, Node> nodes,
+                                                          Map<Node, Map<Node, Fragment>> edgeToFragment) {
+
+        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, start(), nodes);
+        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, end(), nodes);
+        Node middle = Node.addIfAbsent(NodeId.NodeType.VAR, edge, nodes);
+        middle.setInvalidStartingPoint();
+
+        addEdgeToFragmentMapping(middle, start, edgeToFragment);
+        return Sets.newHashSet(
+                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
+                weighted(DirectedEdge.from(middle).to(end), 0));
+    }
+
+    private void addEdgeToFragmentMapping(Node child, Node parent, Map<Node, Map<Node, Fragment>> edgeToFragment) {
+        if (!edgeToFragment.containsKey(child)) {
+            edgeToFragment.put(child, new HashMap<>());
+        }
+        edgeToFragment.get(child).put(parent, this);
     }
 }

@@ -17,6 +17,12 @@
  */
 package ai.grakn.engine;
 
+import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
+import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
@@ -52,8 +58,21 @@ import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+import static com.codahale.metrics.MetricRegistry.name;
+import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.google.common.base.Stopwatch;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import javax.annotation.Nullable;
 import mjson.Json;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,24 +82,6 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 import spark.Service;
-
-import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-
-import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
-import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
-import static com.codahale.metrics.MetricRegistry.name;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
@@ -193,6 +194,10 @@ public class GraknEngineServer implements AutoCloseable {
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "waiters"), (Gauge<Integer>) jedisPool::getNumWaiters);
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "max"), (Gauge<Long>) jedisPool::getMaxBorrowWaitTimeMillis);
         metricRegistry.register(name(GraknEngineServer.class, "jedis", "borrow_wait_time_ms", "mean"), (Gauge<Long>) jedisPool::getMeanBorrowWaitTimeMillis);
+
+        metricRegistry.register(name(GraknEngineServer.class, "System", "gc"), new GarbageCollectorMetricSet());
+        metricRegistry.register(name(GraknEngineServer.class, "System", "threads"), new CachedThreadStatesGaugeSet(15, TimeUnit.SECONDS));
+        metricRegistry.register(name(GraknEngineServer.class, "System", "memory"), new MemoryUsageGaugeSet());
 
         if (!inMemoryQueue) {
             Optional<String> consumers = prop.tryProperty(QUEUE_CONSUMERS);
@@ -381,7 +386,7 @@ public class GraknEngineServer implements AutoCloseable {
     private RedisWrapper instantiateRedis(GraknEngineConfig prop) {
         List<String> redisUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_HOST).orElse("localhost:6379"));
         List<String> sentinelUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_SENTINEL_HOST).orElse(""));
-        int poolSize = prop.tryIntProperty(REDIS_POOL_SIZE, 128);
+        int poolSize = prop.tryIntProperty(REDIS_POOL_SIZE, 32);
         boolean useSentinel = !sentinelUrl.isEmpty();
         Builder builder = RedisWrapper.builder()
                 .setUseSentinel(useSentinel)

@@ -25,9 +25,8 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
+import ai.grakn.util.Schema;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,7 +39,7 @@ import java.util.function.Consumer;
 public class MovieKB extends TestKB {
 
     private static EntityType production, movie, person, genre, character, cluster, language;
-    private static AttributeType<String> title, gender, realName, name;
+    private static AttributeType<String> title, gender, realName, name, provenance;
     private static AttributeType<Long> tmdbVoteCount, runtime;
     private static AttributeType<Double> tmdbVoteAverage;
     private static AttributeType<LocalDateTime> releaseDate;
@@ -48,7 +47,6 @@ public class MovieKB extends TestKB {
     private static Role productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
     private static Role genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
     private static Role work, author;
-    private static RuleType aRuleType;
 
     private static Thing godfather, theMuppets, heat, apocalypseNow, hocusPocus, spy, chineseCoffee;
     private static Thing marlonBrando, alPacino, missPiggy, kermitTheFrog, martinSheen, robertDeNiro, judeLaw;
@@ -99,6 +97,7 @@ public class MovieKB extends TestKB {
         gender = tx.putAttributeType("gender", AttributeType.DataType.STRING).setRegex("(fe)?male");
         realName = tx.putAttributeType("real-name", AttributeType.DataType.STRING);
         name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
 
         production = tx.putEntityType("production")
                 .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast)
@@ -136,6 +135,8 @@ public class MovieKB extends TestKB {
 
         cluster = tx.putEntityType("cluster").plays(clusterOfProduction);
         cluster.attribute(name);
+
+        tx.getType(Schema.ImplicitType.HAS.getLabel("title")).attribute(provenance);
     }
 
     @Override
@@ -286,21 +287,13 @@ public class MovieKB extends TestKB {
     @Override
     protected void buildRules(GraknTx tx) {
         // These rules are totally made up for testing purposes and don't work!
-        aRuleType = tx.putRuleType("a-rule-type");
-        aRuleType.attribute(name);
-
         Pattern when = tx.graql().parsePattern("$x plays actor");
         Pattern then = tx.graql().parsePattern("$x isa person");
-
-        Rule expectation = aRuleType.putRule(when, then);
-
-        putResource(expectation, name, "expectation-rule");
+        tx.putRule("expectation-rule", when, then);
 
         when = tx.graql().parsePattern("$x has name 'materialize-when'");
         then = tx.graql().parsePattern("$x has name 'materialize-then'");
-        Rule materialize = aRuleType.putRule(when, then);
-
-        putResource(materialize, name, "materialize-rule");
+        tx.putRule("materialize-rule", when, then);
     }
 
     private static void hasCast(Thing movie, Thing person, Thing character) {

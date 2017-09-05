@@ -33,6 +33,7 @@ OPTIONS
  -t,--template <arg>   Graql template to apply to the data.
  -u,--uri <arg>        Location of Grakn Engine.
  -v,--verbose          Print counts of migrated data.
+ -d,--debug            Migration immediatly stops if any transaction fails
 ```
 
 {% include note.html content="The JSON migrator can handle either a directory or a file as the -input parameter!" %}

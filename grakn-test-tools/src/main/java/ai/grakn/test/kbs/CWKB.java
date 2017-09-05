@@ -21,10 +21,9 @@ package ai.grakn.test.kbs;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.RelationshipType;
-import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
 
 import java.util.function.Consumer;
@@ -169,8 +168,6 @@ public class CWKB extends TestKB {
 
     @Override
     protected void buildRules(GraknTx tx) {
-        RuleType inferenceRule = tx.admin().getMetaRuleInference();
-
         //R1: "It is a crime for an American to sell weapons to hostile nations"
         Pattern R1_LHS = tx.graql().parsePattern("{$x isa person;$x has nationality 'American';" +
                         "$y isa weapon;" +
@@ -178,12 +175,12 @@ public class CWKB extends TestKB {
                         "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;}");
 
         Pattern R1_RHS = tx.graql().parsePattern("{$x isa criminal;}");
-        inferenceRule.putRule(R1_LHS, R1_RHS);
+        tx.putRule("R1: It is a crime for an American to sell weapons to hostile nations" , R1_LHS, R1_RHS);
 
         //R2: "Missiles are a kind of a weapon"
         Pattern R2_LHS = tx.graql().parsePattern("{$x isa missile;}");
         Pattern R2_RHS = tx.graql().parsePattern("{$x isa weapon;}");
-        inferenceRule.putRule(R2_LHS, R2_RHS);
+        tx.putRule("R2: Missiles are a kind of a weapon\"" , R2_LHS, R2_RHS);
 
         //R3: "If a country is an enemy of America then it is hostile"
         Pattern R3_LHS = tx.graql().parsePattern(
@@ -191,12 +188,12 @@ public class CWKB extends TestKB {
                 "($x, $y) isa is-enemy-of;" +
                 "$y isa country;$y has name 'America';}");
         Pattern R3_RHS = tx.graql().parsePattern("{$x has alignment 'hostile';}");
-        inferenceRule.putRule(R3_LHS, R3_RHS);
+        tx.putRule("R3: If a country is an enemy of America then it is hostile" , R3_LHS, R3_RHS);
 
         //R4: "If a rocket is self-propelled and guided, it is a missile"
         Pattern R4_LHS = tx.graql().parsePattern("{$x isa rocket;$x has propulsion 'gsp';}");
         Pattern R4_RHS = tx.graql().parsePattern("{$x isa missile;}");
-        inferenceRule.putRule(R4_LHS, R4_RHS);
+        tx.putRule("R4: If a rocket is self-propelled and guided, it is a missile" , R4_LHS, R4_RHS);
 
         Pattern R5_LHS = tx.graql().parsePattern(
                 "{$x isa person;" +
@@ -206,6 +203,6 @@ public class CWKB extends TestKB {
                 "($y, $z) isa owns;}");
 
         Pattern R5_RHS = tx.graql().parsePattern("{(seller: $x, buyer: $y, transaction-item: $z) isa transaction;}");
-        inferenceRule.putRule(R5_LHS, R5_RHS);
+        tx.putRule("R5: If a country pays a person and that country now owns a weapon then the person has sold the country a weapon" , R5_LHS, R5_RHS);
     }
 }

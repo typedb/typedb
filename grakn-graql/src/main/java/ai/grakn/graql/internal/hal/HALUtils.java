@@ -36,7 +36,7 @@ import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import com.theoryinpractise.halbuilder.api.Representation;
-import javafx.util.Pair;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -87,8 +87,6 @@ public class HALUtils {
             return Schema.BaseType.RELATIONSHIP;
         } else if (thing.isAttribute()) {
             return Schema.BaseType.ATTRIBUTE;
-        } else if (thing.isRule()) {
-            return Schema.BaseType.RULE;
         } else {
             throw CommonUtil.unreachableStatement("Unrecognised base type of " + thing);
         }
@@ -101,8 +99,8 @@ public class HALUtils {
             return Schema.BaseType.RELATIONSHIP_TYPE;
         } else if (schemaConcept.isAttributeType()) {
             return Schema.BaseType.ATTRIBUTE_TYPE;
-        } else if (schemaConcept.isRuleType()) {
-            return Schema.BaseType.RULE_TYPE;
+        } else if (schemaConcept.isRule()) {
+            return Schema.BaseType.RULE;
         } else if (schemaConcept.isRole()) {
             return Schema.BaseType.ROLE;
         } else if (schemaConcept.getLabel().equals(Schema.MetaSchema.THING.getLabel())) {

@@ -17,37 +17,21 @@
  *
  */
 
-package ai.grakn.generator;
+package ai.grakn.graql;
 
-import ai.grakn.concept.RuleType;
-import ai.grakn.concept.Label;
-import com.google.common.collect.ImmutableSet;
-
-import java.util.Collection;
+import ai.grakn.GraknTx;
+import ai.grakn.concept.SchemaConcept;
 
 /**
- * A generator that produces random {@link RuleType}s
+ * A query for undefining {@link SchemaConcept}s.
+ * <p>
+ *     The query will undefine all {@link SchemaConcept}s described in the {@link VarPattern}s provided.
+ * </p>
  *
  * @author Felix Chapman
  */
-public class RuleTypes extends AbstractTypeGenerator<RuleType> {
-
-    public RuleTypes() {
-        super(RuleType.class);
-    }
+public interface UndefineQuery extends Query<Void> {
 
     @Override
-    protected RuleType newSchemaConcept(Label label) {
-        return tx().putRuleType(label);
-    }
-
-    @Override
-    protected RuleType metaSchemaConcept() {
-        return tx().admin().getMetaRuleType();
-    }
-
-    @Override
-    protected Collection<RuleType> otherMetaSchemaConcepts() {
-        return ImmutableSet.of(tx().admin().getMetaRuleInference(), tx().admin().getMetaRuleConstraint());
-    }
+    UndefineQuery withTx(GraknTx tx);
 }

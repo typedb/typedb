@@ -6,17 +6,17 @@ entity1 sub entity
 #Resources
 res1 sub attribute datatype string;
 
-insert
-
 #Rules
 
-isa inference-rule
+rule-1 sub rule
 when {
     $x isa entity1;
 }
 then {
     $x has res1 'value';
 };
+
+insert
 
 #Data
 $x isa entity1;

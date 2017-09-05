@@ -95,8 +95,13 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
 
     @Override
     public Relationship attribute(Attribute attribute) {
-        reify().attribute(attribute);
+        attributeRelationship(attribute);
         return this;
+    }
+
+    @Override
+    public Relationship attributeRelationship(Attribute attribute) {
+        return reify().attributeRelationship(attribute);
     }
 
     @Override
@@ -156,6 +161,12 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
         return this;
     }
 
+    @Override
+    public Relationship deleteAttribute(Attribute attribute) {
+        reified().ifPresent(rel -> rel.deleteAttribute(attribute));
+        return this;
+    }
+
     /**
      * When a relation is deleted this cleans up any solitary casting and resources.
      */
@@ -190,6 +201,11 @@ public class RelationshipImpl implements Relationship, ConceptVertex, ContainsTx
     @Override
     public void delete() {
         structure().delete();
+    }
+
+    @Override
+    public boolean isDeleted() {
+        return structure().isDeleted();
     }
 
     @Override

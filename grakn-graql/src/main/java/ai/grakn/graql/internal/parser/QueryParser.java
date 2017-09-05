@@ -76,7 +76,7 @@ public class QueryParser {
     );
 
     private static final Set<Integer> NEW_QUERY_TOKENS =
-            ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT, GraqlLexer.DEFINE);
+            ImmutableSet.of(GraqlLexer.MATCH, GraqlLexer.INSERT, GraqlLexer.DEFINE, GraqlLexer.UNDEFINE);
 
     /**
      * Create a query parser with the specified graph

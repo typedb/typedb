@@ -19,11 +19,14 @@ package ai.grakn.migration.export;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.util.Schema;
 
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -80,7 +83,12 @@ public class KBWriter {
      * @return a stream of all types with non-reserved IDs
      */
     private Stream<? extends SchemaConcept> types(){
-        return Stream.concat(tx.admin().getMetaConcept().subs(), tx.admin().getMetaRole().subs()).
-                filter(t -> !Schema.MetaSchema.isMetaLabel(t.getLabel()));
+        Stream<? extends Type> types = tx.admin().getMetaConcept().subs();
+        Stream<Role> roles = tx.admin().getMetaRole().subs();
+        Stream<Rule> rules = tx.admin().getMetaRule().subs();
+
+        return Stream.of(types, roles, rules)
+                .flatMap(Function.identity())
+                .filter(t -> !Schema.MetaSchema.isMetaLabel(t.getLabel()));
     }
 }

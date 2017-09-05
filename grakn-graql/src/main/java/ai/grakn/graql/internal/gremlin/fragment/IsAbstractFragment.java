@@ -19,17 +19,13 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.util.Schema;
+import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
-class IsAbstractFragment extends AbstractFragment {
-
-    IsAbstractFragment(VarProperty varProperty, Var start) {
-        super(varProperty, start);
-    }
+@AutoValue
+abstract class IsAbstractFragment extends Fragment {
 
     @Override
     public GraphTraversal<Element, ? extends Element> applyTraversal(
@@ -39,7 +35,7 @@ class IsAbstractFragment extends AbstractFragment {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return "[is-abstract]";
     }
 

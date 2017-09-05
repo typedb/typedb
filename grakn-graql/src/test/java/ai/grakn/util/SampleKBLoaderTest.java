@@ -58,7 +58,6 @@ public class SampleKBLoaderTest {
         try (GraknTx graph = loader.tx()){
             assertThat(graph.admin().getMetaEntityType().instances().collect(toSet()), is(empty()));
             assertThat(graph.admin().getMetaRelationType().instances().collect(toSet()), is(empty()));
-            assertThat(graph.admin().getMetaRuleType().instances().collect(toSet()), is(empty()));
         }
     }
 

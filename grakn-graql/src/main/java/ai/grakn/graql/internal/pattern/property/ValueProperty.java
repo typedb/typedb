@@ -20,15 +20,13 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Attribute;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.ValuePredicate;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.util.CommonUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -51,11 +49,11 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
 
     public static final String NAME = "val";
 
-    public static ValueProperty of(ValuePredicateAdmin predicate) {
+    public static ValueProperty of(ValuePredicate predicate) {
         return new AutoValue_ValueProperty(predicate);
     }
 
-    public abstract ValuePredicateAdmin predicate();
+    public abstract ValuePredicate predicate();
 
     @Override
     public String getName() {
@@ -73,18 +71,12 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
     }
 
     @Override
-    public void insert(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.builder(var).value(predicate().equalsValue().get()); // TODO
-    }
+    public PropertyExecutor insert(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).value(predicate().equalsValue().get()); // TODO
+        };
 
-    @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of();
-    }
-
-    @Override
-    public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 
     @Override
@@ -101,6 +93,6 @@ public abstract class ValueProperty extends AbstractVarProperty implements Named
 
     @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
-        return new ValuePredicate(var.var(), this.predicate(), parent);
+        return new ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate(var.var(), this.predicate(), parent);
     }
 }

@@ -28,7 +28,6 @@ import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.parser.QueryParser;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -40,9 +39,6 @@ import java.util.Set;
  * Represents the {@code datatype} property on a {@link AttributeType}.
  *
  * This property can be queried or inserted.
- *
- * The insertion behaviour is not implemented here, but instead in
- * {@link ai.grakn.graql.internal.query.InsertQueryExecutor}.
  *
  * @author Felix Chapman
  */
@@ -73,18 +69,28 @@ public abstract class DataTypeProperty extends AbstractVarProperty implements Na
     }
 
     @Override
-    public void define(Var var, InsertQueryExecutor executor) throws GraqlQueryException {
-        executor.builder(var).dataType(dataType());
+    public PropertyExecutor define(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            executor.builder(var).dataType(dataType());
+        };
+
+        return PropertyExecutor.builder(method).produces(var).build();
     }
 
     @Override
-    public Set<Var> requiredVars(Var var) {
-        return ImmutableSet.of();
-    }
-
-    @Override
-    public Set<Var> producedVars(Var var) {
-        return ImmutableSet.of(var);
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        // TODO: resolve the below issue correctly
+        // undefine for datatype must be supported, because it is supported in define.
+        // However, making it do the right thing is difficult. Ideally we want the same as define:
+        //
+        //    undefine name datatype string, sub attribute; <- Remove `name`
+        //    undefine first-name sub name;                 <- Remove `first-name`
+        //    undefine name datatype string;                <- FAIL
+        //    undefine name sub attribute;                  <- FAIL
+        //
+        // Doing this is tough because it means the `datatype` property needs to be aware of the context somehow.
+        // As a compromise, we make all the cases succeed (where some do nothing)
+        return PropertyExecutor.builder(executor -> {}).build();
     }
 
     @Override

@@ -21,11 +21,15 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.DefineQuery;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Query;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.pattern.property.PropertyExecutor;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.util.Partition;
 import com.google.auto.value.AutoValue;
@@ -48,21 +52,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 
 /**
- * A class for executing insert queries.
+ * A class for executing {@link PropertyExecutor}s on {@link VarProperty}s within {@link Query}s.
  *
- * This behaviour is moved to its own class to allow InsertQueryImpl to have fewer mutable fields.
+ * <p>
+ *     Multiple query types share this class, such as {@link InsertQuery} and {@link DefineQuery}.
+ * </p>
  *
  * @author Felix Chapman
  */
-public class InsertQueryExecutor {
+public class QueryOperationExecutor {
 
     private final GraknTx tx;
 
@@ -82,24 +86,24 @@ public class InsertQueryExecutor {
     private final ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies;
 
     // The method that is applied on every `VarProperty`
-    private final Consumer<VarAndProperty> insertFunction;
+    private final ExecutionType executionType;
 
-    private InsertQueryExecutor(GraknTx tx, ImmutableSet<VarAndProperty> properties,
-                                Partition<Var> equivalentVars,
-                                ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies,
-                                BiConsumer<VarAndProperty, InsertQueryExecutor> insertFunction) {
+    private QueryOperationExecutor(GraknTx tx, ImmutableSet<VarAndProperty> properties,
+                                   Partition<Var> equivalentVars,
+                                   ImmutableMultimap<VarAndProperty, VarAndProperty> dependencies,
+                                   ExecutionType executionType) {
         this.tx = tx;
         this.properties = properties;
         this.equivalentVars = equivalentVars;
         this.dependencies = dependencies;
-        this.insertFunction = property -> insertFunction.accept(property, this);
+        this.executionType = executionType;
     }
 
     /**
      * Insert all the Vars
      */
     static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
-        return create(patterns, graph, VarAndProperty::insert).insertAll(new QueryAnswer());
+        return create(patterns, graph, ExecutionType.INSERT).insertAll(new QueryAnswer());
     }
 
     /**
@@ -107,16 +111,19 @@ public class InsertQueryExecutor {
      * @param results the result of a match query
      */
     static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph, Answer results) {
-        return create(patterns, graph, VarAndProperty::insert).insertAll(results);
+        return create(patterns, graph, ExecutionType.INSERT).insertAll(results);
     }
 
     static Answer defineAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
-        return create(patterns, graph, VarAndProperty::define).insertAll(new QueryAnswer());
+        return create(patterns, graph, ExecutionType.DEFINE).insertAll(new QueryAnswer());
     }
 
-    private static InsertQueryExecutor create(
-            Collection<VarPatternAdmin> patterns, GraknTx graph,
-            BiConsumer<VarAndProperty, InsertQueryExecutor> insertFunction
+    static void undefineAll(ImmutableList<VarPatternAdmin> patterns, GraknTx tx) {
+        create(patterns, tx, ExecutionType.UNDEFINE).insertAll(new QueryAnswer());
+    }
+
+    private static QueryOperationExecutor create(
+            Collection<VarPatternAdmin> patterns, GraknTx graph, ExecutionType executionType
     ) {
         ImmutableSet<VarAndProperty> properties =
                 patterns.stream().flatMap(VarAndProperty::fromPattern).collect(toImmutableSet());
@@ -133,7 +140,7 @@ public class InsertQueryExecutor {
         Multimap<VarAndProperty, Var> propDependencies = HashMultimap.create();
 
         for (VarAndProperty property : properties) {
-            for (Var requiredVar : property.requiredVars()) {
+            for (Var requiredVar : property.executor(executionType).requiredVars()) {
                 propDependencies.put(property, requiredVar);
             }
         }
@@ -147,7 +154,7 @@ public class InsertQueryExecutor {
         Multimap<Var, VarAndProperty> varDependencies = HashMultimap.create();
 
         for (VarAndProperty property : properties) {
-            for (Var producedVar : property.producedVars()) {
+            for (Var producedVar : property.executor(executionType).producedVars()) {
                 varDependencies.put(producedVar, property);
             }
         }
@@ -208,8 +215,8 @@ public class InsertQueryExecutor {
          */
         Multimap<VarAndProperty, VarAndProperty> dependencies = composeMultimaps(propDependencies, varDependencies);
 
-        return new InsertQueryExecutor(
-                graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies), insertFunction
+        return new QueryOperationExecutor(
+                graph, properties, equivalentVars, ImmutableMultimap.copyOf(dependencies), executionType
         );
     }
 
@@ -247,7 +254,7 @@ public class InsertQueryExecutor {
     private Answer insertAll(Answer results) {
         concepts.putAll(results.map());
 
-        sortProperties().forEach(insertFunction);
+        sortProperties().forEach(property -> property.executor(executionType).execute(this));
 
         conceptBuilders.forEach((var, builder) -> concepts.put(var, builder.build()));
 
@@ -318,8 +325,8 @@ public class InsertQueryExecutor {
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarPropertyInternal#insert(Var, InsertQueryExecutor)}, provided they return the given {@link Var} in the
-     * response to {@link VarPropertyInternal#producedVars(Var)}.
+     * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
+     * response to {@link PropertyExecutor#producedVars()}.
      * </p>
      * <p>
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
@@ -340,8 +347,8 @@ public class InsertQueryExecutor {
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarPropertyInternal#insert(Var, InsertQueryExecutor)}, provided they return the given {@link Var} in the
-     * response to {@link VarPropertyInternal#producedVars(Var)}.
+     * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
+     * response to {@link PropertyExecutor#producedVars()}.
      * </p>
      * <p>
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
@@ -373,8 +380,8 @@ public class InsertQueryExecutor {
      *
      * <p>
      * This method is expected to be called from implementations of
-     * {@link VarPropertyInternal#insert(Var, InsertQueryExecutor)}, provided they return the given {@link Var} in the
-     * response to {@link VarPropertyInternal#requiredVars(Var)}.
+     * {@link VarPropertyInternal#insert(Var)}, provided they return the given {@link Var} in the
+     * response to {@link PropertyExecutor#requiredVars()}.
      * </p>
      */
     public Concept get(Var var) {
@@ -424,35 +431,44 @@ public class InsertQueryExecutor {
      */
     @AutoValue
     static abstract class VarAndProperty {
+
         abstract Var var();
         abstract VarPropertyInternal property();
 
         static VarAndProperty of(Var var, VarProperty property) {
-            return new AutoValue_InsertQueryExecutor_VarAndProperty(var, VarPropertyInternal.from(property));
+            return new AutoValue_QueryOperationExecutor_VarAndProperty(var, VarPropertyInternal.from(property));
         }
 
         static Stream<VarAndProperty> fromPattern(VarPatternAdmin pattern) {
             return pattern.getProperties().map(prop -> VarAndProperty.of(pattern.var(), prop));
         }
 
-        void insert(InsertQueryExecutor executor) {
-            property().insert(var(), executor);
-        }
-
-        void define(InsertQueryExecutor executor) {
-            property().define(var(), executor);
-        }
-
-        Set<Var> requiredVars() {
-            return property().requiredVars(var());
-        }
-
-        Set<Var> producedVars() {
-            return property().producedVars(var());
+        private PropertyExecutor executor(ExecutionType executionType) {
+            return executionType.executor(property(), var());
         }
 
         boolean uniquelyIdentifiesConcept() {
             return property().uniquelyIdentifiesConcept();
         }
+    }
+
+    private enum ExecutionType {
+        INSERT {
+            PropertyExecutor executor(VarPropertyInternal property, Var var) {
+                return property.insert(var);
+            }
+        },
+        DEFINE {
+            PropertyExecutor executor(VarPropertyInternal property, Var var) {
+                return property.define(var);
+            }
+        },
+        UNDEFINE {
+            PropertyExecutor executor(VarPropertyInternal property, Var var) {
+                return property.undefine(var);
+            }
+        };
+
+        abstract PropertyExecutor executor(VarPropertyInternal property, Var var);
     }
 }

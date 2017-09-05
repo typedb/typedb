@@ -95,13 +95,31 @@ public interface AttributeType<D> extends Type {
     AttributeType<D> plays(Role role);
 
     /**
-     * Removes the Role to prevent instances of this {@link AttributeType} from playing it.
+     * Removes the ability of this {@link AttributeType} to play a specific {@link Role}
      *
-     * @param role The Role Type which the instances of this {@link AttributeType} should no longer be allowed to play.
+     * @param role The {@link Role} which the {@link Thing}s of this {@link AttributeType} should no longer be allowed to play.
      * @return The {@link AttributeType} itself.
      */
     @Override
     AttributeType<D> deletePlays(Role role);
+
+    /**
+     * Removes the ability for {@link Thing}s of this {@link AttributeType} to have {@link Attribute}s of type {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link AttributeType} can no longer have
+     * @return The {@link AttributeType} itself.
+     */
+    @Override
+    AttributeType<D> deleteAttribute(AttributeType attributeType);
+
+    /**
+     * Removes {@link AttributeType} as a key to this {@link AttributeType}
+     *
+     * @param attributeType the {@link AttributeType} which this {@link AttributeType} can no longer have as a key
+     * @return The {@link AttributeType} itself.
+     */
+    @Override
+    AttributeType<D> deleteKey(AttributeType attributeType);
 
     /**
      * Set the regular expression that instances of the {@link AttributeType} must conform to.
@@ -109,7 +127,7 @@ public interface AttributeType<D> extends Type {
      * @param regex The regular expression that instances of this {@link AttributeType} must conform to.
      * @return The {@link AttributeType} itself.
      */
-    AttributeType<D> setRegex(String regex);
+    AttributeType<D> setRegex(@Nullable String regex);
 
     /**
      * Set the value for the {@link Attribute}, unique to its type.

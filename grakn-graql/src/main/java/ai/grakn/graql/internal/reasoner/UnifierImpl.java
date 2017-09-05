@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javafx.util.Pair;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 /**
  *

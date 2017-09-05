@@ -1,6 +1,6 @@
-insert
+define
 
-original-post sub relation
+original-post sub relationship
   relates parent-message
   relates child-message;
 parent-message sub role;
@@ -8,7 +8,7 @@ child-message sub role;
 message plays child-message;
 post plays parent-message;
 
-forum-member sub relation
+forum-member sub relationship
   relates member-message
   relates group-forum;
 member-message sub role;
@@ -16,7 +16,7 @@ group-forum sub role;
 forum plays group-forum;
 message plays member-message;
 
-$rootPost isa inference-rule
+rootPost sub rule
 when {
   $p isa post;
 }
@@ -24,7 +24,7 @@ then {
   (parent-message: $p, child-message: $p) isa original-post;
 };
 
-$childComments isa inference-rule
+childComments sub rule
 when {
   (reply: $c, original: $m) isa reply-of;
   (child-message: $m, parent-message: $op) isa original-post;
@@ -33,7 +33,7 @@ then {
   (child-message: $c, parent-message: $op) isa original-post;
 };
 
-$forumOfComments isa inference-rule
+forumOfComments sub rule
 when {
   (child-message: $m, parent-message: $op) isa original-post;
   (contained: $op, container: $forum) isa container-of;

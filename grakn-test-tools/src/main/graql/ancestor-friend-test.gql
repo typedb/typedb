@@ -42,17 +42,19 @@ $g  isa Person, has name "g";
 (friendA: $a, friendB: $g) isa Friend;
 (friendA: $c, friendB: $d) isa Friend;
 
+define
+
 ####################################################
 ##################RULES#############################
 ####################################################
 
-isa inference-rule,
+rule-1 sub rule,
 when {
 (friendA: $x, friendB: $y) isa Friend;},
 then {
 (person: $x, ancestor-friend: $y) isa Ancestor-friend;};
 
-isa inference-rule,
+rule-2 sub rule,
 when {
 (parent: $x, child: $z) isa Parent;
 (person: $z, ancestor-friend: $y) isa Ancestor-friend;},
