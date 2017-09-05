@@ -24,6 +24,9 @@ if [ -z "${GRAKN_HOME}" ]; then
 fi
 
 case "$1" in
+  console)
+    "${GRAKN_HOME}/services/graql.sh" ${1+"${@:2}"}
+    ;;
   migrate)
     "${GRAKN_HOME}/services/migration.sh" "${@:2}"
     ;;
@@ -37,17 +40,13 @@ case "$1" in
       *)
         echo "
 Usage:
-  graql          Starts a REPL console for running Graql queries. Defaults to connecting to localhost
-  graql COMMAND  Initiates other functionalities depending on the command
+  graql COMMAND
 
 COMMAND:
+  console  Starts a REPL console for running Graql queries. Defaults to connecting to http://localhost:4567
   migrate  Runs migration from a file
   help     Prints this message"
         ;;
     esac
-    ;;
-
-  *)
-    "${GRAKN_HOME}/services/graql.sh" $@
     ;;
 esac

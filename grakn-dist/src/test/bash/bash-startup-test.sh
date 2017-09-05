@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Requirements
+# shunit2
+# distribution tar under target
+
 BASEDIR=$(dirname "$0")
 GRAKN_DIST_TARGET=$BASEDIR/../../../target/
 GRAKN_DIST_TMP=$GRAKN_DIST_TARGET/grakn-bash-test/
@@ -13,7 +17,7 @@ startEngine(){
 
 loadData(){
   echo "Inserting data!"
-  "${GRAKN_DIST_TMP}"/graql < insert-data.gql
+  "${GRAKN_DIST_TMP}"/services/graql.sh < insert-data.gql
 }
 
 oneTimeSetUp() {
@@ -36,14 +40,14 @@ oneTimeTearDown() {
 
 testPersonCount()
 {
-  PERSON_COUNT=$(cat query-data.gql | "${GRAKN_DIST_TMP}"/graql | grep -v '>>>' | grep person | wc -l)
+  PERSON_COUNT=$(cat query-data.gql | "${GRAKN_DIST_TMP}"/graql console | grep -v '>>>' | grep person | wc -l)
   echo Persons found $PERSON_COUNT
   assertEquals 4 $PERSON_COUNT
 }
 
 testMarriageCount()
 {
-  MARRIAGE_COUNT=$(cat query-marriage.gql | "${GRAKN_DIST_TMP}"/graql |  grep -v '>>>' | grep person | wc -l)
+  MARRIAGE_COUNT=$(cat query-marriage.gql | "${GRAKN_DIST_TMP}"/graql console |  grep -v '>>>' | grep person | wc -l)
   echo Marriages found $MARRIAGE_COUNT
   assertEquals 1 $MARRIAGE_COUNT
 }
