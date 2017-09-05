@@ -8,10 +8,10 @@ def buildGrakn = {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
     slackSend channel: "#github", message: """
 Build Started on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
-authored by - """ + user
+authored by - ${user}"""
     sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
     sh "mvn versions:set -DnewVersion=${env.BRANCH_NAME} -DgenerateBackupPoms=false"
-    sh 'mvn clean install -Dmaven.repo.local=' + workspace + '/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT'
+    sh "mvn clean install -Dmaven.repo.local=${workspace}/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT"
     archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 }
 
@@ -37,7 +37,7 @@ def measureSize = {
 }
 
 def buildSnbConnectors = {
-    sh 'mvn clean package assembly:single -Dmaven.repo.local=' + workspace + '/maven -DskipTests -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true'
+    sh "mvn clean package assembly:single -Dmaven.repo.local=${workspace}/maven -DskipTests -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true"
 }
 
 def validateQueries = {
@@ -59,7 +59,7 @@ node {
         //Always wrap each test block in a timeout
         //This first block sets up engine within 15 minutes
         withEnv([
-                'PATH+EXTRA=' + workspace + '/grakn-package/bin'
+                "PATH+EXTRA=${workspace}/grakn-package/bin"
         ]) {
             timeout(15) {
                 //Stages allow you to organise and group things within Jenkins
@@ -71,15 +71,15 @@ node {
         //Only run validation master/stable
         if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
             //Sets up environmental variables which can be shared between multiple tests
-            withEnv(['VALIDATION_DATA=' + workspace + '/generate-SNB/readwrite_neo4j--validation_set.tar.gz',
-                     'CSV_DATA=' + workspace + '/generate-SNB/social_network',
+            withEnv(["VALIDATION_DATA=${workspace}/generate-SNB/readwrite_neo4j--validation_set.tar.gz",
+                     "CSV_DATA=${workspace}/generate-SNB/social_network",
                      'KEYSPACE=snb',
                      'ENGINE=localhost:4567',
                      'ACTIVE_TASKS=1000',
-                     'PATH+EXTRA=' + workspace + '/grakn-package/bin',
-                     'LDBC_DRIVER=' + workspace + '/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar',
-                     'LDBC_CONNECTOR=' + workspace + "/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar",
-                     'LDBC_VALIDATION_CONFIG=' + workspace + '/grakn-test/test-snb/src/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties']) {
+                     "PATH+EXTRA=${workspace}/grakn-package/bin",
+                     "LDBC_DRIVER=${workspace}/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar",
+                     "LDBC_CONNECTOR=${workspace}/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar",
+                     "LDBC_VALIDATION_CONFIG=${workspace}/grakn-test/test-snb/src/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties"]) {
                 timeout(180) {
                     dir('generate-SNB') {
                         stage('Load Validation Data') loadValidationData
@@ -98,13 +98,13 @@ node {
             def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
             slackSend channel: "#github", color: "good", message: """
   Periodic Build Success on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
-  authored by - """ + user
+  authored by - ${user}"""
         }
     } catch (error) {
         def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
         slackSend channel: "#github", color: "danger", message: """
 Periodic Build Failed on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
-authored by - """ + user
+authored by - ${user}"""
         throw error
     } finally { // Tears down test environment
         timeout(5) {
