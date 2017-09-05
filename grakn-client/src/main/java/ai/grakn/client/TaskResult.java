@@ -14,43 +14,34 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
+package ai.grakn.client;
 
-package ai.grakn.engine.tasks.manager.redisqueue;
-
-import ai.grakn.engine.tasks.manager.TaskConfiguration;
-import ai.grakn.engine.tasks.manager.TaskState;
-import ai.grakn.redisq.Document;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import ai.grakn.engine.TaskId;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.auto.value.AutoValue;
-import java.io.Serializable;
 
 /**
- * Convenience class that includes a task state and config
+ * Wrapper for handling the outcome of the execution of a task
  *
  * @author Domenico Corapi
  */
 @AutoValue
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonDeserialize(builder = AutoValue_Task.Builder.class)
-abstract public class Task implements Serializable, Document {
-    protected static final long serialVersionUID = 42L;
-    @JsonProperty("taskState")
-    public abstract TaskState getTaskState();
-    @JsonProperty("taskConfiguration")
-    public abstract TaskConfiguration getTaskConfiguration();
+@JsonDeserialize(builder = AutoValue_TaskResult.Builder.class)
+public abstract class TaskResult {
+    @JsonProperty("taskId")
+    public abstract TaskId getTaskId();
+    @JsonProperty("stackTrace")
+    public abstract String getStackTrace();
+    @JsonProperty("code")
+    public abstract String getCode();
 
     public static Builder builder() {
-        return new AutoValue_Task.Builder();
-    }
-
-    @Override
-    @JsonIgnore
-    public String getIdAsString() {
-        return getTaskState().getId().getValue();
+        return new AutoValue_TaskResult.Builder();
     }
 
     /**
@@ -60,10 +51,13 @@ abstract public class Task implements Serializable, Document {
      */
     @AutoValue.Builder
     public abstract static class Builder {
-        @JsonProperty("taskState")
-        public abstract Builder setTaskState(TaskState newTaskState);
-        @JsonProperty("taskConfiguration")
-        public abstract Builder setTaskConfiguration(TaskConfiguration newTaskConfiguration);
-        public abstract Task build();
+        @JsonProperty("taskId")
+        public abstract Builder setTaskId(TaskId taskId);
+        @JsonProperty("stackTrace")
+        public abstract Builder setStackTrace(String stackTrace);
+        @JsonProperty("code")
+        public abstract Builder setCode(String code);
+
+        public abstract TaskResult build();
     }
 }
