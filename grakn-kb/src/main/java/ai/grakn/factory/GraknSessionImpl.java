@@ -33,8 +33,6 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -61,10 +59,6 @@ import static mjson.Json.read;
  * @author fppt
  */
 public class GraknSessionImpl implements GraknSession {
-
-    //Stores the location of the default configs used to initialise a knowledge base.
-    public final static String DEFAULT_CONFIG = "default-configs";
-
     private final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
     private final String location;
     private final String keyspace;
@@ -78,9 +72,6 @@ public class GraknSessionImpl implements GraknSession {
     static{
         //propertyMapper.put()
     }
-
-    //This is used to store the default config options
-    private static Properties defaultProperties = null;
 
 
     //This constructor must remain public because it is accessed via reflection
@@ -160,31 +151,12 @@ public class GraknSessionImpl implements GraknSession {
     private static TxFactory<?> configureGraphFactoryRemote(String keyspace, String engineUrl, String graphType){
         String restFactoryUri = engineUrl + INITIALISE + "?" + CONFIG_PARAM + "=" + graphType + "&" + KEYSPACE_PARAM + "=" + keyspace;
 
-        //Get Defaults
-        Properties properties = getDefaultProperties();
+        Properties properties = new Properties();
 
         //Get Specific Configs
         properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());
 
         return FactoryBuilder.getFactory(keyspace, engineUrl, properties);
-    }
-
-    /**
-     * Gets the default properties. These are loaded from disk is not already set.
-     *
-     * @return The default properties
-     */
-    private static Properties getDefaultProperties(){
-        if(defaultProperties == null) {
-            defaultProperties = new Properties();
-            try (InputStream in = GraknSessionImpl.class.getResourceAsStream(DEFAULT_CONFIG)) {
-                defaultProperties.load(in);
-                in.close();
-            } catch (IOException e) {
-                throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
-            }
-        }
-        return defaultProperties;
     }
 
     /**
