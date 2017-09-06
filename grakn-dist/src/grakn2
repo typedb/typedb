@@ -136,13 +136,12 @@ redis_wait_until_ready() {
 # ========================
 grakn_start_grakn() {
   local status=
-
-  # TODO: redirect output and error to /dev/null as we already have them in the logs
-  java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.engine.GraknEngineServer &
-
+  java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" \
+    ai.grakn.engine.GraknEngineServer > /dev/null 2>&1 &
+  status=$?
   pid=`ps -ef | grep GraknEngineServer | grep -v grep | awk '{ print $2}'`
-  echo $abc > "${GRAKN_PS}"
-  return 0
+  echo $pid > "${GRAKN_PS}"
+  return $status
 }
 
 grakn_is_grakn_running() {
@@ -237,7 +236,6 @@ grakn_server_start_grakn() {
     return 0 # grakn is already running. no need to do anything
   else
     # otherwise attempt to start
-    grakn_start_grakn
     echo -n "Starting Grakn..."
     grakn_start_grakn
     local exec_grakn_bin=$?
