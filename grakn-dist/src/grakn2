@@ -359,8 +359,26 @@ grakn_server_start() {
 }
 
 display_grakn_server_status() {
+  cassandra_is_cassandra_running
+  if [ $? -eq 0 ] ; then
+    echo "Casssandra: RUNNING"
+  else
+    echo "Casssandra: NOT RUNNING"
+  fi
 
-  echo "display status"
+  redis_is_redis_running
+  if [ $? -eq 0 ] ; then
+    echo "Redis: RUNNING"
+  else
+    echo "Redis: NOT RUNNING"
+  fi
+
+  grakn_is_grakn_running
+  if [ $? -eq 0 ] ; then
+    echo "Grakn: RUNNING"
+  else
+    echo "Grakn: NOT RUNNING"
+  fi
 }
 
 grakn_server_clean() {
