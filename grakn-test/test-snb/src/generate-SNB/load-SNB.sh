@@ -2,7 +2,7 @@
 
 # set script directory as working directory
 SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
-GRAQL=$SCRIPTPATH/./graql
+GRAQL=${SCRIPTPATH}/./graql
 
 source snb-env.sh
 
@@ -16,18 +16,18 @@ fi
 function extractArchData {
 
     if [ -z ${CSV_DATA+x} ]; then
-        echo $CSV_DATA
+        echo ${CSV_DATA}
         echo "Environment Variable Not Set. Please run 'source local-env.sh'"
         exit 1
     fi
 
-	mkdir -p $CSV_DATA
+	mkdir -p ${CSV_DATA}
 	case "$1" in
 		validate)
-			tar -xf $VALIDATION_DATA --strip=1 -C $CSV_DATA validation_set
+			tar -xf ${VALIDATION_DATA} --strip=1 -C ${CSV_DATA} validation_set
 			;;
 		SF1)
-			tar -xf $SF1_DATA
+			tar -xf ${SF1_DATA}
 			;;
 		*)
 			echo "Usage: arch {SF1}"
@@ -41,15 +41,15 @@ function generateData {
 	LDBC_SNB_DATAGEN_HOME=${LDBC_SNB_DATAGEN_HOME:-$DEFAULT_LDBC_SNB_DATAGEN_HOME}
 
 	paramFile=tmpParams.ini
-	cat params.ini > $paramFile
+	cat params.ini > ${paramFile}
 
 	case "$1" in
 		SF*)
 
-			echo "ldbc.snb.datagen.generator.scaleFactor:snb.interactive.${1:2:4}" >> $paramFile
+			echo "ldbc.snb.datagen.generator.scaleFactor:snb.interactive.${1:2:4}" >> ${paramFile}
 			;;
 		P*)
-			echo "ldbc.snb.datagen.generator.numPersons:${1:1:6}" >> $paramFile
+			echo "ldbc.snb.datagen.generator.numPersons:${1:1:6}" >> ${paramFile}
 			;;
 		*)
 			echo "Usage: gen {SF*|P*}"
@@ -58,9 +58,9 @@ function generateData {
 	esac
 
 	export HADOOP_CLIENT_OPTS="-Xmx1024m"
-	$HADOOP_HOME/bin/hadoop jar $LDBC_JAR $SCRIPTPATH/$paramFile
+	${HADOOP_HOME}/bin/hadoop jar ${LDBC_JAR} ${SCRIPTPATH}/${paramFile}
 
-	rm $paramFile
+	rm ${paramFile}
 	rm -f m*personFactors*
 	rm -f .m*personFactors*
 	rm -f m*activityFactors*
@@ -85,23 +85,23 @@ esac
 
 # migrate the data into Grakn
 
-graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-1-resources.gql -r $ENGINE
-graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-2-relations.gql -r $ENGINE
-graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-3-entities.gql -r $ENGINE
-graql.sh -k $KEYSPACE -f $GRAQL/ldbc-snb-4-rules.gql -r $ENGINE
+graql.sh -k ${KEYSPACE} -f ${GRAQL}/ldbc-snb-1-resources.gql -r ${ENGINE}
+graql.sh -k ${KEYSPACE} -f ${GRAQL}/ldbc-snb-2-relations.gql -r ${ENGINE}
+graql.sh -k ${KEYSPACE} -f ${GRAQL}/ldbc-snb-3-entities.gql -r ${ENGINE}
+graql.sh -k ${KEYSPACE} -f ${GRAQL}/ldbc-snb-4-rules.gql -r ${ENGINE}
 
 # lazily take account of OS
 unamestr=`uname`
 if [[ "$unamestr" == 'Linux' ]]; then
-    sed -i "1s/Comment.id|Comment.id/Comment.id|Message.id/" $CSV_DATA/comment_replyOf_comment_0_0.csv
-    sed -i "1s/Person.id|Person.id/Person1.id|Person.id/" $CSV_DATA/person_knows_person_0_0.csv
-    sed -i "1s/Place.id|Place.id/Place1.id|Place.id/" $CSV_DATA/place_isPartOf_place_0_0.csv
-    sed -i "1s/TagClass.id|TagClass.id/TagClass1.id|TagClass.id/" $CSV_DATA/tagclass_isSubclassOf_tagclass_0_0.csv
+    sed -i "1s/Comment.id|Comment.id/Comment.id|Message.id/" ${CSV_DATA}/comment_replyOf_comment_0_0.csv
+    sed -i "1s/Person.id|Person.id/Person1.id|Person.id/" ${CSV_DATA}/person_knows_person_0_0.csv
+    sed -i "1s/Place.id|Place.id/Place1.id|Place.id/" ${CSV_DATA}/place_isPartOf_place_0_0.csv
+    sed -i "1s/TagClass.id|TagClass.id/TagClass1.id|TagClass.id/" ${CSV_DATA}/tagclass_isSubclassOf_tagclass_0_0.csv
 elif [[ "$unamestr" == 'Darwin' ]]; then
-    sed -i '' "1s/Comment.id|Comment.id/Comment.id|Message.id/" $CSV_DATA/comment_replyOf_comment_0_0.csv
-    sed -i '' "1s/Person.id|Person.id/Person1.id|Person.id/" $CSV_DATA/person_knows_person_0_0.csv
-    sed -i '' "1s/Place.id|Place.id/Place1.id|Place.id/" $CSV_DATA/place_isPartOf_place_0_0.csv
-    sed -i '' "1s/TagClass.id|TagClass.id/TagClass1.id|TagClass.id/" $CSV_DATA/tagclass_isSubclassOf_tagclass_0_0.csv
+    sed -i '' "1s/Comment.id|Comment.id/Comment.id|Message.id/" ${CSV_DATA}/comment_replyOf_comment_0_0.csv
+    sed -i '' "1s/Person.id|Person.id/Person1.id|Person.id/" ${CSV_DATA}/person_knows_person_0_0.csv
+    sed -i '' "1s/Place.id|Place.id/Place1.id|Place.id/" ${CSV_DATA}/place_isPartOf_place_0_0.csv
+    sed -i '' "1s/TagClass.id|TagClass.id/TagClass1.id|TagClass.id/" ${CSV_DATA}/tagclass_isSubclassOf_tagclass_0_0.csv
 fi
 
 while read p;
@@ -117,8 +117,8 @@ do
         echo "Dynamic batch size: $BATCH_SIZE"
 
         tail -n +2 $CSV_DATA/${DATA_FILE} | wc -l
-        time migration.sh csv -s \| -t $GRAQL/${TEMPLATE_FILE} -i $CSV_DATA/${DATA_FILE} -d -k $KEYSPACE -u $ENGINE -a ${ACTIVE_TASKS:-25} -b ${BATCH_SIZE}
-done < $SCRIPTPATH/migrationsToRun.txt
+        time migration.sh csv -s \| -t ${GRAQL}/${TEMPLATE_FILE} -i ${CSV_DATA}/${DATA_FILE} -d -k ${KEYSPACE} -u ${ENGINE} -a ${ACTIVE_TASKS:-25} -b ${BATCH_SIZE}
+done < ${SCRIPTPATH}/migrationsToRun.txt
 
 # confirm there were no errors
-$SCRIPTPATH/check-errors.sh fail
+${SCRIPTPATH}/check-errors.sh fail

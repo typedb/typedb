@@ -2,14 +2,14 @@
 //This sets properties in the Jenkins server. In this case run every 8 hours
 properties([pipelineTriggers([cron('H H/8 * * *')])])
 
-def slackGithub = { String message, String color = null ->
+def slackGithub(String message, String color=null) {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
     slackSend channel: "#github", color: color, message: """
 ${message} on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
 authored by - ${user}"""
 }
 
-def buildGrakn = {
+Closure buildGrakn = {
     checkout scm
     slackGithub "Build started"
 
@@ -18,32 +18,32 @@ def buildGrakn = {
     archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 }
 
-def initGrakn = {
+Closure initGrakn = {
     sh 'init-grakn.sh'
 }
 
-def testConnection = {
+Closure testConnection = {
     sh 'test-connection.sh'
 }
 
-def loadValidationData = {
+Closure loadValidationData = {
     sh 'download-snb.sh'
     sh 'load-SNB.sh arch validate'
 }
 
-def measureSize = {
+Closure measureSize = {
     sh 'measure-size.sh'
 }
 
-def buildSnbConnectors = {
+Closure buildSnbConnectors = {
     sh "build-snb-connectors.sh"
 }
 
-def validateQueries = {
+Closure validateQueries = {
     sh "validate.sh ${env.BRANCH_NAME}"
 }
 
-def tearDownGrakn = {
+Closure tearDownGrakn = {
     archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
     sh 'tear-down.sh'
 }
@@ -64,15 +64,11 @@ node {
             //Only run validation master/stable
             if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable' || true) {
                 timeout(180) {
-                    dir('generate-SNB') {
-                        stage('Load Validation Data', loadValidationData)
-                    }
+                    stage('Load Validation Data', loadValidationData)
                     stage('Measure Size', measureSize)
                 }
                 timeout(360) {
-                    dir('grakn-test/test-snb/') {
-                        stage('Build the SNB connectors', buildSnbConnectors)
-                    }
+                    stage('Build the SNB connectors', buildSnbConnectors)
                     dir('validate-snb') {
                         stage('Validate Queries', validateQueries)
                     }

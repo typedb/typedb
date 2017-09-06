@@ -2,8 +2,8 @@
 
 # set script directory as working directory
 SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
-DATA=$SCRIPTPATH/./social_network
-GRAQL=$SCRIPTPATH/./graql
+DATA=${SCRIPTPATH}/./social_network
+GRAQL=${SCRIPTPATH}/./graql
 
 # generate CSV files
 $SCRIPTPATH/run.sh

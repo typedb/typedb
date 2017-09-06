@@ -7,17 +7,17 @@ source snb-env.sh
 
 # size on disk
 nodetool flush
-SIZESTRING=$(du -hd 0 $DB_DIR)
-SPLITSIZESTRING=($SIZESTRING)
+SIZESTRING=$(du -hd 0 ${DB_DIR})
+SPLITSIZESTRING=(${SIZESTRING})
 echo "The size on disk is: ${SPLITSIZESTRING[0]}"
 
 # number of concepts
-CONCEPTS=$(graql.sh -k $KEYSPACE -e "compute count;")
+CONCEPTS=$(graql.sh -k ${KEYSPACE} -e "compute count;")
 echo "The number of concepts is: $CONCEPTS"
 
 # duplicates
-DISTINCT=$(graql.sh -k $KEYSPACE -e "match \$x isa gender; distinct; aggregate count;")
-ALL=$(graql.sh -k $KEYSPACE -e "match \$x isa gender; aggregate count;")
+DISTINCT=$(graql.sh -k ${KEYSPACE} -e "match \$x isa gender; distinct; aggregate count;")
+ALL=$(graql.sh -k ${KEYSPACE} -e "match \$x isa gender; aggregate count;")
 if [ "$DISTINCT" == "$ALL" ]; then
 	echo "No duplicates."
 else
