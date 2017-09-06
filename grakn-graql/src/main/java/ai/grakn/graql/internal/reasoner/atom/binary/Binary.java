@@ -44,7 +44,7 @@ import java.util.Set;
 /**
  *
  * <p>
- * Implementation for binary atoms with single id typePredicate for a schema concept. Binary atoms take the form:
+ * Implementation for binary atoms with single id predicate for a schema concept. Binary atoms take the form:
  *
  * <>($varName, $predicateVariable), type($predicateVariable)
  *
