@@ -25,8 +25,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
               <button @click="updateCurrentTab('entities')" :class="{'active':currentTab==='entities'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
             </div>
             <div class="inline-div">
-              <button @click="$emit('load-schema','resource')" class="btn norightmargin">Resources</button>
-              <button @click="updateCurrentTab('resources')" :class="{'active':currentTab==='resources'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
+              <button @click="$emit('load-schema','attribute')" class="btn norightmargin">Attributes</button>
+              <button @click="updateCurrentTab('attributes')" :class="{'active':currentTab==='attributes'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
             </div>
             <div class="inline-div">
               <button @click="$emit('load-schema','relation')" class="btn norightmargin">Relations</button>
@@ -123,7 +123,9 @@ a:hover {
 <script>
 export default {
   name: 'TypeInstacesPanel',
-  props: ['typeInstances', 'showTypeInstances'],
+  props: ['typeInstances', 'showTypeInstances','state'],
+  created(){
+  },
   data() {
     return {
       currentTab: undefined,

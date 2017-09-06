@@ -89,8 +89,8 @@ export default class Style {
           },
         };
         break;
-      case API.RESOURCE_TYPE:
-      case API.RESOURCE:
+      case API.ATTRIBUTE_TYPE:
+      case API.ATTRIBUTE:
         colourObject = {
           background: '#1d65cb',
           highlight: {

@@ -18,7 +18,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
 
 <template>
 <div>
-    <button @click="showSettings=!showSettings" class="btn btn-default console-button"><i class="fa fa-cog"></i></button>
+    <button @click="togglePanel" class="btn btn-default console-button"><i class="fa fa-cog"></i></button>
     <transition name="fade-in">
         <div v-if="showSettings" class="dropdown-content">
             <div class="panel-heading">
@@ -119,6 +119,7 @@ import User from '../../js/User';
 
 export default {
   name: 'QuerySettings',
+  props:['state'],
   data() {
     return {
       useReasoner: User.getReasonerStatus(),
@@ -126,6 +127,7 @@ export default {
       showSettings: false,
       queryLimit: User.getQueryLimit(),
       freezeNodes: User.getFreezeNodes(),
+      elementId:'4',
     };
   },
   created() {
@@ -135,6 +137,7 @@ export default {
         this.freezeNodes = !this.freezeNodes;
       }
     });
+    this.state.eventHub.$on('show-new-navbar-element',(elementId)=>{if(elementId!=this.elementId)this.showSettings=false;});
   },
   mounted() {
     this.$nextTick(() => {
@@ -167,6 +170,10 @@ export default {
   methods: {
     closeSettings() {
       this.showSettings = false;
+    },
+    togglePanel(){
+        this.showSettings=!this.showSettings;
+        if(this.showSettings) this.state.eventHub.$emit('show-new-navbar-element',this.elementId);
     }
   },
 };
