@@ -94,6 +94,36 @@ cassandra_wait_until_ready() {
   return 1
 }
 
+cassandra_start_and_wait_until_ready() {
+  cassandra_is_cassandra_running
+  is_cassandra_running=$?
+
+  if [ $is_cassandra_running -eq 0 ]; then
+    echo "Cassandra is already running"
+    return 0 # cassandra is already running. no need to do anything
+  else
+    # otherwise attempt to start
+    echo -n "Starting Cassandra..."
+    cassandra_start_cassandra
+    local exec_cassandra_bin=$?
+
+    # check cassandra status and wait until ready
+    local status=
+    if [ $exec_cassandra_bin -eq 0 ] ; then
+      # exec cassandra bin successful. now wait until ready
+      cassandra_wait_until_ready
+      status=$?
+      echo "SUCCESS"
+    else
+      # exec cassandra bin failed
+      status=1
+      echo "FAILED!"
+    fi
+
+    return $status
+  fi
+}
+
 cassandra_stop_cassandra() {
   echo -n "Stopping Cassandra..."
   if [[ -e $CASSANDRA_PS ]]; then
@@ -157,6 +187,36 @@ redis_wait_until_ready() {
   done
 
   return 1
+}
+
+redis_start_and_wait_until_ready() {
+  redis_is_redis_running
+  is_redis_running=$?
+
+  if [ $is_redis_running -eq 0 ]; then
+    echo "Redis is already running"
+    return 0 # redis is already running. no need to do anything
+  else
+    # otherwise attempt to start
+    echo -n "Starting Redis..."
+    redis_start_redis
+    local exec_redis_bin=$?
+
+    # check redis status and wait until ready
+    local status=
+    if [ $exec_redis_bin -eq 0 ] ; then
+      # exec redis bin successful. now wait until ready
+      redis_wait_until_ready
+      status=$?
+      echo "SUCCESS"
+    else
+      # exec redis bin failed
+      status=1
+      echo "FAILED!"
+    fi
+
+    return $status
+  fi
 }
 
 redis_stop_redis() {
@@ -225,88 +285,7 @@ grakn_wait_until_ready() {
   return 1
 }
 
-grakn_stop_grakn() {
-  echo -n "Stopping Grakn..."
-  if [[ -e "$GRAKN_PS" ]]; then
-    kill `cat $GRAKN_PS`
-    status_kill=$?
-    rm $GRAKN_PS
-    if [ $status_kill -eq 0 ] ; then
-      echo "SUCCESS"
-    else
-      echo "FAILED" # unable to kill
-    fi
-    return $status_kill
-  else
-    echo "FAILED!" # unable to find PID file
-    return 1
-  fi
-}
-
-# ================================================
-# command line helpers
-# ================================================
-grakn_server_start_cassandra() {
-  cassandra_is_cassandra_running
-  is_cassandra_running=$?
-
-  if [ $is_cassandra_running -eq 0 ]; then
-    echo "Cassandra is already running"
-    return 0 # cassandra is already running. no need to do anything
-  else
-    # otherwise attempt to start
-    echo -n "Starting Cassandra..."
-    cassandra_start_cassandra
-    local exec_cassandra_bin=$?
-
-    # check cassandra status and wait until ready
-    local status=
-    if [ $exec_cassandra_bin -eq 0 ] ; then
-      # exec cassandra bin successful. now wait until ready
-      cassandra_wait_until_ready
-      status=$?
-      echo "SUCCESS"
-    else
-      # exec cassandra bin failed
-      status=1
-      echo "FAILED!"
-    fi
-
-    return $status
-  fi
-}
-
-grakn_server_start_redis() {
-  redis_is_redis_running
-  is_redis_running=$?
-
-  if [ $is_redis_running -eq 0 ]; then
-    echo "Redis is already running"
-    return 0 # redis is already running. no need to do anything
-  else
-    # otherwise attempt to start
-    echo -n "Starting Redis..."
-    redis_start_redis
-    local exec_redis_bin=$?
-
-    # check redis status and wait until ready
-    local status=
-    if [ $exec_redis_bin -eq 0 ] ; then
-      # exec redis bin successful. now wait until ready
-      redis_wait_until_ready
-      status=$?
-      echo "SUCCESS"
-    else
-      # exec redis bin failed
-      status=1
-      echo "FAILED!"
-    fi
-
-    return $status
-  fi
-}
-
-grakn_server_start_grakn() {
+grakn_start_and_wait_until_ready() {
   grakn_is_grakn_running
   is_grakn_running=$?
 
@@ -336,6 +315,31 @@ grakn_server_start_grakn() {
   fi
 }
 
+grakn_stop_grakn() {
+  echo -n "Stopping Grakn..."
+  if [[ -e "$GRAKN_PS" ]]; then
+    kill `cat $GRAKN_PS`
+    status_kill=$?
+    rm $GRAKN_PS
+    if [ $status_kill -eq 0 ] ; then
+      echo "SUCCESS"
+    else
+      echo "FAILED" # unable to kill
+    fi
+    return $status_kill
+  else
+    echo "FAILED!" # unable to find PID file
+    return 1
+  fi
+}
+
+grakn_clean_grakn() {
+  rm "${GRAKN_HOME}"/logs/*.log
+}
+
+# ================================================
+# command line helpers
+# ================================================
 grakn_server_stop() {
   grakn_stop_grakn
   status_grakn=$?
@@ -353,19 +357,15 @@ grakn_server_stop() {
   fi
 }
 
-grakn_clean_grakn() {
-  rm "${GRAKN_HOME}"/logs/*.log
-}
-
 # attempt to start grakn components. if one of them fails, abort everthing
 grakn_server_start() {
-  grakn_server_start_cassandra
+  cassandra_start_and_wait_until_ready
   cassandra=$?
 
-  grakn_server_start_redis
+  redis_start_and_wait_until_ready
   redis=$?
 
-  grakn_server_start_grakn
+  grakn_start_and_wait_until_ready
   grakn=$?
 
   # log
@@ -435,13 +435,19 @@ grakn_server_clean() {
         return 0
     fi
 
+    echo -n "Cleaning Cassandra..."
     cassandra_clean_cassandra
+    echo "SUCCESS"
 
-    grakn_server_start_redis
+    echo -n "Cleaning Redis..."
+    redis_start_and_wait_until_ready
     redis_clean_redis
     redis_stop_redis
+    echo "SUCCESS"
 
+    echo -n "Cleaning Grakn..."
     grakn_clean_grakn
+    echo "SUCCESS"
   fi
 }
 
@@ -484,6 +490,7 @@ case "$1" in
           exit 0
         else
           # failure detected. attempt to terminate every component gracefully
+          echo "Encountering failure during startup. Attempting to terminate Grakn gracefully..."
           grakn_server_stop
           status=$?
           # TODO: graceful termination failed. report failures
