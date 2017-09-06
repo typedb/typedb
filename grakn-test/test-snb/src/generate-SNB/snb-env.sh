@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source env.sh
+
 export VALIDATION_DATA="/opt/grakn/data/readwrite_neo4j--validation_set.tar.gz"
 export SF1_DATA="/opt/grakn/data/snb-data-sf1.tar.gz"
 export CSV_DATA="/tmp/social-network"

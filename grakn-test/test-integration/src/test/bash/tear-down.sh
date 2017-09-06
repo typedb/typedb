@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-# force script to exit on failed command
-set -e
+source env.sh
 
 if [ -d maven ] ;  then rm -rf maven ; fi
 grakn-package/bin/grakn.sh stop

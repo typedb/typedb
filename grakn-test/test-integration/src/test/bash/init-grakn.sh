@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-# force script to exit on failed command
-set -e
+source env.sh
 
 if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi
 

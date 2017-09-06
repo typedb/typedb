@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+source ../generate-SNB/env.sh
 
 # set script directory as working directory
 SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`

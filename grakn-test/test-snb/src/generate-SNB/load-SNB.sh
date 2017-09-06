@@ -4,8 +4,7 @@
 SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
 GRAQL=$SCRIPTPATH/./graql
 
-# force script to exit on failed command
-set -e
+source env.sh
 
 # validate the number of arguments
 if [ "$#" -lt "2" ]; then

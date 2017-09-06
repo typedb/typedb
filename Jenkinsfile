@@ -13,7 +13,7 @@ def buildGrakn = {
     checkout scm
     slackGithub "Build started"
 
-    sh "grakn-test/src/test/bash/build-grakn.sh ${workspace} ${env.BRACH_NAME}"
+    sh "grakn-test/src/test/bash/build-grakn.sh ${env.BRACH_NAME}"
 
     archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 }
@@ -36,7 +36,7 @@ def measureSize = {
 }
 
 def buildSnbConnectors = {
-    sh "../grakn-test/test-snb/src/generate-SNB/build-snb-connectors.sh ${workspace}"
+    sh "../grakn-test/test-snb/src/generate-SNB/build-snb-connectors.sh"
 }
 
 def validateQueries = {
@@ -55,15 +55,11 @@ node {
         def workspace = pwd()
         //Always wrap each test block in a timeout
         //This first block sets up engine within 15 minutes
-        withEnv([
-                "PATH+EXTRA=${workspace}/grakn-package/bin"
-        ]) {
-            timeout(15) {
-                //Stages allow you to organise and group things within Jenkins
-                stage('Build Grakn') buildGrakn
-                stage('Init Grakn') initGrakn
-                stage('Test Connection') testConnection
-            }
+        timeout(15) {
+            //Stages allow you to organise and group things within Jenkins
+            stage('Build Grakn') buildGrakn
+            stage('Init Grakn') initGrakn
+            stage('Test Connection') testConnection
         }
         //Only run validation master/stable
         if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
@@ -73,7 +69,6 @@ node {
                      'KEYSPACE=snb',
                      'ENGINE=localhost:4567',
                      'ACTIVE_TASKS=1000',
-                     "PATH+EXTRA=${workspace}/grakn-package/bin",
                      "LDBC_DRIVER=${workspace}/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar",
                      "LDBC_CONNECTOR=${workspace}/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar",
                      "LDBC_VALIDATION_CONFIG=${workspace}/grakn-test/test-snb/src/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties"]) {

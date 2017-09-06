@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-# force script to exit on failed command
-set -e
+source env.sh
 
 nodetool flush
 du -hd 0 grakn-package/db/cassandra/data
