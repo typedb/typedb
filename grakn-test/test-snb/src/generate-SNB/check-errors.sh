@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source snb-env.sh
+
 # check for errors from Grakn and exit 1 if fail specified as first argument
 FAILURES=$(curl http://$ENGINE/tasks?status=FAILED)
 if [ "$FAILURES" == "[]" ]; then
