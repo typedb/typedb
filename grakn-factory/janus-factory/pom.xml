@@ -223,10 +223,6 @@
                     <groupId>ch.qos.logback</groupId>
                     <artifactId>logback-classic</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>com.yammer.metrics</groupId>
-                    <artifactId>metrics-core</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
 
