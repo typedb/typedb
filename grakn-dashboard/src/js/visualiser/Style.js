@@ -70,8 +70,8 @@ export default class Style {
     let colourObject;
         // User defined schema & instances
     switch (baseType) {
-      case API.GENERATED_RELATION_TYPE:
-      case API.INFERRED_RELATION_TYPE:
+      case API.GENERATED_RELATIONSHIP_TYPE:
+      case API.INFERRED_RELATIONSHIP_TYPE:
         colourObject = {
           background: '#20a194',
           highlight: {
@@ -80,8 +80,8 @@ export default class Style {
         };
         break;
       case API.ROLE_TYPE:
-      case API.RELATION_TYPE:
-      case API.RELATION:
+      case API.RELATIONSHIP_TYPE:
+      case API.RELATIONSHIP:
         colourObject = {
           background: '#20a194',
           highlight: {
@@ -122,9 +122,9 @@ export default class Style {
   getNodeShape(baseType) {
     let shape;
     switch (baseType) {
-      case API.RELATION:
-      case API.GENERATED_RELATION_TYPE:
-      case API.INFERRED_RELATION_TYPE:
+      case API.RELATIONSHIP:
+      case API.GENERATED_RELATIONSHIP_TYPE:
+      case API.INFERRED_RELATIONSHIP_TYPE:
       case API.ROLE_TYPE:
         shape = 'dot';
         break;
@@ -137,9 +137,9 @@ export default class Style {
   getNodeSize(baseType) {
     let size;
     switch (baseType) {
-      case API.RELATION:
-      case API.GENERATED_RELATION_TYPE:
-      case API.INFERRED_RELATION_TYPE:
+      case API.RELATIONSHIP:
+      case API.GENERATED_RELATIONSHIP_TYPE:
+      case API.INFERRED_RELATIONSHIP_TYPE:
         size = 8;
         break;
       case API.ROLE_TYPE:

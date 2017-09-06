@@ -24,35 +24,35 @@ import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 
 import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.EXPLORE_CONCEPT_LINK;
-import static ai.grakn.graql.internal.hal.HALUtils.GENERATED_RELATION;
+import static ai.grakn.graql.internal.hal.HALUtils.GENERATED_RELATIONSHIP;
 import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
-import static ai.grakn.graql.internal.hal.HALUtils.INFERRED_RELATION;
+import static ai.grakn.graql.internal.hal.HALUtils.INFERRED_RELATIONSHIP;
 import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
 
 /**
- * Class used to build the HAL representation of a generated relation.
+ * Class used to build the HAL representation of a generated relationship.
  *
  * @author Marco Scoppetta
  */
 
-public class HALGeneratedRelation {
+public class HALGeneratedRelationship {
 
     private final RepresentationFactory factory;
 
-    public HALGeneratedRelation() {
+    public HALGeneratedRelationship() {
         this.factory = new StandardRepresentationFactory();
     }
 
 
-    Representation getNewGeneratedRelation(String relationId, String relationHref, String relationType, boolean isInferred) {
-        String relationBaseType = (isInferred) ? INFERRED_RELATION : GENERATED_RELATION;
-        Representation representation = factory.newRepresentation(relationHref)
-                .withProperty(ID_PROPERTY, relationId)
-                .withProperty(BASETYPE_PROPERTY, relationBaseType)
+    Representation getNewGeneratedRelationship(String relationshipId, String relationshipHref, String relationshipType, boolean isInferred) {
+        String relationshipBaseType = (isInferred) ? INFERRED_RELATIONSHIP : GENERATED_RELATIONSHIP;
+        Representation representation = factory.newRepresentation(relationshipHref)
+                .withProperty(ID_PROPERTY, relationshipId)
+                .withProperty(BASETYPE_PROPERTY, relationshipBaseType)
                 .withLink(EXPLORE_CONCEPT_LINK, "");
 
-        if (!relationType.equals("")) {
-            representation.withProperty(TYPE_PROPERTY, relationType);
+        if (!relationshipType.equals("")) {
+            representation.withProperty(TYPE_PROPERTY, relationshipType);
         }
 
         return representation;

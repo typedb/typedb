@@ -29,8 +29,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
               <button @click="updateCurrentTab('attributes')" :class="{'active':currentTab==='attributes'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
             </div>
             <div class="inline-div">
-              <button @click="$emit('load-schema','relation')" class="btn norightmargin">Relations</button>
-              <button @click="updateCurrentTab('relations')" :class="{'active':currentTab==='relations'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
+              <button @click="$emit('load-schema','relationship')" class="btn norightmargin">Relationships</button>
+              <button @click="updateCurrentTab('relationships')" :class="{'active':currentTab==='relationships'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
             </div>
             <button @click="$emit('load-schema','thing')" class="btn" style="margin-left:auto;">All Types</button>
         </div>
