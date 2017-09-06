@@ -42,6 +42,7 @@ import com.google.common.collect.Sets;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -177,7 +178,10 @@ public class InferenceRule {
         //only transfer value predicates if head has a user specified value variable
         Atom headAtom = head.getAtom();
         if(headAtom.isResource() && ((ResourceAtom) headAtom).getMultiPredicate().isEmpty()){
-            parentAtom.getPredicates(ValuePredicate.class)
+            Stream.concat(
+                    parentAtom.getPredicates(ValuePredicate.class),
+                    parentAtom.getInnerPredicates(ValuePredicate.class)
+            )
                     .flatMap(vp -> vp.unify(unifier).stream())
                     .forEach(vp -> {
                         head.addAtomic(AtomicFactory.create(vp, head));

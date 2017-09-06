@@ -52,7 +52,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -89,7 +88,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     ReasonerQueryImpl(Conjunction<VarPatternAdmin> pattern, GraknTx tx) {
         this.tx = tx;
-        atomSet.addAll(AtomicFactory.createAtomSet(pattern, this));
+        AtomicFactory.createAtoms(pattern, this).forEach(atomSet::add);
         inferTypes();
     }
 
@@ -145,9 +144,38 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     public int hashCode() {
         int hashCode = 1;
         SortedSet<Integer> hashes = new TreeSet<>();
-        atomSet.forEach(atom -> hashes.add(atom.equivalenceHashCode()));
+        getAtoms().forEach(atom -> hashes.add(atom.equivalenceHashCode()));
         for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
         return hashCode;
+    }
+
+    /**
+     * @param q query to be compared with
+     * @return true if two queries are alpha-equivalent
+     */
+    public boolean isEquivalent(ReasonerQueryImpl q) {
+        if(getAtoms().size() != q.getAtoms().size()) return false;
+        Set<Atom> atoms = getAtoms(Atom.class).collect(Collectors.toSet());
+        for (Atom atom : atoms){
+            if(!q.containsEquivalentAtom(atom)){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @param atom in question
+     * @return true if query contains an equivalent atom
+     */
+    private boolean containsEquivalentAtom(Atom atom) {
+        return !getEquivalentAtoms(atom).isEmpty();
+    }
+
+    Set<Atom> getEquivalentAtoms(Atom atom) {
+        return getAtoms(Atom.class)
+                .filter(at -> at.isEquivalent(atom))
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -257,17 +285,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @param var variable name
-     * @return id predicate for the specified var name if any
-     */
-    @Nullable
-    public IdPredicate getIdPredicate(Var var) {
-        return getAtoms(IdPredicate.class)
-                .filter(sub -> sub.getVarName().equals(var))
-                .findFirst().orElse(null);
-    }
-
-    /**
      * @param atom to be added
      * @return true if the atom set did not already contain the specified atom
      */
@@ -299,12 +316,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<Atom> orderedSelection = new LinkedHashSet<>();
 
         Atom atom = atomsToSelect.stream()
-                .filter(at -> at.getNeighbours().findFirst().isPresent())
+                .filter(at -> at.getNeighbours(Atom.class).findFirst().isPresent())
                 .findFirst().orElse(null);
         while(!atomsToSelect.isEmpty() && atom != null) {
             orderedSelection.add(atom);
             atomsToSelect.remove(atom);
-            atom = atom.getNeighbours()
+            atom = atom.getNeighbours(Atom.class)
                     .filter(atomsToSelect::contains)
                     .findFirst().orElse(null);
         }
@@ -318,40 +335,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @param q query to be compared with
-     * @return true if two queries are alpha-equivalent
-     */
-    public boolean isEquivalent(ReasonerQueryImpl q) {
-        Set<Atom> atoms = getAtoms(Atom.class).collect(Collectors.toSet());
-        if(atoms.size() != q.getAtoms().stream().filter(Atomic::isAtom).count()) return false;
-        for (Atom atom : atoms){
-            if(!q.containsEquivalentAtom(atom)){
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * @param atom in question
-     * @return true if query contains an equivalent atom
-     */
-    private boolean containsEquivalentAtom(Atom atom) {
-        return !getEquivalentAtoms(atom).isEmpty();
-    }
-
-    Set<Atom> getEquivalentAtoms(Atom atom) {
-        return getAtoms(Atom.class)
-                .filter(at -> at.isEquivalent(atom))
-                .collect(Collectors.toSet());
-    }
-
-    /**
      * @return substitution obtained from all id predicates (including internal) in the query
      */
     public Answer getSubstitution(){
         Set<IdPredicate> predicates = getAtoms(TypeAtom.class)
-                .map(TypeAtom::getPredicate)
+                .map(TypeAtom::getTypePredicate)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         getAtoms(IdPredicate.class).forEach(predicates::add);

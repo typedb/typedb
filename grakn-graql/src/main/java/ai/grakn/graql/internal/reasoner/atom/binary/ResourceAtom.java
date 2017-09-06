@@ -39,6 +39,8 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -57,12 +59,16 @@ import static ai.grakn.graql.internal.reasoner.utils.ReasonerUtils.checkDisjoint
  *
  * has($varName, $predicateVariable = resource variable), type($predicateVariable)
  *
+ * or in graql terms:
+ *
+ * $varName has <type> $predicateVariable; $predicateVariable isa <type>;
+ *
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public class ResourceAtom extends Binary{
+public class ResourceAtom extends Binary {
     private final Set<ValuePredicate> multiPredicate = new HashSet<>();
 
     public ResourceAtom(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate idPred, Set<ValuePredicate> ps, ReasonerQuery par){
@@ -92,7 +98,7 @@ public class ResourceAtom extends Binary{
         int hashCode = 1;
         hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + this.getVarName().hashCode();
-        hashCode = hashCode * 37 + this.getPredicateVariable().hashCode();
+        hashCode = hashCode * 37 + this.getMultiPredicate().hashCode();
         return hashCode;
     }
 
@@ -100,10 +106,10 @@ public class ResourceAtom extends Binary{
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        Binary a2 = (Binary) obj;
+        ResourceAtom a2 = (ResourceAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName())
-                && this.getPredicateVariable().equals(a2.getPredicateVariable());
+                && this.getMultiPredicate().equals(a2.getMultiPredicate());
     }
 
     @Override
@@ -116,24 +122,30 @@ public class ResourceAtom extends Binary{
 
     private int multiPredicateEquivalenceHashCode(){
         int hashCode = 0;
-        for (Predicate aMultiPredicate : multiPredicate) hashCode += aMultiPredicate.equivalenceHashCode();
+        SortedSet<Integer> hashes = new TreeSet<>();
+        getMultiPredicate().forEach(atom -> hashes.add(atom.equivalenceHashCode()));
+        for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
         return hashCode;
     }
 
     @Override
-    protected boolean hasEquivalentPredicatesWith(Binary at) {
-        if (!(at instanceof ResourceAtom)) return false;
+    boolean hasEquivalentPredicatesWith(Binary at) {
+        if (!(at instanceof ResourceAtom && super.hasEquivalentPredicatesWith(at))) return false;
+
         ResourceAtom atom = (ResourceAtom) at;
         if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
-        for (ValuePredicate predicate : getMultiPredicate()) {
+        for (ValuePredicate vp : getMultiPredicate()) {
             Iterator<ValuePredicate> objIt = atom.getMultiPredicate().iterator();
             boolean predicateHasEquivalent = false;
             while (objIt.hasNext() && !predicateHasEquivalent) {
-                predicateHasEquivalent = predicate.isEquivalent(objIt.next());
+                predicateHasEquivalent = vp.isEquivalent(objIt.next());
             }
             if (!predicateHasEquivalent) return false;
         }
-        return true;
+
+        IdPredicate thisPredicate = this.getIdPredicate(getPredicateVariable());
+        IdPredicate predicate = atom.getIdPredicate(atom.getPredicateVariable());
+        return thisPredicate == null && predicate == null || thisPredicate != null && thisPredicate.isEquivalent(predicate);
     }
 
     @Override
@@ -227,6 +239,13 @@ public class ResourceAtom extends Binary{
     @Override
     public boolean requiresMaterialisation(){ return true;}
 
+    @Override
+    public Set<Var> getVarNames(){
+        Set<Var> varNames = super.getVarNames();
+        multiPredicate.stream().flatMap(p -> p.getVarNames().stream()).forEach(varNames::add);
+        return varNames;
+    }
+
     private boolean isSuperNode(){
         return tx().graql().match(getCombinedPattern()).admin().stream()
                 .skip(ResolutionPlan.RESOURCE_SUPERNODE_SIZE)
@@ -276,7 +295,7 @@ public class ResourceAtom extends Binary{
             priority += vpsPriority;
         }
 
-        boolean reifiesRelation =  getNeighbours()
+        boolean reifiesRelation =  getNeighbours(Atom.class)
                 .filter(Atom::isRelation)
                 .filter(at -> at.getVarName().equals(this.getVarName()))
                 .findFirst().isPresent();
@@ -307,14 +326,8 @@ public class ResourceAtom extends Binary{
     }
 
     @Override
-    public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {
-        if(type.equals(ValuePredicate.class)){
-            return Stream.concat(
-                    super.getPredicates(type),
-                    getMultiPredicate().stream()
-            ).map(type::cast);
-        }
-        return super.getPredicates(type);
+    public Stream<Predicate> getInnerPredicates(){
+        return Stream.concat(super.getInnerPredicates(), getMultiPredicate().stream());
     }
 
     @Override

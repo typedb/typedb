@@ -32,10 +32,10 @@ import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
-
 import com.google.common.collect.Sets;
-
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Objects;
@@ -56,44 +56,40 @@ import java.util.Set;
 public abstract class Binary extends Atom {
     private final Var predicateVariable;
     private Type type = null;
-    private ConceptId typeId = null;
-    private @Nullable IdPredicate predicate = null;
+    private @Nullable IdPredicate typePredicate = null;
 
     Binary(VarPatternAdmin pattern, Var predicateVar, @Nullable IdPredicate p, ReasonerQuery par) {
         super(pattern, par);
         this.predicateVariable = predicateVar;
-        this.predicate = p;
-        this.typeId = getPredicate() != null? getPredicate().getPredicate() : null;
+        this.typePredicate = p;
     }
 
     Binary(Binary a) {
         super(a);
         this.predicateVariable = a.predicateVariable;
-        this.predicate = a.getPredicate() != null ? (IdPredicate) AtomicFactory.create(a.getPredicate(), getParentQuery()) : null;
+        this.typePredicate = a.getTypePredicate() != null ? (IdPredicate) AtomicFactory.create(a.getTypePredicate(), getParentQuery()) : null;
         this.type = a.type;
-        this.typeId = a.typeId;
     }
 
     public Var getPredicateVariable() { return predicateVariable;}
-    public IdPredicate getPredicate() { return predicate;}
+    public IdPredicate getTypePredicate() { return typePredicate;}
 
     @Nullable
     @Override
     public SchemaConcept getSchemaConcept(){
-        if (type == null && typeId != null) {
-            type = getParentQuery().tx().getConcept(typeId).asType();
+        if (type == null && getTypePredicate() != null) {
+            type = getParentQuery().tx().getConcept(getTypeId()).asType();
         }
         return type;
     }
 
     @Override
-    public ConceptId getTypeId(){ return typeId;}
+    public ConceptId getTypeId(){ return typePredicate != null? typePredicate.getPredicate() : null;}
 
     @Override
     public int equivalenceHashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + (this.predicate != null ? this.predicate.equivalenceHashCode() : 0);
         return hashCode;
     }
 
@@ -107,23 +103,27 @@ public abstract class Binary extends Atom {
     }
 
     boolean hasEquivalentPredicatesWith(Binary atom) {
-        Predicate pred = getPredicate();
-        Predicate objPredicate = atom.getPredicate();
-        return (pred == null && objPredicate == null)
-                || (pred != null  && pred.isEquivalent(objPredicate));
+        //check if there is a substitution for varName
+        IdPredicate thisVarPredicate = this.getIdPredicate(getVarName());
+        IdPredicate varPredicate = atom.getIdPredicate(atom.getVarName());
+
+        IdPredicate thisTypePredicate = this.getTypePredicate();
+        IdPredicate typePredicate = atom.getTypePredicate();
+        return ((thisVarPredicate == null && varPredicate == null || thisVarPredicate != null && thisVarPredicate.isEquivalent(varPredicate)))
+                && (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && thisTypePredicate.isEquivalent(typePredicate));
     }
 
     @Override
     public PatternAdmin getCombinedPattern() {
         Set<VarPatternAdmin> vars = Sets.newHashSet(super.getPattern().asVarPattern());
-        if (getPredicate() != null) vars.add(getPredicate().getPattern().asVarPattern());
+        if (getTypePredicate() != null) vars.add(getTypePredicate().getPattern().asVarPattern());
         return Patterns.conjunction(vars);
     }
 
     @Override
     public void setParentQuery(ReasonerQuery q) {
         super.setParentQuery(q);
-        if (predicate != null) predicate.setParentQuery(q);
+        if (typePredicate != null) typePredicate.setParentQuery(q);
     }
 
     @Override
@@ -132,6 +132,11 @@ public abstract class Binary extends Atom {
         if (isUserDefinedName()) vars.add(getVarName());
         if (!predicateVariable.getValue().isEmpty()) vars.add(predicateVariable);
         return vars;
+    }
+
+    @Override
+    public Stream<Predicate> getInnerPredicates(){
+        return Stream.of(typePredicate);
     }
 
     @Override

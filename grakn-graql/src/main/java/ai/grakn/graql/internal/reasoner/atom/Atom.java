@@ -202,6 +202,21 @@ public abstract class Atom extends AtomicBase {
         return getParentQuery().getAtoms(type).filter(atom -> !Sets.intersection(this.getVarNames(), atom.getVarNames()).isEmpty());
     }
 
+    public IdPredicate getIdPredicate(Var var){
+        return getPredicates(IdPredicate.class).filter(p -> p.getVarName().equals(var)).findFirst().orElse(null);
+    }
+
+    public abstract Stream<Predicate> getInnerPredicates();
+
+    /**
+     * @param type the class of {@link Predicate} to return
+     * @param <T> the type of {@link Predicate} to return
+     * @return stream of predicates relevant to this atom
+     */
+    public <T extends Predicate> Stream<T> getInnerPredicates(Class<T> type){
+        return getInnerPredicates().filter(type::isInstance).map(type::cast);
+    }
+
     /**
      * @return set of types relevant to this atom
      */
@@ -212,10 +227,12 @@ public abstract class Atom extends AtomicBase {
     }
 
     /**
+     * @param type the class of {@link Predicate} to return
+     * @param <T> the type of neighbour {@link Atomic} to return
      * @return neighbours of this atoms, i.e. atoms connected to this atom via shared variable
      */
-    public Stream<Atom> getNeighbours(){
-        return getParentQuery().getAtoms(Atom.class)
+    public <T extends Atomic> Stream<T> getNeighbours(Class<T> type){
+        return getParentQuery().getAtoms(type)
                 .filter(at -> at != this)
                 .filter(at -> !Sets.intersection(this.getVarNames(), at.getVarNames()).isEmpty());
     }
