@@ -20,26 +20,26 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Match;
+import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
 /**
- * Admin class for inspecting and manipulating an InsertQuery
+ * Admin class for inspecting and manipulating a {@link Match}
  *
- * @author Felix CHapman
+ * @author Felix Chapman
  */
-public interface InsertQueryAdmin extends InsertQuery {
+public interface MatchAdmin extends Match {
 
     /**
-     * @return the {@link Match} that this insert query is using, if it was provided one
+     * @param tx the {@link GraknTx} to use to get types from
+     * @return all concept types referred to explicitly in the query
      */
     @CheckReturnValue
-    Optional<? extends Match> match();
+    Set<SchemaConcept> getSchemaConcepts(GraknTx tx);
 
     /**
      * @return all concept types referred to explicitly in the query
@@ -48,14 +48,20 @@ public interface InsertQueryAdmin extends InsertQuery {
     Set<SchemaConcept> getSchemaConcepts();
 
     /**
-     * @return the variables to insert in the insert query
+     * @return the pattern to match in the graph
      */
     @CheckReturnValue
-    Collection<VarPatternAdmin> varPatterns();
+    Conjunction<PatternAdmin> getPattern();
 
     /**
-     * @return the graph set on this query, if it was provided one
+     * @return the graph the query operates on, if one was provided
      */
     @CheckReturnValue
-    Optional<GraknTx> getTx();
+    Optional<GraknTx> tx();
+
+    /**
+     * @return all selected variable names in the query
+     */
+    @CheckReturnValue
+    Set<Var> getSelectedNames();
 }

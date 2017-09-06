@@ -21,7 +21,7 @@ package ai.grakn.graql;
 import ai.grakn.GraknTx;
 
 /**
- * An aggregate query produced from a {@link MatchQuery}.
+ * An aggregate query produced from a {@link Match}.
  *
  * @param <T> the type of the result of the aggregate query
  *

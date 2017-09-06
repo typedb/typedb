@@ -18,17 +18,14 @@
 
 package ai.grakn.graql.internal.reasoner.inference;
 
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.test.SampleKBContext;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
+import static ai.grakn.util.GraqlTestUtil.assertQueriesEqual;
 import static org.junit.Assume.assumeTrue;
 
 public class WineInferenceTest {
@@ -43,7 +40,7 @@ public class WineInferenceTest {
 
     @Test
     public void testRecommendation() {
-        String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;$y has name $nameW;";
+        String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;$y has name $nameW; get;";
         QueryBuilder qb = wineGraph.tx().graql().infer(false);
         QueryBuilder iqb = wineGraph.tx().graql().infer(true);
 
@@ -53,13 +50,9 @@ public class WineInferenceTest {
                         "{$nameP val 'Charlie';$nameW val 'Pinot Grigio Rose';} or" +
                         "{$nameP val 'Denis';$nameW val 'Busuioaca Romaneasca';} or" +
                         "{$nameP val 'Eva';$nameW val 'Tamaioasa Romaneasca';} or" +
-                        "{$nameP val 'Frank';$nameW val 'Riojo Blanco CVNE 2003';}; select $x, $y, $nameW;";
+                        "{$nameP val 'Frank';$nameW val 'Riojo Blanco CVNE 2003';}; get $x, $y, $nameW;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
-    }
-
-    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
-        assertEquals(q1.stream().collect(Collectors.toSet()), q2.stream().collect(Collectors.toSet()));
     }
 }

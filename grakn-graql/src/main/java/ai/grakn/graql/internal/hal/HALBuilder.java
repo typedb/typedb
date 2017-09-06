@@ -22,17 +22,18 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.util.REST;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
-import ai.grakn.graql.internal.reasoner.utils.Pair;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,7 @@ import static ai.grakn.graql.internal.hal.HALUtils.computeRoleTypesFromQuery;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Class for building HAL representations of a {@link Concept} or a {@link MatchQuery}.
+ * Class for building HAL representations of a {@link Concept} or a {@link Match}.
  *
  * @author Marco Scoppetta
  */
@@ -70,22 +71,22 @@ public class HALBuilder {
     private final static String ASSERTION_URL = "?keyspace=%s&query=match %s %s %s %s; %s &limitEmbedded=%s&infer=false&materialise=false";
 
 
-    public static Json renderHALArrayData(MatchQuery matchQuery, int offset, int limit) {
-        Collection<Answer> answers = matchQuery.execute();
-        return renderHALArrayData(matchQuery, answers, offset, limit, false);
+    public static Json renderHALArrayData(GetQuery getQuery, int offset, int limit) {
+        Collection<Answer> answers = getQuery.execute();
+        return renderHALArrayData(getQuery, answers, offset, limit, false);
     }
 
-    public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Answer> results, int offset, int limit, boolean filterInstances) {
-        String keyspace = matchQuery.admin().tx().get().getKeyspace();
+    public static Json renderHALArrayData(GetQuery getQuery, Collection<Answer> results, int offset, int limit, boolean filterInstances) {
+        String keyspace = getQuery.tx().get().getKeyspace();
 
         //For each VarPatterAdmin containing a relation we store a map containing varNames associated to RoleTypes
         Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
         if (results.iterator().hasNext()) {
             // Compute map on first answer in result, since it will be the same for all the answers
-            roleTypes = computeRoleTypesFromQuery(matchQuery, results.iterator().next());
+            roleTypes = computeRoleTypesFromQuery(getQuery, results.iterator().next());
         }
-        //Collect all the types explicitly asked in the match query
-        Set<Label> typesAskedInQuery = matchQuery.admin().getSchemaConcepts().stream().map(SchemaConcept::getLabel).collect(toSet());
+        //Collect all the types explicitly asked in the get query
+        Set<Label> typesAskedInQuery = getQuery.match().admin().getSchemaConcepts().stream().map(SchemaConcept::getLabel).collect(toSet());
 
         return buildHALRepresentations(results, typesAskedInQuery, roleTypes, keyspace, offset, limit, filterInstances);
     }
@@ -113,12 +114,12 @@ public class HALBuilder {
         answerStream.forEach(answer -> {
             AnswerExplanation expl = answer.getExplanation();
             if (expl.isLookupExplanation()) {
-                HALBuilder.renderHALArrayData(expl.getQuery().getMatchQuery(), Collections.singletonList(answer), 0, limit, true).asList().forEach(conceptsArray::add);
+                HALBuilder.renderHALArrayData(expl.getQuery().getQuery(), Collections.singletonList(answer), 0, limit, true).asList().forEach(conceptsArray::add);
             } else if (expl.isRuleExplanation()) {
                 Atom innerAtom = ((RuleExplanation) expl).getRule().getHead().getAtom();
                 //TODO: handle case innerAtom isa resource
                 if (innerAtom.isRelation()) {
-                    HALBuilder.renderHALArrayData(expl.getQuery().getMatchQuery(), Collections.singletonList(answer), 0, limit, true).asList().forEach(conceptsArray::add);
+                    HALBuilder.renderHALArrayData(expl.getQuery().getQuery(), Collections.singletonList(answer), 0, limit, true).asList().forEach(conceptsArray::add);
                 }
                 explanationAnswersToHAL(expl.getAnswers().stream(), limit).asList().forEach(conceptsArray::add);
             }
@@ -197,7 +198,7 @@ public class HALBuilder {
             String relationId = "temp-assertion-" + idsList;
             String relationType = currentEntry.getValue().getValue();
             boolean isInferred = inferredRelations.containsKey(currentEntry.getKey()) && inferredRelations.get(currentEntry.getKey());
-            // This string contains the match query to execute when double clicking on the 'generated-relation' node from Dashboard
+            // This string contains the get query to execute when double clicking on the 'generated-relation' node from Dashboard
             // It will be an 'explain-query' if the current relation is inferred
             String relationHref = computeRelationHref(relationType, varNamesInCurrentRelation, resultLine, currentEntry.getValue().getKey(), keyspace, limit, isInferred);
             // Create HAL representation of generated relation

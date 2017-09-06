@@ -25,7 +25,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
@@ -133,8 +133,8 @@ public class DefineQueryTest {
                 label("my-type").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.LONG)
         ).execute();
 
-        MatchQuery query = qb.match(var("x").label("my-type"));
-        AttributeType.DataType datatype = query.iterator().next().get("x").asAttributeType().getDataType();
+        Match match = qb.match(var("x").label("my-type"));
+        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().getDataType();
 
         Assert.assertEquals(AttributeType.DataType.LONG, datatype);
     }
@@ -146,8 +146,8 @@ public class DefineQueryTest {
                 label("sub-type").sub("my-type")
         ).execute();
 
-        MatchQuery query = qb.match(var("x").label("sub-type"));
-        AttributeType.DataType datatype = query.iterator().next().get("x").asAttributeType().getDataType();
+        Match match = qb.match(var("x").label("sub-type"));
+        AttributeType.DataType datatype = match.iterator().next().get("x").asAttributeType().getDataType();
 
         Assert.assertEquals(AttributeType.DataType.STRING, datatype);
     }
@@ -188,7 +188,7 @@ public class DefineQueryTest {
 
         qb.insert(var("x").isa("new-type")).execute();
 
-        MatchQuery typeQuery = qb.match(var("n").label("new-type"));
+        Match typeQuery = qb.match(var("n").label("new-type"));
 
         assertEquals(1, typeQuery.stream().count());
 
@@ -264,7 +264,7 @@ public class DefineQueryTest {
     public void testResourceTypeRegex() {
         qb.define(label("greeting").sub(Schema.MetaSchema.ATTRIBUTE.getLabel().getValue()).datatype(AttributeType.DataType.STRING).regex("hello|good day")).execute();
 
-        MatchQuery match = qb.match(var("x").label("greeting"));
+        Match match = qb.match(var("x").label("greeting"));
         assertEquals("hello|good day", match.get("x").findFirst().get().asAttributeType().getRegex());
     }
 

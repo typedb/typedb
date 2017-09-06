@@ -20,8 +20,9 @@ package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.SampleKBContext;
@@ -53,13 +54,13 @@ public class QueryToStringTest {
     }
 
     @Test
-    public void testSimpleMatchQueryToString() {
-        assertSameResults(qb.match(var("x").isa("movie").label("Godfather")));
+    public void testSimpleGetQueryToString() {
+        assertSameResults(qb.match(var("x").isa("movie").label("Godfather")).get());
     }
 
     @Test
     public void testComplexQueryToString() {
-        MatchQuery query = qb.match(
+        GetQuery query = qb.match(
                 var("x").isa("movie"),
                 var().rel("x").rel("y"),
                 or(
@@ -67,38 +68,38 @@ public class QueryToStringTest {
                         var("y").isa("genre").val(neq("crime"))
                 ),
                 var("y").has("name", var("n"))
-        ).orderBy("n").select("x", "y").limit(8).offset(4);
-        assertSameResults(query);
+        ).orderBy("n").limit(8).offset(4).get("x", "y");
+        assertEquivalent(query, query.toString());
     }
 
     @Test
     public void testQueryWithResourcesToString() {
-        assertSameResults(qb.match(var("x").has("tmdb-vote-count", lte(400))));
+        assertSameResults(qb.match(var("x").has("tmdb-vote-count", lte(400))).get());
     }
 
     @Test
     public void testQueryWithSubToString() {
-        assertSameResults(qb.match(var("x").sub(var("y"))));
+        assertSameResults(qb.match(var("x").sub(var("y"))).get());
     }
 
     @Test
     public void testQueryWithPlaysToString() {
-        assertSameResults(qb.match(var("x").plays(var("y"))));
+        assertSameResults(qb.match(var("x").plays(var("y"))).get());
     }
 
     @Test
     public void testQueryWithRelatesToString() {
-        assertSameResults(qb.match(var("x").relates(var("y"))));
+        assertSameResults(qb.match(var("x").relates(var("y"))).get());
     }
 
     @Test
     public void testQueryWithDatatypeToString() {
-        assertSameResults(qb.match(var("x").datatype(AttributeType.DataType.LONG)));
+        assertSameResults(qb.match(var("x").datatype(AttributeType.DataType.LONG)).get());
     }
 
     @Test
     public void testQueryIsAbstractToString() {
-        assertSameResults(qb.match(var("x").isAbstract()));
+        assertSameResults(qb.match(var("x").isAbstract()).get());
     }
 
     @Test
@@ -179,8 +180,8 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryToStringWithReservedKeywords() {
-        MatchQuery query = qb.match(var("x").isa("isa"));
-        assertEquals("match $x isa \"isa\";", query.toString());
+        GetQuery query = qb.match(var("x").isa("isa")).get();
+        assertEquals("match $x isa \"isa\"; get $x;", query.toString());
     }
 
     @Test
@@ -218,12 +219,12 @@ public class QueryToStringTest {
 
     @Test
     public void whenCallingToStringOnAQueryWithAContainsPredicate_ResultIsCorrect() {
-        MatchQuery query = match(var("x").val(contains(var("y"))));
+        Match match = match(var("x").val(contains(var("y"))));
 
-        assertEquals("match $x val contains $y;", query.toString());
+        assertEquals("match $x val contains $y;", match.toString());
     }
 
-    private void assertSameResults(MatchQuery query) {
+    private void assertSameResults(GetQuery query) {
         assertEquals(query.execute(), qb.parse(query.toString()).execute());
     }
 

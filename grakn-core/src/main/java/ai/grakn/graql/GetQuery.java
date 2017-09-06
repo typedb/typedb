@@ -14,54 +14,53 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.graql.admin;
+package ai.grakn.graql;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
 
 import javax.annotation.CheckReturnValue;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 /**
- * Admin class for inspecting and manipulating a MatchQuery
+ * a query used for finding data in a knowledge base that matches the given patterns.
+ * <p>
+ * The {@link GetQuery} is a pattern-matching query. The patterns are described in a declarative fashion,
+ * then the {@link GetQuery} will traverse the knowledge base in an efficient fashion to find any matching answers.
+ * <p>
+ * @see Answer
  *
  * @author Felix Chapman
  */
-public interface MatchQueryAdmin extends MatchQuery {
+public interface GetQuery extends Query<List<Answer>>, Streamable<Answer> {
 
     /**
-     * @param tx the {@link GraknTx} to use to get types from
-     * @return all concept types referred to explicitly in the query
+     * @param tx the transaction to execute the query on
+     * @return a new {@link GetQuery} with the transaction set
      */
-    @CheckReturnValue
-    Set<SchemaConcept> getSchemaConcepts(GraknTx tx);
+    @Override
+    GetQuery withTx(GraknTx tx);
 
     /**
-     * @return all concept types referred to explicitly in the query
-     */
-    @CheckReturnValue
-    Set<SchemaConcept> getSchemaConcepts();
-
-    /**
-     * @return the pattern to match in the graph
-     */
-    @CheckReturnValue
-    Conjunction<PatternAdmin> getPattern();
-
-    /**
-     * @return the graph the query operates on, if one was provided
+     * Get the transaction this query is running against, if it is set
      */
     @CheckReturnValue
     Optional<GraknTx> tx();
 
     /**
-     * @return all selected variable names in the query
+     * Get the {@link Match} this {@link GetQuery} contains
      */
     @CheckReturnValue
-    Set<Var> getSelectedNames();
+    Match match();
+
+    /**
+     * Get the {@link Var}s this {@link GetQuery} will select from the answers
+     */
+    @CheckReturnValue
+    Set<Var> vars();
 }
