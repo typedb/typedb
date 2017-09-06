@@ -358,6 +358,36 @@ grakn_server_stop() {
 }
 
 # attempt to start grakn components. if one of them fails, abort everthing
+grakn_grakn_start() {
+  grakn_start_and_wait_until_ready
+  grakn=$?
+  # log
+  if [ $grakn -ne 0 ] ; then
+    echo "Unable to start Grakn"
+  fi
+  return $grakn
+}
+
+grakn_redis_start() {
+  redis_start_and_wait_until_ready
+  redis=$?
+  # log
+  if [ $redis -ne 0 ] ; then
+    echo "Unable to start Redis"
+  fi
+  return $redis
+}
+
+grakn_cassandra_start() {
+  cassandra_start_and_wait_until_ready
+  cassandra=$?
+  # log
+  if [ $cassandra -ne 0 ] ; then
+    echo "Unable to start Cassandra"
+  fi
+  return $cassandra
+}
+
 grakn_server_start() {
   cassandra_start_and_wait_until_ready
   cassandra=$?
@@ -461,13 +491,16 @@ Usage:
 grakn COMMAND
 
 COMMAND:
-server  manage Grakn process
-version print Grakn version
-help    print this message
+server     manage Grakn processes
+grakn      manage Grakn
+redis      manage Redis
+cassandra  manage Cassandra
+version    print Grakn version
+help       print this message
 
 Tips:
 Start Grakn with 'grakn server start' (by default, the dashboard will be accessible at http://localhost:4567)
-You can then perform queries by opening a console with 'graql console'
+You can then perform queries by opening a console with 'graql console'"
 }
 
 # =============================================
@@ -477,10 +510,36 @@ You can then perform queries by opening a console with 'graql console'
 update_classpath
 
 case "$1" in
+  grakn)
+    case "$2" in
+      start)
+        grakn_grakn_start
+      ;;
+      stop)
+      ;;
+    esac
+  ;;
+  redis)
+    case "$2" in
+      start)
+        grakn_redis_start
+      ;;
+      stop)
+      ;;
+    esac
+  ;;
+  cassandra)
+    case "$2" in
+      start)
+        grakn_cassandra_start
+      ;;
+      stop)
+      ;;
+    esac
+  ;;
   server)
     case "$2" in
       start)
-        # user typed in 'grakn server start'
         # attempt to start every component in the background. check if there's any failure
         # abort and terminate every components if so
         grakn_server_start
