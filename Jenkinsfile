@@ -63,7 +63,7 @@ node {
                 stage('Test Connection', testConnection)
             }
             //Only run validation master/stable
-            if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
+            if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable' || true) {
                 //Sets up environmental variables which can be shared between multiple tests
                 withEnv(["VALIDATION_DATA=${workspace}/generate-SNB/readwrite_neo4j--validation_set.tar.gz",
                          "CSV_DATA=${workspace}/generate-SNB/social_network",
