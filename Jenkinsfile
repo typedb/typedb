@@ -69,9 +69,7 @@ node {
                 }
                 timeout(360) {
                     stage('Build the SNB connectors', buildSnbConnectors)
-                    dir('validate-snb') {
-                        stage('Validate Queries', validateQueries)
-                    }
+                    stage('Validate Queries', validateQueries)
                 }
                 slackGithub "Periodic Build Success" "good"
             }
