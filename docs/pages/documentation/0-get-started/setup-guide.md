@@ -37,7 +37,7 @@ brew install grakn
 grakn.sh start
 ```
 
-This will start Grakn Engine, which is an HTTP server providing batch loading, monitoring and the browser dashboard.
+This will start Grakn, which is an HTTP server providing batch loading, monitoring and the browser dashboard.
 
 {% include note.html content="**Useful commands**  <br />
 To start Grakn, run `grakn.sh start`.   
