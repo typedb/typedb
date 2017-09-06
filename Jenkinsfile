@@ -27,8 +27,8 @@ def testConnection = {
 }
 
 def loadValidationData = {
-    sh '../grakn-test/test-snb/src/generate-SNB/download-snb.sh'
-    sh '../grakn-test/test-snb/src/generate-SNB/load-SNB.sh arch validate'
+    sh 'download-snb.sh'
+    sh 'load-SNB.sh arch validate'
 }
 
 def measureSize = {
@@ -36,11 +36,11 @@ def measureSize = {
 }
 
 def buildSnbConnectors = {
-    sh "../grakn-test/test-snb/src/generate-SNB/build-snb-connectors.sh"
+    sh "build-snb-connectors.sh"
 }
 
 def validateQueries = {
-    sh '../grakn-test/test-snb/src/validate-snb/validate.sh'
+    sh 'validate.sh'
 }
 
 def tearDownGrakn = {
@@ -49,7 +49,7 @@ def tearDownGrakn = {
 }
 
 node {
-    withEnv(["PATH+EXTRA=${workspace}/grakn-test/test-integration/src/test/bash"]) {
+    withEnv(["PATH+EXTRA=${workspace}/grakn-test/test-integration/src/test/bash:${workspace}/grakn-test/test-snb/src/generate-SNB:${workspace}/grakn-test/test-snb/src/validate-snb"]) {
         //Everything is wrapped in a try catch so we can handle any test failures
         //If one test fails then all the others will stop. I.e. we fail fast
         try {
