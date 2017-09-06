@@ -57,9 +57,9 @@ node {
         //This first block sets up engine within 15 minutes
         timeout(15) {
             //Stages allow you to organise and group things within Jenkins
-            stage('Build Grakn') buildGrakn
-            stage('Init Grakn') initGrakn
-            stage('Test Connection') testConnection
+            stage('Build Grakn', buildGrakn)
+            stage('Init Grakn', initGrakn)
+            stage('Test Connection', testConnection)
         }
         //Only run validation master/stable
         if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
@@ -74,16 +74,16 @@ node {
                      "LDBC_VALIDATION_CONFIG=${workspace}/grakn-test/test-snb/src/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties"]) {
                 timeout(180) {
                     dir('generate-SNB') {
-                        stage('Load Validation Data') loadValidationData
+                        stage('Load Validation Data', loadValidationData)
                     }
-                    stage('Measure Size') measureSize
+                    stage('Measure Size', measureSize)
                 }
                 timeout(360) {
                     dir('grakn-test/test-snb/') {
-                        stage('Build the SNB connectors') buildSnbConnectors
+                        stage('Build the SNB connectors', buildSnbConnectors)
                     }
                     dir('validate-snb') {
-                        stage('Validate Queries') validateQueries
+                        stage('Validate Queries', validateQueries)
                     }
                 }
             }
@@ -94,7 +94,7 @@ node {
         throw error
     } finally { // Tears down test environment
         timeout(5) {
-            stage('Tear Down Grakn') tearDownGrakn
+            stage('Tear Down Grakn', tearDownGrakn)
         }
     }
 }
