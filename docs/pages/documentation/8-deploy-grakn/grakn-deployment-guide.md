@@ -18,21 +18,14 @@ This guide offers advice on how to:
 * upgrade to the latest version of the distribution.
    
    
-Grakn releases from our [GitHub repository](https://github.com/graknlabs/grakn) are self-contained packages (tar.gz/zip) containing all the components you need to run Grakn:
-
-* Grakn stack
-* Redis
-* Cassandra
-
-You can run all these components separately depending on the redundancy levels you require.
+Grakn releases from our [GitHub repository](https://github.com/graknlabs/grakn) are self-contained packages (tar.gz/zip) containing all the components you need to run Grakn.
 
 ## Setting up Grakn
 
 ### Minimum Requirements
 
-Grakn can run on default Java settings (heap of 768MB, 1GB machine) if the knowledge base is small enough. Recommended production settings are at least 4GB machine with 3GB heap.
-
-Cassandra will need at least 1GB of memory by itself if run on same machine.
+Grakn can run on default Java settings (heap of 768MB, 1GB machine) if the knowledge base is small enough. 
+Recommended production settings are at least 4GB machine with 3GB heap.
 
 ### Standalone Grakn
 
@@ -46,34 +39,9 @@ We recommend changing this to another location to make upgrading Grakn easier an
 * `commitlog_directory`: eg. /var/lib/cassandra/commitlog
 * `saved_caches_directory`: eg. /var/lib/cassandra/saved_caches
 
-### Clustered Database
-
-To add reliability and redudancy on the database layer, you can run Cassandra (DSE, OrientDB, other storage backends) separately and point Grakn to use the node/cluster.
-
-Running Cassandra requires an entire guide in itself - our brief recommendation is to have, at the minimum, a cluster of 3 nodes with replication factor (RF) 3.
-
-Cassandra version: 2.1.9
-
-Specify an external database cluster in `conf/main/grakn.properties`: `storage.hostname`: eg. 10.0.10.1,10.0.10.2,10.0.10.3
-
-For further information on running Cassandra, see:
-
-- [Cassandra documentation](http://cassandra.apache.org/doc/latest/operating/index.html)    
-- [AWS Cassandra whitepaper](https://d0.awsstatic.com/whitepapers/Cassandra_on_AWS.pdf)
-
 ### Distributed
 
-For a fully scalable and distributed setup, you will need to run each component of Grakn in a separate cluster.
-This provides the highest level of redundancy and availability; you will want this for high throughput systems and to make the most out of Grakn. 
-
-The database layer will need to be configured similarly to the [Clustered database](#clustered-database) setup.
-
-Grakn Engine uses [Redis](https://redis.io/) for distributed task execution.
-
-Redis version: 3.2.9
-
-Once the configuration files are correct, you can start Grakn Engine only with `bin/grakn-engine.sh start`.
-Multiple instances of Grakn Engine can be started that will make use of the shared Cassandra/Redis clusters.
+//TODO this section needs rewording entirely
 
 ## Upgrading Grakn
 

@@ -29,29 +29,20 @@ There are lots of ways you can get involved! Please take a look at our [contribu
 
 ### Why does Grakn hang when I try to start it?   
 
-I am running `grakn.sh start` but it hangs on `Starting Cassandra`. Why?
+I am running `grakn.sh start` but it hangs on `Starting ...`. Why?
 
-This may be because you have cloned the Grakn repo into a directory which has a space in its name (e.g. `/grakn test`). You can build our code successfully, but when you start `grakn.sh`, it hangs because Cassandra needs you to have single word pathnames. Remove the spaces (e.g. `/grakn_test`) and try again.
-
-There are other possible reasons why Grakn hangs starting Cassandra. One may be that some other application is using the port 7199, which Cassandra needs.  To find out what is using port 7199:
-`lsof -i tcp:7199`
-
-From there, you'll see the PID of application using that port. Check if you can safely kill it or change its port. It may be that another instance of Cassandra is blocking it, and you can simply kill it using:
-`pkill -9 java`
-
-Then try `grakn.sh start` again.
-
-Failing that, you can often find out more information by looking in the `/logs` directory under your Grakn installation.  
-
-Please see the answer to the question below "Can I run Grakn on an existing Cassandra Platform?" if you are already using Cassandra and want to run Grakn on a different instance of Cassandra to our default.
+This may be because you have cloned the Grakn repo into a directory which has a space in its name (e.g. `/grakn test`). 
+You can build our code successfully, but when you start `grakn.sh`, it hangs because the database needs you to have single word pathnames. 
+Remove the spaces (e.g. `/grakn_test`) and try again.
 
 ### Why am I getting ghost vertices?
 
-In a  transaction based environment it is possible to have one transaction removing a concept while another concurrently modifies the same concept. Both
-transactions may successfully commit if the backend is eventually consistent, e.g. [Janus Cassandra](http://docs.janusgraph.org/latest/common-questions.html).
+In a transaction based environment it is possible to have one transaction removing a concept while another concurrently modifies the same concept. 
+Both transactions may successfully commit in an eventually consistent environment.
 
-The concept is likely to still exist with only the modified properties. When using the Janus Cassandra backend it is possible to safeguard against
-this by setting the `checkInternalVertexExistence` property to true. However, this will result in slower transaction as more reads will be necessary.
+The concept is likely to still exist with only the modified properties. 
+It is possible to safeguard against this by setting the `checkInternalVertexExistence` property to true. 
+However, this will result in slower transaction as more reads will be necessary.
 
 ## Working with  Grakn
 
@@ -135,27 +126,6 @@ When using a batch load, many safety checks are skipped in favour of speed. One 
 ```
 
 It would be possible to create multiple resources of the type `unique-id` with the value `1`. These duplicate resources are similarly merged and resolved by Grakn engine.
-
-
-### Can I run Grakn on an existing Cassandra Platform?
-
-By default, Grakn is shipped with [Janus Graph](http://janusgraph.org/), which in turn relies on Cassandra. When you call `grakn.sh start`, this starts a Cassandra instance and then starts the Grakn server.  You are not bound to use our instance of Cassandra, and can make adjustments to the settings in the `.properties` file in the `conf/main` directory of the Grakn, e.g. to make Janus use your Cassandra instance.
-
-Specifically you should change the following parameters:
-
-```bash
-# Host Location
-storage.hostname=127.0.0.1
-```
-
-You can also, for example, add the following to specify a custom port:
-
-```bash
-storage.port = 1234
-```
-
-Please refer to the [Janus documentation](http://docs.janusgraph.org/latest/config-ref.html#_storage) for more information.
-
 
 ### Do applications written on top of Grakn have to be in Java?
 
