@@ -2,12 +2,16 @@
 //This sets properties in the Jenkins server. In this case run every 8 hours
 properties([pipelineTriggers([cron('H H/8 * * *')])])
 
+def slackGithub = { String message, String color=null ->
+    def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
+    slackSend channel: "#github", color: color, message: """
+${message} on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
+authored by - ${user}"""
+}
+
 def buildGrakn = {
     checkout scm
-    def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
-    slackSend channel: "#github", message: """
-Build Started on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
-authored by - ${user}"""
+    slackGithub "Build started"
 
     sh "grakn-test/src/test/bash/build-grakn.sh ${workspace} ${env.BRACH_NAME}"
 
@@ -88,16 +92,10 @@ node {
                     }
                 }
             }
-            def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
-            slackSend channel: "#github", color: "good", message: """
-  Periodic Build Success on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
-  authored by - ${user}"""
+            slackGithub "Periodic Build Success" "good"
         }
     } catch (error) {
-        def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
-        slackSend channel: "#github", color: "danger", message: """
-Periodic Build Failed on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
-authored by - ${user}"""
+        slackGithub "Periodic Build Failed" "danger"
         throw error
     } finally { // Tears down test environment
         timeout(5) {
