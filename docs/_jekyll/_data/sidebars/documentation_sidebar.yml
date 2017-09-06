@@ -20,24 +20,21 @@ entries:
   - title: Grakn Fundamentals
     output: web
     folderitems:
-      - title: Grakn Architecture Overview
-        output: web
-        url: /documentation/the-fundamentals/grakn-architecture.html
       - title: Grakn Knowledge Model
         output: web
         url: /documentation/the-fundamentals/grakn-knowledge-model.html
-  - title: Graql Ontology
+  - title: Graql Schema
     output: web
     folderitems:
-      - title: Define a Basic Ontology
+      - title: Define a Basic Schema
         output: web
-        url: /documentation/building-an-ontology/basic-ontology.html
-      - title: Define a Hierarchical Ontology
+        url: /documentation/building-a-schema/basic-schema.html
+      - title: Define a Hierarchical Schema
         output: web
-        url: /documentation/building-an-ontology/hierarchical-ontology.html
-      - title: Define a Rule-Driven Ontology
+        url: /documentation/building-a-schema/hierarchical-schema.html
+      - title: Define a Rule-Driven Schema
         output: web
-        url: /documentation/building-an-ontology/rule-driven-ontology.html
+        url: /documentation/building-a-schema/rule-driven-schema.html
   - title: Graql Queries
     output: web
     folderitems:
@@ -119,9 +116,9 @@ entries:
       - title: Java Development Overview
         output: web
         url: /documentation/developing-with-java/java-setup.html
-      - title: Graph API
+      - title: Java API
         output: web
-        url: /documentation/developing-with-java/graph-api.html
+        url: /documentation/developing-with-java/java-api.html
       - title: Java Graql API
         output: web
         url: /documentation/developing-with-java/java-graql.html
@@ -194,9 +191,9 @@ entries:
       - title: Statistical Analysis
         output: web
         url: /documentation/examples/analytics.html
-      - title: Graph API for Java developers
+      - title: API for Java developers
         output: web
-        url: /documentation/examples/graph-api-example.html
+        url: /documentation/examples/java-api-example.html
       - title: Analytics using Java APIs
         output: web
         url: /documentation/examples/java-analytics.html
