@@ -509,6 +509,7 @@ public class ReasonerTest {
         GetQuery query = graph.graql().infer(true).parse(queryString);
         GetQuery query2 = graph.graql().infer(false).parse(explicitQuery);
         QueryAnswers answers = queryAnswers(query);
+        System.out.println(answers);
         QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers, answers2);
     }

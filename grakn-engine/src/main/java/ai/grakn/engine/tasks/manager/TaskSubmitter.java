@@ -38,4 +38,16 @@ public interface TaskSubmitter {
      * @param taskState Task to execute
      */
     void addTask(TaskState taskState, TaskConfiguration configuration);
+
+    void runTask(TaskState taskState, TaskConfiguration configuration);
+
+    static TaskSubmitter getNoopTaskSubmitter() {
+        return new TaskSubmitter() {
+            @Override
+            public void addTask(TaskState taskState, TaskConfiguration configuration) {}
+
+            @Override
+            public void runTask(TaskState taskState, TaskConfiguration configuration) {}
+        };
+    }
 }

@@ -83,15 +83,15 @@ casting        : variable (':' VARIABLE)?
 
 variable       : label | VARIABLE ;
 
-predicate      : '='? value        # predicateEq
-               | '=' VARIABLE      # predicateVariable
-               | '!=' valueOrVar   # predicateNeq
-               | '>' valueOrVar    # predicateGt
-               | '>=' valueOrVar   # predicateGte
-               | '<' valueOrVar    # predicateLt
-               | '<=' valueOrVar   # predicateLte
-               | 'contains' STRING # predicateContains
-               | REGEX             # predicateRegex
+predicate      : '='? value                     # predicateEq
+               | '=' VARIABLE                   # predicateVariable
+               | '!=' valueOrVar                # predicateNeq
+               | '>' valueOrVar                 # predicateGt
+               | '>=' valueOrVar                # predicateGte
+               | '<' valueOrVar                 # predicateLt
+               | '<=' valueOrVar                # predicateLte
+               | 'contains' (STRING | VARIABLE) # predicateContains
+               | REGEX                          # predicateRegex
                ;
 valueOrVar     : VARIABLE # valueVariable
                | value    # valuePrimitive

@@ -25,26 +25,21 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
+import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.match;
+import static ai.grakn.graql.Graql.var;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import static java.util.stream.Stream.generate;
+import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static ai.grakn.graql.Graql.insert;
-import static ai.grakn.graql.Graql.match;
-import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
-import static java.util.stream.Stream.generate;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -78,6 +73,7 @@ public class BatchMutatorClientTest {
 
         // Wait for queries to finish
         loader.waitToFinish();
+        loader.close();
 
         // Verify that the logger received the failed log message
         assertEquals(1, tasksCompleted.get());
@@ -89,6 +85,7 @@ public class BatchMutatorClientTest {
 
         generate(this::query).limit(100).forEach(loader::add);
         loader.waitToFinish();
+        loader.close();
 
         try (GraknTx graph = session.open(GraknTxType.READ)) {
             assertEquals(100, graph.getEntityType("name_tag").instances().count());
@@ -102,6 +99,7 @@ public class BatchMutatorClientTest {
         loader.setBatchSize(20);
         generate(this::query).limit(100).forEach(loader::add);
         loader.waitToFinish();
+        loader.close();
 
         verify(loader, times(5)).sendQueriesToLoader(argThat(insertQueries -> insertQueries.size() == 20));
     }
@@ -114,24 +112,10 @@ public class BatchMutatorClientTest {
         generate(this::query).limit(90).forEach(loader::add);
 
         loader.waitToFinish();
+        loader.close();
 
         verify(loader, times(4)).sendQueriesToLoader(argThat(insertQueries -> insertQueries.size() == 20));
         verify(loader, times(1)).sendQueriesToLoader(argThat(insertQueries -> insertQueries.size() == 10));
-    }
-
-    @Test
-    public void whenSending20QueriesWith1ActiveTask_OnlyOneBatchIsActiveAtOnce() throws Exception {
-        BatchMutatorClient loader = loader();
-        loader.setNumberActiveTasks(1);
-        loader.setBatchSize(5);
-
-        generate(this::query).limit(20).forEach(loader::add);
-
-        loader.waitToFinish();
-
-        try (GraknTx graph = session.open(GraknTxType.READ)) {
-            assertEquals(20, graph.getEntityType("name_tag").instances().count());
-        }
     }
 
     @Test
@@ -157,47 +141,8 @@ public class BatchMutatorClientTest {
         }
 
         loader.waitToFinish();
-
+        loader.close();
         assertEquals(4, tasksCompletedWithoutError.get());
-    }
-
-    // TODO: Run this test in a more deterministic way (mocking endpoints?)
-    @Test
-    public void whenEngineRESTFailsWhileLoadingWithRetryFalse_LoaderDoesNotWait() throws Exception {
-        AtomicInteger tasksCompletedWithoutError = new AtomicInteger(0);
-        AtomicInteger tasksCompletedWithError = new AtomicInteger(0);
-
-        BatchMutatorClient loader = loader();
-        loader.setRetryPolicy(false);
-        int batchSize = 5;
-        loader.setBatchSize(batchSize);
-        loader.setTaskCompletionConsumer((json) -> {
-            if (json != null) {
-                tasksCompletedWithoutError.incrementAndGet();
-            } else {
-                tasksCompletedWithError.incrementAndGet();
-            }
-        });
-
-        int queries = 20;
-        for(int i = 0; i < queries; i++){
-            try {
-                loader.add(query());
-            } catch(RuntimeException e) {
-                // Swallowing exceptions, there's a count of successful tasks anyway
-            }
-
-            if(i%10 == 0) {
-                engine.server().stopHTTP();
-                engine.server().startHTTP();
-            }
-        }
-
-        loader.waitToFinish();
-
-        int expectedTotal = queries/batchSize;
-        assertThat(tasksCompletedWithoutError.get(), lessThanOrEqualTo(expectedTotal));
-        assertThat(tasksCompletedWithoutError.get() + tasksCompletedWithError.get(), equalTo(expectedTotal));
     }
 
     @Test
@@ -216,6 +161,7 @@ public class BatchMutatorClientTest {
         mutatorClient.add(insertQuery);
         mutatorClient.add(insertQuery);
         mutatorClient.waitToFinish();
+        mutatorClient.close();
         verify(mutatorClient, times(1)).sendQueriesToLoader(argThat(insertQueries -> insertQueries.size() == 2));
     }
 

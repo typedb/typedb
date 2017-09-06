@@ -22,6 +22,7 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.SampleKBContext;
@@ -31,6 +32,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.lte;
 import static ai.grakn.graql.Graql.match;
@@ -213,6 +215,13 @@ public class QueryToStringTest {
         String query = "match $x isa movie; delete $x;";
 
         assertEquals(query, qb.parse(query).toString());
+    }
+
+    @Test
+    public void whenCallingToStringOnAQueryWithAContainsPredicate_ResultIsCorrect() {
+        Match match = match(var("x").val(contains(var("y"))));
+
+        assertEquals("match $x val contains $y;", match.toString());
     }
 
     private void assertSameResults(GetQuery query) {
