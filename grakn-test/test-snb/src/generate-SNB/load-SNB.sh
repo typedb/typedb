@@ -2,7 +2,7 @@
 
 # set script directory as working directory
 SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
-GRAQL=${SCRIPTPATH}/./graql
+GRAQL=${SCRIPTPATH}/../main/graql
 
 source snb-env.sh
 
