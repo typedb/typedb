@@ -19,10 +19,10 @@
 package ai.grakn.factory;
 
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.shaded.minlog.Log;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.Properties;
@@ -48,12 +48,10 @@ public class FactoryBuilder {
     private static final Map<String, TxFactory<?>> openFactories = new ConcurrentHashMap<>();
 
     //This is used to map grakn value properties into the underlaying properties
-    private static final Map<String, String> factoryMapper = new HashMap<>();
-    static{
-        factoryMapper.put("in-memory", "ai.grakn.factory.TxFactoryTinker");
-        factoryMapper.put("production", "ai.grakn.factory.TxFactoryJanus");
-        factoryMapper.put("distributed", "ai.grakn.factory.TxFactoryJanusHadoop");
-    }
+    private static final Map<String, String> factoryMapper = ImmutableMap.of(
+            "in-memory", "ai.grakn.factory.TxFactoryTinker",
+            "production", "ai.grakn.factory.TxFactoryJanus",
+            "distributed", "ai.grakn.factory.TxFactoryJanusHadoop");
 
     private FactoryBuilder(){
         throw new UnsupportedOperationException();

@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.kb.internal.GraknTxJanus;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -43,7 +44,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
@@ -84,11 +84,7 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
     }
 
     //This maps the storage backend to the needed value
-    private static final Map<String, String> storageBackendMapper = new HashMap<>();
-    static{
-        //TODO: BIG TABLE WILL HAVE A VALUE HERE
-        storageBackendMapper.put("grakn-production", "cassandra");
-    }
+    private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
 
     TxFactoryJanus(String keyspace, String engineUrl, Properties properties) {
         super(keyspace, engineUrl, properties);
