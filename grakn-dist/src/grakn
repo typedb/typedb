@@ -17,40 +17,500 @@
 # You should have received a copy of the GNU General Public License
 # <http://www.gnu.org/licenses/gpl.txt>.
 
+# ================================================
+# global variables
+# ================================================
+
+# globals
+WAIT_INTERVAL_S=2
+
+# Grakn globals
+# TODO: clean up
 if [ -z "${GRAKN_HOME}" ]; then
     [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
-    GRAKN_BIN=$(cd "$(dirname "${path}")" && pwd -P)
-    GRAKN_HOME=$(cd "${GRAKN_BIN}" && pwd -P)
+    GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
+    GRAKN_CONFIG="${GRAKN_HOME}/conf/grakn.properties"
+    GRAKN_PS=/tmp/grakn-engine.pid
+    GRAKN_STARTUP_TIMEOUT_S=120
 fi
+
+# Cassandra globals
+CASSANDRA_PS=/tmp/grakn-cassandra.pid
+CASSANDRA_STARTUP_TIMEOUT_S=60
+
+# Redis globals
+REDIS_STARTUP_TIMEOUT_S=10
+
+# ================================================
+# common helper functions
+# ================================================
+update_classpath() {
+  # Define CLASSPATH, exclude slf4j as we use logback
+  for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
+      if [[ $jar != *slf4j-log4j12* ]] ; then
+          CLASSPATH="$CLASSPATH":"$jar"
+      fi
+  done
+
+  # Add path containing grakn.properties and logback.xml
+  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
+  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
+}
+
+# ================================================
+# cassandra helper functions
+# ================================================
+cassandra_start_cassandra() {
+  "${GRAKN_HOME}"/services/cassandra/cassandra -p $CASSANDRA_PS > /dev/null 2>&1
+  return $?
+}
+
+cassandra_is_cassandra_running() {
+  local status=
+  if [ -e $CASSANDRA_PS ] && ps -p `cat $CASSANDRA_PS` > /dev/null ; then
+    status=0 # cassandra running
+  else
+    status=1 # cassandra not running
+  fi
+  return $status
+}
+
+cassandra_wait_until_ready() {
+  local now_s=`date '+%s'`
+  local stop_s=$(( $now_s + $CASSANDRA_STARTUP_TIMEOUT_S ))
+  local status_thrift=
+
+  while [ $now_s -le $stop_s ]; do
+      echo -n "."
+      # The \r\n deletion bit is necessary for Cygwin compatibility
+      status_thrift=`"${GRAKN_HOME}"/services/cassandra/nodetool statusthrift 2>/dev/null | tr -d '\n\r'`
+      if [ $? -eq 0 -a 'running' = "$status_thrift" ]; then
+          return 0
+      fi
+      sleep $WAIT_INTERVAL_S
+      now_s=`date '+%s'`
+  done
+
+  return 1
+}
+
+cassandra_stop_cassandra() {
+  echo -n "Stopping Cassandra..."
+  if [[ -e $CASSANDRA_PS ]]; then
+    pid=`cat $CASSANDRA_PS`
+    kill "$pid"
+    while kill -0 "$pid" 2>/dev/null; do
+        sleep 0.5
+    done
+    echo "SUCCESS"
+    return 0
+  else
+    echo "FAILED!" # unable to find PID
+    return 1
+  fi
+}
+
+cassandra_clean_cassandra() {
+  rm -rf db/cassandra
+  mkdir -p db/cassandra/data db/cassandra/commitlog db/cassandra/saved_caches
+}
+
+# ================================================
+# redis helper functions
+# ================================================
+redis_start_redis() {
+  local redis_bin=""
+  if [ "$(uname)" == "Darwin" ]; then
+      redis_bin="redis-server-osx"
+  elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+      redis_bin="redis-server-linux"
+  fi
+
+  "${GRAKN_HOME}"/services/redis/$redis_bin "${GRAKN_HOME}"/services/redis/redis.conf
+  return $?
+}
+
+redis_is_redis_running() {
+  local status=
+  local count_running_redis_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
+  if [ $count_running_redis_process -gt 0 ] ; then
+    status=0 # redis running
+  else
+    status=1 # redis not running
+  fi
+  return $status
+}
+
+redis_wait_until_ready() {
+  local now_s=`date '+%s'`
+  local stop_s=$(( $now_s + $REDIS_STARTUP_TIMEOUT_S ))
+
+  while [ $now_s -le $stop_s ]; do
+      echo -n "." # output some sort of "progress bar"
+      redis_is_redis_running
+      local is_redis_running=$?
+      if [ $is_redis_running -eq 0 ] ; then
+          return 0
+      fi
+      sleep $WAIT_INTERVAL_S
+      now_s=`date '+%s'`
+  done
+
+  return 1
+}
+
+redis_stop_redis() {
+  echo -n "Stopping Redis..."
+  local redis_bin=
+  if [ "$(uname)" == "Darwin" ]; then
+      redis_bin="redis-cli-osx"
+  elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+      redis_bin="redis-cli-linux"
+  fi
+  "${GRAKN_HOME}/services/redis/"$redis_bin shutdown
+  local status=$?
+  if [ $status -eq 0 ] ; then
+    echo "SUCCESS"
+  else
+    echo "FAILED!"
+  fi
+
+  return $status
+}
+
+redis_clean_redis() {
+  local redis_bin=
+  if [ "$(uname)" == "Darwin" ]; then
+      redis_bin="redis-cli-osx"
+  elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+      redis_bin="redis-cli-linux"
+  fi
+
+  "${GRAKN_HOME}/services/redis/"$redis_bin flushall
+}
+
+# ================================================
+# grakn helper functions
+# ================================================
+grakn_start_grakn() {
+  local status=
+  java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" \
+    ai.grakn.engine.GraknEngineServer > /dev/null 2>&1 &
+  status=$?
+  pid=`ps -ef | grep GraknEngineServer | grep -v grep | awk '{ print $2}'`
+  echo $pid > "${GRAKN_PS}"
+  return $status
+}
+
+grakn_is_grakn_running() {
+  java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.client.Client > /dev/null 2>&1
+  return $?
+}
+
+grakn_wait_until_ready() {
+  local now_s=`date '+%s'`
+  local stop_s=$(( $now_s + $GRAKN_STARTUP_TIMEOUT_S ))
+
+  while [ $now_s -le $stop_s ]; do
+      echo -n "." # output some sort of "progress bar"
+      grakn_is_grakn_running
+      local is_grakn_running=$?
+      if [ $is_grakn_running -eq 0 ] ; then
+          return 0
+      fi
+      sleep $WAIT_INTERVAL_S
+      now_s=`date '+%s'`
+  done
+
+  return 1
+}
+
+grakn_stop_grakn() {
+  echo -n "Stopping Grakn..."
+  if [[ -e "$GRAKN_PS" ]]; then
+    kill `cat $GRAKN_PS`
+    status_kill=$?
+    rm $GRAKN_PS
+    if [ $status_kill -eq 0 ] ; then
+      echo "SUCCESS"
+    else
+      echo "FAILED" # unable to kill
+    fi
+    return $status_kill
+  else
+    echo "FAILED!" # unable to find PID file
+    return 1
+  fi
+}
+
+# ================================================
+# command line helpers
+# ================================================
+grakn_server_start_cassandra() {
+  cassandra_is_cassandra_running
+  is_cassandra_running=$?
+
+  if [ $is_cassandra_running -eq 0 ]; then
+    echo "Cassandra is already running"
+    return 0 # cassandra is already running. no need to do anything
+  else
+    # otherwise attempt to start
+    echo -n "Starting Cassandra..."
+    cassandra_start_cassandra
+    local exec_cassandra_bin=$?
+
+    # check cassandra status and wait until ready
+    local status=
+    if [ $exec_cassandra_bin -eq 0 ] ; then
+      # exec cassandra bin successful. now wait until ready
+      cassandra_wait_until_ready
+      status=$?
+      echo "SUCCESS"
+    else
+      # exec cassandra bin failed
+      status=1
+      echo "FAILED!"
+    fi
+
+    return $status
+  fi
+}
+
+grakn_server_start_redis() {
+  redis_is_redis_running
+  is_redis_running=$?
+
+  if [ $is_redis_running -eq 0 ]; then
+    echo "Redis is already running"
+    return 0 # redis is already running. no need to do anything
+  else
+    # otherwise attempt to start
+    echo -n "Starting Redis..."
+    redis_start_redis
+    local exec_redis_bin=$?
+
+    # check redis status and wait until ready
+    local status=
+    if [ $exec_redis_bin -eq 0 ] ; then
+      # exec redis bin successful. now wait until ready
+      redis_wait_until_ready
+      status=$?
+      echo "SUCCESS"
+    else
+      # exec redis bin failed
+      status=1
+      echo "FAILED!"
+    fi
+
+    return $status
+  fi
+}
+
+grakn_server_start_grakn() {
+  grakn_is_grakn_running
+  is_grakn_running=$?
+
+  if [ $is_grakn_running -eq 0 ]; then
+    echo "Grakn is already running"
+    return 0 # grakn is already running. no need to do anything
+  else
+    # otherwise attempt to start
+    echo -n "Starting Grakn..."
+    grakn_start_grakn
+    local exec_grakn_bin=$?
+
+    # check grakn status and wait until ready
+    local status=
+    if [ $exec_grakn_bin -eq 0 ] ; then
+      # exec grakn bin successful. now wait until ready
+      grakn_wait_until_ready
+      status=$?
+      echo "SUCCESS"
+    else
+      # exec grakn bin failed
+      status=1
+      echo "FAILED!"
+    fi
+
+    return $status
+  fi
+}
+
+grakn_server_stop() {
+  grakn_stop_grakn
+  status_grakn=$?
+
+  redis_stop_redis
+  status_redis=$?
+
+  cassandra_stop_cassandra
+  status_cassandra=$?
+
+  if [ $status_grakn -eq 0 ] && [ $status_redis -eq 0 ] && [ $status_cassandra -eq 0 ] ; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+grakn_clean_grakn() {
+  rm "${GRAKN_HOME}"/logs/*.log
+}
+
+# attempt to start grakn components. if one of them fails, abort everthing
+grakn_server_start() {
+  grakn_server_start_cassandra
+  cassandra=$?
+
+  grakn_server_start_redis
+  redis=$?
+
+  grakn_server_start_grakn
+  grakn=$?
+
+  # log
+  if [ $cassandra -ne 0 ] ; then
+    echo "Unable to start Cassandra"
+  fi
+  if [ $redis -ne 0 ] ; then
+    echo "Unable to start Redis"
+  fi
+  if [ $grakn -ne 0 ] ; then
+    echo "Unable to start Grakn"
+  fi
+
+  status=
+  if [ $cassandra -ne 0 ] || [ $redis -ne 0 ] || [ $grakn -ne 0 ]; then
+    status=1
+  else
+    status=0
+  fi
+
+  return $status
+}
+
+grakn_server_status() {
+  cassandra_is_cassandra_running
+  if [ $? -eq 0 ] ; then
+    echo "Casssandra: RUNNING"
+  else
+    echo "Casssandra: NOT RUNNING"
+  fi
+
+  redis_is_redis_running
+  if [ $? -eq 0 ] ; then
+    echo "Redis: RUNNING"
+  else
+    echo "Redis: NOT RUNNING"
+  fi
+
+  grakn_is_grakn_running
+  if [ $? -eq 0 ] ; then
+    echo "Grakn: RUNNING"
+  else
+    echo "Grakn: NOT RUNNING"
+  fi
+}
+
+# TODO
+# better to remove this functionality in production.
+# Having a very accessible full deletion functionality like this is dangerous
+grakn_server_clean() {
+  cassandra_is_cassandra_running
+  local is_cassandra_running=$?
+
+  redis_is_redis_running
+  local is_redis_running=$?
+
+  grakn_is_grakn_running
+  local is_grakn_running=$?
+
+  if [ $is_cassandra_running -eq 0 ] || [ $is_redis_running -eq 0 ] || [ $is_grakn_running -eq 0 ] ; then
+    echo "Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup."
+  else
+    echo -n "Are you sure you want to delete all stored data and logs? [y/N] " >&2
+    read response
+    if [ "$response" != "y" -a "$response" != "Y" ]; then
+        echo "Response \"$response\" did not equal \"y\" or \"Y\".  Canceling clean operation." >&2
+        return 0
+    fi
+
+    cassandra_clean_cassandra
+
+    grakn_server_start_redis
+    redis_clean_redis
+    redis_stop_redis
+
+    grakn_clean_grakn
+  fi
+}
+
+grakn_version() {
+  echo "1.0"
+}
+
+grakn_help() {
+  echo "
+Usage:
+grakn COMMAND
+
+COMMAND:
+server  manage Grakn process
+version print Grakn version
+help    print this message
+
+Tips:
+Start grakn with 'grakn server start' (by default the dashboard will be on http://localhost:4567)
+You can then perform queries by opening a REPL console with 'graql' (defaults to connecting to a local server)"
+}
+
+# =============================================
+# main routine
+# =============================================
+
+update_classpath
 
 case "$1" in
   server)
-    "${GRAKN_HOME}/services/grakn.sh" "${@:2}"
-    ;;
-
-  *|help)
     case "$2" in
-      server)
-        echo "
-Starts, stops or monitors grakn running on this machine.
-
-Usage:
-  grakn server (start|stop|status)"
-        ;;
-
+      start)
+        # user typed in 'grakn server start'
+        # attempt to start every component in the background. check if there's any failure
+        # abort and terminate every components if so
+        grakn_server_start
+        status=$?
+        if [ $status -eq 0 ] ; then
+          # do nothing
+          exit 0
+        else
+          # failure detected. attempt to terminate every component gracefully
+          grakn_server_stop
+          status=$?
+          # TODO: graceful termination failed. report failures
+        fi
+      ;;
+      stop)
+        # user typed in 'grakn server stop'
+        # attempt to terminate every components gracefully
+        grakn_server_stop
+        status=$?
+        # TODO: graceful termination failed. report failures
+      ;;
+      status)
+        grakn_server_status
+      ;;
+      clean)
+        grakn_server_clean
+      ;;
       *)
-        echo "
-Usage:
-    grakn COMMAND
-
-COMMAND:
-  server  start a new grakn server
-  help    print this message
-
-Tips:
-  Start grakn with 'grakn server start' (by default the dashboard will be on http://localhost:4567)
-  You can then perform queries by opening a REPL console with 'graql' (defaults to connecting to a local server)"
-        ;;
+        grakn_help
+      ;;
     esac
-    ;;
+  ;;
+  version)
+    grakn_version
+  ;;
+  *|help)
+    grakn_help
+  ;;
 esac
