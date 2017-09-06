@@ -13,17 +13,17 @@ def buildGrakn = {
     checkout scm
     slackGithub "Build started"
 
-    sh "grakn-test/src/test/bash/build-grakn.sh ${env.BRACH_NAME}"
+    sh "../grakn-test/src/test/bash/build-grakn.sh ${env.BRACH_NAME}"
 
     archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 }
 
 def initGrakn = {
-    sh 'grakn-test/src/test/bash/init-grakn.sh'
+    sh '../grakn-test/src/test/bash/init-grakn.sh'
 }
 
 def testConnection = {
-    sh 'grakn-test/src/test/bash/test-connection.sh'
+    sh '../grakn-test/src/test/bash/test-connection.sh'
 }
 
 def loadValidationData = {
@@ -32,7 +32,7 @@ def loadValidationData = {
 }
 
 def measureSize = {
-    sh 'grakn-test/src/test/bash/measure-size.sh'
+    sh '../grakn-test/src/test/bash/measure-size.sh'
 }
 
 def buildSnbConnectors = {
@@ -45,7 +45,7 @@ def validateQueries = {
 
 def tearDownGrakn = {
     archiveArtifacts artifacts: 'grakn-package/logs/grakn.log'
-    sh 'grakn-test/src/test/bash/tear-down.sh'
+    sh '../grakn-test/src/test/bash/tear-down.sh'
 }
 
 node {
