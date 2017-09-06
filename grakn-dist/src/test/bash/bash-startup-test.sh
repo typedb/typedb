@@ -17,7 +17,7 @@ startEngine(){
 
 loadData(){
   echo "Inserting data!"
-  "${GRAKN_DIST_TMP}"/services/graql.sh < insert-data.gql
+  "${GRAKN_DIST_TMP}"/graql console < insert-data.gql
 }
 
 oneTimeSetUp() {
