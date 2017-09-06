@@ -40,10 +40,10 @@
             <artifactId>httpclient</artifactId>
             <version>${httpclient.version}</version>
         </dependency>
-      <dependency>
-        <groupId>com.github.rholder</groupId>
-        <artifactId>guava-retrying</artifactId>
-        <version>${guava-retrying.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>com.github.rholder</groupId>
+            <artifactId>guava-retrying</artifactId>
+            <version>${guava-retrying.version}</version>
+        </dependency>
     </dependencies>
 </project>
