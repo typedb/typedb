@@ -237,7 +237,6 @@ public class BatchMutatorClient {
                 f.get();
             } catch (InterruptedException|ExecutionException e) {
                 printError("Error while waiting for termination", e);
-                if(debugOn) throw new RuntimeException(e);
             }
         });
         futures.clear();
@@ -291,9 +290,6 @@ public class BatchMutatorClient {
             } catch (Exception e) {
                 failureMeter.mark();
                 printError("Error while executing queries:\n{" + queries + "} \n", e);
-                if(debugOn) {
-                    throw new RuntimeException(e);
-                }
             }
             return null;
         });
@@ -306,6 +302,7 @@ public class BatchMutatorClient {
             if(error != null){
                 System.err.println("Caused by: ");
                 error.printStackTrace();
+                throw new RuntimeException(error);
             }
         }
     }
