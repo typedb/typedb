@@ -3,4 +3,4 @@
 source env.sh
 
 nodetool flush
-du -hd 0 grakn-package/db/cassandra/data
+du -hd 0 ${PACKAGE}/db/cassandra/data

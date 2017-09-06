@@ -2,10 +2,10 @@
 
 source env.sh
 
-if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi
+if [ -d "${PACKAGE}" ] ;  then rm -rf ${PACKAGE} ; fi
 
-mkdir grakn-package
+mkdir ${PACKAGE}
 
-tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package
+tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C ${PACKAGE}
 
 grakn.sh start

@@ -3,4 +3,5 @@
 # force script to exit on failed command
 set -e
 
-PATH="${WORKSPACE}/grakn-package/bin:$PATH"
+PACKAGE=grakn-package
+PATH="${WORKSPACE}/${PACKAGE}/bin:${PATH}"
