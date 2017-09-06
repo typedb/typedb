@@ -39,7 +39,7 @@ First, make sure that you have an instance of Grakn engine running, which means 
 
 ```bash
 cd [your Grakn install directory]
-./bin/grakn.sh start
+./grakn server start
 ```
 
 

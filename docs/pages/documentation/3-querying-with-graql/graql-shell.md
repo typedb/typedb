@@ -13,8 +13,8 @@ folder: documentation
 The Graql shell is contained in the `bin` folder. After starting the Grakn server, as shown below, you can start the Graql shell, without any parameters, to open a REPL (Read Evaluate Print Loop):
 
 ```bash
-<relative-path-to-Grakn>/bin/grakn.sh start 
-<relative-path-to-Grakn>/bin/graql.sh
+./grakn server start 
+./graql console
 ```
 
 ## Arguments
@@ -38,19 +38,19 @@ You can optionally pass arguments when starting the Graql shell, as follows:
 | `--version`     | `-v`     | Print version                                    | |
 
 
-{% include tip.html content="You can see this list in the terminal by typing `graql.sh -h`" %}
+{% include tip.html content="You can see this list in the terminal by typing `./graql console -h`" %}
 
 For example, to load some data from a file into a knowledge base:
 
 ```bash
-bin/graql.sh -f ./examples/mammal-dataset.gql
+./graql console -f ./examples/mammal-dataset.gql
 ```
 
 
 To load data into a different knowledge base, or keyspace, you can specify the name:
 
 ```bash
-./graql.sh -k <knowledge-base-name> -f ./examples/reptile-dataset.gql
+./graql console -k <knowledge-base-name> -f ./examples/reptile-dataset.gql
 ``` 
 
 The interactive shell commits to the knowledge base only when the user types `commit`.

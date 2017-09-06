@@ -98,9 +98,9 @@ Here, there are three entities, to reflect the book, author of the book and poss
 To load *schema.gql* into Grakn, make sure the engine is running and choose a clean keyspace in which to work (here we use the default keyspace, so we are cleaning it before we get started). 
 
 ```bash
-<relative-path-to-Grakn>/bin/grakn.sh clean
-<relative-path-to-Grakn>/bin/grakn.sh start
-<relative-path-to-Grakn>/bin/graql.sh -f ./schema.gql
+./grakn server clean
+./grakn server start
+./graql console -f ./schema.gql
 ```
 		
 
@@ -150,10 +150,10 @@ Finally, a template to build the relationships between the entities:
 To call the migration script on each template:
 
 ```bash
-./bin/migration.sh json -t ./json/book-template.gql  -i ./json/library-data.json -k grakn
-./bin/migration.sh json -t ./json/author-template.gql  -i ./json/library-data.json -k grakn
-./bin/migration.sh json -t ./json/subject-template.gql  -i ./json/library-data.json -k grakn
-./bin/migration.sh json -t ./json/publication-template.gql  -i ./json/library-data.json -k grakn
+./graql migrate json -t ./json/book-template.gql  -i ./json/library-data.json -k grakn
+./graql migrate json -t ./json/author-template.gql  -i ./json/library-data.json -k grakn
+./graql migrate json -t ./json/subject-template.gql  -i ./json/library-data.json -k grakn
+./graql migrate json -t ./json/publication-template.gql  -i ./json/library-data.json -k grakn
 ```
 
 The resultant Graql for the migration:
@@ -173,10 +173,10 @@ The resultant Graql for the migration:
 
 ```bash
 # Export the schema
-<relative-path-to-Grakn>/migration.sh export -schema > schema-export.gql
+./graql migrate export -schema > schema-export.gql
 
 # Export the data
-<relative-path-to-Grakn>/migration.sh export -data > data-export.gql
+./graql migrate export -data > data-export.gql
 ```
 
 Exporting data or the schema from Grakn, into Graql, will always redirect to standard out, so above we are sending the output to an appropriately named file.

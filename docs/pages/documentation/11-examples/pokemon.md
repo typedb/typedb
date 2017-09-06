@@ -15,10 +15,10 @@ This example uses the pokemon schema and dataset, which is available from [githu
 First up, you need to load the schema and dataset (which are all in one file) as follows. Here we will use the default keyspace, so will clean it before we start Grakn engine and open the Graql shell.
 
 ```bash
-<relative-path-to-Grakn>/bin/grakn.sh clean
-<relative-path-to-Grakn>/bin/grakn.sh start 
-<relative-path-to-Grakn>/bin/graql.sh -f <relative-path-to-Grakn>/examples/pokemon.gql
-<relative-path-to-Grakn>/bin/graql.sh
+./grakn server clean
+./grakn server start 
+./graql console -f <relative-path-to-Grakn>/examples/pokemon.gql
+./graql console
 ```
 
 Here are the queries. Type each one in a separate line and see what happens. Comments are marked with a #, so you can ignore them.

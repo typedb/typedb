@@ -37,7 +37,7 @@ Check the [Developing With Java](../developing-with-java/migration-api.html) sec
 It is also possible to export data from Grakn using the migration shell script. Usage is as follows:
 
 ```bash
-usage: migration.sh export -data -schema [-help] [-no] [-batch <arg>] [-uri <arg>] [-keyspace <arg>]
+usage: graql migrate export -data -schema [-help] [-no] [-batch <arg>] [-uri <arg>] [-keyspace <arg>]
  -data                 export data
  -schema             export schema
  -h,--help             print usage message

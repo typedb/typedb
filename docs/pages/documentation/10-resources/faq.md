@@ -30,9 +30,9 @@ There are lots of ways you can get involved! Please take a look at our [contribu
 
 ### Why does Grakn hang when I try to start it?   
 
-I am running `grakn.sh start` but it hangs on `Starting Cassandra`. Why?
+I am running `./grakn server start` but it hangs on `Starting Cassandra`. Why?
 
-This may be because you have cloned the Grakn repo into a directory which has a space in its name (e.g. `/grakn test`). You can build our code successfully, but when you start `grakn.sh`, it hangs because Cassandra needs you to have single word pathnames. Remove the spaces (e.g. `/grakn_test`) and try again.
+This may be because you have cloned the Grakn repo into a directory which has a space in its name (e.g. `/grakn test`). You can build our code successfully, but when you run `./grakn server start`, it hangs because Cassandra needs you to have single word pathnames. Remove the spaces (e.g. `/grakn_test`) and try again.
 
 There are other possible reasons why Grakn hangs starting Cassandra. One may be that some other application is using the port 7199, which Cassandra needs.  To find out what is using port 7199:
 `lsof -i tcp:7199`
@@ -40,7 +40,7 @@ There are other possible reasons why Grakn hangs starting Cassandra. One may be 
 From there, you'll see the PID of application using that port. Check if you can safely kill it or change its port. It may be that another instance of Cassandra is blocking it, and you can simply kill it using:
 `pkill -9 java`
 
-Then try `grakn.sh start` again.
+Then try `./grakn server start` again.
 
 Failing that, you can often find out more information by looking in the `/logs` directory under your Grakn installation.  
 
@@ -77,19 +77,19 @@ So you need to include a logger dependnecy. In the GRAKN.AI distribution we use 
 There are several ways to load data into Grakn. For small amounts of data (<1000 lines), you an load it directly via the Graql shell. For example, the following loads up the an example file called `family-data.gql`:
 
 ```bash
-bin/graql.sh -f examples/family-data.gql
+./graql console -f examples/family-data.gql
 ```
 
 If you have a larger file, you will need to batch load it. The file will be divided in batches that will be committed concurrently. This differs from a regular load, where the whole file is committed in a single chunk when you call commit. See the example below, which loads the Graql file FILENAME.gql, from PATH.
 
 ```bash
-bin/graql.sh -b PATH/FILENAME.gql
+./graql console -b PATH/FILENAME.gql
 ```
 
-In order to check the status of the loading, you can open a new terminal window, navigate to the logs directory of your Grakn installation and run the command:
+In order to check the status of the loading, you can open a new terminal window and run the command:
 
 ```bash
-tail -f grakn.log
+tail -f logs/grakn.log
 ```
 
 
@@ -140,7 +140,7 @@ It would be possible to create multiple resources of the type `unique-id` with t
 
 ### Can I run Grakn on an existing Cassandra Platform?
 
-By default, Grakn is shipped with [Janus Graph](http://janusgraph.org/), which in turn relies on Cassandra. When you call `grakn.sh start`, this starts a Cassandra instance and then starts the Grakn server.  You are not bound to use our instance of Cassandra, and can make adjustments to the settings in the `.properties` file in the `conf/main` directory of the Grakn, e.g. to make Janus use your Cassandra instance.
+By default, Grakn is shipped with [Janus Graph](http://janusgraph.org/), which in turn relies on Cassandra. When you call `./grakn server start`, this starts a Cassandra instance and then starts the Grakn server.  You are not bound to use our instance of Cassandra, and can make adjustments to the settings in the `.properties` file in the `conf/main` directory of the Grakn, e.g. to make Janus use your Cassandra instance.
 
 Specifically you should change the following parameters:
 
@@ -183,8 +183,8 @@ If you are using the Graql shell and have not committed what you have in the kno
 If you've committed, then you must stop Grakn and specifically clean the knowledge base:
 
 ```bash
-./bin/grakn.sh stop
-./bin/grakn.sh clean
+./grakn server stop
+./grakn server clean
 ```
 
 ### How do I run Graql from a bash script?
@@ -192,7 +192,7 @@ If you've committed, then you must stop Grakn and specifically clean the knowled
 If you want to run Graql from a bash script, for example, to grep the results, you don't want to have to filter out stuff the license and command prompt. The best way therefor, is to use the -e flag or -f flag, which lets you provide a query to the shell. The -e flag accepts a query, while the -f flag accepts a filename. For example:
     
 ```    
-graql.sh -e "match \$x isa movie;"
+./graql console -e "match \$x isa movie;"
 ```
 
 Notice that you have to escape the dollars to stop the shell interpreting them. You can then pipe the output into a command or a file.

@@ -37,9 +37,9 @@ The schema contains a `person` entity, and a number of possible family relations
 The *basic-genealogy.gql* file contains the schema, data and rules needed for this example. To load it into a knowledge base, make sure the engine is running and choose a clean keyspace in which to work (in the example below we use the default keyspace, so we are cleaning it before we get started):
 
 ```bash
-<relative-path-to-Grakn>/bin/grakn.sh clean
-<relative-path-to-Grakn>/bin/grakn.sh start
-<relative-path-to-Grakn>/bin/graql.sh -f <relative-path-to-Grakn>/examples/basic-genealogy.gql
+./grakn server clean
+./grakn server start
+./graql console -f <relative-path-to-Grakn>/examples/basic-genealogy.gql
 ```
 
 When the terminal prompt returns, the data will have been loaded into the default keyspace, and you can start to look it using the [Grakn visualiser](../grakn-dashboard/visualiser.html), by navigating to [http://localhost:4567](http://localhost:4567) in your browser. Submit a query, such as `match $x isa person` to check that all is well with your knowledge base.
@@ -70,7 +70,7 @@ You should see something similar to the screenshot below in your visualiser wind
 
 ![Person query](/images/match-isa-mother-daughter.png)
 
-{% include note.html content="You can alternatively make queries in the graql shell. You will need to use `./graql.sh -n` to enable inference when you start the shell." %}
+{% include note.html content="You can alternatively make queries in the graql shell. You will need to use `./graql console -n` to enable inference when you start the shell." %}
 
 ## Inference Rules
 

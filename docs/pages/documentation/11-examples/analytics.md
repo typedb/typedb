@@ -88,9 +88,9 @@ made sub role;
 To load *schema.gql* into Grakn, make sure the engine is running and choose a clean keyspace in which to work (here we use the default keyspace, so we are cleaning it before we get started). 
 
 ```bash
-<relative-path-to-Grakn>/bin/grakn.sh clean
-<relative-path-to-Grakn>/bin/grakn.sh start
-<relative-path-to-Grakn>/bin/graql.sh -f ./schema.gql
+./grakn server clean
+./grakn server start
+./graql console -f ./schema.gql
 ```		
 
 ## Data Migration
@@ -98,7 +98,7 @@ To load *schema.gql* into Grakn, make sure the engine is running and choose a cl
 We migrated the CSV data using template Graql files, but for ease of use, we provide a single data file that you can load to populate a knowledge base.
 
 ```bash
-<relative-path-to-Grakn>/bin/graql.sh -b ./data.gql
+./graql console -b ./data.gql
 ```		
 
 Spin up the [Grakn visualiser](../grakn-dashboard/visualiser.html) by pointing your browser to [http://localhost:4567/](http://localhost:4567/). You can submit queries to check the data, or explore it using the Types dropdown menu.
@@ -124,7 +124,7 @@ At this point, you are ready to start investigating statistics within the data u
 
 ## `aggregate`
 
-You cannot make [`aggregate`](../graql/aggregate-queries.html) queries from within the **knowledge base** view in the Grakn visualiser, so you will need to switch views using the left hand navigation pane, from **Graph** to **Console**. This shows a read-write view on Grakn, and you can now submit queries in the usual way, via the form. Alternatively, from your terminal, you can start the Graql shell in its interactive (REPL) mode by typing `graql.sh` at the terminal, from within the *bin* directory of the Grakn installation.
+You cannot make [`aggregate`](../graql/aggregate-queries.html) queries from within the **knowledge base** view in the Grakn visualiser, so you will need to switch views using the left hand navigation pane, from **Graph** to **Console**. This shows a read-write view on Grakn, and you can now submit queries in the usual way, via the form. Alternatively, from your terminal, you can start the Graql shell in its interactive (REPL) mode by typing `./graql console` at the terminal, from within the *bin* directory of the Grakn installation.
 
 Here are some example `aggregate` queries to try:
 

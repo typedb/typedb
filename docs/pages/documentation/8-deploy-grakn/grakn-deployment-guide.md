@@ -37,7 +37,7 @@ Cassandra will need at least 1GB of memory by itself if run on same machine.
 
 ### Standalone Grakn
 
-You can start a standalone instance of Grakn by running `grakn.sh start`. This will produce a working environment for importing and analysing your data.
+You can start a standalone instance of Grakn by running `grakn server start`. This will produce a working environment for importing and analysing your data.
 
 By default Grakn stores your data in the extracted directory, under `db/cassandra/` in the folder into which you unzipped the distribution zip.
 
@@ -83,18 +83,18 @@ Multiple instances of Grakn Engine can be started that will make use of the shar
 #### Default directory
 For the default storage directory, `db/cassandra/`, you need to:
 
-- stop old Grakn (`./bin/grakn.sh stop`)
+- stop old Grakn (`grakn server stop`)
 - extract the latest Grakn package into a new directory
 - copy the entire contents of the `db` directory to the new location into the new `db` directory
-- start new Grakn (`./bin/grakn.sh start`)
+- start new Grakn (`grakn server start`)
 
 #### External directory
 If you have changed the location of data_file_directories in the `conf/cassandra/cassandra.yaml`, you need to:
 
-- stop old Grakn (`./bin/grakn.sh stop`)
+- stop old Grakn (`grakn server stop`)
 - extract the latest Grakn package into a new directory
 - amend `data_file_directories`, `commitlog_directory` and `saved_caches_directory` to match your custom directories
-- start new Grakn (`./bin/grakn.sh start`)
+- start new Grakn (`grakn server start`)
 
 You will need to amend these variables with every new version of Grakn.
 
