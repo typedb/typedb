@@ -89,7 +89,7 @@
         <httpclient.version>4.5.3</httpclient.version>
         <findbugs.version>3.0.1</findbugs.version>
         <redis.version>2.9.0</redis.version>
-        <metrics.version>3.2.2</metrics.version>
+        <metrics.version>3.2.3</metrics.version>
         <bytebuddy.version>1.6.14</bytebuddy.version>
         <redis-test.version>0.6</redis-test.version>
         <guava-retrying.version>2.0.0</guava-retrying.version>
