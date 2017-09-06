@@ -19,19 +19,9 @@
 package ai.grakn.client;
 
 import ai.grakn.graql.Query;
-import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
-import static ai.grakn.util.REST.Request.BATCH_NUMBER;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.Meter;
-import static com.codahale.metrics.MetricAttribute.M5_RATE;
-import static com.codahale.metrics.MetricAttribute.P95;
-import static com.codahale.metrics.MetricAttribute.P98;
-import static com.codahale.metrics.MetricAttribute.P999;
-import static com.codahale.metrics.MetricAttribute.STDDEV;
 import com.codahale.metrics.MetricRegistry;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
 import com.github.rholder.retry.Retryer;
@@ -39,6 +29,8 @@ import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.google.common.collect.ImmutableSet;
+import mjson.Json;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -56,10 +48,18 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+
+import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
+import static ai.grakn.util.REST.Request.BATCH_NUMBER;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
+import static com.codahale.metrics.MetricAttribute.M5_RATE;
+import static com.codahale.metrics.MetricAttribute.P95;
+import static com.codahale.metrics.MetricAttribute.P98;
+import static com.codahale.metrics.MetricAttribute.P999;
+import static com.codahale.metrics.MetricAttribute.STDDEV;
+import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.stream.Collectors.toList;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Client to batch load qraql queries into Grakn that mutate the graph.
@@ -71,8 +71,6 @@ import org.slf4j.LoggerFactory;
  * @author alexandraorth
  */
 public class BatchMutatorClient {
-    private static final Logger LOG = LoggerFactory.getLogger(BatchMutatorClient.class);
-
     // Change in behaviour in v0.14 Previously infinite, now limited
     private static final int MAX_RETRIES = 100;
 
@@ -238,8 +236,7 @@ public class BatchMutatorClient {
             try {
                 f.get();
             } catch (InterruptedException|ExecutionException e) {
-                LOG.error("Error while waiting for termination", e);
-                printError(e.getMessage());
+                printError("Error while waiting for termination", e);
             }
         });
         futures.clear();
@@ -292,8 +289,7 @@ public class BatchMutatorClient {
                 onCompletionOfTask.accept(taskId);
             } catch (Exception e) {
                 failureMeter.mark();
-                LOG.error("Error while executing queries:\n{}", queries, e);
-                printError(e.getMessage());
+                printError("Error while executing queries:\n{" + queries + "} \n", e);
                 if(debugOn) {
                     throw new RuntimeException(e);
                 }
@@ -303,8 +299,14 @@ public class BatchMutatorClient {
         futures.add(future);
     }
 
-    private void printError(String message){
-        if(debugOn) System.err.println(message);
+    private void printError(String message, Throwable error){
+        if(debugOn) {
+            System.err.println(message);
+            if(error != null){
+                System.err.println("Caused by: ");
+                error.printStackTrace();
+            }
+        }
     }
 }
 
