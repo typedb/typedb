@@ -40,7 +40,7 @@ def buildSnbConnectors = {
 }
 
 def validateQueries = {
-    sh 'validate.sh'
+    sh "validate.sh ${env.BRANCH_NAME}"
 }
 
 def tearDownGrakn = {
@@ -53,7 +53,6 @@ node {
         //Everything is wrapped in a try catch so we can handle any test failures
         //If one test fails then all the others will stop. I.e. we fail fast
         try {
-            def workspace = pwd()
             //Always wrap each test block in a timeout
             //This first block sets up engine within 15 minutes
             timeout(15) {
@@ -64,21 +63,18 @@ node {
             }
             //Only run validation master/stable
             if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable' || true) {
-                //Sets up environmental variables which can be shared between multiple tests
-                withEnv(["LDBC_CONNECTOR=${workspace}/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar"]) {
-                    timeout(180) {
-                        dir('generate-SNB') {
-                            stage('Load Validation Data', loadValidationData)
-                        }
-                        stage('Measure Size', measureSize)
+                timeout(180) {
+                    dir('generate-SNB') {
+                        stage('Load Validation Data', loadValidationData)
                     }
-                    timeout(360) {
-                        dir('grakn-test/test-snb/') {
-                            stage('Build the SNB connectors', buildSnbConnectors)
-                        }
-                        dir('validate-snb') {
-                            stage('Validate Queries', validateQueries)
-                        }
+                    stage('Measure Size', measureSize)
+                }
+                timeout(360) {
+                    dir('grakn-test/test-snb/') {
+                        stage('Build the SNB connectors', buildSnbConnectors)
+                    }
+                    dir('validate-snb') {
+                        stage('Validate Queries', validateQueries)
                     }
                 }
                 slackGithub "Periodic Build Success" "good"
