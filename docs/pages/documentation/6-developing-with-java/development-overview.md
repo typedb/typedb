@@ -35,7 +35,7 @@ This dependency will give you access to the Core API as well as an in-memory kno
 If you require persistence and would like to access the entirety of the Grakn stack, then it is vital to have an instance of engine running.  
 Please see the [Setup Guide](../get-started/setup-guide.html) on more details on how to set up a Grakn server.
 
-Depending on the configuration of the Grakn server, your Java application will require following dependency: 
+Depending on the configuration of the Grakn server, your Java application will require the following dependency: 
 ```xml   
 <dependency>
     <groupId>ai.grakn</groupId>

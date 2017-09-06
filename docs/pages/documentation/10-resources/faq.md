@@ -28,10 +28,18 @@ There are lots of ways you can get involved! Please take a look at our [contribu
 
 ## Bugs and strange behaviour
 
+### Why does Grakn hang when I try to start it?   
+
+I am running `grakn.sh start` but it hangs on `Starting ...`. Why?
+
+This may be because you have cloned the Grakn repo into a directory which has a space in its name (e.g. `/grakn test`). 
+You can build our code successfully, but when you start `grakn.sh`, it hangs because the database needs you to have single word pathnames. 
+Remove the spaces (e.g. `/grakn_test`) and try again.
+
 ### Why am I getting ghost vertices?
 
-In a  transaction based environment it is possible to have one transaction removing a concept while another concurrently modifies the same concept. 
-Both transactions may successfully commit in eventually consistent environment.
+In a transaction based environment it is possible to have one transaction removing a concept while another concurrently modifies the same concept. 
+Both transactions may successfully commit in an eventually consistent environment.
 
 The concept is likely to still exist with only the modified properties. 
 It is possible to safeguard against this by setting the `checkInternalVertexExistence` property to true. 
