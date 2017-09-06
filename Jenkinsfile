@@ -65,8 +65,7 @@ node {
             //Only run validation master/stable
             if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable' || true) {
                 //Sets up environmental variables which can be shared between multiple tests
-                withEnv(["LDBC_CONNECTOR=${workspace}/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar",
-                         "LDBC_VALIDATION_CONFIG=${workspace}/grakn-test/test-snb/src/validate-snb/readwrite_grakn--ldbc_driver_config--db_validation.properties"]) {
+                withEnv(["LDBC_CONNECTOR=${workspace}/grakn-test/test-snb/target/test-snb-${env.BRANCH_NAME}-jar-with-dependencies.jar"]) {
                     timeout(180) {
                         dir('generate-SNB') {
                             stage('Load Validation Data', loadValidationData)
