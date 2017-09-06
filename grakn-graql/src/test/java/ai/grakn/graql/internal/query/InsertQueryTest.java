@@ -452,7 +452,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertDuplicatePattern() {
         qb.insert(var().isa("person").has("name", "a name"), var().isa("person").has("name", "a name")).execute();
-        assertEquals(2, qb.match(var().has("name", "a name")).stream().count());
+        assertEquals(2, qb.match(x.has("name", "a name")).stream().count());
     }
 
     @Test

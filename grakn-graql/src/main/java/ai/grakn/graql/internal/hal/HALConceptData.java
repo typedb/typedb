@@ -118,7 +118,7 @@ public class HALConceptData {
             embedSuperType(halResource, concept.asType());
         }
 
-        //If a match query contains an assertion we always embed the role players
+        //If a get query contains an assertion we always embed the role players
         if (concept.isRelationship() && separationDegree == 0) {
             generateRelationEmbedded(halResource, concept.asRelationship(), 1);
         }

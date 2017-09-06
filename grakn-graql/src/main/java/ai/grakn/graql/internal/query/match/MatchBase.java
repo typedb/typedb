@@ -22,8 +22,8 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Match;
 import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
@@ -52,20 +52,20 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Base MatchQuery implementation that executes the gremlin traversal
+ * Base {@link Match} implementation that executes the gremlin traversal
  *
  * @author Felix Chapman
  */
-public class MatchQueryBase extends AbstractMatchQuery {
+public class MatchBase extends AbstractMatch {
 
-    protected final Logger LOG = LoggerFactory.getLogger(MatchQueryBase.class);
+    protected final Logger LOG = LoggerFactory.getLogger(MatchBase.class);
 
     private final Conjunction<PatternAdmin> pattern;
 
     /**
      * @param pattern a pattern to match in the graph
      */
-    public MatchQueryBase(Conjunction<PatternAdmin> pattern) {
+    public MatchBase(Conjunction<PatternAdmin> pattern) {
         if (pattern.getPatterns().size() == 0) {
             throw GraqlQueryException.noPatterns();
         }
@@ -97,6 +97,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
         return traversal.toStream()
                 .map(elements -> makeResults(graph, elements))
+                .distinct()
                 .sequential()
                 .map(QueryAnswer::new);
     }
@@ -127,7 +128,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public Set<Var> getSelectedNames() {
+    public final Set<Var> getSelectedNames() {
         return pattern.commonVars();
     }
 
@@ -136,8 +137,8 @@ public class MatchQueryBase extends AbstractMatchQuery {
         return "match " + pattern.getPatterns().stream().map(p -> p + ";").collect(joining(" "));
     }
 
-    public final MatchQuery infer(boolean materialise) {
-        return new MatchQueryInfer(this, materialise);
+    public final Match infer(boolean materialise) {
+        return new MatchInfer(this, materialise);
     }
 
     /**
@@ -165,7 +166,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        MatchQueryBase maps = (MatchQueryBase) o;
+        MatchBase maps = (MatchBase) o;
 
         return pattern.equals(maps.pattern);
     }

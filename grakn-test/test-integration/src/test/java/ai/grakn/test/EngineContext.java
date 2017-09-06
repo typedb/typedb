@@ -75,7 +75,7 @@ public class EngineContext extends ExternalResource {
     }
 
     public static EngineContext startInMemoryServer(){
-        return new EngineContext( false, true);
+        return new EngineContext( true, true);
     }
 
     public int port() {

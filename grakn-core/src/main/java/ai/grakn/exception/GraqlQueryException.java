@@ -96,11 +96,11 @@ public class GraqlQueryException extends GraknException{
     }
 
     public static GraqlQueryException insertUnsupportedProperty(String propertyName) {
-        return GraqlQueryException.create("inserting property '%s' is not supported", propertyName);
+        return GraqlQueryException.create("inserting property '%s' is not supported, try `define`", propertyName);
     }
 
     public static GraqlQueryException defineUnsupportedProperty(String propertyName) {
-        return GraqlQueryException.create("defining property '%s' is not supported", propertyName);
+        return GraqlQueryException.create("defining property '%s' is not supported, try `insert`", propertyName);
     }
 
     public static GraqlQueryException mustBeResourceType(Label resourceType) {

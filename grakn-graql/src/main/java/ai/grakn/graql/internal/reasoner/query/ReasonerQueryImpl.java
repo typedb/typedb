@@ -22,7 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
@@ -244,11 +244,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @return corresponding MatchQuery
+     * @return corresponding {@link GetQuery}
      */
     @Override
-    public MatchQuery getMatchQuery() {
-        return tx.graql().infer(false).match(getPattern());
+    public GetQuery getQuery() {
+        return tx.graql().infer(false).match(getPattern()).get();
     }
 
     /**

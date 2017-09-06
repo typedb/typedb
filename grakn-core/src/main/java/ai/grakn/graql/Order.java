@@ -19,7 +19,7 @@
 package ai.grakn.graql;
 
 /**
- * Ordering for match query results
+ * Ordering for {@link Match} results
  *
  * @author Felix Chapman
  */

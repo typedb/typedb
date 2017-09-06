@@ -18,13 +18,15 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Match;
+
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * An aggregate that changes match query results into a list.
- * @param <T> the type of the results of the match query
+ * An aggregate that changes {@link Match} results into a list.
+ * @param <T> the type of the results of the {@link Match}
  */
 class ListAggregate<T> extends AbstractAggregate<T, List<T>> {
 
