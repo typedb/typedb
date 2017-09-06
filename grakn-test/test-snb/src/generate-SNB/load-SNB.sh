@@ -4,7 +4,7 @@
 SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
 GRAQL=$SCRIPTPATH/./graql
 
-source env.sh
+source snb-env.sh
 
 # validate the number of arguments
 if [ "$#" -lt "2" ]; then

@@ -3,7 +3,7 @@
 DB_DIR="/opt/grakn/grakn-dist-0.13.0-SNAPSHOT/db/cassandra/data"
 KEYSPACE="snb"
 
-set -e
+source snb-env.sh
 
 # size on disk
 nodetool flush

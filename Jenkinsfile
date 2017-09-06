@@ -67,7 +67,6 @@ node {
                 //Sets up environmental variables which can be shared between multiple tests
                 withEnv(["VALIDATION_DATA=${workspace}/generate-SNB/readwrite_neo4j--validation_set.tar.gz",
                          "CSV_DATA=${workspace}/generate-SNB/social_network",
-                         'KEYSPACE=snb',
                          'ENGINE=localhost:4567',
                          'ACTIVE_TASKS=1000',
                          "LDBC_DRIVER=${workspace}/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar",
