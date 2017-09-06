@@ -391,20 +391,18 @@ grakn_cassandra_start() {
 grakn_server_start() {
   cassandra_start_and_wait_until_ready
   cassandra=$?
-
-  redis_start_and_wait_until_ready
-  redis=$?
-
-  grakn_start_and_wait_until_ready
-  grakn=$?
-
-  # log
   if [ $cassandra -ne 0 ] ; then
     echo "Unable to start Cassandra"
   fi
+
+  redis_start_and_wait_until_ready
+  redis=$?
   if [ $redis -ne 0 ] ; then
     echo "Unable to start Redis"
   fi
+
+  grakn_start_and_wait_until_ready
+  grakn=$?
   if [ $grakn -ne 0 ] ; then
     echo "Unable to start Grakn"
   fi
@@ -491,10 +489,10 @@ Usage:
 grakn COMMAND
 
 COMMAND:
-server     manage Grakn processes
-grakn      manage Grakn
-redis      manage Redis
-cassandra  manage Cassandra
+server     manage all components
+grakn      manage Grakn component
+redis      manage Redis component
+cassandra  manage Cassandra component
 version    print Grakn version
 help       print this message
 
@@ -516,6 +514,7 @@ case "$1" in
         grakn_grakn_start
       ;;
       stop)
+        grakn_stop_grakn
       ;;
     esac
   ;;
@@ -525,6 +524,7 @@ case "$1" in
         grakn_redis_start
       ;;
       stop)
+        redis_stop_redis
       ;;
     esac
   ;;
@@ -534,6 +534,7 @@ case "$1" in
         grakn_cassandra_start
       ;;
       stop)
+        cassandra_stop_cassandra
       ;;
     esac
   ;;
