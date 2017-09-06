@@ -21,7 +21,7 @@ This guide offers advice on how to:
    
 Grakn releases from our [GitHub repository](https://github.com/graknlabs/grakn) are self-contained packages (tar.gz/zip) containing all the components you need to run Grakn:
 
-* Grakn stack
+* Grakn
 * Redis
 * Cassandra
 
@@ -49,13 +49,13 @@ We recommend changing this to another location to make upgrading Grakn easier an
 
 ### Clustered Database
 
-To add reliability and redudancy on the database layer, you can run Cassandra (DSE, OrientDB, other storage backends) separately and point Grakn to use the node/cluster.
+To add reliability and redundancy on the database layer, you can run Cassandra separately and point Grakn to use the node/cluster.
 
 Running Cassandra requires an entire guide in itself - our brief recommendation is to have, at the minimum, a cluster of 3 nodes with replication factor (RF) 3.
 
 Cassandra version: 2.1.9
 
-Specify an external database cluster in `conf/main/grakn.properties`: `storage.hostname`: eg. 10.0.10.1,10.0.10.2,10.0.10.3
+Specify an external database cluster in `conf/grakn.properties`: `storage.hostname`: eg. 10.0.10.1,10.0.10.2,10.0.10.3
 
 For further information on running Cassandra, see:
 
