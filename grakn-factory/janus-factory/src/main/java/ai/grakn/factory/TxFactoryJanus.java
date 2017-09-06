@@ -83,6 +83,16 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
         }
     }
 
+    /**
+     * This map is used to override hidden config files.
+     * The key of the map refers to the key of the properties file that gets passed in which provides the value to be injected.
+     * The value of the map specifies the key to inject into.
+     */
+    private static final Map<String, String> overrideMap = ImmutableMap.of(
+            "storage.backend", "janusmr.ioformat.conf.storage.backend",
+            "storage.hostname", "janusmr.ioformat.conf.storage.hostname"
+    );
+
     //This maps the storage backend to the needed value
     private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
 
@@ -144,8 +154,15 @@ final public class TxFactoryJanus extends TxFactoryAbstract<GraknTxJanus, JanusG
                 value = storageBackendMapper.get(value);
             }
 
+            //Inject properties into other default properties
+            if(overrideMap.containsKey(key)){
+                builder.set(overrideMap.get(key), value);
+            }
+
             builder.set(key.toString(), value);
         });
+
+
 
         LOG.debug("Opening graph on {}", address);
         return builder.open();
