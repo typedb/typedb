@@ -9,3 +9,6 @@ LDBC_VALIDATION_CONFIG=${WORKSPACE}/grakn-test/test-snb/src/main/bash/readwrite_
 KEYSPACE=snb
 ENGINE=localhost:4567
 ACTIVE_TASKS=1000
+
+# set script directory as working directory
+SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`

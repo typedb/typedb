@@ -2,9 +2,6 @@
 
 source snb-env.sh
 
-# set script directory as working directory
-SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
-
 BRANCH_NAME=$1
 
 LDBC_CONNECTOR=${WORKSPACE}/grakn-test/test-snb/target/test-snb-${BRANCH_NAME}-jar-with-dependencies.jar

@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# set script directory as working directory
-SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
-GRAQL=${SCRIPTPATH}/../graql
-
 source snb-env.sh
+
+GRAQL=${SCRIPTPATH}/../graql
 
 # validate the number of arguments
 if [ "$#" -lt "2" ]; then
