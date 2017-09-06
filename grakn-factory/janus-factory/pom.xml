@@ -224,7 +224,7 @@
                     <artifactId>logback-classic</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>io.dropwizard.metrics</groupId>
+                    <groupId>com.yammer.metrics</groupId>
                     <artifactId>metrics-core</artifactId>
                 </exclusion>
             </exclusions>
@@ -238,6 +238,10 @@
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.yammer.metrics</groupId>
+                    <artifactId>metrics-core</artifactId>
                 </exclusion>
             </exclusions>
             <scope>test</scope>

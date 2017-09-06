@@ -163,7 +163,7 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
+       <dependency>
           <groupId>io.dropwizard.metrics</groupId>
           <artifactId>metrics-core</artifactId>
           <version>${metrics.version}</version>
