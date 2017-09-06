@@ -49,7 +49,7 @@ update_classpath() {
 
 graql_console() {
   echo "Starting Graql console..."
-  java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell ${1+"${@:2}"}
+  java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell $1
 }
 
 graql_help() {
@@ -71,7 +71,7 @@ update_classpath
 
 case "$1" in
   console)
-    graql_console
+    graql_console ${1+"${@:2}"}
   ;;
   migrate)
     if [ "$2" == "csv" ] ; then
