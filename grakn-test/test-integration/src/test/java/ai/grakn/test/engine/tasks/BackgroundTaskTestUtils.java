@@ -18,6 +18,7 @@
 
 package ai.grakn.test.engine.tasks;
 
+import ai.grakn.client.TaskResult;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
@@ -89,6 +90,10 @@ public class BackgroundTaskTestUtils {
 
     private static void waitForStatus(TaskStateStorage storage, TaskState task, Set<TaskStatus> status) {
         waitForStatus(storage, task.getId(), status);
+    }
+
+    public static void waitForStatus(TaskStateStorage storage, TaskResult task, Set<TaskStatus> status) {
+        waitForStatus(storage, task.getTaskId(), status);
     }
 
     // Added the synchronized because for some reason some variable update wasn't shared between threads

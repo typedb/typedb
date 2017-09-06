@@ -18,6 +18,8 @@
 
 package ai.grakn.engine;
 
+import ai.grakn.redisq.State;
+
 /**
  * <p>
  *     Describes the six possible states a task can be in.
@@ -52,4 +54,32 @@ public enum TaskStatus {
      * The task has failed to execute.
      */
     FAILED;
+
+    public State asStateInfo() {
+        switch (this) {
+            case FAILED:
+                return State.FAILED;
+            case STOPPED:
+                return State.PROCESSING;
+            case COMPLETED:
+                return State.DONE;
+            case RUNNING:
+                return State.PROCESSING;
+            default:
+                return State.NEW;
+        }
+    }
+
+    public static TaskStatus fromState(State state) {
+        switch (state) {
+            case FAILED:
+                return FAILED;
+            case PROCESSING:
+                return RUNNING;
+            case DONE:
+                return COMPLETED;
+            default:
+                return CREATED;
+        }
+    }
 }

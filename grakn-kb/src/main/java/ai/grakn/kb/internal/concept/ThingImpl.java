@@ -137,7 +137,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     public Stream<Attribute<?>> attributes(AttributeType... attributeTypes) {
         Set<ConceptId> resourceTypesIds = Arrays.stream(attributeTypes).map(Concept::getId).collect(Collectors.toSet());
-        return resources(getShortcutNeighbours(), resourceTypesIds);
+        return resources(getRolePlayerNeighbours(), resourceTypesIds);
     }
 
     /**
@@ -165,15 +165,15 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      * @return All the {@link Casting} which this instance is cast into the role
      */
     Stream<Casting> castingsInstance(){
-        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER).
                 map(edge -> vertex().tx().factory().buildCasting(edge));
     }
 
-    <X extends Thing> Stream<X> getShortcutNeighbours(){
-        GraphTraversal<Object, Vertex> shortcutTraversal = __.inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+    <X extends Thing> Stream<X> getRolePlayerNeighbours(){
+        GraphTraversal<Object, Vertex> rolePlayerTraversal = __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 as("edge").
                 outV().
-                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 where(P.neq("edge")).
                 inV();
 
@@ -182,7 +182,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         //noinspection unchecked
         return vertex().tx().getTinkerTraversal().V().
                 has(Schema.VertexProperty.ID.name(), getId().getValue()).
-                union(shortcutTraversal, resourceEdgeTraversal).toStream().
+                union(rolePlayerTraversal, resourceEdgeTraversal).toStream().
                 map(vertex -> vertex().tx().buildConcept(vertex));
     }
 
@@ -201,10 +201,10 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 has(Schema.VertexProperty.ID.name(), getId().getValue());
 
         if(roles.length == 0){
-            traversal.in(Schema.EdgeLabel.SHORTCUT.getLabel());
+            traversal.in(Schema.EdgeLabel.ROLE_PLAYER.getLabel());
         } else {
             Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.getLabelId().getValue()).collect(Collectors.toSet());
-            traversal.inE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+            traversal.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                     has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).outV();
         }
 

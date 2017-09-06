@@ -116,7 +116,7 @@ export default {
              * Send graql query to Engine, returns an array of HAL objects.
              */
   graqlHAL(query:string) {
-      // In match queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
+      // In get queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
     return this.request({
       url: `/kb/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}&limitEmbedded=${User.getQueryLimit()}`,
     });

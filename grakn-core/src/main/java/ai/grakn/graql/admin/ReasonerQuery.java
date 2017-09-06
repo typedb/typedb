@@ -20,7 +20,7 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.SchemaConcept;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Var;
 
 import javax.annotation.CheckReturnValue;
@@ -75,10 +75,10 @@ public interface ReasonerQuery{
     <T extends Atomic> Stream<T> getAtoms(Class<T> type);
 
     /**
-     * @return corresponding MatchQuery
+     * @return corresponding {@link GetQuery}
      */
     @CheckReturnValue
-    MatchQuery getMatchQuery();
+    GetQuery getQuery();
 
     /**
      * @return error messages indicating ontological inconsistencies of the query

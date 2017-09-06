@@ -49,13 +49,13 @@ When the terminal prompt returns, the data will have been loaded into the defaul
 By default, inference is switched off, and the only information you can query Grakn about is what was directed loaded from the data. For example, if you submit the following query to the visualiser:
 
 ```graql
-match (child: $c, parent: $p) isa parentship;
+match (child: $c, parent: $p) isa parentship; get;
 ```
 
 You will receive parentship results, but if you clear the query and then submit a new query for gender-specific results, say mother-daughter relationships:
 
 ```graql
-match (mother: $c, daughter: $p) isa parentship;
+match (mother: $c, daughter: $p) isa parentship; get;
 ```
 
 You will receive no results at all. To find inferred relationships between the people in our dataset, you need to activate inference in the Grakn visualiser. Open the Query settings under the cog button, which is on the far right hand side of the horizontal icon menu (at the top of the screen).
@@ -63,7 +63,7 @@ You will receive no results at all. To find inferred relationships between the p
 You will see the "Activate inference" checkbox. Check it, and Grakn is ready to start building some new information about the family. Try the query again:
 
 ```graql
-match (mother: $c, daughter: $p) isa parentship;
+match (mother: $c, daughter: $p) isa parentship; get;
 ```
 
 You should see something similar to the screenshot below in your visualiser window.
@@ -153,7 +153,7 @@ The four rules can be broken down as follows:
 We can use the rule to easily discover the sons who have the same name as their fathers:
 
 ```graql
-match (father: $p, son: $c) isa parentship; $p has firstname $n; $c has firstname $n;
+match (father: $p, son: $c) isa parentship; $p has firstname $n; $c has firstname $n; get;
 ```
 
 In the genealogy-knowledge-base example, there should be two results returned. William and John are names shared between father/son pairs.
@@ -235,7 +235,7 @@ Much as above for the `parentship` relationship, the rules can be broken down as
 These rules allow us to find all `grandparentship` relationships, and further, it allows us to query, for example, which grandfather/grandson pairs share the same name:
 
 ```graql
-match (grandfather: $x, grandson: $y) isa grandparentship; $x has firstname $n; $y has firstname $n;
+match (grandfather: $x, grandson: $y) isa grandparentship; $x has firstname $n; $y has firstname $n; get;
 ```
 
 In the genealogy-knowledge-base example, there should be three results returned. George, Jacob and John are names shared between grandfather/grandson pairs.

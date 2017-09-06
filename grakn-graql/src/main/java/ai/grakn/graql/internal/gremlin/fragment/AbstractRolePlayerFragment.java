@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
+import ai.grakn.concept.Role;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
@@ -41,12 +42,12 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptional
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Abstract class for the fragments that traverse shortcut edges: {@link InShortcutFragment} and
- * {@link OutShortcutFragment}.
+ * Abstract class for the fragments that traverse {@link Schema.EdgeLabel#ROLE_PLAYER} edges: {@link InRolePlayerFragment} and
+ * {@link OutRolePlayerFragment}.
  *
  * @author Felix Chapman
  */
-public abstract class AbstractShortcutFragment extends Fragment {
+public abstract class AbstractRolePlayerFragment extends Fragment {
 
     @Override
     public abstract Var end();
@@ -64,7 +65,7 @@ public abstract class AbstractShortcutFragment extends Fragment {
         String roleString = role != null ? " role:" + role.shortName() : "";
         String rels = displayOptionalTypeLabels("rels", relationTypeLabels());
         String roles = displayOptionalTypeLabels("roles", roleLabels());
-        return "[shortcut:" + edge().shortName() + roleString + rels + roles + "]";
+        return "[" + Schema.EdgeLabel.ROLE_PLAYER.getLabel() + ":" + edge().shortName() + roleString + rels + roles + "]";
     }
 
     @Override
@@ -93,9 +94,9 @@ public abstract class AbstractShortcutFragment extends Fragment {
     }
 
     /**
-     * Optionally traverse from a shortcut edge to the role-type it mentions, plus any super-types.
+     * Optionally traverse from a {@link Schema.EdgeLabel#ROLE_PLAYER} edge to the {@link Role} it mentions, plus any super-types.
      *
-     * @param traversal the traversal, starting from the shortcut edge
+     * @param traversal the traversal, starting from the {@link Schema.EdgeLabel#ROLE_PLAYER}  edge
      * @param role the variable to assign to the role. If not present, do nothing
      * @param edgeProperty the edge property to look up the role label ID
      */

@@ -24,7 +24,8 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.GetQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Query;
 import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
@@ -158,10 +159,10 @@ public class DashboardController {
     @GET
     @Path("/explain")
     @ApiOperation(
-            value = "Returns an HAL representation of the explanation tree for a given match query.")
+            value = "Returns an HAL representation of the explanation tree for a given get query.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "query", value = "Match query to execute", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "query", value = "Get query to execute", required = true, dataType = "string", paramType = "query"),
     })
     private Json explainConcept(Request request, Response response) {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
@@ -172,13 +173,13 @@ public class DashboardController {
             Query<?> query = graph.graql().infer(true).parse(queryString);
             body.set(ORIGINAL_QUERY, query.toString());
 
-            if (!(query instanceof MatchQuery)) {
+            if (!(query instanceof GetQuery)) {
                 throw GraknServerException.invalidQueryExplaination(query.getClass().getName());
             }
 
             int limitEmbedded = queryParameter(request, REST.Request.Graql.LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
             response.status(200);
-            return explanationAnswersToHAL(((MatchQuery) query).admin().stream(), limitEmbedded);
+            return explanationAnswersToHAL(((Match) query).admin().stream(), limitEmbedded);
         }
 
     }

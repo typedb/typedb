@@ -21,15 +21,13 @@ package ai.grakn.graql.internal.hal;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.Query;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.AcademyKB;
 import ai.grakn.test.kbs.GenealogyKB;
 import ai.grakn.util.Schema;
 import mjson.Json;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static ai.grakn.graql.internal.hal.HALBuilder.HALExploreConcept;
@@ -49,7 +47,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenReceivingHALResponse_EnsureResponseContainsConceptDetails() {
-        Json response = getHALRepresentation(academyKB.tx(), "match $x isa entity; limit 5;");
+        Json response = getHALRepresentation(academyKB.tx(), "match $x isa entity; limit 5; get;");
         String keyspace = academyKB.tx().getKeyspace();
         assertEquals(5, response.asList().size());
 
@@ -65,7 +63,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenExecuteExploreHAL_EnsureHALResponseContainsCorrectExploreLinks() {
-        Json response = getHALRepresentation(academyKB.tx(), "match $x isa entity; limit 5;");
+        Json response = getHALRepresentation(academyKB.tx(), "match $x isa entity; limit 5; get;");
         String conceptId = response.asJsonList().get(0).at("_id").asString();
         Json halObj = getHALExploreRepresentation(academyKB.tx(), conceptId);
         assertTrue(halObj.at("_links").at("explore").asJsonList().get(0).at("href").asString().contains("explore"));
@@ -73,7 +71,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenAskForRelationTypes_EnsureAllObjectsHaveImplicitField() {
-        Json response = getHALRepresentation(academyKB.tx(), "match $x sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + ";");
+        Json response = getHALRepresentation(academyKB.tx(), "match $x sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + "; get;");
         response.asJsonList().forEach(halObj -> {
             assertTrue(halObj.has("_implicit"));
             if(halObj.at("_name").asString().startsWith("has-")){
@@ -90,7 +88,7 @@ public class HALBuilderTest {
                 "$country isa country has name \"Italy\";\n" +
                 "(owner: $company, owned: $platform) isa owns;\n" +
                 "(issuer: $company, issued: $bond) isa issues;\n" +
-                "select $bond, $article; offset 0; limit 5;");
+                "offset 0; limit 5; get $bond, $article;");
 
         // Limit to 5 results, each result will contain 2 variables, so the expected size of HAL results is 10.
         assertEquals(10, response.asList().size());
@@ -109,7 +107,7 @@ public class HALBuilderTest {
                 "$country isa country has name \"Italy\";\n" +
                 "(owner: $company, owned: $platform) isa owns;\n" +
                 "(issuer: $company, issued: $bond) isa issues;\n" +
-                "select $bond, $article; offset 0; limit 5;");
+                "offset 0; limit 5; get $bond, $article;");
 
         // Limit to 5 results, each result will contain 2 variables, so the expected size of HAL results is 10.
         assertEquals(10, response.asList().size());
@@ -122,7 +120,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenSelectInferredRelationWithSingleVar_EnsureValidExplanationHrefIsContainedInResponse(){
-        Json response = getHALRepresentation(genealogyKB.tx(), "match $x isa marriage; offset 0; limit 5;");
+        Json response = getHALRepresentation(genealogyKB.tx(), "match $x isa marriage; offset 0; limit 5; get;");
         assertEquals(5, response.asList().size());
         response.asJsonList().forEach(halObj -> {
             assertEquals("inferred-relation", halObj.at("_baseType").asString());
@@ -133,7 +131,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenTriggerReasonerWithTransitiveRule_EnsureWeReceiveAValidHALResponse() {
-        Json response = getHALRepresentation(academyKB.tx(), "match $x isa region; $y isa oil-platform; (located: $y, location: $x) isa located-in; limit 20;");
+        Json response = getHALRepresentation(academyKB.tx(), "match $x isa region; $y isa oil-platform; (located: $y, location: $x) isa located-in; limit 20; get;");
         // Limit to 20 results, each result will contain 3 variables, expected size 60
         assertEquals(60, response.asList().size());
         response.asJsonList().forEach(halObj -> {
@@ -143,8 +141,8 @@ public class HALBuilderTest {
     }
 
     private Json getHALRepresentation(GraknTx graph, String queryString) {
-        Query<?> query = graph.graql().materialise(false).infer(true).parse(queryString);
-        return renderHALArrayData((MatchQuery) query, 0, 5);
+        GetQuery query = graph.graql().materialise(false).infer(true).parse(queryString);
+        return renderHALArrayData(query, 0, 5);
     }
 
     private Json getHALExploreRepresentation(GraknTx graph, String conceptId) {
@@ -153,8 +151,8 @@ public class HALBuilderTest {
     }
 
     private Json getHALRepresentationNoInference(GraknTx graph, String queryString) {
-        Query<?> query = graph.graql().materialise(false).infer(false).parse(queryString);
-        return renderHALArrayData((MatchQuery) query, 0, 5);
+        GetQuery query = graph.graql().materialise(false).infer(false).parse(queryString);
+        return renderHALArrayData(query, 0, 5);
     }
 
 }

@@ -22,9 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.client.Client;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.util.Schema;
 import com.google.common.io.Files;
 import org.apache.commons.cli.HelpFormatter;
 import org.yaml.snakeyaml.Yaml;
@@ -49,7 +47,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.count;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
+import static ai.grakn.util.Schema.MetaSchema.ENTITY;
+import static ai.grakn.util.Schema.MetaSchema.RELATIONSHIP;
+import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -134,10 +137,10 @@ public class MigrationCLI {
             builder.append("\t ").append(graph.admin().getMetaRule().subs().count()).append(" rules\n\n");
 
             builder.append("Graph data contains:\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.ENTITY.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" entities\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.RELATIONSHIP.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" relations\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.ATTRIBUTE.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" resources\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.RULE.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" rules\n\n");
+            builder.append("\t ").append(qb.match(var("x").isa(label(ENTITY.getLabel()))).aggregate(count()).execute()).append(" entities\n");
+            builder.append("\t ").append(qb.match(var("x").isa(label(RELATIONSHIP.getLabel()))).aggregate(count()).execute()).append(" relations\n");
+            builder.append("\t ").append(qb.match(var("x").isa(label(ATTRIBUTE.getLabel()))).aggregate(count()).execute()).append(" resources\n");
+            builder.append("\t ").append(qb.match(var("x").isa(label(RULE.getLabel()))).aggregate(count()).execute()).append(" rules\n\n");
 
             System.out.println(builder);
 

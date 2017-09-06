@@ -20,29 +20,33 @@ package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknTx;
 
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * "Order" modify that orders the underlying match query
+ * "Offset" modifier for {@link Match} that offsets (skips) some number of results.
  */
-class MatchQueryOrder extends MatchQueryModifier {
+class MatchOffset extends MatchModifier {
 
-    private final MatchOrderImpl order;
+    private final long offset;
 
-    MatchQueryOrder(AbstractMatchQuery inner, MatchOrderImpl order) {
+    MatchOffset(AbstractMatch inner, long offset) {
         super(inner);
-        this.order = order;
+        if (offset < 0) {
+            throw GraqlQueryException.negativeOffset(offset);
+        }
+        this.offset = offset;
     }
 
     @Override
     public Stream<Answer> stream(Optional<GraknTx> graph) {
-        return order.orderStream(inner.stream(graph));
+        return inner.stream(graph).skip(offset);
     }
 
     @Override
     protected String modifierString() {
-        return " " + order.toString() + ";";
+        return " offset " + offset + ";";
     }
 }

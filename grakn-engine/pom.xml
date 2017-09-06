@@ -32,17 +32,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>net.greghaines</groupId>
-            <artifactId>jesque</artifactId>
-            <version>${jesque.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>slf4j-api</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
             <version>${java-jwt.version}</version>
@@ -174,7 +163,7 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
+       <dependency>
           <groupId>io.dropwizard.metrics</groupId>
           <artifactId>metrics-core</artifactId>
           <version>${metrics.version}</version>
