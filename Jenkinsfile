@@ -27,7 +27,7 @@ def testConnection = {
 }
 
 def loadValidationData = {
-    sh '../grakn-test/test-snb/src/generate-SNB/download-SNB.sh'
+    sh '../grakn-test/test-snb/src/generate-SNB/download-snb.sh'
     sh '../grakn-test/test-snb/src/generate-SNB/load-SNB.sh arch validate'
 }
 
