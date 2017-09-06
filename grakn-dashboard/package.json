@@ -77,7 +77,7 @@
       "js",
       "vue"
     ],
-    "testPathIgnorePatterns":[
+    "testPathIgnorePatterns": [
       "/node_modules/",
       "/test/visualiser*"
     ],

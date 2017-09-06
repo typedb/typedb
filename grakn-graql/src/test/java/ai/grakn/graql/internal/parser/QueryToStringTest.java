@@ -31,6 +31,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.lte;
 import static ai.grakn.graql.Graql.match;
@@ -213,6 +214,13 @@ public class QueryToStringTest {
         String query = "match $x isa movie; delete $x;";
 
         assertEquals(query, qb.parse(query).toString());
+    }
+
+    @Test
+    public void whenCallingToStringOnAQueryWithAContainsPredicate_ResultIsCorrect() {
+        MatchQuery query = match(var("x").val(contains(var("y"))));
+
+        assertEquals("match $x val contains $y;", query.toString());
     }
 
     private void assertSameResults(MatchQuery query) {

@@ -180,6 +180,15 @@ public class QueryParserTest {
     }
 
     @Test
+    public void whenParsingContainsPredicateWithAVariable_ResultMatchesJavaGraql() {
+        MatchQuery expected = match(var("x").val(contains(var("y"))));
+
+        MatchQuery parsed = parse("match $x val contains $y;");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
     public void testValueEqualsVariableQuery() {
         MatchQuery expected = match(var("s1").val(var("s2")));
 

@@ -38,8 +38,8 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.LabelFragmentSet.applyRedundantLabelEliminationOptimisation;
 import static ai.grakn.graql.internal.gremlin.sets.ResourceIndexFragmentSet.applyResourceIndexOptimisation;
-import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutRelationTypeOptimisation;
-import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutRoleOptimisation;
+import static ai.grakn.graql.internal.gremlin.sets.RolePlayerFragmentSet.applyRolePlayerRelationTypeOptimisation;
+import static ai.grakn.graql.internal.gremlin.sets.RolePlayerFragmentSet.applyRolePlayerRoleOptimisation;
 
 /**
  * Factory class for producing instances of {@link EquivalentFragmentSet}.
@@ -60,10 +60,10 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a shortcut edge between two role-players.
+     * An {@link EquivalentFragmentSet} that indicates a {@link ai.grakn.util.Schema.EdgeLabel#ROLE_PLAYER} edge between two role-players.
      */
-    public static EquivalentFragmentSet shortcut(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, @Nullable Var role) {
-        return new ShortcutFragmentSet(varProperty, relation, edge, rolePlayer, role, null, null);
+    public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Var relation, Var edge, Var rolePlayer, @Nullable Var role) {
+        return new RolePlayerFragmentSet(varProperty, relation, edge, rolePlayer, role, null, null);
     }
 
     /**
@@ -143,7 +143,7 @@ public class EquivalentFragmentSets {
         return new RegexFragmentSet(varProperty, resourceType, regex);
     }
 
-    // TODO: Move shortcut edge optimisation here
+    // TODO: Move role-player edge optimisation here
 
     /**
      * Modify the given collection of {@link EquivalentFragmentSet} to introduce certain optimisations, such as the
@@ -157,8 +157,8 @@ public class EquivalentFragmentSets {
         // TODO: Create a real interface for these when there are more of them
         ImmutableList<Supplier<Boolean>> optimisations = ImmutableList.of(
                 () -> applyResourceIndexOptimisation(fragmentSets, graph),
-                () -> applyShortcutRoleOptimisation(fragmentSets, graph),
-                () -> applyShortcutRelationTypeOptimisation(fragmentSets, graph),
+                () -> applyRolePlayerRoleOptimisation(fragmentSets, graph),
+                () -> applyRolePlayerRelationTypeOptimisation(fragmentSets, graph),
                 () -> applyRedundantLabelEliminationOptimisation(fragmentSets, graph)
         );
 
