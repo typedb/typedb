@@ -19,13 +19,14 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
-import ai.grakn.graql.admin.MatchQueryAdmin;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
@@ -35,25 +36,30 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
+
 /**
- * A DeleteQuery that will execute deletions for every result of a MatchQuery
+ * A {@link DeleteQuery} that will execute deletions for every result of a {@link Match}
  */
 @AutoValue
 abstract class DeleteQueryImpl implements DeleteQueryAdmin {
+
     abstract ImmutableCollection<Var> vars();
-    abstract MatchQueryAdmin matchQuery();
+
+    @Override
+    public abstract Match match();
 
     /**
      * @param vars a collection of variables to delete
-     * @param matchQuery a pattern to match and delete for each result
+     * @param match a pattern to match and delete for each result
      */
-    static DeleteQueryImpl of(Collection<? extends Var> vars, MatchQuery matchQuery) {
-        return new AutoValue_DeleteQueryImpl(ImmutableSet.copyOf(vars), matchQuery.admin());
+    static DeleteQueryImpl of(Collection<? extends Var> vars, Match match) {
+        return new AutoValue_DeleteQueryImpl(ImmutableSet.copyOf(vars), match);
     }
 
     @Override
     public Void execute() {
-        List<Answer> results = matchQuery().execute();
+        List<Answer> results = match().stream().collect(toList());
         results.forEach(this::deleteResult);
         return null;
     }
@@ -71,7 +77,7 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
 
     @Override
     public DeleteQuery withTx(GraknTx tx) {
-        return Queries.delete(vars(), matchQuery().withTx(tx));
+        return Queries.delete(vars(), match().withTx(tx));
     }
 
     @Override
@@ -83,17 +89,18 @@ abstract class DeleteQueryImpl implements DeleteQueryAdmin {
         Collection<Var> toDelete = vars().isEmpty() ? result.vars() : vars();
 
         for (Var var : toDelete) {
-            result.get(var).delete();
+            Concept concept = result.get(var);
+
+            if (concept.isSchemaConcept()) {
+                throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
+            }
+
+            concept.delete();
         }
     }
 
     @Override
-    public MatchQuery getMatchQuery() {
-        return matchQuery();
-    }
-
-    @Override
     public String toString() {
-        return matchQuery() + " delete " + vars().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+        return match() + " delete " + vars().stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 }

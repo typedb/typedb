@@ -99,11 +99,11 @@ private static void testConnection() {
         // open a tx (database transaction)
         try (GraknTx tx = session.open(GraknTxType.READ)) {
 
-            // construct a match query to find people
-            MatchQuery query = tx.graql().match(var("x").isa("person"));
+            // construct a match to find people
+            Match match = tx.graql().match(var("x").isa("person"));
 
             // execute the query
-            List<Map<String, Concept>> result = query.limit(10).execute();
+            List<Map<String, Concept>> result = match.limit(10).get().execute();
 
             // write the results to the console
             result.forEach(System.out::println);
@@ -221,7 +221,7 @@ private static void persistClusters(Map<String, Set<String>> results) {
 We can now switch to the visualiser, by browsing to [localhost:4567](http://localhost:4567), and execute this query:
 
 ```graql
-match $x isa cluster;
+match $x isa cluster; get;
 ```
 
 If you explore the results you can now see the entities that are members of a given cluster, similar to the image shown below.

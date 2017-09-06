@@ -21,36 +21,25 @@ package ai.grakn.concept;
 import ai.grakn.graql.Pattern;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nonnull;
 import java.util.stream.Stream;
 
 /**
  * <p>
- *     A rule which defines how implicit knowledge can extracted.
+ *     A {@link SchemaConcept} used to model and categorise {@link Rule}s.
  * </p>
  *
  * <p>
- *     It can behave like any other {@link Thing} but primarily serves as a way of extracting
- *     implicit data from the graph. By defining the LHS (if statment) and RHS (then conclusion) it is possible to
- *     automatically materialise new concepts based on these rules.
+ *     A {@link SchemaConcept} used to define different types of {@link Rule}.
+ *     A {@link Rule}
  * </p>
  *
  * @author fppt
- *
  */
-public interface Rule extends Thing {
-    //------------------------------------- Modifiers ----------------------------------
-    /**
-     * Creates a relation from this instance to the provided {@link Attribute}.
-     *
-     * @param attribute The {@link Attribute} to which a relationship is created
-     * @return The instance itself
-     */
-    @Override
-    Rule attribute(Attribute attribute);
-
+public interface Rule extends SchemaConcept {
     //------------------------------------- Accessors ----------------------------------
     /**
-     * Retrieves the Left Hand Side of the rule.
+     * Retrieves the when part of the {@link Rule}
      * When this query is satisfied the "then" part of the rule is executed.
      *
      * @return A string representing the left hand side Graql query.
@@ -59,7 +48,7 @@ public interface Rule extends Thing {
     Pattern getWhen();
 
     /**
-     * Retrieves the Right Hand Side of the rule.
+     * Retrieves the then part of the {@link Rule}.
      * This query is executed when the "when" part of the rule is satisfied
      *
      * @return A string representing the right hand side Graql query.
@@ -67,38 +56,59 @@ public interface Rule extends Thing {
     @CheckReturnValue
     Pattern getThen();
 
-    //------------------------------------- Edge Handling ----------------------------------
     /**
-     * Retrieve a set of Types that constitute a part of the hypothesis of this Rule.
+     * Retrieve a set of {@link Type}s that constitute a part of the hypothesis of this {@link Rule}.
      *
-     * @return A collection of Concept Types that constitute a part of the hypothesis of the Rule
+     * @return A collection of Concept {@link Type}s that constitute a part of the hypothesis of the {@link Rule}
      */
     @CheckReturnValue
     Stream<Type> getHypothesisTypes();
 
     /**
-     * Retrieve a set of Types that constitue a part of the conclusion of the Rule.
+     * Retrieve a set of {@link Type}s that constitue a part of the conclusion of the {@link Rule}.
      *
-     * @return A collection of Concept Types that constitute a part of the conclusion of the Rule
+     * @return A collection of {@link Type}s that constitute a part of the conclusion of the {@link Rule}
      */
     @CheckReturnValue
     Stream<Type> getConclusionTypes();
 
-    //---- Inherited Methods
+    //------------------------------------- Modifiers ----------------------------------
     /**
-     *
-     * @return The type of this Graql
+     * Changes the {@link Label} of this {@link Concept} to a new one.
+     * @param label The new {@link Label}.
+     * @return The {@link Concept} itself
      */
-    @Override
-    RuleType type();
+    Rule setLabel(Label label);
 
     /**
-     * Removes the provided {@link Attribute} from this {@link Rule}
-     * @param attribute the {@link Attribute} to be removed
-     * @return The {@link Rule} itself
+     *
+     * @return The super of this {@link Rule}
      */
     @Override
-    Rule deleteAttribute(Attribute attribute);
+    @Nonnull
+    Rule sup();
+
+    /**
+     *
+     * @param superRule The super of this {@link Rule}
+     * @return The {@link Rule} itself
+     */
+    Rule sup(Rule superRule);
+
+    /**
+     * Adds another subtype to this {@link Rule}
+     *
+     * @param type The sub of this {@link Rule}
+     * @return The {@link Rule} itself
+     */
+    Rule sub(Rule type);
+
+    /**
+     *
+     * @return All the sub of this {@link Rule}
+     */
+    @Override
+    Stream<Rule> subs();
 
     //------------------------------------- Other ---------------------------------
     @Deprecated

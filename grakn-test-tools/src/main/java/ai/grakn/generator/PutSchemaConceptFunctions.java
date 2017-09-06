@@ -43,9 +43,10 @@ public class PutSchemaConceptFunctions extends AbstractGenerator<BiFunction> {
         return random.choose(ImmutableList.of(
                 GraknTx::putEntityType,
                 (graph, label) -> graph.putAttributeType(label, gen(AttributeType.DataType.class)),
-                GraknTx::putRuleType,
                 GraknTx::putRelationshipType,
-                GraknTx::putRole
+                GraknTx::putRole,
+                //TODO: Make smarter rules
+                (graph, label) -> graph.putRule(label, graph.graql().parsePattern("$x"), graph.graql().parsePattern("$x"))
         ));
     }
 }

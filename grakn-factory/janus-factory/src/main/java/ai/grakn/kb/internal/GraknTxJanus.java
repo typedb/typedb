@@ -26,8 +26,9 @@ import ai.grakn.exception.TemporaryWriteException;
 import ai.grakn.kb.internal.concept.ConceptImpl;
 import ai.grakn.kb.internal.structure.VertexElement;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphVertex;
 import org.janusgraph.core.util.JanusGraphCleanup;
@@ -126,11 +127,7 @@ public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
     }
 
     @Override
-    public void validVertex(Vertex vertex) {
-        super.validVertex(vertex);
-
-        if(((JanusGraphVertex) vertex).isRemoved()){
-            throw new IllegalStateException("The vertex [" + vertex + "] has been removed and is no longer valid");
-        }
+    public boolean validElement(Element element) {
+        return super.validElement(element) && !((JanusGraphElement) element).isRemoved();
     }
 }

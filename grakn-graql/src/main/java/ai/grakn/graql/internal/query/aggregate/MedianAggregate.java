@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 
@@ -28,7 +29,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Aggregate that finds median of a match query.
+ * Aggregate that finds median of a {@link Match}.
  */
 class MedianAggregate extends AbstractAggregate<Answer, Optional<Number>> {
 

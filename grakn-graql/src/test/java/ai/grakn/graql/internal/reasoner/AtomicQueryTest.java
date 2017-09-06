@@ -21,8 +21,8 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
@@ -85,8 +85,8 @@ public class AtomicQueryTest {
     public void testWhenMaterialising_MaterialisedInformationIsPresentInGraph(){
         GraknTx graph = geoKB.tx();
         QueryBuilder qb = graph.graql().infer(false);
-        String explicitQuery = "match (geo-entity: $x, entity-location: $y) isa is-located-in;$x has name 'Warsaw';$y has name 'Poland';";
-        assertTrue(!qb.<MatchQuery>parse(explicitQuery).iterator().hasNext());
+        String explicitQuery = "match (geo-entity: $x, entity-location: $y) isa is-located-in;$x has name 'Warsaw';$y has name 'Poland'; get;";
+        assertTrue(!qb.<GetQuery>parse(explicitQuery).iterator().hasNext());
 
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
@@ -126,16 +126,16 @@ public class AtomicQueryTest {
     @Test
     public void testWhenRoleTypesAreAmbiguous_answersArePermutedCorrectly(){
         GraknTx graph = geoKB.tx();
-        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
-        String queryString2 = "match ($x, $y) isa is-located-in;";
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
+        String queryString2 = "match ($x, $y) isa is-located-in; get;";
 
         QueryBuilder qb = graph.graql().infer(false);
-        MatchQuery query = qb.parse(queryString);
-        MatchQuery query2 = qb.parse(queryString2);
-        Set<Answer> answers = query.admin().stream().collect(toSet());
-        Set<Answer> fullAnswers = query2.admin().stream().collect(toSet());
-        Atom mappedAtom = ReasonerQueries.atomic(conjunction(query.admin().getPattern()), graph).getAtom();
-        Atom unmappedAtom = ReasonerQueries.atomic(conjunction(query2.admin().getPattern()), graph).getAtom();
+        GetQuery query = qb.parse(queryString);
+        GetQuery query2 = qb.parse(queryString2);
+        Set<Answer> answers = query.stream().collect(toSet());
+        Set<Answer> fullAnswers = query2.stream().collect(toSet());
+        Atom mappedAtom = ReasonerQueries.atomic(conjunction(query.match().admin().getPattern()), graph).getAtom();
+        Atom unmappedAtom = ReasonerQueries.atomic(conjunction(query2.match().admin().getPattern()), graph).getAtom();
 
         Set<Unifier> permutationUnifiers = mappedAtom.getPermutationUnifiers(mappedAtom);
         Set<Answer> permutedAnswers = answers.stream()

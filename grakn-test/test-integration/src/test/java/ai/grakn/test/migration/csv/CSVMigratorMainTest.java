@@ -22,20 +22,22 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.SampleKBLoader;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.SystemErrRule;
-import org.junit.contrib.java.lang.system.SystemOutRule;
-
 import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.SampleKBLoader;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.contrib.java.lang.system.SystemErrRule;
+import org.junit.contrib.java.lang.system.SystemOutRule;
+import org.junit.rules.ExpectedException;
 
 public class CSVMigratorMainTest {
     private GraknSession factory;
@@ -43,6 +45,7 @@ public class CSVMigratorMainTest {
 
     private final String dataFile = getFile("csv", "pets/data/pets.csv").getAbsolutePath();
     private final String templateFile = getFile("csv", "pets/template.gql").getAbsolutePath();
+    private final String templateCorruptFile = getFile("csv", "pets/template-corrupt.gql").getAbsolutePath();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -53,12 +56,29 @@ public class CSVMigratorMainTest {
     @Rule
     public final SystemErrRule sysErr = new SystemErrRule().enableLog();
 
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
     @Before
     public void setup(){
         keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
 
         load(factory, getFile("csv", "pets/schema.gql"));
+    }
+
+    @Test
+    @Ignore("The exception is being thrown with the correct message but the test doesn't see it")
+    public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsSet_Throw(){
+        expectedException.expect(RuntimeException.class);
+        expectedException.expectMessage(containsString(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage("bob")));
+
+        run("-d", "-u", engine.uri(), "-input", dataFile, "-template", templateCorruptFile, "-keyspace", keyspace);
+    }
+
+    @Test
+    public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsNotSet_DontThrow(){
+        run("-u", engine.uri(), "-input", dataFile, "-template", templateCorruptFile, "-keyspace", keyspace);
     }
 
     @Test

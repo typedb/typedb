@@ -33,16 +33,17 @@ import ai.grakn.client.BatchMutatorClient;
 
 # Basic Usage
 
-The loader client provides two constructors. The first accepts only the keyspace to load data into and the URI endpoint where Grakn Engine Server is running.
+The loader client provides two constructors. 
+The first accepts only the keyspace to load data into, the URI endpoint where Grakn Engine Server is running and a flag to enable debug mode.
 
 ```java
-BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri);
+BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, false);
 ```
 
 The second constructor additionally allows the user to specify a callback function that executes on completion of tasks. 
 
 ```java
-loader = new BatchMutatorClient(keyspace, uri, callback);
+loader = new BatchMutatorClient(keyspace, uri, callback, false);
 ```
 
 The loader client can be thought of as an empty bucket in which to dump insert queries that will be batch-loaded into the specified knowledge base. Batching, blocking and callbacks are all executed based on how the user has configured the client, which simplifies usage. The following code will load 100 insert queries into the knowledge base.
@@ -123,6 +124,8 @@ loader.add(insert);
 
 // Second transaction. Block here until the first transaction completes. 
 loader.add(insert);
+
+loader.waitToFinish();
 ```
 
 In the above scenario, the loader will block the calling thread when adding the second transaction. Only when the first transaction completes execution will the second transaction be sent to the server. 
@@ -174,6 +177,15 @@ loader.setRetryPolicy(true);
 
 // The client will not attempt to resend the batch of queries if the server becomes unavailable
 loader.setRetryPolicy(false);
+```
+
+
+## Close
+
+The loader can be closed as follows
+
+```java
+loader.close();
 ```
 
 ## Comments

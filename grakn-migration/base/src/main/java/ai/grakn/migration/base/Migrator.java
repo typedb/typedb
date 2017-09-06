@@ -19,22 +19,20 @@
 package ai.grakn.migration.base;
 
 import ai.grakn.client.BatchMutatorClient;
+import ai.grakn.client.TaskResult;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraqlSyntaxException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.macro.Macro;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import static java.lang.String.format;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import static ai.grakn.util.REST.Response.Task.STACK_TRACE;
-import static java.lang.String.format;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>
@@ -88,11 +86,13 @@ public class Migrator {
      *
      * Uses the default batch size and number of active tasks.
      *
+     * NOTE: Currently only used for testing purposes
+     *
      * @param template
      * @param converter
      */
     public void load(String template, Stream<Map<String, Object>> converter) {
-        load(template, converter, Migrator.BATCH_SIZE, Migrator.ACTIVE_TASKS, Migrator.RETRY);
+        load(template, converter, Migrator.BATCH_SIZE, Migrator.ACTIVE_TASKS, Migrator.RETRY, true);
     }
 
     /**
@@ -117,19 +117,24 @@ public class Migrator {
      * @param retry If the Loader should continue attempt to send tasks when Engine is not available
      */
     public void load(String template, Stream<Map<String, Object>> converter,
-                     int batchSize, int numberActiveTasks, boolean retry){
+                     int batchSize, int numberActiveTasks, boolean retry, boolean debug){
         this.startTime = System.currentTimeMillis();
         this.batchSize = batchSize;
 
-        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates());
+        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates(), true, debug);
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
         loader.setRetryPolicy(retry);
-        loader.setTaskCompletionConsumer(json -> {
-            if (json.has(STACK_TRACE) && json.at(STACK_TRACE).isString()) {
-                System.err.println(json.at(STACK_TRACE).asString());
-            }
-        });
+            loader.setTaskCompletionConsumer(taskResult -> {
+                String stackTrace = taskResult.getStackTrace();
+                if (stackTrace != null && !stackTrace.isEmpty()) {
+                    if(debug){
+                        throw GraknBackendException.migrationFailure(stackTrace);
+                    } else {
+                        System.err.println(stackTrace);
+                    }
+                }
+            });
 
         converter
                 .flatMap(d -> template(template, d))
@@ -138,6 +143,7 @@ public class Migrator {
                     loader.add(q);
                 });
         loader.waitToFinish();
+        loader.close();
     }
 
     /**
@@ -163,8 +169,8 @@ public class Migrator {
      *
      * @return function that operates on completion of a task
      */
-    private Consumer<Json> recordMigrationStates(){
-        return (Json json) -> {
+    private Consumer<TaskResult> recordMigrationStates(){
+        return (TaskResult taskId) -> {
             numberBatchesCompleted.incrementAndGet();
 
             long timeElapsedSeconds = (System.currentTimeMillis() - startTime)/1000;

@@ -22,10 +22,10 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
+import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
-import ai.grakn.concept.Rule;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.PropertyNotUniqueException;
 import ai.grakn.kb.internal.cache.Cache;
@@ -169,14 +169,13 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     public void delete(){
         if(deletionAllowed()){
             //Force load of linked concepts whose caches need to be updated
-            //noinspection unchecked
-            cachedSuperType.get();
+            T superConcept = cachedSuperType.get();
 
             deleteNode();
 
             //Update neighbouring caches
             //noinspection unchecked
-            ((SchemaConceptImpl<SchemaConcept>) cachedSuperType.get()).deleteCachedDirectedSubType(getThis());
+            ((SchemaConceptImpl<SchemaConcept>) superConcept).deleteCachedDirectedSubType(getThis());
 
             //Clear internal caching
             txCacheClear();

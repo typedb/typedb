@@ -22,7 +22,6 @@ package ai.grakn.generator;
 import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Thing;
-import ai.grakn.concept.Type;
 
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -43,7 +42,7 @@ public class RelationsFromRolePlayers extends FromTxGenerator<Relationship> {
 
     @Override
     protected Relationship generateFromTx() {
-        Stream<? extends Thing> things = ((Type) tx().admin().getMetaConcept()).instances();
+        Stream<? extends Thing> things = tx().admin().getMetaConcept().instances();
 
         Optional<Relationship> relation = things.flatMap(thing -> thing.relationships()).findAny();
 

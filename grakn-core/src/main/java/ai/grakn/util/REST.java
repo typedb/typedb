@@ -105,6 +105,7 @@ public class REST {
         public static final String TASK_RUN_AT_PARAMETER = "runAt";
         public static final String TASK_PRIORITY_PARAMETER = "priority";
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
+        public static final String TASK_RUN_WAIT_PARAMETER = "wait";
         public static final String TASK_LOADER_MUTATIONS = "mutations";
         public static final String BATCH_NUMBER = "batchNumber";
         public static final String LIMIT_PARAM = "limit";
@@ -201,14 +202,8 @@ public class REST {
         public static class Task {
             public static final String STACK_TRACE = "stackTrace";
             public static final String EXCEPTION = "exception";
-            public static final String RECURRING = "recurring";
-            public static final String INTERVAL = "interval";
-            public static final String ENGINE_ID = "engineID";
             public static final String ID = "id";
             public static final String STATUS = "status";
-            public static final String CREATOR = "creator";
-            public static final String CLASS_NAME = "className";
-            public static final String RUN_AT = "runAt";
         }
     }
 

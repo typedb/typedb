@@ -231,7 +231,7 @@ public class SchemaConceptPropertyTest {
                 concept1.isRelationshipType() && concept2.isRelationshipType() ||
                 concept1.isRole() && concept2.isRole() ||
                 concept1.isAttributeType() && concept2.isAttributeType() ||
-                concept1.isRuleType() && concept2.isRuleType();
+                concept1.isRule() && concept2.isRule();
     }
 
     private void setDirectSuper(SchemaConcept subConcept, SchemaConcept superConcept) {
@@ -243,8 +243,8 @@ public class SchemaConceptPropertyTest {
             subConcept.asRole().sup(superConcept.asRole());
         } else if (subConcept.isAttributeType()) {
             subConcept.asAttributeType().sup(superConcept.asAttributeType());
-        } else if (subConcept.isRuleType()) {
-            subConcept.asRuleType().sup(superConcept.asRuleType());
+        } else if (subConcept.isRule()) {
+            subConcept.asRule().sup(superConcept.asRule());
         } else {
             fail("unreachable");
         }
@@ -259,8 +259,8 @@ public class SchemaConceptPropertyTest {
             superConcept.asRole().sub(subConcept.asRole());
         } else if (superConcept.isAttributeType()) {
             superConcept.asAttributeType().sub(subConcept.asAttributeType());
-        } else if (superConcept.isRuleType()) {
-            superConcept.asRuleType().sub(subConcept.asRuleType());
+        } else if (superConcept.isRule()) {
+            superConcept.asRule().sub(subConcept.asRule());
         } else {
             fail("unreachable");
         }

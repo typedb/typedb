@@ -34,18 +34,9 @@ import static com.google.common.collect.Iterators.transform;
 
 /**
  * A Fibonacci heap (due to Fredman and Tarjan).
- * <p>
- * This implementation was inspired and informed by those of
- * Nathan L. Fiedler
- * (https://github.com/nlfiedler/graphmaker/blob/990227c766a9891be1d4669c582975f7c1a4db87/core/src/com/bluemarsh/graphmaker/core/util/FibonacciHeap.java),
- * and
- * Keith Schwarz (htiek@cs.stanford.edu)
- * (http://www.keithschwarz.com/interesting/code/?dir=fibonacci-heap),
- * but rewritten from scratch by Sam Thomson (sthomson@cs.cmu.edu).
  *
  * @param <V> the type of the values stored in the heap
  * @param <P> the type of the priorities
- * @author Sam Thomson
  * @author Jason Liu
  */
 public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> {

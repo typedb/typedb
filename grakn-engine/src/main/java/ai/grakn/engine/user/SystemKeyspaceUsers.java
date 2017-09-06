@@ -24,8 +24,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
@@ -129,7 +129,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
             Var resource = var("property");
 
-            MatchQuery query = graph.graql().match(lookup.has(ATTRIBUTE.getLabel(), resource));
+            GetQuery query = graph.graql().match(lookup.has(ATTRIBUTE.getLabel(), resource)).get();
             List<Answer> L = query.execute();
             if (L.isEmpty()) {
                 return Json.nil();
@@ -167,7 +167,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
                     var("entity").isa(USER_ENTITY).
                             has(USER_NAME, username).
                             has(USER_PASSWORD, var("stored-password")).
-                            has(USER_SALT, var("salt"))).execute();
+                            has(USER_SALT, var("salt"))).get().execute();
 
             if(!results.isEmpty()) {
                 Concept saltConcept = results.get(0).get("salt");
@@ -194,7 +194,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
     public Json allUsers(int offset, int limit) {
         try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.READ)) {
             VarPattern lookup = var("entity").isa(USER_ENTITY);
-            MatchQuery query = graph.graql().match(lookup.has(USER_NAME, var("username"))).limit(limit).offset(offset);
+            GetQuery query = graph.graql().match(lookup.has(USER_NAME, var("username"))).limit(limit).offset(offset).get();
             List<Answer> L = query.execute();
             Json all = Json.array();
             L.forEach(concepts -> {
@@ -219,7 +219,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
     public boolean removeUser(String username) {
         VarPattern lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
         try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.WRITE)) {
-            MatchQuery query = graph.graql().match(lookup);
+            GetQuery query = graph.graql().match(lookup).get();
             List<Answer> results = query.execute();
             boolean exists = !results.isEmpty();
             results.forEach(map -> {

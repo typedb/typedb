@@ -89,7 +89,7 @@ public class ResourceAtom extends Binary{
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getSchemaConcept().getLabel() + " " +
                 multiPredicateString +
-                getPredicates(IdPredicate.class).map(IdPredicate::toString).collect(Collectors.joining("")) +
+                getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""))  +
                 (relationVariable.isUserDefinedName()? "(" + relationVariable + ")" : "");
     }
 

@@ -46,7 +46,6 @@ import static com.google.common.base.Predicates.not;
  * Implementation is based on Tarjan's "Finding Optimum Branchings" paper:
  * http://cw.felk.cvut.cz/lib/exe/fetch.php/courses/a4m33pal/cviceni/tarjan-finding-optimum-branchings.pdf
  *
- * @author sthomson@cs.cmu.edu
  * @author Jason Liu
  */
 public class ChuLiuEdmonds {

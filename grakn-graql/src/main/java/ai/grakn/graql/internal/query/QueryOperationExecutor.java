@@ -108,7 +108,7 @@ public class QueryOperationExecutor {
 
     /**
      * Insert all the Vars
-     * @param results the result of a match query
+     * @param results the result after inserting
      */
     static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph, Answer results) {
         return create(patterns, graph, ExecutionType.INSERT).insertAll(results);
@@ -116,6 +116,10 @@ public class QueryOperationExecutor {
 
     static Answer defineAll(Collection<VarPatternAdmin> patterns, GraknTx graph) {
         return create(patterns, graph, ExecutionType.DEFINE).insertAll(new QueryAnswer());
+    }
+
+    static void undefineAll(ImmutableList<VarPatternAdmin> patterns, GraknTx tx) {
+        create(patterns, tx, ExecutionType.UNDEFINE).insertAll(new QueryAnswer());
     }
 
     private static QueryOperationExecutor create(
@@ -457,6 +461,11 @@ public class QueryOperationExecutor {
         DEFINE {
             PropertyExecutor executor(VarPropertyInternal property, Var var) {
                 return property.define(var);
+            }
+        },
+        UNDEFINE {
+            PropertyExecutor executor(VarPropertyInternal property, Var var) {
+                return property.undefine(var);
             }
         };
 

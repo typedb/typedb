@@ -26,6 +26,8 @@ import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.lock.ProcessWideLockProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.manager.TaskConfiguration;
+import ai.grakn.engine.tasks.manager.TaskState;
+import ai.grakn.engine.tasks.manager.TaskSubmitter;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
@@ -119,7 +121,16 @@ public class PostProcessingTest {
                                 Schema.BaseType.ATTRIBUTE.name(), Json.object(resourceIndex, resourceConcepts)
                         ))
         );
-        task.initialize(null, configuration, (x, y) -> {}, engine.config(), null, engine.server().factory(),
+        TaskSubmitter taskSubmitter = new TaskSubmitter() {
+            @Override
+            public void addTask(TaskState taskState, TaskConfiguration configuration) {
+            }
+
+            @Override
+            public void runTask(TaskState taskState, TaskConfiguration configuration) {
+            }
+        };
+        task.initialize(null, configuration, taskSubmitter, engine.config(), null, engine.server().factory(),
                 new ProcessWideLockProvider(), new MetricRegistry());
 
         task.start();

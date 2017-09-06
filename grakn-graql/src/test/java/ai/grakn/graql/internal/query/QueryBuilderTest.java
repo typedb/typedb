@@ -21,9 +21,11 @@ package ai.grakn.graql.internal.query;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
+import ai.grakn.graql.UndefineQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
@@ -34,7 +36,9 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.match;
+import static ai.grakn.graql.Graql.undefine;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.matcher.GraknMatchers.variable;
 import static ai.grakn.matcher.MovieMatchers.containsAllMovies;
@@ -59,13 +63,13 @@ public class QueryBuilderTest {
 
     @Test
     public void whenBuildingQueryWithGraphFirst_ItExecutes() {
-        MatchQuery query = movieKB.tx().graql().match(x.isa("movie"));
+        GetQuery query = movieKB.tx().graql().match(x.isa("movie")).get();
         assertThat(query, variable(x, containsAllMovies));
     }
 
     @Test
-    public void whenBuildingMatchQueryWithGraphLast_ItExecutes() {
-        MatchQuery query = match(x.isa("movie")).withTx(movieKB.tx());
+    public void whenBuildingMatchWithGraphLast_ItExecutes() {
+        GetQuery query = match(x.isa("movie")).withTx(movieKB.tx()).get();
         assertThat(query, variable(x, containsAllMovies));
     }
 
@@ -91,6 +95,15 @@ public class QueryBuilderTest {
     }
 
     @Test
+    public void whenBuildingUndefineQueryWithGraphLast_ItExecutes() {
+        movieKB.tx().graql().define(label("yes").sub("entity")).execute();
+
+        UndefineQuery query = undefine(label("yes").sub("entity")).withTx(movieKB.tx());
+        query.execute();
+        assertNotExists(movieKB.tx(), label("yes").sub("entity"));
+    }
+
+    @Test
     public void whenBuildingMatchInsertQueryWithGraphLast_ItExecutes() {
         assertNotExists(movieKB.tx(), var().has("title", "a-movie"));
         InsertQuery query =
@@ -101,12 +114,12 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void whenExecutingAMatchQueryWithoutAGraph_Throw() {
-        MatchQuery query = match(x.isa("movie"));
+    public void whenExecutingAMatchWithoutAGraph_Throw() {
+        Match match = match(x.isa("movie"));
         exception.expect(GraqlQueryException.class);
         exception.expectMessage("graph");
         //noinspection ResultOfMethodCallIgnored
-        query.iterator();
+        match.iterator();
     }
 
     @Test
@@ -126,10 +139,10 @@ public class QueryBuilderTest {
 
     @Test
     public void whenGraphIsProvidedAndQueryExecutedWithNonexistentType_Throw() {
-        MatchQuery query = match(x.isa("not-a-thing"));
+        Match match = match(x.isa("not-a-thing"));
         exception.expect(GraqlQueryException.class);
         //noinspection ResultOfMethodCallIgnored
-        query.withTx(movieKB.tx()).stream();
+        match.withTx(movieKB.tx()).stream();
     }
 
     @Test

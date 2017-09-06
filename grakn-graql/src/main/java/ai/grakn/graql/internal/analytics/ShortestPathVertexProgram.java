@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -265,7 +264,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<Tuple> {
 
         if (memory.<Boolean>get(VOTE_TO_HALT_SOURCE) || memory.<Boolean>get(VOTE_TO_HALT_DESTINATION)) {
             LOGGER.debug("There is no path between the given instances");
-            throw new IllegalStateException(ErrorMessage.NO_PATH_EXIST.getMessage());
+            throw new NoResultException();
         }
 
         if (memory.getIteration() == MAX_ITERATION) {

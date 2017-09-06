@@ -22,8 +22,10 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
+import ai.grakn.graql.Streamable;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.hamcrest.Description;
@@ -34,12 +36,10 @@ import org.hamcrest.TypeSafeMatcher;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.util.Schema.MetaSchema.THING;
-import static ai.grakn.util.Schema.MetaSchema.CONSTRAINT_RULE;
-import static ai.grakn.util.Schema.MetaSchema.ENTITY;
-import static ai.grakn.util.Schema.MetaSchema.INFERENCE_RULE;
 import static ai.grakn.util.Schema.MetaSchema.ATTRIBUTE;
+import static ai.grakn.util.Schema.MetaSchema.ENTITY;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
+import static ai.grakn.util.Schema.MetaSchema.THING;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItem;
@@ -55,17 +55,15 @@ public class GraknMatchers {
     public static final Matcher<MatchableConcept> concept = type(THING.getLabel());
     public static final Matcher<MatchableConcept> entity = type(ENTITY.getLabel());
     public static final Matcher<MatchableConcept> resource = type(ATTRIBUTE.getLabel());
-    public static final Matcher<MatchableConcept> rule = type(RULE.getLabel());
-    public static final Matcher<MatchableConcept> inferenceRule = type(INFERENCE_RULE.getLabel());
-    public static final Matcher<MatchableConcept> constraintRule = type(CONSTRAINT_RULE.getLabel());
+    public static final Matcher<MatchableConcept> rule = rule(RULE.getLabel());
 
     /**
      * Create a matcher to test against the results of a Graql query.
      */
-    public static Matcher<MatchQuery> results(
+    public static Matcher<Streamable<? extends Answer>> results(
             Matcher<? extends Iterable<? extends Map<? extends Var, ? extends MatchableConcept>>> matcher
     ) {
-        return new PropertyMatcher<MatchQuery, Iterable<? extends Map<? extends Var, ? extends MatchableConcept>>>(matcher) {
+        return new PropertyMatcher<Streamable<? extends Answer>, Iterable<? extends Map<? extends Var, ? extends MatchableConcept>>>(matcher) {
 
             @Override
             public String getName() {
@@ -73,7 +71,7 @@ public class GraknMatchers {
             }
 
             @Override
-            Iterable<? extends Map<Var, ? extends MatchableConcept>> transform(MatchQuery item) {
+            Iterable<? extends Map<Var, ? extends MatchableConcept>> transform(Streamable<? extends Answer> item) {
                 return item.stream().map(m -> Maps.transformValues(m.map(), MatchableConcept::of)).collect(toList());
             }
         };
@@ -82,8 +80,8 @@ public class GraknMatchers {
     /**
      * Create a matcher to test against every variable of every result of a Graql query.
      */
-    public static Matcher<MatchQuery> allVariables(Matcher<? extends Iterable<? extends MatchableConcept>> matcher) {
-        return new PropertyMatcher<MatchQuery, Iterable<? extends MatchableConcept>>(matcher) {
+    public static Matcher<Match> allVariables(Matcher<? extends Iterable<? extends MatchableConcept>> matcher) {
+        return new PropertyMatcher<Match, Iterable<? extends MatchableConcept>>(matcher) {
 
             @Override
             public String getName() {
@@ -91,7 +89,7 @@ public class GraknMatchers {
             }
 
             @Override
-            Iterable<? extends MatchableConcept> transform(MatchQuery item) {
+            Iterable<? extends MatchableConcept> transform(Match item) {
                 return item.stream()
                         .flatMap(result -> result.values().stream())
                         .map(MatchableConcept::of)
@@ -103,10 +101,10 @@ public class GraknMatchers {
     /**
      * Create matcher to test against a particular variable on every result of a Graql query.
      */
-    public static Matcher<MatchQuery> variable(
+    public static Matcher<Streamable<? extends Answer>> variable(
             Var var, Matcher<? extends Iterable<? extends MatchableConcept>> matcher
     ) {
-        return new PropertyMatcher<MatchQuery, Iterable<? extends MatchableConcept>>(matcher) {
+        return new PropertyMatcher<Streamable<? extends Answer>, Iterable<? extends MatchableConcept>>(matcher) {
 
             @Override
             public String getName() {
@@ -114,8 +112,8 @@ public class GraknMatchers {
             }
 
             @Override
-            Iterable<? extends MatchableConcept> transform(MatchQuery item) {
-                return item.get(var).map(MatchableConcept::of).collect(toList());
+            Iterable<? extends MatchableConcept> transform(Streamable<? extends Answer> item) {
+                return item.stream().map(answer -> MatchableConcept.of(answer.get(var))).collect(toList());
             }
         };
     }
@@ -239,6 +237,32 @@ public class GraknMatchers {
             Label transform(MatchableConcept item) {
                 Concept concept = item.get();
                 return concept.isRole() ? concept.asRole().getLabel() : null;
+            }
+        };
+    }
+
+    /**
+     * Create a matcher to test that the concept has the given type name.
+     */
+    public static Matcher<MatchableConcept> rule(String type) {
+        return rule(Label.of(type));
+    }
+
+    /**
+     * Create a matcher to test that the concept has the given type name.
+     */
+    public static Matcher<MatchableConcept> rule(Label expectedLabel) {
+        return new PropertyEqualsMatcher<MatchableConcept, Label>(expectedLabel) {
+
+            @Override
+            public String getName() {
+                return "rule";
+            }
+
+            @Override
+            Label transform(MatchableConcept item) {
+                Concept concept = item.get();
+                return concept.isRule() ? concept.asRule().getLabel() : null;
             }
         };
     }

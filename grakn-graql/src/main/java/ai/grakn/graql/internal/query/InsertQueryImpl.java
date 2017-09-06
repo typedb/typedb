@@ -23,11 +23,11 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.InsertQueryAdmin;
-import ai.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.CommonUtil;
@@ -47,27 +47,27 @@ import static ai.grakn.util.CommonUtil.toImmutableList;
  */
 class InsertQueryImpl implements InsertQueryAdmin {
 
-    private final Optional<MatchQueryAdmin> matchQuery;
+    private final Optional<MatchAdmin> match;
     private final Optional<GraknTx> tx;
     private final ImmutableCollection<VarPatternAdmin> originalVars;
     private final ImmutableCollection<VarPatternAdmin> vars;
 
     /**
-     * At least one of graph and matchQuery must be absent.
+     * At least one of {@code tx} and {@code match} must be absent.
      *
      * @param vars a collection of Vars to insert
-     * @param matchQuery the match query to insert for each result
+     * @param match the {@link Match} to insert for each result
      * @param tx the graph to execute on
      */
-    InsertQueryImpl(ImmutableCollection<VarPatternAdmin> vars, Optional<MatchQueryAdmin> matchQuery, Optional<GraknTx> tx) {
-        // match query and graph should never both be present (should get graph from inner match query)
-        assert(!matchQuery.isPresent() || !tx.isPresent());
+    InsertQueryImpl(ImmutableCollection<VarPatternAdmin> vars, Optional<MatchAdmin> match, Optional<GraknTx> tx) {
+        // match and graph should never both be present (should get graph from inner match)
+        assert(!match.isPresent() || !tx.isPresent());
 
         if (vars.isEmpty()) {
             throw GraqlQueryException.noPatterns();
         }
 
-        this.matchQuery = matchQuery;
+        this.match = match;
         this.tx = tx;
 
         this.originalVars = vars;
@@ -82,7 +82,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public InsertQuery withTx(GraknTx tx) {
-        return matchQuery.map(
+        return match.map(
                 m -> Queries.insert(vars, m.withTx(tx).admin())
         ).orElseGet(
                 () -> new InsertQueryImpl(vars, Optional.empty(), Optional.of(tx))
@@ -108,7 +108,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
     public Stream<Answer> stream() {
         GraknTx theGraph = getTx().orElseThrow(GraqlQueryException::noTx);
 
-        return matchQuery.map(
+        return match.map(
                 query -> query.stream().map(answer -> QueryOperationExecutor.insertAll(vars, theGraph, answer))
         ).orElseGet(
                 () -> Stream.of(QueryOperationExecutor.insertAll(vars, theGraph))
@@ -121,8 +121,8 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Optional<? extends MatchQuery> getMatchQuery() {
-        return matchQuery;
+    public Optional<? extends Match> match() {
+        return match;
     }
 
     @Override
@@ -136,7 +136,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
                 .map(theGraph::<Type>getSchemaConcept)
                 .collect(Collectors.toSet());
 
-        matchQuery.ifPresent(mq -> types.addAll(mq.getSchemaConcepts()));
+        match.ifPresent(mq -> types.addAll(mq.getSchemaConcepts()));
 
         return types;
     }
@@ -148,12 +148,12 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Optional<GraknTx> getTx() {
-        return matchQuery.map(MatchQueryAdmin::tx).orElse(tx);
+        return match.map(MatchAdmin::tx).orElse(tx);
     }
 
     @Override
     public String toString() {
-        String mq = matchQuery.map(match -> match + "\n").orElse("");
+        String mq = match.map(match -> match + "\n").orElse("");
         return mq + "insert " + originalVars.stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
     }
 
@@ -164,14 +164,14 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
         InsertQueryImpl maps = (InsertQueryImpl) o;
 
-        if (!matchQuery.equals(maps.matchQuery)) return false;
+        if (!match.equals(maps.match)) return false;
         if (!tx.equals(maps.tx)) return false;
         return originalVars.equals(maps.originalVars);
     }
 
     @Override
     public int hashCode() {
-        int result = matchQuery.hashCode();
+        int result = match.hashCode();
         result = 31 * result + tx.hashCode();
         result = 31 * result + originalVars.hashCode();
         return result;

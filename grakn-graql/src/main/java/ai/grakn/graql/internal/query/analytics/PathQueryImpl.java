@@ -27,8 +27,8 @@ import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.analytics.ClusterMemberMapReduce;
+import ai.grakn.graql.internal.analytics.NoResultException;
 import ai.grakn.graql.internal.analytics.ShortestPathVertexProgram;
-import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
 import java.util.ArrayList;
@@ -76,15 +76,9 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
                     new ShortestPathVertexProgram(sourceId, destinationId),
                     new ClusterMemberMapReduce(ShortestPathVertexProgram.FOUND_IN_ITERATION),
                     subLabelIds);
-        } catch (RuntimeException e) {
-            if ((e.getCause() instanceof IllegalStateException &&
-                    e.getCause().getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage())) ||
-                    (e instanceof IllegalStateException &&
-                            e.getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage()))) {
-                LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
-                return Optional.empty();
-            }
-            throw e;
+        } catch (NoResultException e) {
+            LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
+            return Optional.empty();
         }
         Map<Integer, Set<String>> map = result.memory().get(ClusterMemberMapReduce.class.getName());
         String middlePoint = result.memory().get(ShortestPathVertexProgram.MIDDLE);

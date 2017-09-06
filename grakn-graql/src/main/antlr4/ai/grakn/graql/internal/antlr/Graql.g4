@@ -1,30 +1,22 @@
 grammar Graql;
 
-queryList : queryListElem* ;
-
-// This rule exists so query lists never parse "match...insert" style queries,
-// because it is ambiguous.
-// TODO: Fix this by changing the syntax
-queryListElem : matchQuery | insertOnly | simpleQuery ;
+queryList : query* EOF ;
 
 queryEOF       : query EOF ;
-query          : matchQuery | insertQuery | simpleQuery ;
-simpleQuery    : defineQuery | deleteQuery | aggregateQuery | computeQuery ;
+query          : getQuery | insertQuery | defineQuery | undefineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
-matchQuery     : MATCH patterns                                   # matchBase
-               | matchQuery 'select' variables                ';' # matchSelect
-               | matchQuery 'limit' INTEGER                   ';' # matchLimit
-               | matchQuery 'offset' INTEGER                  ';' # matchOffset
-               | matchQuery 'distinct'                        ';' # matchDistinct
-               | matchQuery 'order' 'by' VARIABLE ORDER?      ';' # matchOrderBy
+matchPart      : MATCH patterns                             # matchBase
+               | matchPart 'limit' INTEGER              ';' # matchLimit
+               | matchPart 'offset' INTEGER             ';' # matchOffset
+               | matchPart 'order' 'by' VARIABLE ORDER? ';' # matchOrderBy
                ;
 
-insertQuery    : matchInsert | insertOnly ;
-insertOnly     : INSERT varPatterns ;
-matchInsert    : matchQuery INSERT varPatterns ;
+getQuery       : matchPart 'get' (VARIABLE (',' VARIABLE)*)? ';' ;
+insertQuery    : matchPart? INSERT varPatterns ;
 defineQuery    : DEFINE varPatterns ;
-deleteQuery    : matchQuery 'delete' variables? ';' ;
-aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
+undefineQuery  : UNDEFINE varPatterns ;
+deleteQuery    : matchPart 'delete' variables? ';' ;
+aggregateQuery : matchPart 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
 
 variables      : VARIABLE (',' VARIABLE)* ;
@@ -91,15 +83,15 @@ casting        : variable (':' VARIABLE)?
 
 variable       : label | VARIABLE ;
 
-predicate      : '='? value        # predicateEq
-               | '=' VARIABLE      # predicateVariable
-               | '!=' valueOrVar   # predicateNeq
-               | '>' valueOrVar    # predicateGt
-               | '>=' valueOrVar   # predicateGte
-               | '<' valueOrVar    # predicateLt
-               | '<=' valueOrVar   # predicateLte
-               | 'contains' STRING # predicateContains
-               | REGEX             # predicateRegex
+predicate      : '='? value                     # predicateEq
+               | '=' VARIABLE                   # predicateVariable
+               | '!=' valueOrVar                # predicateNeq
+               | '>' valueOrVar                 # predicateGt
+               | '>=' valueOrVar                # predicateGte
+               | '<' valueOrVar                 # predicateLt
+               | '<=' valueOrVar                # predicateLte
+               | 'contains' (STRING | VARIABLE) # predicateContains
+               | REGEX                          # predicateRegex
                ;
 valueOrVar     : VARIABLE # valueVariable
                | value    # valuePrimitive
@@ -137,6 +129,7 @@ SIZE           : 'size' ;
 MATCH          : 'match' ;
 INSERT         : 'insert' ;
 DEFINE         : 'define' ;
+UNDEFINE       : 'undefine' ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' | 'date' ;
 ORDER          : 'asc' | 'desc' ;

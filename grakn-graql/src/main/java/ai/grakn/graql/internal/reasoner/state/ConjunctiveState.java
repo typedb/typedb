@@ -52,8 +52,7 @@ public class ConjunctiveState extends QueryState {
     private final Iterator<Answer> dbIterator;
 
     private boolean visited = false;
-
-    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConjunctiveState.class);
 
     public ConjunctiveState(ReasonerQueryImpl q,
                             Answer sub,
@@ -65,13 +64,13 @@ public class ConjunctiveState extends QueryState {
         this.query = ReasonerQueries.create(q, sub);
 
         if (!query.isRuleResolvable()){
-            dbIterator = query.getMatchQuery().stream()
+            dbIterator = query.getQuery().stream()
                     .map(at -> at.explain(new JoinExplanation(query, at)))
                     .iterator();
             subQueries = new LinkedList<>();
         } else {
             dbIterator = Collections.emptyIterator();
-            subQueries = ResolutionPlan.getResolutionPlanFromTraversal(query);
+            subQueries = new ResolutionPlan(query).queryPlan();
 
             LOG.trace("CQ plan:\n" + subQueries.stream()
                     .map(aq -> aq.toString() + (aq.isRuleResolvable()? "*" : ""))

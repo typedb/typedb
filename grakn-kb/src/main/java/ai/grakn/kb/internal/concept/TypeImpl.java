@@ -158,7 +158,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     private void preCheckForInstanceCreation(){
         vertex().tx().checkMutationAllowed();
 
-        if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
+        if(Schema.MetaSchema.isMetaLabel(getLabel())){
             throw GraknTxOperationException.metaTypeImmutable(getLabel());
         }
     }

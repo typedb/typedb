@@ -94,6 +94,20 @@ public abstract class RelatesProperty extends AbstractVarProperty implements Nam
     }
 
     @Override
+    public PropertyExecutor undefine(Var var) throws GraqlQueryException {
+        PropertyExecutor.Method method = executor -> {
+            RelationshipType relationshipType = executor.get(var).asRelationshipType();
+            Role role = executor.get(this.role().var()).asRole();
+
+            if (!relationshipType.isDeleted() && !role.isDeleted()) {
+                relationshipType.deleteRelates(role);
+            }
+        };
+
+        return PropertyExecutor.builder(method).requires(var, role().var()).build();
+    }
+
+    @Override
     public Atomic mapToAtom(VarPatternAdmin var, Set<VarPatternAdmin> vars, ReasonerQuery parent) {
         Var varName = var.var().asUserDefined();
         VarPatternAdmin roleVar = this.role();

@@ -140,7 +140,7 @@ Having started Grakn engine and the Graql shell in its interactive mode, we are 
 Find all the people in the knowledge base, and list their `identifier` attributes (a string that represents their full name):
 
 ```graql
-match $p isa person, has identifier $i;
+match $p isa person, has identifier $i; get;
 ```
 
 {% include note.html content="In queries, Graql variables start with a `$`, which represent wildcards, and are returned as results in `match` queries. A variable name can contain alphanumeric characters, dashes and underscores." %}
@@ -148,19 +148,19 @@ match $p isa person, has identifier $i;
 Find all the people who are married:
 
 ```graql
-match (spouse1: $x, spouse2: $y) isa marriage; $x has identifier $xi; $y has identifier $yi;  
+match (spouse1: $x, spouse2: $y) isa marriage; $x has identifier $xi; $y has identifier $yi; get;
 ```
 
 List parent-child relationships with the names of each person:
 
 ```graql
-match (parent: $p, child: $c) isa parentship; $p has identifier $pi; $c has identifier $ci; 
+match (parent: $p, child: $c) isa parentship; $p has identifier $pi; $c has identifier $ci; get;
 ```
 
 Find all the people who are named 'Elizabeth':
 
 ```graql
-match $x isa person, has identifier $y; $y val contains "Elizabeth";
+match $x isa person, has identifier $y; $y val contains "Elizabeth"; get;
 ```
 
 Querying the knowledge base is more fully described in the [Graql documentation](../graql/graql-overview.html).
@@ -179,7 +179,7 @@ commit
 To find your inserted `person`:
 
 ```graql
-match $x isa person has identifier "Titus Groan"; 
+match $x isa person has identifier "Titus Groan"; get;
 ```
 
 To delete the `person` again:
@@ -237,9 +237,9 @@ daughter sub child;
 Included in *basic-genealogy.gql* are a set of Graql rules to instruct Grakn's reasoner on how to label each parentship relationship:
 
 ```graql
-insert
+define
 
-$genderizeParentships1 isa inference-rule
+genderizeParentships1 sub rule
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
@@ -248,7 +248,7 @@ $c has gender "male";
 then
 {(father: $p, son: $c) isa parentship;};
 
-$genderizeParentships2 isa inference-rule
+genderizeParentships2 sub rule
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "male";
@@ -257,7 +257,7 @@ $c has gender "female";
 then
 {(father: $p, daughter: $c) isa parentship;};
 
-$genderizeParentships3 isa inference-rule
+genderizeParentships3 sub rule
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";
@@ -266,7 +266,7 @@ $c has gender "male";
 then
 {(mother: $p, son: $c) isa parentship;};
 
-$genderizeParentships4 isa inference-rule
+genderizeParentships4 sub rule
 when
 {(parent: $p, child: $c) isa parentship;
 $p has gender "female";
@@ -280,10 +280,10 @@ If you're unfamiliar with the syntax of rules, don't worry too much about it too
 
 Let's test it out!
 
-First, try making a match query to find `parentship` relationships between fathers and sons in the Graql shell:
+First, try making a get query to find `parentship` relationships between fathers and sons in the Graql shell:
 
 ```graql
-match (father: $p, son: $c) isa parentship; $p has identifier $n1; $c has identifier $n2;
+match (father: $p, son: $c) isa parentship; $p has identifier $n1; $c has identifier $n2; get;
 ```
 
 Did you get any results? Probably not, because reasoning is not enabled by default at present, although as Grakn develops, we expect that to change. If you didn't see any results, you need to `exit` the Graql shell and restart it, passing `-n` and `-m` flags to switch on reasoning (see our documentation for more information about [flags supported by the Graql shell](https://grakn.ai/pages/documentation/graql/graql-shell.html)).
@@ -295,7 +295,7 @@ Did you get any results? Probably not, because reasoning is not enabled by defau
 Try the query again:
 
 ```graql
-match (father: $p, son: $c) isa parentship; $p has identifier $n1; $c has identifier $n2;
+match (father: $p, son: $c) isa parentship; $p has identifier $n1; $c has identifier $n2; get;
 ```
 
 There may be a pause, and then you should see a stream of results as Grakn infers the `parentships` between male `parent` and `child` entities. It is, in effect, building new information about the family which was not explicit in the dataset.
@@ -309,7 +309,7 @@ You may want to take a look at the results of this query in the Grakn visualiser
 Now try submitting the query above or a variation of it for mothers and sons, fathers and daughters etc. Or, you can even go one step further and find out fathers who have the same name as their sons:
 
 ```graql
-match (father: $p, son: $c) isa parentship; $p has firstname $n; $c has firstname $n;
+match (father: $p, son: $c) isa parentship; $p has firstname $n; $c has firstname $n; get;
 ```
 
 ![Father-Son Shared Names query](/images/father-son-shared-names.png)
@@ -342,7 +342,7 @@ It is also possible to find the shortest path between two nodes in the knowledge
 In brief, let's select two people from the genealogy dataset:
 
 ```graql
-match $x has identifier "Barbara Shafner"; $y has identifier "Jacob J. Niesz";
+match $x has identifier "Barbara Shafner"; $y has identifier "Jacob J. Niesz"; get;
 ```
 
 and then search for relationships joining two of them using:

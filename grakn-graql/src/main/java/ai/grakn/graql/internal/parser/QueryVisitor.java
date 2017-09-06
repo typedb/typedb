@@ -27,9 +27,10 @@ import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.DefineQuery;
 import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.NamedAggregate;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Pattern;
@@ -63,7 +64,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -97,13 +97,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Iterator<? extends Query<?>> visitQueryList(GraqlParser.QueryListContext ctx) {
-        return ctx.queryListElem().stream().map(this::visitQueryListElem).iterator();
-    }
-
-    @Override
-    public Query<?> visitQueryListElem(GraqlParser.QueryListElemContext ctx) {
-        return (Query<?>) super.visitQueryListElem(ctx);
+    public Stream<? extends Query<?>> visitQueryList(GraqlParser.QueryListContext ctx) {
+        return ctx.query().stream().map(this::visitQuery);
     }
 
     @Override
@@ -117,59 +112,56 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public MatchQuery visitMatchBase(GraqlParser.MatchBaseContext ctx) {
+    public Match visitMatchBase(GraqlParser.MatchBaseContext ctx) {
         Collection<Pattern> patterns = visitPatterns(ctx.patterns());
         return queryBuilder.match(patterns);
     }
 
     @Override
-    public MatchQuery visitMatchSelect(GraqlParser.MatchSelectContext ctx) {
-        return visitMatchQuery(ctx.matchQuery()).select(visitVariables(ctx.variables()));
+    public Match visitMatchOffset(GraqlParser.MatchOffsetContext ctx) {
+        return visitMatchPart(ctx.matchPart()).offset(getInteger(ctx.INTEGER()));
     }
 
     @Override
-    public MatchQuery visitMatchOffset(GraqlParser.MatchOffsetContext ctx) {
-        return visitMatchQuery(ctx.matchQuery()).offset(getInteger(ctx.INTEGER()));
-    }
-
-    @Override
-    public MatchQuery visitMatchOrderBy(GraqlParser.MatchOrderByContext ctx) {
-        MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery());
+    public Match visitMatchOrderBy(GraqlParser.MatchOrderByContext ctx) {
+        Match match = visitMatchPart(ctx.matchPart());
 
         // decide which ordering method to use
         Var var = getVariable(ctx.VARIABLE());
         if (ctx.ORDER() != null) {
-            return matchQuery.orderBy(var, getOrder(ctx.ORDER()));
+            return match.orderBy(var, getOrder(ctx.ORDER()));
         } else {
-            return matchQuery.orderBy(var);
+            return match.orderBy(var);
         }
     }
 
     @Override
-    public MatchQuery visitMatchLimit(GraqlParser.MatchLimitContext ctx) {
-        return visitMatchQuery(ctx.matchQuery()).limit(getInteger(ctx.INTEGER()));
+    public Match visitMatchLimit(GraqlParser.MatchLimitContext ctx) {
+        return visitMatchPart(ctx.matchPart()).limit(getInteger(ctx.INTEGER()));
     }
 
     @Override
-    public MatchQuery visitMatchDistinct(GraqlParser.MatchDistinctContext ctx) {
-        return visitMatchQuery(ctx.matchQuery()).distinct();
+    public GetQuery visitGetQuery(GraqlParser.GetQueryContext ctx) {
+        Set<Var> vars = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
+
+        Match match = visitMatchPart(ctx.matchPart());
+
+        if (vars.isEmpty()) {
+            return match.get();
+        } else {
+            return match.get(vars);
+        }
     }
 
     @Override
     public InsertQuery visitInsertQuery(GraqlParser.InsertQueryContext ctx) {
-        return (InsertQuery) super.visitInsertQuery(ctx);
-    }
-
-    @Override
-    public InsertQuery visitInsertOnly(GraqlParser.InsertOnlyContext ctx) {
         Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
-        return queryBuilder.insert(vars);
-    }
 
-    @Override
-    public InsertQuery visitMatchInsert(GraqlParser.MatchInsertContext ctx) {
-        Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
-        return visitMatchQuery(ctx.matchQuery()).insert(vars);
+        if (ctx.matchPart() != null) {
+            return visitMatchPart(ctx.matchPart()).insert(vars);
+        } else {
+            return queryBuilder.insert(vars);
+        }
     }
 
     @Override
@@ -179,9 +171,15 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public Object visitUndefineQuery(GraqlParser.UndefineQueryContext ctx) {
+        Collection<VarPattern> vars = visitVarPatterns(ctx.varPatterns());
+        return queryBuilder.undefine(vars);
+    }
+
+    @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
         Collection<Var> vars = ctx.variables() != null ? visitVariables(ctx.variables()) : ImmutableSet.of();
-        return visitMatchQuery(ctx.matchQuery()).delete(vars);
+        return visitMatchPart(ctx.matchPart()).delete(vars);
     }
 
     @Override
@@ -351,7 +349,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public AggregateQuery<?> visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
         Aggregate aggregate = visitAggregate(ctx.aggregate());
-        return visitMatchQuery(ctx.matchQuery()).aggregate(aggregate);
+        return visitMatchPart(ctx.matchPart()).aggregate(aggregate);
     }
 
     @Override
@@ -597,7 +595,9 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public ValuePredicate visitPredicateContains(GraqlParser.PredicateContainsContext ctx) {
-        return applyPredicate((Function<String, ValuePredicate>) Graql::contains, Graql::contains, getString(ctx.STRING()));
+        Object stringOrVar = ctx.STRING() != null ? getString(ctx.STRING()) : getVariable(ctx.VARIABLE());
+
+        return applyPredicate((Function<String, ValuePredicate>) Graql::contains, Graql::contains, stringOrVar);
     }
 
     @Override
@@ -640,8 +640,8 @@ class QueryVisitor extends GraqlBaseVisitor {
         return LocalDateTime.parse(ctx.DATETIME().getText(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 
-    private MatchQuery visitMatchQuery(GraqlParser.MatchQueryContext ctx) {
-        return (MatchQuery) visit(ctx);
+    private Match visitMatchPart(GraqlParser.MatchPartContext ctx) {
+        return (Match) visit(ctx);
     }
 
     private Aggregate<?, ?> visitAggregate(GraqlParser.AggregateContext ctx) {

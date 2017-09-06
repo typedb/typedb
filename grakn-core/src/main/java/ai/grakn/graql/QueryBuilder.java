@@ -37,17 +37,17 @@ public interface QueryBuilder {
 
     /**
      * @param patterns an array of patterns to match in the graph
-     * @return a match query that will find matches of the given patterns
+     * @return a {@link Match} that will find matches of the given patterns
      */
     @CheckReturnValue
-    MatchQuery match(Pattern... patterns);
+    Match match(Pattern... patterns);
 
     /**
      * @param patterns a collection of patterns to match in the graph
-     * @return a match query that will find matches of the given patterns
+     * @return a {@link Match} that will find matches of the given patterns
      */
     @CheckReturnValue
-    MatchQuery match(Collection<? extends Pattern> patterns);
+    Match match(Collection<? extends Pattern> patterns);
 
     /**
      * @param vars an array of variables to insert into the graph
@@ -76,6 +76,20 @@ public interface QueryBuilder {
      */
     @CheckReturnValue
     DefineQuery define(Collection<? extends VarPattern> varPatterns);
+
+    /**
+     * @param varPatterns an array of {@link VarPattern}s defining {@link SchemaConcept}s to undefine
+     * @return an {@link UndefineQuery} that will remove the changes described in the {@code varPatterns}
+     */
+    @CheckReturnValue
+    UndefineQuery undefine(VarPattern... varPatterns);
+
+    /**
+     * @param varPatterns a collection of {@link VarPattern}s defining {@link SchemaConcept}s to undefine
+     * @return an {@link UndefineQuery} that will remove the changes described in the {@code varPatterns}
+     */
+    @CheckReturnValue
+    UndefineQuery undefine(Collection<? extends VarPattern> varPatterns);
 
     /**
      * @return a compute query builder for building analytics query

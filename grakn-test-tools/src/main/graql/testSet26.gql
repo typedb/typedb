@@ -30,11 +30,9 @@ relation3 sub relationship
 res1 sub attribute datatype string;
 res2 sub attribute datatype string;
 
-insert
-
 #Rules
 
-$rule isa inference-rule
+my-rule sub rule
     when{
         $b isa entity2;
         $b has res1 'value';
@@ -47,7 +45,7 @@ $rule isa inference-rule
         (role1: $p, role2: $c) isa relation2;
     };
 
-$dummyRule isa inference-rule
+dummyRule sub rule
     when{
         (role1: $p, role2: $c) isa relation3;
     }
@@ -55,6 +53,7 @@ $dummyRule isa inference-rule
         (role1: $p, role2: $c) isa relation1;
     };
 
+insert
 
 #Data
 

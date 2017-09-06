@@ -31,7 +31,7 @@ authored by - """ + user
           sh 'grakn server start'
         }
         stage('Test Connection') {
-          sh 'graql -e "match \\\$x;"' //Sanity check query. I.e. is everything working?
+          sh 'graql console -e "match \\\$x;"' //Sanity check query. I.e. is everything working?
         }
       }
     }
@@ -73,13 +73,13 @@ authored by - """ + user
 	}
       }
       def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
-      slackSend channel: "#github", message: """
+      slackSend channel: "#github", color: "good", message: """
   Periodic Build Success on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
   authored by - """ + user
     }
   } catch (error) {
     def user = sh(returnStdout: true, script: "git show --format=\"%aN\" | head -n 1").trim()
-    slackSend channel: "#github", message: """
+    slackSend channel: "#github", color: "danger", message: """
 Periodic Build Failed on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)
 authored by - """ + user
     throw error

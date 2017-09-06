@@ -212,7 +212,7 @@ public class EntityTypeTest extends TxTestBase {
 
     @Test
     public void whenSettingMetaTypeToAbstract_Throw(){
-        Type meta = tx.getMetaRuleType();
+        Type meta = tx.getMetaEntityType();
 
         expectedException.expect(GraknTxOperationException.class);
         expectedException.expectMessage(GraknTxOperationException.metaTypeImmutable(meta.getLabel()).getMessage());
@@ -222,7 +222,7 @@ public class EntityTypeTest extends TxTestBase {
 
     @Test
     public void whenAddingRoleToMetaType_Throw(){
-        Type meta = tx.getMetaRuleType();
+        Type meta = tx.getMetaEntityType();
         Role role = tx.putRole("A Role");
 
         expectedException.expect(GraknTxOperationException.class);
