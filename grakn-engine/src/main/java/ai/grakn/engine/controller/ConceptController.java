@@ -59,7 +59,7 @@ import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
 import static ai.grakn.util.REST.Response.Json.ENTITIES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.RELATIONS_JSON_FIELD;
-import static ai.grakn.util.REST.Response.Json.RESOURCES_JSON_FIELD;
+import static ai.grakn.util.REST.Response.Json.ATTRIBUTES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.ROLES_JSON_FIELD;
 import static ai.grakn.util.REST.WebPath.Concept.CONCEPT;
 import static ai.grakn.util.REST.WebPath.Concept.SCHEMA;
@@ -134,7 +134,7 @@ public class ConceptController {
             responseObj.set(ROLES_JSON_FIELD, subLabels(graph.admin().getMetaRole()));
             responseObj.set(ENTITIES_JSON_FIELD, subLabels(graph.admin().getMetaEntityType()));
             responseObj.set(RELATIONS_JSON_FIELD, subLabels(graph.admin().getMetaRelationType()));
-            responseObj.set(RESOURCES_JSON_FIELD, subLabels(graph.admin().getMetaResourceType()));
+            responseObj.set(ATTRIBUTES_JSON_FIELD, subLabels(graph.admin().getMetaResourceType()));
 
             response.type(APPLICATION_JSON);
             response.status(HttpStatus.SC_OK);

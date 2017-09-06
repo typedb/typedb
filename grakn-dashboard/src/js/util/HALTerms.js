@@ -29,8 +29,8 @@ export const RULE_TYPE = 'RULE_TYPE';
 export const RULE = 'RULE';
 
 
-export const RESOURCE = 'RESOURCE';
-export const RESOURCE_TYPE = 'RESOURCE_TYPE';
+export const ATTRIBUTE = 'ATTRIBUTE';
+export const ATTRIBUTE_TYPE = 'ATTRIBUTE_TYPE';
 
 export const ROLE_TYPE = 'ROLE_TYPE';
 export const ROLE = 'ROLE';

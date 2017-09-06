@@ -22,7 +22,7 @@ import * as API from '../util/HALTerms';
 import * as Utils from './APIUtils';
 
 /**
- * Regular expression used to match URIs contained in resources values
+ * Regular expression used to match URIs contained in attributes values
  */
 export const URL_REGEX = '^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:' +
     '(?!(?:10|127)(?:\\.\\d{1,3}){3})' +
@@ -38,7 +38,7 @@ export const URL_REGEX = '^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:' +
 
 const metaTypesSet = {
   ENTITY_TYPE: true,
-  RESOURCE_TYPE: true,
+  ATTRIBUTE_TYPE: true,
   ROLE_TYPE: true,
   RELATION_TYPE: true,
   RULE_TYPE: true,
@@ -46,7 +46,7 @@ const metaTypesSet = {
 
 
    /**
-    * Parse HAL object to extract default properties, resources and links.
+    * Parse HAL object to extract default properties, attributes and links.
     * Add new node object to the nodes array that will be returned to invoker of HALParser.
     * @param {*} nodeObj HAL object that will be turned into graph node
     * @param {*} nodes array containing the resulting set of graph nodes
@@ -56,8 +56,8 @@ const metaTypesSet = {
 function newNode(nodeObj:Object, nodes:Object[]) {
   const links = Utils.nodeLinks(nodeObj);
   const properties = Utils.defaultProperties(nodeObj);
-  const resources = Utils.extractResources(nodeObj);
-  nodes.push({ properties, resources, links });
+  const attributes = Utils.extractAttributes(nodeObj);
+  nodes.push({ properties, attributes, links });
 }
 
 

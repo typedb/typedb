@@ -272,7 +272,7 @@ export default class Visualiser {
     /**
      * Add a node to the graph. This can be called at any time *after* render().
      */
-  addNode(nodeBaseProperties, nodeResources, nodeLinks, clickedNodeId) {
+  addNode(nodeBaseProperties, nodeAttributes, nodeLinks, clickedNodeId) {
     if (!this.nodeExists(nodeBaseProperties.id)) {
       const colorObj = this.style.getNodeColour(nodeBaseProperties.type, nodeBaseProperties.baseType);
       const highlightObj = {
@@ -286,7 +286,7 @@ export default class Visualiser {
       this.nodes.add({
         id: nodeBaseProperties.id,
         href: nodeBaseProperties.href,
-        label: this.generateLabel(nodeBaseProperties.type, nodeResources, nodeBaseProperties.label, nodeBaseProperties.baseType),
+        label: this.generateLabel(nodeBaseProperties.type, nodeAttributes, nodeBaseProperties.label, nodeBaseProperties.baseType),
         baseLabel: nodeBaseProperties.label,
         type: nodeBaseProperties.type,
         baseType: nodeBaseProperties.baseType,
@@ -297,7 +297,7 @@ export default class Visualiser {
         shape: this.style.getNodeShape(nodeBaseProperties.baseType),
         size: this.style.getNodeSize(nodeBaseProperties.baseType),
         explore: nodeBaseProperties.explore,
-        properties: nodeResources,
+        properties: nodeAttributes,
         links: nodeLinks,
       });
       this.nodes.flush();
@@ -313,7 +313,7 @@ export default class Visualiser {
     return this;
   }
 
-  // Given an array of instances(nodes) refresh all their labels with new resources
+  // Given an array of instances(nodes) refresh all their labels with new attributes
   refreshLabels(instances) {
     instances.forEach((instance) => {
       const node = this.getNode(instance.id);
@@ -324,7 +324,7 @@ export default class Visualiser {
     });
   }
 
-  updateNodeResources(id, properties) {
+  updateNodeAttributes(id, properties) {
     this.updateNode({
       id,
       properties,
