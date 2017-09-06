@@ -282,8 +282,8 @@ public class TxCacheTest extends TxTestBase {
         assertTxBoundConceptMatches(rel, t -> t.relates().collect(toSet()), containsInAnyOrder(rol1, rol2));
         assertTxBoundConceptMatches(rol1, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1));
         assertTxBoundConceptMatches(rol2, t -> t.playedByTypes().collect(toSet()), containsInAnyOrder(e1));
-        assertTxBoundConceptMatches(rol1, t -> t.relationTypes().collect(toSet()), containsInAnyOrder(rel));
-        assertTxBoundConceptMatches(rol2, t -> t.relationTypes().collect(toSet()), containsInAnyOrder(rel));
+        assertTxBoundConceptMatches(rol1, t -> t.relationshipTypes().collect(toSet()), containsInAnyOrder(rel));
+        assertTxBoundConceptMatches(rol2, t -> t.relationshipTypes().collect(toSet()), containsInAnyOrder(rel));
 
         //Role Type 1 and 2 played by e2 now
         e2.plays(rol1);
@@ -298,7 +298,7 @@ public class TxCacheTest extends TxTestBase {
 
         //Role 2 no longer part of relation type
         rel.deleteRelates(rol2);
-        assertTxBoundConceptMatches(rol2, t -> t.relationTypes().collect(toSet()), empty());
+        assertTxBoundConceptMatches(rol2, t -> t.relationshipTypes().collect(toSet()), empty());
         assertTxBoundConceptMatches(rel, t -> t.relates().collect(toSet()), containsInAnyOrder(rol1));
     }
 

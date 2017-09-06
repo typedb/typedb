@@ -142,7 +142,7 @@ class ValidateGlobalRules {
      * @return An error message if the relates does not have a single incoming RELATES edge
      */
     static Optional<String> validateHasSingleIncomingRelatesEdge(Role role){
-        if(!role.relationTypes().findAny().isPresent()) {
+        if(!role.relationshipTypes().findAny().isPresent()) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.getLabel()));
         }
         return Optional.empty();
@@ -179,7 +179,7 @@ class ValidateGlobalRules {
         }
 
         for(Casting casting : castings){
-            boolean notFound = casting.getRoleType().relationTypes().
+            boolean notFound = casting.getRoleType().relationshipTypes().
                     noneMatch(innerRelationType -> innerRelationType.getLabel().equals(relationshipType.getLabel()));
 
             if(notFound) {

@@ -79,19 +79,19 @@ public interface Role extends SchemaConcept {
     Stream<Role> subs();
 
     /**
-     * Returns the RelationTypes that this Role takes part in.
+     * Returns the {@link RelationshipType}s that this {@link Role} takes part in.
      * @see RelationshipType
      *
-     * @return The RelationTypes which this role takes part in.
+     * @return The {@link RelationshipType} which this {@link Role} takes part in.
      */
     @CheckReturnValue
-    Stream<RelationshipType> relationTypes();
+    Stream<RelationshipType> relationshipTypes();
 
     /**
-     * Returns a collection of the Types that can play this Role.
+     * Returns a collection of the {@link Type}s that can play this {@link Role}.
      * @see Type
      *
-     * @return A list of all the Types which can play this role.
+     * @return A list of all the {@link Type}s which can play this {@link Role}.
      */
     @CheckReturnValue
     Stream<Type> playedByTypes();

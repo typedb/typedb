@@ -48,9 +48,9 @@ public class RoleTest extends TxTestBase {
 
     @Test
     public void whenGettingTheRelationTypesARoleIsInvolvedIn_ReturnTheRelationTypes() throws Exception {
-        assertThat(role.relationTypes().collect(toSet()), empty());
+        assertThat(role.relationshipTypes().collect(toSet()), empty());
         relationshipType.relates(role);
-        assertThat(role.relationTypes().collect(toSet()), containsInAnyOrder(relationshipType));
+        assertThat(role.relationshipTypes().collect(toSet()), containsInAnyOrder(relationshipType));
     }
 
     @Test
@@ -115,8 +115,8 @@ public class RoleTest extends TxTestBase {
         RelationshipType relationshipType2 = tx.putRelationshipType("relationshipType2").relates(roleB).relates(role);
         tx.commit();
 
-        assertThat(roleA.relationTypes().collect(toSet()), containsInAnyOrder(relationshipType));
-        assertThat(roleB.relationTypes().collect(toSet()), containsInAnyOrder(relationshipType2));
-        assertThat(role.relationTypes().collect(toSet()), containsInAnyOrder(relationshipType, relationshipType2));
+        assertThat(roleA.relationshipTypes().collect(toSet()), containsInAnyOrder(relationshipType));
+        assertThat(roleB.relationshipTypes().collect(toSet()), containsInAnyOrder(relationshipType2));
+        assertThat(role.relationshipTypes().collect(toSet()), containsInAnyOrder(relationshipType, relationshipType2));
     }
 }
