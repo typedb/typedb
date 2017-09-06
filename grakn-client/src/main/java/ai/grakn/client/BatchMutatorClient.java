@@ -237,6 +237,7 @@ public class BatchMutatorClient {
                 f.get();
             } catch (InterruptedException|ExecutionException e) {
                 printError("Error while waiting for termination", e);
+                if(debugOn) throw new RuntimeException(e);
             }
         });
         futures.clear();
