@@ -191,7 +191,7 @@ public class REST {
         public static class Json {
             public static final String ENTITIES_JSON_FIELD = "entities";
             public static final String ROLES_JSON_FIELD = "roles";
-            public static final String RELATIONS_JSON_FIELD = "relations";
+            public static final String RELATIONSHIPS_JSON_FIELD = "relationships";
             public static final String ATTRIBUTES_JSON_FIELD = "attributes";
         }
 

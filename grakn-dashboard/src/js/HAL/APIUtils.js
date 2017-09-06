@@ -35,15 +35,15 @@ function buildLabel(attribute) {
     case API.ENTITY:
       label = `${attribute[API.KEY_TYPE]}: ${attribute[API.KEY_ID]}`;
       break;
-    case API.RELATION_TYPE:
-    case API.RELATION:
+    case API.RELATIONSHIP_TYPE:
+    case API.RELATIONSHIP:
       label = `${attribute[API.KEY_BASE_TYPE].substring(0, 3)}: ${attribute[API.KEY_TYPE]}`;
       break;
     case API.ATTRIBUTE_TYPE:
     case API.ATTRIBUTE:
       label = attribute[API.KEY_VALUE];
       break;
-    case API.GENERATED_RELATION_TYPE:
+    case API.GENERATED_RELATIONSHIP_TYPE:
       label = attribute[API.KEY_TYPE] || '';
       break;
 
@@ -59,7 +59,7 @@ function buildLabel(attribute) {
 }
 
 /**
- * Used to decide the directionality of a relationship between two attributes,
+ * Used to decide the directionality of a relationshipship between two attributes,
  * based on the API.KEY_DIRECTION property.
  */
 export function edgeLeftToRight(a:Object, b:Object) {

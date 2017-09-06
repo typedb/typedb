@@ -96,7 +96,7 @@ function filterNodesToRender(responseObject:Object|Object[], parsedResponse:Obje
 function updateNodeHref(nodeId:string, responseObject:Object) {
      // When a nodeId is provided is because the user double-clicked on a node, so we need to update its href
       // which will contain a new value for offset
-      // Check if the node still in the Dataset, if not (generated relation), don't update href
+      // Check if the node still in the Dataset, if not (generated relationship), don't update href
   if (visualiser.getNode(nodeId) && ('_links' in responseObject)) {
     visualiser.updateNode({
       id: nodeId,
@@ -128,7 +128,7 @@ function flushPromises(promises:Object[]) {
     responses.filter(x => x.success).map(x => x.result).forEach((resp) => {
       const respObj = JSON.parse(resp);
       // Check if some of the attributes attached to this node are already drawn in the graph:
-      // if a attribute is already in the graph (because explicitly asked for (e.g. all relations with weight > 0.5 ))
+      // if a attribute is already in the graph (because explicitly asked for (e.g. all relationships with weight > 0.5 ))
       // we need to draw the edges connecting this node to the attribute node.
       onGraphResponse(resp, false, false);
       visualiser.updateNodeAttributes(respObj[API.KEY_ID], Utils.extractAttributes(respObj));
@@ -185,7 +185,7 @@ function onGraphResponse(resp:string, showIsa:boolean, showAttributes:boolean, n
     // Collect instances from filteredNodes to lazy load their attributes.
   const instances = filteredNodes
                     .map(x => x.properties)
-                    .filter(node => ((node.baseType === API.ENTITY || node.baseType === API.RELATION || node.baseType === API.RULE) && (!visualiser.nodeExists(node.id))));
+                    .filter(node => ((node.baseType === API.ENTITY || node.baseType === API.RELATIONSHIP || node.baseType === API.RULE) && (!visualiser.nodeExists(node.id))));
 
   filteredNodes.forEach(node => visualiser.addNode(node.properties, node.attributes, node.links, nodeId));
   parsedResponse.edges.forEach(edge => visualiser.addEdge(edge.from, edge.to, edge.label));
@@ -200,7 +200,7 @@ function onGraphResponse(resp:string, showIsa:boolean, showAttributes:boolean, n
   visualiser.fitGraphToWindow();
 }
 
-function fetchFilteredRelations(href:string) {
+function fetchFilteredRelationships(href:string) {
   EngineClient.request({
     url: href,
   }).then(resp => onGraphResponse(resp, false, false), (err) => {
@@ -215,4 +215,4 @@ function loadAttributeOwners(attributeId:string) {
 }
 
 
-export default { initialise, onGraphResponse, fetchFilteredRelations, loadAttributeOwners };
+export default { initialise, onGraphResponse, fetchFilteredRelationships, loadAttributeOwners };

@@ -22,7 +22,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <div class="graph-panel-body">
         <div v-on:contextmenu="customContextMenu" v-on:mousemove="updateRectangle" id="graph-div" ref="graph"></div>
         <node-panel :showNodePanel="showNodePanel" :node="selectedNodeObject" v-on:load-attribute-owners="onLoadAttributeOwners" v-on:close-node-panel="showNodePanel=false"></node-panel>
-        <context-menu :showContextMenu="showContextMenu" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop" v-on:type-query="emitInjectQuery" v-on:close-context="showContextMenu=false" v-on:fetch-relations="fetchFilteredRelations"></context-menu>
+        <context-menu :showContextMenu="showContextMenu" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop" v-on:type-query="emitInjectQuery" v-on:close-context="showContextMenu=false" v-on:fetch-relationships="fetchFilteredRelationships"></context-menu>
         <node-tool-tip :showToolTip="showToolTip" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop"></node-tool-tip>
         <footer-bar></footer-bar>
     </div>
@@ -102,8 +102,8 @@ export default {
   },
 
   methods: {
-    fetchFilteredRelations(href) {
-      CanvasHandler.fetchFilteredRelations(href);
+    fetchFilteredRelationships(href) {
+      CanvasHandler.fetchFilteredRelationships(href);
       this.showContextMenu = false;
     },
     onShowNodePanel(nodeObject) {
