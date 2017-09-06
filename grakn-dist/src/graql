@@ -17,36 +17,80 @@
 # You should have received a copy of the GNU General Public License
 # <http://www.gnu.org/licenses/gpl.txt>.
 
+# ================================================
+# global variables
+# ================================================
+
+# Grakn globals
+# TODO: clean up
 if [ -z "${GRAKN_HOME}" ]; then
     [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
-    GRAKN_BIN=$(cd "$(dirname "${path}")" && pwd -P)
-    GRAKN_HOME=$(cd "${GRAKN_BIN}" && pwd -P)
+    GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
+    GRAKN_CONFIG="${GRAKN_HOME}/conf/grakn.properties"
+    GRAKN_PS=/tmp/grakn-engine.pid
+    GRAKN_STARTUP_TIMEOUT_S=120
 fi
+
+# ================================================
+# common helper functions
+# ================================================
+update_classpath() {
+  # Define CLASSPATH, exclude slf4j as we use logback
+  for jar in "${GRAKN_HOME}"/services/lib/*.jar; do
+      if [[ $jar != *slf4j-log4j12* ]] ; then
+          CLASSPATH="$CLASSPATH":"$jar"
+      fi
+  done
+
+  # Add path containing grakn.properties and logback.xml
+  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/conf
+  CLASSPATH="$CLASSPATH":"${GRAKN_HOME}"/services/grakn
+}
+
+graql_console() {
+  echo "Starting Graql console..."
+  java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.graql.GraqlShell ${1+"${@:2}"}
+}
+
+graql_help() {
+  echo "
+Usage:
+graql COMMAND
+
+COMMAND:
+console  Starts a REPL console for running Graql queries. Defaults to connecting to http://localhost
+migrate  Runs migration from a file
+help     Prints this message"
+}
+
+# =============================================
+# main routine
+# =============================================
+
+update_classpath
 
 case "$1" in
   console)
-    "${GRAKN_HOME}/services/graql.sh" ${1+"${@:2}"}
-    ;;
+    graql_console
+  ;;
   migrate)
-    "${GRAKN_HOME}/services/migration.sh" "${@:2}"
-    ;;
-
+    if [ "$2" == "csv" ] ; then
+      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.csv.CSVMigrator ${1+"${@:2}"}
+    elif [ "$2" == "json" ] ; then
+      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.json.JsonMigrator ${1+"${@:2}"}
+    elif [ "$2" == "owl" ] ; then
+      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.owl.Main ${1+"${@:2}"}
+    elif [ "$2" == "export" ] ; then
+      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.export.Main ${1+"${@:2}"}
+    elif [ "$2" == "sql" ] ; then
+      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.sql.SQLMigrator ${1+"${@:2}"}
+    elif [ "$2" == "xml" ] ; then
+      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.xml.XmlMigrator ${1+"${@:2}"}
+    else
+      java -cp ${CLASSPATH} -Dgrakn.dir="${GRAKN_HOME}/services" ai.grakn.migration.xml.XmlMigrator -h
+    fi
+  ;;
   *|help)
-    case "$2" in
-      migrate)
-        "${GRAKN_HOME}/services/migration.sh" help
-        ;;
-
-      *)
-        echo "
-Usage:
-  graql COMMAND
-
-COMMAND:
-  console  Starts a REPL console for running Graql queries. Defaults to connecting to http://localhost:4567
-  migrate  Runs migration from a file
-  help     Prints this message"
-        ;;
-    esac
-    ;;
+    graql_help
+  ;;
 esac
