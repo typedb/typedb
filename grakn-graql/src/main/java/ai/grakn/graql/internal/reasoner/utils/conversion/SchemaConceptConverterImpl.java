@@ -40,7 +40,7 @@ public class SchemaConceptConverterImpl implements SchemaConceptConverter<Schema
         schemaConcept.subs().filter(Concept::isType)
                 .flatMap(t -> t.asType().plays())
                 .forEach(roleType -> {
-                    roleType.relationTypes()
+                    roleType.relationshipTypes()
                             .filter(rel -> !rel.isImplicit())
                             .forEach(rel -> relationMap.put(rel, roleType));
                 });

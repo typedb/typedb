@@ -7,7 +7,6 @@ summary: "Resources to help you learn more about databases."
 sidebar: documentation_sidebar
 permalink: /documentation/resources/resources-overview.html
 folder: documentation
-comment_issue_id: 25
 ---
 
 This page lists useful resources for learning about Grakn and Graph Databases.
@@ -49,6 +48,3 @@ Date: June 2015.
 
 
 {% include links.html %}
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/25" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

@@ -7,7 +7,6 @@ summary: "This document will teach you how to migrate CSV data into Grakn."
 sidebar: documentation_sidebar
 permalink: /documentation/migration/CSV-migration.html
 folder: documentation
-comment_issue_id: 32
 ---
 
 ## Introduction
@@ -139,7 +138,3 @@ We have an additional, more extensive, example that [migrates genealogy data fro
 You can find further documentation about migration in our API reference documentation (which is in the */docs* directory of the distribution zip file, and also online [here](https://grakn.ai/javadocs.html). 
 
 {% include links.html %}
-
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/32" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

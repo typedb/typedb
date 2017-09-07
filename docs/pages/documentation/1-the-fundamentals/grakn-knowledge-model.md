@@ -7,7 +7,6 @@ summary: "Introducing the fundamentals of the Grakn knowledge model."
 sidebar: documentation_sidebar
 permalink: /documentation/the-fundamentals/grakn-knowledge-model.html
 folder: documentation
-comment_issue_id: 17
 ---
 
 In Grakn, a knowledge base is made of two layers: the schema layer and the data layer. 
@@ -389,6 +388,3 @@ Our [Quickstart Tutorial](../get-started/quickstart-tutorial.html) will show you
 You can find additional example code and documentation on this portal. We are always adding more and welcome ideas and improvement suggestions. Please get in touch!
 
 {% include links.html %}
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/17" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

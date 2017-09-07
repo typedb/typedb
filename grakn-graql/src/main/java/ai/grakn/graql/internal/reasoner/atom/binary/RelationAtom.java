@@ -595,24 +595,8 @@ public class RelationAtom extends IsaAtom {
             Var varName = rp.getRolePlayer().var();
             VarPatternAdmin rolePattern = rp.getRole().orElse(null);
             if (rolePattern != null) {
-
-                //try directly
-                Label typeLabel = rolePattern.getTypeLabel().orElse(null);
-                Role role = typeLabel != null ? graph.getRole(typeLabel.getValue()) : null;
-
-                //try indirectly
-                //TODO not needed if included on construction
-                /*
-                if (role == null && rolePattern.var().isUserDefinedName()) {
-                    IdPredicate rolePredicate = getIdPredicate(rolePattern.var());
-                    if (rolePredicate != null) role = graph.getConcept(rolePredicate.getPredicate());
-                }
-                */
-
-                //if (role != null){
-                    rolePlayerMappings.add(new Pair<>(varName, rolePattern));
-                    allocatedRelationPlayers.add(rp);
-                //}
+                rolePlayerMappings.add(new Pair<>(varName, rolePattern));
+                allocatedRelationPlayers.add(rp);
             }
         });
 

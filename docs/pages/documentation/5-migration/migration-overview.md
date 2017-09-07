@@ -7,7 +7,6 @@ summary: "Landing page for documentation about loading data in different formats
 sidebar: documentation_sidebar
 permalink: /documentation/migration/migration-overview.html
 folder: documentation
-comment_issue_id: 32
 ---
 
 ## Introduction
@@ -52,7 +51,3 @@ Exporting data or the schema from Grakn, into Graql, will always redirect to sta
 You can find further documentation about migration in our API reference documentation (which is in the */docs* directory of the distribution zip file, and also online [here](https://grakn.ai/javadocs.html).
 
 {% include links.html %}
-
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/32" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

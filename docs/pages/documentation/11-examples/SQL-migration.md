@@ -7,7 +7,6 @@ summary: "A short example to illustrate migration of SQL to Grakn"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/SQL-migration.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 If you have not yet set up the Grakn environment, please see the [setup guide](../get-started/setup-guide.html). For a comprehensive guide to migration, please see both our [Migration Tutorial](../migration/migration-overview.html) and our additional documentation specific to [SQL Migration](../migration/SQL-migration.html).
@@ -88,7 +87,3 @@ After running this SQL migration, check out the [Graql documentation](../graql/g
 
 
 {% include links.html %}
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/27" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
-
