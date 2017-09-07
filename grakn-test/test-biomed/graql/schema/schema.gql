@@ -1,4 +1,4 @@
-insert
+define
 
 "article" sub entity
 	plays publication
@@ -46,7 +46,7 @@ insert
 	plays therapy
 	plays chemical;
 
-"action" sub relation
+"action" sub relationship
 	has action-type
 	relates chemical
 	relates influenced;
@@ -54,7 +54,7 @@ insert
 "chemical" sub role;
 
 
-"interaction" sub relation
+"interaction" sub relationship
 	relates disease
 	relates affected
 	plays fact
@@ -62,25 +62,25 @@ insert
 "disease" sub role;
 "affected" sub role;
 
-"coordinate" sub relation
+"coordinate" sub relationship
 	relates sequence-in-genome
 	relates position;
 "sequence-in-genome" sub role;
 "position" sub role;
 
-"reference" sub relation
+"reference" sub relationship
 	relates fact
 	relates publication;
 "fact" sub role;
 "publication" sub role;
 
-"mirna-precursor" sub relation
+"mirna-precursor" sub relationship
 	relates precursor
 	relates matured;
 "precursor" sub role;
 "matured" sub role;
 
-"gene-target" sub relation
+"gene-target" sub relationship
 	relates targeted-gene
 	relates targeting-mirna
 	plays fact
@@ -88,61 +88,61 @@ insert
 "targeted-gene" sub role;
 "targeting-mirna" sub role;
 
-"treatment" sub relation
+"treatment" sub relationship
 	relates target
 	relates therapy;
 
 "target" sub role;
 "therapy" sub role;
 
-"starting-position" sub resource
+"starting-position" sub attribute
 	datatype string;
-"end-position" sub resource
+"end-position" sub attribute
 	datatype string;
-"sequence" sub resource
-	datatype string;
-
-"species" sub resource
+"sequence" sub attribute
 	datatype string;
 
-"chromosome" sub resource
+"species" sub attribute
 	datatype string;
 
-"strand" sub resource
+"chromosome" sub attribute
 	datatype string;
 
-"accession-number" sub resource
+"strand" sub attribute
 	datatype string;
 
-"pmid" sub resource
+"accession-number" sub attribute
 	datatype string;
 
-"title" sub resource
+"pmid" sub attribute
 	datatype string;
 
-"abstract" sub resource
+"title" sub attribute
 	datatype string;
 
-"abstract" sub resource
+"abstract" sub attribute
 	datatype string;
 
-"mirID" sub resource
+"abstract" sub attribute
 	datatype string;
 
-"name" sub resource
+"mirID" sub attribute
 	datatype string;
 
-"gene-symbol" sub resource
+"name" sub attribute
 	datatype string;
 
-"entrez-gene-id" sub resource
+"gene-symbol" sub attribute
 	datatype string;
 
-"action-type" sub resource
+"entrez-gene-id" sub attribute
+	datatype string;
+
+"action-type" sub attribute
   datatype string;
 
-"drug-name" sub resource
+"drug-name" sub attribute
 	datatype string;
 
-"degree" sub resource
+"degree" sub attribute
   datatype long;
