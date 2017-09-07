@@ -174,9 +174,9 @@ public abstract class Atom extends AtomicBase {
     public boolean requiresMaterialisation(){ return false; }
 
     /**
-     * @return true if the atom requires answer refinement (computation of role combinations)
+     * @return true if the atom requires role expansion
      */
-    public boolean requiresAnswerRefinement(){ return false; }
+    public boolean requiresRoleExpansion(){ return false; }
 
     /**
      * @return corresponding type if any

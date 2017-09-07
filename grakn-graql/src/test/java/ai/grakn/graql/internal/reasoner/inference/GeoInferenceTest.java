@@ -281,6 +281,23 @@ public class GeoInferenceTest {
     }
 
     @Test
+    public void testTransitiveQuery_variableRoles_withSubstitution_withRelationVar() {
+        GraknTx graph = geoKB.tx();
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
+        Concept masovia = getConcept(graph, "name", "Masovia");
+        String queryString = "match " +
+                "$x ($r1: $x1, $r2: $x2) isa is-located-in;" +
+                "$x2 id '" + masovia.getId().getValue() + "';";
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        assertEquals(answers.size(), 20);
+        answers.forEach(ans -> assertEquals(ans.size(), 5));
+        answers2.forEach(ans -> assertEquals(ans.size(), 5));
+        assertEquals(answers, answers2);
+    }
+
+    @Test
     public void testTransitiveQuery_Closure_variableSpecificRoles() {
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
 
@@ -332,7 +349,7 @@ public class GeoInferenceTest {
     }
 
     @Test
-    public void testTransitiveClosureQueryWithRelationVar() {
+    public void testTransitiveQuery_Closure_withRelationVar() {
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in;";
 
@@ -343,7 +360,7 @@ public class GeoInferenceTest {
     }
 
     @Test
-    public void testRelationVarQuery_WithAndWithoutRelationPlayers() {
+    public void testRelationVarQuery_Closure_withAndWithoutRelationPlayers() {
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match $x isa is-located-in;";
         String queryString2 = "match $x ($x1, $x2) isa is-located-in;select $x;";

@@ -238,7 +238,7 @@ public class RelationAtom extends IsaAtom {
     }
 
     @Override
-    public boolean requiresAnswerRefinement(){ return !getRoleVariables().isEmpty(); }
+    public boolean requiresRoleExpansion(){ return !getRoleVariables().isEmpty(); }
 
     @Override
     public boolean isAllowedToFormRuleHead(){
