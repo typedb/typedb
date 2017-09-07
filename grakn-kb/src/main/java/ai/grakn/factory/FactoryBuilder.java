@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.shaded.minlog.Log;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.Properties;
@@ -73,7 +74,7 @@ public class FactoryBuilder {
      * @return A graph factory which produces the relevant expected graph.
     */
     static TxFactory<?> getFactory(String factoryType, String keyspace, String engineUrl, Properties properties){
-        String key = factoryType + keyspace.toLowerCase();
+        String key = factoryType + keyspace.toLowerCase(Locale.getDefault());
         Log.debug("Get factory for " + key);
         TxFactory<?> factory = openFactories.get(key);
         if (factory != null) {

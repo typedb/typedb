@@ -25,6 +25,7 @@ import ai.grakn.kb.internal.GraknTxAbstract;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -62,7 +63,7 @@ abstract class TxFactoryAbstract<M extends GraknTxAbstract<G>, G extends Graph> 
     TxFactoryAbstract(String keyspace, String engineUrl, Properties properties){
         Objects.requireNonNull(keyspace);
 
-        this.keyspace = keyspace.toLowerCase();
+        this.keyspace = keyspace.toLowerCase(Locale.getDefault());
         this.engineUrl = engineUrl;
         this.properties = properties;
     }

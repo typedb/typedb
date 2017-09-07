@@ -36,12 +36,4 @@
         <Bug pattern="CN_IDIOM_NO_SUPER_CALL"/>
     </Match>
 
-    <Match>
-        <Bug pattern="DM_CONVERT_CASE"/>
-    </Match>
-
-    <Match>
-        <Bug pattern="UR_UNINIT_READ_CALLED_FROM_SUPER_CONSTRUCTOR"/>
-    </Match>
-
 </FindBugsFilter>
