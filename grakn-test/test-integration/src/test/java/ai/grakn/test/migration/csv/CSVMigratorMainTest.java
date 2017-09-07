@@ -22,22 +22,22 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
-import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
-import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
-import static ai.grakn.test.migration.MigratorTestUtils.getFile;
-import static ai.grakn.test.migration.MigratorTestUtils.load;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.SampleKBLoader;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemErrRule;
 import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.junit.rules.ExpectedException;
+
+import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.getFile;
+import static ai.grakn.test.migration.MigratorTestUtils.load;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 public class CSVMigratorMainTest {
     private GraknSession factory;
@@ -68,7 +68,6 @@ public class CSVMigratorMainTest {
     }
 
     @Test
-    @Ignore("The exception is being thrown with the correct message but the test doesn't see it")
     public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsSet_Throw(){
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(containsString(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage("bob")));

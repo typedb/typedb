@@ -7,7 +7,6 @@ summary: "Demonstrates how to create a rule-driven schema for Grakn."
 sidebar: documentation_sidebar
 permalink: /documentation/building-a-schema/rule-driven-schema.html
 folder: documentation
-comment_issue_id: 22
 ---
 
 {% include warning.html content="Please note that this page is in progress and subject to revision." %}
@@ -27,6 +26,3 @@ supported constructs-->
 Further information about the syntax of Graql rules can be found in the documentation on [Graql](../graql/graql-rules.html).
  
 {% include links.html %}
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/22" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

@@ -7,7 +7,6 @@ summary: "A short example to illustrate Graql queries"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/pokemon.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 This example uses the pokemon schema and dataset, which is available from [github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/pokemon.gql) and is also in the *examples* folder in the Grakn distribution zip. You can use it as a primer to work out if you're building a Graql query correctly, to revise your knowledge or just walk through it as you learn Graql.
@@ -81,9 +80,3 @@ match $x isa pokemon, has weight $w, has height $h; aggregate (min $w as minWeig
 
 
 ```
-
-
-
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/27" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

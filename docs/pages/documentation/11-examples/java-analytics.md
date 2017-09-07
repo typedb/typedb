@@ -7,7 +7,6 @@ summary: "How to use Graql analytics methods in Java"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/java-analytics.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 In this example, we are going to introduce the analytics package using the basic genealogy example. We will use Java APIs to determine clusters and degrees in the data - specifically we will determine clusters of people who are related by marriage and how large those clusters are using two graph algorithms:
@@ -65,7 +64,7 @@ The rest of the project is contained in the Java example code, which can be foun
 </dependency>
 ```
 
-The Janus factory is required because engine is configured with Janus as the backend. The `slf4j-nop` dependency is a work around because we are using a later version of Spark. The spring framework dependency is a current bug workaround in GRAKN.AI version 0.12.0.
+The `slf4j-nop` dependency is a work around because we are using a later version of Spark. The spring framework dependency is a current bug workaround in GRAKN.AI version 0.12.0.
 
 First, we load the schema and data we will be working with, which is the familiar *basic-genealogy.gql* dataset.
 

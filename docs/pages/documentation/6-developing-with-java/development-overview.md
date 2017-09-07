@@ -35,8 +35,7 @@ This dependency will give you access to the Core API as well as an in-memory kno
 If you require persistence and would like to access the entirety of the Grakn stack, then it is vital to have an instance of engine running.  
 Please see the [Setup Guide](../get-started/setup-guide.html) on more details on how to set up a Grakn server.
 
-Depending on the configuration of the Grakn server, your Java application will require one of the following dependencies. When your server is running against a Janus backend: 
-
+Depending on the configuration of the Grakn server, your Java application will require the following dependency: 
 ```xml   
 <dependency>
     <groupId>ai.grakn</groupId>
@@ -44,9 +43,6 @@ Depending on the configuration of the Grakn server, your Java application will r
     <version>${grakn.version}</version>
 </dependency>
 ```    
-
-{% include note.html content="The distribution package comes with a Janus backend configured out of the box." %}
-
 
 The JAR files you will need to develop with Grakn can be found inside the `lib` directory of the distribution zip file. All the JARs are provided with no dependencies, so using these requires you to use Maven to acquire dependencies.
 
@@ -136,10 +132,6 @@ The pages in this section of the documentation cover some of the public APIs ava
 There is also a page (in progress) that discusses advanced topics in Java development, such as transactions and multi-threading.
 
 There is an example described in our [blog](https://blog.grakn.ai/working-with-grakn-ai-using-java-5f13f24f1269#.8df3991rw) that discusses how to get set up to develop using Java, and how to work with the Java API.
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/23" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
-
 
 {% include links.html %}
 
