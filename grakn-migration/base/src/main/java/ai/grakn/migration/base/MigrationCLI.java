@@ -61,7 +61,7 @@ import static java.util.stream.Collectors.joining;
  */
 public class MigrationCLI {
 
-    private static final String COULD_NOT_CONNECT  = "Could not connect to Grakn Engine. Have you run 'grakn.sh start'?";
+    private static final String COULD_NOT_CONNECT  = "Could not connect to Grakn Engine. Have you run 'grakn server start'?";
 
     public static <T extends MigrationOptions> List<Optional<T>> init(String[] args, Function<String[], T> constructor) {
         // get the options from the command line
