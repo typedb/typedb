@@ -88,7 +88,7 @@ class HALExploreType extends HALExploreConcept{
             halResource.withRepresentation(PLAYS_EDGE, roleRepresentation);
         });
 
-        role.relationTypes().forEach(relType -> {
+        role.relationshipTypes().forEach(relType -> {
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + relType.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, relType);
