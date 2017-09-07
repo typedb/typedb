@@ -19,15 +19,13 @@
 package ai.grakn.test.engine;
 
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.data.RedisWrapper;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.SimpleURI;
-import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
+import ai.grakn.util.EmbeddedRedis;
 import ai.grakn.util.GraknVersion;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,8 +36,9 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.util.Pool;
 
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
+import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
-import ai.grakn.util.EmbeddedRedis;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -60,9 +59,6 @@ public class GraknEngineServerTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public final EngineContext engineContext = EngineContext.startNoQueue();
-
-    @Rule
     public final SystemOutRule stdout = new SystemOutRule();
 
     private final GraknEngineConfig conf = GraknEngineConfig.create();
@@ -73,6 +69,7 @@ public class GraknEngineServerTest {
 
     @Before
     public void setUp() {
+        GraknTestSetup.startCassandraIfNeeded();
         Pool<Jedis> jedisPool = mock(JedisPool.class);
         when(redisWrapper.getJedisPool()).thenReturn(jedisPool);
         when(jedisPool.getResource()).thenReturn(jedis);
