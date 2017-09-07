@@ -4,10 +4,12 @@
 set -e
 
 SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
-GRAQL=${SCRIPTPATH}/./graql
+GRAQL=${SCRIPTPATH}/graql
+GRAQL_SCHMEA=${GRAQL}/schema
+GRAQL_TEMPLATES=${GRAQL}/templates
 
 echo "Loading Biomed Schema . . ."
-graql.sh -k biomed -f ${GRAQL}/schema/ontology.gql
+graql.sh -k biomed -f ${GRAQL}/schema/schema.gql
 graql.sh -k biomed -f ${GRAQL}/schema/rules.gql
 graql.sh -k biomed -f ${GRAQL}/schema/new-rules.gql
 
