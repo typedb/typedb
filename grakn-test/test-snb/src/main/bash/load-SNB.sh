@@ -2,7 +2,13 @@
 
 source snb-env.sh
 
+# set script directory as working directory
+SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
+
 GRAQL=${SCRIPTPATH}/../graql
+
+ACTIVE_TASKS=1000
+VALIDATION_DATA=${WORKSPACE}/readwrite_neo4j--validation_set.tar.gz
 
 # validate the number of arguments
 if [ "$#" -lt "2" ]; then
