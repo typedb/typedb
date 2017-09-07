@@ -45,7 +45,6 @@ def withGrakn(Closure closure) {
                 //Stages allow you to organise and group things within Jenkins
                 stage('Start Grakn') {
                     checkout scm
-                    slackGithub "Build started"
 
                     sh "build-grakn.sh ${env.BRACH_NAME}"
 
@@ -76,6 +75,7 @@ node {
     }
     //Only run validation master/stable
     if (env.BRANCH_NAME in ['master', 'stable'] || true) {
+        slackGithub "Build started"
         for (String moduleName : integrationTests) {
             runIntegrationTest(moduleName)
         }
