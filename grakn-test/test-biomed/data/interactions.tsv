@@ -1,0 +1,248 @@
+SearchTerm|Gene|Drug|InteractionType|Source|GeneSymbol|FullGeneName|SourceVersion
+CCND1|CCND1 - cyclin D1|TAMOXIFEN|na|CIViC|CCND1|cyclin D1|09-February-2016
+CCND1|CCND1 - cyclin D1|LY2835219|na|ClearityFoundationBiomarkers|CCND1|cyclin D1|26-July-2013
+CCND1|CCND1 - cyclin D1|LEE011|na|ClearityFoundationBiomarkers|CCND1|cyclin D1|26-July-2013
+ESR1|ESR1 - estrogen receptor 1|TAMOXIFEN|na|CIViC|ESR1|estrogen receptor 1|09-February-2016
+ESR1|ESR1 - estrogen receptor 1|FULVESTRANT|na|CIViC|ESR1|estrogen receptor 1|09-February-2016
+ESR1|ESR1 - estrogen receptor 1|ANASTROZOLE|na|ClearityFoundationBiomarkers|ESR1|estrogen receptor 1|26-July-2013
+ESR1|ESR1 - estrogen receptor 1|TAMOXIFEN|na|ClearityFoundationBiomarkers|ESR1|estrogen receptor 1|26-July-2013
+ESR1|ESR1 - estrogen receptor 1|LETROZOLE|na|ClearityFoundationBiomarkers|ESR1|estrogen receptor 1|26-July-2013
+ESR1|ESR1 - estrogen receptor 1|FULVESTRANT|antagonist|TALC|ESR1|estrogen receptor 1|17-September-2013
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|PROGESTERONE|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|ESTRIOL|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|CONJUGATED ESTROGENS|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|RALOXIFENE|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|DIETHYLSTILBESTROL|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|TOREMIFENE|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|ETHYNODIOL DIACETATE|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|DANAZOL|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|TAMOXIFEN|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|FULVESTRANT|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|LEVONORGESTREL|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|ETONOGESTREL|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|ETHINYL ESTRADIOL|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|MEGESTROL|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|CLOMIFENE|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|CHLOROTRIANISENE|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|ESTRONE|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|MESTRANOL|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|NORGESTIMATE|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|NORGESTREL|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|QUINESTROL|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|DESOGESTREL|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|DIENESTROL|na|TEND|ESR1|estrogen receptor 1|01-August-2011
+ESR1|ESR1 - estrogen receptor 1|MESTRANOL|agonist|ChEMBL|ESR1|estrogen receptor 1|chembl_20
+ESR1|ESR1 - estrogen receptor 1|ESTROPIPATE|agonist|ChEMBL|ESR1|estrogen receptor 1|chembl_20
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL CYPIONATE|agonist|ChEMBL|ESR1|estrogen receptor 1|chembl_20
+ESR1|ESR1 - estrogen receptor 1|DIENESTROL|agonist|ChEMBL|ESR1|estrogen receptor 1|chembl_20
+ESR1|ESR1 - estrogen receptor 1|ETHINYL ESTRADIOL|agonist|ChEMBL|ESR1|estrogen receptor 1|chembl_20
+ESR1|ESR1 - estrogen receptor 1|CLOMIPHENE CITRATE|modulator|ChEMBL|ESR1|estrogen receptor 1|chembl_20
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL VALERATE|agonist|ChEMBL|ESR1|estrogen receptor 1|chembl_20
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|agonist|ChEMBL|ESR1|estrogen receptor 1|chembl_20
+ESR1|ESR1 - estrogen receptor 1|ESTRONE|agonist|ChEMBL|ESR1|estrogen receptor 1|chembl_20
+ESR1|ESR1 - estrogen receptor 1|TAMOXIFEN CITRATE|modulator|ChEMBL|ESR1|estrogen receptor 1|chembl_20
+ESR1|ESR1 - estrogen receptor 1|DIETHYLSTILBESTROL|agonist|ChEMBL|ESR1|estrogen receptor 1|chembl_20
+ESR1|ESR1 - estrogen receptor 1|METHYL-PIPERIDINO-PYRAZOLE|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|HEXESTROL|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|FULVESTRANT|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|TAMOXIFEN|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|CLOMIPHENE|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|BAZEDOXIFENE|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|LASOFOXIFENE|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|TAMOXIFEN|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|RALOXIFENE|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|ETHINYL ESTRADIOL|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|ESTRONE|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|ESTRIOL|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|DIETHYLSTILBESTROL|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|RALOXIFENE|na|GuideToPharmacologyInteractions|ESR1|estrogen receptor 1|04-March-2015
+ESR1|ESR1 - estrogen receptor 1|ENDOXIFEN|na|ClearityFoundationClinicalTrial|ESR1|estrogen receptor 1|15-June-2013
+ESR1|ESR1 - estrogen receptor 1|TAMOXIFEN|na|ClearityFoundationClinicalTrial|ESR1|estrogen receptor 1|15-June-2013
+ESR1|ESR1 - estrogen receptor 1|PROGESTERONE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|DIENOGEST|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|LEVONORGESTREL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ETHINYL ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|LEVONORGESTREL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ETONOGESTREL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|TOREMIFENE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ETONOGESTREL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|RALOXIFEN|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|FISPEMIFENE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|FULVESTRANT|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|LASOFOXIFENE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ETHINYL ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|LEVONORGESTREL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|IODINE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ETHINYL ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ETHINYL ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|NORELGESTROMIN|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ETHINYL ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|PROGESTERONE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|BAZEDOXIFENE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|OSPEMIFENE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|LEVONORGESTREL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ETHINYL ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|CHLOROTRIANISENE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|CONJUGATED ESTROGENS|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|DANAZOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|DESOGESTREL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|DIENESTROL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|DIETHYLSTILBESTROL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ESTRONE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ETHYNODIOL DIACETATE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|MEGESTROL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|MESTRANOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|NORGESTIMATE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|NORGESTREL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|QUINESTROL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|RALOXIFENE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|TAMOXIFEN|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|TOREMIFENE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ETHINYL ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|LEVONORGESTREL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|CLOMIFENE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ARZOXIFENE|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|ETHINYL ESTRADIOL|na|TdgClinicalTrial|ESR1|estrogen receptor 1|January-2014
+ESR1|ESR1 - estrogen receptor 1|FULVESTRANT|na|PharmGKB|ESR1|estrogen receptor 1|12-July-2012
+ESR1|ESR1 - estrogen receptor 1|LEFLUNOMIDE|na|PharmGKB|ESR1|estrogen receptor 1|12-July-2012
+ESR1|ESR1 - estrogen receptor 1|EXEMESTANE|na|PharmGKB|ESR1|estrogen receptor 1|12-July-2012
+ESR1|ESR1 - estrogen receptor 1|LASOFOXIFENE|modulator|TTD|ESR1|estrogen receptor 1|4.3.02 (25-August-2011)
+ESR1|ESR1 - estrogen receptor 1|QUINESTROL|modulator|TTD|ESR1|estrogen receptor 1|4.3.02 (25-August-2011)
+ESR1|ESR1 - estrogen receptor 1|RALOXIFENE|modulator|TTD|ESR1|estrogen receptor 1|4.3.02 (25-August-2011)
+ESR1|ESR1 - estrogen receptor 1|MITOTANE|binder|TTD|ESR1|estrogen receptor 1|4.3.02 (25-August-2011)
+ESR1|ESR1 - estrogen receptor 1|CHLOROTRIANISENE|binder|TTD|ESR1|estrogen receptor 1|4.3.02 (25-August-2011)
+ESR1|ESR1 - estrogen receptor 1|OSPEMIFENE|modulator|TTD|ESR1|estrogen receptor 1|4.3.02 (25-August-2011)
+ESR1|ESR1 - estrogen receptor 1|FULVESTRANT|antagonist|TTD|ESR1|estrogen receptor 1|4.3.02 (25-August-2011)
+ESR1|ESR1 - estrogen receptor 1|TAMOXIFEN|antagonist|TTD|ESR1|estrogen receptor 1|4.3.02 (25-August-2011)
+ESR1|ESR1 - estrogen receptor 1|ETHINYL ESTRADIOL|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|(3AS,4R,9BR)-4-(4-HYDROXYPHENYL)-1,2,3,3A,4,9B-...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|4-(1S,2R,5S)-4,4,8-TRIMETHYL-3-OXABICYCLO3.3....|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|DIETHYL (1R,2S,3R,4S)-5,6-BIS(4-HYDROXYPHENYL)-...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|4-(6-HYDROXY-1H-INDAZOL-3-YL)BENZENE-1,3-DIOL|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|(3AS,4R,9BR)-4-(4-HYDROXYPHENYL)-6-(METHOXYMETH...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|DIMETHYL (1R,4S)-5,6-BIS(4-HYDROXYPHENYL)-7-OXA...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|3-ETHYL-2-(4-HYDROXYPHENYL)-2H-INDAZOL-5-OL|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|3-CHLORO-2-(4-HYDROXYPHENYL)-2H-INDAZOL-5-OL|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|(9BETA,11ALPHA,13ALPHA,14BETA,17ALPHA)-11-(METH...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|(9ALPHA,13BETA,17BETA)-2-(1Z)-BUT-1-EN-1-YL]ES...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|(3AS,4R,9BR)-2,2-DIFLUORO-4-(4-HYDROXYPHENYL)-1...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|(2R,3R,4S)-3-(4-HYDROXYPHENYL)-4-METHYL-2-4-(2...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|4-(1S,2S,5S)-5-(HYDROXYMETHYL)-6,8,9-TRIMETHYL...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|4-(1S,2S,5S,9R)-5-(HYDROXYMETHYL)-8,9-DIMETHYL...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|4-(1S,2S,5S)-5-(HYDROXYMETHYL)-8-METHYL-3-OXAB...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|5-HYDROXY-2-(4-HYDROXYPHENYL)-1-BENZOFURAN-7-Y...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|17-METHYL-17-ALPHA-DIHYDROEQUILENIN|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|2-PHENYL-1-4-(2-PIPERIDIN-1-YL-ETHOXY)-PHENYL]...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|AFIMOXIFENE|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|1-4-(OCTAHYDRO-PYRIDO1,2-A]PYRAZIN-2-YL)-PHEN...|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|COMPOUND 4-D|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|COMPOUND 19|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|GENISTEIN|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|OSPEMIFENE|agonistantagonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|QUINESTROL|agonistmodulator|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|ESTROPIPATE|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|ESTRIOL|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|DEHYDROEPIANDROSTERONE|binder|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|ALLYLESTRENOL|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|DANAZOL|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|MESTRANOL|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|ESTRAMUSTINE|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|FLUOXYMESTERONE|antagonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|NALOXONE|antagonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|TRILOSTANE|allosteric modulator|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|MELATONIN|antagonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|RALOXIFENE CORE|na|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|NORGESTIMATE|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|FULVESTRANT|antagonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|DIENESTROL|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|CLOMIFENE|agonistantagonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|ETHYNODIOL|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|ESTRADIOL|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|TAMOXIFEN|agonistantagonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|ESTRONE|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|RALOXIFENE|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|PROGESTERONE|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|LEVONORGESTREL|otherunknown|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|DESOGESTREL|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|ETONOGESTREL|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|CONJUGATED ESTROGENS|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|CHLOROTRIANISENE|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+ESR1|ESR1 - estrogen receptor 1|DIETHYLSTILBESTROL|agonist|DrugBank|ESR1|estrogen receptor 1|4.3
+YES1|YES1 - v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|AT9283|inhibitor|TALC|YES1|v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|17-September-2013
+YES1|YES1 - v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|DASATINIB|na|TEND|YES1|v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|01-August-2011
+YES1|YES1 - v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|SARACATINIB|na|GuideToPharmacologyInteractions|YES1|v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|04-March-2015
+YES1|YES1 - v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|SU6656|na|GuideToPharmacologyInteractions|YES1|v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|04-March-2015
+YES1|YES1 - v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|DASATINIB|na|TdgClinicalTrial|YES1|v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|January-2014
+YES1|YES1 - v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|ENMD-2076|na|TdgClinicalTrial|YES1|v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|January-2014
+YES1|YES1 - v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|DASATINIB|inhibitor|DrugBank|YES1|v-yes-1 Yamaguchi sarcoma viral oncogene homolog 1|4.3
+PPP3CA|PPP3CA - protein phosphatase 3, catalytic subunit, alpha isozyme|VOCLOSPORIN|na|TdgClinicalTrial|PPP3CA|protein phosphatase 3, catalytic subunit, alpha isozyme|January-2014
+IRS1|IRS1 - insulin receptor substrate 1|4-({5-(AMINOCARBONYL)-4-(3-METHYLPHENYL)AMINO...|na|DrugBank|IRS1|insulin receptor substrate 1|4.3
+CDKN1A|CDKN1A - cyclin-dependent kinase inhibitor 1A (p21, Cip1)|5-FLUOROURIDINE|na|CIViC|CDKN1A|cyclin-dependent kinase inhibitor 1A (p21, Cip1)|09-February-2016
+PTEN|PTEN - phosphatase and tensin homolog|CARBOPLATIN|na|CIViC|PTEN|phosphatase and tensin homolog|09-February-2016
+PTEN|PTEN - phosphatase and tensin homolog|TEMSIROLIMUS|na|CIViC|PTEN|phosphatase and tensin homolog|09-February-2016
+PTEN|PTEN - phosphatase and tensin homolog|PACLITAXEL|na|CIViC|PTEN|phosphatase and tensin homolog|09-February-2016
+PTEN|PTEN - phosphatase and tensin homolog|EGFR INHIBITOR|na|CIViC|PTEN|phosphatase and tensin homolog|09-February-2016
+PTEN|PTEN - phosphatase and tensin homolog|EVEROLIMUS|na|CIViC|PTEN|phosphatase and tensin homolog|09-February-2016
+PTEN|PTEN - phosphatase and tensin homolog|VANDETANIB|na|ClearityFoundationBiomarkers|PTEN|phosphatase and tensin homolog|26-July-2013
+PTEN|PTEN - phosphatase and tensin homolog|GSK2126458|na|ClearityFoundationBiomarkers|PTEN|phosphatase and tensin homolog|26-July-2013
+PTEN|PTEN - phosphatase and tensin homolog|PF-04691502|na|ClearityFoundationBiomarkers|PTEN|phosphatase and tensin homolog|26-July-2013
+PTEN|PTEN - phosphatase and tensin homolog|XL765|na|ClearityFoundationBiomarkers|PTEN|phosphatase and tensin homolog|26-July-2013
+PTEN|PTEN - phosphatase and tensin homolog|TEMSIROLIMUS|na|ClearityFoundationBiomarkers|PTEN|phosphatase and tensin homolog|26-July-2013
+PTEN|PTEN - phosphatase and tensin homolog|EVEROLIMUS|na|ClearityFoundationBiomarkers|PTEN|phosphatase and tensin homolog|26-July-2013
+PTEN|PTEN - phosphatase and tensin homolog|GEFITINIB|na|ClearityFoundationBiomarkers|PTEN|phosphatase and tensin homolog|26-July-2013
+PTEN|PTEN - phosphatase and tensin homolog|ZSTK474|na|ClearityFoundationBiomarkers|PTEN|phosphatase and tensin homolog|26-July-2013
+PTEN|PTEN - phosphatase and tensin homolog|ERLOTINIB|na|ClearityFoundationBiomarkers|PTEN|phosphatase and tensin homolog|26-July-2013
+PTEN|PTEN - phosphatase and tensin homolog|GSK2636771|inhibitor|MyCancerGenomeClinicalTrial|PTEN|phosphatase and tensin homolog|30-February-2014
+PTEN|PTEN - phosphatase and tensin homolog|GSK2636771|inhibitor|MyCancerGenomeClinicalTrial|PTEN|phosphatase and tensin homolog|30-February-2014
+PTEN|PTEN - phosphatase and tensin homolog|GSK2636771|inhibitor|MyCancerGenomeClinicalTrial|PTEN|phosphatase and tensin homolog|30-February-2014
+PTEN|PTEN - phosphatase and tensin homolog|GSK2636771|inhibitor|MyCancerGenomeClinicalTrial|PTEN|phosphatase and tensin homolog|30-February-2014
+EZH2|EZH2 - enhancer of zeste homolog 2 (Drosophila)|EI1|na|GuideToPharmacologyInteractions|EZH2|enhancer of zeste homolog 2 (Drosophila)|04-March-2015
+EZH2|EZH2 - enhancer of zeste homolog 2 (Drosophila)|EPZ-6438|na|GuideToPharmacologyInteractions|EZH2|enhancer of zeste homolog 2 (Drosophila)|04-March-2015
+EZH2|EZH2 - enhancer of zeste homolog 2 (Drosophila)|GSK126|na|GuideToPharmacologyInteractions|EZH2|enhancer of zeste homolog 2 (Drosophila)|04-March-2015
+SIRT1|SIRT1 - sirtuin 1|PANOBINOSTAT|inhibitor|TALC|SIRT1|sirtuin 1|17-September-2013
+SIRT1|SIRT1 - sirtuin 1|SRT1720|na|GuideToPharmacologyInteractions|SIRT1|sirtuin 1|04-March-2015
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|LY2835219|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|GEFITINIB|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|GEMCITABINE|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|TRAMETINIB|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|CARBOPLATIN|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|PACLITAXEL|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|CISPLATINUM|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|ERLOTINIB|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|DECITABINE|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|AFATINIB|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|EGFR INHIBITOR|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|RAF265|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|DASATINIB|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|SELUMETINIB|na|CIViC|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|09-February-2016
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|PIMASERTIB|na|ClearityFoundationBiomarkers|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|26-July-2013
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|GEFITINIB|na|ClearityFoundationBiomarkers|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|26-July-2013
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|ERLOTINIB|na|ClearityFoundationBiomarkers|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|26-July-2013
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|TRAMETINIB|na|ClearityFoundationBiomarkers|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|26-July-2013
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|SELUMETINIB|na|ClearityFoundationBiomarkers|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|26-July-2013
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|TEMSIROLIMUS|na|ClearityFoundationBiomarkers|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|26-July-2013
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|EVEROLIMUS|na|ClearityFoundationBiomarkers|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|26-July-2013
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|VANDETANIB|na|ClearityFoundationBiomarkers|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|26-July-2013
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|SELUMETINIB|inhibitor|MyCancerGenomeClinicalTrial|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|30-February-2014
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|REGORAFENIB|inhibitor|MyCancerGenomeClinicalTrial|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|30-February-2014
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|SELUMETINIB|inhibitor|MyCancerGenomeClinicalTrial|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|30-February-2014
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|SELUMETINIB|inhibitor|MyCancerGenomeClinicalTrial|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|30-February-2014
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|(3,7,11-TRIMETHYL-DODECA-2,6,10-TRIENYLOXYCARB...|na|DrugBank|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|4.3
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|FARNESYL|na|DrugBank|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|4.3
+KRAS|KRAS - v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|FARNESYL DIPHOSPHATE|na|DrugBank|KRAS|v-Ki-ras2 Kirsten rat sarcoma viral oncogene homolog|4.3
+
+

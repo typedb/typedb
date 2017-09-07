@@ -1,0 +1,22 @@
+insert
+
+
+$inferMature isa inference-rule
+ lhs
+ {$z isa cancer;
+  $a isa stem-loop;
+  (disease: $z, affected: $a);
+  $b isa mature;
+  (precursor: $a, matured: $b);}
+ rhs
+ {(disease: $z, affected: $b) isa interaction;};
+
+$inferCancerDrug isa inference-rule
+lhs {
+  (disease: $c, affected: $b);
+  (targeting-mirna: $b, targeted-gene: $g);
+  (influenced: $g, chemical: $d);
+}
+rhs {
+  (target: $c, therapy: $d) isa treatment;
+};

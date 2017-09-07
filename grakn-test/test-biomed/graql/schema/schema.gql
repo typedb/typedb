@@ -1,0 +1,148 @@
+insert
+
+"article" sub entity
+	plays publication
+	has pmid
+	has title
+	has abstract;
+
+"mirna" sub entity
+	is-abstract
+	plays sequence-in-genome
+	plays affected
+	plays targeting-mirna
+	has accession-number
+	has sequence
+	has mirID;
+
+"mature" sub mirna
+	plays matured;
+
+"stem-loop" sub mirna
+	plays precursor;
+
+"cancer" sub entity
+	plays disease
+	plays target
+	has name;
+
+"location" sub entity
+	plays position
+	has chromosome
+	has species
+	has starting-position
+	has end-position
+	has strand;
+
+"gene" sub entity
+	plays targeted-gene
+	plays affected
+	plays influenced
+	has gene-symbol
+	has entrez-gene-id;
+
+"drug" sub entity
+	has drug-name
+	plays therapy
+	plays chemical;
+
+"action" sub relation
+	has action-type
+	relates chemical
+	relates influenced;
+"influenced" sub role;
+"chemical" sub role;
+
+
+"interaction" sub relation
+	relates disease
+	relates affected
+	plays fact
+	has degree;
+"disease" sub role;
+"affected" sub role;
+
+"coordinate" sub relation
+	relates sequence-in-genome
+	relates position;
+"sequence-in-genome" sub role;
+"position" sub role;
+
+"reference" sub relation
+	relates fact
+	relates publication;
+"fact" sub role;
+"publication" sub role;
+
+"mirna-precursor" sub relation
+	relates precursor
+	relates matured;
+"precursor" sub role;
+"matured" sub role;
+
+"gene-target" sub relation
+	relates targeted-gene
+	relates targeting-mirna
+	plays fact
+	has degree;
+"targeted-gene" sub role;
+"targeting-mirna" sub role;
+
+"treatment" sub relation
+	relates target
+	relates therapy;
+
+"target" sub role;
+"therapy" sub role;
+
+"starting-position" sub resource
+	datatype string;
+"end-position" sub resource
+	datatype string;
+"sequence" sub resource
+	datatype string;
+
+"species" sub resource
+	datatype string;
+
+"chromosome" sub resource
+	datatype string;
+
+"strand" sub resource
+	datatype string;
+
+"accession-number" sub resource
+	datatype string;
+
+"pmid" sub resource
+	datatype string;
+
+"title" sub resource
+	datatype string;
+
+"abstract" sub resource
+	datatype string;
+
+"abstract" sub resource
+	datatype string;
+
+"mirID" sub resource
+	datatype string;
+
+"name" sub resource
+	datatype string;
+
+"gene-symbol" sub resource
+	datatype string;
+
+"entrez-gene-id" sub resource
+	datatype string;
+
+"action-type" sub resource
+  datatype string;
+
+"drug-name" sub resource
+	datatype string;
+
+"degree" sub resource
+  datatype long;

@@ -1,0 +1,22 @@
+insert
+
+referenced-treatment sub relation
+  relates target
+  relates therapy;
+
+$referencedTreatments isa inference-rule
+lhs {
+  $cancer isa cancer;
+  $sl isa stem-loop;
+  (disease: $cancer, affected: $sl) isa interaction  has degree >= 4;
+  $m isa mature;
+  (precursor: $sl, matured: $m) isa mirna-precursor;
+  $gene isa gene;
+  (targeting-mirna: $m, targeted-gene: $gene) isa gene-target has degree >= 4;
+  (influenced: $gene, chemical: $drug) isa action; $drug isa drug;
+}
+
+rhs {
+  (target: $cancer, therapy: $drug) isa referenced-treatment;
+};
+

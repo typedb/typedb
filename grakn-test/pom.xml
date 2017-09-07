@@ -33,6 +33,7 @@
     <modules>
         <module>test-integration</module>
         <module>test-snb</module>
+        <module>test-biomed</module>
     </modules>
 
     <dependencies>
