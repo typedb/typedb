@@ -14,10 +14,13 @@ GRAQL_DATA=${GRAQL}/data
 # Data Directory
 DATA=${SCRIPTPATH}/data
 
-if [ -d "${GRAQL_DATA}" ]; then
+if [ -d "${DATA}" ]; then
+    echo "Validation Data Already Downloaded"
+else
     echo "Downloading validation data . . . "
     git clone https://github.com/graknlabs/biomed.git
-    mv biomed/data/ data/
+    mkdir -p ${DATA}
+    mv biomed/data/* ${DATA}/
     rm -rf biomed
 fi
 
