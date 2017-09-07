@@ -19,7 +19,6 @@ def timeit(method):
 def runQuery(query, numResults):
     result = check_output(["graql.sh", "-n", "-k", "biomed", "-e", query]);
     assert int(result) == numResults
-    print ("OK")
     return
 
 print ("Checking if data has loaded . . . ")
