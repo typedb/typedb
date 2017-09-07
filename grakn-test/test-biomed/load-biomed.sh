@@ -9,6 +9,7 @@ SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
 GRAQL=${SCRIPTPATH}/graql
 GRAQL_SCHMEA=${GRAQL}/schema
 GRAQL_TEMPLATES=${GRAQL}/templates
+GRAQL_DATA=${GRAQL}/data
 
 # Data Directory
 DATA=${SCRIPTPATH}/data
@@ -32,5 +33,14 @@ migration.sh csv -d -k biomed -s \| -t ${GRAQL_TEMPLATES}/unique-mirna-gene-rela
 migration.sh csv -d -k biomed -s \| -t ${GRAQL_TEMPLATES}/miRTarBase-migrator.gql -i ${DATA}/miRTarBase_MTI_1000.tsv
 migration.sh csv -d -k biomed -s \| -t ${GRAQL_TEMPLATES}/drugs-migrator.gql -i ${DATA}/drugs.csv
 migration.sh csv -d -k biomed -s \| -t ${GRAQL_TEMPLATES}/interactions-migrator.gql -i ${DATA}/interactions.tsv
+
+# This is to compensate for the current failing state of analytics
+echo "Loading Fake Degrees . . ."
+graql.sh -k biomed -f ${GRAQL_DATA}/fake-degrees-schema.gql
+echo "Adding fake interaction degrees . . ."
+graql.sh -k biomed -f ${GRAQL_DATA}/fake-degrees-data-1.gql
+echo "Adding fake Gene Target degrees . . ."
+graql.sh -k biomed -f ${GRAQL_DATA}/fake-degrees-data-2.gql
+
 
 echo "Data load complete "
