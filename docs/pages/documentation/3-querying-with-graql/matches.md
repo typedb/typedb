@@ -1,15 +1,18 @@
 ---
-title: Match Queries
+title: Matches
 keywords: graql, query, match
 last_updated: April 2017
 tags: [graql]
-summary: "Graql Match Queries"
+summary: "Graql Matches"
 sidebar: documentation_sidebar
-permalink: /documentation/graql/match-queries.html
+permalink: /documentation/graql/matches.html
 folder: documentation
 ---
 
-A match query will search the knowledge base for anything that matchs the given pattern, returning a result for each match found. The results of the query can be modified with various [modifiers](#modifiers). To follow along, or experiment further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
+A match describes a pattern to find in the knowledge base. The results of the match can be modified with various
+[modifiers](#modifiers). To follow along, or experiment further, with the examples given below, please load the
+*basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on
+[Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
 ```bash
 <relative-path-to-Grakn>/bin/grakn.sh start 
@@ -28,10 +31,10 @@ Match instances that have the given type. In the example, find all `person` enti
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell1">
-<pre>match $x isa person;</pre>
+<pre>match $x isa person; get;</pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java1">
-<pre>qb.match(var("x").isa("person"));</pre>
+<pre>qb.match(var("x").isa("person")).get();</pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
@@ -47,12 +50,12 @@ Match concepts that have a system id that matches the [predicate](#predicates).
 <div role="tabpanel" class="tab-pane active" id="shell2">
 <pre>
 # Insert one of the system id values that were displayed from the previous query. For example:
-match $x id "1216728"; 
+match $x id "1216728"; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java2">
 <pre>
-qb.match(var("x").has("id", "1216728"));
+qb.match(var("x").has("id", "1216728")).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -69,12 +72,12 @@ Match all attributes that have a value matching the given [predicate](#predicate
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell3">
 <pre>
-match $x val contains "Bar";
+match $x val contains "Bar"; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java3">
 <pre>
-qb.match(var("x").val(contains("Bar")))
+qb.match(var("x").val(contains("Bar"))).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -94,14 +97,14 @@ Match things that have the attribute specified. If a [predicate](#predicates) is
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell4">
 <pre>
-match $x has identifier $y; 
-match $x has identifier contains "Bar"; 
+match $x has identifier $y; get;
+match $x has identifier contains "Bar"; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java4">
 <pre>
-qb.match(var("x").has("identifier", var("x")));
-qb.match(var("x").has("identifier", contains("Bar")));
+qb.match(var("x").has("identifier", var("x"))).get();
+qb.match(var("x").has("identifier", contains("Bar"))).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -117,12 +120,12 @@ You can also specify a variable to represent the relationship connecting the thi
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell5">
 <pre>
-match $x has identifier "Bar" as $r;
+match $x has identifier "Bar" as $r; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java5">
 <pre>
-qb.match(var("x").has(Label.of("identifier"), var().val("Bar"), var("r")));
+qb.match(var("x").has(Label.of("identifier"), var().val("Bar"), var("r"))).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -140,21 +143,21 @@ Match things that have a relationship with the given variable. If a role is prov
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell6">
 <pre>
-match $x isa person; ($x, $y); 
-match $x isa person; (spouse1:$x, $y); 
-match $x isa person; (spouse1:$x, $y); $x has identifier $xn; $y has identifier $yn;
+match $x isa person; ($x, $y); get;
+match $x isa person; (spouse1:$x, $y); get;
+match $x isa person; (spouse1:$x, $y); $x has identifier $xn; $y has identifier $yn; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java6">
 <pre>
-qb.match(var("x").isa("person"), var().rel("x").rel("y"));
-qb.match(var("x").isa("person"), var().rel("spouse1", "x").rel("y"));
+qb.match(var("x").isa("person"), var().rel("x").rel("y")).get();
+qb.match(var("x").isa("person"), var().rel("spouse1", "x").rel("y")).get();
 qb.match(
   var("x").isa("person"),
   var().rel("spouse1", "x").rel("x"),
   var("x").has("identifier", var("xn")),
   var("y").has("identifier", var("yn"))
-);
+).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -171,7 +174,7 @@ Patterns can be combined into a disjunction ('or') and grouped together with cur
 
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell">
-<pre>match $x isa person, has identifier $y; {$y val contains "Elizabeth";} or {$y val contains "Mary";};</pre>
+<pre>match $x isa person, has identifier $y; {$y val contains "Elizabeth";} or {$y val contains "Mary";}; get;</pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java">
 <pre>
@@ -181,7 +184,7 @@ qb.match(
         var("y").val(contains("Elizabeth")),
         var("y").val(contains("Mary"))
     )
-);
+).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -201,16 +204,16 @@ Match types that are a subclass of the given type.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell7">
 <pre>
-match $x sub thing; # List all types
-match $x sub attribute; # List all attribute types
-match $x sub entity; # List all entity types
-match $x sub role; # List all role types
-match $x sub relationship; # List all relationship types
+match $x sub thing; get; # List all types
+match $x sub attribute; get; # List all attribute types
+match $x sub entity; get; # List all entity types
+match $x sub role; get; # List all role types
+match $x sub relationship; get; # List all relationship types
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java7">
 <pre>
-qb.match(var("x").sub("thing"));
+qb.match(var("x").sub("thing")).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -227,12 +230,12 @@ Match roles to a given relationship.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell8">
 <pre>
-match parentship relates $x;
+match parentship relates $x; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java8">
 <pre>
-qb.match(label("parentship").relates(var("x")));
+qb.match(label("parentship").relates(var("x"))).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -248,12 +251,12 @@ Match types that play the given role.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell9">
 <pre>
-match $x plays child;
+match $x plays child; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java9">
 <pre>
-qb.match(var("x").plays("child"));
+qb.match(var("x").plays("child")).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -270,12 +273,12 @@ Match types that can have the given attribute.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell10">
 <pre>
-match $x has firstname;
+match $x has firstname; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java10">
 <pre>
-qb.match(var("x").has("firstname"));
+qb.match(var("x").has("firstname")).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -290,12 +293,12 @@ The above is equivalent to:
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell11">
 <pre>
-match $x plays has-firstname-owner;
+match $x plays has-firstname-owner; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java11">
 <pre>
-qb.match(var("x").plays("has-firstname-owner"));
+qb.match(var("x").plays("has-firstname-owner")).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -304,13 +307,13 @@ qb.match(var("x").plays("has-firstname-owner"));
 Allows you to refer to a specific types by its typename. For example:
 
 ```
-match $x isa $type;$type label 'person';
+match $x isa $type; $type label 'person'; get;
 ```
 
 This is equivalent to the following:
 
 ```
-match $x isa person;
+match $x isa person; get;
 ``` 
 
 ## Predicates
@@ -329,12 +332,12 @@ longs and doubles, these sort by value. Strings are ordered lexicographically.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell12">
 <pre>
-match $x has age > 70;
+match $x has age > 70; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java12">
 <pre>
-qb.match(var("x").has("age", gt(70)));
+qb.match(var("x").has("age", gt(70))).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -342,7 +345,7 @@ qb.match(var("x").has("age", gt(70)));
 If a concept doesn't have a value, all predicates are considered false. The query below matches everything where the predicate `>10` is true. So, it will find all concepts with value greater than 10. However, if a concept does not have a value at all, the predicate is considered false, so it won???t appear in the results.
 
 ```graql
-match $x val >10;
+match $x val >10; get;
 ``` 
 
 
@@ -357,7 +360,7 @@ Asks if the given string is a substring.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell13">
 <pre>
-match $x has identifier $id; $id val contains "Niesz";
+match $x has identifier $id; $id val contains "Niesz"; get;
 
 </pre>
 </div>
@@ -366,7 +369,7 @@ match $x has identifier $id; $id val contains "Niesz";
 qb.match(
     var("x").has("identifier", var("id")),
     var("id").val(contains("Niesz"))
-);
+).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -384,12 +387,12 @@ surround the expression with `.*`.
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell14">
 <pre>
-match $x val /.*(Mary|Barbara).*/;
+match $x val /.*(Mary|Barbara).*/; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java14">
 <pre>
-qb.match(var("x").val(regex(".*(Mary|Barbara).*")));
+qb.match(var("x").val(regex(".*(Mary|Barbara).*"))).get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
@@ -398,11 +401,9 @@ qb.match(var("x").val(regex(".*(Mary|Barbara).*")));
 
 There are a number of modifiers that can be applied to a query:   
 
-* `distinct` - Removes any duplicate results.
 * `limit` - Limits the number of results returned from the query.
 * `offset` - Offsets the results returned from the query by the given number of results.
 * `order` - Orders the results by the given variable's degree. If a type is provided, order by the attribute of that type on that concept. Order is ascending by default.
-* `select` - Indicates which variables to include in the results.
 
 
 <ul id="profileTabs" class="nav nav-tabs">
@@ -413,36 +414,32 @@ There are a number of modifiers that can be applied to a query:
 <div class="tab-content">
 <div role="tabpanel" class="tab-pane active" id="shell16">
 <pre>
-match $x isa person, has identifier $id; select $id; limit 10; offset 5; order by $id asc;
-match $x isa person, has firstname $y; select $y; order by $y asc; distinct;
+match $x isa person, has identifier $id; limit 10; offset 5; order by $id asc; get;
+match $x isa person, has firstname $y; order by $y asc; get;
 </pre>
 </div>
 <div role="tabpanel" class="tab-pane" id="java16">
 <pre>
 qb.match(var("x").isa("person").has("identifier", var("id")))
-    .select("id")
     .limit(10)
     .offset(5)
-    .orderBy("id", Order.asc);
+    .orderBy("id", Order.asc)
+    .get();
 </pre>
 </div> <!-- tab-pane -->
 </div> <!-- tab-content -->
 
-Note that the order in which you specify modifiers can be important. If you make a query and `limit` the results returned, say to 10 as in the example, then specify the `distinct` modifier _after_ the `limit`, you may find that `distinct` removes any non-unique results, so you end up with fewer than the 10 results you expected to be returned to you. To ensure that you receive _exactly_ 10 distinct results, you are better to use `distinct` before `limit`.
-     
+Note that the order in which you specify modifiers can be important. If you make a query and `limit` the results
+returned, say to 10 as in the example, then specify the `order by` modifier _after_ the `limit`, you will find that you
+get an ordering of 10 arbitrary results (so an ordering of a _sample_ of the results). If instead, you do `order by`,
+then `limit` you will get a global ordering.
+
 ```graql
-match $x isa person, has firstname $y; select $y; limit 10; distinct; order by $y asc;
-# Returns 9 results
-match $x isa person, has firstname $y; select $y; distinct; limit 10; order by $y asc;
-# Returns 10 results
+match $x isa person, has firstname $y; limit 10; order by $y asc; get;
+# Returns 10 arbitrary people, ordered by firstname
+match $x isa person, has firstname $y; order by $y asc; limit 10; get;
+# Returns the 10 people who come first alphabetically by firstname
 ```
-
-
-
-
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/42" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
 
 {% include links.html %}
 

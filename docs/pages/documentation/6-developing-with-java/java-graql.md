@@ -46,36 +46,43 @@ The user can also choose to not provide a knowledge base with `Graql.withoutTx()
 This can be useful if you need to provide the knowledge base later (using `withTx`),
 or you only want to construct queries without executing them.
 
-The `QueryBuilder` class provides methods for building `match` and `insert`
+The `QueryBuilder` class provides methods for building `match`es and `insert`
 queries. Additionally, it is possible to build `aggregate`, `match..insert` and `delete` queries from `match`
 queries.
 
-## Match Queries
+## Match
 
-Match queries are constructed using the `match` method. This will produce a
-`MatchQuery` instance, which includes additional methods that apply modifiers
-such as `limit` and `distinct`:
-
-```java
-MatchQuery query = qb.match(var("x").isa("person").has("firstname", "Bob")).limit(50);
-```
-
-`MatchQuery` is `Iterable` and has a `stream` method. Each result is a
-`Map<String, Concept>`, where the keys are the variable names in the query.
-
-A `MatchQuery` will only execute when it is iterated over.
+Matches are constructed using the `match` method. This will produce a `Match` instance, which includes additional
+methods that apply modifiers such as `limit` and `distinct`:
 
 ```java
-for (Map<String, Concept> result : query) {
-  System.out.println(result.get("x").getId());
-}
+Match match = qb.match(var("x").isa("person").has("firstname", "Bob")).limit(50);
 ```
 
 If you're only interested in one variable name, it also includes a `get` method
 for requesting a single variable:
 
 ```
-query.get("x").forEach(x -> System.out.println(x.asResource().getValue()));
+match.get("x").forEach(x -> System.out.println(x.asResource().getValue()));
+```
+
+## Get Queries
+
+Get queries are constructed using the `get` method on a `match`.
+
+```java
+GetQuery query = qb.match(var("x").isa("person").has("firstname", "Bob")).limit(50).get();
+```
+
+`GetQuery` is `Iterable` and has a `stream` method. Each result is a `Map<Var, Concept>`, where the keys are the
+variables in the query.
+
+A `GetQuery` will only execute when it is iterated over.
+
+```java
+for (Map<String, Concept> result : query) {
+  System.out.println(result.get("x").getId());
+}
 ```
 
 ## Aggregate Queries
@@ -116,8 +123,8 @@ The `QueryBuilder` also allows the user to parse Graql query strings into Java G
 objects:
 
 ```java
-for (Concept x : qb.<MatchQuery>parse("match $x isa person;").get("x")) {
-    System.out.println(x);
+for (Answer a : qb.<GetQuery>parse("match $x isa person; get;")) {
+    System.out.println(a);
 }
 
 if (qb.<AggregateQuery<Boolean>>parse("match has name 'Bob' isa person; aggregate ask;").execute()) {
@@ -155,9 +162,5 @@ The table below summarises the available reasoning configuration options togethe
 | -------------------- |:--|:--|
 | `QueryBuilder::infer(boolean)` | controls whether reasoning should be turned on | False=Off |
 | `QueryBuilder::materialise(boolean)`       | controls whether inferred knowledge should be persisted to knowledge base | False=Off |
-
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/23" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
 
 {% include links.html %}

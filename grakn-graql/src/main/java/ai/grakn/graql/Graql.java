@@ -64,19 +64,19 @@ public class Graql {
 
     /**
      * @param patterns an array of patterns to match in the graph
-     * @return a match query that will find matches of the given patterns
+     * @return a {@link Match} that will find matches of the given patterns
      */
     @CheckReturnValue
-    public static MatchQuery match(Pattern... patterns) {
+    public static Match match(Pattern... patterns) {
         return withoutGraph().match(patterns);
     }
 
     /**
      * @param patterns a collection of patterns to match in the graph
-     * @return a match query that will find matches of the given patterns
+     * @return a {@link Match} that will find matches of the given patterns
      */
     @CheckReturnValue
-    public static MatchQuery match(Collection<? extends Pattern> patterns) {
+    public static Match match(Collection<? extends Pattern> patterns) {
         return withoutGraph().match(patterns);
     }
 

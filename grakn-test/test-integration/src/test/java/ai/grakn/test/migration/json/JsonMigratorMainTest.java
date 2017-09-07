@@ -19,8 +19,8 @@
 package ai.grakn.test.migration.json;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Entity;
@@ -30,24 +30,22 @@ import ai.grakn.concept.Thing;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
+import static ai.grakn.test.migration.MigratorTestUtils.getFile;
+import static ai.grakn.test.migration.MigratorTestUtils.getProperties;
+import static ai.grakn.test.migration.MigratorTestUtils.getProperty;
+import static ai.grakn.test.migration.MigratorTestUtils.getResource;
+import static ai.grakn.test.migration.MigratorTestUtils.load;
 import ai.grakn.util.SampleKBLoader;
+import java.util.Collection;
+import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemErrRule;
 import org.junit.contrib.java.lang.system.SystemOutRule;
-
-import java.util.Collection;
-
-import static ai.grakn.test.migration.MigratorTestUtils.getFile;
-import static ai.grakn.test.migration.MigratorTestUtils.getProperties;
-import static ai.grakn.test.migration.MigratorTestUtils.getProperty;
-import static ai.grakn.test.migration.MigratorTestUtils.getResource;
-import static ai.grakn.test.migration.MigratorTestUtils.load;
-import static junit.framework.TestCase.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 
 public class JsonMigratorMainTest {
 

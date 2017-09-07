@@ -35,14 +35,10 @@ import com.codahale.metrics.MetricRegistry;
 import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.Timer.Context;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
-import static java.time.Instant.now;
-import java.util.Map;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.Jedis;
-import redis.clients.util.Pool;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
@@ -50,87 +46,31 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
  *
  * @author Domenico Corapi
  */
-public class RedisTaskQueueConsumer implements Runnable {
+public class RedisTaskQueueConsumer implements Consumer<Task> {
 
     private final static Logger LOG = LoggerFactory.getLogger(RedisTaskQueueConsumer.class);
-    private final static ObjectMapper objectMapper = new ObjectMapper();
 
     private RedisTaskManager redisTaskManager;
     private EngineID engineId;
     private GraknEngineConfig config;
     private RedisCountStorage redisCountStorage;
     private MetricRegistry metricRegistry;
-    private Task task;
     private EngineGraknTxFactory factory;
     private LockProvider lockProvider;
 
-    @SuppressWarnings("unused")
-    public RedisTaskQueueConsumer(String taskId, TaskState taskState, TaskConfiguration taskConfiguration) {
-        this.task = Task.builder().setTaskConfiguration(taskConfiguration).setTaskState(taskState).build();
-    }
 
-    @SuppressWarnings("unused")
-    public RedisTaskQueueConsumer(Task task) {
-        this.task = task;
-    }
-
-    @SuppressWarnings("unused")
-    public RedisTaskQueueConsumer(Map<String, Object> task) {
-        this.task = objectMapper.convertValue(task, Task.class);
-    }
-
-    @Override
-    public void run() {
-        checkPreconditions();
-        Timer executeTimer = metricRegistry
-                .timer(name(RedisTaskQueueConsumer.class, "execute"));
-        Context context = executeTimer.time();
-        TaskState taskState = task.getTaskState();
-        TaskConfiguration taskConfiguration = task.getTaskConfiguration();
-        if (shouldStopTask(taskState)) {
-            taskState.markStopped();
-            redisTaskManager.storage().updateState(taskState);
-            LOG.info("{}\t marked as stopped", task);
-        } else if(shouldDelayTask(taskState)) {
-            redisTaskManager.storage().updateState(taskState);
-            LOG.info("{}\t resubmitted", task);
-        } else {
-            BackgroundTask runningTask;
-            try {
-                runningTask = taskState.taskClass().newInstance();
-                runningTask.initialize(saveCheckpoint(taskState, redisTaskManager.storage()),
-                        taskConfiguration, redisTaskManager, config, redisCountStorage, factory, lockProvider, metricRegistry);
-                metricRegistry.meter(name(RedisTaskQueueConsumer.class, "initialized")).mark();
-                boolean completed;
-                if (taskShouldResume(task)) {
-                    // Not implemented
-                    throw new NotImplementedException();
-                } else {
-                    //Mark as running
-                    taskState.markRunning(engineId);
-                    redisTaskManager.storage().newState(taskState);
-                    LOG.debug("{} marked as running", task);
-                    completed = runningTask.start();
-                    metricRegistry.meter(name(RedisTaskQueueConsumer.class, "run")).mark();
-                }
-                if (completed) {
-                    taskState.markCompleted();
-                } else {
-                    taskState.markStopped();
-                }
-                if(taskShouldRecur(taskState)){
-                    resubmitTask(taskState);
-                }
-                // TODO check if we can simplify the storage using just the queue or a different data structure
-                redisTaskManager.storage().updateState(taskState);
-            } catch (Throwable throwable) {
-                taskState.markFailed(throwable);
-                LOG.error("{} could not be completed successfully", task.getTaskState().getId(), throwable);
-            } finally {
-                redisTaskManager.storage().updateState(taskState);
-                context.stop();
-            }
-        }
+    public RedisTaskQueueConsumer(
+            RedisTaskManager redisTaskManager, EngineID engineId,
+            GraknEngineConfig config,
+            RedisCountStorage redisCountStorage, MetricRegistry metricRegistry,
+            EngineGraknTxFactory factory, LockProvider lockProvider) {
+        this.redisTaskManager = redisTaskManager;
+        this.engineId = engineId;
+        this.config = config;
+        this.redisCountStorage = redisCountStorage;
+        this.metricRegistry = metricRegistry;
+        this.factory = factory;
+        this.lockProvider = lockProvider;
     }
 
     private void checkPreconditions() {
@@ -141,47 +81,63 @@ public class RedisTaskQueueConsumer implements Runnable {
             Preconditions.checkNotNull(redisCountStorage);
             Preconditions.checkNotNull(redisTaskManager);
             Preconditions.checkNotNull(lockProvider);
-        } catch (NullPointerException e){
-            throw new IllegalStateException(String.format("%s was started but the state wasn't set explicitly", this.getClass().getName()));
+        } catch (NullPointerException e) {
+            throw new IllegalStateException(
+                    String.format("%s was started but the state wasn't set explicitly",
+                            this.getClass().getName()));
         }
     }
 
-    private void resubmitTask(TaskState taskState) {
-        taskState.schedule(taskState.schedule().incrementByInterval());
-    }
-
     private boolean taskShouldRecur(TaskState taskState) {
-        return taskState.schedule().isRecurring() && !taskState.status().equals(FAILED) && !taskState.status().equals(STOPPED);
+        return taskState.schedule().isRecurring() && !taskState.status().equals(FAILED)
+                && !taskState.status().equals(STOPPED);
     }
-
-    private boolean shouldDelayTask(TaskState taskState) {
-        return !taskState.schedule().runAt().isBefore(now());
-    }
-
-    private boolean shouldStopTask(TaskState taskState) {
-        return taskState.status() == STOPPED || redisTaskManager.storage().isTaskMarkedStopped(task.getTaskState().getId());
-    }
-
 
     private boolean taskShouldResume(Task task) {
         return task.getTaskState().status() == RUNNING;
     }
 
 
-    private java.util.function.Consumer<TaskCheckpoint> saveCheckpoint(TaskState taskState, TaskStateStorage storage) {
+    private Consumer<TaskCheckpoint> saveCheckpoint(TaskState taskState, TaskStateStorage storage) {
         return checkpoint -> storage.updateState(taskState.checkpoint(checkpoint));
     }
 
-
-    public void setRunningState(RedisTaskManager redisTaskManager, EngineID engineId,
-            GraknEngineConfig config, Pool<Jedis> jedisPool, EngineGraknTxFactory factory,
-            LockProvider lockProvider, MetricRegistry metricRegistry) {
-        this.redisTaskManager = redisTaskManager;
-        this.engineId = engineId;
-        this.config = config;
-        this.redisCountStorage = RedisCountStorage.create(jedisPool, metricRegistry);
-        this.lockProvider = lockProvider;
-        this.metricRegistry = metricRegistry;
-        this.factory = factory;
+    @Override
+    public void accept(Task task) {
+        checkPreconditions();
+        Timer executeTimer = metricRegistry
+                .timer(name(RedisTaskQueueConsumer.class, "execute"));
+        Context context = executeTimer.time();
+        TaskState taskState = task.getTaskState();
+        TaskConfiguration taskConfiguration = task.getTaskConfiguration();
+        BackgroundTask runningTask;
+        try {
+            runningTask = taskState.taskClass().newInstance();
+            runningTask.initialize(saveCheckpoint(taskState, redisTaskManager.storage()),
+                    taskConfiguration, redisTaskManager, config, redisCountStorage, factory,
+                    lockProvider, metricRegistry);
+            metricRegistry.meter(name(RedisTaskQueueConsumer.class, "initialized")).mark();
+            if (taskShouldResume(task)) {
+                // Not implemented
+                throw new NotImplementedException();
+            } else {
+                runningTask.start();
+                metricRegistry.meter(name(RedisTaskQueueConsumer.class, "run")).mark();
+            }
+            if (taskShouldRecur(taskState)) {
+                // Not implemented
+                throw new NotImplementedException();
+            }
+        } catch (IllegalAccessException | InstantiationException e) {
+            metricRegistry.meter(name(RedisTaskQueueConsumer.class, "failed")).mark();
+            LOG.error("{} had an instantiantion exception", task.getTaskState().getId(), e);
+            throw new RuntimeException(e);
+        } catch (RuntimeException throwable) {
+            metricRegistry.meter(name(RedisTaskQueueConsumer.class, "failed")).mark();
+            LOG.error("{} could not be completed successfully", task.getTaskState().getId(), throwable);
+            throw new RuntimeException(throwable);
+        } finally {
+            context.stop();
+        }
     }
 }

@@ -27,7 +27,8 @@ fi
 
 redisRunning()
 {
-    echo $(ps -ef | grep "redis-server" | grep -v grep | awk '{ print $2}')
+    export REDIS_PORT=$(grep "port " grakn-dist/src/conf/redis/redis.conf | grep -v '#' | awk '{ print $2}')
+    echo $(ps -ef | grep "redis-server" | grep -v grep | grep ${REDIS_PORT} | awk '{ print $2}')
 }
 
 executeRedisServer(){
@@ -50,7 +51,8 @@ case "$1" in
 
 start)
     if [ $(redisRunning) ] ; then
-        echo "Redis is already running"
+        echo "Redis is already running: "
+        ps -ef | grep "redis-server" | grep $REDIS_PORT | grep -v grep
     else
         echo "Starting redis"
         executeRedisServer "${GRAKN_HOME}/conf/redis/redis.conf"

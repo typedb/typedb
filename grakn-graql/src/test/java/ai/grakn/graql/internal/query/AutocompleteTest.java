@@ -51,9 +51,9 @@ public class AutocompleteTest {
 
     @Test
     public void whenAutocompletingHalfwayThroughAWord_CandidatesOnlyIncludeKeywordsWithCorrectPrefix() {
-        String queryString = "match $x isa movie; sel";
+        String queryString = "match $x isa movie; lim";
         Autocomplete autocomplete = Autocomplete.create(types, queryString, queryString.length());
-        assertThat(autocomplete.getCandidates(), hasItem("select"));
+        assertThat(autocomplete.getCandidates(), hasItem("limit"));
         assertThat(autocomplete.getCandidates(), not(hasItem("match")));
         assertEquals(queryString.length() - 3, autocomplete.getCursorPosition());
     }

@@ -98,7 +98,7 @@ public class RelationshipTest extends TxTestBase {
     }
 
     @Test
-    public void checkShortcutEdgesAreCreatedBetweenAllRolePlayers(){
+    public void checkRolePlayerEdgesAreCreatedBetweenAllRolePlayers(){
         //Create the Schema
         Role role1 = tx.putRole("Role 1");
         Role role2 = tx.putRole("Role 2");
@@ -126,24 +126,24 @@ public class RelationshipTest extends TxTestBase {
         relationship.addRolePlayer(role3, entity4r3);
         relationship.addRolePlayer(role3, entity6r1r2r3);
 
-        //Check the structure of the NEW shortcut edges
-        assertThat(followShortcutsToNeighbours(tx, entity1r1),
+        //Check the structure of the NEW role-player edges
+        assertThat(followRolePlayerEdgesToNeighbours(tx, entity1r1),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
-        assertThat(followShortcutsToNeighbours(tx, entity2r1),
+        assertThat(followRolePlayerEdgesToNeighbours(tx, entity2r1),
                 containsInAnyOrder(entity2r1, entity1r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
-        assertThat(followShortcutsToNeighbours(tx, entity3r2r3),
+        assertThat(followRolePlayerEdgesToNeighbours(tx, entity3r2r3),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
-        assertThat(followShortcutsToNeighbours(tx, entity4r3),
+        assertThat(followRolePlayerEdgesToNeighbours(tx, entity4r3),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
-        assertThat(followShortcutsToNeighbours(tx, entity5r1),
+        assertThat(followRolePlayerEdgesToNeighbours(tx, entity5r1),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
-        assertThat(followShortcutsToNeighbours(tx, entity6r1r2r3),
+        assertThat(followRolePlayerEdgesToNeighbours(tx, entity6r1r2r3),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
-    private Set<Concept> followShortcutsToNeighbours(GraknTx graph, Thing thing) {
+    private Set<Concept> followRolePlayerEdgesToNeighbours(GraknTx graph, Thing thing) {
         List<Vertex> vertices = graph.admin().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.getId().getValue()).
-                in(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                out(Schema.EdgeLabel.SHORTCUT.getLabel()).toList();
+                in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();
 
         return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).asThing()).collect(Collectors.toSet());
     }

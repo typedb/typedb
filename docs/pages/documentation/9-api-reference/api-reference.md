@@ -5,7 +5,6 @@ tags: [graql, java, java-api]
 sidebar: documentation_sidebar
 permalink: /documentation/api-reference/api-reference.html
 toc: false
-comment_issue_id: 19
 ---
 
 Welcome to the API Reference landing page. From here, you can find the latest, and all previous, versions of our API reference.
@@ -174,7 +173,7 @@ Execute **read-only** graql queries on a Grakn knowledge base. Read-only queries
 - **keyspace** Keyspace where query should execute. Required.
 - **infer** Enables reasoner inference on the provided query. Required.
 - **materialise** Enables materialisation of reasoner results from the provided query. Required.
-- **query** Graql match query to be executed. Required.
+- **query** Graql get query to be executed. Required.
 
 **Response Headers**
 
@@ -197,7 +196,7 @@ Query response from the knowledge base formatted as specified by the provided `A
 
 - 401 *Unauthorized* Provided privileges are not authorized.
 
-- 405 *Method Not Allowed* Attempted to execute a non-match query.
+- 405 *Method Not Allowed* Attempted to execute a non-get query.
 
   `{"exception":"Only \"read-only\" queries are allowed."}`
 
@@ -743,6 +742,3 @@ Server: Jetty(9.3.6.v20151106)
 
 ## Feedback
 We hope you find our documentation helpful, but if you need more information, please don't hesitate to contact us using our [discussion forums](http://discuss.grakn.ai) or through our main [website](http://www.grakn.ai).
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/19" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.

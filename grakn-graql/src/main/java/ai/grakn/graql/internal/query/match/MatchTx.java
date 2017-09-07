@@ -19,54 +19,65 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.joining;
-
 /**
- * "Select" modifier for a match query that selects particular variables from the result.
+ * Modifier that specifies the graph to execute the {@link Match} with.
  */
-class MatchQuerySelect extends MatchQueryModifier {
+class MatchTx extends MatchModifier {
 
-    private final ImmutableSet<Var> names;
+    private final GraknTx tx;
 
-    MatchQuerySelect(AbstractMatchQuery inner, ImmutableSet<Var> names) {
+    MatchTx(GraknTx tx, AbstractMatch inner) {
         super(inner);
-
-        Set<Var> selectedNames = inner.getSelectedNames();
-
-        for (Var name : names) {
-            if (!selectedNames.contains(name)) {
-                throw GraqlQueryException.varNotInQuery(name);
-            }
-        }
-
-        if (names.isEmpty()) {
-            throw GraqlQueryException.noSelectedVars();
-        }
-
-        this.names = names;
+        this.tx = tx;
     }
 
     @Override
     public Stream<Answer> stream(Optional<GraknTx> graph) {
-        return inner.stream(graph).map(result -> result.filterVars(names));
+        if (graph.isPresent()) {
+            throw GraqlQueryException.multipleTxs();
+        }
+
+        return inner.stream(Optional.of(this.tx));
+    }
+
+    @Override
+    public Optional<GraknTx> tx() {
+        return Optional.of(tx);
+    }
+
+    @Override
+    public Set<SchemaConcept> getSchemaConcepts() {
+        return inner.getSchemaConcepts(tx);
     }
 
     @Override
     protected String modifierString() {
-        return " select " + names.stream().map(Object::toString).collect(joining(", ")) + ";";
+        return "";
     }
 
     @Override
-    public Set<Var> getSelectedNames() {
-        return names;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        MatchTx maps = (MatchTx) o;
+
+        return tx.equals(maps.tx);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + tx.hashCode();
+        return result;
     }
 }

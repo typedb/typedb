@@ -110,6 +110,8 @@ do
         DATA_FILE=$(echo $p | awk '{print $2}')
         TEMPLATE_FILE=$(echo $p | awk '{print $1}')
 
+        echo "Loading ${DATA_FILE} with ${TEMPLATE_FILE}"
+
         NUM_SPLIT=$(head -1 ${CSV_DATA}/${DATA_FILE} | tr -cd \| | wc -c)
         BATCH_SIZE=$(awk "BEGIN {print int(1000/${NUM_SPLIT})}")
 

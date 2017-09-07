@@ -98,7 +98,7 @@ public class AggregateTest {
     @Test
     public void testGroupCount() {
         AggregateQuery<Map<Concept, Long>> groupCountQuery =
-                qb.match(var("x").isa("movie"), var().rel("x")).aggregate(group("x", count()));
+                qb.match(var("x").isa("movie"), var("r").rel("x")).aggregate(group("x", count()));
 
         Map<Concept, Long> groupCount = groupCountQuery.execute();
 

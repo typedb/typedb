@@ -108,7 +108,7 @@ public class QueryOperationExecutor {
 
     /**
      * Insert all the Vars
-     * @param results the result of a match query
+     * @param results the result after inserting
      */
     static Answer insertAll(Collection<VarPatternAdmin> patterns, GraknTx graph, Answer results) {
         return create(patterns, graph, ExecutionType.INSERT).insertAll(results);

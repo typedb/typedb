@@ -83,7 +83,7 @@ public class JavaDocsTest {
 
     @AfterClass
     public static void assertEnoughExamplesFound() {
-        if (GraknTestSetup.usingTinker() && numFound < 10) {
+        if (GraknTestSetup.usingTinker() && numFound < 8) {
             fail("Only found " + numFound + " Java examples. Perhaps the regex is wrong?");
         }
     }

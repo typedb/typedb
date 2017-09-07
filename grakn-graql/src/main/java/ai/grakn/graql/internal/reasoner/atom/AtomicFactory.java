@@ -23,9 +23,10 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 
 import ai.grakn.graql.admin.VarPatternAdmin;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *
@@ -54,14 +55,21 @@ public class AtomicFactory {
      * @param parent query the created atoms should belong to
      * @return set of atoms
      */
-    public static Set<Atomic> createAtomSet(Conjunction<VarPatternAdmin> pattern, ReasonerQuery parent) {
-        Set<Atomic> atoms = new HashSet<>();
-        pattern.varPatterns().stream()
+    public static Stream<Atomic> createAtoms(Conjunction<VarPatternAdmin> pattern, ReasonerQuery parent) {
+        Set<Atomic> atoms = pattern.varPatterns().stream()
                 .flatMap(var -> var.getProperties()
                         .map(vp -> vp.mapToAtom(var, pattern.varPatterns(), parent))
                         .filter(Objects::nonNull))
-                .forEach(atoms::add);
-        return atoms;
+                .collect(Collectors.toSet());
+
+        return atoms.stream()
+                .filter(at -> ! atoms.stream()
+                        .filter(Atom.class::isInstance)
+                        .map(Atom.class::cast)
+                        .flatMap(Atom::getInnerPredicates)
+                        .filter(at::equals)
+                        .findFirst().isPresent()
+                );
     }
 
 }

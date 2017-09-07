@@ -49,7 +49,7 @@ public class GraknEngineStartIT {
 
     @BeforeClass
     public static void setUpClass() {
-        EmbeddedRedis.start(REDIS_PORT);
+        EmbeddedRedis.forceStart(REDIS_PORT);
         GraknTestSetup.startCassandraIfNeeded();
         GraknSystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
     }

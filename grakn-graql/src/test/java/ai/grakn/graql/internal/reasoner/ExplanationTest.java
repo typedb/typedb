@@ -20,10 +20,8 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
-import ai.grakn.test.kbs.GenealogyKB;
-import ai.grakn.test.kbs.GeoKB;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
@@ -32,6 +30,8 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
+import ai.grakn.test.kbs.GenealogyKB;
+import ai.grakn.test.kbs.GeoKB;
 import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -80,14 +80,14 @@ public class ExplanationTest {
 
     @Test
     public void testExplanationTreeCorrect_TransitiveClosure() {
-        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
         Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), warsaw));
         Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), masovia));
         Answer answer3 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), poland));
         Answer answer4 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), europe));
 
-        List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
@@ -129,12 +129,12 @@ public class ExplanationTest {
     public void testExplanationTreeCorrect_TransitiveClosureWithSpecificResourceAndTypes() {
         String queryString = "match $x isa university;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "$y isa country;$y has name 'Poland';";
+                "$y isa country;$y has name 'Poland'; get;";
 
         Answer answer1 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), polibuda, Graql.var("y"), poland));
         Answer answer2 = new QueryAnswer(ImmutableMap.of(Graql.var("x"), uw, Graql.var("y"), poland));
 
-        List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
+        List<Answer> answers = iqb.<GetQuery>parse(queryString).execute();
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
@@ -162,10 +162,10 @@ public class ExplanationTest {
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$x id '" + polibuda.getId() + "';" +
-                "$y id '" + europe.getId() + "';";
+                "$y id '" + europe.getId() + "'; get;";
 
-        MatchQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.admin().execute();
+        GetQuery query = iqb.parse(queryString);
+        List<Answer> answers = query.execute();
         assertEquals(answers.size(), 1);
 
         Answer answer = answers.iterator().next();
@@ -183,10 +183,10 @@ public class ExplanationTest {
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;" +
                 "$x id '" + polibuda.getId() + "';" +
                 "$z id '" + masovia.getId() + "';" +
-                "select $y;";
+                "get $y;";
 
-        MatchQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.admin().execute();
+        GetQuery query = iqb.parse(queryString);
+        List<Answer> answers = query.execute();
         assertEquals(answers.size(), 1);
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
     }
@@ -196,19 +196,19 @@ public class ExplanationTest {
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$x id '" + polibuda.getId() + "';" +
-                "$y id '" + uw.getId() + "';";
+                "$y id '" + uw.getId() + "'; get;";
 
-        MatchQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.admin().execute();
+        GetQuery query = iqb.parse(queryString);
+        List<Answer> answers = query.execute();
         assertEquals(answers.size(), 0);
     }
 
     @Test
     public void testExplainingNonRuleResolvableQuery(){
-        String queryString = "match $x isa city, has name $n;";
+        String queryString = "match $x isa city, has name $n; get;";
 
-        MatchQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.admin().execute();
+        GetQuery query = iqb.parse(queryString);
+        List<Answer> answers = query.execute();
         answers.forEach(ans -> assertEquals(ans.getExplanation().isEmpty(), true));
     }
 
@@ -222,10 +222,10 @@ public class ExplanationTest {
         String queryString = "match " +
                 "(role1: $x, role2: $y) isa relation1;" +
                 "$x id '" + a1.getId() + "';" +
-                "$y id '" + a2.getId() + "';";
+                "$y id '" + a2.getId() + "'; get;";
 
-        MatchQuery query = eiqb.parse(queryString);
-        List<Answer> answers = query.admin().execute();
+        GetQuery query = eiqb.parse(queryString);
+        List<Answer> answers = query.execute();
         assertEquals(answers.size(), 0);
     }
 
@@ -237,15 +237,15 @@ public class ExplanationTest {
         String queryString = "match " +
                 "(role1: $x, role2: $w) isa inferredRelation;" +
                 "$x has name $xName;" +
-                "$w has name $wName;";
+                "$w has name $wName; get;";
 
-        MatchQuery query = eiqb.parse(queryString);
+        GetQuery query = eiqb.parse(queryString);
         List<Answer> answers = query.execute();
         answers.forEach(a -> assertTrue(answerHasConsistentExplanations(a)));
     }
 
     private static Concept getConcept(GraknTx graph, String typeLabel, Object val){
-        return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).execute().iterator().next().get("x");
+        return graph.graql().match(Graql.var("x").has(typeLabel, val)).get("x").findAny().get();
     }
 
     private Answer findAnswer(Answer a, List<Answer> list){

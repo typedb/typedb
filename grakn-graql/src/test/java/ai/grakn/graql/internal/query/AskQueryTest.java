@@ -59,7 +59,7 @@ public class AskQueryTest {
     }
 
     @Test
-    public void testNegativeQueryShortcutEdge() {
+    public void testNegativeQueryRolePlayerEdge() {
         assertFalse(qb.match(
                 var().rel("x").rel("y").isa("directed-by"),
                 var("x").val("Apocalypse Now"),
