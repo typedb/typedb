@@ -80,7 +80,7 @@ public class JsonMigratorMainTest {
     @Test
     public void jsonMigratorCalledWithNoArgs_HelpMessagePrintedToSystemOut() {
         run("json");
-        assertThat(sysOut.getLog(), containsString("usage: migration.sh"));
+        assertThat(sysOut.getLog(), containsString("usage: graql migrate"));
     }
 
     @Test

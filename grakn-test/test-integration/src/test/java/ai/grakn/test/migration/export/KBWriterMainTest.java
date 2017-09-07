@@ -75,21 +75,21 @@ public class KBWriterMainTest {
     public void exportCalledWithNoArgs_HelpMessagePrintedToSystemOut(){
         run("export", "schema");
 
-        assertThat(sysOut.getLog(), containsString("usage: migration.sh"));
+        assertThat(sysOut.getLog(), containsString("usage: graql migrate"));
     }
 
     @Test
     public void exportCalledWithHelpFlag_HelpMessagePrintedToSystemOut(){
         run("export", "-h");
 
-        assertThat(sysOut.getLog(), containsString("usage: migration.sh"));
+        assertThat(sysOut.getLog(), containsString("usage: graql migrate"));
     }
 
     @Test
     public void exportCalledWithIncorrectURI_ErrorIsPrintedToSystemErr(){
         run("export", "-u", engine.uri().substring(1), "-data", "-keyspace", keyspace);
 
-        assertThat(sysErr.getLog(), containsString("Could not connect to Grakn Engine. Have you run 'grakn.sh start'?"));
+        assertThat(sysErr.getLog(), containsString("Could not connect to Grakn Engine. Have you run 'grakn server start'?"));
     }
 
     private void run(String... args){
