@@ -4,8 +4,8 @@ if [ -z "$FOREGROUND" ]; then
   export FOREGROUND=false
 fi
 
-# Set USE_CASSANDRA if factory.internal is Janus
-GRAKN_ENGINE_FACTORY=$(grep ^factory.internal= "${GRAKN_CONFIG}"| cut -d '=' -f 2)
-if [[ "$GRAKN_ENGINE_FACTORY" == "ai.grakn.factory.TxFactoryJanus" ]]; then
+# Set USE_CASSANDRA if knowledge-base.mode is production
+GRAKN_ENGINE_FACTORY=$(grep ^knowledge-base.mode= "${GRAKN_CONFIG}"| cut -d '=' -f 2)
+if [[ "$GRAKN_ENGINE_FACTORY" == "production" ]]; then
     USE_CASSANDRA=true
 fi
