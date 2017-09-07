@@ -124,7 +124,7 @@ cassandra_start_and_wait_until_ready() {
   fi
 }
 
-cassandra_stop_cassandra() {
+grakn_server_stop_cassandra() {
   echo -n "Stopping Cassandra..."
   if [[ -e $CASSANDRA_PS ]]; then
     pid=`cat $CASSANDRA_PS`
@@ -219,7 +219,7 @@ redis_start_and_wait_until_ready() {
   fi
 }
 
-redis_stop_redis() {
+grakn_server_stop_redis() {
   echo -n "Stopping Redis..."
   local redis_bin=
   if [ "$(uname)" == "Darwin" ]; then
@@ -315,7 +315,7 @@ grakn_start_and_wait_until_ready() {
   fi
 }
 
-grakn_stop_grakn() {
+grakn_server_stop_grakn() {
   echo -n "Stopping Grakn..."
   if [[ -e "$GRAKN_PS" ]]; then
     kill `cat $GRAKN_PS`
@@ -341,13 +341,13 @@ grakn_clean_grakn() {
 # command line helpers
 # ================================================
 grakn_server_stop() {
-  grakn_stop_grakn
+  grakn_server_stop_grakn
   status_grakn=$?
 
-  redis_stop_redis
+  grakn_server_stop_redis
   status_redis=$?
 
-  cassandra_stop_cassandra
+  grakn_server_stop_cassandra
   status_cassandra=$?
 
   if [ $status_grakn -eq 0 ] && [ $status_redis -eq 0 ] && [ $status_cassandra -eq 0 ] ; then
@@ -358,7 +358,7 @@ grakn_server_stop() {
 }
 
 # attempt to start grakn components. if one of them fails, abort everthing
-grakn_grakn_start() {
+grakn_server_start_grakn() {
   grakn_start_and_wait_until_ready
   grakn=$?
   # log
@@ -368,7 +368,7 @@ grakn_grakn_start() {
   return $grakn
 }
 
-grakn_redis_start() {
+grakn_server_start_redis() {
   redis_start_and_wait_until_ready
   redis=$?
   # log
@@ -378,7 +378,7 @@ grakn_redis_start() {
   return $redis
 }
 
-grakn_cassandra_start() {
+grakn_server_start_cassandra() {
   cassandra_start_and_wait_until_ready
   cassandra=$?
   # log
@@ -389,25 +389,16 @@ grakn_cassandra_start() {
 }
 
 grakn_server_start() {
-  cassandra_start_and_wait_until_ready
-  cassandra=$?
-  if [ $cassandra -ne 0 ] ; then
-    echo "Unable to start Cassandra"
-  fi
+  grakn_server_start_cassandra
+  local cassandra=$?
 
-  redis_start_and_wait_until_ready
-  redis=$?
-  if [ $redis -ne 0 ] ; then
-    echo "Unable to start Redis"
-  fi
+  grakn_server_start_redis
+  local redis=$?
 
-  grakn_start_and_wait_until_ready
-  grakn=$?
-  if [ $grakn -ne 0 ] ; then
-    echo "Unable to start Grakn"
-  fi
+  grakn_server_start_grakn
+  local grakn=$?
 
-  status=
+  local status=
   if [ $cassandra -ne 0 ] || [ $redis -ne 0 ] || [ $grakn -ne 0 ]; then
     status=1
   else
@@ -470,7 +461,7 @@ grakn_server_clean() {
     echo -n "Cleaning Redis..."
     redis_start_and_wait_until_ready
     redis_clean_redis
-    redis_stop_redis
+    grakn_server_stop_redis
     echo "SUCCESS"
 
     echo -n "Cleaning Grakn..."
@@ -501,6 +492,92 @@ Start Grakn with 'grakn server start' (by default, the dashboard will be accessi
 You can then perform queries by opening a console with 'graql console'"
 }
 
+# ================================================
+# case statement helpers for branches that are too big
+# ================================================
+case_grakn_server_start() {
+  # attempt to start. check if there's any failure
+  # abort and terminate if so
+  status=
+  case "$1" in
+    grakn)
+      grakn_server_start_grakn
+      status=$?
+      if [ $status -eq 0 ] ; then
+        # do nothing
+        exit 0
+      else
+        # failure detected. attempt to terminate every component gracefully
+        echo "Encountering failure during startup. Attempting to terminate Grakn gracefully..."
+        grakn_server_stop
+        status=$?
+        # TODO: graceful termination failed. report failures
+      fi
+    ;;
+    redis)
+      echo "hola"
+      grakn_server_start_redis
+      status=$?
+      if [ $status -eq 0 ] ; then
+        # do nothing
+        exit 0
+      else
+        # failure detected. attempt to terminate every component gracefully
+        echo "Encountering failure during startup. Attempting to terminate Redis gracefully..."
+        grakn_server_stop
+        status=$?
+        # TODO: graceful termination failed. report failures
+      fi
+    ;;
+    cassandra)
+      grakn_server_start_cassandra
+      status=$?
+      if [ $status -eq 0 ] ; then
+        # do nothing
+        exit 0
+      else
+        # failure detected. attempt to terminate every component gracefully
+        echo "Encountering failure during startup. Attempting to terminate Cassandra gracefully..."
+        grakn_server_stop
+        status=$?
+        # TODO: graceful termination failed. report failures
+      fi
+    ;;
+    *)
+      grakn_server_start
+      status=$?
+      if [ $status -eq 0 ] ; then
+        # do nothing
+        exit 0
+      else
+        # failure detected. attempt to terminate every component gracefully
+        echo "Encountering failure during startup. Attempting to terminate Grakn gracefully..."
+        grakn_server_stop
+        status=$?
+        # TODO: graceful termination failed. report failures
+      fi
+    ;;
+  esac
+}
+
+case_grakn_server_stop() {
+  # TODO: handle if graceful termination failed and log failures
+  case $1 in
+    grakn)
+      grakn_server_stop_grakn
+    ;;
+    redis)
+      grakn_server_stop_redis
+    ;;
+    cassandra)
+      grakn_server_stop_cassandra
+    ;;
+    *)
+      grakn_server_stop
+    ;;
+  esac
+}
+
 # =============================================
 # main routine
 # =============================================
@@ -508,60 +585,13 @@ You can then perform queries by opening a console with 'graql console'"
 update_classpath
 
 case "$1" in
-  grakn)
-    case "$2" in
-      start)
-        grakn_grakn_start
-      ;;
-      stop)
-        grakn_stop_grakn
-      ;;
-    esac
-  ;;
-  redis)
-    case "$2" in
-      start)
-        grakn_redis_start
-      ;;
-      stop)
-        redis_stop_redis
-      ;;
-    esac
-  ;;
-  cassandra)
-    case "$2" in
-      start)
-        grakn_cassandra_start
-      ;;
-      stop)
-        cassandra_stop_cassandra
-      ;;
-    esac
-  ;;
   server)
     case "$2" in
       start)
-        # attempt to start every component in the background. check if there's any failure
-        # abort and terminate every components if so
-        grakn_server_start
-        status=$?
-        if [ $status -eq 0 ] ; then
-          # do nothing
-          exit 0
-        else
-          # failure detected. attempt to terminate every component gracefully
-          echo "Encountering failure during startup. Attempting to terminate Grakn gracefully..."
-          grakn_server_stop
-          status=$?
-          # TODO: graceful termination failed. report failures
-        fi
+        case_grakn_server_start $3
       ;;
       stop)
-        # user typed in 'grakn server stop'
-        # attempt to terminate every components gracefully
-        grakn_server_stop
-        status=$?
-        # TODO: graceful termination failed. report failures
+        case_grakn_server_stop $3
       ;;
       status)
         grakn_server_status
