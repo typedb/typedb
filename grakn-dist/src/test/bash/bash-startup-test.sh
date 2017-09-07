@@ -7,7 +7,6 @@
 BASEDIR=$(dirname "$0")
 GRAKN_DIST_TARGET=$BASEDIR/../../../target/
 GRAKN_DIST_TMP=$GRAKN_DIST_TARGET/grakn-bash-test/
-GRAKN_DIST_BIN=${GRAKN_DIST_TMP}/bin/
 REDIS_DATA_DIR=./db/redis
 
 startEngine(){
@@ -33,7 +32,6 @@ oneTimeSetUp() {
 }
 
 oneTimeTearDown() {
-
   echo "y" | "${GRAKN_DIST_TMP}"/grakn server clean
   "${GRAKN_DIST_TMP}"/grakn server stop
 }
