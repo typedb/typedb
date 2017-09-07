@@ -230,20 +230,21 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     private Stream<Answer> getIdPredicateAnswerStream(Stream<Answer> stream){
-        Answer idPredicateAnswer = getSubstitution();
+        Answer idPredicateAnswer = getSubstitution().merge(getRoleSubstitution());
         return stream.map(answer -> {
             AnswerExplanation exp = answer.getExplanation();
             return answer.merge(idPredicateAnswer).explain(exp);
         });
     }
 
-    private Stream<Answer> getFilteredAnswerStream(Stream<Answer> answers, Set<Unifier> permutationUnifiers){
+    private Stream<Answer> getFilteredRuleAnswerStream(Stream<Answer> answers, InferenceRule rule){
         Set<Var> vars = getVarNames();
+        Set<Var> expansionVars = getAtom().getRoleExpansionVariables();
         Set<TypeAtom> mappedTypeConstraints = atom.getSpecificTypeConstraints();
         return getIdPredicateAnswerStream(answers)
                 .filter(a -> entityTypeFilter(a, mappedTypeConstraints))
                 .map(a -> a. filterVars(vars))
-                .flatMap(a -> a.permute(permutationUnifiers));
+                .flatMap(a -> a.expandHierarchies(expansionVars));
     }
 
     /**
@@ -261,7 +262,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                           Cache<ReasonerAtomicQuery, ?> dCache,
                                           boolean differentialJoin){
 
-        LOG.trace("Applying rule " + rule.getRuleId());
+        LOG.debug("Applying rule " + rule + permutationUnifier);
 
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
@@ -297,7 +298,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .filter(a -> !a.isEmpty());
 
         //if query not exactly equal to the rule head, do some conversion
-        return  isHeadEquivalent? dCache.record(this, answers) : dCache.record(this, getFilteredAnswerStream(answers, getAtom().getPermutationUnifiers(ruleHead.getAtom())));
+        return isHeadEquivalent? dCache.record(this, answers) : dCache.record(this, getFilteredRuleAnswerStream(answers,rule));
     }
 
     /**
@@ -313,7 +314,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                        boolean differentialJoin){
         boolean queryAdmissible = !subGoals.contains(this);
 
-        LOG.trace("AQ: " + this);
+        LOG.debug("AQ: " + this);
 
         Stream<Answer> answerStream = cache.contains(this) ? Stream.empty() : dCache.record(this, lookup(cache));
         if(queryAdmissible) {
@@ -377,17 +378,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     public Iterator<RuleTuple> getRuleIterator(){
         return getAtom().getApplicableRules()
-
-                .map(r -> {
-                    Unifier ruleUnifier = r.getUnifier(getAtom());
-                    Unifier ruleUnifierInv = ruleUnifier.inverse();
-                    return new RuleTuple(new InferenceRule(r)
-                                            .propagateConstraints(getAtom(), ruleUnifierInv),
-                                            ruleUnifier,
-                                            new UnifierImpl());
-                })
-
-                /*
                 .flatMap(r -> {
                     Unifier ruleUnifier = r.getUnifier(getAtom());
                     Unifier ruleUnifierInv = ruleUnifier.inverse();
@@ -398,7 +388,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                             ruleUnifier,
                                             permutationUnifier));
                 })
-                */
                 .sorted(Comparator.comparing(rt -> -rt.getRule().resolutionPriority()))
                 .iterator();
     }
@@ -415,7 +404,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     private class QueryAnswerIterator extends ReasonerQueryIterator {
 
         private int iter = 0;
-        private long answers = 0;
+        private final Set<Answer> answers = new HashSet<>();
         private final Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
 
         private final LazyQueryCache<ReasonerAtomicQuery> cache;
@@ -436,7 +425,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         @Override
         public Stream<Answer> hasStream(){
             Iterable<Answer> iterable = () -> this;
-            return StreamSupport.stream(iterable.spliterator(), false).distinct().peek(ans -> answers++);
+            return StreamSupport.stream(iterable.spliterator(), false).distinct();
         }
 
         private void computeNext(){
@@ -457,7 +446,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 updateCache();
                 long dAns = differentialAnswerSize();
                 if (dAns != 0 || iter == 0) {
-                    LOG.debug("Atom: " + query().getAtom() + " iter: " + iter + " answers: " + answers + " dAns = " + dAns);
+                    LOG.debug("Atom: " + query().getAtom() + " iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
                     computeNext();
                     return answerIterator.hasNext();
                 }
@@ -476,7 +465,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
          */
         @Override
         public Answer next() {
-            return answerIterator.next();
+            Answer next = answerIterator.next();
+            answers.add(next);
+            return next;
         }
 
         private long differentialAnswerSize(){

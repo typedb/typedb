@@ -147,6 +147,14 @@ public interface Answer {
     Stream<Answer> permute(Set<Unifier> unifierSet);
 
     /**
+     *
+     * @param vars
+     * @return
+     */
+    @CheckReturnValue
+    Stream<Answer> expandHierarchies(Set<Var> vars);
+
+    /**
      * @return an explanation object indicating how this answer was obtained
      */
     @CheckReturnValue

@@ -65,52 +65,7 @@ public class GeoInferenceTest {
     }
 
     @Test
-    public void testTransitiveQueryWithTypes() {
-        QueryBuilder qb = geoKB.tx().graql().infer(false);
-        QueryBuilder iqb = geoKB.tx().graql().infer(true);
-        String queryString = "match $x isa city;"+
-                        "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
-                        "$y isa country;$y has name 'Poland'; select $x;";
-
-        String explicitQuery = "match " +
-                "$x isa city;$x has name $name;{$name val 'Warsaw';} or {$name val 'Wroclaw';};select $x;";
-
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
-    }
-
-    @Test
-    public void testTransitiveQueryWithTypes_NoRoles() {
-        QueryBuilder qb = geoKB.tx().graql().infer(false);
-        QueryBuilder iqb = geoKB.tx().graql().infer(true);
-        String queryString = "match " +
-                "$z1 isa city;$z1 has name $name;" +
-                "($z1, $z2) isa is-located-in;" +
-                "$z2 isa country;$z2 has name 'Poland';" +
-                "select $z1, $name;";
-        String queryString2 = "match " +
-                "$z1 isa country;$z1 has name 'Poland';" +
-                "$z2 isa city;$z2 has name $name;"+
-                "($z1, $z2) isa is-located-in;" +
-                "select $z2, $name;";
-        String explicitQuery = "match " +
-                "$z1 isa city;$z1 has name $name;{$name val 'Warsaw';} or {$name val 'Wroclaw';};select $z1, $name;";
-        String explicitQuery2 = "match " +
-                "$z2 isa city;$z2 has name $name;{$name val 'Warsaw';} or {$name val 'Wroclaw';};select $z2, $name;";
-
-        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
-        QueryAnswers explicitAnswers = queryAnswers(qb.parse(explicitQuery));
-
-        assertEquals(answers, explicitAnswers);
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
-
-        assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
-    }
-
-    @Test
-    public void testTransitiveQueryWithTypes2() {
+    public void testTransitiveQuery_withGuards() {
         QueryBuilder qb = geoKB.tx().graql().infer(false);
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match " +
@@ -131,7 +86,7 @@ public class GeoInferenceTest {
     }
 
     @Test
-    public void testTransitiveQueryWithTypes2_NoRoles() {
+    public void testTransitiveQuery_withTypes_noRoles() {
         QueryBuilder qb = geoKB.tx().graql().infer(false);
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match " +
@@ -157,13 +112,15 @@ public class GeoInferenceTest {
     }
 
     @Test
-    public void testSpecificTransitiveQuery() {
+    public void testTransitiveQuery_withSpecificResource() {
         GraknTx graph = geoKB.tx();
         QueryBuilder iqb = graph.graql().infer(true);
-        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;" +
+        String queryString = "match " +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$y has name 'Poland';";
 
-        String queryString2 = "match (geo-entity: $x, entity-location: $y) isa is-located-in;" +
+        String queryString2 = "match " +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$y has name 'Europe';";
 
         Concept poland = getConcept(graph, "name", "Poland");
@@ -181,7 +138,28 @@ public class GeoInferenceTest {
     }
 
     @Test
-    public void testSpecificTransitiveQueryWithIds() {
+    public void testTransitiveQuery_withSpecificResource_noRoles() {
+        GraknTx graph = geoKB.tx();
+        QueryBuilder iqb = graph.graql().infer(true);
+        Concept masovia = getConcept(graph, "name", "Masovia");
+        String queryString = "match " +
+                "($x, $y) isa is-located-in;" +
+                "$y has name 'Masovia';";
+        String queryString2 = "match " +
+                "{(geo-entity: $x, entity-location: $y) isa is-located-in or " +
+                "(geo-entity: $y, entity-location: $x) isa is-located-in;};" +
+                "$y has name 'Masovia';";
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        assertEquals(answers.size(), 5);
+        answers.forEach(ans -> assertEquals(ans.size(), 2));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
+        assertEquals(answers.size(), answers2.size());
+    }
+
+    @Test
+    public void testTransitiveQuery_withSubstitution() {
         GraknTx graph = geoKB.tx();
         QueryBuilder iqb = graph.graql().infer(true);
         Concept poland = getConcept(graph, "name", "Poland");
@@ -207,28 +185,7 @@ public class GeoInferenceTest {
     }
 
     @Test
-    public void testSpecificTransitiveQuery_NoRoles() {
-        GraknTx graph = geoKB.tx();
-        QueryBuilder iqb = graph.graql().infer(true);
-        Concept masovia = getConcept(graph, "name", "Masovia");
-        String queryString = "match " +
-                "($x, $y) isa is-located-in;" +
-                "$y has name 'Masovia';";
-        String queryString2 = "match " +
-                "{(geo-entity: $x, entity-location: $y) isa is-located-in or " +
-                "(geo-entity: $y, entity-location: $x) isa is-located-in;};" +
-                "$y has name 'Masovia';";
-
-        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
-        assertEquals(answers.size(), 5);
-        answers.forEach(ans -> assertEquals(ans.size(), 2));
-        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
-        QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
-        assertEquals(answers.size(), answers2.size());
-    }
-
-    @Test
-    public void testSpecificTransitiveQueryWithIds_NoRoles() {
+    public void testTransitiveQuery_withSubstitution_noRoles() {
         GraknTx graph = geoKB.tx();
         QueryBuilder iqb = graph.graql().infer(true);
         Concept masovia = getConcept(graph, "name", "Masovia");
@@ -250,7 +207,23 @@ public class GeoInferenceTest {
     }
 
     @Test
-    public void testTransitiveClosureQuery() {
+    public void testTransitiveQuery_withSubstitution_variableRoles() {
+        GraknTx graph = geoKB.tx();
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
+        Concept masovia = getConcept(graph, "name", "Masovia");
+        String queryString = "match " +
+                "($r1: $x, $r2: $y) isa is-located-in;" +
+                "$y id '" + masovia.getId().getValue() + "';";
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+
+        //assertEquals(answers.size(), 408);
+        assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testTransitiveQuery_Closure() {
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
 
@@ -261,7 +234,7 @@ public class GeoInferenceTest {
     }
 
     @Test
-    public void testTransitiveClosureQuery_NoRoles() {
+    public void testTransitiveQuery_Closure_NoRoles() {
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match ($x, $y) isa is-located-in;";
 
@@ -272,21 +245,55 @@ public class GeoInferenceTest {
     }
 
     @Test
-    public void testTransitiveClosureQuery_VariableRoles() {
+    public void testTransitiveQuery_Closure_NoRoles_withSubstitution() {
+        GraknTx graph = geoKB.tx();
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
+        Concept masovia = getConcept(graph, "name", "Masovia");
+        String queryString = "match " +
+                "($x, $y) isa is-located-in;" +
+                "$y id '" + masovia.getId().getValue() + "';";
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        //assertEquals(answers.size(), 102);
+        assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testTransitiveQuery_Closure_variableRoles() {
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match ($r1: $x, $r2: $y) isa is-located-in;";
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
 
-        VarPattern rel = var()
-                .rel(var("r1").label("role"), var("x"))
-                .rel(var("r2").label("role"), var("y")).isa("is-located-in");
-        List<Answer> execute = iqb.infer(false).match(rel).execute();
+        //assertEquals(answers.size(), 408);
+        assertEquals(answers, answers2);
+    }
 
-        Set<Answer> collect = answers.stream().map(a -> a.filterVars(Sets.newHashSet(var("x"), var("y")))).collect(toSet());
+    @Test
+    public void testTransitiveQuery_Closure_variableSpecificRoles() {
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
 
-        assertEquals(answers.size(), 102);
+        VarPattern rolePattern = var()
+                .rel(var("r1").label("geo-entity"), var("x"))
+                .rel(var("r2").label("entity-location"), var("y"));
+
+        QueryAnswers answers = queryAnswers(iqb.match(rolePattern));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).match(rolePattern));
+
+        //assertEquals(answers.size(), 408);
+        assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testTransitiveQuery_Closure_singleVariableRole() {
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
+        String queryString = "match ($x, $r2: $y) isa is-located-in;";
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+
         assertEquals(answers, answers2);
     }
 

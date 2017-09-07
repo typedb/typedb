@@ -72,7 +72,7 @@ class AnswerState extends ResolutionState {
 
     private Answer getRuleAnswer(ReasonerAtomicQuery query, InferenceRule rule){
         Answer answer = getSubstitution()
-                .merge(rule.getHead().getSubstitution())
+                .merge(rule.getHead().getRoleSubstitution())
                 .unify(getUnifier());
         if (answer.isEmpty()) return answer;
 

@@ -99,6 +99,8 @@ public abstract class Atom extends AtomicBase {
      */
     protected Stream<IdPredicate> getPartialSubstitutions(){ return Stream.empty();}
 
+    public Set<Var> getRoleExpansionVariables(){ return Collections.emptySet();}
+
     /**
      * compute base resolution priority of this atom
      * @return priority value
@@ -170,6 +172,11 @@ public abstract class Atom extends AtomicBase {
      * @return true if the atom requires materialisation in order to be referenced
      */
     public boolean requiresMaterialisation(){ return false; }
+
+    /**
+     * @return true if the atom requires answer refinement (computation of role combinations)
+     */
+    public boolean requiresAnswerRefinement(){ return false; }
 
     /**
      * @return corresponding type if any

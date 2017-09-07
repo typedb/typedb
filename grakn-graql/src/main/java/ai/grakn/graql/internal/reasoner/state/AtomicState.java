@@ -89,17 +89,11 @@ public class AtomicState extends QueryState{
     ResolutionState propagateAnswer(AnswerState state){
         Answer answer = state.getAnswer();
         if (answer.isEmpty()) return null;
-        return new AnswerState(answer, getUnifier(), getParentState());
-        /*
-        if (currentRule != null){
-            Set<Unifier> permutationUnifiers = query.getAtom().getPermutationUnifiers(currentRule.getHead().getAtom());
-            return permutationUnifiers.size() == 1?
-                    new AnswerState(answer, getUnifier(), getParentState()) :
-                    new PermutationState(answer, getUnifier(), getParentState(), permutationUnifiers);
-        }
 
+        if (currentRule != null && query.getAtom().requiresAnswerRefinement()){
+            return new RoleExpansionState(answer, getUnifier(), query.getAtom().getRoleExpansionVariables(), getParentState());
+        }
         return new AnswerState(answer, getUnifier(), getParentState());
-        */
     }
 
     @Override
