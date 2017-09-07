@@ -24,10 +24,10 @@ import ai.grakn.graql.admin.DeleteQueryAdmin;
 import javax.annotation.CheckReturnValue;
 
 /**
- * A query for deleting concepts from a match query.
+ * A query for deleting concepts from a {@link Match}.
  * <p>
- * A {@code DeleteQuery} is built from a {@code MatchQuery} and will perform a delete operation for every result of
- * the @{code MatchQuery}.
+ * A {@link DeleteQuery} is built from a {@link Match} and will perform a delete operation for every result of
+ * the {@link Match}.
  * <p>
  * The delete operation to perform is based on what {@link VarPattern} objects are provided to it. If only variable names
  * are provided, then the delete query will delete the concept bound to each given variable name. If property flags

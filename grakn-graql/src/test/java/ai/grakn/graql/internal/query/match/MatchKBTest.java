@@ -29,29 +29,29 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.mock;
 
-public class MatchQueryKBTest {
+public class MatchKBTest {
 
-    private final AbstractMatchQuery query =
-            new MatchQueryBase(Patterns.conjunction(Sets.newHashSet(var("x").admin())));
+    private final AbstractMatch query =
+            new MatchBase(Patterns.conjunction(Sets.newHashSet(var("x").admin())));
 
     @Test
-    public void matchQueriesContainingTheSameGraphAndMatchQueryBaseAreEqual() {
+    public void matchesContainingTheSameGraphAndMatchBaseAreEqual() {
         GraknTx graph = mock(GraknTx.class);
 
-        MatchQueryTx query1 = new MatchQueryTx(graph, query);
-        MatchQueryTx query2 = new MatchQueryTx(graph, query);
+        MatchTx query1 = new MatchTx(graph, query);
+        MatchTx query2 = new MatchTx(graph, query);
 
         assertEquals(query1, query2);
         assertEquals(query1.hashCode(), query2.hashCode());
     }
 
     @Test
-    public void matchQueriesContainingDifferentGraphsAreNotEqual() {
+    public void matchesContainingDifferentGraphsAreNotEqual() {
         GraknTx graph1 = mock(GraknTx.class);
         GraknTx graph2 = mock(GraknTx.class);
 
-        MatchQueryTx query1 = new MatchQueryTx(graph1, query);
-        MatchQueryTx query2 = new MatchQueryTx(graph2, query);
+        MatchTx query1 = new MatchTx(graph1, query);
+        MatchTx query2 = new MatchTx(graph2, query);
 
         assertNotEquals(query1, query2);
     }

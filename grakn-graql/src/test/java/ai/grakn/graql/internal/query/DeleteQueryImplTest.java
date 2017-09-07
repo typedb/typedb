@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query;
 
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import com.google.common.collect.Sets;
 import org.junit.Test;
@@ -34,14 +34,14 @@ import static org.junit.Assert.assertNotEquals;
 
 public class DeleteQueryImplTest {
 
-    private final MatchQuery match1 = Graql.match(var("x").isa("movie"));
-    private final MatchQuery match2 = Graql.match(var("y").isa("movie"));
+    private final Match match1 = Graql.match(var("x").isa("movie"));
+    private final Match match2 = Graql.match(var("y").isa("movie"));
 
     private final Collection<Var> vars1 = Sets.newHashSet(var("x"));
     private final Collection<Var> vars2 = Sets.newHashSet(var("y"));
 
     @Test
-    public void deleteQueriesWithTheSameMatchQueryAndVarsAreEqual() {
+    public void deleteQueriesWithTheSameMatchAndVarsAreEqual() {
         DeleteQuery query1 = DeleteQueryImpl.of(vars1, match1);
         DeleteQuery query2 = DeleteQueryImpl.of(vars1, match1);
 
@@ -50,7 +50,7 @@ public class DeleteQueryImplTest {
     }
 
     @Test
-    public void deleteQueriesWithDifferentMatchQueriesAreDifferent() {
+    public void deleteQueriesWithDifferentMatchesAreDifferent() {
         DeleteQuery query1 = DeleteQueryImpl.of(vars1, match1);
         DeleteQuery query2 = DeleteQueryImpl.of(vars1, match2);
 

@@ -28,12 +28,12 @@ import java.util.List;
 /**
  * A query for inserting data.
  * <p>
- * A {@code InsertQuery} can be built from a {@code QueryBuilder} or a {@code MatchQuery}.
+ * A {@link InsertQuery} can be built from a {@link QueryBuilder} or a {@link Match}.
  * <p>
  * When built from a {@code QueryBuilder}, the insert query will execute once, inserting all the variables provided.
  * <p>
- * When built from a {@code MatchQuery}, the insert query will execute for each result of the {@code MatchQuery},
- * where variable names in the {@code InsertQuery} are bound to the concept in the result of the {@code MatchQuery}.
+ * When built from a {@link Match}, the {@link InsertQuery} will execute for each result of the {@link Match},
+ * where variable names in the {@link InsertQuery} are bound to the concept in the result of the {@link Match}.
  *
  * @author Felix Chapman
  */

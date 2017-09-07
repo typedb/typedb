@@ -20,6 +20,7 @@ package ai.grakn.exception;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Query;
+
 import static ai.grakn.util.ErrorMessage.AUTHENTICATION_FAILURE;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE_KEYSPACE;
 import static ai.grakn.util.ErrorMessage.ENGINE_ERROR;
@@ -122,7 +123,7 @@ public class GraknServerException extends GraknBackendException {
     }
 
     /**
-     * Thrown when asked to explain a non-match query
+     * Thrown when asked to explain a non-get query
      */
     public static GraknServerException invalidQueryExplaination(String query){
         return new GraknServerException(EXPLAIN_ONLY_MATCH.getMessage(query), 405);

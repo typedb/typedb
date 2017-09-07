@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknTx;
 import ai.grakn.exception.GraqlQueryException;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.admin.VarProperty;
@@ -36,7 +37,7 @@ import java.util.stream.Stream;
 public interface VarPropertyInternal extends VarProperty {
 
     /**
-     * Check if the given property can be used in a match query
+     * Check if the given property can be used in a {@link Match}
      */
     void checkValid(GraknTx graph, VarPatternAdmin var) throws GraqlQueryException;
 

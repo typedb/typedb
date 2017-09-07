@@ -23,7 +23,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Type;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -134,14 +134,14 @@ public class GraknQueryHandlers {
                 // to make this query execute faster split it into two parts:
                 //     the first does the ordering
                 //     the second fetches the resources
-                MatchQuery graknLdbcQuery2 = match(
+                Match graknLdbcQuery2 = match(
                         var().rel(thePerson.has(personID, var().val(ldbcQuery2.personId()))).rel(aFriend).isa(knowsType),
                         var().rel(aFriend).rel(aMessage).isa(hasCreatorType),
                         aMessage.has(creationDate, aMessageDate).has(messageID, aMessageId),
                         aMessageDate.val(lte(maxDate)));
 
                 List<Answer> rawResult = graknLdbcQuery2.orderBy(aMessageDate, Order.desc)
-                        .limit(ldbcQuery2.limit()).withTx(graknTx).execute();
+                        .limit(ldbcQuery2.limit()).withTx(graknTx).get().execute();
 
                 // sort first by date and then by message id
                 Comparator<Answer> ugly = Comparator.<Answer>comparingLong(
@@ -151,13 +151,13 @@ public class GraknQueryHandlers {
                 // process the query results
                 List<LdbcQuery2Result> result = rawResult.stream().sorted(ugly).map(map -> {
                     // fetch the resources attached to entities in the queries
-                    MatchQuery queryExtendedInfo = match(
+                    Match queryExtendedInfo = match(
                             aFriend.has(personFirstName, aFriendFirstName).has(personLastName, aFriendLastName).has(personID, aFriendId),
                             var().rel(aFriend).rel(aMessage).isa(hasCreatorType),
                             aMessage.has(creationDate, aMessageDate)
                                     .has(messageID, var().val(GraknQueryHandlers.<Long>resource(map, aMessageId))),
                             or(aMessage.has(messageContent, someContent), aMessage.has(messageImageFile, someContent)));
-                    Answer extendedInfo = queryExtendedInfo.withTx(graknTx).execute().iterator().next();
+                    Answer extendedInfo = queryExtendedInfo.withTx(graknTx).get().execute().iterator().next();
 
                     // prepare the answer from the original query and the query for extended information
                     return new LdbcQuery2Result(
@@ -189,14 +189,14 @@ public class GraknQueryHandlers {
                 Var responderId = var("responderId");
                 Var responderFirst = var("responderFirst");
                 Var responderLast = var("responderLast");
-                MatchQuery orderQuery = match(
+                Match orderQuery = match(
                         thePerson.has(personID, var().val(ldbcQuery8.personId())),
                         var().rel(thePerson).rel(aMessage).isa(hasCreatorType),
                         var().rel(aMessage).rel(reply, aReply).isa(replyOf),
                         aReply.has(creationDate, aMessageDate).has(messageID, aMessageId)
                 );
                 List<Answer> rawResult = orderQuery.withTx(graknTx)
-                        .orderBy(aMessageDate, Order.desc).limit(ldbcQuery8.limit()).execute();
+                        .orderBy(aMessageDate, Order.desc).limit(ldbcQuery8.limit()).get().execute();
 
                 // sort first by date and then by message id
                 Comparator<Answer> ugly = Comparator.<Answer>comparingLong(
@@ -206,13 +206,13 @@ public class GraknQueryHandlers {
                 // process the query results
                 List<LdbcQuery8Result> result = rawResult.stream().sorted(ugly).map(map -> {
                     // fetch the resources attached to entities in the queries
-                    MatchQuery queryExtendedInfo = match(
+                    Match queryExtendedInfo = match(
                             aReply.has(messageID, var().val(GraknQueryHandlers.<Long>resource(map, aMessageId))),
                             or(aReply.has(messageContent, someContent), aReply.has(messageImageFile, someContent)),
                             var().rel(aReply).rel(responder).isa(hasCreatorType),
                             responder.has(personID, responderId).has(personFirstName, responderFirst).has(personLastName, responderLast)
                             );
-                    Answer extendedInfo = queryExtendedInfo.withTx(graknTx).execute().iterator().next();
+                    Answer extendedInfo = queryExtendedInfo.withTx(graknTx).get().execute().iterator().next();
 
                     // prepare the answer from the original query and the query for extended information
                     return new LdbcQuery8Result(
@@ -242,7 +242,7 @@ public class GraknQueryHandlers {
 
                 // for speed fetch the Grakn id first
                 ConceptId graknPersonId = match(thePerson.has(personID, var().val(ldbcQuery1.personId()))).withTx(graknTx).
-                        execute().iterator().next().get(thePerson).getId();
+                        get().execute().iterator().next().get(thePerson).getId();
 
                 // sort by lastname and then id
                 Comparator<Answer> ugly = Comparator.<Answer,String>comparing(
@@ -252,16 +252,16 @@ public class GraknQueryHandlers {
                 // This query has to be split into 3 parts, each fetching people a further distance away
                 // The longer queries only need be executed if there are not enough shorter queries
                 // The last ordering by id must be done after each query has been executed
-                MatchQuery matchQuery = match(thePerson.id(graknPersonId),
+                Match match = match(thePerson.id(graknPersonId),
                         var().rel(thePerson).rel(aFriend).isa(knowsType),
                         aFriend.has(personFirstName,var().val(ldbcQuery1.firstName())).
                                 has(personLastName,aFriendLastName).
                                 has(personID, aFriendId),
                         thePerson.neq(aFriend));
-                List<Answer> distance1Result = matchQuery.withTx(graknTx).execute();
+                List<Answer> distance1Result = match.withTx(graknTx).get().execute();
                 List<LdbcQuery1Result> distance1LdbcResult = populateResults(distance1Result.stream().sorted(ugly), ldbcQuery1, graknTx, 1);
                 if (distance1Result.size() < ldbcQuery1.limit()) {
-                    matchQuery = match(thePerson.id(graknPersonId),
+                    match = match(thePerson.id(graknPersonId),
                             var().rel(thePerson).rel(anyone).isa(knowsType),
                             var().rel(anyone).rel(aFriend).isa(knowsType),
                             aFriend.has(personFirstName,var().val(ldbcQuery1.firstName())).
@@ -269,10 +269,10 @@ public class GraknQueryHandlers {
                                     has(personID, aFriendId),
                             thePerson.neq(aFriend)
                             );
-                    List<Answer> distance2Result = matchQuery.withTx(graknTx).execute();
+                    List<Answer> distance2Result = match.withTx(graknTx).get().execute();
                     distance1LdbcResult.addAll(populateResults(distance2Result.stream().sorted(ugly),ldbcQuery1, graknTx, 2));
                     if (distance1Result.size() + distance2Result.size() < ldbcQuery1.limit()) {
-                        matchQuery = match(thePerson.id(graknPersonId),
+                        match = match(thePerson.id(graknPersonId),
                                 var().rel(thePerson).rel(anyone).isa(knowsType),
                                 var().rel(anyone).rel(anyoneElse).isa(knowsType),
                                 var().rel(anyoneElse).rel(aFriend).isa(knowsType),
@@ -282,7 +282,7 @@ public class GraknQueryHandlers {
                                 thePerson.neq(aFriend),
                                 aFriend.neq(anyone)
                         );
-                        List<Answer> distance3Result = matchQuery.withTx(graknTx).execute();
+                        List<Answer> distance3Result = match.withTx(graknTx).get().execute();
                         distance1LdbcResult.addAll(populateResults(distance3Result.stream().sorted(ugly),ldbcQuery1, graknTx, 3));
                     }
                 }
@@ -303,19 +303,19 @@ public class GraknQueryHandlers {
             return graqlResults.limit(ldbcQuery1.limit()).map(map -> {
                 // these queries get all of the additional related material, excluding resources
                 Var aLocation = var("aLocation");
-                MatchQuery locationQuery = match(
+                Match locationQuery = match(
                         aFriend.id(map.get(aFriend).getId()),
                         var().rel(aFriend).rel(aLocation).isa(isLocatedIn));
-                Answer locationResult = locationQuery.withTx(graknTx).execute().iterator().next();
+                Answer locationResult = locationQuery.withTx(graknTx).get().execute().iterator().next();
 
                 Var aYear = var("aYear");
                 Var aOrganisation = var("aOrganisation");
-                MatchQuery universityQuery = match(
+                Match universityQuery = match(
                         aFriend.id(map.get(aFriend).getId()),
                         var().rel(aFriend).rel(aOrganisation).isa(studyAt).has(classYear, aYear),
                         var().rel(aOrganisation).rel(aLocation).isa(isLocatedIn)
                 );
-                List<Answer> universityResults = universityQuery.withTx(graknTx).execute();
+                List<Answer> universityResults = universityQuery.withTx(graknTx).get().execute();
                 List<List<Object>> universityProcessedResults = universityResults.stream().map(answer -> {
                     List<Object> result = new ArrayList<Object>();
                     result.add(getSingleResource(answer.get(aOrganisation).asEntity(), name, graknTx));
@@ -324,12 +324,12 @@ public class GraknQueryHandlers {
                     return result;
                 }).collect(Collectors.toList());
 
-                MatchQuery workQuery = match(
+                Match workQuery = match(
                         aFriend.id(map.get(aFriend).getId()),
                         var().rel(aFriend).rel(aOrganisation).isa(workAt).has(workFrom, aYear),
                         var().rel(aOrganisation).rel(aLocation).isa(isLocatedIn)
                 );
-                List<Answer> workResults = workQuery.withTx(graknTx).execute();
+                List<Answer> workResults = workQuery.withTx(graknTx).get().execute();
                 List<List<Object>> workProcessedResults = workResults.stream().map(answer -> {
                     List<Object> result = new ArrayList<Object>();
                     result.add(getSingleResource(answer.get(aOrganisation).asEntity(), name, graknTx));
@@ -377,10 +377,10 @@ public class GraknQueryHandlers {
         public void executeOperation(LdbcQuery13 ldbcQuery13, GraknDbConnectionState dbConnectionState, ResultReporter resultReporter) throws DbException {
             GraknSession session = dbConnectionState.session();
             try (GraknTx graknTx = session.open(GraknTxType.READ)) {
-                MatchQuery matchQuery = match(thePerson.has(personID,var().val(ldbcQuery13.person1Id())));
-                Concept person1 = matchQuery.withTx(graknTx).execute().iterator().next().get(thePerson);
-                matchQuery = match(thePerson.has(personID,var().val(ldbcQuery13.person2Id())));
-                Concept person2 = matchQuery.withTx(graknTx).execute().iterator().next().get(thePerson);
+                Match match = match(thePerson.has(personID,var().val(ldbcQuery13.person1Id())));
+                Concept person1 = match.withTx(graknTx).get().execute().iterator().next().get(thePerson);
+                match = match(thePerson.has(personID,var().val(ldbcQuery13.person2Id())));
+                Concept person2 = match.withTx(graknTx).get().execute().iterator().next().get(thePerson);
 
                 PathQuery pathQuery = compute().path().from(person1.getId()).to(person2.getId())
                         .in("knows", "person");

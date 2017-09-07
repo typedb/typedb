@@ -24,7 +24,7 @@ import ai.grakn.concept.Label;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -60,7 +60,7 @@ public class AdminTest {
 
     @Test
     public void testGetTypesInQuery() {
-        MatchQuery query = qb.match(
+        Match match = qb.match(
                 var("x").isa(label("movie").sub("production")).has("tmdb-vote-count", 400),
                 var("y").isa("character"),
                 var().rel("production-with-cast", "x").rel("y").isa("has-cast")
@@ -70,28 +70,21 @@ public class AdminTest {
                 "movie", "production", "tmdb-vote-count", "character", "production-with-cast", "has-cast"
         ).map(t -> rule.tx().<SchemaConcept>getSchemaConcept(Label.of(t))).collect(toSet());
 
-        assertEquals(types, query.admin().getSchemaConcepts());
+        assertEquals(types, match.admin().getSchemaConcepts());
     }
 
     @Test
     public void testDefaultGetSelectedNamesInQuery() {
-        MatchQuery query = qb.match(var("x").isa(var("y")));
+        Match match = qb.match(var("x").isa(var("y")));
 
-        assertEquals(Sets.newHashSet(Graql.var("x"), Graql.var("y")), query.admin().getSelectedNames());
-    }
-
-    @Test
-    public void testExplicitGetSelectedNamesInQuery() {
-        MatchQuery query = qb.match(var("x").isa(var("y"))).select("x");
-
-        assertEquals(Sets.newHashSet(Graql.var("x")), query.admin().getSelectedNames());
+        assertEquals(Sets.newHashSet(Graql.var("x"), Graql.var("y")), match.admin().getSelectedNames());
     }
 
     @Test
     public void testGetPatternInQuery() {
-        MatchQuery query = qb.match(var("x").isa("movie"), var("x").val("Bob"));
+        Match match = qb.match(var("x").isa("movie"), var("x").val("Bob"));
 
-        Conjunction<PatternAdmin> conjunction = query.admin().getPattern();
+        Conjunction<PatternAdmin> conjunction = match.admin().getPattern();
         assertNotNull(conjunction);
 
         Set<PatternAdmin> patterns = conjunction.getPatterns();
@@ -99,25 +92,25 @@ public class AdminTest {
     }
 
     @Test
-    public void testMutateMatchQuery() {
-        MatchQuery query = qb.match(var("x").isa("movie"));
+    public void testMutateMatch() {
+        Match match = qb.match(var("x").isa("movie"));
 
-        Conjunction<PatternAdmin> pattern = query.admin().getPattern();
+        Conjunction<PatternAdmin> pattern = match.admin().getPattern();
         pattern.getPatterns().add(var("x").has("title", "Spy").admin());
 
-        assertEquals(1, query.stream().count());
+        assertEquals(1, match.stream().count());
     }
 
     @Test
     public void testInsertQueryMatchPatternEmpty() {
         InsertQuery query = qb.insert(var().id(ConceptId.of("123")).isa("movie"));
-        assertFalse(query.admin().getMatchQuery().isPresent());
+        assertFalse(query.admin().match().isPresent());
     }
 
     @Test
-    public void testInsertQueryWithMatchQuery() {
+    public void testInsertQueryWithMatch() {
         InsertQuery query = qb.match(var("x").isa("movie")).insert(var().id(ConceptId.of("123")).isa("movie"));
-        assertEquals(Optional.of("match $x isa movie;"), query.admin().getMatchQuery().map(Object::toString));
+        assertEquals(Optional.of("match $x isa movie;"), query.admin().match().map(Object::toString));
     }
 
     @Test
@@ -130,7 +123,7 @@ public class AdminTest {
     @Test
     public void testDeleteQueryPattern() {
         DeleteQuery query = qb.match(var("x").isa("movie")).delete("x");
-        assertEquals("match $x isa movie;", query.admin().getMatchQuery().toString());
+        assertEquals("match $x isa movie;", query.admin().match().toString());
     }
 
     @Test

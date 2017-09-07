@@ -7,7 +7,6 @@ summary: "How to build a hierarchical schema"
 sidebar: documentation_sidebar
 permalink: /documentation/building-a-schema/hierarchical-schema.html
 folder: documentation
-comment_issue_id: 22
 ---
 
 {% include warning.html content="Please note that this page is in progress and subject to revision." %}
@@ -286,7 +285,3 @@ define
 We will continue to explore the development of a schema in the next section on defining a [rule-driven schema](./rule-driven-schema.html).
 
 You can find the complete schema for our genealogy knowledge base project, the dataset and rules that accompany it, on Github in our [sample-datasets repository](https://github.com/graknlabs/sample-datasets/tree/master/genealogy-knowledge-base).
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/22" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
-has

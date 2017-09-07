@@ -1,31 +1,22 @@
 grammar Graql;
 
-queryList : queryListElem* ;
-
-// This rule exists so query lists never parse "match...insert" style queries,
-// because it is ambiguous.
-// TODO: Fix this by changing the syntax
-queryListElem : matchQuery | insertOnly | simpleQuery ;
+queryList : query* EOF ;
 
 queryEOF       : query EOF ;
-query          : matchQuery | insertQuery | simpleQuery ;
-simpleQuery    : defineQuery | undefineQuery | deleteQuery | aggregateQuery | computeQuery ;
+query          : getQuery | insertQuery | defineQuery | undefineQuery | deleteQuery | aggregateQuery | computeQuery ;
 
-matchQuery     : MATCH patterns                                   # matchBase
-               | matchQuery 'select' variables                ';' # matchSelect
-               | matchQuery 'limit' INTEGER                   ';' # matchLimit
-               | matchQuery 'offset' INTEGER                  ';' # matchOffset
-               | matchQuery 'distinct'                        ';' # matchDistinct
-               | matchQuery 'order' 'by' VARIABLE ORDER?      ';' # matchOrderBy
+matchPart      : MATCH patterns                             # matchBase
+               | matchPart 'limit' INTEGER              ';' # matchLimit
+               | matchPart 'offset' INTEGER             ';' # matchOffset
+               | matchPart 'order' 'by' VARIABLE ORDER? ';' # matchOrderBy
                ;
 
-insertQuery    : matchInsert | insertOnly ;
-insertOnly     : INSERT varPatterns ;
-matchInsert    : matchQuery INSERT varPatterns ;
+getQuery       : matchPart 'get' (VARIABLE (',' VARIABLE)*)? ';' ;
+insertQuery    : matchPart? INSERT varPatterns ;
 defineQuery    : DEFINE varPatterns ;
 undefineQuery  : UNDEFINE varPatterns ;
-deleteQuery    : matchQuery 'delete' variables? ';' ;
-aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
+deleteQuery    : matchPart 'delete' variables? ';' ;
+aggregateQuery : matchPart 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
 
 variables      : VARIABLE (',' VARIABLE)* ;

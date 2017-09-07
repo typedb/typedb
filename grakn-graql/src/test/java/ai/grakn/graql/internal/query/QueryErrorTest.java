@@ -26,9 +26,8 @@ import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.Var;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.ErrorMessage;
@@ -125,14 +124,6 @@ public class QueryErrorTest {
     }
 
     @Test
-    public void testExceptionWhenNoSelectVariablesProvided() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage("select");
-        //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa("movie")).select(new Var[] {});
-    }
-
-    @Test
     public void testExceptionWhenNoPatternsProvided() {
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(NO_PATTERNS.getMessage());
@@ -188,9 +179,9 @@ public class QueryErrorTest {
 
     @Test
     public void testGetNonExistentVariable() {
-        MatchQuery query = qb.match(var("x").isa("movie"));
+        Match match = qb.match(var("x").isa("movie"));
 
-        Stream<Concept> concepts = query.get("y");
+        Stream<Concept> concepts = match.get("y");
 
         exception.expect(GraqlQueryException.class);
         exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(Graql.var("y")));

@@ -66,8 +66,4 @@ When mutating the knowledge base concurrently and attempting to load the same da
 
 Validation exceptions may also occur when mutating the knowledge base concurrently. For example, two transactions may be trying to create the exact same relationship and one of them may fail. When this occurs it is recommended retrying the transaction. If the same exception occurs again then it is likely that the transaction contains a validation error that would have still occurred even in a single threaded environment.
 
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/23" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
-
-
 {% include links.html %}

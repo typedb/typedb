@@ -28,7 +28,6 @@ import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
-import com.google.common.collect.ImmutableSet;
 import mjson.Json;
 
 import java.io.IOException;
@@ -53,11 +52,6 @@ import static ai.grakn.util.ErrorMessage.READ_ONLY_QUERY;
 import static ai.grakn.util.REST.Request.BATCH_NUMBER;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.TASK_LOADER_MUTATIONS;
-import static com.codahale.metrics.MetricAttribute.M5_RATE;
-import static com.codahale.metrics.MetricAttribute.P95;
-import static com.codahale.metrics.MetricAttribute.P98;
-import static com.codahale.metrics.MetricAttribute.P999;
-import static com.codahale.metrics.MetricAttribute.STDDEV;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.stream.Collectors.toList;
 
@@ -136,7 +130,6 @@ public class BatchMutatorClient {
             final ConsoleReporter reporter = ConsoleReporter.forRegistry(metricRegistry)
                     .convertRatesTo(TimeUnit.SECONDS)
                     .convertDurationsTo(TimeUnit.MILLISECONDS)
-                    .disabledMetricAttributes(ImmutableSet.of(P999, STDDEV, P98, P95, M5_RATE))
                     .build();
             reporter.start(1, TimeUnit.MINUTES);
         }
