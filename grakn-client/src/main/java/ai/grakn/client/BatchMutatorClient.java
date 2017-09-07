@@ -29,8 +29,6 @@ import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -67,8 +65,6 @@ import static java.util.stream.Collectors.toList;
  * @author alexandraorth
  */
 public class BatchMutatorClient {
-    private static final Logger LOG = LoggerFactory.getLogger(BatchMutatorClient.class);
-
     // Change in behaviour in v0.14 Previously infinite, now limited
     private static final int MAX_RETRIES = 100;
 
@@ -233,8 +229,7 @@ public class BatchMutatorClient {
             try {
                 f.get();
             } catch (InterruptedException|ExecutionException e) {
-                LOG.error("Error while waiting for termination", e);
-                printError(e.getMessage());
+                printError("Error while waiting for termination", e);
             }
         });
         futures.clear();
@@ -287,19 +282,22 @@ public class BatchMutatorClient {
                 onCompletionOfTask.accept(taskId);
             } catch (Exception e) {
                 failureMeter.mark();
-                LOG.error("Error while executing queries:\n{}", queries, e);
-                printError(e.getMessage());
-                if(debugOn) {
-                    throw new RuntimeException(e);
-                }
+                printError("Error while executing queries:\n{" + queries + "} \n", e);
             }
             return null;
         });
         futures.add(future);
     }
 
-    private void printError(String message){
-        if(debugOn) System.err.println(message);
+    private void printError(String message, Throwable error){
+        if(debugOn) {
+            System.err.println(message);
+            if(error != null){
+                System.err.println("Caused by: ");
+                error.printStackTrace();
+                throw new RuntimeException(error);
+            }
+        }
     }
 }
 
