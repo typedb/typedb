@@ -17,8 +17,8 @@ This guide offers advice on how to:
 
 * run Grakn in a production environment
 * upgrade to the latest version of the distribution.
-   
-   
+
+
 Grakn releases from our [GitHub repository](https://github.com/graknlabs/grakn) are self-contained packages (tar.gz/zip) containing all the components you need to run Grakn:
 
 * Grakn
@@ -65,7 +65,7 @@ For further information on running Cassandra, see:
 ### Distributed
 
 For a fully scalable and distributed setup, you will need to run each component of Grakn in a separate cluster.
-This provides the highest level of redundancy and availability; you will want this for high throughput systems and to make the most out of Grakn. 
+This provides the highest level of redundancy and availability; you will want this for high throughput systems and to make the most out of Grakn.
 
 The database layer will need to be configured similarly to the [Clustered database](#clustered-database) setup.
 
@@ -73,7 +73,7 @@ Grakn Engine uses [Redis](https://redis.io/) for distributed task execution.
 
 Redis version: 3.2.9
 
-Once the configuration files are correct, you can start Grakn Engine only with `bin/grakn-engine.sh start`.
+Once the configuration files are correct, you can start Grakn Engine only with `grakn server start grakn`.
 Multiple instances of Grakn Engine can be started that will make use of the shared Cassandra/Redis clusters.
 
 ## Upgrading Grakn
@@ -102,9 +102,9 @@ You will need to amend these variables with every new version of Grakn.
 
 Upgrading Grakn in a distributed setup is very simple:
 
-- stop and remove old Grakn Engine (`./bin/grakn-engine.sh stop`)
+- stop and remove old Grakn Engine (`grakn server stop grakn`)
 - roll out the latest Grakn package with the correct Redis variables in the configuration files
-- start new Grakn Engine (`./bin/grakn-engine.sh start`)
+- start new Grakn Engine (`grakn server start grakn`)
 
 You can perform a rolling deployment in this fashion with minimum impact on your services.
 
