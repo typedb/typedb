@@ -14,6 +14,13 @@ GRAQL_DATA=${GRAQL}/data
 # Data Directory
 DATA=${SCRIPTPATH}/data
 
+if [ -d "${GRAQL_DATA}" ]; then
+    echo "Downloading validation data . . . "
+    git clone https://github.com/graknlabs/biomed.git
+    mv biomed/data/ data/
+    rm -rf biomed
+fi
+
 echo "Loading Biomed Schema . . ."
 graql.sh -k biomed -f ${GRAQL}/schema/schema.gql
 
