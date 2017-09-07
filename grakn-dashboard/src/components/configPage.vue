@@ -70,20 +70,12 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         <td>{{configuration['log.level']}}</td>
                     </tr>
                     <tr>
-                        <td>Batch size</td>
-                        <td>{{configuration['blockingLoader.batch-size']}}</td>
-                    </tr>
-                    <tr>
                         <td>Default Keyspace</td>
                         <td>{{configuration['knowledge-base.default-keyspace']}}</td>
                     </tr>
                     <tr>
                         <td>Repeat Commits</td>
                         <td>{{configuration['loader.repeat-commits']}}</td>
-                    </tr>
-                    <tr>
-                        <td>HAL builder degree</td>
-                        <td>{{configuration['halBuilder.degree']}}</td>
                     </tr>
                     <tr>
                         <td>Version</td>

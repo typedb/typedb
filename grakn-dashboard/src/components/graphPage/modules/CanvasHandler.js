@@ -73,22 +73,22 @@ function onGraphResponseAnalytics(resp:string) {
   EventHub.$emit('analytics-string-response', responseObject);
 }
 
-function filterNodesToRender(responseObject:Object|Object[], parsedResponse:Object, showResources:boolean) {
+function filterNodesToRender(responseObject:Object|Object[], parsedResponse:Object, showAttributes:boolean) {
   const dataArray = (Array.isArray(responseObject)) ? responseObject : [responseObject];
     // Populate map containing all the first level objects returned in the response, they MUST be added to the graph.
   const firstLevelNodes = dataArray.reduce((accumulator, current) => Object.assign(accumulator, { [current._id]: true }), {});
 
     // Add embedded object to the graph only if one of the following is satisfied:
-    // - the current node is not a RESOURCE_TYPE || showResources is set to true
+    // - the current node is not a ATTRIBUTE_TYPE || showAttributes is set to true
     // - the current node is already drawn in the graph
     // - the current node is contained in the response as first level object (not embdedded)
     //    if it's contained in firstLevelNodes it means it MUST be drawn and so all the edges pointing to it.
 
   return parsedResponse.nodes
           .filter(node=> !node.properties.implicit)
-          .filter(node => (((node.properties.baseType !== API.RESOURCE_TYPE)
-          && (node.properties.baseType !== API.RESOURCE)
-          || showResources)
+          .filter(node => (((node.properties.baseType !== API.ATTRIBUTE_TYPE)
+          && (node.properties.baseType !== API.ATTRIBUTE)
+          || showAttributes)
           || (firstLevelNodes[node.properties.id])
           || visualiser.nodeExists(node.properties.id)));
 }
@@ -96,7 +96,7 @@ function filterNodesToRender(responseObject:Object|Object[], parsedResponse:Obje
 function updateNodeHref(nodeId:string, responseObject:Object) {
      // When a nodeId is provided is because the user double-clicked on a node, so we need to update its href
       // which will contain a new value for offset
-      // Check if the node still in the Dataset, if not (generated relation), don't update href
+      // Check if the node still in the Dataset, if not (generated relationship), don't update href
   if (visualiser.getNode(nodeId) && ('_links' in responseObject)) {
     visualiser.updateNode({
       id: nodeId,
@@ -105,7 +105,7 @@ function updateNodeHref(nodeId:string, responseObject:Object) {
   }
 }
 
-function loadInstancesResources(start:number, instances:Object[]) {
+function loadInstancesAttributes(start:number, instances:Object[]) {
   const batchSize = 50;
   const promises = [];
 
@@ -120,18 +120,18 @@ function loadInstancesResources(start:number, instances:Object[]) {
       url: instances[i].explore,
     }));
   }
-  flushPromises(promises).then(() => loadInstancesResources(start + batchSize, instances));
+  flushPromises(promises).then(() => loadInstancesAttributes(start + batchSize, instances));
 }
 
 function flushPromises(promises:Object[]) {
   return Promise.all(promises.map(softFail)).then((responses) => {
     responses.filter(x => x.success).map(x => x.result).forEach((resp) => {
       const respObj = JSON.parse(resp);
-      // Check if some of the resources attached to this node are already drawn in the graph:
-      // if a resource is already in the graph (because explicitly asked for (e.g. all relations with weight > 0.5 ))
-      // we need to draw the edges connecting this node to the resource node.
+      // Check if some of the attributes attached to this node are already drawn in the graph:
+      // if a attribute is already in the graph (because explicitly asked for (e.g. all relationships with weight > 0.5 ))
+      // we need to draw the edges connecting this node to the attribute node.
       onGraphResponse(resp, false, false);
-      visualiser.updateNodeResources(respObj[API.KEY_ID], Utils.extractResources(respObj));
+      visualiser.updateNodeAttributes(respObj[API.KEY_ID], Utils.extractAttributes(respObj));
     });
     visualiser.flushUpdates();
   });
@@ -145,10 +145,10 @@ function softFail(promise) {
     .catch(error => ({ success: false, error }));
 }
 
-function linkResourceOwners(instances) {
-  instances.forEach((resource) => {
+function linkAttributeOwners(instances) {
+  instances.forEach((attribute) => {
     EngineClient.request({
-      url: resource.properties.href,
+      url: attribute.properties.href,
     }).then((resp) => {
       const responseObject = JSON.parse(resp);
       const parsedResponse = HALParser.parseResponse(responseObject, false);
@@ -171,7 +171,7 @@ function initialise(graphElement:Object) {
   visualiser.render(graphElement);
 }
 
-function onGraphResponse(resp:string, showIsa:boolean, showResources:boolean, nodeId:?string) {
+function onGraphResponse(resp:string, showIsa:boolean, showAttributes:boolean, nodeId:?string) {
   const responseObject = JSON.parse(resp);
   const parsedResponse = HALParser.parseResponse(responseObject, showIsa);
 
@@ -180,27 +180,27 @@ function onGraphResponse(resp:string, showIsa:boolean, showResources:boolean, no
     return;
   }
 
-  const filteredNodes = filterNodesToRender(responseObject, parsedResponse, showResources);
+  const filteredNodes = filterNodesToRender(responseObject, parsedResponse, showAttributes);
 
-    // Collect instances from filteredNodes to lazy load their resources.
+    // Collect instances from filteredNodes to lazy load their attributes.
   const instances = filteredNodes
                     .map(x => x.properties)
-                    .filter(node => ((node.baseType === API.ENTITY || node.baseType === API.RELATION || node.baseType === API.RULE) && (!visualiser.nodeExists(node.id))));
+                    .filter(node => ((node.baseType === API.ENTITY || node.baseType === API.RELATIONSHIP || node.baseType === API.RULE) && (!visualiser.nodeExists(node.id))));
 
-  filteredNodes.forEach(node => visualiser.addNode(node.properties, node.resources, node.links, nodeId));
+  filteredNodes.forEach(node => visualiser.addNode(node.properties, node.attributes, node.links, nodeId));
   parsedResponse.edges.forEach(edge => visualiser.addEdge(edge.from, edge.to, edge.label));
 
-  loadInstancesResources(0, instances);
+  loadInstancesAttributes(0, instances);
 
-  // Check if there are resources and make sure they are linked to their owners (if any already drawn in the graph)
-  linkResourceOwners(filteredNodes.filter(node => ((node.properties.baseType === API.RESOURCE))));
+  // Check if there are attributes and make sure they are linked to their owners (if any already drawn in the graph)
+  linkAttributeOwners(filteredNodes.filter(node => ((node.properties.baseType === API.ATTRIBUTE))));
 
   if (nodeId) updateNodeHref(nodeId, responseObject);
 
   visualiser.fitGraphToWindow();
 }
 
-function fetchFilteredRelations(href:string) {
+function fetchFilteredRelationships(href:string) {
   EngineClient.request({
     url: href,
   }).then(resp => onGraphResponse(resp, false, false), (err) => {
@@ -208,11 +208,11 @@ function fetchFilteredRelations(href:string) {
   });
 }
 
-function loadResourceOwners(resourceId:string) {
+function loadAttributeOwners(attributeId:string) {
   EngineClient.request({
-    url: resourceId,
+    url: attributeId,
   }).then(resp => onGraphResponse(resp, false, true));
 }
 
 
-export default { initialise, onGraphResponse, fetchFilteredRelations, loadResourceOwners };
+export default { initialise, onGraphResponse, fetchFilteredRelationships, loadAttributeOwners };
