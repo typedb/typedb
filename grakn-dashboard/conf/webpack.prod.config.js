@@ -3,14 +3,6 @@ const baseWpConfig = require('./webpack.base.config');
 const webpack = require('webpack');
 
 module.exports = merge(baseWpConfig, {
-  module: {
-    rules: [
-     {
-        test: /\.vue$/,
-        loader: 'vue-loader',
-      },
-    ],
-  },
   plugins: [
     new webpack.DefinePlugin({
       'process.env': {
@@ -21,9 +13,6 @@ module.exports = merge(baseWpConfig, {
       compress: {
         warnings: false,
       },
-    }),
-    new webpack.LoaderOptionsPlugin({
-      minimize: true,
     }),
   ],
 });
