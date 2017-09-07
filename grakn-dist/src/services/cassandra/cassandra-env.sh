@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -14,6 +13,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# This script is not meant to be ran as a standalone, but rather source'd from other script
 
 calculate_heap_sizes()
 {
@@ -248,8 +249,8 @@ fi
 # JVM_OPTS+=("-XX:NumberOfGCLogFiles=10")
 # JVM_OPTS+=("-XX:GCLogFileSize=10M")
 
-# Configure the following for JEMallocAllocator and if jemalloc is not available in the system 
-# library path (Example: /usr/local/lib/). Usually "make install" will do the right thing. 
+# Configure the following for JEMallocAllocator and if jemalloc is not available in the system
+# library path (Example: /usr/local/lib/). Usually "make install" will do the right thing.
 # export LD_LIBRARY_PATH=<JEMALLOC_HOME>/lib/
 # JVM_OPTS+=("-Djava.library.path=<JEMALLOC_HOME>/lib/")
 
@@ -274,9 +275,9 @@ JVM_OPTS+=("-Djava.net.preferIPv4Stack=true")
 # for more on configuring JMX through firewalls, etc. (Short version:
 # get it working with no firewall first.)
 #
-# Cassandra ships with JMX accessible *only* from localhost.  
+# Cassandra ships with JMX accessible *only* from localhost.
 # To enable remote JMX connections, uncomment lines below
-# with authentication and/or ssl enabled. See https://wiki.apache.org/cassandra/JmxSecurity 
+# with authentication and/or ssl enabled. See https://wiki.apache.org/cassandra/JmxSecurity
 #
 LOCAL_JMX=yes
 
