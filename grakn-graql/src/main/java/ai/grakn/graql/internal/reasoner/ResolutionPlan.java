@@ -272,8 +272,8 @@ public final class ResolutionPlan {
             }
 
             //look at neighbours up to two hops away
-            top = top.getNeighbours().filter(atoms::contains)
-                    .flatMap(at -> Stream.concat(Stream.of(at), at.getNeighbours().filter(atoms::contains)))
+            top = top.getNeighbours(Atom.class).filter(atoms::contains)
+                    .flatMap(at -> Stream.concat(Stream.of(at), at.getNeighbours(Atom.class).filter(atoms::contains)))
                     .sorted(Comparator.comparing(at -> -at.computePriority(subbedVars)))
                     .findFirst().orElse(null);
 
