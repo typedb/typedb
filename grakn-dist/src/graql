@@ -56,9 +56,9 @@ graql_help() {
   echo "Usage: graql COMMAND
 
 COMMAND:
-console  Starts a REPL console for running Graql queries. Defaults to connecting to http://localhost
-migrate  Runs migration from a file
-help     Prints this message"
+console  Start a REPL console for running Graql queries. Defaults to connecting to http://localhost
+migrate  Run migration from a file
+help     Print this message"
 }
 
 # =============================================

@@ -50,6 +50,14 @@
                 <include>**</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <outputDirectory>examples</outputDirectory>
+            <directory>${basedir}/src/examples/</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+        </fileSet>
+
         <!-- grakn.properties -->
         <fileSet>
             <outputDirectory>conf</outputDirectory>

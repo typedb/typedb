@@ -492,9 +492,9 @@ grakn_help() {
   echo "Usage: grakn COMMAND
 
 COMMAND:
-server     manage Grakn components
-version    print Grakn version
-help       print this message
+server     Manage Grakn components
+version    Print Grakn version
+help       Print this message
 
 Tips:
 - Start Grakn with 'grakn server start' (by default, the dashboard will be accessible at http://localhost:4567)
