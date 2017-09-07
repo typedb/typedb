@@ -13,7 +13,6 @@ graql.sh -k biomed -f ${GRAQL}/schema/schema.gql
 
 echo "Loading Biomed Rules . . ."
 graql.sh -k biomed -f ${GRAQL}/schema/rules.gql
-graql.sh -k biomed -f ${GRAQL}/schema/new-rules.gql
 
 echo "Loading Biomed Data . . ."
 migration.sh csv -d -k biomed -t ${GRAQL_TEMPLATES}/hsa-mature-migrator.gql  -i data/hsa-mature.tsv

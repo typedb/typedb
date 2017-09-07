@@ -92,6 +92,10 @@ define
 	relates target
 	relates therapy;
 
+"referenced-treatment" sub relationship
+  relates target
+  relates therapy;
+
 "target" sub role;
 "therapy" sub role;
 
