@@ -62,7 +62,7 @@ node {
                 stage('Test Connection', testConnection)
             }
             //Only run validation master/stable
-            if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable' || true) {
+            if (env.BRANCH_NAME in ['master', 'stable'] || true) {
                 timeout(180) {
                     stage('Load Validation Data', loadValidationData)
                     stage('Measure Size', measureSize)
