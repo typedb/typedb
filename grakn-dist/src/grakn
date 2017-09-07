@@ -412,9 +412,9 @@ grakn_server_help() {
   echo "Usage: grakn server COMMAND
 
 COMMAND:
-start [grakn|redis|cassandra]  start Grakn (or optionally, only one of the component)
-stop [grakn|redis|cassandra]   stop Grakn (or optionally, only one of the component)
-status                         check if Grakn is running
+start [grakn|redis|cassandra]  Start Grakn (or optionally, only one of the component)
+stop [grakn|redis|cassandra]   Stop Grakn (or optionally, only one of the component)
+status                         Check if Grakn is running
 clean                          DANGEROUS: wipe data completely
 
 Tips:
