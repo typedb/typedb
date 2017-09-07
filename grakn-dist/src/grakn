@@ -408,6 +408,22 @@ grakn_server_start() {
   return $status
 }
 
+grakn_server_help() {
+  echo "Grakn: Database For AI
+
+Usage: grakn server COMMAND
+
+COMMAND:
+start [grakn|redis|cassandra]  start Grakn (or optionally, only one of the component)
+stop [grakn|redis|cassandra]   stop Grakn (or optionally, only one of the component)
+status                         check if Grakn is running
+clean                          DANGEROUS: wipe data completely
+
+Tips:
+- Start Grakn with 'grakn server start'
+- Start or stop only one component with, e.g. 'grakn server start cassandra' or 'grakn server stop cassandra', respectively
+"
+}
 grakn_server_status() {
   cassandra_is_cassandra_running
   if [ $? -eq 0 ] ; then
@@ -475,21 +491,18 @@ grakn_version() {
 }
 
 grakn_help() {
-  echo "
-Usage:
-grakn COMMAND
+  echo "Grakn: Database For AI
+
+Usage: grakn COMMAND
 
 COMMAND:
-server     manage all components
-grakn      manage Grakn component
-redis      manage Redis component
-cassandra  manage Cassandra component
+server     manage Grakn components
 version    print Grakn version
 help       print this message
 
 Tips:
-Start Grakn with 'grakn server start' (by default, the dashboard will be accessible at http://localhost:4567)
-You can then perform queries by opening a console with 'graql console'"
+- Start Grakn with 'grakn server start' (by default, the dashboard will be accessible at http://localhost:4567)
+- You can then perform queries by opening a console with 'graql console'"
 }
 
 # ================================================
@@ -599,8 +612,8 @@ case "$1" in
       clean)
         grakn_server_clean
       ;;
-      *)
-        grakn_help
+      help|*)
+        grakn_server_help
       ;;
     esac
   ;;
