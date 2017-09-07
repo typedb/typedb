@@ -86,7 +86,7 @@ public class GeoInferenceTest {
     }
 
     @Test
-    public void testTransitiveQuery_withTypes_noRoles() {
+    public void testTransitiveQuery_withGuards_noRoles() {
         QueryBuilder qb = geoKB.tx().graql().infer(false);
         QueryBuilder iqb = geoKB.tx().graql().infer(true);
         String queryString = "match " +
@@ -218,7 +218,11 @@ public class GeoInferenceTest {
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
 
-        //assertEquals(answers.size(), 408);
+        assertEquals(answers.size(), 20);
+        answers.forEach(ans -> assertEquals(ans.size(), 4));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers2.forEach(ans -> assertEquals(ans.size(), 4));
+        answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
         assertEquals(answers, answers2);
     }
 
@@ -255,7 +259,10 @@ public class GeoInferenceTest {
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
-        //assertEquals(answers.size(), 102);
+
+        assertEquals(answers.size(), 5);
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
         assertEquals(answers, answers2);
     }
 
@@ -267,7 +274,9 @@ public class GeoInferenceTest {
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
 
-        //assertEquals(answers.size(), 408);
+        assertEquals(answers.size(), 408);
+        answers.forEach(ans -> assertEquals(ans.size(), 4));
+        answers2.forEach(ans -> assertEquals(ans.size(), 4));
         assertEquals(answers, answers2);
     }
 
@@ -282,7 +291,9 @@ public class GeoInferenceTest {
         QueryAnswers answers = queryAnswers(iqb.match(rolePattern));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).match(rolePattern));
 
-        //assertEquals(answers.size(), 408);
+        assertEquals(answers.size(), 51);
+        answers.forEach(ans -> assertEquals(ans.size(), 4));
+        answers2.forEach(ans -> assertEquals(ans.size(), 4));
         assertEquals(answers, answers2);
     }
 
@@ -294,6 +305,29 @@ public class GeoInferenceTest {
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
 
+        assertEquals(answers.size(), 204);
+        answers.forEach(ans -> assertEquals(ans.size(), 3));
+        answers2.forEach(ans -> assertEquals(ans.size(), 3));
+        assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testTransitiveQuery_Closure_singleVariableRole_withSubstitution() {
+        GraknTx graph = geoKB.tx();
+        QueryBuilder iqb = geoKB.tx().graql().infer(true);
+        Concept masovia = getConcept(graph, "name", "Masovia");
+        String queryString = "match " +
+                "($x, $r2: $y) isa is-located-in;" +
+                "$y id '" + masovia.getId().getValue() + "';";
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+
+        assertEquals(answers.size(), 10);
+        answers.forEach(ans -> assertEquals(ans.size(), 3));
+        answers2.forEach(ans -> assertEquals(ans.size(), 3));
+        answers.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
+        answers2.forEach(ans -> assertEquals(ans.get(var("y")).getId().getValue(), masovia.getId().getValue()));
         assertEquals(answers, answers2);
     }
 

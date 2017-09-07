@@ -117,11 +117,9 @@ public class AtomicState extends QueryState{
         Unifier permutationUnifier = ruleTuple.getPermutationUnifier();
 
         //delta' = theta . thetaP . delta
-        Answer sub = query.getSubstitution();
-        Unifier uInv = ruleUnifier.inverse();
-        Answer partialSubPrime = sub
+        Answer partialSubPrime = query.getSubstitution()
                 .unify(permutationUnifier)
-                .unify(uInv);
+                .unify(ruleUnifier.inverse());
 
         Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
         return currentRule.getBody().subGoal(partialSubPrime, combinedUnifier, this, getSubGoals(), getCache());

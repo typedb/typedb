@@ -21,13 +21,14 @@ package ai.grakn.graql.internal.reasoner.state;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import java.util.Iterator;
 import java.util.Set;
 
 /**
  *
  * <p>
- * //TODO
+ * Query state produced by {@link AtomicState} when an atomic query {@link ReasonerAtomicQuery}contains role variables which may require role hierarchy expansion.
  * </p>
  *
  * @author Kasper Piskorski

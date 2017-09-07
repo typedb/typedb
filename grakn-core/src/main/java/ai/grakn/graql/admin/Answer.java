@@ -147,9 +147,8 @@ public interface Answer {
     Stream<Answer> permute(Set<Unifier> unifierSet);
 
     /**
-     *
-     * @param vars
-     * @return
+     * @param vars variables for which role hierarchy should be expanded
+     * @return stream of answers with expanded role hierarchy
      */
     @CheckReturnValue
     Stream<Answer> expandHierarchies(Set<Var> vars);

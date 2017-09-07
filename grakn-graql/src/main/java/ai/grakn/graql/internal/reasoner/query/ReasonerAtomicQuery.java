@@ -237,7 +237,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         });
     }
 
-    private Stream<Answer> getFilteredRuleAnswerStream(Stream<Answer> answers, InferenceRule rule){
+    private Stream<Answer> getFilteredRuleAnswerStream(Stream<Answer> answers){
         Set<Var> vars = getVarNames();
         Set<Var> expansionVars = getAtom().getRoleExpansionVariables();
         Set<TypeAtom> mappedTypeConstraints = atom.getSpecificTypeConstraints();
@@ -262,7 +262,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                           Cache<ReasonerAtomicQuery, ?> dCache,
                                           boolean differentialJoin){
 
-        LOG.debug("Applying rule " + rule + permutationUnifier);
+        LOG.trace("Applying rule " + rule.getRuleId());
 
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
@@ -298,7 +298,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .filter(a -> !a.isEmpty());
 
         //if query not exactly equal to the rule head, do some conversion
-        return isHeadEquivalent? dCache.record(this, answers) : dCache.record(this, getFilteredRuleAnswerStream(answers,rule));
+        return isHeadEquivalent? dCache.record(this, answers) : dCache.record(this, getFilteredRuleAnswerStream(answers));
     }
 
     /**
@@ -314,7 +314,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                        boolean differentialJoin){
         boolean queryAdmissible = !subGoals.contains(this);
 
-        LOG.debug("AQ: " + this);
+        LOG.trace("AQ: " + this);
 
         Stream<Answer> answerStream = cache.contains(this) ? Stream.empty() : dCache.record(this, lookup(cache));
         if(queryAdmissible) {
@@ -323,14 +323,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             while(ruleIterator.hasNext()) {
                 RuleTuple ruleContext = ruleIterator.next();
                 InferenceRule rule = ruleContext.getRule();
-                Unifier u = ruleContext.getRuleUnifier();
-                Unifier pu = ruleContext.getPermutationUnifier();
+                Unifier unifier = ruleContext.getRuleUnifier();
+                Unifier permutationUnifier = ruleContext.getPermutationUnifier();
 
-                Answer sub = this.getSubstitution().unify(u.inverse());
+                Answer sub = this.getSubstitution()
+                        .unify(permutationUnifier)
+                        .unify(unifier.inverse());
                 rule.getHead().addSubstitution(sub);
                 rule.getBody().addSubstitution(sub);
 
-                Stream<Answer> localStream = resolveViaRule(rule, u, pu, subGoals, cache, dCache, differentialJoin);
+                Stream<Answer> localStream = resolveViaRule(rule, unifier, permutationUnifier, subGoals, cache, dCache, differentialJoin);
                 answerStream = Stream.concat(answerStream, localStream);
             }
         }

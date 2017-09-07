@@ -46,10 +46,13 @@ public abstract class QueryState extends ResolutionState {
     }
 
     /**
-     * @return
+     * @return true if this state corresponds to an atomic state
      */
     boolean isAtomicState(){ return false; }
 
+    /**
+     * @return query corresponding to this query state
+     */
     abstract ReasonerQueryImpl getQuery();
 
     /**
@@ -62,6 +65,9 @@ public abstract class QueryState extends ResolutionState {
      */
     QueryCache<ReasonerAtomicQuery> getCache(){ return cache;}
 
+    /**
+     * @return cache unifier if any
+     */
     abstract Unifier getCacheUnifier();
 
     /**

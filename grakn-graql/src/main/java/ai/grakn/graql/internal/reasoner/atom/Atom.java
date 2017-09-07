@@ -266,7 +266,6 @@ public abstract class Atom extends AtomicBase {
      * @return set of permutation unifiers that guarantee all variants of role assignments are performed and hence the results are complete
      */
     public Set<Unifier> getPermutationUnifiers(Atom headAtom){
-        //return Collections.emptySet();
         return Collections.singleton(new UnifierImpl());
     }
 
@@ -278,6 +277,7 @@ public abstract class Atom extends AtomicBase {
 
     /**
      * rewrites the atom to one with user defined name
+     * @param parentAtom parent atom that triggers rewrite
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
     public Atom rewriteToUserDefined(Atom parentAtom){ return this;}
