@@ -5,7 +5,10 @@ source snb-env.sh
 BRANCH_NAME=$1
 
 LDBC_CONNECTOR=${WORKSPACE}/grakn-test/test-snb/target/test-snb-${BRANCH_NAME}-jar-with-dependencies.jar
+
+# TODO: This is weird and possibly unnecessary now
 LDBC_DRIVER=${HOME}/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.3-SNAPSHOT.jar
+
 LDBC_VALIDATION_CONFIG=${WORKSPACE}/grakn-test/test-snb/src/main/bash/readwrite_grakn--ldbc_driver_config--db_validation.properties
 
 echo ${LDBC_DRIVER}
