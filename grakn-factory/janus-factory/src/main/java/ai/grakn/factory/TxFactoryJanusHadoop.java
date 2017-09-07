@@ -29,7 +29,7 @@ import java.util.Properties;
 
 /**
  * <p>
- *     A {@link GraknTx} on top of {@link HadoopGraph}
+ *     A {@link ai.grakn.GraknTx} on top of {@link HadoopGraph}
  * </p>
  *
  * <p>
@@ -64,6 +64,14 @@ public class TxFactoryJanusHadoop extends TxFactoryAbstract<GraknTxAbstract<Hado
     @Override
     HadoopGraph buildTinkerPopGraph(boolean batchLoading) {
         LOG.warn("Hadoop graph ignores parameter address [" + super.engineUrl + "]");
+
+        //Load Defaults
+        TxFactoryJanus.DEFAULT_PROPERTIES.forEach((key, value) -> {
+            if(!properties.containsKey(key)){
+                properties.put(key, value);
+            }
+        });
+
         return (HadoopGraph) GraphFactory.open(properties);
     }
 
