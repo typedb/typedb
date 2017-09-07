@@ -4,6 +4,8 @@ source snb-env.sh
 
 BRANCH_NAME=$1
 
+build-snb-connectors.sh
+
 LDBC_CONNECTOR=${WORKSPACE}/grakn-test/test-snb/target/test-snb-${BRANCH_NAME}-jar-with-dependencies.jar
 
 # TODO: This is weird and possibly unnecessary now
