@@ -19,49 +19,56 @@ def timeit(method):
 def runQuery(query, numResults):
     result = check_output(["graql.sh", "-n", "-k", "biomed", "-e", query]);
     assert int(result) == numResults
-    return
 
 print ("Checking if data has loaded . . . ")
 query = "match $x sub thing; aggregate count;";
 runQuery(query, 54)
 
 print ("Running explicit query . . .")
-query = "match  $cancer isa cancer has name \"breast cancer\";" \
-    + "($cancer, $sl); $sl isa stem-loop;" \
-    + "($sl, $m); $m isa mature;" \
-    + "($m, $gene); $gene isa gene;" \
-    + "($gene, $drug); $drug isa drug;" \
-    + "offset 0; limit 1;" \
-    + "aggregate count;"
+query = """
+match  $cancer isa cancer has name \"breast cancer\";
+($cancer, $sl); $sl isa stem-loop;
+($sl, $m); $m isa mature;
+($m, $gene); $gene isa gene;
+($gene, $drug); $drug isa drug;
+offset 0; limit 1;
+aggregate count;
+"""
 runQuery(query, 1)
 
 print ("Running query via rule . . .")
-query = "match  $cancer isa cancer has name \"breast cancer\";" \
-    + "$drug isa drug;" \
-    + "($cancer, $drug); offset 0; limit 1;" \
-    + "aggregate count;"
+query = """
+match  $cancer isa cancer has name \"breast cancer\";
+$drug isa drug;
+($cancer, $drug); offset 0; limit 1;
+aggregate count;
+"""
 runQuery(query, 1)
 
 print ("Running high degree explicit query . . .")
-query = "match $a isa cancer;" \
-    + "$b isa stem-loop;" \
-    + "$c (disease: $a, affected: $b); $c has degree >= 3;" \
-    + "$d isa mature;" \
-    + "($b, $d);" \
-    + "$e isa gene;" \
-    + "$f ($d, $e); $f has degree >= 3;" \
-    + "limit 1; offset 0;" \
-    + "aggregate count;"
+query = """
+match $a isa cancer;
+$b isa stem-loop;
+$c (disease: $a, affected: $b); $c has degree >= 3;
+$d isa mature;
+($b, $d);
+$e isa gene;
+$f ($d, $e); $f has degree >= 3;
+limit 1; offset 0;
+aggregate count;
+"""
 runQuery(query, 1)
 
 print ("Running query to check links between cancer and genes. . .")
-query = "match $a isa cancer; $b isa stem-loop;" \
-    + "$c (disease: $a, affected: $b);" \
-    + "($b, $d);" \
-    + "$e isa gene;" \
-    + "$f ($d, $e);" \
-    + "limit 1; offset 0;" \
-    + "aggregate count;"
+query = """
+match $a isa cancer; $b isa stem-loop;
+$c (disease: $a, affected: $b);
+($b, $d);
+$e isa gene;
+$f ($d, $e);
+limit 1; offset 0;
+aggregate count;
+"""
 runQuery(query, 1)
 
 print ("Running query to check referenced treatments . . . ")
