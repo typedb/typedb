@@ -291,6 +291,8 @@ public class InferenceRule {
         }
         //case of match all relation atom
         else{
+            // TODO: is this cast always safe?
+            assert parentAtom instanceof RelationAtom;
             Atom extendedParent = ((RelationAtom) parentAtom)
                     .addType(childAtom.getSchemaConcept())
                     .inferTypes();

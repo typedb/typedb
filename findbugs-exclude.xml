@@ -25,15 +25,4 @@
         <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS"/>
     </Match>
 
-    <!-- Exclude a lot of bugs we can't be bothered to fix -->
-    <!-- TODO: Re-enable these -->
-
-    <Match>
-        <Bug pattern="BC_UNCONFIRMED_CAST"/>
-    </Match>
-
-    <Match>
-        <Bug pattern="CN_IDIOM_NO_SUPER_CALL"/>
-    </Match>
-
 </FindBugsFilter>

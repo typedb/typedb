@@ -789,6 +789,7 @@ public class RelationAtom extends IsaAtom {
 
         Unifier unifier = super.getUnifier(pAtom);
         if (pAtom.isRelation()) {
+            assert pAtom instanceof RelationAtom; // This is safe due to the check above
             RelationAtom parentAtom = (RelationAtom) pAtom;
 
             getRelationPlayerMappings(parentAtom)
