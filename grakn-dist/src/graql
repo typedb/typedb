@@ -53,9 +53,7 @@ graql_console() {
 }
 
 graql_help() {
-  echo "
-Usage:
-graql COMMAND
+  echo "Usage: graql COMMAND
 
 COMMAND:
 console  Starts a REPL console for running Graql queries. Defaults to connecting to http://localhost
@@ -68,6 +66,9 @@ help     Prints this message"
 # =============================================
 
 update_classpath
+
+echo "Grakn: Database For AI"
+echo ""
 
 case "$1" in
   console)

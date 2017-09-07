@@ -341,8 +341,6 @@ grakn_clean_grakn() {
 # command line helpers
 # ================================================
 grakn_server_stop() {
-  echo "Grakn: Database For AI"
-  echo ""
   grakn_server_stop_grakn
   status_grakn=$?
 
@@ -391,8 +389,6 @@ grakn_server_start_cassandra() {
 }
 
 grakn_server_start() {
-  echo "Grakn: Database For AI"
-  echo ""
   grakn_server_start_cassandra
   local cassandra=$?
 
@@ -413,9 +409,7 @@ grakn_server_start() {
 }
 
 grakn_server_help() {
-  echo "Grakn: Database For AI
-
-Usage: grakn server COMMAND
+  echo "Usage: grakn server COMMAND
 
 COMMAND:
 start [grakn|redis|cassandra]  start Grakn (or optionally, only one of the component)
@@ -429,8 +423,6 @@ Tips:
 "
 }
 grakn_server_status() {
-  echo "Grakn: Database For AI"
-  echo ""
   cassandra_is_cassandra_running
   if [ $? -eq 0 ] ; then
     echo "Casssandra: RUNNING"
@@ -457,8 +449,6 @@ grakn_server_status() {
 # better to remove this functionality in production.
 # Having a very accessible full deletion functionality like this is dangerous
 grakn_server_clean() {
-  echo "Grakn: Database For AI"
-  echo ""
   cassandra_is_cassandra_running
   local is_cassandra_running=$?
 
@@ -495,15 +485,11 @@ grakn_server_clean() {
 }
 
 grakn_version() {
-  echo "Grakn: Database For AI"
-  echo ""
   echo "1.0"
 }
 
 grakn_help() {
-  echo "Grakn: Database For AI
-
-Usage: grakn COMMAND
+  echo "Usage: grakn COMMAND
 
 COMMAND:
 server     manage Grakn components
@@ -606,6 +592,9 @@ case_grakn_server_stop() {
 # =============================================
 
 update_classpath
+
+echo "Grakn: Database For AI"
+echo ""
 
 case "$1" in
   server)
