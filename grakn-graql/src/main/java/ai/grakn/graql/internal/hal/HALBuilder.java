@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.hal;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
@@ -77,7 +78,7 @@ public class HALBuilder {
     }
 
     public static Json renderHALArrayData(GetQuery getQuery, Collection<Answer> results, int offset, int limit, boolean filterInstances) {
-        String keyspace = getQuery.tx().get().getKeyspace();
+        Keyspace keyspace = getQuery.tx().get().getKeyspace();
 
         //For each VarPatterAdmin containing a relation we store a map containing varNames associated to RoleTypes
         Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes = new HashMap<>();
@@ -91,7 +92,7 @@ public class HALBuilder {
         return buildHALRepresentations(results, typesAskedInQuery, roleTypes, keyspace, offset, limit, filterInstances);
     }
 
-    public static String renderHALConceptData(Concept concept, int separationDegree, String keyspace, int offset, int limit) {
+    public static String renderHALConceptData(Concept concept, int separationDegree, Keyspace keyspace, int offset, int limit) {
         return new HALConceptData(concept, separationDegree, false, new HashSet<>(), keyspace, offset, limit).render();
     }
 
@@ -127,7 +128,7 @@ public class HALBuilder {
         return conceptsArray;
     }
 
-    private static Json buildHALRepresentations(Collection<Answer> graqlResultsList, Set<Label> typesAskedInQuery, Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, String keyspace, int offset, int limit, boolean filterInstances) {
+    private static Json buildHALRepresentations(Collection<Answer> graqlResultsList, Set<Label> typesAskedInQuery, Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Keyspace keyspace, int offset, int limit, boolean filterInstances) {
         final Json lines = Json.array();
         graqlResultsList.forEach(answer -> {
             Map<VarPatternAdmin, Boolean> inferredRelations = buildInferredRelationsMap(answer);
@@ -164,7 +165,7 @@ public class HALBuilder {
         return lines;
     }
 
-    private static String computeHrefInferred(Concept currentConcept, String keyspace, int limit){
+    private static String computeHrefInferred(Concept currentConcept, Keyspace keyspace, int limit){
         Set<Thing> thingSet = new HashSet<>();
         currentConcept.asRelationship().allRolePlayers().values().forEach(set -> set.forEach(thingSet::add));
         String isaString =  "isa " + currentConcept.asRelationship().type().getLabel();
@@ -186,7 +187,7 @@ public class HALBuilder {
 
     }
 
-    private static Collection<Representation> loopThroughRelations(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Map<Var, Representation> mapFromVarNameToHALObject, Map<Var, Concept> resultLine, String keyspace, int limit, Map<VarPatternAdmin, Boolean> inferredRelations) {
+    private static Collection<Representation> loopThroughRelations(Map<VarPatternAdmin, Pair<Map<Var, String>, String>> roleTypes, Map<Var, Representation> mapFromVarNameToHALObject, Map<Var, Concept> resultLine, Keyspace keyspace, int limit, Map<VarPatternAdmin, Boolean> inferredRelations) {
 
         final Collection<Representation> generatedRelations = new ArrayList<>();
         // For each relation (VarPatternAdmin key in roleTypes) we fetch all the role-players representations and embed them in the generated-relationship's HAL representation.
@@ -211,7 +212,7 @@ public class HALBuilder {
         return generatedRelations;
     }
 
-    private static String computeRelationHref(String relationType, Collection<Var> varNamesInCurrentRelation, Map<Var, Concept> resultLine, Map<Var, String> varNameToRole, String keyspace, int limit, boolean isInferred) {
+    private static String computeRelationHref(String relationType, Collection<Var> varNamesInCurrentRelation, Map<Var, Concept> resultLine, Map<Var, String> varNameToRole, Keyspace keyspace, int limit, boolean isInferred) {
         String isaString = (!relationType.equals("")) ? "isa " + relationType : "";
         StringBuilder stringBuilderVarsWithIds = new StringBuilder();
         StringBuilder stringBuilderParenthesis = new StringBuilder().append('(');

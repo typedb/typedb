@@ -20,6 +20,7 @@ package ai.grakn.engine;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
@@ -75,7 +76,7 @@ public class SystemKeyspace {
     public static final Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
 
     private static final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
-    private final ConcurrentHashMap<String, Boolean> openSpaces;
+    private final ConcurrentHashMap<Keyspace, Boolean> openSpaces;
     private final EngineGraknTxFactory factory;
 
     public SystemKeyspace(EngineGraknTxFactory factory){
@@ -93,7 +94,7 @@ public class SystemKeyspace {
     /**
      * Notify that we just opened a keyspace with the same engineUrl & config.
      */
-     public boolean ensureKeyspaceInitialised(String keyspace) {
+     public boolean ensureKeyspaceInitialised(Keyspace keyspace) {
          if(openSpaces.containsKey(keyspace)){
              return true;
          }
@@ -103,7 +104,7 @@ public class SystemKeyspace {
             if (keyspaceName == null) {
                 throw GraknBackendException.initializationException(keyspace);
             }
-            Attribute<String> attribute = keyspaceName.putAttribute(keyspace);
+            Attribute<String> attribute = keyspaceName.putAttribute(keyspace.getValue());
             if (attribute.owner() == null) {
                 graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).addEntity().attribute(attribute);
             }

@@ -21,6 +21,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.AttributeType;
@@ -140,7 +141,7 @@ public class SystemController {
     @ApiOperation(value = "Initialise a grakn session - add the keyspace to the system graph and return configured properties.")
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
     private String initialiseSession(Request request, Response response){
-        String keyspace = request.queryParams(KEYSPACE_PARAM);
+        Keyspace keyspace = Keyspace.of(request.queryParams(KEYSPACE_PARAM));
         boolean keyspaceInitialised = factory.systemKeyspace().ensureKeyspaceInitialised(keyspace);
 
         if(keyspaceInitialised) {

@@ -18,17 +18,18 @@
 
 package ai.grakn.exception;
 
+import ai.grakn.Keyspace;
 import ai.grakn.engine.TaskId;
-import static ai.grakn.util.ErrorMessage.ENGINE_STARTUP_ERROR;
 import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.io.IOException;
 
 import static ai.grakn.util.ErrorMessage.BACKEND_EXCEPTION;
+import static ai.grakn.util.ErrorMessage.ENGINE_STARTUP_ERROR;
 import static ai.grakn.util.ErrorMessage.ENGINE_UNAVAILABLE;
+import static ai.grakn.util.ErrorMessage.INITIALIZATION_EXCEPTION;
 import static ai.grakn.util.ErrorMessage.MISSING_TASK_ID;
 import static ai.grakn.util.ErrorMessage.STATE_STORAGE_ERROR;
-import static ai.grakn.util.ErrorMessage.INITIALIZATION_EXCEPTION;
 import static ai.grakn.util.ErrorMessage.TASK_STATE_RETRIEVAL_FAILURE;
 
 /**
@@ -69,13 +70,6 @@ public class GraknBackendException extends GraknException {
     /**
      * Thrown when the task state storage cannot be accessed.
      */
-    public static GraknBackendException stateStorage(Exception error){
-        return new GraknBackendException(STATE_STORAGE_ERROR.getMessage(), error);
-    }
-
-    /**
-     * Thrown when the task state storage cannot be accessed.
-     */
     public static GraknBackendException stateStorage(){
         return new GraknBackendException(STATE_STORAGE_ERROR.getMessage());
     }
@@ -101,7 +95,7 @@ public class GraknBackendException extends GraknException {
         return new GraknBackendException(ENGINE_UNAVAILABLE.getMessage(host, port), e);
     }
 
-    public static GraknBackendException initializationException(String keyspace) {
+    public static GraknBackendException initializationException(Keyspace keyspace) {
         return new GraknBackendException(String.format(INITIALIZATION_EXCEPTION.getMessage(), keyspace));
     }
 

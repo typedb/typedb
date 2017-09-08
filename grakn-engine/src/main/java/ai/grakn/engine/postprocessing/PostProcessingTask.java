@@ -19,6 +19,7 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -191,7 +192,7 @@ public class PostProcessingTask extends BackgroundTask {
      * @param config The config which contains the concepts to post process
      * @return The task configuration encapsulating the above details in a manner executable by the task runner
      */
-    public static TaskConfiguration createConfig(String keyspace, String config){
+    public static TaskConfiguration createConfig(Keyspace keyspace, String config){
         Json postProcessingConfiguration = Json.object();
         postProcessingConfiguration.set(REST.Request.KEYSPACE, keyspace);
         postProcessingConfiguration.set(REST.Request.COMMIT_LOG_FIXING, Json.read(config).at(REST.Request.COMMIT_LOG_FIXING));

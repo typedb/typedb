@@ -21,6 +21,7 @@ package ai.grakn.engine.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.factory.FactoryBuilder;
@@ -67,7 +68,11 @@ public class EngineGraknTxFactory {
     }
 
     public GraknTx tx(String keyspace, GraknTxType type){
-        if(!keyspace.equals(SystemKeyspace.SYSTEM_KB_NAME)) {
+        return tx(Keyspace.of(keyspace), type);
+    }
+
+    public GraknTx tx(Keyspace keyspace, GraknTxType type){
+        if(!keyspace.getValue().equals(SystemKeyspace.SYSTEM_KB_NAME)) {
             systemKeyspace.ensureKeyspaceInitialised(keyspace);
         }
         return FactoryBuilder.getFactory(keyspace, engineURI, properties).open(type);

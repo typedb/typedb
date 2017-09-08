@@ -18,6 +18,7 @@
 
 package ai.grakn.exception;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Query;
 
@@ -146,7 +147,7 @@ public class GraknServerException extends GraknBackendException {
     /**
      * Thrown when requested concept is not found in the graph
      */
-    public static GraknServerException noConceptFound(ConceptId conceptId, String keyspace){
+    public static GraknServerException noConceptFound(ConceptId conceptId, Keyspace keyspace){
         return new GraknServerException(NO_CONCEPT_IN_KEYSPACE.getMessage(conceptId, keyspace), 404);
     }
 

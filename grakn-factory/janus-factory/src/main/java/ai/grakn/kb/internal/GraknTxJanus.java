@@ -20,6 +20,7 @@ package ai.grakn.kb.internal;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.TemporaryWriteException;
@@ -54,8 +55,8 @@ import java.util.function.Supplier;
  * @author fppt
  */
 public class GraknTxJanus extends GraknTxAbstract<JanusGraph> {
-    public GraknTxJanus(JanusGraph graph, String name, String engineUrl, Properties properties){
-        super(graph, name, engineUrl, properties);
+    public GraknTxJanus(JanusGraph graph, Keyspace keyspace, String engineUrl, Properties properties){
+        super(graph, keyspace, engineUrl, properties);
     }
 
     /**

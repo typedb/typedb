@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -28,16 +29,18 @@ import ai.grakn.engine.tasks.manager.TaskSchedule;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.REST;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.Timer.Context;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * <p>
@@ -188,9 +191,9 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @param config The config which contains the concepts with updated counts
      * @return The task configuration encapsulating the above details in a manner executable by the task runner
      */
-    public static TaskConfiguration createConfig(String keyspace, String config){
+    public static TaskConfiguration createConfig(Keyspace keyspace, String config){
         Json countingConfiguration = Json.object();
-        countingConfiguration.set(REST.Request.KEYSPACE, keyspace);
+        countingConfiguration.set(REST.Request.KEYSPACE, keyspace.getValue());
         countingConfiguration.set(REST.Request.COMMIT_LOG_COUNTING, Json.read(config).at(REST.Request.COMMIT_LOG_COUNTING));;
         return TaskConfiguration.of(countingConfiguration);
     }

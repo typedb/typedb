@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.hal;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
@@ -63,7 +64,7 @@ public class HALConceptData {
     private final Representation halResource;
 
     private final String resourceLinkPrefix;
-    private final String keyspace;
+    private final Keyspace keyspace;
 
     private final boolean embedType;
     private final Set<Label> typesInQuery;
@@ -72,7 +73,7 @@ public class HALConceptData {
     private final int limit;
 
 
-    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<Label> typesInQuery, String keyspace, int offset, int limit){
+    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<Label> typesInQuery, Keyspace keyspace, int offset, int limit){
 
         embedType = embedTypeParam;
         this.typesInQuery = typesInQuery;
