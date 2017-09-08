@@ -259,6 +259,13 @@ public class GraknTxOperationException extends GraknException{
     }
 
     /**
+     * Thrown when creating an invalid {@link ai.grakn.Keyspace}
+     */
+    public static GraknTxOperationException invalidKeyspace(String keyspace){
+        throw new GraknTxOperationException("Keyspace [" + keyspace + "] is invalid. Grakn Keyspaces cannot start with a number and can only be lower case containing alphanumeric values and underscore characters");
+    }
+
+    /**
      * Thrown when changing the super of a {@link Type} will result in a {@link Role} disconnection which is in use.
      */
     public static GraknTxOperationException changingSuperWillDisconnectRole(Type oldSuper, Type newSuper, Role role){
