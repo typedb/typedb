@@ -56,7 +56,7 @@ public class RolePlayerFragmentSetTest {
                 authorLabelFragmentSet
         );
 
-        RolePlayerFragmentSet.applyRolePlayerRoleOptimisation(fragmentSets, sampleKB.tx());
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, sampleKB.tx());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
                 new RolePlayerFragmentSet(null, a, b, c, null, ImmutableSet.of(author, director), null),
@@ -77,7 +77,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.applyRolePlayerRoleOptimisation(fragmentSets, sampleKB.tx());
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, sampleKB.tx());
 
         assertEquals(expected, fragmentSets);
     }
@@ -93,7 +93,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.applyRolePlayerRoleOptimisation(fragmentSets, sampleKB.tx());
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, sampleKB.tx());
 
         assertEquals(expected, fragmentSets);
     }
@@ -108,7 +108,7 @@ public class RolePlayerFragmentSetTest {
                 authorLabelFragmentSet
         );
 
-        RolePlayerFragmentSet.applyRolePlayerRoleOptimisation(fragmentSets, sampleKB.tx());
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, sampleKB.tx());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
                 new RolePlayerFragmentSet(null, a, b, c, null, null, null),
@@ -130,7 +130,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.applyRolePlayerRelationTypeOptimisation(fragmentSets, sampleKB.tx());
+        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, sampleKB.tx());
 
         assertEquals(expected, fragmentSets);
     }
@@ -147,7 +147,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.applyRolePlayerRelationTypeOptimisation(fragmentSets, sampleKB.tx());
+        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, sampleKB.tx());
 
         assertEquals(expected, fragmentSets);
     }
