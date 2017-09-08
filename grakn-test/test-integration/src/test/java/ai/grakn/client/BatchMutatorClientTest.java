@@ -57,7 +57,7 @@ public class BatchMutatorClientTest {
 
     @Before
     public void setupSession(){
-        this.session = engine.factoryWithNewKeyspace();
+        this.session = engine.sessionWithNewKeyspace();
     }
 
     @Test
