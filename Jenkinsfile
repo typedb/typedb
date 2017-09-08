@@ -28,7 +28,7 @@ def runIntegrationTest(String moduleName) {
                 }
                 timeout(360) {
                     stage('Validate') {
-                        sh "validate.sh"
+                        sh "validate.sh ${env.BRANCH_NAME}"
                     }
                 }
             }

@@ -13,9 +13,6 @@ LDBC_DRIVER=${HOME}/.m2/repository/com/ldbc/driver/jeeves/0.3-SNAPSHOT/jeeves-0.
 
 LDBC_VALIDATION_CONFIG=${WORKSPACE}/grakn-test/test-snb/src/main/bash/readwrite_grakn--ldbc_driver_config--db_validation.properties
 
-echo ${LDBC_DRIVER}
-echo ${LDBC_CONNECTOR}
-
 # execute validation
 java \
     -classpath ${LDBC_DRIVER}:${LDBC_CONNECTOR} com.ldbc.driver.Client \
