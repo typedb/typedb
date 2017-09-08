@@ -59,7 +59,7 @@ class HALExploreType extends HALExploreConcept{
 
         if (type.isRelationshipType()) {
             // Role types that make up this RelationshipType
-            relationTypeRoles(halResource, type.asRelationshipType());
+            relationshipTypeRoles(halResource, type.asRelationshipType());
         } else if (type.isRole()) {
             // Types that can play this role && Relationship types this role can take part in.
             roleTypeSchema(halResource, type.asRole());
@@ -88,7 +88,7 @@ class HALExploreType extends HALExploreConcept{
             halResource.withRepresentation(PLAYS_EDGE, roleRepresentation);
         });
 
-        role.relationTypes().forEach(relType -> {
+        role.relationshipTypes().forEach(relType -> {
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + relType.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, relType);
@@ -96,7 +96,7 @@ class HALExploreType extends HALExploreConcept{
         });
     }
 
-    private void relationTypeRoles(Representation halResource, RelationshipType relationshipType) {
+    private void relationshipTypeRoles(Representation halResource, RelationshipType relationshipType) {
         relationshipType.relates().forEach(role -> {
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + role.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
@@ -108,11 +108,11 @@ class HALExploreType extends HALExploreConcept{
     }
 
     private void attachTypeResources(Representation halResource, Type conceptType) {
-        conceptType.attributes().forEach(currentResourceType -> {
+        conceptType.attributes().forEach(currentAttributeType -> {
             Representation embeddedResource = factory
-                    .newRepresentation(resourceLinkPrefix + currentResourceType.getId() + getURIParams())
+                    .newRepresentation(resourceLinkPrefix + currentAttributeType.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-            generateStateAndLinks(embeddedResource, currentResourceType);
+            generateStateAndLinks(embeddedResource, currentAttributeType);
             halResource.withRepresentation(HAS_EDGE, embeddedResource);
         });
     }
@@ -123,7 +123,7 @@ class HALExploreType extends HALExploreConcept{
                     .newRepresentation(resourceLinkPrefix + role.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, role);
-            //We always return roles with in embedded the relations they play in.
+            //We always return roles with in embedded the relationships they play in.
             roleTypeSchema(roleRepresentation, role);
 
             halResource.withRepresentation(PLAYS_EDGE, roleRepresentation);

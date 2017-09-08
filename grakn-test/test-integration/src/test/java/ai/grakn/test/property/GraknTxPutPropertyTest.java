@@ -259,7 +259,7 @@ public class GraknTxPutPropertyTest {
         Role role = graph.putRole(label);
 
         assertThat("The role should be played by no types", role.playedByTypes().collect(toSet()), empty());
-        assertThat("The role should be owned by no relation types", role.relationTypes().collect(toSet()), empty());
+        assertThat("The role should be owned by no relation types", role.relationshipTypes().collect(toSet()), empty());
     }
 
     @Property

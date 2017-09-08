@@ -161,13 +161,17 @@ import FavQueries from '../../js/FavQueries';
 
 export default {
   name: 'FavQueriesList',
+  props:['state'],
   data() {
     return {
       favouriteQueries: [],
       showFavourites: false,
+      elementId:'3',
     };
   },
-  created() {},
+  created() {
+            this.state.eventHub.$on('show-new-navbar-element',(elementId)=>{if(elementId!=this.elementId)this.showFavourites=false;});
+  },
   mounted() {
     this.$nextTick(() => {
 
@@ -181,6 +185,9 @@ export default {
         this.showFavourites = true;
       } else {
         this.showFavourites = false;
+      }
+      if(this.showFavourites){
+          this.state.eventHub.$emit('show-new-navbar-element',this.elementId);
       }
     },
     refreshList() {

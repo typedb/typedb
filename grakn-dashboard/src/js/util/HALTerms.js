@@ -20,8 +20,8 @@
  * Keys used in HAL API JSON Objects
  */
 
-export const RELATION_TYPE = 'RELATION_TYPE';
-export const RELATION = 'RELATION';
+export const RELATIONSHIP_TYPE = 'RELATIONSHIP_TYPE';
+export const RELATIONSHIP = 'RELATIONSHIP';
 
 export const TYPE_TYPE = 'TYPE';
 
@@ -29,8 +29,8 @@ export const RULE_TYPE = 'RULE_TYPE';
 export const RULE = 'RULE';
 
 
-export const RESOURCE = 'RESOURCE';
-export const RESOURCE_TYPE = 'RESOURCE_TYPE';
+export const ATTRIBUTE = 'ATTRIBUTE';
+export const ATTRIBUTE_TYPE = 'ATTRIBUTE_TYPE';
 
 export const ROLE_TYPE = 'ROLE_TYPE';
 export const ROLE = 'ROLE';
@@ -38,8 +38,8 @@ export const ROLE = 'ROLE';
 export const ENTITY_TYPE = 'ENTITY_TYPE';
 export const ENTITY = 'ENTITY';
 
-export const GENERATED_RELATION_TYPE = 'generated-relation';
-export const INFERRED_RELATION_TYPE = 'inferred-relation';
+export const GENERATED_RELATIONSHIP_TYPE = 'generated-relationship';
+export const INFERRED_RELATIONSHIP_TYPE = 'inferred-relationship';
 
 
 export const ROOT_CONCEPT = 'thing';

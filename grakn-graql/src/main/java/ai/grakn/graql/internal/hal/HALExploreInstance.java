@@ -37,11 +37,11 @@ class HALExploreInstance extends HALExploreConcept {
 
     void populateEmbedded(Representation halResource, Concept concept) {
         // Thing resources
-        concept.asThing().attributes().forEach(currentResource -> {
-            Representation embeddedResource = factory.newRepresentation(resourceLinkPrefix + currentResource.getId() + getURIParams())
+        concept.asThing().attributes().forEach(currentAttribute -> {
+            Representation embeddedResource = factory.newRepresentation(resourceLinkPrefix + currentAttribute.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-            generateStateAndLinks(embeddedResource, currentResource);
-            halResource.withRepresentation(currentResource.type().getLabel().getValue(), embeddedResource);
+            generateStateAndLinks(embeddedResource, currentAttribute);
+            halResource.withRepresentation(currentAttribute.type().getLabel().getValue(), embeddedResource);
         });
     }
 

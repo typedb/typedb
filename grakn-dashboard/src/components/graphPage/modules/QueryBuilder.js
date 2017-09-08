@@ -38,7 +38,7 @@ export default {
     return `compute path from "${nodeIds[0]}" to "${nodeIds[1]}";`;
   },
 
-  exploreRelationsBuilder(nodeIds) {
+  exploreRelationshipsBuilder(nodeIds) {
     return `match $x id "${nodeIds[0]}"; $y id "${nodeIds[1]}"; $r ($x, $y);`;
   },
 
