@@ -30,6 +30,7 @@ authored by - """ + user
           sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
           sh 'cd grakn-package'
           sh 'grakn server start'
+	  sh 'cat /tmp/grakn-redis-logs'
         }
         stage('Test Connection') {
           sh 'graql console -e "match \\\$x;"' //Sanity check query. I.e. is everything working?
