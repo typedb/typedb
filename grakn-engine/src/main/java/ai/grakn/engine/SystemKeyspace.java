@@ -70,7 +70,7 @@ public class SystemKeyspace {
     // This will eventually be configurable and obtained the same way the factory is obtained
     // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
-    public static final String SYSTEM_KB_NAME = "graknSystem";
+    public static final Keyspace SYSTEM_KB_KEYSPACE = Keyspace.of("graknsystem");
     private static final String SYSTEM_VERSION = "system-version";
     public static final Label KEYSPACE_ENTITY = Label.of("keyspace");
     public static final Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
@@ -99,7 +99,7 @@ public class SystemKeyspace {
              return true;
          }
 
-        try (GraknTx graph = factory.tx(SYSTEM_KB_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
             if (keyspaceName == null) {
                 throw GraknBackendException.initializationException(keyspace);
@@ -120,11 +120,11 @@ public class SystemKeyspace {
      * Checks if the keyspace exists in the system. The persisted graph is checked each time because the graph
      * may have been deleted in another JVM.
      *
-     * @param keyspace The keyspace which might be in the system
+     * @param keyspace The {@link Keyspace} which might be in the system
      * @return true if the keyspace is in the system
      */
-    public boolean containsKeyspace(String keyspace){
-        try (GraknTx graph = factory.tx(SYSTEM_KB_NAME, GraknTxType.READ)) {
+    public boolean containsKeyspace(Keyspace keyspace){
+        try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.READ)) {
             return graph.getAttributeType(KEYSPACE_RESOURCE.getValue()).getAttribute(keyspace) != null;
         }
     }
@@ -136,11 +136,11 @@ public class SystemKeyspace {
      * @param keyspace the keyspace to be removed from the system graph
      */
     public boolean deleteKeyspace(String keyspace){
-        if(keyspace.equals(SYSTEM_KB_NAME)){
+        if(keyspace.equals(SYSTEM_KB_KEYSPACE)){
            return false;
         }
 
-        try (GraknTx graph = factory.tx(SYSTEM_KB_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
             Attribute<String> attribute = keyspaceName.getAttribute(keyspace);
 
@@ -164,7 +164,7 @@ public class SystemKeyspace {
      */
     public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
-        try (GraknTx tx = factory.tx(SYSTEM_KB_NAME, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
                 checkVersion(tx);
                 return;

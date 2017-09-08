@@ -211,7 +211,7 @@ public class SystemController {
     @Path("/keyspaces")
     @ApiOperation(value = "Get all the key spaces that have been opened")
     private String getKeyspaces(Request request, Response response) {
-        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_NAME, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
 
             AttributeType<String> keyspaceName = graph.getSchemaConcept(SystemKeyspace.KEYSPACE_RESOURCE);
             Json result = Json.array();
