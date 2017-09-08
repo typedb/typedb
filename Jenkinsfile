@@ -32,6 +32,7 @@ authored by - """ + user
           sh 'grakn server start'
           sh 'pwd'
           sh 'ls .'
+          sh 'cd ..'
 	      sh 'cat /tmp/grakn-redis-logs'
         }
         stage('Test Connection') {
