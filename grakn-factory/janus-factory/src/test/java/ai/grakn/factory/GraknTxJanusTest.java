@@ -288,7 +288,7 @@ public class GraknTxJanusTest extends JanusTestBase {
         murder.delete();
 
         assertTrue(murder.isDeleted());
-        assertThat(murderer.relationTypes().toArray(), emptyArray());
-        assertThat(victim.relationTypes().toArray(), emptyArray());
+        assertThat(murderer.relationshipTypes().toArray(), emptyArray());
+        assertThat(victim.relationshipTypes().toArray(), emptyArray());
     }
 }

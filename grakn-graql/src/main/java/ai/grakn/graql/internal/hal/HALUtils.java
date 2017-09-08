@@ -72,11 +72,12 @@ public class HALUtils {
     public final static String BASETYPE_PROPERTY = "_baseType";
     public final static String DIRECTION_PROPERTY = "_direction";
     public final static String VALUE_PROPERTY = "_value";
+    public final static String DATATYPE_PROPERTY = "_dataType";
     public final static String NAME_PROPERTY = "_name";
     public final static String LINKS_PROPERTY = "_links";
 
-    public final static String INFERRED_RELATION = "inferred-relation";
-    public final static String GENERATED_RELATION = "generated-relation";
+    public final static String INFERRED_RELATIONSHIP = "inferred-relationship";
+    public final static String GENERATED_RELATIONSHIP = "generated-relationship";
     public final static String IMPLICIT_PROPERTY = "_implicit";
 
 
@@ -124,10 +125,16 @@ public class HALUtils {
 
         if (concept.isAttribute()) {
             resource.withProperty(VALUE_PROPERTY, concept.asAttribute().getValue());
+            resource.withProperty(DATATYPE_PROPERTY, concept.asAttribute().dataType().getName());
         }
+
         if (concept.isType()) {
             resource.withProperty(NAME_PROPERTY, concept.asType().getLabel().getValue());
             resource.withProperty(IMPLICIT_PROPERTY, ((SchemaConcept)concept).isImplicit());
+            if(concept.isAttributeType()){
+                String dataType = Optional.ofNullable(concept.asAttributeType().getDataType()).map(x->x.getName()).orElse("");
+                resource.withProperty(DATATYPE_PROPERTY, dataType);
+            }
         }
     }
 
@@ -152,7 +159,7 @@ public class HALUtils {
             Optional<VarPatternAdmin> var = atom.getPattern().varPatterns().stream().filter(x -> x.hasProperty(RelationProperty.class)).findFirst();
             VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
             if (var.isPresent() && !var.get().var().isUserDefinedName() && bothRolePlayersAreSelected(atom, getQuery)) {
-                roleTypes.put(varAdmin, pairVarNamesRelationType(atom));
+                roleTypes.put(varAdmin, pairVarNamesRelationshipType(atom));
             }
         }
     }
@@ -161,14 +168,14 @@ public class HALUtils {
         RelationAtom reasonerRel = ((RelationAtom) atom);
         Set<Var> rolePlayersInAtom = reasonerRel.getRolePlayers().stream().collect(Collectors.toSet());
         Set<Var> selectedVars = getQuery.vars();
-        //If all the role players contained in the current relation are also selected in the user query
+        //If all the role players contained in the current relationship are also selected in the user query
         return Sets.intersection(rolePlayersInAtom, selectedVars).equals(rolePlayersInAtom);
     }
 
     private static boolean bothRolePlayersAreSelectedNoReasoner(VarPatternAdmin var, GetQuery getQuery) {
         Set<Var> rolePlayersInVar =  var.getProperty(RelationProperty.class).get().relationPlayers().stream().map(x->x.getRolePlayer().var()).collect(Collectors.toSet());
         Set<Var> selectedVars = getQuery.vars();
-        //If all the role players contained in the current relation are also selected in the user query
+        //If all the role players contained in the current relationship are also selected in the user query
         return Sets.intersection(rolePlayersInVar, selectedVars).equals(rolePlayersInVar);
     }
 
@@ -183,21 +190,21 @@ public class HALUtils {
                                     (x.getRole().isPresent()) ? x.getRole().get().getPrintableName() : HAS_EMPTY_ROLE_EDGE);
                         }
                 );
-                String relationType = null;
+                String relationshipType = null;
                 if (var.getProperty(IsaProperty.class).isPresent()) {
                     Optional<Label> relOptional = var.getProperty(IsaProperty.class).get().type().getTypeLabel();
-                    relationType = (relOptional.isPresent()) ? relOptional.get().getValue() : "";
+                    relationshipType = (relOptional.isPresent()) ? relOptional.get().getValue() : "";
                 } else {
-                    relationType = "";
+                    relationshipType = "";
                 }
 
-                roleTypes.put(var, new Pair<>(tempMap, relationType));
+                roleTypes.put(var, new Pair<>(tempMap, relationshipType));
             }
         });
         return roleTypes;
     }
 
-    private static Pair<Map<Var, String>, String> pairVarNamesRelationType(Atom atom) {
+    private static Pair<Map<Var, String>, String> pairVarNamesRelationshipType(Atom atom) {
         RelationAtom reasonerRel = ((RelationAtom) atom);
         Map<Var, String> varNamesToRole = new HashMap<>();
         // Put all the varNames in the map with EMPTY-ROLE role
@@ -205,30 +212,30 @@ public class HALUtils {
         // Overrides the varNames that have roles in the previous map
         reasonerRel.getRoleVarMap().entries().stream().filter(entry -> !Schema.MetaSchema.isMetaLabel(entry.getKey().getLabel())).forEach(entry -> varNamesToRole.put(entry.getValue(), entry.getKey().getLabel().getValue()));
 
-        String relationType = (reasonerRel.getSchemaConcept() != null) ? reasonerRel.getSchemaConcept().getLabel().getValue() : "";
-        return new Pair<>(varNamesToRole, relationType);
+        String relationshipType = (reasonerRel.getSchemaConcept() != null) ? reasonerRel.getSchemaConcept().getLabel().getValue() : "";
+        return new Pair<>(varNamesToRole, relationshipType);
     }
 
-    static Map<VarPatternAdmin, Boolean> buildInferredRelationsMap(Answer firstAnswer) {
-        final Map<VarPatternAdmin, Boolean> inferredRelations = new HashMap<>();
+    static Map<VarPatternAdmin, Boolean> buildInferredRelationshipsMap(Answer firstAnswer) {
+        final Map<VarPatternAdmin, Boolean> inferredRelationships = new HashMap<>();
         AnswerExplanation firstExplanation = firstAnswer.getExplanation();
         if (firstExplanation.isRuleExplanation() || firstExplanation.isLookupExplanation()) {
             Atom atom = ((ReasonerAtomicQuery) firstAnswer.getExplanation().getQuery()).getAtom();
             if (atom.isRelation()) {
                 VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
-                inferredRelations.put(varAdmin, firstAnswer.getExplanation().isRuleExplanation());
+                inferredRelationships.put(varAdmin, firstAnswer.getExplanation().isRuleExplanation());
             }
         } else {
             firstAnswer.getExplanation().getAnswers().forEach(answer -> {
                 Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
                 if (atom.isRelation()) {
                     VarPatternAdmin varAdmin = atom.getPattern().asVarPattern();
-                    inferredRelations.put(varAdmin, answer.getExplanation().isRuleExplanation());
+                    inferredRelationships.put(varAdmin, answer.getExplanation().isRuleExplanation());
                 }
             });
         }
 
-        return inferredRelations;
+        return inferredRelationships;
     }
 
 }

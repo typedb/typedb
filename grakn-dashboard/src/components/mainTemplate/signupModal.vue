@@ -34,21 +34,21 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         <div class="form-group">
                             <div class="same-line">
                                 <label class="label">First Name</label>
-                                <input v-model="credentials.name" name="name" v-validate:name.initial="'required|alpha'" :class="{'input': true, 'is-danger': errors.has('name') }" type="text" class="form-control">
+                                <input v-model="credentials.name" name="name" v-validate="'required|alpha'" :class="{'input': true, 'is-danger': errors.has('name') }" type="text" class="form-control">
                             </div>
                             <span v-show="errors.has('name')" class="help-block"> <i v-show="errors.has('name')" class="fa fa-warning"></i>&nbsp;{{ errors.first('name') }}</span>
                         </div>
                         <div class="form-group">
                             <div class="same-line">
                                 <label class="label">Last Name</label>
-                                <input v-model="credentials.surname" name="lastname" v-validate:lastname.initial="'required|alpha'" :class="{'input': true, 'is-danger': errors.has('lastname') }" type="text" class="form-control">
+                                <input v-model="credentials.surname" name="lastname" v-validate="'required|alpha'" :class="{'input': true, 'is-danger': errors.has('lastname') }" type="text" class="form-control">
                             </div>
                             <span v-show="errors.has('lastname')" class="help-block"><i v-show="errors.has('lastname')" class="fa fa-warning"></i>&nbsp;{{ errors.first('lastname') }}</span>
                         </div>
                         <div class="form-group">
                             <div class="same-line">
                                 <label class="label">Email</label>
-                                <input v-model="credentials.email" name="email" v-validate:email.initial="'required|email'" :class="{'input': true, 'is-danger': errors.has('email') }" type="text" class="form-control">
+                                <input v-model="credentials.email" name="email" v-validate="'required|email'" :class="{'input': true, 'is-danger': errors.has('email') }" type="text" class="form-control">
                             </div>
                             <span v-show="errors.has('email')" class="help-block"><i v-show="errors.has('email')" class="fa fa-warning"></i>&nbsp;{{ errors.first('email') }}</span>
                         </div>
