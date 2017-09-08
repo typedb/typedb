@@ -69,10 +69,6 @@ def withGrakn(Closure closure) {
 }
 
 node {
-    // always run a quick test script to check that the distribution works
-    withGrakn {
-        sh 'test-connection.sh'
-    }
     //Only run validation master/stable
     if (env.BRANCH_NAME in ['master', 'stable'] || true) {
         slackGithub "Build started"
