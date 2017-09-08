@@ -47,7 +47,7 @@ abstract class NeqFragment extends Fragment {
     @Override
     public double fragmentCost() {
         // This is arbitrary - we imagine about half the results are filtered out
-        return COST_NEQ;
+        return COST_NODE_NEQ;
     }
 
     @Override

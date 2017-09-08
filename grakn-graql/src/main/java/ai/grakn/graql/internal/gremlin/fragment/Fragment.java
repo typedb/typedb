@@ -85,13 +85,17 @@ public abstract class Fragment {
     static final double COST_ROLE_PLAYERS_PER_RELATION = Math.log1p(NUM_ROLE_PLAYERS_PER_RELATION);
     static final double COST_ROLE_PLAYERS_PER_ROLE = Math.log1p(NUM_ROLE_PLAYERS_PER_ROLE);
 
-    static final double COST_INDEX = 0.05D; // arbitrary small number
-    static final double COST_RESOURCES_PER_VALUE = Math.log1p(COST_INDEX * NUM_RESOURCES_PER_VALUE);
-
     static final double COST_SAME_AS_PREVIOUS = Math.log1p(1);
-    static final double COST_NEQ = Math.log1p(0.5);
-    static final double COST_DATA_TYPE = Math.log1p(2D / AttributeType.DataType.SUPPORTED_TYPES.size());
-    static final double COST_UNSPECIFIC_PREDICATE = Math.log1p(0.5);
+
+    static final double COST_NODE_INDEX = -Math.log(NUM_INSTANCES_PER_TYPE);
+    static final double COST_NODE_INDEX_VALUE = -Math.log(NUM_INSTANCES_PER_TYPE / NUM_RESOURCES_PER_VALUE);
+
+    static final double COST_NODE_NEQ = -Math.log(2D);
+    static final double COST_NODE_DATA_TYPE = -Math.log(AttributeType.DataType.SUPPORTED_TYPES.size() / 2D);
+    static final double COST_NODE_UNSPECIFIC_PREDICATE = -Math.log(2D);
+    static final double COST_NODE_REGEX = -Math.log(2D);
+    static final double COST_NODE_NOT_INTERNAL = -Math.log(1.1D);
+    static final double COST_NODE_IS_ABSTRACT = -Math.log(1.1D);
 
     /**
      * Get the corresponding property
