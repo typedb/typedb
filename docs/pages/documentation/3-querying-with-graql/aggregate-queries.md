@@ -9,7 +9,7 @@ permalink: /documentation/graql/aggregate-queries.html
 folder: documentation
 ---
 
-An aggregate query applies an operation onto a [match query](match-queries.html), to return information about the results (e.g. a count). To follow along, or experiment further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
+An aggregate query applies an operation onto a [match](matches.html), to return information about the results (e.g. a count). To follow along, or experiment further, with the examples given below, please load the *basic-genealogy.gql* file, which can be found in the *examples* directory of the Grakn installation zip, or on [Github](https://github.com/graknlabs/grakn/blob/master/grakn-dist/src/examples/basic-genealogy.gql).
 
 ```bash
 <relative-path-to-Grakn>/bin/grakn.sh start 
@@ -22,7 +22,7 @@ An aggregate query applies an operation onto a [match query](match-queries.html)
 
 ### Ask
 
-Whether the given [match query](match-queries.html) has any results.
+Whether the given [match](matches.html) has any results.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell-ask" data-toggle="tab">Graql</a></li>
@@ -46,7 +46,7 @@ qb.match(label("marriage").sub("relationship")).aggregate(ask()).execute();
 
 ### Count
 
-Count the number of results of the match query or aggregate result.
+Count the number of results of the match or aggregate result.
 
 <ul id="profileTabs" class="nav nav-tabs">
     <li class="active"><a href="#shell1" data-toggle="tab">Graql</a></li>
@@ -258,10 +258,4 @@ compute count in person;
 
 Can be used to calculate the number of people in the knowledge base very fast, but you can't filter the results to determine the number of people with a certain name.
 
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/42" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
-
-
 {% include links.html %}
-
-

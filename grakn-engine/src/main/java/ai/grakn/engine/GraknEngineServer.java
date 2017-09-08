@@ -205,6 +205,7 @@ public class GraknEngineServer implements AutoCloseable {
                     .map(s -> new RedisTaskManager(engineId, prop, jedisPool, Integer.parseInt(s), factory, lockProvider, metricRegistry))
                     .orElseGet(() -> new RedisTaskManager(engineId, prop, jedisPool, factory, lockProvider, metricRegistry));
         } else  {
+            LOG.info("Task queue in memory");
             // Redis storage for counts, in the RedisTaskManager it's created in consumers
             RedisCountStorage redisCountStorage = RedisCountStorage.create(jedisPool, metricRegistry);
             taskManager = new StandaloneTaskManager(engineId, prop, redisCountStorage, factory, lockProvider, metricRegistry);
@@ -395,7 +396,9 @@ public class GraknEngineServer implements AutoCloseable {
         if (useSentinel) {
             builder.setMasterName(prop.tryProperty(REDIS_SENTINEL_MASTER).orElse("graknmaster"));
         }
-        return builder.build();
+        RedisWrapper redisWrapper = builder.build();
+        redisWrapper.testConnection();
+        return redisWrapper;
     }
 
     private void logStartMessage(String host, String port) {

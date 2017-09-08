@@ -26,6 +26,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Atomic;
@@ -57,7 +58,7 @@ import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
  * including one implicit {@link RelationshipType} and two implicit {@link Role}s. The labels of these types are derived
  * from the label of the {@link AttributeType}.
  *
- * Like {@link HasResourceProperty}, if this is not a key and is used in a match query it will not use the implicit
+ * Like {@link HasResourceProperty}, if this is not a key and is used in a {@link Match} it will not use the implicit
  * structure - instead, it will match if there is any kind of relation type connecting the two types.
  *
  * @author Felix Chapman

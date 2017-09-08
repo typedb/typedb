@@ -22,7 +22,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
@@ -62,10 +62,10 @@ public class DeleteQueryTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    private MatchQuery kurtz;
-    private MatchQuery marlonBrando;
-    private MatchQuery apocalypseNow;
-    private MatchQuery kurtzCastRelation;
+    private Match kurtz;
+    private Match marlonBrando;
+    private Match apocalypseNow;
+    private Match kurtzCastRelation;
 
     @Before
     public void setUp() {
@@ -128,7 +128,7 @@ public class DeleteQueryTest {
     @Test
     public void testDeleteAllRolePlayers() {
         ConceptId id = kurtzCastRelation.get("a").findFirst().get().getId();
-        MatchQuery relation = qb.match(var().id(id));
+        Match relation = qb.match(var().id(id));
 
         assertExists(kurtz);
         assertExists(marlonBrando);
@@ -177,7 +177,7 @@ public class DeleteQueryTest {
 
     @Test
     public void afterDeletingAllInstances_TheTypeCanBeUndefined() {
-        MatchQuery movie = qb.match(x.isa("movie"));
+        Match movie = qb.match(x.isa("movie"));
 
         assertNotNull(movieKB.tx().getEntityType("movie"));
         assertExists(movie);

@@ -69,9 +69,6 @@ There is potential to use the open data from Elixir and Bioschemas.org to build 
 ### European Broadcast Union 
 The European Broadcast Union are interested interested in semantics and have documented what they are pursuing [here](https://nlpdbpedia2016.files.wordpress.com/2016/09/nlpdbpedia2016_paper_1.pdf).
 
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/27" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
-
 {% include links.html %}
 
 

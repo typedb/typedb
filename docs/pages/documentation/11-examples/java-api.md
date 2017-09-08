@@ -7,7 +7,6 @@ summary: "Learn how to use the Java API to model a schema"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/java-api-example.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 This example shows how to use Java in a basic example that can be extended as a template for your own projects. It shows how to get set up, then how to build up a schema, add data and how to make some queries. The example we will build is very simple: it's based on the genealogy dataset we have used throughout the GRAKN.AI documentation. We have kept it very simple (as close to a Hello World as you can get while still being useful as a template for creating and querying a knowledge base). You can find it in our sample-projects repository on [Github](https://github.com/graknlabs/sample-projects/tree/master/example-java-api-genealogy).
@@ -23,7 +22,7 @@ All Grakn applications have the following Maven dependency:
 </dependency>
 ```
 
-This dependency will give you access to the Core API. Your Java application will also require the following dependency when it is running against a Janus backend, which is what is configured for you by default:
+This dependency will give you access to the Core API. Your Java application will also require the following dependency:
 
 ```xml
 <dependency>
@@ -155,7 +154,7 @@ theMarriage.attribute(marriageDate);
 The `runSampleQueries()` method shows how to run a simple query using the `GraknTx` API. For example, take the query "What are the instances of type person?". In Graql, this is simply:
 
 ```graql
-match $x isa person;
+match $x isa person; get;
 ```
 
 In Java:
@@ -189,13 +188,13 @@ Manipulation, such as insertions into the knowledge base.
 This is best for advanced querying where traversals are involved. For example “Who is married to Homer?” is too complex a query for the Java API. Using a `QueryBuilder`:
 
 ```java
-List<Map<String, Concept>> results = tx.graql().match(
+GetQuery query = tx.graql().match(
   var("x").has("firstname", "John").isa("person"),
   var("y").has("firstname", var("y_name")).isa("person"),
   var().isa("marriage").
   rel("husband", "x").
-  rel("wife", "y")).execute();
-for (Map<String, Concept> result : results) {
+  rel("wife", "y")).get();
+for (Map<String, Concept> result : query) {
   System.out.println(" " + result.get("y_name"));
 }
 

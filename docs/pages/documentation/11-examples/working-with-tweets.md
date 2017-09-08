@@ -7,7 +7,6 @@ summary: "An example which demonstrates key Grakn concepts in a practical settin
 sidebar: documentation_sidebar
 permalink: /documentation/examples/working-with-tweets.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 # Working With Tweets
@@ -369,7 +368,7 @@ Therefore, let's add a method for checking whether we've previously stored a par
 
 ```java-test-ignore
 public static Optional<Entity> findUser(QueryBuilder queryBuilder, String user) {
-  MatchQuery findUser = queryBuilder.match(var("x").isa("user").has("screen_name", user)).limit(1);
+  Match findUser = queryBuilder.match(var("x").isa("user").has("screen_name", user)).limit(1);
   Iterator<Concept> concepts = findUser.get("x").iterator();
   if (concepts.hasNext()) {
     Entity entity = concepts.next().asEntity();

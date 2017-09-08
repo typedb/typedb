@@ -34,7 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  * </p>
  *
  * <p>
- *    Wraps the shortcut {@link Edge} which contains the information unifying an {@link Thing},
+ *    Wraps the {@link Schema.EdgeLabel#ROLE_PLAYER} {@link Edge} which contains the information unifying an {@link Thing},
  *    {@link Relationship} and {@link Role}.
  * </p>
  *

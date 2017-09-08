@@ -107,8 +107,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     //TODO: Is this the correct place for these config paths
     //----------------------------- Config Paths
-    public static final String SHARDING_THRESHOLD = "graph.sharding-threshold";
-    public static final String NORMAL_CACHE_TIMEOUT_MS = "graph.schema-cache-timeout-ms";
+    public static final String SHARDING_THRESHOLD = "knowledge-base.sharding-threshold";
+    public static final String NORMAL_CACHE_TIMEOUT_MS = "knowledge-base.schema-cache-timeout-ms";
 
     //----------------------------- Shared Variables
     private final String keyspace;
@@ -666,15 +666,15 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         return getSchemaConcept(Schema.MetaSchema.RULE.getId());
     }
 
-    public void putShortcutEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {
+    public void putRolePlayerEdge(Thing toThing, RelationshipReified fromRelation, Role roleType) {
         boolean exists = getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), fromRelation.getId().getValue()).
-                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), fromRelation.type().getLabelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), roleType.getLabelId().getValue()).inV().
                 has(Schema.VertexProperty.ID.name(), toThing.getId()).hasNext();
 
         if (!exists) {
-            EdgeElement edge = fromRelation.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.SHORTCUT);
+            EdgeElement edge = fromRelation.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
             edge.property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID, fromRelation.type().getLabelId().getValue());
             edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, roleType.getLabelId().getValue());
             txCache().trackForValidation(factory().buildCasting(edge));
@@ -922,7 +922,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             otherRelationship.allRolePlayers().forEach((roleType, instances) -> {
                 Optional<RelationshipReified> relationReified = RelationshipImpl.from(otherRelationship).reified();
                 if (instances.contains(other) && relationReified.isPresent()) {
-                    putShortcutEdge(main, relationReified.get(), roleType);
+                    putRolePlayerEdge(main, relationReified.get(), roleType);
                 }
             });
         }

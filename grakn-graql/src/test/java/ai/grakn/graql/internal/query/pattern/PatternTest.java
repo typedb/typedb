@@ -164,35 +164,23 @@ public class PatternTest {
                 var("x").isa("movie"),
                 var("y1").isa("genre").has("name", "crime"),
                 var().isa("has-genre").rel(var("x")).rel(var("y1")));
-        Set<Concept> resultSet1 = tx.graql().match(varSet1).select("x").execute()
-                .stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
+        Set<Concept> resultSet1 = tx.graql().match(varSet1).get("x").collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
         Set<VarPattern> varSet11 = Sets.newHashSet(var("x"));
         varSet11.addAll(varSet1);
-        Set<Concept> resultSet11 = tx.graql().match(varSet11).select("x").execute()
-                .stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
+        Set<Concept> resultSet11 = tx.graql().match(varSet11).get("x").collect(Collectors.toSet());
         assertEquals(resultSet11, resultSet1);
 
         varSet11.add(var("z"));
-        resultSet11 = tx.graql().match(varSet11).execute()
-                .stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
+        resultSet11 = tx.graql().match(varSet11).get("x").collect(Collectors.toSet());
         assertEquals(resultSet11, resultSet1);
 
         Set<VarPattern> varSet2 = Sets.newHashSet(
                 var("x").isa("movie"),
                 var("y2").isa("person").has("name", "Marlon Brando"),
                 var().isa("has-cast").rel(var("x")).rel(var("y2")));
-        Set<Concept> resultSet2 = tx.graql().match(varSet2).select("x").execute()
-                .stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
+        Set<Concept> resultSet2 = tx.graql().match(varSet2).get("x").collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
         Set<VarPattern> varSet3 = Sets.newHashSet(
@@ -201,24 +189,16 @@ public class PatternTest {
                 var().isa("has-genre").rel(var("x")).rel(var("y")),
                 var("y2").isa("person").has("name", "Marlon Brando"),
                 var().isa("has-cast").rel(var("x")).rel(var("y2")));
-        Set<Concept> conj = tx.graql().match(varSet3).select("x").execute()
-                .stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
+        Set<Concept> conj = tx.graql().match(varSet3).get("x").collect(Collectors.toSet());
         assertFalse(conj.isEmpty());
 
         resultSet2.retainAll(resultSet1);
         assertEquals(resultSet2, conj);
 
-        conj = tx.graql().match(and(varSet3)).execute().stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
+        conj = tx.graql().match(and(varSet3)).get("x").collect(Collectors.toSet());
         assertEquals(resultSet2, conj);
 
-        conj = tx.graql().match(or(var("x"), var("x"))).select("x").execute()
-                .stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
+        conj = tx.graql().match(or(var("x"), var("x"))).get("x").collect(Collectors.toSet());
         assertTrue(conj.size() > 1);
     }
 
@@ -242,20 +222,14 @@ public class PatternTest {
                 var("x").isa("movie"),
                 var("y1").isa("genre").has("name", "crime"),
                 var().isa("has-genre").rel(var("x")).rel(var("y1")));
-        Set<Concept> resultSet1 = tx.graql().match(varSet1).select("x").execute()
-                .stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
+        Set<Concept> resultSet1 = tx.graql().match(varSet1).get("x").collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
         Set<VarPattern> varSet2 = Sets.newHashSet(
                 var("x").isa("movie"),
                 var("y2").isa("person").has("name", "Marlon Brando"),
                 var().isa("has-cast").rel(var("x")).rel(var("y2")));
-        Set<Concept> resultSet2 = tx.graql().match(varSet2).select("x").execute()
-                .stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
+        Set<Concept> resultSet2 = tx.graql().match(varSet2).get("x").collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
         Set<Pattern> varSet3 = Sets.newHashSet(
@@ -263,19 +237,13 @@ public class PatternTest {
                 or(var("y").isa("genre").has("name", "crime"),
                         var("y").isa("person").has("name", "Marlon Brando")),
                 var().rel(var("x")).rel(var("y")));
-        Set<Concept> conj = tx.graql().match(varSet3).select("x").execute()
-                .stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
+        Set<Concept> conj = tx.graql().match(varSet3).get("x").collect(Collectors.toSet());
         assertFalse(conj.isEmpty());
 
         resultSet2.addAll(resultSet1);
         assertEquals(resultSet2, conj);
 
-        conj = tx.graql().match(or(var("x"), var("x"))).select("x").execute()
-                .stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
+        conj = tx.graql().match(or(var("x"), var("x"))).get("x").collect(Collectors.toSet());
         assertTrue(conj.size() > 1);
     }
 
@@ -298,18 +266,12 @@ public class PatternTest {
         assertExists(tx.graql(), var().isa("movie").has("title", "Godfather"));
         Set<Concept> result1 = tx.graql().match(
                 var("x").isa("movie").has("title", var("y")),
-                var("y").val(neq("Godfather"))).select("x").execute()
-                .stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
+                var("y").val(neq("Godfather"))).get("x").collect(Collectors.toSet());
         assertFalse(result1.isEmpty());
 
         Set<Concept> result2 = tx.graql().match(
                 var("x").isa("movie").has("title", var("y")),
-                var("y")).select("x").execute()
-                .stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
+                var("y")).get("x").collect(Collectors.toSet());
         assertFalse(result2.isEmpty());
 
         result2.removeAll(result1);

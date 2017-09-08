@@ -19,26 +19,34 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknTx;
+import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.admin.Answer;
+
 import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * "Distinct" modifier for a match query that eliminates duplicate results.
+ * "Limit" modifier for {@link Match} that limits the results of a query.
  */
-class MatchQueryDistinct extends MatchQueryModifier {
+class MatchLimit extends MatchModifier {
 
-    MatchQueryDistinct(AbstractMatchQuery inner) {
+    private final long limit;
+
+    MatchLimit(AbstractMatch inner, long limit) {
         super(inner);
+        if (limit <= 0) {
+            throw GraqlQueryException.nonPositiveLimit(limit);
+        }
+        this.limit = limit;
     }
 
     @Override
     public Stream<Answer> stream(Optional<GraknTx> graph) {
-        return inner.stream(graph).distinct();
+        return inner.stream(graph).limit(limit);
     }
 
     @Override
     protected String modifierString() {
-        return " distinct;";
+        return " limit " + limit + ";";
     }
 }

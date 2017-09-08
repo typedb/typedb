@@ -24,21 +24,20 @@ import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Match;
 import ai.grakn.graql.Order;
-import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarPattern;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.graql.admin.MatchAdmin;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.util.AdminConverter;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,30 +47,15 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Order.asc;
+import static ai.grakn.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 @SuppressWarnings("UnusedReturnValue")
-abstract class AbstractMatchQuery implements MatchQueryAdmin {
+abstract class AbstractMatch implements MatchAdmin {
 
     @Override
-    public final Stream<String> resultsString(Printer printer) {
-        return stream().map(printer::graqlString);
-    }
-
-    @Override
-    public final boolean isReadOnly() {
-        return true;
-    }
-
-    @Override
-    public final MatchQueryAdmin admin() {
+    public final MatchAdmin admin() {
         return this;
-    }
-
-    @Override
-    public final List<Answer> execute() {
-        return stream().collect(toList());
     }
 
     /**
@@ -87,43 +71,23 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final MatchQuery withTx(GraknTx tx) {
-        return new MatchQueryTx(tx, this);
+    public final Match withTx(GraknTx tx) {
+        return new MatchTx(tx, this);
     }
 
     @Override
-    public final MatchQuery limit(long limit) {
-        return new MatchQueryLimit(this, limit);
+    public final Match limit(long limit) {
+        return new MatchLimit(this, limit);
     }
 
     @Override
-    public final MatchQuery offset(long offset) {
-        return new MatchQueryOffset(this, offset);
-    }
-
-    @Override
-    public final MatchQuery distinct() {
-        return new MatchQueryDistinct(this);
+    public final Match offset(long offset) {
+        return new MatchOffset(this, offset);
     }
 
     @Override
     public final <S> AggregateQuery<S> aggregate(Aggregate<? super Answer, S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
-    }
-
-    @Override
-    public final MatchQuery select(String... vars) {
-        return select(Stream.of(vars).map(Graql::var).collect(toSet()));
-    }
-
-    @Override
-    public final MatchQuery select(Var... vars) {
-        return select(Sets.newHashSet(vars));
-    }
-
-    @Override
-    public final MatchQuery select(Set<Var> vars) {
-        return new MatchQuerySelect(this, ImmutableSet.copyOf(vars));
     }
 
     @Override
@@ -139,6 +103,28 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
             }
             return result.get(var);
         });
+    }
+
+    @Override
+    public GetQuery get() {
+        return get(getPattern().commonVars());
+    }
+
+    @Override
+    public GetQuery get(String var, String... vars) {
+        Stream<String> varStream = Stream.concat(Stream.of(var), Stream.of(vars));
+        return get(varStream.map(Graql::var).collect(toImmutableSet()));
+    }
+
+    @Override
+    public GetQuery get(Var var, Var... vars) {
+        Stream<Var> varStream = Stream.concat(Stream.of(var), Stream.of(vars));
+        return get(varStream.collect(toImmutableSet()));
+    }
+
+    @Override
+    public GetQuery get(Set<Var> vars) {
+        return Queries.get(ImmutableSet.copyOf(vars), this);
     }
 
     @Override
@@ -169,22 +155,22 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final MatchQuery orderBy(String varName) {
+    public final Match orderBy(String varName) {
         return orderBy(varName, asc);
     }
 
     @Override
-    public final MatchQuery orderBy(Var varName) {
+    public final Match orderBy(Var varName) {
         return orderBy(varName, asc);
     }
 
     @Override
-    public final MatchQuery orderBy(String varName, Order order) {
+    public final Match orderBy(String varName, Order order) {
         return orderBy(Graql.var(varName), order);
     }
 
     @Override
-    public final MatchQuery orderBy(Var varName, Order order) {
-        return new MatchQueryOrder(this, new MatchOrderImpl(varName, order));
+    public final Match orderBy(Var varName, Order order) {
+        return new MatchOrder(this, Ordering.of(varName, order));
     }
 }

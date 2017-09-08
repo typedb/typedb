@@ -35,7 +35,7 @@ import javax.annotation.CheckReturnValue;
  * static methods for constructing {@link VarPattern} objects.
  * <p>
  * The methods on {@link VarPattern} are used to set its properties. A {@link VarPattern} behaves differently depending
- * on the type of query its used in. In a {@link MatchQuery}, a {@link VarPattern} describes the properties any matching
+ * on the type of query its used in. In a {@link Match}, a {@link VarPattern} describes the properties any matching
  * concept must have. In an {@link InsertQuery}, it describes the properties that should be set on the inserted concept.
  * In a {@link DeleteQuery}, it describes the properties that should be deleted.
  *

@@ -7,7 +7,6 @@ summary: "How to use Grakn for statistical analysis"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/analytics.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 
@@ -107,16 +106,16 @@ Some sample queries:
 
 ```graql
 # Cars where the model name contains "Merc"
-match $x has model contains "Merc";
+match $x has model contains "Merc"; get;
 
 # Cars with more than 4 gears
-match $x has gear > 4;
+match $x has gear > 4; get;
 
 # Japanese-made cars that are manual
-match $x isa manual-car has model $s; $y isa japanese-maker; (made: $x, maker:$y);
+match $x isa manual-car has model $s; $y isa japanese-maker; (made: $x, maker:$y); get;
 
 # European cars that are automatic
-match $x isa automatic-car has model $s; $y isa european-maker; (made: $x, maker:$y);
+match $x isa automatic-car has model $s; $y isa european-maker; (made: $x, maker:$y); get;
 
 ```
 
@@ -221,6 +220,3 @@ If you haven't already, we recommend that you review the documentation about [Gr
 This example was based on CSV data migrated into Grakn. Having read it, Yyou may want to further study our documentation about [CSV migration](../migration/CSV-migration.html) and [Graql templating](https://grakn.ai/pages/documentation/graql/graql-templating.html).  
 
 {% include links.html %}
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/27" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
