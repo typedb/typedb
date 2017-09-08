@@ -103,6 +103,7 @@ public class GraknEngineServerTest {
     @Test
     public void whenEngineServerIsStarted_SystemKeyspaceIsLoaded(){
         GraknTestSetup.startCassandraIfNeeded();
+        GraknTestSetup.startRedisIfNeeded(new SimpleURI(conf.getProperty(REDIS_HOST)).getPort());
 
         try (GraknEngineServer server = GraknEngineServer.create(conf)) {
             server.start();
