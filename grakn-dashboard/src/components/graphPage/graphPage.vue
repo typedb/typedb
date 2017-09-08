@@ -21,8 +21,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <div>
     <div class="graph-panel-body">
         <div v-on:contextmenu="customContextMenu" v-on:mousemove="updateRectangle" id="graph-div" ref="graph"></div>
-        <node-panel :showNodePanel="showNodePanel" :allNodeResources="allNodeResources" :allNodeSchemaProps="allNodeSchemaProps" :node="selectedNodeObject" v-on:load-resource-owners="onLoadResourceOwners" v-on:close-node-panel="showNodePanel=false"></node-panel>
-        <context-menu :showContextMenu="showContextMenu" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop" v-on:type-query="emitInjectQuery" v-on:close-context="showContextMenu=false" v-on:fetch-relations="fetchFilteredRelations"></context-menu>
+        <node-panel :showNodePanel="showNodePanel" :node="selectedNodeObject" v-on:load-attribute-owners="onLoadAttributeOwners" v-on:close-node-panel="showNodePanel=false"></node-panel>
+        <context-menu :showContextMenu="showContextMenu" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop" v-on:type-query="emitInjectQuery" v-on:close-context="showContextMenu=false" v-on:fetch-relationships="fetchFilteredRelationships"></context-menu>
         <node-tool-tip :showToolTip="showToolTip" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop"></node-tool-tip>
         <footer-bar></footer-bar>
     </div>
@@ -102,8 +102,8 @@ export default {
   },
 
   methods: {
-    fetchFilteredRelations(href) {
-      CanvasHandler.fetchFilteredRelations(href);
+    fetchFilteredRelationships(href) {
+      CanvasHandler.fetchFilteredRelationships(href);
       this.showContextMenu = false;
     },
     onShowNodePanel(nodeObject) {
@@ -147,8 +147,8 @@ export default {
       GraphPageState.eventHub.$emit('inject-query', query);
     },
 
-    onLoadResourceOwners(resourceId) {
-      CanvasHandler.loadResourceOwners(resourceId);
+    onLoadAttributeOwners(attributeId) {
+      CanvasHandler.loadAttributeOwners(attributeId);
     },
 
   },

@@ -158,16 +158,19 @@ import * as PGraqlLang from '../../js/prismGraql';
 
 export default {
   name: 'addQueryButton',
-  props: ['currentQuery'],
+  props: ['currentQuery','state'],
   data() {
     return {
       showToolTip: false,
       currentQueryName: '',
       highlightedQuery: undefined,
+      elementId:'1',
     };
   },
 
-  created() {},
+  created() {
+      this.state.eventHub.$on('show-new-navbar-element',(elementId)=>{if(elementId!=this.elementId)this.showToolTip=false;});
+  },
   directives: {
         // Registering local directive to always force focus on query-name input
     focus: {
@@ -181,6 +184,11 @@ export default {
             // code for previous attach() method.
     });
   },
+  watch:{
+      currentQuery(val){
+          if(!val.length) this.showToolTip = false;
+      }
+  },
 
   methods: {
     showToolTipFn() {
@@ -189,6 +197,7 @@ export default {
         this.highlightedQuery = Prism.highlight(this.currentQuery, PGraqlLang.default);
       }
       this.showToolTip = !this.showToolTip;
+      if(this.showToolTip) this.state.eventHub.$emit('show-new-navbar-element',this.elementId);
     },
     addQuery() {
       FavQueries.addFavQuery(this.currentQueryName, this.currentQuery);
