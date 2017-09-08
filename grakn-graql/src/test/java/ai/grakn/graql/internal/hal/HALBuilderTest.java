@@ -71,7 +71,7 @@ public class HALBuilderTest {
 
     @Test
     public void whenExecuteExploreHALOnAttribute_EnsureHALResponseContainsCorrectDataType() {
-        Json response = getHALRepresentation(academyKB.tx(), "match $x label 'name';");
+        Json response = getHALRepresentation(academyKB.tx(), "match $x label 'name'; get;");
         String conceptId = response.asJsonList().get(0).at("_id").asString();
         Json halObj = getHALExploreRepresentation(academyKB.tx(), conceptId);
         assertEquals("java.lang.String", halObj.at("_dataType").asString());
