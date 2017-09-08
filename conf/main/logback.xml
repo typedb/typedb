@@ -21,7 +21,7 @@
     <property name="graknLogFileName" value="grakn.log"/>
     <property name="graknPPLogFileName" value="grakn-postprocessing.log"/>
 
-    <!--Configure a properties file (located on the classpath) from which values can be referenced -->
+    <!--Configure a properties file (located on the classpath) from which values can be referenced-->
     <property resource="grakn.properties"/>
 
     <!--Extract the directory of the grakn logs from the properties file. If the path is relative it
