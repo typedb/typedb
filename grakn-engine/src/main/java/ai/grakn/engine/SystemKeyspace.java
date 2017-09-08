@@ -133,16 +133,16 @@ public class SystemKeyspace {
      * This is called when a graph is deleted via {@link GraknAdmin#delete()}.
      * This removes the keyspace of the deleted graph from the system graph
      *
-     * @param keyspace the keyspace to be removed from the system graph
+     * @param keyspace the {@link Keyspace} to be removed from the system graph
      */
-    public boolean deleteKeyspace(String keyspace){
+    public boolean deleteKeyspace(Keyspace keyspace){
         if(keyspace.equals(SYSTEM_KB_KEYSPACE)){
            return false;
         }
 
         try (GraknTx graph = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
-            Attribute<String> attribute = keyspaceName.getAttribute(keyspace);
+            Attribute<String> attribute = keyspaceName.getAttribute(keyspace.getValue());
 
             if(attribute == null) return false;
             Thing thing = attribute.owner();

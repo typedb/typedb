@@ -156,7 +156,7 @@ public class SystemController {
     @ApiOperation(value = "Delete a keyspace from the system graph.")
     @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
     private boolean deleteKeyspace(Request request, Response response){
-        String keyspace = request.queryParams(KEYSPACE_PARAM);
+        Keyspace keyspace = Keyspace.of(request.queryParams(KEYSPACE_PARAM));
         boolean deletionComplete = factory.systemKeyspace().deleteKeyspace(keyspace);
         if(deletionComplete){
             LOG.info("Keyspace {} deleted", keyspace);
