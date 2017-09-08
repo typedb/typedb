@@ -19,12 +19,12 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
-import ai.grakn.Keyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
+import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
@@ -81,7 +81,7 @@ public class GraqlControllerInsertTest {
 
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(Keyspace.of("randomKeyspace"));
+        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
         when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
         when(mockFactory.tx(eq(mockTx.getKeyspace()), any())).thenReturn(mockTx);
@@ -213,7 +213,7 @@ public class GraqlControllerInsertTest {
     private Response sendRequest(String query, String acceptType){
         return RestAssured.with()
                 .accept(acceptType)
-                .queryParam(KEYSPACE, mockTx.getKeyspace())
+                .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .queryParam(INFER, false)
                 .queryParam(MATERIALISE, false)
                 .body(query)

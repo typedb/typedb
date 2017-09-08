@@ -20,13 +20,13 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
-import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
 import ai.grakn.util.REST;
+import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import org.junit.Before;
@@ -71,7 +71,7 @@ public class ConceptControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(Keyspace.of("randomKeyspace"));
+        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
         when(mockTx.getConcept(any())).thenAnswer(invocation ->
                 sampleKB.tx().getConcept(invocation.getArgument(0)));
 
@@ -91,7 +91,7 @@ public class ConceptControllerTest {
         Concept concept = sampleKB.tx().getEntityType("movie");
 
         Response response = with()
-                .queryParam(KEYSPACE, mockTx.getKeyspace())
+                .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
@@ -102,7 +102,7 @@ public class ConceptControllerTest {
     public void gettingConceptByIdWithHAlAcceptType_ResponseContentTypeIsHAL(){
         Concept concept = sampleKB.tx().getEntityType("movie");
 
-        Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace())
+        Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId());
 
@@ -129,7 +129,7 @@ public class ConceptControllerTest {
 
         Response response = sendRequest(concept, 1);
 
-        String expectedResponse = renderHALConceptData(concept, 1, Keyspace.of("randomKeyspace"), 0, 1);
+        String expectedResponse = renderHALConceptData(concept, 1, SampleKBLoader.randomKeyspace(), 0, 1);
         assertThat(stringResponse(response), equalTo(expectedResponse));
     }
 
@@ -140,7 +140,7 @@ public class ConceptControllerTest {
 
         Response response = sendRequest(concept, 1);
 
-        String expectedResponse = renderHALConceptData(concept, 1, Keyspace.of("randomKeyspace"), 0, 1);
+        String expectedResponse = renderHALConceptData(concept, 1, SampleKBLoader.randomKeyspace(), 0, 1);
         assertThat(stringResponse(response), equalTo(expectedResponse));
     }
 
@@ -158,7 +158,7 @@ public class ConceptControllerTest {
 
     @Test
     public void gettingNonExistingElementById_ResponseStatusIs404(){
-        Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace())
+        Response response = with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .queryParam(IDENTIFIER, "invalid")
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Concept.CONCEPT + "blah");
@@ -167,7 +167,7 @@ public class ConceptControllerTest {
     }
 
     private Response sendRequest(Concept concept, int numberEmbeddedComponents){
-        return with().queryParam(KEYSPACE, mockTx.getKeyspace())
+        return with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .queryParam(LIMIT_EMBEDDED, numberEmbeddedComponents)
                 .accept(APPLICATION_HAL)
                 .get(REST.WebPath.Concept.CONCEPT + concept.getId().getValue());

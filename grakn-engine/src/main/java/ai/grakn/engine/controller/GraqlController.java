@@ -113,7 +113,7 @@ public class GraqlController {
     @ApiOperation(value = "Execute an arbitrary Graql queryEndpoints used to query the graph by ID or Graql get query and build HAL objects.")
     private Object executeGraql(Request request, Response response) {
         String queryString = mandatoryBody(request);
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        Keyspace keyspace = Keyspace.of(mandatoryQueryParameter(request, KEYSPACE));
         boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
         boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
         int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
