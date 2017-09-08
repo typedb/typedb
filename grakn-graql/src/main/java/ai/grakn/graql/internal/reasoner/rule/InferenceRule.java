@@ -145,7 +145,7 @@ public class InferenceRule {
         getBody().getAtoms(TypeAtom.class)
                 .filter(t -> !t.isRelation())
                 .forEach(atoms::add);
-        return getBody().isEquivalent(ReasonerQueries.create(atoms, tx));
+        return getBody().isEquivalent(ReasonerQueries.create(atoms, tx), Atomic::isAlphaEquivalent);
     }
 
     /**

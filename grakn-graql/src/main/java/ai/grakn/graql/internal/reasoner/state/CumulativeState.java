@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.state;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.cache.StructuralCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import java.util.LinkedList;
@@ -45,11 +46,12 @@ class CumulativeState extends QueryState{
                     Unifier u,
                     QueryState parent,
                     Set<ReasonerAtomicQuery> subGoals,
-                    QueryCache<ReasonerAtomicQuery> cache) {
-        super(sub, u, parent, subGoals, cache);
+                    QueryCache<ReasonerAtomicQuery> cache,
+                    StructuralCache sCache) {
+        super(sub, u, parent, subGoals, cache, sCache);
         this.subQueries = new LinkedList<>(qs);
         this.feederGoals = !subQueries.isEmpty()?
-               subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache) :
+               subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache, sCache) :
                new LinkedList<>();
     }
 
@@ -59,7 +61,7 @@ class CumulativeState extends QueryState{
         if (subQueries.isEmpty()){
             return new AnswerState(answer, getUnifier(), getParentState());
         }
-        return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getSubGoals(), getCache());
+        return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getSubGoals(), getCache(), getStructuralCache());
     }
 
     @Override

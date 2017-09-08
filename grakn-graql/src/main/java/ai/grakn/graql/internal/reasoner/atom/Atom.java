@@ -67,6 +67,23 @@ public abstract class Atom extends AtomicBase {
         this.applicableRules = a.applicableRules;
     }
 
+    public abstract boolean isRuleApplicable(InferenceRule child);
+
+    /**
+     * @return set of applicable rules - does detailed (slow) check for applicability
+     */
+    public Stream<InferenceRule> getApplicableRules() {
+        if (applicableRules == null) {
+            applicableRules = new HashSet<>();
+            return RuleUtil.getRulesWithType(getSchemaConcept(), tx())
+                    .map(rule -> new InferenceRule(rule, tx()))
+                    .filter(this::isRuleApplicable)
+                    .map(r -> r.rewriteToUserDefined(this))
+                    .peek(applicableRules::add);
+        }
+        return applicableRules.stream();
+    }
+
     @Override
     public boolean isAtom(){ return true;}
 
@@ -140,30 +157,6 @@ public abstract class Atom extends AtomicBase {
             basePriority = computePriority();
         }
         return basePriority;
-    }
-
-    protected abstract boolean isRuleApplicable(InferenceRule child);
-
-    /**
-     * @return set of potentially applicable rules - does shallow (fast) check for applicability
-     */
-    private Stream<Rule> getPotentialRules(){
-        return RuleUtil.getRulesWithType(getSchemaConcept(), tx());
-    }
-
-    /**
-     * @return set of applicable rules - does detailed (slow) check for applicability
-     */
-    public Stream<InferenceRule> getApplicableRules() {
-        if (applicableRules == null) {
-            applicableRules = new HashSet<>();
-            return getPotentialRules()
-                    .map(rule -> new InferenceRule(rule, tx()))
-                    .filter(this::isRuleApplicable)
-                    .map(r -> r.rewriteToUserDefined(this))
-                    .peek(applicableRules::add);
-        }
-        return applicableRules.stream();
     }
 
     /**

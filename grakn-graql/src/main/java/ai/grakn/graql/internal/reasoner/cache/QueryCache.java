@@ -19,14 +19,17 @@
 package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.UnifierImpl;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -42,7 +45,7 @@ import java.util.stream.Stream;
  * @author Kasper Piskorski
  *
  */
-public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> {
+public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswers> {
 
     public QueryCache(){ super();}
 
@@ -60,6 +63,7 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
 
     @Override
     public Stream<Answer> record(Q query, Stream<Answer> answerStream) {
+        //NB: stream collection!
         QueryAnswers newAnswers = new QueryAnswers(answerStream.collect(Collectors.toSet()));
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
@@ -74,24 +78,9 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
         }
     }
 
-    /**
-     * find specific answer to a query in the cache
-     * @param query input query
-     * @param answer sought specific answer to the query
-     * @return found answer if any, otherwise empty answer
-     */
-    public Answer getAnswer(Q query, Answer answer){
-        Pair<Q, QueryAnswers> match =  cache.get(query);
-        if (match != null) {
-            Q equivalentQuery = match.getKey();
-            Unifier unifier = equivalentQuery.getUnifier(query);
-            QueryAnswers answers =  match.getValue().unify(unifier);
-            return answers.stream()
-                    .filter(a -> a.containsAll(answer))
-                    .findFirst().orElse(new QueryAnswer());
-        } else {
-            return new QueryAnswer();
-        }
+    @Override
+    public LazyIterator<Answer> recordRetrieveLazy(Q query, Stream<Answer> answers) {
+        return new LazyIterator<>(record(query, answers));
     }
 
     /**
@@ -133,11 +122,6 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
     }
 
     @Override
-    public LazyIterator<Answer> recordRetrieveLazy(Q query, Stream<Answer> answers) {
-        return new LazyIterator<>(record(query, answers));
-    }
-
-    @Override
     public QueryAnswers getAnswers(Q query) {
         return getAnswersWithUnifier(query).getKey();
     }
@@ -151,7 +135,9 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
             Unifier unifier = equivalentQuery.getUnifier(query);
             return new Pair<>(answers.unify(unifier), unifier);
         }
-        else return new Pair<>(new QueryAnswers(), new UnifierImpl());
+        else{
+            return new Pair<>(new QueryAnswers(), new UnifierImpl());
+        }
     }
 
     @Override
@@ -161,13 +147,47 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
 
     @Override
     public Pair<Stream<Answer>, Unifier> getAnswerStreamWithUnifier(Q query) {
-        Pair<QueryAnswers, Unifier> answersWithUnifier = getAnswersWithUnifier(query);
-        return new Pair<>(answersWithUnifier.getKey().stream(), answersWithUnifier.getValue());
+        Pair<Q, QueryAnswers> match =  cache.get(query);
+        if (match != null) {
+            Q equivalentQuery = match.getKey();
+            QueryAnswers answers = match.getValue();
+            Unifier unifier = equivalentQuery.getUnifier(query);
+            return new Pair<>(answers.unify(unifier).stream(), unifier);
+        }
+        else{
+            return new Pair<>(
+                    query.getQuery().stream().map(a -> a.explain(new LookupExplanation(query))),
+                    new UnifierImpl()
+            );
+        }
     }
 
     @Override
     public LazyIterator<Answer> getAnswerIterator(Q query) {
         return new LazyIterator<>(getAnswers(query).stream());
+    }
+
+    /**
+     * find specific answer to a query in the cache
+     * @param query input query
+     * @param ans sought specific answer to the query
+     * @return found answer if any, otherwise empty answer
+     */
+    public Answer getAnswer(Q query, Answer ans){
+        Pair<Q, QueryAnswers> match =  cache.get(query);
+        if (match != null) {
+            Q equivalentQuery = match.getKey();
+            Unifier unifier = equivalentQuery.getUnifier(query);
+            QueryAnswers answers =  match.getValue().unify(unifier);
+            Answer answer = answers.stream()
+                    .filter(a -> a.containsAll(ans))
+                    .findFirst().orElse(null);
+            if (answer != null) return answer;
+        }
+
+        //TODO should it create a cache entry?
+        List<Answer> answers = ReasonerQueries.create(query, ans).getQuery().execute();
+        return answers.isEmpty()? new QueryAnswer() : answers.iterator().next();
     }
 
     @Override

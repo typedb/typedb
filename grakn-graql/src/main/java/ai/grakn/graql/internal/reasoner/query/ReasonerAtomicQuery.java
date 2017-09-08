@@ -41,6 +41,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.cache.StructuralCache;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
@@ -159,7 +160,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Set<Atom> unified = new HashSet<>();
         getAtom().getTypeConstraints()
                 .forEach(type -> {
-                    Set<Atom> toUnify = Sets.difference(parent.getEquivalentAtoms(type), unified);
+                    Set<Atom> toUnify = Sets.difference(parent.getEquivalentAtoms(type, Atomic::isAlphaEquivalent), unified);
                     Atom equiv = toUnify.stream().findFirst().orElse(null);
                     //only apply if unambiguous
                     if (equiv != null && toUnify.size() == 1){
@@ -262,6 +263,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                           Set<ReasonerAtomicQuery> subGoals,
                                           Cache<ReasonerAtomicQuery, ?> cache,
                                           Cache<ReasonerAtomicQuery, ?> dCache,
+                                          StructuralCache sCache,
                                           boolean differentialJoin){
 
         LOG.trace("Applying rule " + rule.getRuleId());
@@ -272,7 +274,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         subGoals.add(this);
         Stream<Answer> answers = ruleBody
-                .computeJoin(subGoals, cache, dCache, differentialJoin)
+                .computeJoin(subGoals, cache, dCache, sCache, differentialJoin)
                 .map(a -> a.filterVars(varsToRetain))
                 .distinct()
                 .map(ans -> ans.explain(new RuleExplanation(this, rule)));
@@ -291,7 +293,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         answers = dCache.record(ruleHead, answers);
 
         //unify answers
-        boolean isHeadEquivalent = this.isEquivalent(ruleHead);
+        boolean isHeadEquivalent = this.isEquivalent(ruleHead, Atomic::isAlphaEquivalent);
         Set<Var> queryVars = this.getVarNames().size() < ruleHead.getVarNames().size()? ruleUnifier.keySet() : ruleHead.getVarNames();
         answers = answers
                 .map(a -> a.filterVars(queryVars))
@@ -311,9 +313,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @return stream of differential answers
      */
     Stream<Answer> answerStream(Set<ReasonerAtomicQuery> subGoals,
-                                       Cache<ReasonerAtomicQuery, ?> cache,
-                                       Cache<ReasonerAtomicQuery, ?> dCache,
-                                       boolean differentialJoin){
+                                Cache<ReasonerAtomicQuery, ?> cache,
+                                Cache<ReasonerAtomicQuery, ?> dCache,
+                                StructuralCache sCache,
+                                boolean differentialJoin){
         boolean queryAdmissible = !subGoals.contains(this);
 
         LOG.trace("AQ: " + this);
@@ -321,7 +324,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Stream<Answer> answerStream = cache.contains(this) ? Stream.empty() : dCache.record(this, lookup(cache));
         if(queryAdmissible) {
 
-            Iterator<RuleTuple> ruleIterator = getRuleIterator();
+            Iterator<RuleTuple> ruleIterator = getRuleIterator(sCache);
             while(ruleIterator.hasNext()) {
                 RuleTuple ruleContext = ruleIterator.next();
                 Unifier u = ruleContext.getRuleUnifier();
@@ -330,7 +333,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 Answer sub = this.getSubstitution().unify(u.inverse());
                 InferenceRule rule = ruleContext.getRule().withSubstitution(sub);
 
-                Stream<Answer> localStream = resolveViaRule(rule, u, pu, subGoals, cache, dCache, differentialJoin);
+                Stream<Answer> localStream = resolveViaRule(rule, u, pu, subGoals, cache, dCache, sCache, differentialJoin);
                 answerStream = Stream.concat(answerStream, localStream);
             }
         }
@@ -339,19 +342,21 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Stream<Answer> resolveAndMaterialise(LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
+    public Stream<Answer> resolveAndMaterialise(LazyQueryCache<ReasonerAtomicQuery> cache,
+                                                LazyQueryCache<ReasonerAtomicQuery> dCache,
+                                                StructuralCache sCache) {
         if (!this.getAtom().isRuleResolvable()) {
             return this.getQuery().stream().map(QueryAnswer::new);
         } else {
-            return new QueryAnswerIterator(cache, dCache).hasStream();
+            return new QueryAnswerIterator(cache, dCache, sCache).hasStream();
         }
     }
 
     @Override
-    public AtomicState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public AtomicState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache, StructuralCache sCache){
         return getAtoms(NeqPredicate.class).findFirst().isPresent()?
-                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
-                new AtomicState(this, sub, u, parent, subGoals, cache);
+                new NeqComplementState(this, sub, u, parent, subGoals, cache, sCache) :
+                new AtomicState(this, sub, u, parent, subGoals, cache, sCache);
     }
 
     /**
@@ -376,8 +381,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * @return iterator of all rules applicable to this atomic query including permuted cases when the role types are meta roles
      */
-    public Iterator<RuleTuple> getRuleIterator(){
-        return getAtom().getApplicableRules()
+    public Iterator<RuleTuple> getRuleIterator(StructuralCache sCache){
+        return sCache.getApplicableRules(this).stream()
                 .flatMap(r -> {
                     Unifier ruleUnifier = r.getUnifier(getAtom());
                     Unifier ruleUnifierInv = ruleUnifier.inverse();
@@ -408,12 +413,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         private final LazyQueryCache<ReasonerAtomicQuery> cache;
         private final LazyQueryCache<ReasonerAtomicQuery> dCache;
+        private final StructuralCache sCache;
         private Iterator<Answer> answerIterator;
 
-        QueryAnswerIterator(LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache){
+        QueryAnswerIterator(LazyQueryCache<ReasonerAtomicQuery> cache,
+                            LazyQueryCache<ReasonerAtomicQuery> dCache,
+                            StructuralCache sCache){
             this.cache = cache;
             this.dCache = dCache;
-            this.answerIterator = query().answerStream(subGoals, cache, dCache, iter != 0).iterator();
+            this.sCache = sCache;
+            this.answerIterator = query().answerStream(subGoals, cache, dCache, sCache, iter != 0).iterator();
         }
 
         private ReasonerAtomicQuery query(){ return ReasonerAtomicQuery.this;}
@@ -430,7 +439,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         private void computeNext(){
             iter++;
             subGoals.clear();
-            answerIterator = query().answerStream(subGoals, cache, dCache, iter != 0).iterator();
+            answerIterator = query().answerStream(subGoals, cache, dCache, sCache, iter != 0).iterator();
         }
 
         /**

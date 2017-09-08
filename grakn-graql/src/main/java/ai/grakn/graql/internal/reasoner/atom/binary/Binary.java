@@ -23,6 +23,7 @@ import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
@@ -34,6 +35,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.Sets;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -87,20 +89,40 @@ public abstract class Binary extends Atom {
     public ConceptId getTypeId(){ return typePredicate != null? typePredicate.getPredicate() : null;}
 
     @Override
-    public int equivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
-        return hashCode;
-    }
-
-    @Override
-    public boolean isEquivalent(Object obj) {
+    public boolean isAlphaEquivalent(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Binary a2 = (Binary) obj;
         return  (isUserDefined() == a2.isUserDefined())
                 && Objects.equals(this.getTypeId(), a2.getTypeId())
                 && hasEquivalentPredicatesWith(a2);
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
+        return hashCode;
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        Binary a2 = (Binary) obj;
+        return  (isUserDefined() == a2.isUserDefined())
+                && Objects.equals(this.getTypeId(), a2.getTypeId())
+                && predicateBindingsAreEquivalent(a2);
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return alphaEquivalenceHashCode();
+    }
+
+    @Override
+    public boolean isRuleApplicable(InferenceRule child) {
+        return false;
     }
 
     boolean hasEquivalentPredicatesWith(Binary atom) {
@@ -110,8 +132,19 @@ public abstract class Binary extends Atom {
 
         IdPredicate thisTypePredicate = this.getTypePredicate();
         IdPredicate typePredicate = atom.getTypePredicate();
-        return ((thisVarPredicate == null && varPredicate == null || thisVarPredicate != null && thisVarPredicate.isEquivalent(varPredicate)))
-                && (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && thisTypePredicate.isEquivalent(typePredicate));
+        return ((thisVarPredicate == null && varPredicate == null || thisVarPredicate != null && thisVarPredicate.isAlphaEquivalent(varPredicate)))
+                && (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && thisTypePredicate.isAlphaEquivalent(typePredicate));
+    }
+
+    boolean predicateBindingsAreEquivalent(Binary atom) {
+        //check if there is a substitution for varName
+        IdPredicate thisVarPredicate = this.getIdPredicate(getVarName());
+        IdPredicate varPredicate = atom.getIdPredicate(atom.getVarName());
+
+        IdPredicate thisTypePredicate = this.getTypePredicate();
+        IdPredicate typePredicate = atom.getTypePredicate();
+        return (thisVarPredicate == null) == (varPredicate == null)
+                && (thisTypePredicate == null) == (typePredicate == null);
     }
 
     @Override

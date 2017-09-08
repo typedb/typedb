@@ -165,16 +165,6 @@ public class RelationAtom extends IsaAtom {
     }
 
     @Override
-    public int hashCode() {
-        if (hashCode == 0) {
-            hashCode = 1;
-            hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
-            hashCode = hashCode * 37 + getVarNames().hashCode();
-        }
-        return hashCode;
-    }
-
-    @Override
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
@@ -185,7 +175,17 @@ public class RelationAtom extends IsaAtom {
     }
 
     @Override
-    public boolean isEquivalent(Object obj) {
+    public int hashCode() {
+        if (hashCode == 0) {
+            hashCode = 1;
+            hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
+            hashCode = hashCode * 37 + getVarNames().hashCode();
+        }
+        return hashCode;
+    }
+
+    @Override
+    public boolean isAlphaEquivalent(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         RelationAtom a2 = (RelationAtom) obj;
@@ -201,11 +201,36 @@ public class RelationAtom extends IsaAtom {
     }
 
     @Override
-    public int equivalenceHashCode() {
+    public int alphaEquivalenceHashCode() {
         int equivalenceHashCode = 1;
         equivalenceHashCode = equivalenceHashCode * 37 + (this.getTypeId() != null ? this.getTypeId().hashCode() : 0);
         equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().hashCode();
         equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleTypeMap().hashCode();
+        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleLabels().hashCode();
+        return equivalenceHashCode;
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        RelationAtom a2 = (RelationAtom) obj;
+        return (isUserDefined() == a2.isUserDefined())
+                && Objects.equals(this.getTypeId(), a2.getTypeId())
+                //check relation players equivalent
+                && getRolePlayers().size() == a2.getRolePlayers().size()
+                && getRelationPlayers().size() == a2.getRelationPlayers().size()
+                && getRoleLabels().equals(a2.getRoleLabels())
+                // check bindings
+                && getRoleConceptIdMap().keySet().equals(a2.getRoleConceptIdMap().keySet());
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        int equivalenceHashCode = 1;
+        equivalenceHashCode = equivalenceHashCode * 37 + (this.getTypeId() != null ? this.getTypeId().hashCode() : 0);
+        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleConceptIdMap().keySet().hashCode();
+        equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleTypeMap().keySet().hashCode();
         equivalenceHashCode = equivalenceHashCode * 37 + this.getRoleLabels().hashCode();
         return equivalenceHashCode;
     }

@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.state;
 
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
@@ -86,7 +87,7 @@ class AnswerState extends ResolutionState {
                 unifier.keySet() :
                 ruleHead.getVarNames();
 
-        boolean queryEquivalentToHead = query.isEquivalent(ruleHead);
+        boolean queryEquivalentToHead = query.isEquivalent(ruleHead, Atomic::isAlphaEquivalent);
 
         //check if the specific answer to ruleHead already in cache/db
         Answer headAnswer = ruleHead

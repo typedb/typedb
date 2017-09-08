@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.graql.internal.reasoner.query.ReasonerStructuralQuery;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GeoKB;
@@ -734,6 +735,72 @@ public class AtomicQueryTest {
         queryEquivalence(query6, query7, false);
     }
 
+    @Test
+    public void testStructuralEquivalence_RelationsWithSubstitution(){
+        GraknTx graph = unificationTestSet.tx();
+        String patternString = "{(role: $x, role: $y);$x id 'V666';}";
+        String patternString2 = "{(role: $x, role: $y);$y id 'V666';}";
+        String patternString3 = "{(role: $x, role: $y);$x id 'V666';$y id 'V667';}";
+        String patternString4 = "{(role: $x, role: $y);$y id 'V666';$x id 'V667';}";
+        String patternString5 = "{(role1: $x, role2: $y);$x id 'V666';$y id 'V667';}";
+        String patternString6 = "{(role1: $x, role2: $y);$y id 'V666';$x id 'V667';}";
+        String patternString7 = "{(role: $x, role: $y);$x id 'V666';$y id 'V666';}";
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        Conjunction<VarPatternAdmin> pattern3 = conjunction(patternString3, graph);
+        Conjunction<VarPatternAdmin> pattern4 = conjunction(patternString4, graph);
+        Conjunction<VarPatternAdmin> pattern5 = conjunction(patternString5, graph);
+        Conjunction<VarPatternAdmin> pattern6 = conjunction(patternString6, graph);
+        Conjunction<VarPatternAdmin> pattern7 = conjunction(patternString7, graph);
+
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
+        ReasonerAtomicQuery query3 = ReasonerQueries.atomic(pattern3, graph);
+        ReasonerAtomicQuery query4 = ReasonerQueries.atomic(pattern4, graph);
+        ReasonerAtomicQuery query5 = ReasonerQueries.atomic(pattern5, graph);
+        ReasonerAtomicQuery query6 = ReasonerQueries.atomic(pattern6, graph);
+        ReasonerAtomicQuery query7 = ReasonerQueries.atomic(pattern7, graph);
+
+        queryEquivalence(query, query2, true);
+        queryEquivalence(query, query3, false);
+        queryEquivalence(query, query4, false);
+        queryEquivalence(query, query5, false);
+        queryEquivalence(query, query6, false);
+        queryEquivalence(query, query7, false);
+
+        queryEquivalence(query2, query3, false);
+        queryEquivalence(query2, query4, false);
+        queryEquivalence(query2, query5, false);
+        queryEquivalence(query2, query6, false);
+        queryEquivalence(query2, query7, false);
+
+        queryEquivalence(query3, query4, true);
+        queryEquivalence(query3, query5, false);
+        queryEquivalence(query3, query6, false);
+        queryEquivalence(query3, query7, false);
+
+        queryEquivalence(query4, query5, false);
+        queryEquivalence(query4, query6, false);
+        queryEquivalence(query4, query7, false);
+
+        queryEquivalence(query5, query6, false);
+        queryEquivalence(query5, query7, false);
+
+        queryEquivalence(query6, query7, false);
+    }
+
+    private void structuralQueryEquivalence(ReasonerStructuralQuery a, ReasonerStructuralQuery b, boolean queryExpectation){
+        assertEquals("Query: " + a.toString() + " =? " + b.toString(), a.equals(b), queryExpectation);
+        assertEquals("Query: " + b.toString() + " =? " + a.toString(), b.equals(a), queryExpectation);
+
+        //check hash additionally if need to be equal
+        if (queryExpectation) {
+            assertEquals(a.toString() + " hash=? " + b.toString(), a.hashCode() == b.hashCode(), true);
+        }
+
+        //atomicEquivalence(a.getAtom(), b.getAtom(), queryExpectation);
+    }
+
     private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean expectation){
         queryEquivalence(a, b, expectation, expectation);
     }
@@ -751,12 +818,12 @@ public class AtomicQueryTest {
     }
 
     private void atomicEquivalence(Atomic a, Atomic b, boolean expectation){
-        assertEquals("Atom: " + a.toString() + " =? " + b.toString(), a.isEquivalent(b), expectation);
-        assertEquals("Atom: " + b.toString() + " =? " + a.toString(), b.isEquivalent(a), expectation);
+        assertEquals("Atom: " + a.toString() + " =? " + b.toString(), a.isAlphaEquivalent(b), expectation);
+        assertEquals("Atom: " + b.toString() + " =? " + a.toString(), b.isAlphaEquivalent(a), expectation);
 
         //check hash additionally if need to be equal
         if (expectation) {
-            assertEquals(a.toString() + " hash=? " + b.toString(), a.equivalenceHashCode() == b.equivalenceHashCode(), true);
+            assertEquals(a.toString() + " hash=? " + b.toString(), a.alphaEquivalenceHashCode() == b.alphaEquivalenceHashCode(), true);
         }
     }
 
