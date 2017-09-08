@@ -97,8 +97,6 @@ public class GraqlController {
         spark.post(REST.WebPath.KB.ANY_GRAQL, this::executeGraql);
         spark.get(REST.WebPath.KB.GRAQL,    this::executeGraqlGET);
 
-        //TODO The below exceptions are very broad. They should be revised after we improve exception
-        //TODO hierarchies in Graql and GraknTx
         spark.exception(GraqlQueryException.class, (e, req, res) -> handleError(400, e, res));
         spark.exception(GraqlSyntaxException.class, (e, req, res) -> handleError(400, e, res));
 
