@@ -24,20 +24,23 @@ import ai.grakn.engine.tasks.manager.TaskConfiguration;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.TaskState;
 import ai.grakn.util.REST;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import mjson.Json;
 import spark.Request;
 import spark.Response;
 import spark.Service;
+
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+
+import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 
 /**
  * A controller which core submits commit logs to so we can post-process jobs for cleanup.
@@ -77,7 +80,7 @@ public class CommitLogController {
         @ApiImplicitParam(name = COMMIT_LOG_FIXING, value = "A Json Array of IDs representing concepts to be post processed", required = true, dataType = "string", paramType = "body"),
         @ApiImplicitParam(name = COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
-    private String submitConcepts(Request req, Response res) {
+    private Json submitConcepts(Request req, Response res) {
         String keyspace = Optional.ofNullable(req.queryParams(KEYSPACE_PARAM)).orElse(defaultKeyspace);
 
         // Instances to post process
@@ -94,7 +97,10 @@ public class CommitLogController {
                 CompletableFuture.runAsync(() -> manager.addTask(countingTaskState, countingTaskConfiguration)))
                 .join();
 
-        // TODO return Json
-        return "PP Task [ " + postProcessingTaskState.getId().getValue() + " ] and Counting task [" + countingTaskState.getId().getValue() + "] created for graph [" + keyspace + "]";
+        return Json.object(
+                "postProcessingTaskId", postProcessingTaskState.getId().getValue(),
+                "countingTaskId", countingTaskState.getId().getValue(),
+                "keyspace", keyspace
+        );
     }
 }
