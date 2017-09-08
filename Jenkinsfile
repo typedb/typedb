@@ -31,8 +31,8 @@ authored by - """ + user
           sh 'echo -n "a: " && pwd'
           sh 'cd grakn-package'
           sh 'echo $?'
-          sh 'echo -n "b: " && pwd'
-          sh 'ps x | grep redis'
+          sh 'pwd'
+          sh "kill -9 `ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}'`"
           sh 'grakn server start'
           sh 'ls .'
           sh 'cd ..'
