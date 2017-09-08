@@ -46,7 +46,7 @@ def withGrakn(Closure closure) {
                 stage('Start Grakn') {
                     checkout scm
 
-                    sh "build-grakn.sh ${env.BRACH_NAME}"
+                    sh "build-grakn.sh ${env.BRANCH_NAME}"
 
                     archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
 
