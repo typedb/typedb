@@ -22,7 +22,7 @@ import * as API from '../util/HALTerms';
 import * as Utils from './APIUtils';
 
 /**
- * Regular expression used to match URIs contained in resources values
+ * Regular expression used to match URIs contained in attributes values
  */
 export const URL_REGEX = '^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:' +
     '(?!(?:10|127)(?:\\.\\d{1,3}){3})' +
@@ -38,15 +38,15 @@ export const URL_REGEX = '^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:' +
 
 const metaTypesSet = {
   ENTITY_TYPE: true,
-  RESOURCE_TYPE: true,
+  ATTRIBUTE_TYPE: true,
   ROLE_TYPE: true,
-  RELATION_TYPE: true,
+  RELATIONSHIP_TYPE: true,
   RULE_TYPE: true,
 };
 
 
    /**
-    * Parse HAL object to extract default properties, resources and links.
+    * Parse HAL object to extract default properties, attributes and links.
     * Add new node object to the nodes array that will be returned to invoker of HALParser.
     * @param {*} nodeObj HAL object that will be turned into graph node
     * @param {*} nodes array containing the resulting set of graph nodes
@@ -56,8 +56,8 @@ const metaTypesSet = {
 function newNode(nodeObj:Object, nodes:Object[]) {
   const links = Utils.nodeLinks(nodeObj);
   const properties = Utils.defaultProperties(nodeObj);
-  const resources = Utils.extractResources(nodeObj);
-  nodes.push({ properties, resources, links });
+  const attributes = Utils.extractAttributes(nodeObj);
+  nodes.push({ properties, attributes, links });
 }
 
 
@@ -65,7 +65,7 @@ function newNode(nodeObj:Object, nodes:Object[]) {
    * Add a new edge to the edges array that will be returned to the invoker of HALParser.
    * @param {*} parent HAL object in which child is embedded
    * @param {*} child  HAL object embedded in parent object that is connected to it
-   * @param {*} roleName label describing relation between parent and child
+   * @param {*} roleName label describing relationship between parent and child
    * @param {*} edges array containing the resulting set of graph edges
    * @private
    */
@@ -85,7 +85,7 @@ function newEdge(parent:Object, child:Object, roleName:string, edges:Object[]) {
     * Given a set of embedded HAL objects parse them into graph nodes, recursively
     * @param {*} objs HAL objects that need to be parsed into graph nodes
     * @param {*} parent parent HAL object in which objs are embedded
-    * @param {*} roleName label describing relation between parent and objects in objs
+    * @param {*} roleName label describing relationship between parent and objects in objs
     * @param {*} showIsa boolean used to determine whether we should parse "isa" embedded objects
     * @param {*} nodes array containing the resulting set of graph nodes
     * @param {*} edges array containing the resulting set of graph edges

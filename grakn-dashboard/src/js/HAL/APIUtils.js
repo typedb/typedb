@@ -27,39 +27,39 @@ import * as API from '../util/HALTerms';
  /*
   * Build label to show in the visualiser, based on the node type.
   */
-function buildLabel(resource) {
-  let label = resource[API.KEY_TYPE];
+function buildLabel(attribute) {
+  let label = attribute[API.KEY_TYPE];
 
-  switch (resource[API.KEY_BASE_TYPE]) {
+  switch (attribute[API.KEY_BASE_TYPE]) {
     case API.ENTITY_TYPE:
     case API.ENTITY:
-      label = `${resource[API.KEY_TYPE]}: ${resource[API.KEY_ID]}`;
+      label = `${attribute[API.KEY_TYPE]}: ${attribute[API.KEY_ID]}`;
       break;
-    case API.RELATION_TYPE:
-    case API.RELATION:
-      label = `${resource[API.KEY_BASE_TYPE].substring(0, 3)}: ${resource[API.KEY_TYPE]}`;
+    case API.RELATIONSHIP_TYPE:
+    case API.RELATIONSHIP:
+      label = `${attribute[API.KEY_BASE_TYPE].substring(0, 3)}: ${attribute[API.KEY_TYPE]}`;
       break;
-    case API.RESOURCE_TYPE:
-    case API.RESOURCE:
-      label = resource[API.KEY_VALUE];
+    case API.ATTRIBUTE_TYPE:
+    case API.ATTRIBUTE:
+      label = attribute[API.KEY_VALUE];
       break;
-    case API.GENERATED_RELATION_TYPE:
-      label = resource[API.KEY_TYPE] || '';
+    case API.GENERATED_RELATIONSHIP_TYPE:
+      label = attribute[API.KEY_TYPE] || '';
       break;
 
     default:
-      label = resource[API.KEY_TYPE];
+      label = attribute[API.KEY_TYPE];
   }
 
-  if (API.KEY_VALUE in resource) { label = resource[API.KEY_VALUE] || label; }
-  if (API.KEY_NAME in resource) { label = resource[API.KEY_NAME] || label; }
+  if (API.KEY_VALUE in attribute) { label = attribute[API.KEY_VALUE] || label; }
+  if (API.KEY_NAME in attribute) { label = attribute[API.KEY_NAME] || label; }
 
 
   return label;
 }
 
 /**
- * Used to decide the directionality of a relationship between two resources,
+ * Used to decide the directionality of a relationshipship between two attributes,
  * based on the API.KEY_DIRECTION property.
  */
 export function edgeLeftToRight(a:Object, b:Object) {
@@ -72,55 +72,55 @@ export function edgeLeftToRight(a:Object, b:Object) {
 
 /**
  * Extract default properties from HAL object, mainly properties from the HAL's state
- * @param {Object} resource HAL Object
- * @returns {Object} Object containing all the resources embedded in a HAL object
+ * @param {Object} attribute HAL Object
+ * @returns {Object} Object containing all the attributes embedded in a HAL object
  * @public
  */
-export function defaultProperties(resource:Object) {
+export function defaultProperties(attribute:Object) {
   return {
-    id: resource[API.KEY_ID],
-    href: resource[API.KEY_LINKS][API.KEY_SELF][API.KEY_HREF],
-    type: resource[API.KEY_TYPE] || '',
-    baseType: resource[API.KEY_BASE_TYPE],
-    label: buildLabel(resource),
-    explore: resource[API.KEY_LINKS][API.KEY_EXPLORE][0][API.KEY_HREF],
-    implicit: resource[API.KEY_IMPLICIT] || false,
+    id: attribute[API.KEY_ID],
+    href: attribute[API.KEY_LINKS][API.KEY_SELF][API.KEY_HREF],
+    type: attribute[API.KEY_TYPE] || '',
+    baseType: attribute[API.KEY_BASE_TYPE],
+    label: buildLabel(attribute),
+    explore: attribute[API.KEY_LINKS][API.KEY_EXPLORE][0][API.KEY_HREF],
+    implicit: attribute[API.KEY_IMPLICIT] || false,
   };
 }
 
 
 /**
- * Extract from "_embedded" all the nodes that are "resource-type" and
- * build a new object that lists all the resources related to a node.
+ * Extract from "_embedded" all the nodes that are "attribute-type" and
+ * build a new object that lists all the attributes related to a node.
  * Structure: e.g. {"title":"Skyfall","duration":"263"}
- * @param {Object} resource HAL object
- * @returns {Object} Object containing all the resources embedded in a HAL object
+ * @param {Object} attribute HAL object
+ * @returns {Object} Object containing all the attributes embedded in a HAL object
  * @public
  */
-export function extractResources(resource:Object) {
-  if (!(API.KEY_EMBEDDED in resource)) return {};
+export function extractAttributes(attribute:Object) {
+  if (!(API.KEY_EMBEDDED in attribute)) return {};
 
-  const embeddedObject = resource[API.KEY_EMBEDDED];
-  return Object.keys(embeddedObject).reduce((newResourcesObject, key) => {
+  const embeddedObject = attribute[API.KEY_EMBEDDED];
+  return Object.keys(embeddedObject).reduce((newAttributesObject, key) => {
       // TODO: decide if we want to support multiple values as label of a visualiser node. For now we pick the first value.
-    const currentResource = embeddedObject[key][0];
-    if (currentResource[API.KEY_BASE_TYPE] === API.RESOURCE_TYPE || currentResource[API.KEY_BASE_TYPE] === API.RESOURCE) {
-      return Object.assign({}, newResourcesObject, { [key]:
+    const currentAttribute = embeddedObject[key][0];
+    if (currentAttribute[API.KEY_BASE_TYPE] === API.ATTRIBUTE_TYPE || currentAttribute[API.KEY_BASE_TYPE] === API.ATTRIBUTE) {
+      return Object.assign({}, newAttributesObject, { [key]:
       {
-        id: currentResource[API.KEY_ID],
-        label: buildLabel(currentResource),
-        link: currentResource[API.KEY_LINKS][API.KEY_SELF][API.KEY_HREF],
+        id: currentAttribute[API.KEY_ID],
+        label: buildLabel(currentAttribute),
+        link: currentAttribute[API.KEY_LINKS][API.KEY_SELF][API.KEY_HREF],
       } });
     }
-    return newResourcesObject;
+    return newAttributesObject;
   }, {});
 }
 
 /**
  *Work in progress to generate links, this will need to change to use AJAX requests.
  */
-export function nodeLinks(resource:Object) {
-  const linksObject = resource[API.KEY_LINKS];
+export function nodeLinks(attribute:Object) {
+  const linksObject = attribute[API.KEY_LINKS];
   return Object.keys(linksObject)
         .filter(x => (x !== API.KEY_SELF && x !== API.KEY_EXPLORE))
         .reduce((newLinksObject, key) => Object.assign({}, newLinksObject, { [key]: linksObject[key].length }), {});

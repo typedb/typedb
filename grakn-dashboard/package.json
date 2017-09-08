@@ -14,7 +14,6 @@
   "homepage": "https://github.com/graknlabs/grakn",
   "dependencies": {
     "codemirror": "^5.19.0",
-    "envify": "^4.0.0",
     "jquery": "^3.1.0",
     "pace-progress": "^1.0.2",
     "prismjs": "^1.5.1",
@@ -26,16 +25,16 @@
     "vue-template-compiler": "^2.0"
   },
   "devDependencies": {
-    "ava": "^0.16.0",
+    "babel-core": "6.26.0",
     "babel-eslint": "^7.2.2",
     "babel-jest": "^19.0.0",
+    "babel-loader": "^7.0.0",
     "babel-plugin-syntax-flow": "^6.18.0",
     "babel-plugin-transform-class-properties": "^6.24.1",
     "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "babel-plugin-transform-runtime": "^6.12.0",
     "babel-preset-es2015": "^6.13.2",
-    "babelify": "^7.3.0",
-    "browserify": "^13.3.0",
+    "css-loader": "^0.28.4",
     "canvas-prebuilt": "^1.6.5-prerelease.1",
     "eslint": "^3.13.1",
     "eslint-config-airbnb-base": "^11.0.0",
@@ -49,35 +48,26 @@
     "jest-vue-preprocessor": "^0.2.0",
     "nyc": "^10.0.0",
     "vue-eslint-parser": "^1.0.0",
-    "vueify": "^9.4.1",
-    "watchify": "^3.7.0",
-    "xhr-mock": "^1.8.0"
-  },
-  "browserify": {
-    "transform": [
-      "babelify",
-      "vueify"
-    ]
-  },
-  "browser": {
-    "vue": "vue/dist/vue.common"
+    "xhr-mock": "^1.8.0",
+    "vue-loader": "^12.2.1",
+    "webpack": "^2.6.1",
+    "webpack-merge": "^4.1.0"
   },
   "scripts": {
-    "browserify": "browserify -e src/main.js -o static/dashboard.js",
-    "browserify-production": "NODE_ENV=production browserify -g envify -e src/main.js -o static/dashboard.js",
-    "watchify": "watchify src/main.js -o static/dashboard.js -v",
-    "preinstall": "npm install browserify vueify babelify",
+    "build": "webpack --progress --config conf/webpack.base.config.js",
+    "build:prod": "webpack --progress --config conf/webpack.prod.config.js",
     "test": "jest",
     "test-coverage": "jest --coverage --coverageDirectory=./coverage/",
     "coverage": "nyc report --temp-directory=coverage --reporter=text-lcov",
-    "flow": "flow check"
+    "flow": "flow check",
+    "watch": "webpack --progress --watch --config conf/webpack.base.config.js"
   },
   "jest": {
     "moduleFileExtensions": [
       "js",
       "vue"
     ],
-    "testPathIgnorePatterns":[
+    "testPathIgnorePatterns": [
       "/node_modules/",
       "/test/visualiser*"
     ],
