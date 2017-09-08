@@ -20,10 +20,8 @@
 package ai.grakn.test.engine;
 
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.util.SimpleURI;
@@ -31,15 +29,20 @@ import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.EmbeddedRedis;
 import com.google.common.base.StandardSystemProperty;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import java.util.HashSet;
-import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
 import org.junit.AfterClass;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.HashSet;
+import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
+
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
+import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
+import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineStartIT {
@@ -91,7 +94,7 @@ public class GraknEngineStartIT {
                             fail();
                         }
                     }
-                    boolean success = engine.factory().systemKeyspace().ensureKeyspaceInitialised("grakn");
+                    boolean success = engine.factory().systemKeyspace().ensureKeyspaceInitialised(Keyspace.of("grakn"));
                     assertTrue(success);
                 }));
         CompletableFuture.allOf(cfs.toArray(new CompletableFuture[cfs.size()])).join();

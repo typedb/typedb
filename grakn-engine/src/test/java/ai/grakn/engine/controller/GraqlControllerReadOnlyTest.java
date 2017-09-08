@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -109,7 +110,7 @@ public class GraqlControllerReadOnlyTest {
 
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockTx.getKeyspace()).thenReturn(Keyspace.of("randomKeyspace"));
         when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
         when(mockSystemKeyspace.ensureKeyspaceInitialised(any())).thenReturn(true);

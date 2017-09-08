@@ -65,7 +65,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
             Map<ConceptId, Long> jobs = getCountUpdatingJobs(configuration());
             metricRegistry().histogram(name(UpdatingInstanceCountTask.class, "jobs"))
                     .update(jobs.size());
-            String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+            Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
 
             //We Use redis to keep track of counts in order to ensure sharding happens in a centralised manner.
             //The graph cannot be used because each engine can have it's own snapshot of the graph with caching which makes
@@ -126,7 +126,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * @return true if sharding is needed.
      */
     private static boolean updateShardCounts(
-            RedisCountStorage redis, String keyspace, ConceptId conceptId, long value, long shardingThreshold){
+            RedisCountStorage redis, Keyspace keyspace, ConceptId conceptId, long value, long shardingThreshold){
         long numShards = redis.getCount(RedisCountStorage.getKeyNumShards(keyspace, conceptId));
         if(numShards == 0) numShards = 1;
         long numInstances = redis.adjustCount(
@@ -141,11 +141,11 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
      * - Actually sharding
      * - Incrementing the number of shards on each type
      *
-     * @param keyspace The graph containing the type to shard
+     * @param keyspace The database containing the {@link ai.grakn.concept.Type} to shard
      * @param conceptId The id of the concept to shard
      */
     private void shardConcept(RedisCountStorage redis, EngineGraknTxFactory factory,
-            String keyspace, ConceptId conceptId, int maxRetry, long shardingThreshold){
+            Keyspace keyspace, ConceptId conceptId, int maxRetry, long shardingThreshold){
         Lock engineLock = this.getLockProvider().getLock(getLockingKey(keyspace, conceptId));
         engineLock.lock(); //Try to get the lock
 
@@ -167,7 +167,7 @@ public class UpdatingInstanceCountTask extends BackgroundTask {
         }
     }
 
-    private static String getLockingKey(String keyspace, ConceptId conceptId){
+    private static String getLockingKey(Keyspace keyspace, ConceptId conceptId){
         return "/updating-instance-count-lock/" + keyspace + "/" + conceptId.getValue();
     }
 

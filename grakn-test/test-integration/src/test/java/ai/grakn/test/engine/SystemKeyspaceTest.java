@@ -3,9 +3,10 @@ package ai.grakn.test.engine;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.test.EngineContext;
@@ -74,7 +75,7 @@ public class SystemKeyspaceTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system graph", spaces.contains(keyspace));
-            assertTrue(engine.server().factory().systemKeyspace().containsKeyspace(keyspace));
+            assertTrue(engine.server().factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
         }
 
         graphs.forEach(GraknTx::close);
@@ -89,7 +90,7 @@ public class SystemKeyspaceTest {
 
         for (String keyspace : keyspaces) {
             assertTrue("Keyspace [" + keyspace + "] is missing from system graph", spaces.contains(keyspace));
-            assertTrue(engine.server().factory().systemKeyspace().containsKeyspace(keyspace));
+            assertTrue(engine.server().factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspace)));
         }
 
         graphs.forEach(GraknTx::close);

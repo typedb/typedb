@@ -18,9 +18,8 @@
 
 package ai.grakn.test.engine;
 
+import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineConfig;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
@@ -28,13 +27,16 @@ import ai.grakn.engine.util.SimpleURI;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.util.EmbeddedRedis;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
+import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertNotNull;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 public class GraknEngineServerTest {
 
@@ -83,9 +85,9 @@ public class GraknEngineServerTest {
 
             // init a random keyspace
             String keyspaceName = "thisisarandomwhalekeyspace";
-            server.factory().systemKeyspace().ensureKeyspaceInitialised(keyspaceName);
+            server.factory().systemKeyspace().ensureKeyspaceInitialised(Keyspace.of(keyspaceName));
 
-            assertTrue(server.factory().systemKeyspace().containsKeyspace(keyspaceName));
+            assertTrue(server.factory().systemKeyspace().containsKeyspace(Keyspace.of(keyspaceName)));
         }
     }
 }

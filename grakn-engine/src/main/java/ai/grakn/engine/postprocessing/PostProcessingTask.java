@@ -74,7 +74,7 @@ public class PostProcessingTask extends BackgroundTask {
                 Context contextSingle = metricRegistry()
                         .timer(name(PostProcessingTask.class, "execution-single")).time();
                 try {
-                    String keyspace = configuration().json().at(REST.Request.KEYSPACE).asString();
+                    Keyspace keyspace = Keyspace.of(configuration().json().at(REST.Request.KEYSPACE).asString());
                     int maxRetry = engineConfiguration()
                             .getPropertyAsInt(GraknEngineConfig.LOADER_REPEAT_COMMITS);
 

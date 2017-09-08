@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -35,7 +36,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
-import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -63,9 +63,9 @@ public class CSVMigratorTest {
 
     @Before
     public void setup() {
-        String keyspace = SampleKBLoader.randomKeyspace();
+        Keyspace keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
-        migrator = Migrator.to(engine.uri(), keyspace);
+        migrator = Migrator.to(engine.uri(), keyspace.getValue());
     }
 
     @Test

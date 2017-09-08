@@ -4,6 +4,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
@@ -28,7 +29,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class XMLMigratorTest {
 
-    private static String keyspace;
+    private static Keyspace keyspace;
     private static GraknSession session;
 
     @ClassRule
@@ -104,7 +105,7 @@ public class XMLMigratorTest {
         MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "schema.gql"));
 
         // load the data
-        Migrator migrator = Migrator.to(engine.uri(), keyspace);
+        Migrator migrator = Migrator.to(engine.uri(), keyspace.getValue());
 
         File xmlFile = MigratorTestUtils.getFile("xml", "data.xml");
 
