@@ -97,7 +97,7 @@ public class HALBuilder {
     }
 
     @Nullable
-    public static String HALExploreConcept(Concept concept, String keyspace, int offset, int limit) {
+    public static String HALExploreConcept(Concept concept, Keyspace keyspace, int offset, int limit) {
         String renderedHAL = null;
 
         if (concept.isThing()) {

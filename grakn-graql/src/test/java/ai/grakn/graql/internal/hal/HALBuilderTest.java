@@ -156,7 +156,7 @@ public class HALBuilderTest {
 
     private Json getHALExploreRepresentation(GraknTx graph, String conceptId) {
         Concept concept = graph.getConcept(ConceptId.of(conceptId));
-        return Json.read(HALExploreConcept(concept, graph.getKeyspace().getValue(), 0, 5));
+        return Json.read(HALExploreConcept(concept, graph.getKeyspace(), 0, 5));
     }
 
     private Json getHALRepresentationNoInference(GraknTx graph, String queryString) {
