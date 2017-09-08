@@ -106,7 +106,10 @@ public class EntityController {
                 response.status(HttpStatus.SC_OK);
                 return responseBody;
             } else {
-                LOG.info("assignAttributeToEntity - either entity or attribute not found. request processed.");
+                String entityInfo = entityOptional.map(e -> e.toString()).orElse("<empty>");
+                String attributeInfo = attributeOptional.map(e -> e.toString()).orElse("<empty>");
+                LOG.info("assignAttributeToEntity - either entity (" + entityInfo + ") or" +
+                    "attribute (" + attributeInfo + ") not found. request processed.");
                 response.status(HttpStatus.SC_BAD_REQUEST);
                 return Json.nil();
             }
