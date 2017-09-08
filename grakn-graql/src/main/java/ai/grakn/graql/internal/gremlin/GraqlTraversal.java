@@ -130,20 +130,18 @@ public abstract class GraqlTraversal {
     static double fragmentListCost(List<Fragment> fragments) {
         Set<Var> names = new HashSet<>();
 
-        double cost = 0;
         double listCost = 0;
 
         for (Fragment fragment : fragments) {
-            cost = fragmentCost(fragment, names);
+            listCost += fragmentCost(fragment, names);
             names.addAll(fragment.vars());
-            listCost += cost;
         }
 
         return listCost;
     }
 
     static double fragmentCost(Fragment fragment, Collection<Var> names) {
-        if (names.contains(fragment.start())) {
+        if (names.contains(fragment.start()) || fragment.hasFixedFragmentCost()) {
             return fragment.fragmentCost();
         } else {
             // Restart traversal, meaning we are navigating from all vertices
