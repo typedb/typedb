@@ -35,7 +35,6 @@ import spark.Service;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
@@ -49,12 +48,10 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
  */
 //TODO Implement delete
 public class CommitLogController {
-    private final Keyspace defaultKeyspace;
     private final TaskManager manager;
     private final int postProcessingDelay;
 
-    public CommitLogController(Service spark, Keyspace defaultKeyspace, int postProcessingDelay, TaskManager manager){
-        this.defaultKeyspace = defaultKeyspace;
+    public CommitLogController(Service spark, int postProcessingDelay, TaskManager manager){
         this.postProcessingDelay = postProcessingDelay;
         this.manager = manager;
 
@@ -81,7 +78,7 @@ public class CommitLogController {
         @ApiImplicitParam(name = COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
     private String submitConcepts(Request req, Response res) {
-        Keyspace keyspace = Keyspace.of(Optional.ofNullable(req.queryParams(KEYSPACE_PARAM)).orElse(defaultKeyspace));
+        Keyspace keyspace = Keyspace.of(req.queryParams(KEYSPACE_PARAM));
 
         // Instances to post process
         TaskState postProcessingTaskState = PostProcessingTask.createTask(this.getClass(), postProcessingDelay);

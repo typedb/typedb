@@ -19,6 +19,7 @@
 package ai.grakn.migration.base;
 
 import ai.grakn.Grakn;
+import ai.grakn.Keyspace;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -71,12 +72,12 @@ public class MigrationOptions {
         return command.hasOption("d");
     }
 
-    public String getKeyspace() {
+    public Keyspace getKeyspace() {
         if(!command.hasOption("k")){
             throw new IllegalArgumentException("Keyspace missing (-k)");
         }
 
-        return command.getOptionValue("k");
+        return Keyspace.of(command.getOptionValue("k"));
     }
 
     @Nullable

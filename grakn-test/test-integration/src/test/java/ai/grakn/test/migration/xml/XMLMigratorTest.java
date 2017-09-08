@@ -105,7 +105,7 @@ public class XMLMigratorTest {
         MigratorTestUtils.load(session, MigratorTestUtils.getFile("xml", "schema.gql"));
 
         // load the data
-        Migrator migrator = Migrator.to(engine.uri(), keyspace.getValue());
+        Migrator migrator = Migrator.to(engine.uri(), keyspace);
 
         File xmlFile = MigratorTestUtils.getFile("xml", "data.xml");
 

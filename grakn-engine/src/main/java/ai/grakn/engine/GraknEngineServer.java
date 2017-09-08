@@ -17,7 +17,6 @@
  */
 package ai.grakn.engine;
 
-import ai.grakn.Keyspace;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
@@ -223,7 +222,6 @@ public class GraknEngineServer implements AutoCloseable {
         RemoteSession graqlWebSocket = passwordProtected ? RemoteSession.passwordProtected(usersHandler) : RemoteSession.create();
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
-        Keyspace defaultKeyspace = Keyspace.of(prop.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY));
         int postProcessingDelay = prop.getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
 
         // Start all the controllers
@@ -233,7 +231,7 @@ public class GraknEngineServer implements AutoCloseable {
         new SystemController(factory, spark, graknEngineStatus, metricRegistry);
         new AuthController(spark, passwordProtected, jwtHandler, usersHandler);
         new UserController(spark, usersHandler);
-        new CommitLogController(spark, defaultKeyspace, postProcessingDelay, taskManager);
+        new CommitLogController(spark, postProcessingDelay, taskManager);
         new TasksController(spark, taskManager, metricRegistry);
 
         // This method will block until all the controllers are ready to serve requests

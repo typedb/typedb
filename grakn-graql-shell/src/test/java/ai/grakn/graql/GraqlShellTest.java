@@ -20,6 +20,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.Grakn;
+import ai.grakn.Keyspace;
 import ai.grakn.client.BatchMutatorClient;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
@@ -68,7 +69,7 @@ public class GraqlShellTest {
 
         batchMutatorClient = mock(BatchMutatorClient.class);
 
-        when(client.loaderClient(anyString(), anyString())).thenReturn(batchMutatorClient);
+        when(client.loaderClient(Keyspace.of("a" + anyString().toLowerCase()), anyString())).thenReturn(batchMutatorClient);
     }
 
    @Test

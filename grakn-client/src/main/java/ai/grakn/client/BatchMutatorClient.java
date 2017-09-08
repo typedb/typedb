@@ -18,6 +18,7 @@
 
 package ai.grakn.client;
 
+import ai.grakn.Keyspace;
 import ai.grakn.graql.Query;
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.Meter;
@@ -70,7 +71,7 @@ public class BatchMutatorClient {
 
     private final Set<Future<Void>> futures;
     private final Collection<Query> queries;
-    private final String keyspace;
+    private final Keyspace keyspace;
     private final TaskClient taskClient;
     private final Timer addTimer;
     private final Timer batchSendToLoaderTimer;
@@ -84,15 +85,15 @@ public class BatchMutatorClient {
     private boolean retry = false;
     private ExecutorService threadPool;
 
-    public BatchMutatorClient(String keyspace, String uri, boolean debugOn) {
+    public BatchMutatorClient(Keyspace keyspace, String uri, boolean debugOn) {
         this(keyspace, uri, (TaskResult t) -> {}, true, debugOn);
     }
 
-    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean debugOn) {
+    public BatchMutatorClient(Keyspace keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean debugOn) {
         this(keyspace, uri, onCompletionOfTask, false, debugOn);
     }
 
-    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean reportStats, boolean debugOn) {
+    public BatchMutatorClient(Keyspace keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean reportStats, boolean debugOn) {
         this.keyspace = keyspace;
         this.queries = new ArrayList<>();
         this.futures = new HashSet<>();

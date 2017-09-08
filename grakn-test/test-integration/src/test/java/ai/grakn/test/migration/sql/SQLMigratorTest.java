@@ -60,7 +60,7 @@ public class SQLMigratorTest {
     public void setup(){
         Keyspace keyspace = SampleKBLoader.randomKeyspace();
         factory = Grakn.session(engine.uri(), keyspace);
-        migrator = Migrator.to(engine.uri(), keyspace.getValue());
+        migrator = Migrator.to(engine.uri(), keyspace);
     }
 
     @Test
