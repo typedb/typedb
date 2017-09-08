@@ -140,7 +140,7 @@ public class GraknServerException extends GraknBackendException {
     /**
      * Thrown when engine cannot delete a keyspace as expected
      */
-    public static GraknServerException couldNotDelete(String keyspace){
+    public static GraknServerException couldNotDelete(Keyspace keyspace){
         return new GraknServerException(CANNOT_DELETE_KEYSPACE.getMessage(keyspace), 500);
     }
 
