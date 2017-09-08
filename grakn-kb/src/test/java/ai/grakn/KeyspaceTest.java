@@ -19,7 +19,6 @@
 package ai.grakn;
 
 import ai.grakn.exception.GraknTxOperationException;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -29,26 +28,25 @@ public class KeyspaceTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    @Before
-    public void expectException(){
-        expectedException.expect(GraknTxOperationException.class);
-    }
-
     @Test
     public void whenCreatingKeyspaceWithUpperCaseLetters_Throw(){
-        expectedException.expectMessage(GraknTxOperationException.invalidKeyspace("bOb").getMessage());
-        Keyspace.of("bOb");
+        invalidKeyspace("bOb");
     }
 
     @Test
     public void whenCreatingKeyspaceStartingWithNumbers_Throw(){
-        expectedException.expectMessage(GraknTxOperationException.invalidKeyspace("123hello").getMessage());
-        Keyspace.of("123hello");
+        invalidKeyspace("123hello");
     }
 
     @Test
     public void whenCreatingKeyspaceWithNonAlphaNumberis_Throw(){
-        expectedException.expectMessage(GraknTxOperationException.invalidKeyspace("mynameis@£$%^&").getMessage());
-        Keyspace.of("mynameis@£$%^&");
+        invalidKeyspace("mynameis@£$%^&");
     }
+
+    private void invalidKeyspace(String keyspace) {
+        expectedException.expect(GraknTxOperationException.class);
+        expectedException.expectMessage(GraknTxOperationException.invalidKeyspace(keyspace).getMessage());
+        Keyspace.of(keyspace);
+    }
+
 }
