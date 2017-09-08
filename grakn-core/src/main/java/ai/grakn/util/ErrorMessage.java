@@ -116,7 +116,7 @@ public enum ErrorMessage {
     //--------------------------------------------- Client Errors
     INVALID_ENGINE_RESPONSE("Grakn Engine located at [%s] returned response [%s], cannot proceed."),
     INVALID_FACTORY("Graph Factory [%s] is not valid"),
-    MISSING_FACTORY_DEFINITION("Graph Factor Config ['factory.internal'] missing from provided config. " +
+    MISSING_FACTORY_DEFINITION("Graph Factor Config ['knowledge-base.mode'] missing from provided config. " +
             "Cannot produce graph"),
     COULD_NOT_REACH_ENGINE("Could not reach Grakn engine at [%s]"),
 

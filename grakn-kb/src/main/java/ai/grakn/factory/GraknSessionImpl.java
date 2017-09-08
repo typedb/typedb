@@ -20,8 +20,8 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
@@ -57,7 +57,7 @@ import static mjson.Json.read;
  * @author fppt
  */
 public class GraknSessionImpl implements GraknSession {
-    private final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
     private final String location;
     private final String keyspace;
 
@@ -136,15 +136,16 @@ public class GraknSessionImpl implements GraknSession {
      *
      * @param keyspace The keyspace of the tx
      * @param engineUrl The url of engine to get the tx factory config from
-     * @param graphType The type of tx to produce, default, batch, or compute
+     * @param type The type of tx to produce, default, batch, or compute
      * @return A new or existing grakn tx factory with the defined name connecting to the specified remote location
      */
-    private static TxFactory<?> configureGraphFactoryRemote(String keyspace, String engineUrl, String graphType){
-        String restFactoryUri = engineUrl + INITIALISE + "?" + CONFIG_PARAM + "=" + graphType + "&" + KEYSPACE_PARAM + "=" + keyspace;
+    private static TxFactory<?> configureGraphFactoryRemote(String keyspace, String engineUrl, String type){
+        String restFactoryUri = engineUrl + INITIALISE + "?" + CONFIG_PARAM + "=" + type + "&" + KEYSPACE_PARAM + "=" + keyspace;
 
         Properties properties = new Properties();
-        properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());
 
+        //Get Specific Configs
+        properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());
         return FactoryBuilder.getFactory(keyspace, engineUrl, properties);
     }
 
@@ -157,7 +158,7 @@ public class GraknSessionImpl implements GraknSession {
         Properties inMemoryProperties = new Properties();
         inMemoryProperties.put(GraknTxAbstract.SHARDING_THRESHOLD, 100_000);
         inMemoryProperties.put(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS, 30_000);
-        inMemoryProperties.put(FactoryBuilder.FACTORY_TYPE, TxFactoryTinker.class.getName());
+        inMemoryProperties.put(FactoryBuilder.KB_MODE, TxFactoryTinker.class.getName());
 
         return FactoryBuilder.getFactory(TxFactoryTinker.class.getName(), keyspace, Grakn.IN_MEMORY, inMemoryProperties);
     }

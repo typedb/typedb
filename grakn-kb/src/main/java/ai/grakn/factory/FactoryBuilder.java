@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.shaded.minlog.Log;
 
 import java.lang.reflect.InvocationTargetException;
@@ -43,8 +44,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author fppt
  */
 public class FactoryBuilder {
-    public static final String FACTORY_TYPE = "factory.internal";
+    public static final String KB_MODE = "knowledge-base.mode";
     private static final Map<String, TxFactory<?>> openFactories = new ConcurrentHashMap<>();
+
+    //This is used to map grakn value properties into the underlaying properties
+    private static final Map<String, String> factoryMapper = ImmutableMap.of(
+            "in-memory", "ai.grakn.factory.TxFactoryTinker",
+            "production", "ai.grakn.factory.TxFactoryJanus",
+            "distributed", "ai.grakn.factory.TxFactoryJanusHadoop");
 
     private FactoryBuilder(){
         throw new UnsupportedOperationException();
@@ -52,7 +59,7 @@ public class FactoryBuilder {
 
     public static TxFactory<?> getFactory(String keyspace, String engineUrl, Properties properties){
         try{
-            String factoryType = properties.get(FACTORY_TYPE).toString();
+            String factoryType = factoryMapper.get(properties.get(KB_MODE).toString());
             return getFactory(factoryType, keyspace, engineUrl, properties);
         } catch(MissingResourceException e){
             throw new IllegalArgumentException(ErrorMessage.MISSING_FACTORY_DEFINITION.getMessage());

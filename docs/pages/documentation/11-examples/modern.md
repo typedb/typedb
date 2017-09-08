@@ -7,7 +7,6 @@ summary: "A short example to illustrate Graql queries"
 sidebar: documentation_sidebar
 permalink: /documentation/examples/modern.html
 folder: documentation
-comment_issue_id: 27
 ---
 
 If you have not yet set up the Grakn environment, please see the [Setup guide](../get-started/setup-guide.html). For a comprehensive guide to all Graql keywords, please see the [Graql documentation](https://grakn.ai/pages/documentation/graql/graql-overview.html).
@@ -15,13 +14,10 @@ If you have not yet set up the Grakn environment, please see the [Setup guide](.
 ## Introduction
 We have a few examples on how to work with Graql using different datasets. For example, see our [blog posts](https://medium.com/p/e1125e02dc85) and the [Quickstart Tutorial](../get-started/quickstart-tutorial.html) that introduces how to make Graql queries.
 
-This example takes a very simple example from [TinkerPop3 Documentation](http://tinkerpop.apache.org/docs/3.0.1-incubating/), called TinkerPop Modern. Here it is, shown diagrammatically:
-
-![](/images/example-tinkerpop-modern.png)
-
-The image above is used from the documentation provided for TinkerPop3, and licensed by the [Apache Software Foundation](http://www.apache.org). 
-
-We have chosen this example as it may already be familiar, and is simple enough to demonstrate some of the fundamentals of Graql. We walk through the entities ("things") and relationships between them and show how to represent them using Graql to define a schema. We then use Graql to add the data to the knowledge base.  The main purpose of this example, however, is to use it for practice at making sample queries on the knowledge base. 
+The following is a simple example enough to demonstrate some of the fundamentals of Graql. 
+We walk through the entities ("things") and relationships between them and show how to represent them using Graql to define a schema. 
+We then use Graql to add the data to the knowledge base.
+The main purpose of this example, however, is to use it for practice at making sample queries on the knowledge base. 
 
 ### Starting Graql
 
@@ -82,7 +78,7 @@ define person plays known-about;
 define knows sub relationship, relates knower, relates known-about, has weight;
 ```
 
-Note that the  `knows` relationship also has an attribute, in the form of an attribute called `weight` (though it's not clear from the TinkerPop example what this represents).
+Note that the `knows` relationship also has an attribute, in the form of an attribute called `weight`.
 
 We can set up a similar relationship between software and the people that created it:
 
@@ -254,8 +250,3 @@ programming sub relationship
 
 
 {% include links.html %}
-
-
-## Comments
-Want to leave a comment? Visit <a href="https://github.com/graknlabs/docs/issues/27" target="_blank">the issues on Github for this page</a> (you'll need a GitHub account). You are also welcome to contribute to our documentation directly via the "Edit me" button at the top of the page.
-

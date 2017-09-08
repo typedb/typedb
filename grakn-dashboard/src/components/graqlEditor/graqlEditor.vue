@@ -20,7 +20,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <transition name="slideInDown" appear>
     <div class="graqlEditor-container">
         <div class="left-side">
-            <fav-queries-list v-on:type-query="typeFavQuery" ref="savedQueries"></fav-queries-list>
+            <fav-queries-list v-on:type-query="typeFavQuery" ref="savedQueries" :state="state"></fav-queries-list>
             <button @click="toggleTypeInstances" class="btn types-button"><span>Types</span><i style="padding-left:3px;" :class="[showTypeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i>
                       </button>
         </div>
@@ -28,19 +28,19 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             <div class="graqlEditor-wrapper">
                 <textarea ref="graqlEditor" class="form-control" rows="3" placeholder=">>"></textarea>
                 <div class="types-wrapper">
-                    <types-panel :typeInstances="typeInstances" :showTypeInstances="showTypeInstances" v-on:type-query="typeQuery" v-on:load-schema="(type)=>state.eventHub.$emit('load-schema',type)"></types-panel>
+                    <types-panel :typeInstances="typeInstances" :showTypeInstances="showTypeInstances" v-on:type-query="typeQuery" v-on:load-schema="(type)=>state.eventHub.$emit('load-schema',type)" :state="state"></types-panel>
                 </div>
                 <message-panel :showMessagePanel="showMessagePanel" :message="message" v-on:close-message="showMessagePanel=false"></message-panel>
             </div>
         </div>
         <div class="right-side">
           <scroll-button :editorLinesNumber="editorLinesNumber" :codeMirror="codeMirror"></scroll-button>
-          <add-current-query :current-query="currentQuery" v-on:new-query-saved="refreshSavedQueries"></add-current-query>
+          <add-current-query :current-query="currentQuery" v-on:new-query-saved="refreshSavedQueries" :state="state"></add-current-query>
             <button @click="runQuery" class="btn"><i
                           class="pe-7s-angle-right-circle"></i></button>
             <button @click="clearGraph" @click.shift="clearGraphAndPage" class="btn"><i class="pe-7s-close-circle"></i>
                           </button>
-            <query-settings></query-settings>
+            <query-settings :state="state"></query-settings>
         </div>
     </div>
 </transition>
@@ -136,8 +136,10 @@ export default {
       currentQuery: undefined,
       state: undefined,
       showTypeInstances: false,
+      typesElementId:'2',
       showMessagePanel: false,
       message: undefined,
+      editorLinesNumber: 1,
     };
   },
   created() {
@@ -148,6 +150,9 @@ export default {
     window.addEventListener('keyup', (e) => {
       if (e.keyCode === 13 && !e.shiftKey) this.runQuery();
     });
+
+    this.state.eventHub.$on('show-new-navbar-element',(elementId)=>{if(elementId!=this.typesElementId) this.showTypeInstances=false;});
+
   },
   mounted() {
     this.$nextTick(() => {
@@ -158,8 +163,8 @@ export default {
         viewportMargin: Infinity,
         autofocus: true,
         extraKeys: {
-                    // Enter key is now binded globally on the window object so that a runQuery can be fired even if the cursor is not in the editor
-                    // But here we need to bind Enter to a behaviour that is not the default "newLine", otherwise everytime we hit enter the cursor goes to new line.
+          // Enter key is now binded globally on the window object so that a runQuery can be fired even if the cursor is not in the editor
+          // But here we need to bind Enter to a behaviour that is not the default "newLine", otherwise everytime we hit enter the cursor goes to new line.
           Enter: 'goLineEnd',
           'Shift-Enter': 'newlineAndIndent',
           'Shift-Delete': this.clearGraph,
@@ -223,6 +228,9 @@ export default {
     toggleTypeInstances() {
       this.showTypeInstances = !this.showTypeInstances;
       this.showMessagePanel = false;
+      if(this.showTypeInstances){
+        this.state.eventHub.$emit('show-new-navbar-element',this.typesElementId);
+      }
     },
     onErrorMessage(message) {
       this.showMessagePanel = true;

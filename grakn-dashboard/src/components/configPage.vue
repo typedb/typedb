@@ -39,19 +39,19 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td>Graph Factory</td>
-                        <td>{{configuration['factory.internal']}}</td>
+                        <td>{{configuration['knowledge-base.mode']}}</td>
                     </tr>
                     <tr>
                         <td>Graph Analytics Factory</td>
-                        <td>{{configuration['factory.analytics']}}</td>
+                        <td>{{configuration['knowledge-base.analytics']}}</td>
                     </tr>
                     <tr>
                         <td>Default Keyspace</td>
-                        <td>{{configuration['graph.default-keyspace']}}</td>
+                        <td>{{configuration['knowledge-base.default-keyspace']}}</td>
                     </tr>
                     <tr>
                         <td>Graph Sharding Threshold</td>
-                        <td>{{configuration['graph.sharding-threshold']}}</td>
+                        <td>{{configuration['knowledge-base.sharding-threshold']}}</td>
                     </tr>
                     <tr>
                         <td>Server Executor Threads</td>
@@ -70,20 +70,12 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         <td>{{configuration['log.level']}}</td>
                     </tr>
                     <tr>
-                        <td>Batch size</td>
-                        <td>{{configuration['blockingLoader.batch-size']}}</td>
-                    </tr>
-                    <tr>
                         <td>Default Keyspace</td>
-                        <td>{{configuration['graph.default-keyspace']}}</td>
+                        <td>{{configuration['knowledge-base.default-keyspace']}}</td>
                     </tr>
                     <tr>
                         <td>Repeat Commits</td>
                         <td>{{configuration['loader.repeat-commits']}}</td>
-                    </tr>
-                    <tr>
-                        <td>HAL builder degree</td>
-                        <td>{{configuration['halBuilder.degree']}}</td>
                     </tr>
                     <tr>
                         <td>Version</td>

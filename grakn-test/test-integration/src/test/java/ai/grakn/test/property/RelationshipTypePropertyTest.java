@@ -109,7 +109,7 @@ public class RelationshipTypePropertyTest {
     @Property
     public void relationTypeRelatingARoleIsEquivalentToARoleHavingARelationType(
             RelationshipType relationshipType, @FromTx Role role) {
-        assertEquals(relationshipType.relates().collect(toSet()).contains(role), role.relationTypes().collect(toSet()).contains(relationshipType));
+        assertEquals(relationshipType.relates().collect(toSet()).contains(role), role.relationshipTypes().collect(toSet()).contains(relationshipType));
     }
 
     @Property

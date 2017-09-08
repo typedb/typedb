@@ -36,7 +36,7 @@ Grakn’s schema modelling constructs include, but are not limited to, data type
 
 Grakn’s schema is flexible, allowing a data model to evolve. Later in the year, we will show how you can have a machine learning system adapt and grow your Grakn schema. Our schema is a key feature in maintaining data quality, as it functions as a data schema constraint that guarantees information consistency.
 
-Grakn is built using several distributed computing platforms, such as Apache Cassandra, [Apache TinkerPop](https://tinkerpop.apache.org/), [Apache Spark](http://spark.apache.org/), and Apache Hadoop. Grakn is designed to be sharded and replicated over a network of distributed machines.
+Grakn is designed to be sharded and replicated over a network of distributed machines.
 
 ## Graql
 

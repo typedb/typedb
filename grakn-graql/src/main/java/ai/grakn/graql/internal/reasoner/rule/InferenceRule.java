@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -210,14 +211,17 @@ public class InferenceRule {
         Atom headAtom = head.getAtom();
         Set<Atomic> bodyAtoms = new HashSet<>(body.getAtoms());
         if(headAtom.isResource() && ((ResourceAtom) headAtom).getMultiPredicate().isEmpty()){
-            Set<ValuePredicate> vps = parentAtom.getPredicates(ValuePredicate.class)
+            Set<ValuePredicate> vps  = Stream.concat(
+                    parentAtom.getPredicates(ValuePredicate.class),
+                    parentAtom.getInnerPredicates(ValuePredicate.class)
+            )
                     .flatMap(vp -> vp.unify(unifier).stream())
                     .collect(toSet());
             headAtom = new ResourceAtom(
                     headAtom.getPattern().asVarPattern(),
                     headAtom.getPredicateVariable(),
                     ((ResourceAtom) headAtom).getRelationVariable(),
-                    ((ResourceAtom) headAtom).getPredicate(),
+                    ((ResourceAtom) headAtom).getTypePredicate(),
                     vps,
                     headAtom.getParentQuery()
             );

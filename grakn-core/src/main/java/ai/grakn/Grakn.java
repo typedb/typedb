@@ -81,6 +81,7 @@ import java.util.Map;
 
 
 public class Grakn {
+
     /**
      * Constant to be passed to {@link #session(String, String)} to specify the default localhost Grakn Engine location.
      * This default constant, which is set to localhost: 4567 cannot be changed in development"
