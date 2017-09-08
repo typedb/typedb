@@ -28,11 +28,14 @@ authored by - """ + user
           sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
           sh 'mkdir grakn-package'
           sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
+          sh 'echo -n "a: " && pwd'
           sh 'cd grakn-package'
-          sh 'grakn server start'
-          sh 'pwd'
+          sh 'ps x | grep redis'
+          sh './grakn server start'
+          sh 'echo -n "b: " && pwd'
           sh 'ls .'
           sh 'cd ..'
+          sh 'echo -n "c: " && pwd'
 	      sh 'cat /tmp/grakn-redis-logs'
         }
         stage('Test Connection') {
