@@ -69,7 +69,7 @@ public class GraqlShellTest {
 
         batchMutatorClient = mock(BatchMutatorClient.class);
 
-        when(client.loaderClient(Keyspace.of("a" + anyString().toLowerCase()), anyString())).thenReturn(batchMutatorClient);
+        when(client.loaderClient(any(Keyspace.class), anyString())).thenReturn(batchMutatorClient);
     }
 
    @Test
