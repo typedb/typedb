@@ -33,7 +33,7 @@ authored by - """ + user
           sh 'echo $?'
           sh 'echo -n "b: " && pwd'
           sh 'ps x | grep redis'
-          sh './grakn server start'
+          sh 'grakn server start'
           sh 'ls .'
           sh 'cd ..'
           sh 'echo -n "c: " && pwd'
