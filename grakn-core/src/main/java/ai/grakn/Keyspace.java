@@ -18,9 +18,12 @@
 
 package ai.grakn;
 
+import ai.grakn.exception.GraknTxOperationException;
 import com.google.auto.value.AutoValue;
+
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
+import java.util.regex.Pattern;
 
 /**
  * <p>
@@ -51,6 +54,7 @@ public abstract class Keyspace implements Comparable<Keyspace>, Serializable {
      */
     @CheckReturnValue
     public static Keyspace of(String value){
+        if(!Pattern.matches("[a-z_][a-z_0-9]*", value)) throw GraknTxOperationException.invalidKeyspace(value);
         return new AutoValue_Keyspace(value);
     }
 
