@@ -49,11 +49,11 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
  */
 //TODO Implement delete
 public class CommitLogController {
-    private final String defaultKeyspace;
+    private final Keyspace defaultKeyspace;
     private final TaskManager manager;
     private final int postProcessingDelay;
 
-    public CommitLogController(Service spark, String defaultKeyspace, int postProcessingDelay, TaskManager manager){
+    public CommitLogController(Service spark, Keyspace defaultKeyspace, int postProcessingDelay, TaskManager manager){
         this.defaultKeyspace = defaultKeyspace;
         this.postProcessingDelay = postProcessingDelay;
         this.manager = manager;

@@ -17,12 +17,7 @@
  */
 package ai.grakn.engine;
 
-import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
-import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
-import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
+import ai.grakn.Keyspace;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
@@ -50,21 +45,11 @@ import ai.grakn.exception.GraknServerException;
 import ai.grakn.util.REST;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import static com.codahale.metrics.MetricRegistry.name;
 import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.google.common.base.Stopwatch;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import javax.annotation.Nullable;
 import mjson.Json;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +59,24 @@ import spark.HaltException;
 import spark.Request;
 import spark.Response;
 import spark.Service;
+
+import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+
+import static ai.grakn.engine.GraknEngineConfig.QUEUE_CONSUMERS;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
+import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
+import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
+import static com.codahale.metrics.MetricRegistry.name;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
@@ -220,7 +223,7 @@ public class GraknEngineServer implements AutoCloseable {
         RemoteSession graqlWebSocket = passwordProtected ? RemoteSession.passwordProtected(usersHandler) : RemoteSession.create();
         spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, graqlWebSocket);
 
-        String defaultKeyspace = prop.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY);
+        Keyspace defaultKeyspace = Keyspace.of(prop.getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY));
         int postProcessingDelay = prop.getPropertyAsInt(GraknEngineConfig.POST_PROCESSING_TASK_DELAY);
 
         // Start all the controllers
