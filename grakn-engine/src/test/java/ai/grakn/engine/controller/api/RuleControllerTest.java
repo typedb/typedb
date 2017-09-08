@@ -59,11 +59,13 @@ public class RuleControllerTest {
 
         when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
 
+        when(mockTx.graql()).thenAnswer(invocation -> sampleKB.tx().graql());
+
         when(mockTx.putRule(anyString(), any(), any())).thenAnswer(invocation ->
             sampleKB.tx().putRule(
                 (String) invocation.getArgument(0),
-                mockTx.graql().parsePattern((String) invocation.getArgument(1)),
-                mockTx.graql().parsePattern((String) invocation.getArgument(2))
+                invocation.getArgument(1),
+                invocation.getArgument(2)
             )
         );
         when(mockTx.getRule(anyString())).thenAnswer(invocation ->
@@ -77,21 +79,21 @@ public class RuleControllerTest {
     public void getRuleFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace())
-            .get("/api/rule/a-rule-type");
+            .get("/api/rule/expectation-rule");
 
         Json responseBody = Json.read(response.body().asString());
-
+        
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.at("rule").at("conceptId").asString(), notNullValue());
-        assertThat(responseBody.at("rule").at("label").asString(), equalTo("a-rule-type"));
+        assertThat(responseBody.at("rule").at("label").asString(), equalTo("expectation-rule"));
     }
 
     @Test
     public void postRuleShouldExecuteSuccessfully() {
         Json body = Json.object("rule", Json.object(
             "label", "newRule",
-            "when", "(parent: $p, child: $c) isa Parent;",
-            "then", "(ancestor: $p, descendant: $c) isa Ancestor;"
+            "when", "$x has name \"newRule-when\"",
+            "then", "$x has name \"newRule-then\""
         ));
         Response response = with()
             .queryParam(KEYSPACE, mockTx.getKeyspace())
@@ -103,5 +105,7 @@ public class RuleControllerTest {
         assertThat(response.statusCode(), equalTo(200));
         assertThat(responseBody.at("rule").at("conceptId").asString(), notNullValue());
         assertThat(responseBody.at("rule").at("label").asString(), equalTo("newRule"));
+        assertThat(responseBody.at("rule").at("when").asString(), equalTo("$x has name \"newRule-when\""));
+        assertThat(responseBody.at("rule").at("then").asString(), equalTo("$x has name \"newRule-then\""));
     }
 }

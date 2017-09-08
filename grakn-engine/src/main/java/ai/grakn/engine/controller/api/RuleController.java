@@ -65,8 +65,10 @@ public class RuleController {
             if (rule.isPresent()) {
                 String jsonConceptId = rule.get().getId().getValue();
                 String jsonRuleLabel = rule.get().getLabel().getValue();
+                String jsonRuleWhen = rule.get().getWhen().toString();
+                String jsonRuleThen = rule.get().getThen().toString();
                 response.status(HttpStatus.SC_OK);
-                Json responseBody = ruleJson(jsonConceptId, jsonRuleLabel);
+                Json responseBody = ruleJson(jsonConceptId, jsonRuleLabel, jsonRuleWhen, jsonRuleThen);
                 LOG.info("getRule - rule found - " + jsonConceptId + ", " + jsonRuleLabel + ". request processed.");
                 return responseBody;
             } else {
@@ -93,20 +95,26 @@ public class RuleController {
                 tx.graql().parsePattern(then)
             );
             tx.commit();
+
             String jsonConceptId = rule.getId().getValue();
             String jsonRuleLabel = rule.getLabel().getValue();
+            String jsonRuleWhen = rule.getWhen().toString();
+            String jsonRuleThen = rule.getThen().toString();
             LOG.info("postRule - rule " + jsonRuleLabel + " with id " + jsonConceptId + " added. request processed.");
             response.status(HttpStatus.SC_OK);
-            Json responseBody = ruleJson(jsonConceptId, ruleLabel);
+            Json responseBody = ruleJson(jsonConceptId, jsonRuleLabel, jsonRuleWhen, jsonRuleThen);
 
             return responseBody;
         }
     }
 
-    private Json ruleJson(String conceptId, String label) {
+    private Json ruleJson(String conceptId, String label, String when, String then) {
         return Json.object(
             "rule", Json.object(
-                "conceptId", conceptId, "label", label
+                "conceptId", conceptId,
+                "label", label,
+                "when", when,
+                "then", then
             )
         );
     }
