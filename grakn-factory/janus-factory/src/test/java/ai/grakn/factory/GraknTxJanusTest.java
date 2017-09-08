@@ -118,16 +118,6 @@ public class GraknTxJanusTest extends JanusTestBase {
     }
 
     @Test
-    public void whenCreatingGraphsWithDifferentKeyspace_EnsureCaseIsIgnored(){
-        TxFactoryJanus factory1 =  new TxFactoryJanus(Keyspace.of("case"), Grakn.IN_MEMORY, TEST_PROPERTIES);
-        TxFactoryJanus factory2 = new TxFactoryJanus(Keyspace.of("Case"), Grakn.IN_MEMORY, TEST_PROPERTIES);
-        GraknTxJanus case1 = factory1.open(GraknTxType.WRITE);
-        GraknTxJanus case2 = factory2.open(GraknTxType.WRITE);
-
-        assertEquals(case1.getKeyspace(), case2.getKeyspace());
-    }
-
-    @Test
     public void whenClosingTheGraph_EnsureTheTransactionIsClosed(){
         GraknTxJanus graph = new TxFactoryJanus(Keyspace.of("test"), Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
 
