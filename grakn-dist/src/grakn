@@ -156,8 +156,15 @@ redis_start_redis() {
       redis_bin="redis-server-linux"
   fi
 
+  # run redis
+  # redis needs to be ran with $GRAKN_HOME as the working directory
+  # otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
+  pushd "$GRAKN_HOME"
   "${GRAKN_HOME}"/services/redis/$redis_bin "${GRAKN_HOME}"/services/redis/redis.conf
-  return $?
+  status=$?
+  popd
+
+  return status
 }
 
 redis_is_redis_running() {
