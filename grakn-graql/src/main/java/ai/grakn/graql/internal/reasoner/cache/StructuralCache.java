@@ -65,9 +65,6 @@ public class StructuralCache{
         return applicableRules;
     }
 
-    public Set<InferenceRule> getApplicableRules(Atom atom){
-        return getApplicableRules(ReasonerQueries.atomic(atom));
-    }
 
     public boolean isRuleResolvable(ReasonerAtomicQuery q){
         return !getApplicableRules(q).isEmpty();

@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknTx;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;

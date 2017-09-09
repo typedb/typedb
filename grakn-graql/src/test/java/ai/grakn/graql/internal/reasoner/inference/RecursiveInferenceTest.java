@@ -510,7 +510,7 @@ public class RecursiveInferenceTest {
 
     @Test
     public void testTransitiveChain(){
-        final int N = 500;
+        final int N = 100;
         int answers = (N+1)*N/2;
         emptyKB.load(TransitivityChainKB.get(N));
         QueryBuilder qb = emptyKB.tx().graql().infer(false);

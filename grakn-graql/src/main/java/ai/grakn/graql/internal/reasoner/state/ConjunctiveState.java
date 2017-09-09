@@ -23,7 +23,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.ResolutionPlan;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.cache.StructuralCache;
 import ai.grakn.graql.internal.reasoner.explanation.JoinExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
@@ -60,9 +59,8 @@ public class ConjunctiveState extends QueryState {
                             Unifier u,
                             QueryState parent,
                             Set<ReasonerAtomicQuery> subGoals,
-                            QueryCache<ReasonerAtomicQuery> cache,
-                            StructuralCache sCache) {
-        super(sub, u, parent, subGoals, cache, sCache);
+                            QueryCache<ReasonerAtomicQuery> cache) {
+        super(sub, u, parent, subGoals, cache);
         this.query = ReasonerQueries.create(q, sub);
 
         if (!query.isRuleResolvable()){
@@ -72,7 +70,7 @@ public class ConjunctiveState extends QueryState {
             subQueries = new LinkedList<>();
         } else {
             dbIterator = Collections.emptyIterator();
-            subQueries = new ResolutionPlan(query).queryPlan(sCache);
+            subQueries = new ResolutionPlan(query).queryPlan(cache.structuralCache());
 
             LOG.trace("CQ plan:\n" + subQueries.stream()
                     .map(aq -> aq.toString() + (aq.isRuleResolvable()? "*" : ""))
@@ -95,7 +93,7 @@ public class ConjunctiveState extends QueryState {
 
         if (!subQueries.isEmpty() && !visited) {
             visited = true;
-            return new CumulativeState(subQueries, new QueryAnswer(), getUnifier(), this, getSubGoals(), getCache(), getStructuralCache());
+            return new CumulativeState(subQueries, new QueryAnswer(), getUnifier(), this, getSubGoals(), getCache());
         }
         return null;
     }

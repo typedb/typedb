@@ -48,6 +48,17 @@ import java.util.stream.Stream;
 public abstract class Cache<Q extends ReasonerQueryImpl, T extends Iterable<Answer>>{
 
     protected final Map<Q, Pair<Q, T>> cache = new HashMap<>();
+    private final StructuralCache sCache;
+
+    Cache(){
+        this.sCache = new StructuralCache();
+    }
+
+    /**
+     *
+     * @return
+     */
+    public StructuralCache structuralCache(){ return sCache;}
 
     public boolean contains(Q query){ return cache.containsKey(query);}
     public Set<Q> getQueries(){ return cache.keySet();}

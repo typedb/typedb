@@ -28,7 +28,6 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
-import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;

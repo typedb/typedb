@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.cache.StructuralCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -51,7 +50,6 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final Set<Answer> answers = new HashSet<>();
 
     private final QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
-    private final StructuralCache sCache = new StructuralCache();
     private final Stack<ResolutionState> states = new Stack<>();
 
     private Answer nextAnswer = null;
@@ -62,7 +60,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     public ResolutionIterator(ReasonerQueryImpl q){
         this.query = q;
         this.reiterationRequired = q.requiresReiteration();
-        states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache, sCache));
+        states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
     }
 
     private Answer findNextAnswer(){
@@ -104,7 +102,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             if (dAns != 0 || iter == 0) {
                 LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
                 iter++;
-                states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache, sCache));
+                states.push(query.subGoal(new QueryAnswer(), new UnifierImpl(), null, new HashSet<>(), cache));
                 oldAns = answers.size();
                 return hasNext();
             }

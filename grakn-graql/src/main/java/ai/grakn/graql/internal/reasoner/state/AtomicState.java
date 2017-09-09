@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.state;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.cache.StructuralCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -56,10 +55,9 @@ public class AtomicState extends QueryState{
                        Unifier u,
                        QueryState parent,
                        Set<ReasonerAtomicQuery> subGoals,
-                       QueryCache<ReasonerAtomicQuery> cache,
-                       StructuralCache sCache) {
+                       QueryCache<ReasonerAtomicQuery> cache) {
 
-        super(sub, u, parent, subGoals, cache, sCache);
+        super(sub, u, parent, subGoals, cache);
         this.query = ReasonerQueries.atomic(q, sub);
 
         Pair<Stream<Answer>, Unifier> streamUnifierPair = query.lookupWithUnifier(cache);
@@ -73,7 +71,7 @@ public class AtomicState extends QueryState{
                 || (query.isGround() && dbIterator.hasNext() ) ){
             this.ruleIterator = Collections.emptyIterator();
         } else {
-            this.ruleIterator = query.getRuleIterator(sCache);
+            this.ruleIterator = query.getRuleIterator(cache.structuralCache());
         }
 
         //mark as visited and hence not admissible
@@ -107,6 +105,6 @@ public class AtomicState extends QueryState{
 
         Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
 
-        return currentRule.getBody().subGoal(partialSubPrime, combinedUnifier, this, getSubGoals(), getCache(), getStructuralCache());
+        return currentRule.getBody().subGoal(partialSubPrime, combinedUnifier, this, getSubGoals(), getCache());
     }
 }

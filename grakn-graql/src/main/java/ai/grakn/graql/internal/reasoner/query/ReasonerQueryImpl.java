@@ -43,7 +43,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.cache.StructuralCache;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import ai.grakn.graql.internal.reasoner.state.ConjunctiveState;
@@ -363,17 +362,16 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private Stream<Answer> fullJoin(Set<ReasonerAtomicQuery> subGoals,
                                     Cache<ReasonerAtomicQuery, ?> cache,
-                                    Cache<ReasonerAtomicQuery, ?> dCache,
-                                    StructuralCache sCache){
+                                    Cache<ReasonerAtomicQuery, ?> dCache){
         List<ReasonerAtomicQuery> queries = selectAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toList());
         Iterator<ReasonerAtomicQuery> qit = queries.iterator();
         ReasonerAtomicQuery childAtomicQuery = qit.next();
-        Stream<Answer> join = childAtomicQuery.answerStream(subGoals, cache, dCache, sCache, false);
+        Stream<Answer> join = childAtomicQuery.answerStream(subGoals, cache, dCache, false);
         Set<Var> joinedVars = childAtomicQuery.getVarNames();
         while(qit.hasNext()){
             childAtomicQuery = qit.next();
             Set<Var> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
-            Stream<Answer> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, sCache, false);
+            Stream<Answer> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, false);
             join = join(join, localSubs, ImmutableSet.copyOf(joinVars));
             joinedVars.addAll(childAtomicQuery.getVarNames());
         }
@@ -382,8 +380,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private Stream<Answer> differentialJoin(Set<ReasonerAtomicQuery> subGoals,
                                             Cache<ReasonerAtomicQuery, ?> cache,
-                                            Cache<ReasonerAtomicQuery, ?> dCache,
-                                            StructuralCache sCache){
+                                            Cache<ReasonerAtomicQuery, ?> dCache){
         Stream<Answer> join = Stream.empty();
         List<ReasonerAtomicQuery> queries = selectAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toList());
         Set<ReasonerAtomicQuery> uniqueQueries = queries.stream().collect(Collectors.toSet());
@@ -391,7 +388,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         List<ReasonerAtomicQuery> queriesToJoin  = isTransitive()? Lists.newArrayList(uniqueQueries) : queries;
 
         for(ReasonerAtomicQuery qi : queriesToJoin){
-            Stream<Answer> subs = qi.answerStream(subGoals, cache, dCache, sCache, true);
+            Stream<Answer> subs = qi.answerStream(subGoals, cache, dCache, true);
             Set<Var> joinedVars = qi.getVarNames();
             for(ReasonerAtomicQuery qj : queries){
                 if ( qj != qi ){
@@ -412,7 +409,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     Stream<Answer> computeJoin(Set<ReasonerAtomicQuery> subGoals,
                                Cache<ReasonerAtomicQuery, ?> cache,
                                Cache<ReasonerAtomicQuery, ?> dCache,
-                               StructuralCache sCache,
                                boolean differentialJoin) {
 
         //handling neq predicates by using complement
@@ -420,8 +416,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         ReasonerQueryImpl positive = neqPredicates.isEmpty()? this : this.positive();
 
         Stream<Answer> join = differentialJoin?
-                positive.differentialJoin(subGoals, cache, dCache, sCache) :
-                positive.fullJoin(subGoals, cache, dCache, sCache);
+                positive.differentialJoin(subGoals, cache, dCache) :
+                positive.fullJoin(subGoals, cache, dCache);
 
         return join.filter(a -> nonEqualsFilter(a, neqPredicates));
     }
@@ -429,7 +425,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public Stream<Answer> resolve(boolean materialise) {
         if (materialise) {
-            return resolveAndMaterialise(new LazyQueryCache<>(), new LazyQueryCache<>(), new StructuralCache());
+            return resolveAndMaterialise(new LazyQueryCache<>(), new LazyQueryCache<>());
         } else {
             return new ResolutionIterator(this).hasStream();
         }
@@ -440,8 +436,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return stream of answers
      */
     Stream<Answer> resolveAndMaterialise(LazyQueryCache<ReasonerAtomicQuery> cache,
-                                         LazyQueryCache<ReasonerAtomicQuery> dCache,
-                                         StructuralCache sCache) {
+                                         LazyQueryCache<ReasonerAtomicQuery> dCache) {
 
         //handling neq predicates by using complement
         Set<NeqPredicate> neqPredicates = getAtoms(NeqPredicate.class).collect(Collectors.toSet());
@@ -449,12 +444,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         Iterator<Atom> atIt = positive.selectAtoms().iterator();
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());
-        Stream<Answer> answerStream = atomicQuery.resolveAndMaterialise(cache, dCache, sCache);
+        Stream<Answer> answerStream = atomicQuery.resolveAndMaterialise(cache, dCache);
         Set<Var> joinedVars = atomicQuery.getVarNames();
 
         while (atIt.hasNext()) {
             atomicQuery = new ReasonerAtomicQuery(atIt.next());
-            Stream<Answer> subAnswerStream = atomicQuery.resolveAndMaterialise(cache, dCache, sCache);
+            Stream<Answer> subAnswerStream = atomicQuery.resolveAndMaterialise(cache, dCache);
             Set<Var> joinVars = Sets.intersection(joinedVars, atomicQuery.getVarNames());
             answerStream = join(answerStream, subAnswerStream, ImmutableSet.copyOf(joinVars));
             joinedVars.addAll(atomicQuery.getVarNames());
@@ -474,8 +469,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return resolution subGoal formed from this query
      */
-    public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache, StructuralCache sCache){
-        return new ConjunctiveState(this, sub, u, parent, subGoals, cache, sCache);
+    public QueryState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return new ConjunctiveState(this, sub, u, parent, subGoals, cache);
     }
 
     /**
@@ -486,9 +481,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cache query cache
      * @return resolution subGoals formed from this query obtained by expanding the inferred types contained in the query
      */
-    public LinkedList<QueryState> subGoals(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache, StructuralCache sCache){
+    public LinkedList<QueryState> subGoals(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return getQueryStream(sub)
-                .map(q -> q.subGoal(sub, u, parent, subGoals, cache, sCache))
+                .map(q -> q.subGoal(sub, u, parent, subGoals, cache))
                 .collect(Collectors.toCollection(LinkedList::new));
     }
 

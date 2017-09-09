@@ -263,7 +263,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                           Set<ReasonerAtomicQuery> subGoals,
                                           Cache<ReasonerAtomicQuery, ?> cache,
                                           Cache<ReasonerAtomicQuery, ?> dCache,
-                                          StructuralCache sCache,
                                           boolean differentialJoin){
 
         LOG.trace("Applying rule " + rule.getRuleId());
@@ -274,7 +273,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         subGoals.add(this);
         Stream<Answer> answers = ruleBody
-                .computeJoin(subGoals, cache, dCache, sCache, differentialJoin)
+                .computeJoin(subGoals, cache, dCache, differentialJoin)
                 .map(a -> a.filterVars(varsToRetain))
                 .distinct()
                 .map(ans -> ans.explain(new RuleExplanation(this, rule)));
@@ -315,7 +314,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     Stream<Answer> answerStream(Set<ReasonerAtomicQuery> subGoals,
                                 Cache<ReasonerAtomicQuery, ?> cache,
                                 Cache<ReasonerAtomicQuery, ?> dCache,
-                                StructuralCache sCache,
                                 boolean differentialJoin){
         boolean queryAdmissible = !subGoals.contains(this);
 
@@ -324,7 +322,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Stream<Answer> answerStream = cache.contains(this) ? Stream.empty() : dCache.record(this, lookup(cache));
         if(queryAdmissible) {
 
-            Iterator<RuleTuple> ruleIterator = getRuleIterator(sCache);
+            Iterator<RuleTuple> ruleIterator = getRuleIterator(cache.structuralCache());
             while(ruleIterator.hasNext()) {
                 RuleTuple ruleContext = ruleIterator.next();
                 Unifier u = ruleContext.getRuleUnifier();
@@ -333,7 +331,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 Answer sub = this.getSubstitution().unify(u.inverse());
                 InferenceRule rule = ruleContext.getRule().withSubstitution(sub);
 
-                Stream<Answer> localStream = resolveViaRule(rule, u, pu, subGoals, cache, dCache, sCache, differentialJoin);
+                Stream<Answer> localStream = resolveViaRule(rule, u, pu, subGoals, cache, dCache, differentialJoin);
                 answerStream = Stream.concat(answerStream, localStream);
             }
         }
@@ -342,21 +340,19 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Stream<Answer> resolveAndMaterialise(LazyQueryCache<ReasonerAtomicQuery> cache,
-                                                LazyQueryCache<ReasonerAtomicQuery> dCache,
-                                                StructuralCache sCache) {
+    public Stream<Answer> resolveAndMaterialise(LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
         if (!this.getAtom().isRuleResolvable()) {
             return this.getQuery().stream().map(QueryAnswer::new);
         } else {
-            return new QueryAnswerIterator(cache, dCache, sCache).hasStream();
+            return new QueryAnswerIterator(cache, dCache).hasStream();
         }
     }
 
     @Override
-    public AtomicState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache, StructuralCache sCache){
+    public AtomicState subGoal(Answer sub, Unifier u, QueryState parent, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return getAtoms(NeqPredicate.class).findFirst().isPresent()?
-                new NeqComplementState(this, sub, u, parent, subGoals, cache, sCache) :
-                new AtomicState(this, sub, u, parent, subGoals, cache, sCache);
+                new NeqComplementState(this, sub, u, parent, subGoals, cache) :
+                new AtomicState(this, sub, u, parent, subGoals, cache);
     }
 
     /**
@@ -413,16 +409,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         private final LazyQueryCache<ReasonerAtomicQuery> cache;
         private final LazyQueryCache<ReasonerAtomicQuery> dCache;
-        private final StructuralCache sCache;
         private Iterator<Answer> answerIterator;
 
         QueryAnswerIterator(LazyQueryCache<ReasonerAtomicQuery> cache,
-                            LazyQueryCache<ReasonerAtomicQuery> dCache,
-                            StructuralCache sCache){
+                            LazyQueryCache<ReasonerAtomicQuery> dCache){
             this.cache = cache;
             this.dCache = dCache;
-            this.sCache = sCache;
-            this.answerIterator = query().answerStream(subGoals, cache, dCache, sCache, iter != 0).iterator();
+            this.answerIterator = query().answerStream(subGoals, cache, dCache, iter != 0).iterator();
         }
 
         private ReasonerAtomicQuery query(){ return ReasonerAtomicQuery.this;}
@@ -439,7 +432,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         private void computeNext(){
             iter++;
             subGoals.clear();
-            answerIterator = query().answerStream(subGoals, cache, dCache, sCache, iter != 0).iterator();
+            answerIterator = query().answerStream(subGoals, cache, dCache, iter != 0).iterator();
         }
 
         /**
