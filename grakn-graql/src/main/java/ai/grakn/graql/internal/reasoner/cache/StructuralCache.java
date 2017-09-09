@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.cache;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerStructuralQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
@@ -62,5 +63,17 @@ public class StructuralCache{
 
         structCache.put(structQuery, new Pair<>(structQuery, new StructuralCacheEntry(applicableRules)));
         return applicableRules;
+    }
+
+    public Set<InferenceRule> getApplicableRules(Atom atom){
+        return getApplicableRules(ReasonerQueries.atomic(atom));
+    }
+
+    public boolean isRuleResolvable(ReasonerAtomicQuery q){
+        return !getApplicableRules(q).isEmpty();
+    }
+
+    public boolean isRuleResolvable(Atom atom) {
+        return isRuleResolvable(ReasonerQueries.atomic(atom));
     }
 }

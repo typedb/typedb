@@ -72,7 +72,7 @@ public class ConjunctiveState extends QueryState {
             subQueries = new LinkedList<>();
         } else {
             dbIterator = Collections.emptyIterator();
-            subQueries = new ResolutionPlan(query).queryPlan();
+            subQueries = new ResolutionPlan(query).queryPlan(sCache);
 
             LOG.trace("CQ plan:\n" + subQueries.stream()
                     .map(aq -> aq.toString() + (aq.isRuleResolvable()? "*" : ""))

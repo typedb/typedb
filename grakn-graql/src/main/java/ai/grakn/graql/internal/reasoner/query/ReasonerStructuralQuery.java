@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -42,6 +43,11 @@ public class ReasonerStructuralQuery<Q extends ReasonerQueryImpl> {
     }
 
     @Override
+    public String toString(){
+        return query.toString();
+    }
+
+    @Override
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
@@ -53,7 +59,7 @@ public class ReasonerStructuralQuery<Q extends ReasonerQueryImpl> {
     public int hashCode() {
         int hashCode = 1;
         SortedSet<Integer> hashes = new TreeSet<>();
-        query.getAtoms().forEach(atom -> hashes.add(atom.structuralEquivalenceHashCode()));
+        query.getAtoms(Atom.class).forEach(atom -> hashes.add(atom.structuralEquivalenceHashCode()));
         for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
         return hashCode;
     }

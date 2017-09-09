@@ -32,6 +32,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.NeqPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.cache.StructuralCache;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import com.google.common.collect.Sets;
@@ -85,12 +86,13 @@ public abstract class Atom extends AtomicBase {
     }
 
     @Override
-    public boolean isAtom(){ return true;}
-
-    @Override
     public boolean isRuleResolvable() {
         return getApplicableRules().findFirst().isPresent();
+        //return getSchemaConcept() == null || getSchemaConcept().isType() && RuleUtil.getInferrableTypes(tx()).contains(getSchemaConcept().asType());
     }
+
+    @Override
+    public boolean isAtom(){ return true;}
 
     @Override
     public boolean isRecursive(){

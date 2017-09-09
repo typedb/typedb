@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
+import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
@@ -92,6 +93,11 @@ public abstract class TypeAtom extends Binary{
                 //disjoint atom
                 || !this.getNeighbours(Atom.class).findFirst().isPresent()
                 || isRuleResolvable();
+        /*
+                || getSchemaConcept() == null
+                //rule resolvable
+                || getSchemaConcept().isType() && RuleUtil.getInferrableTypes(tx()).contains(getSchemaConcept().asType());
+                */
     }
 
     @Override

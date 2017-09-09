@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Type;
@@ -30,6 +31,7 @@ import ai.grakn.util.Schema;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.label;
@@ -45,6 +47,15 @@ import static ai.grakn.graql.Graql.var;
  *
  */
 public class RuleUtil {
+
+    private static Set<Type> inferrableTypes = null;
+
+    public static Set<Type> getInferrableTypes(GraknTx graph){
+        if (inferrableTypes == null){
+            inferrableTypes = getRules(graph).flatMap(Rule::getConclusionTypes).collect(Collectors.toSet());
+        }
+        return inferrableTypes;
+    }
 
     /**
      * @param graph of interest

@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
@@ -36,6 +37,7 @@ import ai.grakn.test.kbs.PathKBSymmetric;
 import ai.grakn.test.kbs.TailRecursionKB;
 import ai.grakn.test.kbs.TransitivityChainKB;
 import ai.grakn.test.kbs.TransitivityMatrixKB;
+import java.util.List;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -508,30 +510,42 @@ public class RecursiveInferenceTest {
 
     @Test
     public void testTransitiveChain(){
-        final int N = 10;
+        final int N = 500;
+        int answers = (N+1)*N/2;
         emptyKB.load(TransitivityChainKB.get(N));
         QueryBuilder qb = emptyKB.tx().graql().infer(false);
         QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
-        String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get $y;";
+        String queryString = "match (Q-from: $x, Q-to: $y) isa Q; limit " + answers + "; get;";
+        //String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get $y;";
         String explicitQuery = "match $y isa a-entity; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        long startTime = System.currentTimeMillis();
+        List<Answer> execute = iqb.materialise(false).<GetQuery>parse(queryString).execute();
+        System.out.println("answers: " + execute.size());
+        System.out.println("time: " + (System.currentTimeMillis() - startTime));
+        //assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
     public void testTransitiveMatrix(){
-        final int N = 5;
+        final int N = 10;
         emptyKB.load(TransitivityMatrixKB.get(N, N));
         QueryBuilder qb = emptyKB.tx().graql().infer(false);
         QueryBuilder iqb = emptyKB.tx().graql().infer(true);
 
-        String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get $y;";
+        String queryString = "match (Q-from: $x, Q-to: $y) isa Q; limit 14400; get;";
+        //String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get $y;";
         String explicitQuery = "match $y isa a-entity; get;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        long startTime = System.currentTimeMillis();
+        List<Answer> execute = iqb.materialise(false).<GetQuery>parse(queryString).execute();
+        System.out.println("answers: " + execute.size());
+        System.out.println("time: " + (System.currentTimeMillis() - startTime));
+
+        //assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
