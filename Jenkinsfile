@@ -32,7 +32,7 @@ authored by - """ + user
           sh 'grakn server start'
         }
         stage('Test Connection') {
-          sh 'graql console -e "match \\\$x;"' //Sanity check query. I.e. is everything working?
+          sh 'graql console -e "match \\\$x; get;"' //Sanity check query. I.e. is everything working?
         }
       }
     }
