@@ -28,16 +28,9 @@ authored by - """ + user
           sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
           sh 'mkdir grakn-package'
           sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
-          sh 'echo -n "a: " && pwd'
-          sh 'cd grakn-package'
-          sh 'echo $?'
-          sh 'pwd'
-          sh "kill -9 `ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}'`"
-          sh 'grakn server start'
           sh 'ls .'
-          sh 'cd ..'
-          sh 'echo -n "c: " && pwd'
-	      sh 'cat /tmp/grakn-redis-logs'
+          sh 'ls grakn-package'
+          sh 'grakn server start'
         }
         stage('Test Connection') {
           sh 'graql console -e "match \\\$x;"' //Sanity check query. I.e. is everything working?
