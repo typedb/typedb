@@ -22,7 +22,7 @@ Build Started on ${env.BRANCH_NAME}: ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${en
 authored by - """ + user
           sh 'if [ -d maven ] ;  then rm -rf maven ; fi'
           sh "mvn versions:set -DnewVersion=${env.BRANCH_NAME} -DgenerateBackupPoms=false"
-          sh 'mvn clean install -Dmaven.repo.local=' + workspace + '/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT'
+          sh 'mvn package -Dmaven.repo.local=' + workspace + '/maven -DskipTests -U -Djetty.log.level=WARNING -Djetty.log.appender=STDOUT'
           archiveArtifacts artifacts: "grakn-dist/target/grakn-dist*.tar.gz"
         }
         stage('Init Grakn') {
