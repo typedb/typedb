@@ -159,10 +159,10 @@ redis_start_redis() {
   # run redis
   # redis needs to be ran with $GRAKN_HOME as the working directory
   # otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
-  pushd "$GRAKN_HOME"
+  pushd "$GRAKN_HOME" > /dev/null
   "${GRAKN_HOME}"/services/redis/$redis_bin "${GRAKN_HOME}"/services/redis/redis.conf
   local status=$?
-  popd
+  popd > /dev/null
 
   return $status
 }
