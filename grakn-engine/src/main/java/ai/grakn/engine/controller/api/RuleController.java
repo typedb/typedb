@@ -21,7 +21,6 @@ import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
-import ai.grakn.graql.Pattern;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.Logger;
