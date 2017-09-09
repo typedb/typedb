@@ -161,7 +161,7 @@ redis_start_redis() {
   # otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
   pushd "$GRAKN_HOME"
   "${GRAKN_HOME}"/services/redis/$redis_bin "${GRAKN_HOME}"/services/redis/redis.conf
-  status=$?
+  local status=$?
   popd
 
   return status
