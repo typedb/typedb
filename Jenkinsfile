@@ -26,15 +26,13 @@ authored by - """ + user
           sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
           sh 'mkdir grakn-package'
           sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
-          sh 'cd grakn-package'
-          sh 'ls .'
-          sh './grakn server start'
+          sh 'grakn server start'
         }
         stage('Test Connection') {
           sh 'graql console -e "match \\\$x;"' //Sanity check query. I.e. is everything working?
         }
       }
-    
+
     //Only run validation master/stable
     if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
       //Sets up environmental variables which can be shared between multiple tests
