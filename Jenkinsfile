@@ -8,9 +8,7 @@ node {
     def workspace = pwd()
     //Always wrap each test block in a timeout
     //This first block sets up engine within 15 minutes
-    withEnv([
-            'PATH+EXTRA=' + workspace + '/grakn-package'
-            ]) {
+
       timeout(15) {
         stage('Build Grakn') {//Stages allow you to organise and group things within Jenkins
           sh 'npm config set registry http://registry.npmjs.org/'
@@ -28,15 +26,15 @@ authored by - """ + user
           sh 'if [ -d grakn-package ] ;  then rm -rf grakn-package ; fi'
           sh 'mkdir grakn-package'
           sh 'tar -xf grakn-dist/target/grakn-dist*.tar.gz --strip=1 -C grakn-package'
+          sh 'cd grakn-package'
           sh 'ls .'
-          sh 'ls grakn-package'
-          sh 'grakn server start'
+          sh './grakn server start'
         }
         stage('Test Connection') {
           sh 'graql console -e "match \\\$x;"' //Sanity check query. I.e. is everything working?
         }
       }
-    }
+    
     //Only run validation master/stable
     if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME == 'stable') {
       //Sets up environmental variables which can be shared between multiple tests
