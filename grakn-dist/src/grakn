@@ -164,7 +164,7 @@ redis_start_redis() {
   local status=$?
   popd
 
-  return status
+  return $status
 }
 
 redis_is_redis_running() {
