@@ -30,6 +30,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
+import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -778,6 +779,22 @@ public class AtomicQueryTest {
         queryEquivalence(query4, query6, false, false);
 
         queryEquivalence(query5, query6, false, true);
+    }
+
+    @Test
+    public void traversalTest(){
+        GraknTx graph = unificationTestSet.tx();
+        String patternString = "{(role1: $x, role2: $y);$x id 'a';$y id 'b';}";
+        String patternString2 = "{(role1: $x, role2: $y);$y id 'c';$x id 'd';}";
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
+
+        GreedyTraversalPlan.createTraversal(query.getPattern(), graph);
+        GreedyTraversalPlan.createTraversal(query2.getPattern(), graph);
+        System.out.println();
     }
 
     private void queryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean expectation){

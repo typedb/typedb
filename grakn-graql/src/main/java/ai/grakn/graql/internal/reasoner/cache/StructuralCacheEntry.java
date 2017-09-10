@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
+import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import java.util.Set;
 
@@ -32,11 +33,14 @@ import java.util.Set;
  */
 class StructuralCacheEntry {
 
+    private final GraqlTraversal traversal;
     private final Set<InferenceRule> applicableRules;
 
-    StructuralCacheEntry(Set<InferenceRule> rules){
+    StructuralCacheEntry(GraqlTraversal traversal, Set<InferenceRule> rules){
+        this.traversal = traversal;
         this.applicableRules = rules;
     }
 
+    public GraqlTraversal getTraversal(){ return traversal;}
     public Set<InferenceRule> getRules(){ return applicableRules;}
 }

@@ -19,17 +19,24 @@
 package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.gremlin.GraqlTraversal;
+import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.ReasonerStructuralQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 
 /**
  *
@@ -40,37 +47,49 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class StructuralCache{
+public class StructuralCache<Q extends ReasonerQueryImpl>{
 
-    private final Map<ReasonerStructuralQuery<ReasonerAtomicQuery>, Pair<ReasonerStructuralQuery<ReasonerAtomicQuery>, StructuralCacheEntry>> structCache;
+    private final Map<ReasonerStructuralQuery<Q>, Pair<ReasonerStructuralQuery<Q>, StructuralCacheEntry>> structCache;
 
     public StructuralCache(){
         this.structCache = new HashMap<>();
     }
 
-    public Set<InferenceRule> getApplicableRules(ReasonerAtomicQuery q){
-        ReasonerStructuralQuery<ReasonerAtomicQuery> structQuery = new ReasonerStructuralQuery<>(q);
-        Pair<ReasonerStructuralQuery<ReasonerAtomicQuery>, StructuralCacheEntry> match = structCache.get(structQuery);
-        if (match != null) return match.getValue().getRules();
+    public StructuralCacheEntry get(Q query){
+        ReasonerStructuralQuery<Q> structQuery = new ReasonerStructuralQuery<>(query);
 
-        Atom atom = q.getAtom();
-        GraknTx tx = q.tx();
-        Set<InferenceRule> applicableRules = RuleUtil.getRulesWithType(atom.getSchemaConcept(), tx)
-                .map(rule -> new InferenceRule(rule, tx))
-                .filter(atom::isRuleApplicable)
-                .map(r -> r.rewriteToUserDefined(atom))
-                .collect(Collectors.toSet());
+        Pair<ReasonerStructuralQuery<Q>, StructuralCacheEntry> match = structCache.get(structQuery);
+        if (match != null){
+            Q equivalentQuery = match.getKey().query();
+            GraqlTraversal traversal = match.getValue().getTraversal();
+            Unifier unifier = equivalentQuery.getUnifier(query);
+            return new StructuralCacheEntry(traversal.transform(query, unifier), match.getValue().getRules());
+        }
 
-        structCache.put(structQuery, new Pair<>(structQuery, new StructuralCacheEntry(applicableRules)));
-        return applicableRules;
+        StructuralCacheEntry newEntry = new StructuralCacheEntry(
+                GreedyTraversalPlan.createTraversal(query.getPattern(), query.tx()),
+                query.getAtoms(Atom.class).flatMap(Atom::getApplicableRules).collect(Collectors.toSet())
+        );
+        structCache.put(structQuery, new Pair<>(structQuery, newEntry));
+        return newEntry;
     }
 
+    public Set<InferenceRule> getApplicableRules(Q q){
+        ReasonerStructuralQuery<Q> structQuery = new ReasonerStructuralQuery<>(q);
 
-    public boolean isRuleResolvable(ReasonerAtomicQuery q){
+        Pair<ReasonerStructuralQuery<Q>, StructuralCacheEntry> match = structCache.get(structQuery);
+        if (match != null) return match.getValue().getRules();
+
+        return Collections.emptySet();
+    }
+
+    public boolean isRuleResolvable(Q q){
         return !getApplicableRules(q).isEmpty();
     }
 
+    /*
     public boolean isRuleResolvable(Atom atom) {
-        return isRuleResolvable(ReasonerQueries.atomic(atom));
+        return isRuleResolvable(ReasonerQueries.create(Collections.singletonList(atom), atom.getParentQuery().tx()));
     }
+    */
 }

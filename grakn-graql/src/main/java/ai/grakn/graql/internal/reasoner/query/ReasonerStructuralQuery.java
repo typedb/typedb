@@ -64,4 +64,6 @@ public class ReasonerStructuralQuery<Q extends ReasonerQueryImpl> {
         return hashCode;
     }
 
+    public Q query(){ return query;}
+
 }

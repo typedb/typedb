@@ -21,7 +21,9 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.GraknTx;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
@@ -80,6 +82,18 @@ public abstract class GraqlTraversal {
     //        |            |
     //        V            V
     public abstract ImmutableSet<ImmutableList<Fragment>> fragments();
+
+
+    /**
+     *
+     * @param unifier
+     * @return
+     */
+    public GraqlTraversal transform(ReasonerQueryImpl target, Unifier unifier){
+        //TODO
+        ImmutableSet<ImmutableList<Fragment>> newFragments = ImmutableSet.copyOf(fragments());
+        return new AutoValue_GraqlTraversal(newFragments);
+    }
 
     /**
      * @return a gremlin traversal that represents this inner query
