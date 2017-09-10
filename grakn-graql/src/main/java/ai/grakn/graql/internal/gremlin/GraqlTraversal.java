@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Match;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
@@ -28,6 +29,7 @@ import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.util.stream.Collectors;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -86,12 +88,13 @@ public abstract class GraqlTraversal {
 
     /**
      *
-     * @param unifier
      * @return
      */
-    public GraqlTraversal transform(ReasonerQueryImpl target, Unifier unifier){
-        //TODO
-        ImmutableSet<ImmutableList<Fragment>> newFragments = ImmutableSet.copyOf(fragments());
+    public GraqlTraversal transform(Map<ConceptId, ConceptId> conceptMap){
+        ImmutableList<Fragment> fragments = ImmutableList.copyOf(
+                fragments().iterator().next().stream().map(f -> f.transform(conceptMap)).collect(Collectors.toList())
+        );
+        ImmutableSet<ImmutableList<Fragment>> newFragments = ImmutableSet.of(fragments);
         return new AutoValue_GraqlTraversal(newFragments);
     }
 

@@ -19,14 +19,18 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknTx;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.GetQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarPatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.cache.StructuralCacheEntry;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
@@ -34,12 +38,14 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
+import ai.grakn.graql.internal.reasoner.utils.Pair;
 import ai.grakn.test.GraknTestSetup;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.GeoKB;
 import ai.grakn.test.kbs.MatrixKBII;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -66,6 +72,26 @@ public class LazyTest {
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(GraknTestSetup.usingTinker());
+    }
+
+    @Test
+    public void testQueryPlanCaching(){
+        GraknTx graph = geoKB.tx();
+        String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in; $x id 'a'; $y id 'b';}";
+        String patternString2 = "{(geo-entity: $y, entity-location: $z) isa is-located-in; $y id 'b'; $z id 'c';}";
+
+        Conjunction<VarPatternAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarPatternAdmin> pattern2 = conjunction(patternString2, graph);
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(pattern, graph);
+        ReasonerAtomicQuery query2 = ReasonerQueries.atomic(pattern2, graph);
+
+        QueryCache<ReasonerAtomicQuery> cache = new QueryCache<>();
+        cache.getAnswerStream(query);
+        cache.getAnswerStream(query2);
+
+        Pair<StructuralCacheEntry<ReasonerAtomicQuery>, Pair<Unifier, Map<ConceptId, ConceptId>>> entry = cache.structuralCache().get(query);
+        Pair<StructuralCacheEntry<ReasonerAtomicQuery>, Pair<Unifier, Map<ConceptId, ConceptId>>> entry2 = cache.structuralCache().get(query2);
+        System.out.println();
     }
 
     @Test

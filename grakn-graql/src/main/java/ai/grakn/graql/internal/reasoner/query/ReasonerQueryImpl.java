@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.exception.GraqlQueryException;
 import ai.grakn.graql.GetQuery;
@@ -133,6 +134,21 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public ReasonerQueryImpl positive(){
         return new ReasonerQueryImpl(getAtoms().stream().filter(at -> !(at instanceof NeqPredicate)).collect(Collectors.toSet()), tx());
+    }
+
+    /**
+     *
+     * @param conceptMap
+     * @return
+     */
+    public ReasonerQueryImpl transformIds(Map<ConceptId, ConceptId> conceptMap){
+        Set<Atomic> atoms = getAtoms(IdPredicate.class).map(p -> {
+            ConceptId conceptId = conceptMap.get(p.getPredicate());
+            if (conceptId != null) return new IdPredicate(p.getVarName(), conceptId, p.getParentQuery());
+            return p;
+        }).collect(Collectors.toSet());
+        getAtoms().stream().filter(at -> !(at instanceof IdPredicate)).forEach(atoms::add);
+        return new ReasonerQueryImpl(atoms, tx());
     }
 
     @Override

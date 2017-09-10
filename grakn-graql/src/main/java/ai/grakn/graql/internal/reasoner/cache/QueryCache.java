@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.query.QueryAnswer;
@@ -30,6 +31,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -155,8 +157,18 @@ public class QueryCache<Q extends ReasonerQueryImpl> extends Cache<Q, QueryAnswe
             Unifier unifier = equivalentQuery.getUnifier(query);
             return new Pair<>(answers.unify(unifier).stream(), unifier);
         }
+
+        Pair<StructuralCacheEntry<Q>, Pair<Unifier, Map<ConceptId, ConceptId>>> cacheEntry = structuralCache().get(query);
+        Unifier unifier = cacheEntry.getValue().getKey();
+        Map<ConceptId, ConceptId> conceptMap = cacheEntry.getValue().getValue();
+        ReasonerQueryImpl cacheQuery = cacheEntry.getKey().query().transformIds(conceptMap);
+        Stream<Answer> answerStream = cacheQuery.getQuery().stream()
+                .map(ans -> ans.unify(unifier))
+                .map(a -> a.explain(new LookupExplanation(query)));
+
         return new Pair<>(
-                query.getQuery().stream().map(a -> a.explain(new LookupExplanation(query))),
+                answerStream,
+                //query.getQuery().stream().map(a -> a.explain(new LookupExplanation(query))),
                 new UnifierImpl()
         );
     }

@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import java.util.Set;
 
@@ -31,16 +32,19 @@ import java.util.Set;
  * @author Kasper Piskorski
  *
  */
-class StructuralCacheEntry {
+public class StructuralCacheEntry<Q extends ReasonerQueryImpl> {
 
+    private final Q query;
     private final GraqlTraversal traversal;
     private final Set<InferenceRule> applicableRules;
 
-    StructuralCacheEntry(GraqlTraversal traversal, Set<InferenceRule> rules){
+    StructuralCacheEntry(Q query, GraqlTraversal traversal, Set<InferenceRule> rules){
+        this.query = query;
         this.traversal = traversal;
         this.applicableRules = rules;
     }
 
-    public GraqlTraversal getTraversal(){ return traversal;}
-    public Set<InferenceRule> getRules(){ return applicableRules;}
+    public Q query(){ return query;}
+    public GraqlTraversal traversal(){ return traversal;}
+    public Set<InferenceRule> rules(){ return applicableRules;}
 }

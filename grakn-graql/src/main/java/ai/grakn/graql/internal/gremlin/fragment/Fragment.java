@@ -20,7 +20,9 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.AttributeType;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.DirectedEdge;
 import ai.grakn.graql.internal.gremlin.spanningtree.graph.Node;
@@ -95,6 +97,8 @@ public abstract class Fragment {
     static final double COST_DATA_TYPE = Math.log1p(2D / AttributeType.DataType.SUPPORTED_TYPES.size());
     static final double COST_UNSPECIFIC_PREDICATE = Math.log1p(0.5);
 
+    public Fragment transform(Map<ConceptId, ConceptId> conceptMap){ return this;}
+
     /**
      * Get the corresponding property
      */
@@ -141,6 +145,7 @@ public abstract class Fragment {
      */
     public abstract GraphTraversal<Element, ? extends Element> applyTraversal(
             GraphTraversal<Element, ? extends Element> traversal, GraknTx graph);
+
 
     /**
      * The name of the fragment

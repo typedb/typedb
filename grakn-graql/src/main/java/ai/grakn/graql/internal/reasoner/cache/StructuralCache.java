@@ -18,14 +18,20 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
+import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
+import ai.grakn.graql.internal.reasoner.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.ReasonerStructuralQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
+import com.google.common.collect.Iterators;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,47 +50,62 @@ import java.util.stream.Collectors;
  */
 public class StructuralCache<Q extends ReasonerQueryImpl>{
 
-    private final Map<ReasonerStructuralQuery<Q>, Pair<ReasonerStructuralQuery<Q>, StructuralCacheEntry>> structCache;
+    private final Map<ReasonerStructuralQuery<Q>, Pair<ReasonerStructuralQuery<Q>, StructuralCacheEntry<Q>>> structCache;
 
     public StructuralCache(){
         this.structCache = new HashMap<>();
     }
 
-    public StructuralCacheEntry get(Q query){
+    public Pair<StructuralCacheEntry<Q>, Pair<Unifier, Map<ConceptId, ConceptId>>> get(Q query){
         ReasonerStructuralQuery<Q> structQuery = new ReasonerStructuralQuery<>(query);
 
-        Pair<ReasonerStructuralQuery<Q>, StructuralCacheEntry> match = structCache.get(structQuery);
+        Pair<ReasonerStructuralQuery<Q>, StructuralCacheEntry<Q>> match = structCache.get(structQuery);
         if (match != null){
             Q equivalentQuery = match.getKey().query();
-            GraqlTraversal traversal = match.getValue().getTraversal();
+            GraqlTraversal traversal = match.getValue().traversal();
             Unifier unifier = equivalentQuery.getUnifier(query);
-            return new StructuralCacheEntry(traversal.transform(query, unifier), match.getValue().getRules());
+            Map<ConceptId, ConceptId> conceptMap = new HashMap<>();
+            equivalentQuery.getAtoms(IdPredicate.class)
+                    .forEach(p -> {
+                        Collection<Var> vars = unifier.get(p.getVarName());
+                        Var var = !vars.isEmpty()? Iterators.getOnlyElement(vars.iterator()) : p.getVarName();
+                        IdPredicate p2 = query.getIdPredicate(var);
+                        if ( p2 != null){
+                            conceptMap.put(p.getPredicate(), p2.getPredicate());
+                        }
+                    });
+            return new Pair<>(
+                    new StructuralCacheEntry<>(equivalentQuery, traversal.transform(conceptMap), match.getValue().rules()),
+                    new Pair<>(unifier, conceptMap)
+            );
         }
 
-        StructuralCacheEntry newEntry = new StructuralCacheEntry(
+        StructuralCacheEntry<Q> newEntry = new StructuralCacheEntry<>(
+                query,
                 GreedyTraversalPlan.createTraversal(query.getPattern(), query.tx()),
                 query.getAtoms(Atom.class).flatMap(Atom::getApplicableRules).collect(Collectors.toSet())
         );
         structCache.put(structQuery, new Pair<>(structQuery, newEntry));
-        return newEntry;
+        return new Pair<>(newEntry, new Pair<>(new UnifierImpl(), new HashMap<>()));
     }
 
-    public Set<InferenceRule> getApplicableRules(Q q){
-        ReasonerStructuralQuery<Q> structQuery = new ReasonerStructuralQuery<>(q);
+    public Set<InferenceRule> getApplicableRules(Q query){
+        ReasonerStructuralQuery<Q> structQuery = new ReasonerStructuralQuery<>(query);
 
-        Pair<ReasonerStructuralQuery<Q>, StructuralCacheEntry> match = structCache.get(structQuery);
-        if (match != null) return match.getValue().getRules();
+        Pair<ReasonerStructuralQuery<Q>, StructuralCacheEntry<Q>> match = structCache.get(structQuery);
+        if (match != null) return match.getValue().rules();
 
-        return Collections.emptySet();
+        return query.getAtoms(Atom.class).flatMap(Atom::getApplicableRules).collect(Collectors.toSet());
     }
 
     public boolean isRuleResolvable(Q q){
         return !getApplicableRules(q).isEmpty();
     }
 
-    /*
-    public boolean isRuleResolvable(Atom atom) {
-        return isRuleResolvable(ReasonerQueries.create(Collections.singletonList(atom), atom.getParentQuery().tx()));
-    }
-    */
+
+    //public boolean isRuleResolvable(Atom atom) {
+    //ReasonerQueries.create(Collections.singletonList(atom)
+    //    return isRuleResolvable(, atom.getParentQuery().tx()));
+    //}
+
 }

@@ -230,7 +230,7 @@ public final class ResolutionPlan {
         List<Atom> nonResolvableAtoms = new ArrayList<>();
         while (!atoms.isEmpty()) {
             Atom top = atoms.remove();
-            if (sCache.isRuleResolvable(top) /*top.isRuleResolvable()*/) {
+            if (/*sCache.isRuleResolvable(top)*/ top.isRuleResolvable()) {
                 if (!nonResolvableAtoms.isEmpty()) {
                     queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
                     nonResolvableAtoms.clear();
@@ -261,7 +261,7 @@ public final class ResolutionPlan {
             subbedVars.addAll(top.getVarNames());
             atoms.remove(top);
 
-            if (sCache.isRuleResolvable(top) /*top.isRuleResolvable()*/) {
+            if (/*sCache.isRuleResolvable(top)*/ top.isRuleResolvable()) {
                 if (!nonResolvableAtoms.isEmpty()){
                     queries.add(ReasonerQueries.create(nonResolvableAtoms, tx));
                     nonResolvableAtoms.clear();
