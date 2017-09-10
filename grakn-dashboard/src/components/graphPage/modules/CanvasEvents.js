@@ -50,7 +50,7 @@ function doubleClick(param) {
     }).then(resp => CanvasHandler.onGraphResponse(resp, false, false, node), (err) => {
       EventHub.$emit('error-message', err.message);
     });
-    if (nodeObj.baseType === API.GENERATED_RELATION_TYPE) {
+    if (nodeObj.baseType === API.GENERATED_RELATIONSHIP_TYPE) {
       visualiser.deleteNode(node);
     }
   }

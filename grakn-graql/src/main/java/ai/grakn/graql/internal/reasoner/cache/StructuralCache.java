@@ -18,18 +18,13 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
-import ai.grakn.GraknTx;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueries;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.ReasonerStructuralQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graql.internal.reasoner.rule.RuleUtil;
 import ai.grakn.graql.internal.reasoner.utils.Pair;
 import java.util.Collections;
 import java.util.HashMap;

@@ -104,8 +104,8 @@ public class LazyTest {
         ReasonerAtomicQuery query3 = ReasonerQueries.atomic(pattern3, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
-        Stream<Answer> stream = query.lookup(cache);
-        Stream<Answer> stream2 = query2.lookup(cache);
+        Stream<Answer> stream = cache.getAnswerStream(query);
+        Stream<Answer> stream2 = cache.getAnswerStream(query2);
         Stream<Answer> joinedStream = QueryAnswerStream.join(stream, stream2);
 
         joinedStream = cache.record(query3, joinedStream.map(a -> a.filterVars(query3.getVarNames())));
@@ -132,7 +132,7 @@ public class LazyTest {
         ReasonerAtomicQuery query3 = ReasonerQueries.atomic(pattern3, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
-        query.lookup(cache);
+        cache.getAnswerStream(query);
         InferenceRule rule = new InferenceRule(RuleUtil.getRules(graph).iterator().next(), graph);
 
         Set<Var> joinVars = Sets.intersection(query.getVarNames(), query2.getVarNames());
