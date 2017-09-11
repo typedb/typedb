@@ -112,95 +112,95 @@ public class GraqlShellIT {
         // Assert simply that the shell starts and terminates without errors
         assertTrue(runShellWithoutErrors("exit\n").matches("[\\s\\S]*>>> exit(\r\n?|\n)"));
     }
-//
-//    @Test
-//    public void testHelpOption() throws Exception {
-//        String result = runShellWithoutErrors("", "--help");
-//
-//        // Check for a few expected usage messages
-//        assertThat(
-//                result,
-//                allOf(
-//                        containsString("usage"), containsString("graql console"), containsString("-e"),
-//                        containsString("--execute <arg>"), containsString("query to execute")
-//                )
-//        );
-//    }
-//
-//    @Test
-//    public void testVersionOption() throws Exception {
-//        String result = runShellWithoutErrors("", "--version");
-//        assertThat(result, containsString(expectedVersion));
-//    }
-//
-//    @Test
-//    public void testExecuteOption() throws Exception {
-//        String result = runShellWithoutErrors("", "-e", "match $x isa entity; aggregate ask;");
-//
-//        // When using '-e', only results should be printed, no prompt or query
-//        assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
-//    }
-//
-//    @Test
-//    public void whenUsingExecuteOptionAndPassingGetQueriesWithoutVariables_PrintWarning() throws Exception {
-//        ShellResponse response = runShell("", "-e", "match sub entity; get;");
-//
-//        // There should still be a result...
-//        assertThat(response.out(), containsString("{}"));
-//
-//        // ...but also a warning
-//        assertThat(response.err(), containsString(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage()));
-//    }
-//
-//    @Test
-//    public void whenUsingExecuteOptionAndPassingNonGetQueriesWithoutVariables_DoNotPrintWarning() throws Exception {
-//        // There should be no errors...
-//        String result = runShellWithoutErrors("", "-e", "define person sub entity;");
-//
-//        // ...and a result
-//        assertThat(result, containsString("{}"));
-//    }
-//
-//    @Test
-//    public void testDefaultKeyspace() throws Exception {
-//        runShellWithoutErrors("define im-in-the-default-keyspace sub entity;\ncommit\n");
-//
-//        assertShellMatches(ImmutableList.of("-k", "grakn"),
-//                "match im-in-the-default-keyspace sub entity; aggregate ask;",
-//                containsString("True")
-//        );
-//    }
-//
-//    @Test
-//    public void testSpecificKeyspace() throws Exception {
-//        runShellWithoutErrors("define foo-foo sub entity;\ncommit\n", "-k", "foo");
-//        runShellWithoutErrors("define bar-bar sub entity;\ncommit\n", "-k", "bar");
-//
-//        String fooFooinFoo = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
-//        String fooFooInBar = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
-//        String barBarInFoo = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "foo");
-//        String barBarInBar = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "bar");
-//        assertThat(fooFooinFoo, containsString("True"));
-//        assertThat(fooFooInBar, containsString("False"));
-//        assertThat(barBarInFoo, containsString("False"));
-//        assertThat(barBarInBar, containsString("True"));
-//    }
-//
-//    @Test
-//    public void testFileOption() throws Exception {
-//        ShellResponse response = runShell("", "-f", "src/test/graql/shell test(weird name).gql");
-//        assertEquals("", response.err());
-//    }
-//
-//    @Test
-//    public void testLoadCommand() throws Exception {
-//        assertShellMatches(
-//                "load src/test/graql/shell test(weird name).gql",
-//                anything(),
-//                "match movie sub entity; aggregate ask;",
-//                containsString("True")
-//        );
-//    }
+
+    @Test
+    public void testHelpOption() throws Exception {
+        String result = runShellWithoutErrors("", "--help");
+
+        // Check for a few expected usage messages
+        assertThat(
+                result,
+                allOf(
+                        containsString("usage"), containsString("graql console"), containsString("-e"),
+                        containsString("--execute <arg>"), containsString("query to execute")
+                )
+        );
+    }
+
+    @Test
+    public void testVersionOption() throws Exception {
+        String result = runShellWithoutErrors("", "--version");
+        assertThat(result, containsString(expectedVersion));
+    }
+
+    @Test
+    public void testExecuteOption() throws Exception {
+        String result = runShellWithoutErrors("", "-e", "match $x isa entity; aggregate ask;");
+
+        // When using '-e', only results should be printed, no prompt or query
+        assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
+    }
+
+    @Test
+    public void whenUsingExecuteOptionAndPassingGetQueriesWithoutVariables_PrintWarning() throws Exception {
+        ShellResponse response = runShell("", "-e", "match sub entity; get;");
+
+        // There should still be a result...
+        assertThat(response.out(), containsString("{}"));
+
+        // ...but also a warning
+        assertThat(response.err(), containsString(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage()));
+    }
+
+    @Test
+    public void whenUsingExecuteOptionAndPassingNonGetQueriesWithoutVariables_DoNotPrintWarning() throws Exception {
+        // There should be no errors...
+        String result = runShellWithoutErrors("", "-e", "define person sub entity;");
+
+        // ...and a result
+        assertThat(result, containsString("{}"));
+    }
+
+    @Test
+    public void testDefaultKeyspace() throws Exception {
+        runShellWithoutErrors("define im-in-the-default-keyspace sub entity;\ncommit\n");
+
+        assertShellMatches(ImmutableList.of("-k", "grakn"),
+                "match im-in-the-default-keyspace sub entity; aggregate ask;",
+                containsString("True")
+        );
+    }
+
+    @Test
+    public void testSpecificKeyspace() throws Exception {
+        runShellWithoutErrors("define foo-foo sub entity;\ncommit\n", "-k", "foo");
+        runShellWithoutErrors("define bar-bar sub entity;\ncommit\n", "-k", "bar");
+
+        String fooFooinFoo = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
+        String fooFooInBar = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
+        String barBarInFoo = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "foo");
+        String barBarInBar = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "bar");
+        assertThat(fooFooinFoo, containsString("True"));
+        assertThat(fooFooInBar, containsString("False"));
+        assertThat(barBarInFoo, containsString("False"));
+        assertThat(barBarInBar, containsString("True"));
+    }
+
+    @Test
+    public void testFileOption() throws Exception {
+        ShellResponse response = runShell("", "-f", "src/test/graql/shell test(weird name).gql");
+        assertEquals("", response.err());
+    }
+
+    @Test
+    public void testLoadCommand() throws Exception {
+        assertShellMatches(
+                "load src/test/graql/shell test(weird name).gql",
+                anything(),
+                "match movie sub entity; aggregate ask;",
+                containsString("True")
+        );
+    }
 //
 //    @Test
 //    public void testLoadCommandWithEscapes() throws Exception {
