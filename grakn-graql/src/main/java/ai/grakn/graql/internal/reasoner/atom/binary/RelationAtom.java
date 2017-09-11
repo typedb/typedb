@@ -796,6 +796,6 @@ public class RelationAtom extends IsaAtom {
             getRelationPlayerMappings(parentAtom)
                     .forEach(rpm -> unifier.addMapping(rpm.getKey().getRolePlayer().var(), rpm.getValue().getRolePlayer().var()));
         }
-        return unifier.removeTrivialMappings();
+        return unifier;
     }
 }
