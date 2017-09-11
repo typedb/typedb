@@ -151,7 +151,6 @@ public class GraqlShellIT {
         // ...but also a warning
         assertThat(response.err(), containsString(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage()));
     }
-// -
 
     @Test
     public void whenUsingExecuteOptionAndPassingNonGetQueriesWithoutVariables_DoNotPrintWarning() throws Exception {
