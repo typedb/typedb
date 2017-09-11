@@ -18,6 +18,7 @@
 
 package ai.grakn.migration.base;
 
+import ai.grakn.Keyspace;
 import ai.grakn.client.BatchMutatorClient;
 import ai.grakn.client.TaskResult;
 import ai.grakn.exception.GraknBackendException;
@@ -26,13 +27,15 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.macro.Macro;
-import static java.lang.String.format;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static java.lang.String.format;
 
 /**
  * <p>
@@ -54,21 +57,21 @@ public class Migrator {
     private static final boolean RETRY = false;
 
     private final String uri;
-    private final String keyspace;
+    private final Keyspace keyspace;
     private int batchSize;
     private long startTime;
 
     /**
      *
      * @param uri Uri where one instance of Grakn Engine is running
-     * @param keyspace The name of the keyspace where the data should be persisted
+     * @param keyspace The {@link Keyspace} where the data should be persisted
      */
-    private Migrator(String uri, String keyspace){
+    private Migrator(String uri, Keyspace keyspace){
         this.uri = uri;
         this.keyspace = keyspace;
     }
 
-    public static Migrator to(String uri, String keyspace){
+    public static Migrator to(String uri, Keyspace keyspace){
         return new Migrator(uri, keyspace);
     }
 

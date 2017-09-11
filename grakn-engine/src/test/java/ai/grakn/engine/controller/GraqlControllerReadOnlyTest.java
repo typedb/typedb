@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.engine.GraknEngineStatus;
 import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -109,7 +110,7 @@ public class GraqlControllerReadOnlyTest {
 
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn("randomKeyspace");
+        when(mockTx.getKeyspace()).thenReturn(Keyspace.of("randomkeyspace"));
         when(mockTx.graql()).thenReturn(mockQueryBuilder);
 
         when(mockSystemKeyspace.ensureKeyspaceInitialised(any())).thenReturn(true);
@@ -188,7 +189,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchNoMaterialise_ResponseStatusIs400() {
-        Response response = RestAssured.with().queryParam(KEYSPACE, mockTx.getKeyspace())
+        Response response = RestAssured.with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .body("match $x isa movie;")
                 .queryParam(INFER, true)
                 .accept(APPLICATION_TEXT)
@@ -214,7 +215,7 @@ public class GraqlControllerReadOnlyTest {
 
     @Test
     public void GETGraqlMatchWithNoInfer_ResponseStatusIs400() {
-        Response response = RestAssured.with().queryParam(KEYSPACE, mockTx.getKeyspace())
+        Response response = RestAssured.with().queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .body("match $x isa movie;")
                 .accept(APPLICATION_TEXT)
                 .post(REST.WebPath.KB.ANY_GRAQL);
@@ -471,7 +472,7 @@ public class GraqlControllerReadOnlyTest {
     private Response sendRequest(String match, String acceptType, boolean reasonser,
                                  boolean materialise, int limitEmbedded) {
         return RestAssured.with()
-                .queryParam(KEYSPACE, mockTx.getKeyspace())
+                .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
                 .body(match)
                 .queryParam(INFER, reasonser)
                 .queryParam(MATERIALISE, materialise)

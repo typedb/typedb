@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
@@ -64,7 +65,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     Optional<GraknTx> tx = Optional.empty();
     GraknComputer graknComputer = null;
-    String keySpace;
+    Keyspace keySpace;
 
     Set<Label> subLabels = new HashSet<>();
     Set<Type> subTypes = new HashSet<>();

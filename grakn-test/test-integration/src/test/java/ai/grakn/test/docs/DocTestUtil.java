@@ -20,20 +20,21 @@
 package ai.grakn.test.docs;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTx;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknSystemProperty;
+import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.test.kbs.GenealogyKB;
+import ai.grakn.util.SampleKBLoader;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 
 import java.io.File;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,7 +45,7 @@ public class DocTestUtil {
     public static final File PAGES = new File(GraknSystemProperty.PROJECT_RELATIVE_DIR.value()+"/docs/pages/");
 
     public static GraknSession getTestGraph(String uri) {
-        String keyspace = UUID.randomUUID().toString().replaceAll("-", "");
+        Keyspace keyspace = SampleKBLoader.randomKeyspace();
         GraknSession session = Grakn.session(uri, keyspace);
 
         try (GraknTx tx = session.open(GraknTxType.WRITE)) {
