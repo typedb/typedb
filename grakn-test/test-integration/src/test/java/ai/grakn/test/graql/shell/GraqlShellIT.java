@@ -186,22 +186,22 @@ public class GraqlShellIT {
 //        assertThat(barBarInFoo, containsString("False"));
 //        assertThat(barBarInBar, containsString("True"));
 //    }
-//
-//    @Test
-//    public void testFileOption() throws Exception {
-//        ShellResponse response = runShell("", "-f", "src/test/graql/shell test(weird name).gql");
-//        assertEquals("", response.err());
-//    }
-//
-//    @Test
-//    public void testLoadCommand() throws Exception {
-//        assertShellMatches(
-//                "load src/test/graql/shell test(weird name).gql",
-//                anything(),
-//                "match movie sub entity; aggregate ask;",
-//                containsString("True")
-//        );
-//    }
+
+    @Test
+    public void testFileOption() throws Exception {
+        ShellResponse response = runShell("", "-f", "src/test/graql/shell test(weird name).gql");
+        assertEquals("", response.err());
+    }
+
+    @Test
+    public void testLoadCommand() throws Exception {
+        assertShellMatches(
+                "load src/test/graql/shell test(weird name).gql",
+                anything(),
+                "match movie sub entity; aggregate ask;",
+                containsString("True")
+        );
+    }
 //-
 //    @Test
 //    public void testLoadCommandWithEscapes() throws Exception {
