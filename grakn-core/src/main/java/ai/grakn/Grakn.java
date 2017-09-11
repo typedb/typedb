@@ -38,7 +38,7 @@ import java.util.Map;
  Grakn is the main entry point to connect to a Grakn Knowledge Base.
 
  To connect to a knowledge graph, first make sure you have a Grakn Engine server running by starting it from the shell using:
- <pre>{@code grakn.sh start}</pre>
+ <pre>{@code grakn server start}</pre>
 
  To establish a connection, you first need to obtain a {@link GraknSession} by calling
  the {@link #session(String, String)} method. A {@link GraknSession} connects to a given physical
