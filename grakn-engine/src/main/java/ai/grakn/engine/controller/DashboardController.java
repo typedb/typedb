@@ -179,7 +179,7 @@ public class DashboardController {
 
             int limitEmbedded = queryParameter(request, REST.Request.Graql.LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
             response.status(200);
-            return explanationAnswersToHAL(((Match) query).admin().stream(), limitEmbedded);
+            return explanationAnswersToHAL(((GetQuery) query).stream(), limitEmbedded);
         }
 
     }

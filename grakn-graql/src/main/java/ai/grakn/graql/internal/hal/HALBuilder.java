@@ -178,7 +178,7 @@ public class HALBuilder {
         String varsWithIds = stringBuilderVarsWithIds.toString();
         String parenthesis = stringBuilderParenthesis.deleteCharAt(stringBuilderParenthesis.length() - 1).append(')').toString();
 
-        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, "", parenthesis, isaString, "", limit);
+        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, "", parenthesis, isaString, "get;", limit);
 
         String URL = REST.WebPath.Dashboard.EXPLAIN;
 
@@ -226,9 +226,9 @@ public class HALBuilder {
         String parenthesis = stringBuilderParenthesis.deleteCharAt(stringBuilderParenthesis.length() - 1).append(')').toString();
 
         String dollarR = (isInferred) ? "" : "$r";
-        String selectR = (isInferred) ? "" : "select $r;";
+        String getR = (isInferred) ? "get;" : "get $r;";
 
-        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, dollarR, parenthesis, isaString, selectR, limit);
+        String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, dollarR, parenthesis, isaString, getR, limit);
 
         String URL = (isInferred) ? REST.WebPath.Dashboard.EXPLAIN : REST.WebPath.KB.GRAQL;
 

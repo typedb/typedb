@@ -108,6 +108,7 @@ import simpleGraql from '../../js/codemirrorGraql';
 import EngineClient from '../../js/EngineClient';
 import GraphPageState from '../../js/state/graphPageState';
 import ConsolePageState from '../../js/state/consolePageState';
+import User from '../../js/User';
 
 // Sub-components
 import AddCurrentQuery from './addCurrentQuery.vue';
@@ -255,7 +256,27 @@ export default {
         this.codeMirror.setValue(query);
       }
 
+      //If graph page - add limit to avoid overloading the Canvas
+      if(this.$route.fullPath==='/graph'){ 
+        query = this.limitQuery(query);
+        this.codeMirror.setValue(query);
+      }
+
       this.state.eventHub.$emit('click-submit', query);
+    },
+    limitQuery(query){
+      let limitedQuery = query;
+      let getPos = query.indexOf('get');
+      //If there is no `get` the user mistyped the query - he shall see an error and learn that `get` is mandatory
+      if(getPos>=0){
+        let getPattern = limitedQuery.slice(getPos);
+        limitedQuery = limitedQuery.slice(0,getPos);
+        if (!(limitedQuery.includes('offset')) && !(limitedQuery.includes('delete'))) { limitedQuery = `${limitedQuery} offset 0;`; }
+        if (!(limitedQuery.includes('limit')) && !(limitedQuery.includes('delete'))) { limitedQuery = `${limitedQuery} limit ${User.getQueryLimit()};`; }
+        limitedQuery = `${limitedQuery} ${getPattern}`;
+      }
+
+      return limitedQuery;
     },
     updateCurrentQuery() {
       this.currentQuery = this.codeMirror.getValue();
@@ -264,7 +285,7 @@ export default {
       this.codeMirror.setValue(query);
     },
     typeQuery(t, ti) {
-      this.codeMirror.setValue(`match $x ${t === 'roles' ? 'plays' : 'isa'} ${ti};`);
+      this.codeMirror.setValue(`match $x ${t === 'roles' ? 'plays' : 'isa'} ${ti}; get;`);
       this.showTypeInstances = false;
       this.runQuery();
     },
