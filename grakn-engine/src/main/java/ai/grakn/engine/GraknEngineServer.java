@@ -41,6 +41,7 @@ import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknServerException;
+import ai.grakn.util.GraknVersion;
 import ai.grakn.util.REST;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
@@ -74,6 +75,7 @@ import static ai.grakn.engine.GraknEngineConfig.REDIS_POOL_SIZE;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_HOST;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_SENTINEL_MASTER;
 import static ai.grakn.engine.GraknEngineConfig.WEBSOCKET_TIMEOUT;
+import static ai.grakn.util.ErrorMessage.VERSION_MISMATCH;
 import static com.codahale.metrics.MetricRegistry.name;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
@@ -83,6 +85,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Marco Scoppetta
  */
 public class GraknEngineServer implements AutoCloseable {
+
+    private static final String REDIS_VERSION_KEY = "info:version";
 
     private static final String LOAD_SYSTEM_SCHEMA_LOCK_NAME = "load-system-schema";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
@@ -102,12 +106,12 @@ public class GraknEngineServer implements AutoCloseable {
     private final GraknEngineStatus graknEngineStatus = new GraknEngineStatus();
     private final RedisWrapper redisWrapper;
 
-    public GraknEngineServer(GraknEngineConfig prop) {
+    private GraknEngineServer(GraknEngineConfig prop, RedisWrapper redisWrapper) {
         this.prop = prop;
         // Metrics
         this.metricRegistry = new MetricRegistry();
         // Redis connection pool
-        this.redisWrapper = instantiateRedis(prop);
+        this.redisWrapper = redisWrapper;
         // Lock provider
         String taskManagerClassName = prop.getProperty(GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION);
         boolean inMemoryQueue = !taskManagerClassName.contains("RedisTaskManager");
@@ -118,10 +122,18 @@ public class GraknEngineServer implements AutoCloseable {
         this.taskManager = startTaskManager(inMemoryQueue, redisWrapper.getJedisPool(), lockProvider);
     }
 
+    public static GraknEngineServer create(GraknEngineConfig prop) {
+        return create(prop, instantiateRedis(prop));
+    }
+
+    public static GraknEngineServer create(GraknEngineConfig prop, RedisWrapper redisWrapper) {
+        return new GraknEngineServer(prop, redisWrapper);
+    }
+
     public static void main(String[] args) {
         GraknEngineConfig prop = GraknEngineConfig.create();
         // Start Engine
-        GraknEngineServer graknEngineServer = new GraknEngineServer(prop);
+        GraknEngineServer graknEngineServer = create(prop);
         graknEngineServer.start();
         // close GraknEngineServer on SIGTERM
         Thread closeThread = new Thread(graknEngineServer::close, "GraknEngineServer-shutdown");
@@ -134,11 +146,22 @@ public class GraknEngineServer implements AutoCloseable {
                 prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME),
                 prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER));
         synchronized (this){
+            checkVersion();
             lockAndInitializeSystemSchema();
             startHTTP();
         }
         graknEngineStatus.setReady(true);
         LOG.info("Engine started in {}", timer.stop());
+    }
+
+    private void checkVersion() {
+        Jedis jedis = redisWrapper.getJedisPool().getResource();
+        String storedVersion = jedis.get(REDIS_VERSION_KEY);
+        if (storedVersion == null) {
+            jedis.set(REDIS_VERSION_KEY, GraknVersion.VERSION);
+        } else if (!storedVersion.equals(GraknVersion.VERSION)) {
+            LOG.warn(VERSION_MISMATCH.getMessage(GraknVersion.VERSION, storedVersion));
+        }
     }
 
     @Override
@@ -369,7 +392,7 @@ public class GraknEngineServer implements AutoCloseable {
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
-    private RedisWrapper instantiateRedis(GraknEngineConfig prop) {
+    private static RedisWrapper instantiateRedis(GraknEngineConfig prop) {
         List<String> redisUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_HOST).orElse("localhost:6379"));
         List<String> sentinelUrl = GraknEngineConfig.parseCSValue(prop.tryProperty(REDIS_SENTINEL_HOST).orElse(""));
         int poolSize = prop.tryIntProperty(REDIS_POOL_SIZE, 32);

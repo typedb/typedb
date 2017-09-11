@@ -28,10 +28,8 @@ import ai.grakn.concept.Label;
 import ai.grakn.concept.Thing;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.kb.admin.GraknAdmin;
-import ai.grakn.util.GraknVersion;
 import com.google.common.base.Stopwatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +69,6 @@ public class SystemKeyspace {
     // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
     public static final Keyspace SYSTEM_KB_KEYSPACE = Keyspace.of("graknsystem");
-    private static final String SYSTEM_VERSION = "system-version";
     public static final Label KEYSPACE_ENTITY = Label.of("keyspace");
     public static final Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
 
@@ -166,32 +163,15 @@ public class SystemKeyspace {
         Stopwatch timer = Stopwatch.createStarted();
         try (GraknTx tx = factory.tx(SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
-                checkVersion(tx);
                 return;
             }
-            LOG.info("No other version found, loading schema for version {}", GraknVersion.VERSION);
+            LOG.info("Loading schema");
             loadSystemSchema(tx);
-            tx.getAttributeType(SYSTEM_VERSION).putAttribute(GraknVersion.VERSION);
             tx.admin().commitNoLogs();
             LOG.info("Loaded system schema to system keyspace. Took: {}", timer.stop());
         } catch (Exception e) {
             LOG.error("Error while loading system schema in {}. The error was: {}", timer.stop(), e.getMessage(), e);
             throw e;
-        }
-    }
-
-    /**
-     * Helper method which checks the version persisted in the system keyspace with the version of the running grakn
-     * instance
-     *
-     * @throws GraknTxOperationException when the versions do not match
-     */
-    private void checkVersion(GraknTx tx){
-        Attribute existingVersion = tx.getAttributeType(SYSTEM_VERSION).instances().iterator().next();
-        if(!GraknVersion.VERSION.equals(existingVersion.getValue())) {
-            throw GraknTxOperationException.versionMistmatch(existingVersion);
-        } else {
-            LOG.info("Found version {}", existingVersion.getValue());
         }
     }
 
@@ -221,8 +201,5 @@ public class SystemKeyspace {
                 attribute(userLastName).
                 attribute(userEmail).
                 attribute(userIsAdmin);
-
-        //System Version
-        tx.putAttributeType("system-version", AttributeType.DataType.STRING);
     }
 }
