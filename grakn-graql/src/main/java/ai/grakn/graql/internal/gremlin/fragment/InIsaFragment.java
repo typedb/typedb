@@ -41,7 +41,7 @@ import static ai.grakn.util.Schema.BaseType.RELATIONSHIP_TYPE;
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 import static ai.grakn.util.Schema.EdgeLabel.RELATES;
-import static ai.grakn.util.Schema.EdgeLabel.RESOURCE;
+import static ai.grakn.util.Schema.EdgeLabel.ATTRIBUTE;
 import static ai.grakn.util.Schema.EdgeLabel.SHARD;
 import static ai.grakn.util.Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID;
 import static ai.grakn.util.Schema.VertexProperty.IS_IMPLICIT;
@@ -109,7 +109,7 @@ class InIsaFragment extends AbstractFragment {
         traversal = toVertexInstances(traversal);
 
         // Finally, navigate to all relation edges with the correct type attached to these instances
-        return traversal.outE(RESOURCE.getLabel())
+        return traversal.outE(ATTRIBUTE.getLabel())
                 .has(RELATIONSHIP_TYPE_LABEL_ID.name(), __.where(P.eq(labelId.getValue())));
     }
 

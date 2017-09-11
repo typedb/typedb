@@ -135,10 +135,10 @@ public class GraknComputerImpl implements GraknComputer {
         Traversal<Vertex, Edge> edgeFilter = includesShortcut ?
                 __.union(
                         __.bothE(Schema.EdgeLabel.SHORTCUT.getLabel()),
-                        __.bothE(Schema.EdgeLabel.RESOURCE.getLabel())
+                        __.bothE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
                                 .has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), P.within(labelIds))) :
                 __.union(
-                        __.bothE(Schema.EdgeLabel.RESOURCE.getLabel())
+                        __.bothE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
                                 .has(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID.name(), P.within(labelIds)));
 
         graphComputer.vertices(vertexFilter).edges(edgeFilter);
