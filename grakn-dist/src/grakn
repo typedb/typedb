@@ -22,6 +22,7 @@
 # ================================================
 
 # globals
+GRAKN_VERSION="1.0"
 WAIT_INTERVAL_S=2
 
 # Grakn globals
@@ -126,17 +127,23 @@ cassandra_start_and_wait_until_ready() {
 
 grakn_server_stop_cassandra() {
   echo -n "Stopping Cassandra..."
-  if [[ -e $CASSANDRA_PS ]]; then
-    pid=`cat $CASSANDRA_PS`
-    kill "$pid"
-    while kill -0 "$pid" 2>/dev/null; do
-        sleep 0.5
-    done
-    echo "SUCCESS"
-    return 0
+  cassandra_is_cassandra_running
+  local is_cassandra_running=$?
+  if [[ $is_cassandra_running -eq 0 ]]; then
+    if [[ -e $CASSANDRA_PS ]]; then
+      pid=`cat $CASSANDRA_PS`
+      kill "$pid"
+      while kill -0 "$pid" 2>/dev/null; do
+          sleep 0.5
+      done
+      echo "SUCCESS"
+      return 0
+    else
+      echo "FAILED!" # unable to find PID
+      return 1
+    fi
   else
-    echo "FAILED!" # unable to find PID
-    return 1
+    echo "NOT RUNNING"
   fi
 }
 
@@ -228,18 +235,24 @@ redis_start_and_wait_until_ready() {
 
 grakn_server_stop_redis() {
   echo -n "Stopping Redis..."
-  local redis_bin=
-  if [ "$(uname)" == "Darwin" ]; then
-      redis_bin="redis-cli-osx"
-  elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-      redis_bin="redis-cli-linux"
-  fi
-  "${GRAKN_HOME}/services/redis/"$redis_bin shutdown
-  local status=$?
-  if [ $status -eq 0 ] ; then
-    echo "SUCCESS"
+  redis_is_redis_running
+  local is_redis_running=$?
+  if [[ $is_redis_running -eq 0 ]]; then
+    local redis_bin=
+    if [ "$(uname)" == "Darwin" ]; then
+        redis_bin="redis-cli-osx"
+    elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+        redis_bin="redis-cli-linux"
+    fi
+    "${GRAKN_HOME}/services/redis/"$redis_bin shutdown
+    local status=$?
+    if [ $status -eq 0 ] ; then
+      echo "SUCCESS"
+    else
+      echo "FAILED!"
+    fi
   else
-    echo "FAILED!"
+    echo "NOT RUNNING"
   fi
 
   return $status
@@ -324,19 +337,25 @@ grakn_start_and_wait_until_ready() {
 
 grakn_server_stop_grakn() {
   echo -n "Stopping Grakn..."
-  if [[ -e "$GRAKN_PS" ]]; then
-    kill `cat $GRAKN_PS`
-    status_kill=$?
-    rm $GRAKN_PS
-    if [ $status_kill -eq 0 ] ; then
-      echo "SUCCESS"
+  grakn_is_grakn_running
+  local is_grakn_running=$?
+  if [[ $is_grakn_running -eq 0 ]]; then
+    if [[ -e "$GRAKN_PS" ]]; then
+      kill `cat $GRAKN_PS`
+      status_kill=$?
+      rm $GRAKN_PS
+      if [ $status_kill -eq 0 ] ; then
+        echo "SUCCESS"
+      else
+        echo "FAILED!" # unable to kill
+      fi
+      return $status_kill
     else
-      echo "FAILED" # unable to kill
+      echo "FAILED!" # unable to find PID file
+      return 1
     fi
-    return $status_kill
   else
-    echo "FAILED!" # unable to find PID file
-    return 1
+    echo "NOT RUNNING"
   fi
 }
 
@@ -492,7 +511,7 @@ grakn_server_clean() {
 }
 
 grakn_version() {
-  echo "1.0"
+  echo "${GRAKN_VERSION}"
 }
 
 grakn_help() {
@@ -531,7 +550,6 @@ case_grakn_server_start() {
       fi
     ;;
     redis)
-      echo "hola"
       grakn_server_start_redis
       status=$?
       if [ $status -eq 0 ] ; then
