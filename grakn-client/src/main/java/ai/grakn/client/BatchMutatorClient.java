@@ -256,7 +256,7 @@ public class BatchMutatorClient {
      */
     void sendQueriesToLoader(Collection<Query> queries){
         Json configuration = Json.object()
-                .set(KEYSPACE_PARAM, keyspace)
+                .set(KEYSPACE_PARAM, keyspace.getValue())
                 .set(BATCH_NUMBER, batchNumber)
                 .set(TASK_LOADER_MUTATIONS,
                         queries.stream().map(Query::toString).collect(toList()));
