@@ -151,26 +151,27 @@ public class GraqlShellIT {
         // ...but also a warning
         assertThat(response.err(), containsString(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage()));
     }
-//
-//    @Test
-//    public void whenUsingExecuteOptionAndPassingNonGetQueriesWithoutVariables_DoNotPrintWarning() throws Exception {
-//        // There should be no errors...
-//        String result = runShellWithoutErrors("", "-e", "define person sub entity;");
-//
-//        // ...and a result
-//        assertThat(result, containsString("{}"));
-//    }
-//
-//    @Test
-//    public void testDefaultKeyspace() throws Exception {
-//        runShellWithoutErrors("define im-in-the-default-keyspace sub entity;\ncommit\n");
-//
-//        assertShellMatches(ImmutableList.of("-k", "grakn"),
-//                "match im-in-the-default-keyspace sub entity; aggregate ask;",
-//                containsString("True")
-//        );
-//    }
-//
+// -
+
+    @Test
+    public void whenUsingExecuteOptionAndPassingNonGetQueriesWithoutVariables_DoNotPrintWarning() throws Exception {
+        // There should be no errors...
+        String result = runShellWithoutErrors("", "-e", "define person sub entity;");
+
+        // ...and a result
+        assertThat(result, containsString("{}"));
+    }
+
+    @Test
+    public void testDefaultKeyspace() throws Exception {
+        runShellWithoutErrors("define im-in-the-default-keyspace sub entity;\ncommit\n");
+
+        assertShellMatches(ImmutableList.of("-k", "grakn"),
+                "match im-in-the-default-keyspace sub entity; aggregate ask;",
+                containsString("True")
+        );
+    }
+
 //    @Test
 //    public void testSpecificKeyspace() throws Exception {
 //        runShellWithoutErrors("define foo-foo sub entity;\ncommit\n", "-k", "foo");
