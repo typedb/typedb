@@ -167,8 +167,8 @@ public class DistributionContext extends ExternalResource {
     private String getClassPath(){
         Stream<File> jars = Stream.of(new File(DIST_DIRECTORY + "/services/lib").listFiles(jarFiles));
         File conf = new File(DIST_DIRECTORY + "/conf/");
-
-        return Stream.concat(jars, Stream.of(conf))
+        File graknLogback = new File(DIST_DIRECTORY + "/services/grakn/");
+        return Stream.concat(jars, Stream.of(conf, graknLogback))
                 .filter(f -> !f.getName().contains("slf4j-log4j12"))
                 .map(File::getAbsolutePath)
                 .collect(joining(":"));
