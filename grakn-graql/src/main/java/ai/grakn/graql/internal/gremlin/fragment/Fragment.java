@@ -28,10 +28,12 @@ import ai.grakn.graql.internal.gremlin.spanningtree.graph.NodeId;
 import ai.grakn.graql.internal.gremlin.spanningtree.util.Weighted;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -139,8 +141,56 @@ public abstract class Fragment {
      * @param traversal the traversal to extend with this Fragment
      * @param graph     the graph to execute the traversal on
      */
-    public abstract GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph);
+    public final GraphTraversal<Element, ? extends Element> applyTraversal(
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph,
+            Collection<Var> vars, @Nullable Var currentVar
+    ) {
+        if (currentVar != null) {
+            if (!currentVar.equals(start())) {
+                if (vars.contains(start())) {
+                    // If the variable name has been visited but the traversal is not at that variable name, select it
+                    traversal.select(start().getValue());
+                } else {
+                    // Restart traversal when fragments are disconnected
+                    traversal.V().as(start().getValue());
+                }
+            }
+        } else {
+            // If the variable name has not been visited yet, remember it and use the 'as' step
+            traversal.as(start().getValue());
+        }
+
+        vars.add(start());
+
+        traversal = applyTraversalInner(traversal, graph, vars);
+
+        Var end = end();
+        if (end != null) {
+            assignVar(traversal, end, vars);
+        }
+
+        vars.addAll(vars());
+
+        return traversal;
+    }
+
+    static <T, U> GraphTraversal<T, U> assignVar(GraphTraversal<T, U> traversal, Var var, Collection<Var> vars) {
+        if (!vars.contains(var)) {
+            // This variable name has not been encountered before, remember it and use the 'as' step
+            return traversal.as(var.getValue());
+        } else {
+            // This variable name has been encountered before, confirm it is the same
+            return traversal.where(P.eq(var.getValue()));
+        }
+    }
+
+    /**
+     * @param traversal the traversal to extend with this Fragment
+     * @param graph     the graph to execute the traversal on
+     * @param vars
+     */
+    abstract GraphTraversal<Element, ? extends Element> applyTraversalInner(
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars);
 
     /**
      * The name of the fragment
