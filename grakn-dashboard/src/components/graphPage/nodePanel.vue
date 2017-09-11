@@ -31,9 +31,9 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 <div><span class="list-key">{{key}}:</span> {{value}}</div>
             </div>
         </div>
-        <div class="dd-header" v-show="Object.keys(nodeResources).length">Resources:</div>
-        <div class="dd-item" v-for="(value,key) in nodeResources">
-            <div class="dd-handle noselect" @dblclick="addResourceNodeWithOwners(value.link)"><span class="list-key">{{key}}:</span>
+        <div class="dd-header" v-show="Object.keys(nodeAttributes).length">Attributes:</div>
+        <div class="dd-item" v-for="(value,key) in nodeAttributes">
+            <div class="dd-handle noselect" @dblclick="addAttributeNodeWithOwners(value.link)"><span class="list-key">{{key}}:</span>
                 <a v-if="value.href" :href="value.label" style="word-break: break-all; color:#00eca2;" target="_blank">{{value.label}}</a>
                 <span v-else> {{value.label}}</span>
             </div>
@@ -142,9 +142,9 @@ export default {
     });
   },
   computed: {
-    nodeResources() {
+    nodeAttributes() {
       if (this.node === undefined) return {};
-      return this.prepareResources(this.node.properties);
+      return this.prepareAttributes(this.node.properties);
     },
     nodeProperties() {
       if (this.node === undefined) return {};
@@ -163,25 +163,25 @@ export default {
     },
   },
   methods: {
-    addResourceNodeWithOwners(resourceId) {
-      this.$emit('load-resource-owners', resourceId);
+    addAttributeNodeWithOwners(attributeId) {
+      this.$emit('load-attribute-owners', attributeId);
     },
     closePanel() {
       this.$emit('close-node-panel');
     },
   /**
-   * Prepare the list of resources to be shown in the right div panel
-   * It sorts them alphabetically and then check if a resource value is a URL
+   * Prepare the list of attributes to be shown in the right div panel
+   * It sorts them alphabetically and then check if a attribute value is a URL
    */
-    prepareResources(originalObject) {
+    prepareAttributes(originalObject) {
       if (originalObject == null) return {};
       return Object.keys(originalObject).sort().reduce(
           // sortedObject is the accumulator variable, i.e. new object with sorted keys
           // k is the current key
           (sortedObject, k) => {
               // Add 'href' field to the current object, it will be set to TRUE if it contains a valid URL, FALSE otherwise
-            const currentResourceWithHref = Object.assign(originalObject[k], { href: this.validURL(originalObject[k].label) });
-            return Object.assign(sortedObject, { [k]: currentResourceWithHref });
+            const currentAttributeWithHref = Object.assign(originalObject[k], { href: this.validURL(originalObject[k].label) });
+            return Object.assign(sortedObject, { [k]: currentAttributeWithHref });
           }, {});
     },
     validURL(str) {

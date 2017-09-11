@@ -35,7 +35,7 @@ public class RoleTypeConverter implements SchemaConceptConverter<Role> {
     public Multimap<RelationshipType, Role> toRelationshipMultimap(Role role) {
         Multimap<RelationshipType, Role> relationMap = HashMultimap.create();
         role.subs().forEach(roleType -> {
-                    roleType.relationTypes()
+                    roleType.relationshipTypes()
                             .filter(rel -> !rel.isImplicit())
                             .forEach(rel -> relationMap.put(rel, roleType));
                 });
