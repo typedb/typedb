@@ -70,11 +70,19 @@ public class HALBuilderTest {
     }
 
     @Test
+    public void whenExecuteExploreHALOnAttribute_EnsureHALResponseContainsCorrectDataType() {
+        Json response = getHALRepresentation(academyKB.tx(), "match $x label 'name'; get;");
+        String conceptId = response.asJsonList().get(0).at("_id").asString();
+        Json halObj = getHALExploreRepresentation(academyKB.tx(), conceptId);
+        assertEquals("java.lang.String", halObj.at("_dataType").asString());
+    }
+
+    @Test
     public void whenAskForRelationTypes_EnsureAllObjectsHaveImplicitField() {
         Json response = getHALRepresentation(academyKB.tx(), "match $x sub " + Schema.MetaSchema.RELATIONSHIP.getLabel() + "; get;");
         response.asJsonList().forEach(halObj -> {
             assertTrue(halObj.has("_implicit"));
-            if(halObj.at("_name").asString().startsWith("has-")){
+            if (halObj.at("_name").asString().startsWith("has-")) {
                 assertTrue(halObj.at("_implicit").asBoolean());
             }
         });
@@ -119,11 +127,11 @@ public class HALBuilderTest {
     }
 
     @Test
-    public void whenSelectInferredRelationWithSingleVar_EnsureValidExplanationHrefIsContainedInResponse(){
+    public void whenSelectInferredRelationWithSingleVar_EnsureValidExplanationHrefIsContainedInResponse() {
         Json response = getHALRepresentation(genealogyKB.tx(), "match $x isa marriage; offset 0; limit 5; get;");
         assertEquals(5, response.asList().size());
         response.asJsonList().forEach(halObj -> {
-            assertEquals("inferred-relation", halObj.at("_baseType").asString());
+            assertEquals("inferred-relationship", halObj.at("_baseType").asString());
             String href = halObj.at("_links").at("self").at("href").asString();
             assertTrue(href.contains("($a,$b) isa marriage;"));
         });
