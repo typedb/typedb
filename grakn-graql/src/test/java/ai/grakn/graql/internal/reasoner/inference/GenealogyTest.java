@@ -178,7 +178,6 @@ public class GenealogyTest {
         assertEquals(answers.size(), 4);
     }
 
-    //@Ignore
     @Test
     public void testMarriedToThemselves(){
         String queryString = "match (spouse: $x, spouse: $x) isa marriage; get;";
