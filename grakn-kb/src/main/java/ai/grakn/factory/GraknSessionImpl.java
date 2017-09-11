@@ -23,6 +23,7 @@ import ai.grakn.GraknComputer;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.kb.internal.GraknTxTinker;
@@ -59,14 +60,14 @@ import static mjson.Json.read;
 public class GraknSessionImpl implements GraknSession {
     private static final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
     private final String location;
-    private final String keyspace;
+    private final Keyspace keyspace;
 
     //References so we don't have to open a tx just to check the count of the transactions
     private GraknTxAbstract<?> tx = null;
     private GraknTxAbstract<?> txBatch = null;
 
     //This constructor must remain public because it is accessed via reflection
-    public GraknSessionImpl(String keyspace, String location){
+    public GraknSessionImpl(Keyspace keyspace, String location){
         this.location = location;
         this.keyspace = keyspace;
     }
@@ -124,7 +125,7 @@ public class GraknSessionImpl implements GraknSession {
      * @param graphType The type of tx to produce, default, batch, or compute
      * @return A new or existing grakn tx factory with the defined name connecting to the specified remote location
      */
-    static TxFactory<?> configureGraphFactory(String keyspace, String location, String graphType){
+    static TxFactory<?> configureGraphFactory(Keyspace keyspace, String location, String graphType){
         if(Grakn.IN_MEMORY.equals(location)){
             return configureGraphFactoryInMemory(keyspace);
         } else {
@@ -139,7 +140,7 @@ public class GraknSessionImpl implements GraknSession {
      * @param type The type of tx to produce, default, batch, or compute
      * @return A new or existing grakn tx factory with the defined name connecting to the specified remote location
      */
-    private static TxFactory<?> configureGraphFactoryRemote(String keyspace, String engineUrl, String type){
+    private static TxFactory<?> configureGraphFactoryRemote(Keyspace keyspace, String engineUrl, String type){
         String restFactoryUri = engineUrl + INITIALISE + "?" + CONFIG_PARAM + "=" + type + "&" + KEYSPACE_PARAM + "=" + keyspace;
 
         Properties properties = new Properties();
@@ -154,7 +155,7 @@ public class GraknSessionImpl implements GraknSession {
      * @param keyspace The keyspace of the tx
      * @return  A new or existing grakn tx factory with the defined name holding the tx in memory
      */
-    private static TxFactory<?> configureGraphFactoryInMemory(String keyspace){
+    private static TxFactory<?> configureGraphFactoryInMemory(Keyspace keyspace){
         Properties inMemoryProperties = new Properties();
         inMemoryProperties.put(GraknTxAbstract.SHARDING_THRESHOLD, 100_000);
         inMemoryProperties.put(GraknTxAbstract.NORMAL_CACHE_TIMEOUT_MS, 30_000);

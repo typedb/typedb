@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.hal;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
@@ -31,7 +32,7 @@ import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
 
 class HALExploreInstance extends HALExploreConcept {
 
-    HALExploreInstance(Concept concept, String keyspace, int offset, int limit) {
+    HALExploreInstance(Concept concept, Keyspace keyspace, int offset, int limit) {
         super(concept, keyspace, offset, limit);
     }
 

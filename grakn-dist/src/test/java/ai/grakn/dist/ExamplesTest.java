@@ -39,7 +39,7 @@ public class ExamplesTest {
 
     @Before
     public void setUp() {
-        tx = Grakn.session("in-memory", "my-pokemon-graph").open(GraknTxType.WRITE);
+        tx = Grakn.session(Grakn.IN_MEMORY, "mypokemongraph").open(GraknTxType.WRITE);
     }
 
     @After

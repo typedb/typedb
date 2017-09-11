@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.hal;
 
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
@@ -42,7 +43,7 @@ import static ai.grakn.graql.internal.hal.HALUtils.SUB_EDGE;
 
 class HALExploreType extends HALExploreConcept{
 
-    HALExploreType(Concept concept, String keyspace, int offset, int limit) {
+    HALExploreType(Concept concept, Keyspace keyspace, int offset, int limit) {
         super(concept, keyspace, offset, limit);
     }
 

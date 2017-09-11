@@ -21,6 +21,7 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -117,18 +118,8 @@ public class GraknTxJanusTest extends JanusTestBase {
     }
 
     @Test
-    public void whenCreatingGraphsWithDifferentKeyspace_EnsureCaseIsIgnored(){
-        TxFactoryJanus factory1 =  new TxFactoryJanus("case", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        TxFactoryJanus factory2 = new TxFactoryJanus("Case", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        GraknTxJanus case1 = factory1.open(GraknTxType.WRITE);
-        GraknTxJanus case2 = factory2.open(GraknTxType.WRITE);
-
-        assertEquals(case1.getKeyspace(), case2.getKeyspace());
-    }
-
-    @Test
     public void whenClosingTheGraph_EnsureTheTransactionIsClosed(){
-        GraknTxJanus graph = new TxFactoryJanus("test", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        GraknTxJanus graph = new TxFactoryJanus(Keyspace.of("test"), Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
 
         String entityTypeLabel = "Hello";
 
@@ -146,7 +137,7 @@ public class GraknTxJanusTest extends JanusTestBase {
 
     @Test
     public void whenCreatingDateResource_EnsureDateCanBeRetrieved(){
-        GraknTxJanus graph = new TxFactoryJanus("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
+        GraknTxJanus graph = new TxFactoryJanus(Keyspace.of("case"), Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
         AttributeType<LocalDateTime> dateType = graph.putAttributeType("date", AttributeType.DataType.DATE);
         LocalDateTime now = LocalDateTime.now();
         Attribute<LocalDateTime> date = dateType.putAttribute(now);

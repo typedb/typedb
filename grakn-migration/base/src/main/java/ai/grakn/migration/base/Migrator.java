@@ -18,6 +18,7 @@
 
 package ai.grakn.migration.base;
 
+import ai.grakn.Keyspace;
 import ai.grakn.client.BatchMutatorClient;
 import ai.grakn.client.TaskResult;
 import ai.grakn.exception.GraknBackendException;
@@ -56,21 +57,21 @@ public class Migrator {
     public static final int DEFAULT_MAX_RETRY = 1;
 
     private final String uri;
-    private final String keyspace;
+    private final Keyspace keyspace;
     private int batchSize;
     private long startTime;
 
     /**
      *
      * @param uri Uri where one instance of Grakn Engine is running
-     * @param keyspace The name of the keyspace where the data should be persisted
+     * @param keyspace The {@link Keyspace} where the data should be persisted
      */
-    private Migrator(String uri, String keyspace){
+    private Migrator(String uri, Keyspace keyspace){
         this.uri = uri;
         this.keyspace = keyspace;
     }
 
-    public static Migrator to(String uri, String keyspace){
+    public static Migrator to(String uri, Keyspace keyspace){
         return new Migrator(uri, keyspace);
     }
 
