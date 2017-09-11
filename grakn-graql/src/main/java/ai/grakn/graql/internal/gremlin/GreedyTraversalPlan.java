@@ -272,11 +272,11 @@ public class GreedyTraversalPlan {
     }
 
     private static double nodeFragmentWeight(Node node) {
-        return node.getFragmentsWithoutDependency().stream()
-                .map(Fragment::fragmentCost).reduce(0D, (x, y) -> x + y) +
-                node.getFragmentsWithDependencyVisited().stream()
-                        .map(Fragment::fragmentCost).reduce(0D, (x, y) -> x + y) +
-                node.getFixedFragmentCost();
+        double costFragmentsWithoutDependency = node.getFragmentsWithoutDependency().stream()
+                .map(Fragment::fragmentCost).reduce(0D, Double::sum);
+        double costFragmentsWithDependencyVisited = node.getFragmentsWithDependencyVisited().stream()
+                .map(Fragment::fragmentCost).reduce(0D, Double::sum);
+        return costFragmentsWithoutDependency + costFragmentsWithDependencyVisited + node.getFixedFragmentCost();
     }
 
     private static void addNodeFragmentToPlan(Node node, List<Fragment> plan, Map<NodeId, Node> nodes,
