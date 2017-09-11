@@ -26,13 +26,15 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.macro.Macro;
-import static java.lang.String.format;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static java.lang.String.format;
 
 /**
  * <p>
@@ -51,7 +53,7 @@ public class Migrator {
     private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
     public static final int BATCH_SIZE = 25;
     public static final int ACTIVE_TASKS = 25;
-    private static final boolean RETRY = false;
+    public static final int DEFAULT_MAX_RETRY = 1;
 
     private final String uri;
     private final String keyspace;
@@ -92,7 +94,7 @@ public class Migrator {
      * @param converter
      */
     public void load(String template, Stream<Map<String, Object>> converter) {
-        load(template, converter, Migrator.BATCH_SIZE, Migrator.ACTIVE_TASKS, Migrator.RETRY, true);
+        load(template, converter, Migrator.BATCH_SIZE, Migrator.ACTIVE_TASKS, Migrator.DEFAULT_MAX_RETRY, true);
     }
 
     /**
@@ -114,17 +116,17 @@ public class Migrator {
      * @param batchSize The number of queries to execute in one transaction. Default is 25.
      * @param numberActiveTasks Number of tasks running on the server at any one time. Consider this a safeguard
      *                  to bot the system load. Default is 25.
-     * @param retry If the Loader should continue attempt to send tasks when Engine is not available
+     * @param retrySize If the Loader should continue attempt to send tasks when Engine is not available or an exception occurs
      */
     public void load(String template, Stream<Map<String, Object>> converter,
-                     int batchSize, int numberActiveTasks, boolean retry, boolean debug){
+                     int batchSize, int numberActiveTasks, int retrySize, boolean debug){
         this.startTime = System.currentTimeMillis();
         this.batchSize = batchSize;
 
         BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates(), true, debug);
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
-        loader.setRetryPolicy(retry);
+        loader.setRetryPolicy(retrySize);
             loader.setTaskCompletionConsumer(taskResult -> {
                 String stackTrace = taskResult.getStackTrace();
                 if (stackTrace != null && !stackTrace.isEmpty()) {

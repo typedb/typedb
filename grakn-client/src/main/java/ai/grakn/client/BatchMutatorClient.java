@@ -66,9 +66,7 @@ import static java.util.stream.Collectors.toList;
  * @author alexandraorth
  */
 public class BatchMutatorClient {
-    // Change in behaviour in v0.14 Previously infinite, now limited
-    private static final int MAX_RETRIES = 100;
-
+    private int maxRetries = 100;
     private final Set<Future<Void>> futures;
     private final Collection<Query> queries;
     private final String keyspace;
@@ -82,7 +80,6 @@ public class BatchMutatorClient {
     private Consumer<TaskResult> onCompletionOfTask;
     private AtomicInteger batchNumber;
     private int batchSize;
-    private boolean retry = false;
     private ExecutorService threadPool;
 
     public BatchMutatorClient(String keyspace, String uri, boolean debugOn) {
@@ -140,10 +137,10 @@ public class BatchMutatorClient {
      * Tell the {@link BatchMutatorClient} if it should retry sending tasks when the Engine
      * server is not available
      *
-     * @param retry boolean representing if engine should retry
+     * @param maxRetries The number of times to retry if a failure occurs
      */
-    public BatchMutatorClient setRetryPolicy(boolean retry){
-        this.retry = retry;
+    public BatchMutatorClient setRetryPolicy(int maxRetries){
+        this.maxRetries = maxRetries;
         return this;
     }
 
@@ -275,7 +272,7 @@ public class BatchMutatorClient {
         Retryer<TaskResult> sendQueryRetry = RetryerBuilder.<TaskResult>newBuilder()
                 .retryIfExceptionOfType(IOException.class)
                 .retryIfRuntimeException()
-                .withStopStrategy(StopStrategies.stopAfterAttempt(retry ? MAX_RETRIES : 1))
+                .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetries))
                 .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
                 .build();
 
