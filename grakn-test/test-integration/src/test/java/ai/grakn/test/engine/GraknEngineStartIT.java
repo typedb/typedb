@@ -112,6 +112,6 @@ public class GraknEngineStartIT {
         properties.setProperty(SERVER_PORT_NUMBER, port);
         properties.setProperty(REDIS_HOST, new SimpleURI("localhost", REDIS_PORT).toString());
         properties.setProperty(TASK_MANAGER_IMPLEMENTATION, RedisTaskManager.class.getName());
-        return new GraknEngineServer(graknEngineConfig);
+        return GraknEngineServer.create(graknEngineConfig);
     }
 }
