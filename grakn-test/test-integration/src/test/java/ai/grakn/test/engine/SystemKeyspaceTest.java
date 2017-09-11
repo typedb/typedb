@@ -144,7 +144,7 @@ public class SystemKeyspaceTest {
 
         //Check only 2 graphs have been built
         for(GraknTx graph:graphs){
-            assertTrue("Contains correct keyspace", systemKeyspaces.contains(graph.getKeyspace()));
+            assertTrue("Contains correct keyspace", systemKeyspaces.contains(graph.getKeyspace().getValue()));
         }
         assertFalse(engine.server().factory().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
     }
@@ -167,7 +167,7 @@ public class SystemKeyspaceTest {
 
         //Check only 2 graphs have been built
         for(GraknTx graph:graphs){
-            assertTrue("Contains correct keyspace", systemKeyspaces.contains(graph.getKeyspace()));
+            assertTrue("Contains correct keyspace", systemKeyspaces.contains(graph.getKeyspace().getValue()));
         }
         assertFalse(engine.server().factory().systemKeyspace().containsKeyspace(deletedGraph.getKeyspace()));
     }
