@@ -107,11 +107,11 @@ public class GraqlShellIT {
         System.setErr(trueErr);
     }
 
-//    @Test
-//    public void testStartAndExitShell() throws Exception {
-//        // Assert simply that the shell starts and terminates without errors
-//        assertTrue(runShellWithoutErrors("exit\n").matches("[\\s\\S]*>>> exit(\r\n?|\n)"));
-//    }
+    @Test
+    public void testStartAndExitShell() throws Exception {
+        // Assert simply that the shell starts and terminates without errors
+        assertTrue(runShellWithoutErrors("exit\n").matches("[\\s\\S]*>>> exit(\r\n?|\n)"));
+    }
 //
 //    @Test
 //    public void testHelpOption() throws Exception {
