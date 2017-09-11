@@ -151,57 +151,57 @@ public class GraqlShellIT {
         // ...but also a warning
         assertThat(response.err(), containsString(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage()));
     }
-
-    @Test
-    public void whenUsingExecuteOptionAndPassingNonGetQueriesWithoutVariables_DoNotPrintWarning() throws Exception {
-        // There should be no errors...
-        String result = runShellWithoutErrors("", "-e", "define person sub entity;");
-
-        // ...and a result
-        assertThat(result, containsString("{}"));
-    }
-
-    @Test
-    public void testDefaultKeyspace() throws Exception {
-        runShellWithoutErrors("define im-in-the-default-keyspace sub entity;\ncommit\n");
-
-        assertShellMatches(ImmutableList.of("-k", "grakn"),
-                "match im-in-the-default-keyspace sub entity; aggregate ask;",
-                containsString("True")
-        );
-    }
-
-    @Test
-    public void testSpecificKeyspace() throws Exception {
-        runShellWithoutErrors("define foo-foo sub entity;\ncommit\n", "-k", "foo");
-        runShellWithoutErrors("define bar-bar sub entity;\ncommit\n", "-k", "bar");
-
-        String fooFooinFoo = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
-        String fooFooInBar = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
-        String barBarInFoo = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "foo");
-        String barBarInBar = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "bar");
-        assertThat(fooFooinFoo, containsString("True"));
-        assertThat(fooFooInBar, containsString("False"));
-        assertThat(barBarInFoo, containsString("False"));
-        assertThat(barBarInBar, containsString("True"));
-    }
-
-    @Test
-    public void testFileOption() throws Exception {
-        ShellResponse response = runShell("", "-f", "src/test/graql/shell test(weird name).gql");
-        assertEquals("", response.err());
-    }
-
-    @Test
-    public void testLoadCommand() throws Exception {
-        assertShellMatches(
-                "load src/test/graql/shell test(weird name).gql",
-                anything(),
-                "match movie sub entity; aggregate ask;",
-                containsString("True")
-        );
-    }
 //
+//    @Test
+//    public void whenUsingExecuteOptionAndPassingNonGetQueriesWithoutVariables_DoNotPrintWarning() throws Exception {
+//        // There should be no errors...
+//        String result = runShellWithoutErrors("", "-e", "define person sub entity;");
+//
+//        // ...and a result
+//        assertThat(result, containsString("{}"));
+//    }
+//
+//    @Test
+//    public void testDefaultKeyspace() throws Exception {
+//        runShellWithoutErrors("define im-in-the-default-keyspace sub entity;\ncommit\n");
+//
+//        assertShellMatches(ImmutableList.of("-k", "grakn"),
+//                "match im-in-the-default-keyspace sub entity; aggregate ask;",
+//                containsString("True")
+//        );
+//    }
+//
+//    @Test
+//    public void testSpecificKeyspace() throws Exception {
+//        runShellWithoutErrors("define foo-foo sub entity;\ncommit\n", "-k", "foo");
+//        runShellWithoutErrors("define bar-bar sub entity;\ncommit\n", "-k", "bar");
+//
+//        String fooFooinFoo = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
+//        String fooFooInBar = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
+//        String barBarInFoo = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "foo");
+//        String barBarInBar = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "bar");
+//        assertThat(fooFooinFoo, containsString("True"));
+//        assertThat(fooFooInBar, containsString("False"));
+//        assertThat(barBarInFoo, containsString("False"));
+//        assertThat(barBarInBar, containsString("True"));
+//    }
+//
+//    @Test
+//    public void testFileOption() throws Exception {
+//        ShellResponse response = runShell("", "-f", "src/test/graql/shell test(weird name).gql");
+//        assertEquals("", response.err());
+//    }
+//
+//    @Test
+//    public void testLoadCommand() throws Exception {
+//        assertShellMatches(
+//                "load src/test/graql/shell test(weird name).gql",
+//                anything(),
+//                "match movie sub entity; aggregate ask;",
+//                containsString("True")
+//        );
+//    }
+//-
 //    @Test
 //    public void testLoadCommandWithEscapes() throws Exception {
 //        assertShellMatches(
