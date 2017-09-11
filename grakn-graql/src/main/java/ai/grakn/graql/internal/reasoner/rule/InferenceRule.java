@@ -67,6 +67,7 @@ public class InferenceRule {
     private final ReasonerAtomicQuery head;
 
     private int priority = Integer.MAX_VALUE;
+    private Boolean requiresMaterialisation = null;
 
     public InferenceRule(Rule rule, GraknTx tx){
         this.tx = tx;
@@ -154,10 +155,14 @@ public class InferenceRule {
      *
      * @return true if the rule needs to be materialised
      */
-    public boolean requiresMaterialisation(Atom parentAtom){
-        return parentAtom.requiresMaterialisation()
-            || getHead().getAtom().requiresMaterialisation()
-            || hasDisconnectedHead();}
+    public boolean requiresMaterialisation(Atom parentAtom) {
+        if (requiresMaterialisation == null) {
+            requiresMaterialisation = parentAtom.requiresMaterialisation()
+                    || getHead().getAtom().requiresMaterialisation()
+                    || hasDisconnectedHead();
+        }
+        return requiresMaterialisation;
+    }
 
     /**
      * @return body of the rule of the form head :- body
