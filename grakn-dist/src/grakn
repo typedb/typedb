@@ -543,10 +543,8 @@ case_grakn_server_start() {
         exit 0
       else
         # failure detected. attempt to terminate every component gracefully
-        echo "Encountering failure during startup. Attempting to terminate Grakn gracefully..."
-        grakn_server_stop
-        status=$?
-        # TODO: graceful termination failed. report failures
+        echo "Unable to start Grakn. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        exit 1
       fi
     ;;
     redis)
@@ -557,10 +555,8 @@ case_grakn_server_start() {
         exit 0
       else
         # failure detected. attempt to terminate every component gracefully
-        echo "Encountering failure during startup. Attempting to terminate Redis gracefully..."
-        grakn_server_stop
-        status=$?
-        # TODO: graceful termination failed. report failures
+        echo "Unable to start Redis. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        exit 1
       fi
     ;;
     cassandra)
@@ -571,10 +567,8 @@ case_grakn_server_start() {
         exit 0
       else
         # failure detected. attempt to terminate every component gracefully
-        echo "Encountering failure during startup. Attempting to terminate Cassandra gracefully..."
-        grakn_server_stop
-        status=$?
-        # TODO: graceful termination failed. report failures
+        echo "Unable to start Cassandra. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        exit 1
       fi
     ;;
     *)
@@ -585,10 +579,8 @@ case_grakn_server_start() {
         exit 0
       else
         # failure detected. attempt to terminate every component gracefully
-        echo "Encountering failure during startup. Attempting to terminate Grakn gracefully..."
-        grakn_server_stop
-        status=$?
-        # TODO: graceful termination failed. report failures
+        echo "Unable to start Grakn. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        exit 1
       fi
     ;;
   esac
