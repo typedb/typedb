@@ -172,20 +172,20 @@ public class GraqlShellIT {
         );
     }
 
-//    @Test
-//    public void testSpecificKeyspace() throws Exception {
-//        runShellWithoutErrors("define foo-foo sub entity;\ncommit\n", "-k", "foo");
-//        runShellWithoutErrors("define bar-bar sub entity;\ncommit\n", "-k", "bar");
-//
-//        String fooFooinFoo = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
-//        String fooFooInBar = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
-//        String barBarInFoo = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "foo");
-//        String barBarInBar = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "bar");
-//        assertThat(fooFooinFoo, containsString("True"));
-//        assertThat(fooFooInBar, containsString("False"));
-//        assertThat(barBarInFoo, containsString("False"));
-//        assertThat(barBarInBar, containsString("True"));
-//    }
+    @Test
+    public void testSpecificKeyspace() throws Exception {
+        runShellWithoutErrors("define foo-foo sub entity;\ncommit\n", "-k", "foo");
+        runShellWithoutErrors("define bar-bar sub entity;\ncommit\n", "-k", "bar");
+
+        String fooFooinFoo = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
+        String fooFooInBar = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
+        String barBarInFoo = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "foo");
+        String barBarInBar = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "bar");
+        assertThat(fooFooinFoo, containsString("True"));
+        assertThat(fooFooInBar, containsString("False"));
+        assertThat(barBarInFoo, containsString("False"));
+        assertThat(barBarInBar, containsString("True"));
+    }
 
     @Test
     public void testFileOption() throws Exception {
