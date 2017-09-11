@@ -194,7 +194,7 @@ public class PostProcessingTask extends BackgroundTask {
      */
     public static TaskConfiguration createConfig(Keyspace keyspace, String config){
         Json postProcessingConfiguration = Json.object();
-        postProcessingConfiguration.set(REST.Request.KEYSPACE, keyspace);
+        postProcessingConfiguration.set(REST.Request.KEYSPACE, keyspace.getValue());
         postProcessingConfiguration.set(REST.Request.COMMIT_LOG_FIXING, Json.read(config).at(REST.Request.COMMIT_LOG_FIXING));
         return TaskConfiguration.of(postProcessingConfiguration);
     }
