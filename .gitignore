@@ -35,3 +35,6 @@ logs/
 grakn-test/db/
 grakn-test/output/
 grakn-test/*.txt
+
+# Sample Date Files #
+grakn-test/test-biomed/data/*

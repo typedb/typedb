@@ -3,14 +3,10 @@ package ai.grakn.test.engine;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.AttributeType;
-import ai.grakn.engine.SystemKeyspace;
-import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
 import org.junit.After;
 import org.junit.ClassRule;
@@ -43,25 +39,6 @@ public class SystemKeyspaceTest {
         try (GraknTx graph = engine.server().factory().tx(SYSTEM_KB_NAME, GraknTxType.WRITE)){
             graph.getEntityType("keyspace").instances().forEach(Concept::delete);
             graph.commit();
-        }
-    }
-
-    @Test
-    public void whenOpeningGraphBuiltUsingDifferentVersionOfGrakn_Throw(){
-        try {
-            String rubbishVersion = "Hippo Version";
-
-            //Insert fake version number
-            setVersionInSystemGraph(rubbishVersion);
-
-            expectedException.expect(GraknTxOperationException.class);
-            expectedException.expectMessage(ErrorMessage.VERSION_MISMATCH.getMessage(GraknVersion.VERSION, rubbishVersion));
-
-            //This simulates accessing the system for the first time
-            new SystemKeyspace(engine.server().factory());
-        } finally {
-            // reset real version
-            setVersionInSystemGraph(GraknVersion.VERSION);
         }
     }
 

@@ -272,7 +272,7 @@ public class ConceptPropertyTest {
             if (schemaConcept.isRole()) {
                 Role role = schemaConcept.asRole();
                 assumeThat(role.playedByTypes().collect(toSet()), empty());
-                assumeThat(role.relationTypes().collect(toSet()), empty());
+                assumeThat(role.relationshipTypes().collect(toSet()), empty());
                 Stream<Relationship> allRelations = graph.admin().getMetaRelationType().instances();
                 Set<Role> allRolesPlayed = allRelations.flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
                 assumeThat(allRolesPlayed, not(hasItem(role)));

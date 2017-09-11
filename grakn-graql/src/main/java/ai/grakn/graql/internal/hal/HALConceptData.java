@@ -214,7 +214,7 @@ public class HALConceptData {
         relationStream = relationStream.skip(offset);
         if (limit >= 0) relationStream = relationStream.limit(limit);
 
-        relationStream.forEach(rel -> embedRelationsNotConnectedToResources(halResource, entity, rel, separationDegree));
+        relationStream.forEach(rel -> embedRelationsNotConnectedToAttributes(halResource, entity, rel, separationDegree));
     }
 
     private void attachRelation(Representation halResource, Concept rel, Label role, int separationDegree) {
@@ -244,22 +244,22 @@ public class HALConceptData {
         });
     }
 
-    private void embedRelationsNotConnectedToResources(Representation halResource, Concept concept, Relationship relationship, int separationDegree) {
+    private void embedRelationsNotConnectedToAttributes(Representation halResource, Concept concept, Relationship relationship, int separationDegree) {
         Label rolePlayedByCurrentConcept = null;
-        boolean isResource = false;
+        boolean isAttribute = false;
         for (Map.Entry<Role, Set<Thing>> entry : relationship.allRolePlayers().entrySet()) {
             for (Thing thing : entry.getValue()) {
                 //Some role players can be null
                 if (thing != null) {
                     if (thing.isAttribute()) {
-                        isResource = true;
+                        isAttribute = true;
                     } else if (thing.getId().equals(concept.getId())) {
                         rolePlayedByCurrentConcept = entry.getKey().getLabel();
                     }
                 }
             }
         }
-        if (!isResource) {
+        if (!isAttribute) {
             attachRelation(halResource, relationship, rolePlayedByCurrentConcept, separationDegree);
         }
     }
@@ -267,7 +267,7 @@ public class HALConceptData {
     private void embedRelationsPlays(Representation halResource, Relationship rel) {
         rel.plays().forEach(roleTypeRel -> {
             rel.relationships(roleTypeRel).forEach(relation -> {
-                embedRelationsNotConnectedToResources(halResource, rel, relation, 1);
+                embedRelationsNotConnectedToAttributes(halResource, rel, relation, 1);
             });
         });
     }

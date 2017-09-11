@@ -74,7 +74,7 @@
                         <phase>compile</phase>
                         <configuration>
                             <executable>npm</executable>
-                            <commandlineArgs>run browserify-production</commandlineArgs>
+                            <commandlineArgs>run build:prod</commandlineArgs>
                         </configuration>
                     </execution>
                 </executions>
