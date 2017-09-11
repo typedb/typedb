@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -225,13 +226,15 @@ public class BatchMutatorClient {
      */
     public void waitToFinish(){
         flush();
-        futures.forEach(f -> {
+        Iterator<Future<Void>> it = futures.iterator();
+        while(it.hasNext()){
+            Future<Void> future = it.next();
             try {
-                f.get();
+                future.get();
             } catch (InterruptedException|ExecutionException e) {
                 printError("Error while waiting for termination", e);
             }
-        });
+        }
         futures.clear();
         System.out.println("All tasks completed");
     }
@@ -295,6 +298,11 @@ public class BatchMutatorClient {
             if(error != null){
                 System.err.println("Caused by: ");
                 error.printStackTrace();
+
+                //Cancel and clear the futures
+                futures.forEach(f -> f.cancel(true));
+                futures.clear();
+
                 throw new RuntimeException(error);
             }
         }
