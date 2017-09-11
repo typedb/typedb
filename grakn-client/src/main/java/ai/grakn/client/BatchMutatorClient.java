@@ -66,7 +66,7 @@ import static java.util.stream.Collectors.toList;
  * @author alexandraorth
  */
 public class BatchMutatorClient {
-    private int maxRetries = 100;
+    private final int maxRetries;
     private final Set<Future<Void>> futures;
     private final Collection<Query> queries;
     private final String keyspace;
@@ -82,21 +82,22 @@ public class BatchMutatorClient {
     private int batchSize;
     private ExecutorService threadPool;
 
-    public BatchMutatorClient(String keyspace, String uri, boolean debugOn) {
-        this(keyspace, uri, (TaskResult t) -> {}, true, debugOn);
+    public BatchMutatorClient(String keyspace, String uri, boolean debugOn, int maxRetries) {
+        this(keyspace, uri, (TaskResult t) -> {}, true, debugOn, maxRetries);
     }
 
-    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean debugOn) {
-        this(keyspace, uri, onCompletionOfTask, false, debugOn);
+    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean debugOn, int maxRetries) {
+        this(keyspace, uri, onCompletionOfTask, false, debugOn, maxRetries);
     }
 
-    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean reportStats, boolean debugOn) {
+    public BatchMutatorClient(String keyspace, String uri, Consumer<TaskResult> onCompletionOfTask, boolean reportStats, boolean debugOn, int maxRetries) {
         this.keyspace = keyspace;
         this.queries = new ArrayList<>();
         this.futures = new HashSet<>();
         this.onCompletionOfTask = onCompletionOfTask;
         this.batchNumber = new AtomicInteger(0);
         this.debugOn = debugOn;
+        this.maxRetries = maxRetries;
         // Some extra logic here since we don't provide a well formed URI by default
         if (uri.startsWith("http")) {
             try {
@@ -131,17 +132,6 @@ public class BatchMutatorClient {
                     .build();
             reporter.start(1, TimeUnit.MINUTES);
         }
-    }
-
-    /**
-     * Tell the {@link BatchMutatorClient} if it should retry sending tasks when the Engine
-     * server is not available
-     *
-     * @param maxRetries The number of times to retry if a failure occurs
-     */
-    public BatchMutatorClient setRetryPolicy(int maxRetries){
-        this.maxRetries = maxRetries;
-        return this;
     }
 
     /**

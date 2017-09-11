@@ -65,7 +65,7 @@ class GraqlClient {
     }
 
     public BatchMutatorClient loaderClient(String keyspace, String uriString) {
-        return new BatchMutatorClient(keyspace, uriString, false).setRetryPolicy(DEFAULT_MAX_RETRY);
+        return new BatchMutatorClient(keyspace, uriString, false, DEFAULT_MAX_RETRY);
     }
 
     public boolean serverIsRunning(String uri) {

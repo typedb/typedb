@@ -123,20 +123,19 @@ public class Migrator {
         this.startTime = System.currentTimeMillis();
         this.batchSize = batchSize;
 
-        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates(), true, debug);
+        BatchMutatorClient loader = new BatchMutatorClient(keyspace, uri, recordMigrationStates(), true, debug, retrySize);
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
-        loader.setRetryPolicy(retrySize);
-            loader.setTaskCompletionConsumer(taskResult -> {
-                String stackTrace = taskResult.getStackTrace();
-                if (stackTrace != null && !stackTrace.isEmpty()) {
-                    if(debug){
-                        throw GraknBackendException.migrationFailure(stackTrace);
-                    } else {
-                        System.err.println(stackTrace);
-                    }
+        loader.setTaskCompletionConsumer(taskResult -> {
+            String stackTrace = taskResult.getStackTrace();
+            if (stackTrace != null && !stackTrace.isEmpty()) {
+                if(debug){
+                    throw GraknBackendException.migrationFailure(stackTrace);
+                } else {
+                    System.err.println(stackTrace);
                 }
-            });
+            }
+        });
 
         converter
                 .flatMap(d -> template(template, d))
