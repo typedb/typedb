@@ -107,556 +107,556 @@ public class GraqlShellIT {
         System.setErr(trueErr);
     }
 
-    @Test
-    public void testStartAndExitShell() throws Exception {
-        // Assert simply that the shell starts and terminates without errors
-        assertTrue(runShellWithoutErrors("exit\n").matches("[\\s\\S]*>>> exit(\r\n?|\n)"));
-    }
-
-    @Test
-    public void testHelpOption() throws Exception {
-        String result = runShellWithoutErrors("", "--help");
-
-        // Check for a few expected usage messages
-        assertThat(
-                result,
-                allOf(
-                        containsString("usage"), containsString("graql console"), containsString("-e"),
-                        containsString("--execute <arg>"), containsString("query to execute")
-                )
-        );
-    }
-
-    @Test
-    public void testVersionOption() throws Exception {
-        String result = runShellWithoutErrors("", "--version");
-        assertThat(result, containsString(expectedVersion));
-    }
-
-    @Test
-    public void testExecuteOption() throws Exception {
-        String result = runShellWithoutErrors("", "-e", "match $x isa entity; aggregate ask;");
-
-        // When using '-e', only results should be printed, no prompt or query
-        assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
-    }
-
-    @Test
-    public void whenUsingExecuteOptionAndPassingGetQueriesWithoutVariables_PrintWarning() throws Exception {
-        ShellResponse response = runShell("", "-e", "match sub entity; get;");
-
-        // There should still be a result...
-        assertThat(response.out(), containsString("{}"));
-
-        // ...but also a warning
-        assertThat(response.err(), containsString(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage()));
-    }
-
-    @Test
-    public void whenUsingExecuteOptionAndPassingNonGetQueriesWithoutVariables_DoNotPrintWarning() throws Exception {
-        // There should be no errors...
-        String result = runShellWithoutErrors("", "-e", "define person sub entity;");
-
-        // ...and a result
-        assertThat(result, containsString("{}"));
-    }
-
-    @Test
-    public void testDefaultKeyspace() throws Exception {
-        runShellWithoutErrors("define im-in-the-default-keyspace sub entity;\ncommit\n");
-
-        assertShellMatches(ImmutableList.of("-k", "grakn"),
-                "match im-in-the-default-keyspace sub entity; aggregate ask;",
-                containsString("True")
-        );
-    }
-
-    @Test
-    public void testSpecificKeyspace() throws Exception {
-        runShellWithoutErrors("define foo-foo sub entity;\ncommit\n", "-k", "foo");
-        runShellWithoutErrors("define bar-bar sub entity;\ncommit\n", "-k", "bar");
-
-        String fooFooinFoo = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
-        String fooFooInBar = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
-        String barBarInFoo = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "foo");
-        String barBarInBar = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "bar");
-        assertThat(fooFooinFoo, containsString("True"));
-        assertThat(fooFooInBar, containsString("False"));
-        assertThat(barBarInFoo, containsString("False"));
-        assertThat(barBarInBar, containsString("True"));
-    }
-
-    @Test
-    public void testFileOption() throws Exception {
-        ShellResponse response = runShell("", "-f", "src/test/graql/shell test(weird name).gql");
-        assertEquals("", response.err());
-    }
-
-    @Test
-    public void testLoadCommand() throws Exception {
-        assertShellMatches(
-                "load src/test/graql/shell test(weird name).gql",
-                anything(),
-                "match movie sub entity; aggregate ask;",
-                containsString("True")
-        );
-    }
-
-    @Test
-    public void testLoadCommandWithEscapes() throws Exception {
-        assertShellMatches(
-                "load src/test/graql/shell\\ test\\(weird\\ name\\).gql",
-                anything(),
-                "match movie sub entity; aggregate ask;",
-                containsString("True")
-        );
-    }
-
-    @Test
-    public void testMatch() throws Exception {
-        String[] result = runShellWithoutErrors(
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;\nexit"
-        ).split("\r\n?|\n");
-
-        // Make sure we find a few results (don't be too fussy about the output here)
-        assertEquals(">>> match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", result[4]);
-        assertTrue(result.length > 5);
-    }
-
-    @Test
-    public void testAskQuery() throws Exception {
-        assertShellMatches(
-                "match $x isa " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()+ "; aggregate ask;",
-                containsString("False")
-        );
-    }
-
-    @Test
-    public void testInsertQuery() throws Exception {
-        assertShellMatches(
-                "define entity2 sub entity;",
-                anything(),
-                "match $x isa entity2; aggregate ask;",
-                containsString("False"),
-                "insert $x isa entity2;",
-                anything(),
-                "match $x isa entity2; aggregate ask;",
-                containsString("True")
-        );
-    }
-
-    @Test
-    public void testInsertOutput() throws Exception {
-        assertShellMatches(
-                "define X sub entity; insert $thingy isa X;",
-                containsString("{}"),
-                allOf(containsString("$thingy"), containsString("isa"), containsString("X"))
-        );
-    }
-
-    @Test
-    public void testAggregateQuery() throws Exception {
-        assertShellMatches(
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate count;",
-                is(Integer.toString(NUM_METATYPES))
-        );
-    }
-
-    @Test
-    public void testAutocomplete() throws Exception {
-        String result = runShellWithoutErrors("match $x isa \t");
-
-        // Make sure all the autocompleters are working (except shell commands because we are writing a query)
-        assertThat(
-                result,
-                allOf(
-                        containsString(Schema.MetaSchema.THING.getLabel().getValue()), containsString("match"),
-                        not(containsString("exit")), containsString("$x")
-                )
-        );
-    }
-
-    @Test
-    public void testAutocompleteShellCommand() throws Exception {
-        String result = runShellWithoutErrors("\t");
-
-        // Make sure all the autocompleters are working (including shell commands because we are not writing a query)
-        assertThat(result, allOf(containsString("type"), containsString("match"), containsString("exit")));
-    }
-
-    @Test
-    public void testAutocompleteFill() throws Exception {
-        String result = runShellWithoutErrors("match $x sub thin\t; get;\n");
-        assertThat(result, containsString(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()));
-    }
-
-    @Test
-    public void testReasonerOff() throws Exception {
-        assertShellMatches(
-                "define man sub entity has name; name sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string;",
-                anything(),
-                "define person sub entity;",
-                anything(),
-                "insert has name 'felix' isa man;",
-                anything(),
-                "define my-rule sub rule when {$x isa man;} then {$x isa person;};",
-                anything(),
-                "commit",
-                "match isa person, has name $x; get;"
-                // No results
-        );
-    }
-
-    @Test
-    public void testReasoner() throws Exception {
-        assertShellMatches(ImmutableList.of("--infer"),
-                "define man sub entity has name; name sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string;",
-                anything(),
-                "define person sub entity;",
-                anything(),
-                "insert has name 'felix' isa man;",
-                anything(),
-                "match isa person, has name $x; get;",
-                // No results
-                "define my-rule sub rule when {$x isa man;} then {$x isa person;};",
-                anything(),
-                "commit",
-                "match isa person, has name $x; get;",
-                containsString("felix") // Results after result is added
-        );
-    }
-
-    @Test
-    public void testInvalidQuery() throws Exception {
-        ShellResponse response = runShell(
-                "define movie sub entity; insert $moon isa movie; $europa isa $moon;\n"
-        );
-
-        assertThat(response.err(), allOf(containsString("not"), containsString("type")));
-    }
-
-    @Test
-    public void testComputeCount() throws Exception {
-        assertShellMatches(
-                "define X sub entity; insert $a isa X; $b isa X; $c isa X;",
-                anything(),
-                anything(),
-                "commit",
-                "compute count;",
-                is("3")
-        );
-    }
-
-    @Test
-    public void testRollback() throws Exception {
-        // Tinker graph doesn't support rollback
-        assumeFalse(GraknTestSetup.usingTinker());
-
-        String[] result = runShellWithoutErrors("insert E sub entity;\nrollback\nmatch $x label E;\n").split("\n");
-
-        // Make sure there are no results for get query
-        assertEquals(">>> match $x label E; get;", result[result.length-2]);
-        assertEquals(">>> ", result[result.length-1]);
-    }
-
-    @Test
-    public void testLimit() throws Exception {
-        assertShellMatches(
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; limit 1; get;",
-                anything() // Only one result
-        );
-    }
-
-    @Test
-    public void testGraqlOutput() throws Exception {
-        String result = runShellWithoutErrors(
-                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", "-o", "graql"
-        );
-        assertThat(result, allOf(containsString("$x"), containsString(Schema.MetaSchema.ENTITY.getLabel().getValue())));
-    }
-
-    @Test
-    public void testJsonOutput() throws Exception {
-        String[] result = runShellWithoutErrors(
-                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", "-o", "json"
-        ).split("\n");
-        assertThat(result, arrayWithSize(NUM_METATYPES));
-        Json json = Json.read(result[0]);
-        Json x = json.at("x");
-        assertTrue(x.has("id"));
-        assertFalse(x.has("isa"));
-    }
-
-    @Test
-    public void testHALOutput() throws Exception {
-        String[] result = runShellWithoutErrors(
-                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", "-o", "hal"
-        ).split("\n");
-        assertThat(result, arrayWithSize(NUM_METATYPES));
-        Json json = Json.read(result[0]);
-        Json x = json.at("x");
-        assertTrue(x.has("_id"));
-        assertTrue(x.has("_baseType"));
-    }
-
-    @Test
-    public void testRollbackSemicolon() throws Exception {
-        // Tinker graph doesn't support rollback
-        assumeFalse(GraknTestSetup.usingTinker());
-
-        String result = runShellWithoutErrors(
-                "insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity;\n"
-        );
-        String[] lines = result.split("\n");
-
-        // Make sure there are no results for get query
-        assertEquals(result, ">>> match $x isa entity; get;", lines[lines.length-2]);
-        assertEquals(result, ">>> ", lines[lines.length-1]);
-    }
-
-    @Test
-    public void whenEngineIsNotRunning_ShowAnError() throws Exception {
-        ShellResponse response = runShell("", "-r", "localhost:7654");
-
-        assertThat(response.err(), containsString(ErrorMessage.COULD_NOT_CONNECT.getMessage()));
-    }
-
-    @Test
-    @Ignore
-    /* TODO: Fix this test
-     * Sometimes we see this: "Websocket closed, code: 1005, reason: null".
-     * Other times, JLine crashes when receiving certain input.
-     */
-    public void fuzzTest() throws Exception {
-        int repeats = 100;
-        for (int i = 0; i < repeats; i ++) {
-            String input = randomString(i);
-            try {
-                runShell(input);
-            } catch (Throwable e) {
-                // We catch all exceptions so we can report exactly what input caused the error
-                throw new RuntimeException("Error when providing the following input to shell: [" + input + "]", e);
-            }
-        }
-    }
-
-    @Test
-    public void testLargeQuery() throws Exception {
-        // We don't show output for this test because the query is really-really-really-really-really-really-really long
-        showStdOutAndErr = false;
-
-        try {
-            String value = Strings.repeat("really-", 100000) + "long-value";
-
-            assertShellMatches(
-                    "define X sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; insert val '" + value + "' isa X;",
-                    anything(),
-                    anything(),
-                    "match $x isa X; get;",
-                    allOf(containsString("$x"), containsString(value))
-            );
-        } finally {
-            showStdOutAndErr = true;
-        }
-    }
-
-    @Test
-    public void whenErrorIsLarge_UserStillSeesEntireErrorMessage() throws Exception {
-        // We don't show output for this test because the query is really-really-really-really-really-really-really long
-        showStdOutAndErr = false;
-
-        try {
-            String value = Strings.repeat("really-", 100000) + "long-value";
-
-            // Query has a syntax error
-            ShellResponse response = runShell(
-                    "insert X sub resource datatype string; value '" + value + "' isa X;\n"
-            );
-
-            assertThat(response.err(), allOf(containsString("syntax error"), containsString(value)));
-        } finally {
-            showStdOutAndErr = true;
-        }
-    }
-
-    @Test
-    public void testCommitError() throws Exception {
-        ShellResponse response = runShell("insert bob sub relation;\ncommit;\nmatch $x sub relationship;\n");
-        assertFalse(response.out(), response.err().isEmpty());
-    }
-
-    @Test
-    public void testCommitErrorExecuteOption() throws Exception {
-        ShellResponse response = runShell("", "-e", "insert bob sub relation;");
-        assertFalse(response.out(), response.err().isEmpty());
-    }
-
-    @Test
-    public void testDefaultDontDisplayResources() throws Exception {
-        assertShellMatches(
-                "define X sub entity; R sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; X has R; insert isa X has R 'foo';",
-                anything(),
-                anything(),
-                "match $x isa X; get;",
-                allOf(containsString("id"), not(containsString("\"foo\"")))
-        );
-    }
-
-    @Test
-    public void testDisplayResourcesCommand() throws Exception {
-        assertShellMatches(
-                "define X sub entity; R sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; X has R; insert isa X has R 'foo';",
-                anything(),
-                anything(),
-                "display R;",
-                "match $x isa X; get;",
-                allOf(containsString("id"), containsString("\"foo\""))
-        );
-    }
-
-    @Test
-    public void whenRunningCleanCommand_TheGraphIsCleanedAndCommitted() throws Exception {
-        assertShellMatches(
-                "define my-type sub entity;",
-                is("{}"),
-                "commit",
-                "match $x sub entity; get;",
-                containsString("entity"),
-                containsString("entity"),
-                "clean",
-                is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
-                is("Type 'confirm' to continue."),
-                "confirm",
-                is("Cleaning..."),
-                "match $x sub entity; get;",
-                containsString("entity"),
-                "rollback",
-                "match $x sub entity; get;",
-                containsString("entity")
-        );
-    }
-
-    @Test
-    public void whenCancellingCleanCommand_TheGraphIsNotCleaned() throws Exception {
-        assertShellMatches(
-                "define my-type sub entity;",
-                is("{}"),
-                "match $x sub entity; get;",
-                containsString("entity"),
-                containsString("entity"),
-                "clean",
-                is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
-                is("Type 'confirm' to continue."),
-                "n",
-                is("Cancelling clean."),
-                "match $x sub entity; get;",
-                containsString("entity"),
-                containsString("entity"),
-                "clean",
-                is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
-                is("Type 'confirm' to continue."),
-                "no thanks bad idea thanks for warning me",
-                is("Cancelling clean."),
-                "match $x sub entity; get;",
-                containsString("entity"),
-                containsString("entity")
-        );
-    }
-
-    @Test
-    public void testExecuteMultipleQueries() throws Exception {
-        assertShellMatches(
-                "define X sub entity; insert $x isa X; match $y isa X; get; match $y isa X; aggregate count;",
-                // Make sure we see results from all four queries
-                containsString("{}"),
-                containsString("$x"),
-                containsString("$y"),
-                is("1")
-        );
-    }
-
-    @Test
-    @Ignore("Causes Travis build to halt")
-    public void whenRunningBatchLoad_LoadCompletes() throws Exception {
-        runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
-        runShellWithoutErrors("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
-
-        assertShellMatches(ImmutableList.of("-k", "batch"),
-                "match $x isa movie; aggregate ask;",
-                containsString("True")
-        );
-    }
-
-    @Test
-    @Ignore("Causes Travis build to halt")
-    public void whenRunningBatchLoadAndAnErrorOccurs_PrintStatus() throws Exception {
-        runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
-
-        assertShellMatches(ImmutableList.of("-k", "batch", "-b", "src/test/graql/batch-test-bad.gql"),
-                is("Status of batch: FAILED"),
-                is("Number batches completed: 1"),
-                containsString("Approximate queries executed:"),
-                containsString("All tasks completed")
-        );
-    }
-
-    @Test
-    public void whenUserMakesAMistake_SubsequentQueriesStillWork() throws Exception {
-        ShellResponse response = runShell(
-                "match $x sub concet; aggregate count;\n" +
-                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate ask;\n"
-        );
-
-        assertThat(response.err(), not(containsString("error")));
-        assertThat(response.out(), containsString("True"));
-    }
-
-    @Test
-    public void whenUserMakesAMistake_SubsequentErrorsAreTheSame() throws Exception {
-        String query = "insert r sub resource datatype string; e sub entity has r has nothing;";
-
-        String err1 = runShell("", "-e", query).err();
-        assertThat(err1, not(isEmptyString()));
-
-        String err2 = runShell("", "-e", query).err();
-        assertEquals(err1, err2);
-    }
-
-    @Test
-    public void testDuplicateRelation() throws Exception {
-        String err = runShell(
-                "define R sub " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue() + ", relates R1, relates R2; R1 sub role; R2 sub role;\n" +
-                        "define X sub entity, plays R1, plays R2;\n" +
-                        "insert $x isa X; (R1: $x, R2: $x) isa R;\n" +
-                        "match $x isa X; insert (R1: $x, R2: $x) isa R;\n" +
-                        "commit\n"
-        ).err();
-
-        assertThat(err.toLowerCase(), allOf(
-                anyOf(containsString("exists"), containsString("one or more")),
-                containsString("relationships")
-        ));
-    }
-
-    @Test
-    public void whenErrorOccurs_DoNotShowStackTrace() throws Exception {
-        ShellResponse response = runShell("match fofobjiojasd\n");
-
-        assertFalse(response.out(), response.err().isEmpty());
-        assertThat(response.err(), not(containsString(".java")));
-    }
-
-    @Test
-    public void whenErrorDoesNotOccurs_Return0() throws Exception {
-        ShellResponse response = runShell("match $x sub entity; get;\n");
-        assertEquals(0, response.exitCode());
-    }
-
-    @Test
-    public void whenErrorOccurs_Return1() throws Exception {
-        ShellResponse response = runShell("match fofobjiojasd\n");
-        assertEquals(1, response.exitCode());
-    }
+//    @Test
+//    public void testStartAndExitShell() throws Exception {
+//        // Assert simply that the shell starts and terminates without errors
+//        assertTrue(runShellWithoutErrors("exit\n").matches("[\\s\\S]*>>> exit(\r\n?|\n)"));
+//    }
+//
+//    @Test
+//    public void testHelpOption() throws Exception {
+//        String result = runShellWithoutErrors("", "--help");
+//
+//        // Check for a few expected usage messages
+//        assertThat(
+//                result,
+//                allOf(
+//                        containsString("usage"), containsString("graql console"), containsString("-e"),
+//                        containsString("--execute <arg>"), containsString("query to execute")
+//                )
+//        );
+//    }
+//
+//    @Test
+//    public void testVersionOption() throws Exception {
+//        String result = runShellWithoutErrors("", "--version");
+//        assertThat(result, containsString(expectedVersion));
+//    }
+//
+//    @Test
+//    public void testExecuteOption() throws Exception {
+//        String result = runShellWithoutErrors("", "-e", "match $x isa entity; aggregate ask;");
+//
+//        // When using '-e', only results should be printed, no prompt or query
+//        assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
+//    }
+//
+//    @Test
+//    public void whenUsingExecuteOptionAndPassingGetQueriesWithoutVariables_PrintWarning() throws Exception {
+//        ShellResponse response = runShell("", "-e", "match sub entity; get;");
+//
+//        // There should still be a result...
+//        assertThat(response.out(), containsString("{}"));
+//
+//        // ...but also a warning
+//        assertThat(response.err(), containsString(ErrorMessage.NO_VARIABLE_IN_QUERY.getMessage()));
+//    }
+//
+//    @Test
+//    public void whenUsingExecuteOptionAndPassingNonGetQueriesWithoutVariables_DoNotPrintWarning() throws Exception {
+//        // There should be no errors...
+//        String result = runShellWithoutErrors("", "-e", "define person sub entity;");
+//
+//        // ...and a result
+//        assertThat(result, containsString("{}"));
+//    }
+//
+//    @Test
+//    public void testDefaultKeyspace() throws Exception {
+//        runShellWithoutErrors("define im-in-the-default-keyspace sub entity;\ncommit\n");
+//
+//        assertShellMatches(ImmutableList.of("-k", "grakn"),
+//                "match im-in-the-default-keyspace sub entity; aggregate ask;",
+//                containsString("True")
+//        );
+//    }
+//
+//    @Test
+//    public void testSpecificKeyspace() throws Exception {
+//        runShellWithoutErrors("define foo-foo sub entity;\ncommit\n", "-k", "foo");
+//        runShellWithoutErrors("define bar-bar sub entity;\ncommit\n", "-k", "bar");
+//
+//        String fooFooinFoo = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "foo");
+//        String fooFooInBar = runShellWithoutErrors("match foo-foo sub entity; aggregate ask;\n", "-k", "bar");
+//        String barBarInFoo = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "foo");
+//        String barBarInBar = runShellWithoutErrors("match bar-bar sub entity; aggregate ask;\n", "-k", "bar");
+//        assertThat(fooFooinFoo, containsString("True"));
+//        assertThat(fooFooInBar, containsString("False"));
+//        assertThat(barBarInFoo, containsString("False"));
+//        assertThat(barBarInBar, containsString("True"));
+//    }
+//
+//    @Test
+//    public void testFileOption() throws Exception {
+//        ShellResponse response = runShell("", "-f", "src/test/graql/shell test(weird name).gql");
+//        assertEquals("", response.err());
+//    }
+//
+//    @Test
+//    public void testLoadCommand() throws Exception {
+//        assertShellMatches(
+//                "load src/test/graql/shell test(weird name).gql",
+//                anything(),
+//                "match movie sub entity; aggregate ask;",
+//                containsString("True")
+//        );
+//    }
+//
+//    @Test
+//    public void testLoadCommandWithEscapes() throws Exception {
+//        assertShellMatches(
+//                "load src/test/graql/shell\\ test\\(weird\\ name\\).gql",
+//                anything(),
+//                "match movie sub entity; aggregate ask;",
+//                containsString("True")
+//        );
+//    }
+//
+//    @Test
+//    public void testMatch() throws Exception {
+//        String[] result = runShellWithoutErrors(
+//                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;\nexit"
+//        ).split("\r\n?|\n");
+//
+//        // Make sure we find a few results (don't be too fussy about the output here)
+//        assertEquals(">>> match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", result[4]);
+//        assertTrue(result.length > 5);
+//    }
+//
+//    @Test
+//    public void testAskQuery() throws Exception {
+//        assertShellMatches(
+//                "match $x isa " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()+ "; aggregate ask;",
+//                containsString("False")
+//        );
+//    }
+//
+//    @Test
+//    public void testInsertQuery() throws Exception {
+//        assertShellMatches(
+//                "define entity2 sub entity;",
+//                anything(),
+//                "match $x isa entity2; aggregate ask;",
+//                containsString("False"),
+//                "insert $x isa entity2;",
+//                anything(),
+//                "match $x isa entity2; aggregate ask;",
+//                containsString("True")
+//        );
+//    }
+//
+//    @Test
+//    public void testInsertOutput() throws Exception {
+//        assertShellMatches(
+//                "define X sub entity; insert $thingy isa X;",
+//                containsString("{}"),
+//                allOf(containsString("$thingy"), containsString("isa"), containsString("X"))
+//        );
+//    }
+//
+//    @Test
+//    public void testAggregateQuery() throws Exception {
+//        assertShellMatches(
+//                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate count;",
+//                is(Integer.toString(NUM_METATYPES))
+//        );
+//    }
+
+//    @Test
+//    public void testAutocomplete() throws Exception {
+//        String result = runShellWithoutErrors("match $x isa \t");
+//
+//        // Make sure all the autocompleters are working (except shell commands because we are writing a query)
+//        assertThat(
+//                result,
+//                allOf(
+//                        containsString(Schema.MetaSchema.THING.getLabel().getValue()), containsString("match"),
+//                        not(containsString("exit")), containsString("$x")
+//                )
+//        );
+//    }
+//
+//    @Test
+//    public void testAutocompleteShellCommand() throws Exception {
+//        String result = runShellWithoutErrors("\t");
+//
+//        // Make sure all the autocompleters are working (including shell commands because we are not writing a query)
+//        assertThat(result, allOf(containsString("type"), containsString("match"), containsString("exit")));
+//    }
+//
+//    @Test
+//    public void testAutocompleteFill() throws Exception {
+//        String result = runShellWithoutErrors("match $x sub thin\t; get;\n");
+//        assertThat(result, containsString(Schema.MetaSchema.RELATIONSHIP.getLabel().getValue()));
+//    }
+//
+//    @Test
+//    public void testReasonerOff() throws Exception {
+//        assertShellMatches(
+//                "define man sub entity has name; name sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string;",
+//                anything(),
+//                "define person sub entity;",
+//                anything(),
+//                "insert has name 'felix' isa man;",
+//                anything(),
+//                "define my-rule sub rule when {$x isa man;} then {$x isa person;};",
+//                anything(),
+//                "commit",
+//                "match isa person, has name $x; get;"
+//                // No results
+//        );
+//    }
+//
+//    @Test
+//    public void testReasoner() throws Exception {
+//        assertShellMatches(ImmutableList.of("--infer"),
+//                "define man sub entity has name; name sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string;",
+//                anything(),
+//                "define person sub entity;",
+//                anything(),
+//                "insert has name 'felix' isa man;",
+//                anything(),
+//                "match isa person, has name $x; get;",
+//                // No results
+//                "define my-rule sub rule when {$x isa man;} then {$x isa person;};",
+//                anything(),
+//                "commit",
+//                "match isa person, has name $x; get;",
+//                containsString("felix") // Results after result is added
+//        );
+//    }
+//
+//    @Test
+//    public void testInvalidQuery() throws Exception {
+//        ShellResponse response = runShell(
+//                "define movie sub entity; insert $moon isa movie; $europa isa $moon;\n"
+//        );
+//
+//        assertThat(response.err(), allOf(containsString("not"), containsString("type")));
+//    }
+//
+//    @Test
+//    public void testComputeCount() throws Exception {
+//        assertShellMatches(
+//                "define X sub entity; insert $a isa X; $b isa X; $c isa X;",
+//                anything(),
+//                anything(),
+//                "commit",
+//                "compute count;",
+//                is("3")
+//        );
+//    }
+//
+//    @Test
+//    public void testRollback() throws Exception {
+//        // Tinker graph doesn't support rollback
+//        assumeFalse(GraknTestSetup.usingTinker());
+//
+//        String[] result = runShellWithoutErrors("insert E sub entity;\nrollback\nmatch $x label E;\n").split("\n");
+//
+//        // Make sure there are no results for get query
+//        assertEquals(">>> match $x label E; get;", result[result.length-2]);
+//        assertEquals(">>> ", result[result.length-1]);
+//    }
+//
+//    @Test
+//    public void testLimit() throws Exception {
+//        assertShellMatches(
+//                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; limit 1; get;",
+//                anything() // Only one result
+//        );
+//    }
+//
+//    @Test
+//    public void testGraqlOutput() throws Exception {
+//        String result = runShellWithoutErrors(
+//                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", "-o", "graql"
+//        );
+//        assertThat(result, allOf(containsString("$x"), containsString(Schema.MetaSchema.ENTITY.getLabel().getValue())));
+//    }
+//
+//    @Test
+//    public void testJsonOutput() throws Exception {
+//        String[] result = runShellWithoutErrors(
+//                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", "-o", "json"
+//        ).split("\n");
+//        assertThat(result, arrayWithSize(NUM_METATYPES));
+//        Json json = Json.read(result[0]);
+//        Json x = json.at("x");
+//        assertTrue(x.has("id"));
+//        assertFalse(x.has("isa"));
+//    }
+//
+//    @Test
+//    public void testHALOutput() throws Exception {
+//        String[] result = runShellWithoutErrors(
+//                "", "-e", "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; get;", "-o", "hal"
+//        ).split("\n");
+//        assertThat(result, arrayWithSize(NUM_METATYPES));
+//        Json json = Json.read(result[0]);
+//        Json x = json.at("x");
+//        assertTrue(x.has("_id"));
+//        assertTrue(x.has("_baseType"));
+//    }
+//
+//    @Test
+//    public void testRollbackSemicolon() throws Exception {
+//        // Tinker graph doesn't support rollback
+//        assumeFalse(GraknTestSetup.usingTinker());
+//
+//        String result = runShellWithoutErrors(
+//                "insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity;\n"
+//        );
+//        String[] lines = result.split("\n");
+//
+//        // Make sure there are no results for get query
+//        assertEquals(result, ">>> match $x isa entity; get;", lines[lines.length-2]);
+//        assertEquals(result, ">>> ", lines[lines.length-1]);
+//    }
+//
+//    @Test
+//    public void whenEngineIsNotRunning_ShowAnError() throws Exception {
+//        ShellResponse response = runShell("", "-r", "localhost:7654");
+//
+//        assertThat(response.err(), containsString(ErrorMessage.COULD_NOT_CONNECT.getMessage()));
+//    }
+//
+//    @Test
+//    @Ignore
+//    /* TODO: Fix this test
+//     * Sometimes we see this: "Websocket closed, code: 1005, reason: null".
+//     * Other times, JLine crashes when receiving certain input.
+//     */
+//    public void fuzzTest() throws Exception {
+//        int repeats = 100;
+//        for (int i = 0; i < repeats; i ++) {
+//            String input = randomString(i);
+//            try {
+//                runShell(input);
+//            } catch (Throwable e) {
+//                // We catch all exceptions so we can report exactly what input caused the error
+//                throw new RuntimeException("Error when providing the following input to shell: [" + input + "]", e);
+//            }
+//        }
+//    }
+//
+//    @Test
+//    public void testLargeQuery() throws Exception {
+//        // We don't show output for this test because the query is really-really-really-really-really-really-really long
+//        showStdOutAndErr = false;
+//
+//        try {
+//            String value = Strings.repeat("really-", 100000) + "long-value";
+//
+//            assertShellMatches(
+//                    "define X sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; insert val '" + value + "' isa X;",
+//                    anything(),
+//                    anything(),
+//                    "match $x isa X; get;",
+//                    allOf(containsString("$x"), containsString(value))
+//            );
+//        } finally {
+//            showStdOutAndErr = true;
+//        }
+//    }
+//
+//    @Test
+//    public void whenErrorIsLarge_UserStillSeesEntireErrorMessage() throws Exception {
+//        // We don't show output for this test because the query is really-really-really-really-really-really-really long
+//        showStdOutAndErr = false;
+//
+//        try {
+//            String value = Strings.repeat("really-", 100000) + "long-value";
+//
+//            // Query has a syntax error
+//            ShellResponse response = runShell(
+//                    "insert X sub resource datatype string; value '" + value + "' isa X;\n"
+//            );
+//
+//            assertThat(response.err(), allOf(containsString("syntax error"), containsString(value)));
+//        } finally {
+//            showStdOutAndErr = true;
+//        }
+//    }
+//
+//    @Test
+//    public void testCommitError() throws Exception {
+//        ShellResponse response = runShell("insert bob sub relation;\ncommit;\nmatch $x sub relationship;\n");
+//        assertFalse(response.out(), response.err().isEmpty());
+//    }
+//
+//    @Test
+//    public void testCommitErrorExecuteOption() throws Exception {
+//        ShellResponse response = runShell("", "-e", "insert bob sub relation;");
+//        assertFalse(response.out(), response.err().isEmpty());
+//    }
+//
+//    @Test
+//    public void testDefaultDontDisplayResources() throws Exception {
+//        assertShellMatches(
+//                "define X sub entity; R sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; X has R; insert isa X has R 'foo';",
+//                anything(),
+//                anything(),
+//                "match $x isa X; get;",
+//                allOf(containsString("id"), not(containsString("\"foo\"")))
+//        );
+//    }
+//
+//    @Test
+//    public void testDisplayResourcesCommand() throws Exception {
+//        assertShellMatches(
+//                "define X sub entity; R sub " + Schema.MetaSchema.ATTRIBUTE.getLabel().getValue() + " datatype string; X has R; insert isa X has R 'foo';",
+//                anything(),
+//                anything(),
+//                "display R;",
+//                "match $x isa X; get;",
+//                allOf(containsString("id"), containsString("\"foo\""))
+//        );
+//    }
+//
+//    @Test
+//    public void whenRunningCleanCommand_TheGraphIsCleanedAndCommitted() throws Exception {
+//        assertShellMatches(
+//                "define my-type sub entity;",
+//                is("{}"),
+//                "commit",
+//                "match $x sub entity; get;",
+//                containsString("entity"),
+//                containsString("entity"),
+//                "clean",
+//                is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
+//                is("Type 'confirm' to continue."),
+//                "confirm",
+//                is("Cleaning..."),
+//                "match $x sub entity; get;",
+//                containsString("entity"),
+//                "rollback",
+//                "match $x sub entity; get;",
+//                containsString("entity")
+//        );
+//    }
+//
+//    @Test
+//    public void whenCancellingCleanCommand_TheGraphIsNotCleaned() throws Exception {
+//        assertShellMatches(
+//                "define my-type sub entity;",
+//                is("{}"),
+//                "match $x sub entity; get;",
+//                containsString("entity"),
+//                containsString("entity"),
+//                "clean",
+//                is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
+//                is("Type 'confirm' to continue."),
+//                "n",
+//                is("Cancelling clean."),
+//                "match $x sub entity; get;",
+//                containsString("entity"),
+//                containsString("entity"),
+//                "clean",
+//                is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
+//                is("Type 'confirm' to continue."),
+//                "no thanks bad idea thanks for warning me",
+//                is("Cancelling clean."),
+//                "match $x sub entity; get;",
+//                containsString("entity"),
+//                containsString("entity")
+//        );
+//    }
+//
+//    @Test
+//    public void testExecuteMultipleQueries() throws Exception {
+//        assertShellMatches(
+//                "define X sub entity; insert $x isa X; match $y isa X; get; match $y isa X; aggregate count;",
+//                // Make sure we see results from all four queries
+//                containsString("{}"),
+//                containsString("$x"),
+//                containsString("$y"),
+//                is("1")
+//        );
+//    }
+//
+//    @Test
+//    @Ignore("Causes Travis build to halt")
+//    public void whenRunningBatchLoad_LoadCompletes() throws Exception {
+//        runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
+//        runShellWithoutErrors("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
+//
+//        assertShellMatches(ImmutableList.of("-k", "batch"),
+//                "match $x isa movie; aggregate ask;",
+//                containsString("True")
+//        );
+//    }
+//
+//    @Test
+//    @Ignore("Causes Travis build to halt")
+//    public void whenRunningBatchLoadAndAnErrorOccurs_PrintStatus() throws Exception {
+//        runShellWithoutErrors("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
+//
+//        assertShellMatches(ImmutableList.of("-k", "batch", "-b", "src/test/graql/batch-test-bad.gql"),
+//                is("Status of batch: FAILED"),
+//                is("Number batches completed: 1"),
+//                containsString("Approximate queries executed:"),
+//                containsString("All tasks completed")
+//        );
+//    }
+//
+//    @Test
+//    public void whenUserMakesAMistake_SubsequentQueriesStillWork() throws Exception {
+//        ShellResponse response = runShell(
+//                "match $x sub concet; aggregate count;\n" +
+//                "match $x sub " + Schema.MetaSchema.THING.getLabel().getValue() + "; aggregate ask;\n"
+//        );
+//
+//        assertThat(response.err(), not(containsString("error")));
+//        assertThat(response.out(), containsString("True"));
+//    }
+//
+//    @Test
+//    public void whenUserMakesAMistake_SubsequentErrorsAreTheSame() throws Exception {
+//        String query = "insert r sub resource datatype string; e sub entity has r has nothing;";
+//
+//        String err1 = runShell("", "-e", query).err();
+//        assertThat(err1, not(isEmptyString()));
+//
+//        String err2 = runShell("", "-e", query).err();
+//        assertEquals(err1, err2);
+//    }
+//
+//    @Test
+//    public void testDuplicateRelation() throws Exception {
+//        String err = runShell(
+//                "define R sub " + Schema.MetaSchema.RELATIONSHIP.getLabel().getValue() + ", relates R1, relates R2; R1 sub role; R2 sub role;\n" +
+//                        "define X sub entity, plays R1, plays R2;\n" +
+//                        "insert $x isa X; (R1: $x, R2: $x) isa R;\n" +
+//                        "match $x isa X; insert (R1: $x, R2: $x) isa R;\n" +
+//                        "commit\n"
+//        ).err();
+//
+//        assertThat(err.toLowerCase(), allOf(
+//                anyOf(containsString("exists"), containsString("one or more")),
+//                containsString("relationships")
+//        ));
+//    }
+//
+//    @Test
+//    public void whenErrorOccurs_DoNotShowStackTrace() throws Exception {
+//        ShellResponse response = runShell("match fofobjiojasd\n");
+//
+//        assertFalse(response.out(), response.err().isEmpty());
+//        assertThat(response.err(), not(containsString(".java")));
+//    }
+//
+//    @Test
+//    public void whenErrorDoesNotOccurs_Return0() throws Exception {
+//        ShellResponse response = runShell("match $x sub entity; get;\n");
+//        assertEquals(0, response.exitCode());
+//    }
+//
+//    @Test
+//    public void whenErrorOccurs_Return1() throws Exception {
+//        ShellResponse response = runShell("match fofobjiojasd\n");
+//        assertEquals(1, response.exitCode());
+//    }
 
     private static String randomString(int length) {
         Random random = new Random();
