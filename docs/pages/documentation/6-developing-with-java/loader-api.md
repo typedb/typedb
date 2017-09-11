@@ -165,21 +165,6 @@ loader.setTaskCompletionConsumer((Json json) -> {
 
 This callback is executed whenever a terminal response from the server is received, even if an exception was thrown. In the case of an execption, the Json argument will be either empty or contain the errored response from the server including the server-side exception. 
 
-## Retry policy
-Allows the user to specify whether the client should retry sending requests if the server cannot be reached. 
-
-The default setting is for the retry policy to be **false**. 
-
-
-```java
-// If the server is unavailable, the client will attempt to re-send the queries
-loader.setRetryPolicy(true);
-
-// The client will not attempt to resend the batch of queries if the server becomes unavailable
-loader.setRetryPolicy(false);
-```
-
-
 ## Close
 
 The loader can be closed as follows
