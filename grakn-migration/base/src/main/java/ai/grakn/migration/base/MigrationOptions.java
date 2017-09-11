@@ -51,7 +51,7 @@ public class MigrationOptions {
         options.addOption("u", "uri", true, "Location of Grakn Engine.");
         options.addOption("n", "no", false, "Write to standard out.");
         options.addOption("c", "config", true, "Configuration file.");
-        options.addOption("r", "retry", true, "Retry sending tasks if engine is not available");
+        options.addOption("r", "retry", true, "Number of times to retry sending tasks if engine is not available");
         options.addOption("d", "debug", false, "Immediately stop and fail migration if an error occurs");
     }
 
