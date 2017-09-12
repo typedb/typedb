@@ -178,7 +178,7 @@ public class GraknTxTest extends TxTestBase {
 
     @Test
     public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws InvalidKBException {
-        GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "testing-again").open(GraknTxType.WRITE);
+        GraknTx graph = Grakn.session(Grakn.IN_MEMORY, "testingagain").open(GraknTxType.WRITE);
         graph.close();
 
         boolean errorThrown = false;
@@ -191,7 +191,7 @@ public class GraknTxTest extends TxTestBase {
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
-        graph = Grakn.session(Grakn.IN_MEMORY, "testing-again").open(GraknTxType.WRITE);
+        graph = Grakn.session(Grakn.IN_MEMORY, "testingagain").open(GraknTxType.WRITE);
         graph.putEntityType("A Thing");
     }
 
@@ -250,7 +250,7 @@ public class GraknTxTest extends TxTestBase {
 
     @Test
     public void whenAttemptingToMutateReadOnlyGraph_Throw(){
-        String keyspace = "my-read-only-graph";
+        String keyspace = "myreadonlygraph";
         String entityType = "My Entity Type";
         String roleType1 = "My Role Type 1";
         String roleType2 = "My Role Type 2";

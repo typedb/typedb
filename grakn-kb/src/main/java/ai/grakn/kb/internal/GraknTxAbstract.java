@@ -21,6 +21,7 @@ package ai.grakn.kb.internal;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
@@ -111,7 +112,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     public static final String NORMAL_CACHE_TIMEOUT_MS = "knowledge-base.schema-cache-timeout-ms";
 
     //----------------------------- Shared Variables
-    private final String keyspace;
+    private final Keyspace keyspace;
     private final String engineUri;
     private final Properties properties;
     private final G graph;
@@ -131,7 +132,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     //----------------------------- Transaction Specific
     private final ThreadLocal<TxCache> localConceptLog = new ThreadLocal<>();
 
-    public GraknTxAbstract(G graph, String keyspace, String engineUri, Properties properties) {
+    public GraknTxAbstract(G graph, Keyspace keyspace, String engineUri, Properties properties) {
         this.graph = graph;
         this.keyspace = keyspace;
         this.engineUri = engineUri;
@@ -208,7 +209,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public String getKeyspace() {
+    public Keyspace getKeyspace() {
         return keyspace;
     }
 

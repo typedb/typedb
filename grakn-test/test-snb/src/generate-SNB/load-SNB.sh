@@ -118,7 +118,7 @@ do
         echo "Dynamic batch size: $BATCH_SIZE"
 
         tail -n +2 $CSV_DATA/${DATA_FILE} | wc -l
-        time migration.sh csv -s \| -t $GRAQL/${TEMPLATE_FILE} -i $CSV_DATA/${DATA_FILE} -d -k $KEYSPACE -u $ENGINE -a ${ACTIVE_TASKS:-25} -b ${BATCH_SIZE}
+        time migration.sh csv -s \| -t $GRAQL/${TEMPLATE_FILE} -i $CSV_DATA/${DATA_FILE} -d -r 5 -k $KEYSPACE -u $ENGINE -a ${ACTIVE_TASKS:-25} -b ${BATCH_SIZE}
 done < $SCRIPTPATH/migrationsToRun.txt
 
 # confirm there were no errors

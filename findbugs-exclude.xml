@@ -21,6 +21,7 @@
             <Class name="ai.grakn.concept.ConceptId"/>
             <Class name="ai.grakn.concept.Label"/>
             <Class name="ai.grakn.concept.LabelId"/>
+            <Class name="ai.grakn.Keyspace"/>
         </Or>
         <Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS"/>
     </Match>
