@@ -104,15 +104,37 @@ Within the [patterns](#pattern), the following [properties](#property) are suppo
 
 #### relationship
 
-`$r ($A1: $x1, ..., $An: $xn)` is _satisfied_ if `$r` is a relation where for each _i_ `$xi` is a role-player
-in `$r`, indirectly playing the role `$Ai`.
-<!-- TODO additional duplicate role-players constraint -->
+`$r ($A1: $x1, ..., $An: $xn)` is _satisfied_ if `$r` is a relation where for each `$Ai: $xi`, `$xi` is a role-player
+in `$r` indirectly playing the role `$Ai`.
+
+Additionally, for all pairs `$Ai: $xi` and `$Aj: $xj` where `i != j`, `$xi` and `$xj` must be different, or directly
+playing different roles in the relationship `$r`.
 
 The [variable](#variable) representing the role can optionally be omitted. If it is omitted, then the first
 [variable](#variable) is implicitly bound to the label `role`.
 
 #### has (data)
-<!-- TODO -->
+
+<!-- TODO: Describe without referring to relationships? -->
+```
+$x has <identifier> $y as $r;
+```
+is equivalent to
+```
+$r ($x, $y);
+$y isa <identifier>;
+```
+
+The `as $r` is optional. Additionally, a predicate can be used instead of a [variable](#variable):
+
+```
+$x has <identifier> <predicate>;
+```
+which is equivalent to:
+```
+$x has <identifier> $_;
+$_ val <predicate>;
+```
 
 #### val
 
@@ -144,19 +166,53 @@ The [variable](#variable) representing the role can optionally be omitted. If it
 `$A plays $B` is _satisfied_ if `$A` is a type that indirectly plays a role `$B`.
 
 #### has (type)
-<!-- TODO -->
+
+<!-- TODO: Describe without referring to relationships? -->
+```
+$A has <identifier>
+```
+is equivalent to
+```
+$_R sub relationship, relates $_O, relates $_V;
+$_O sub role;
+$_V sub role;
+
+$A plays $_O;
+<identifier> plays $_V;
+
+$_O != $_V;
+```
 
 #### key
-<!-- TODO -->
+
+<!-- TODO: Describe without referring to relationships? -->
+<!-- TODO: handle required part properly -->
+```
+$A key <identifier>
+```
+is equivalent to
+```
+$_R sub relationship, relates $_O, relates $_V;
+$_O sub role;
+$_V sub role;
+
+$A plays <required thingy I GUESS> $_O;
+<identifier> plays $_V;
+
+$_O != $_V;
+```
 
 #### datatype
-<!-- TODO -->
+
+`$A dataype <datatype>` is _satisfied_ if `$A` is an attribute type with the given datatype.
 
 #### regex
-<!-- TODO -->
+
+`$A regex <regex>` is _satisfied_ if `$A` is an attribute type with the given regex constraint.
 
 #### is-abstract
-<!-- TODO -->
+
+`$A is-abstract;` is _satisfied_ if `$A` is an abstract type.
 
 ### Modifier
 
