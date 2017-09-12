@@ -23,7 +23,6 @@ import ai.grakn.GraknSession;
 import ai.grakn.Keyspace;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.SampleKBLoader;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -71,7 +70,6 @@ public class CSVMigratorMainTest {
     @Test
     public void whenAFailureOccursDuringLoadingAndTheDebugFlagIsSet_Throw(){
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(containsString(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage("bob")));
 
         run("-d", "-u", engine.uri(), "-input", dataFile, "-template", templateCorruptFile, "-keyspace", keyspace.getValue());
     }

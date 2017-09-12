@@ -125,7 +125,6 @@ public class BatchMutatorClientTest {
         AtomicInteger tasksCompletedWithoutError = new AtomicInteger(0);
 
         BatchMutatorClient loader = loader();
-        loader.setRetryPolicy(true);
         loader.setBatchSize(5);
         loader.setTaskCompletionConsumer((json) -> {
             if(json != null){
@@ -178,7 +177,7 @@ public class BatchMutatorClientTest {
             nameTag.attribute(nameTagId);
             graph.admin().commitNoLogs();
 
-            return spy(new BatchMutatorClient(graph.getKeyspace(), engine.uri(), true));
+            return spy(new BatchMutatorClient(graph.getKeyspace(), engine.uri(), true, 5));
         }
     }
 
