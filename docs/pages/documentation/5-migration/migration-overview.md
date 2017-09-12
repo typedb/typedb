@@ -43,6 +43,7 @@ usage: graql migrate export -data -schema [-help] [-no] [-batch <arg>] [-uri <ar
  -k,--keyspace <arg>   keyspace to use
  -n,--no               dry run- write to standard out
  -u,--uri <arg>        uri to engine endpoint
+ -r, --retry           Number of times to retry sending tasks if engine is not available
  -d,--debug            Migration immediatly stops if any transaction fails
 ```
 

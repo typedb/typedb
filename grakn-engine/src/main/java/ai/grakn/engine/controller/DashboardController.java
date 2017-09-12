@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknTx;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Role;
@@ -102,7 +103,7 @@ public class DashboardController {
     private Json exploreConcept(Request request, Response response) {
         validateRequest(request, APPLICATION_HAL);
 
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        Keyspace keyspace = Keyspace.of(mandatoryQueryParameter(request, KEYSPACE));
         ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID_PARAMETER));
         int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);

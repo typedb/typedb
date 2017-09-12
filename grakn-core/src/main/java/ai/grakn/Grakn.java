@@ -21,7 +21,6 @@ package ai.grakn;
 import javax.annotation.CheckReturnValue;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 
 //Docs to do @Filipe
@@ -99,11 +98,11 @@ public class Grakn {
 
     private static <F extends GraknSession> F loadImplementation(String className,
                                                                  String location,
-                                                                 String keyspace) {
+                                                                 Keyspace keyspace) {
         try {
             @SuppressWarnings("unchecked")
             Class<F> cl = (Class<F>)Class.forName(className);
-            return cl.getConstructor(String.class, String.class).newInstance(keyspace, location);
+            return cl.getConstructor(Keyspace.class, String.class).newInstance(keyspace, location);
         } catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException
                 | ClassNotFoundException e) {
             throw new RuntimeException(e);
@@ -128,8 +127,12 @@ public class Grakn {
      */
     @CheckReturnValue
     public static GraknSession session(String location, String keyspace) {
-        String finalKeyspace = keyspace.toLowerCase(Locale.getDefault());
-        String key = location + finalKeyspace;
-        return clients.computeIfAbsent(key, (k) -> loadImplementation(GRAKN_SESSION_IMPLEMENTATION, location, finalKeyspace));
+        return session(location, Keyspace.of(keyspace));
+    }
+
+    @CheckReturnValue
+    public static GraknSession session(String location, Keyspace keyspace) {
+        String key = location + keyspace.getValue();
+        return clients.computeIfAbsent(key, (k) -> loadImplementation(GRAKN_SESSION_IMPLEMENTATION, location, keyspace));
     }
 }

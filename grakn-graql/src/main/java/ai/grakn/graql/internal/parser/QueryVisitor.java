@@ -675,13 +675,18 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     private String getRegex(TerminalNode string) {
         // Remove surrounding /.../
-        return getString(string);
+        String unquoted = unquoteString(string);
+        return unquoted.replaceAll("\\\\/", "/");
     }
 
     private String getString(TerminalNode string) {
         // Remove surrounding quotes
-        String unquoted = string.getText().substring(1, string.getText().length() - 1);
+        String unquoted = unquoteString(string);
         return StringUtil.unescapeString(unquoted);
+    }
+
+    private String unquoteString(TerminalNode string) {
+        return string.getText().substring(1, string.getText().length() - 1);
     }
 
     /**

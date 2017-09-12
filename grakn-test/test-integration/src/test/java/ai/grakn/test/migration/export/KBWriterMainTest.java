@@ -21,6 +21,7 @@ package ai.grakn.test.migration.export;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.migration.export.Main;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.kbs.MovieKB;
@@ -37,7 +38,7 @@ import static org.hamcrest.Matchers.containsString;
 
 public class KBWriterMainTest {
 
-    private static String keyspace;
+    private static Keyspace keyspace;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -59,14 +60,14 @@ public class KBWriterMainTest {
 
     @Test
     public void exportCalledWithSchemaFlag_DataPrintedToSystemOut(){
-        run("export", "-u", engine.uri(), "-schema", "-keyspace", keyspace);
+        run("export", "-u", engine.uri(), "-schema", "-keyspace", keyspace.getValue());
 
         assertThat(sysOut.getLog(), containsString("sub entity"));
     }
 
     @Test
     public void exportCalledWithDataFlag_DataPrintedToSystemOutTest(){
-        run("export", "-u", engine.uri(), "-data", "-keyspace", keyspace);
+        run("export", "-u", engine.uri(), "-data", "-keyspace", keyspace.getValue());
 
         assertThat(sysOut.getLog(), containsString("isa movie"));
     }
@@ -87,7 +88,7 @@ public class KBWriterMainTest {
 
     @Test
     public void exportCalledWithIncorrectURI_ErrorIsPrintedToSystemErr(){
-        run("export", "-u", engine.uri().substring(1), "-data", "-keyspace", keyspace);
+        run("export", "-u", engine.uri().substring(1), "-data", "-keyspace", keyspace.getValue());
 
         assertThat(sysErr.getLog(), containsString("Could not connect to Grakn Engine. Have you run 'grakn server start'?"));
     }
