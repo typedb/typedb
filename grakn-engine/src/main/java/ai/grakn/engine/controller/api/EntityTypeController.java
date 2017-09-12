@@ -20,6 +20,7 @@ package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Role;
@@ -71,7 +72,7 @@ public class EntityTypeController {
         String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getEntityType - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<EntityType> entityType = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
             if (entityType.isPresent()) {
                 String jsonConceptId = entityType.get().getId().getValue();
@@ -94,7 +95,7 @@ public class EntityTypeController {
         String entityTypeLabel = requestBody.at("entityType").at("label").asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postEntityType - attempting to add entityType " + entityTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             EntityType entityType = tx.putEntityType(entityTypeLabel);
             tx.commit();
             response.status(HttpStatus.SC_OK);
@@ -116,7 +117,7 @@ public class EntityTypeController {
         String attributeTypeLabel = mandatoryPathParameter(request, "attributeTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("assignAttributeTypeToEntityType - attempting to assign attributeType " + attributeTypeLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
             Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));
             if (entityTypeOptional.isPresent() && attributeTypeOptional.isPresent()) {
@@ -146,7 +147,7 @@ public class EntityTypeController {
         String roleLabel = mandatoryPathParameter(request, "roleLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("assignAttributeTypeToEntityType - attempting to assign roleLabel " + roleLabel + " to entityType " + entityTypeLabel + ", in keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
             Optional<Role> roleOptional = Optional.ofNullable(tx.getRole(roleLabel));
 

@@ -25,6 +25,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -68,7 +69,7 @@ public class RoleControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(Keyspace.of("randomKeyspace"));
+        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.putRole(anyString())).thenAnswer(invocation ->
             sampleKB.tx().putRole((String) invocation.getArgument(0)));
@@ -82,7 +83,7 @@ public class RoleControllerTest {
     @Test
     public void getRoleFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .get("/api/role/production-with-cluster");
 
         Map<String, Object> responseBody = Json.read(response.body().asString()).asMap();

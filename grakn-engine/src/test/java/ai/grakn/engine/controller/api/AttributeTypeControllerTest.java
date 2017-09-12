@@ -26,6 +26,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -69,7 +70,7 @@ public class AttributeTypeControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(Keyspace.of("randomKeyspace"));
+        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.putAttributeType(anyString(), any())).thenAnswer(invocation -> {
             String label = invocation.getArgument(0);
@@ -92,7 +93,7 @@ public class AttributeTypeControllerTest {
             )
         );
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(body.toString())
             .post("/api/attributeType");
 
@@ -106,7 +107,7 @@ public class AttributeTypeControllerTest {
     @Test
     public void getAttributeTypeFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .get("/api/attributeType/tmdb-vote-count");
 
         Json responseBody = Json.read(response.body().asString());

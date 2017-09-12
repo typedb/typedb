@@ -25,6 +25,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.SampleKBLoader;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.apache.commons.httpclient.HttpStatus;
@@ -68,7 +69,7 @@ public class EntityControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(Keyspace.of("randomKeyspace"));
+        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.getEntityType(anyString())).thenAnswer(invocation ->
             sampleKB.tx().getEntityType(invocation.getArgument(0)));
@@ -84,7 +85,7 @@ public class EntityControllerTest {
     @Test
     public void postEntityShouldExecuteSuccessfully() {
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .post("/api/entityType/production");
 
         Json responseBody = Json.read(response.body().asString());
@@ -97,12 +98,12 @@ public class EntityControllerTest {
     public void assignAttributeToEntityShouldExecuteSuccessfully() {
         // add an entity
         Response addEntityResponse = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .post("/api/entityType/person");
 
         // add an attribute
         Response addAttributeResponse = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(Json.object("value", "attributeValue").toString())
             .post("/api/attributeType/real-name");
 
@@ -112,7 +113,7 @@ public class EntityControllerTest {
 
         // assign the attribute to the entity
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .put("/api/entity/" + entityConceptId + "/attribute/" + attributeConceptId);
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));

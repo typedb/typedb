@@ -20,6 +20,7 @@ package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import mjson.Json;
@@ -59,7 +60,7 @@ public class RoleController {
         String roleLabel = mandatoryPathParameter(request, "roleLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getRole - attempting to find role " + roleLabel + " in keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<Role> role = Optional.ofNullable(tx.getRole(roleLabel));
             if (role.isPresent()) {
                 String jsonConceptId = role.get().getId().getValue();

@@ -20,6 +20,7 @@ package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -66,7 +67,7 @@ public class EntityController {
         String entityTypeLabel = mandatoryPathParameter(request, "entityTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postEntity - attempting to find entityType " + entityTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<EntityType> entityTypeOptional = Optional.ofNullable(tx.getEntityType(entityTypeLabel));
             if (entityTypeOptional.isPresent()) {
                 LOG.info("postEntity - entityType " + entityTypeLabel + " found.");
@@ -90,7 +91,7 @@ public class EntityController {
         String entityConceptId = mandatoryPathParameter(request, "entityConceptId");
         String attributeConceptId = mandatoryPathParameter(request, "attributeConceptId");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             LOG.info("assignAttributeToEntity - attempting to find attributeConceptId " + attributeConceptId + " and entityConceptId " + entityConceptId + ", in keyspace " + keyspace);
             Optional<Entity> entityOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(entityConceptId)));
             Optional<Attribute> attributeOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(attributeConceptId)));

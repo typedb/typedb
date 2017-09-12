@@ -20,6 +20,7 @@ package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Relationship;
@@ -66,7 +67,7 @@ public class RelationshipController {
         String relationshipTypeLabel = mandatoryPathParameter(request, "relationshipTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postRelationship - attempting to find entityType " + relationshipTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<RelationshipType> relationshipTypeOptional = Optional.ofNullable(tx.getRelationshipType(relationshipTypeLabel));
             if (relationshipTypeOptional.isPresent()) {
                 LOG.info("postRelationship - relationshipType " + relationshipTypeLabel + " found.");
@@ -90,7 +91,7 @@ public class RelationshipController {
         String roleConceptId = mandatoryPathParameter(request, "roleConceptId");
         String entityConceptId = mandatoryPathParameter(request, "entityConceptId");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             LOG.info("assignEntityAndRoleToRelationship - attempting to find roleConceptId " + roleConceptId + " and relationshipConceptId " + relationshipConceptId + ", in keyspace " + keyspace);
             Optional<Relationship> relationshipOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(relationshipConceptId)));
             Optional<Role> roleOptional = Optional.ofNullable(tx.getConcept(ConceptId.of(roleConceptId)));

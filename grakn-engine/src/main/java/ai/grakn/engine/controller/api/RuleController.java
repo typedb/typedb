@@ -19,6 +19,7 @@ package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Rule;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import mjson.Json;
@@ -59,7 +60,7 @@ public class RuleController {
         String ruleLabel = mandatoryPathParameter(request, "ruleLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getRule - attempting to find rule " + ruleLabel + " in keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<Rule> rule = Optional.ofNullable(tx.getRule(ruleLabel));
             if (rule.isPresent()) {
                 String jsonConceptId = rule.get().getId().getValue();
@@ -87,7 +88,7 @@ public class RuleController {
 
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postRule - attempting to add a new rule " + ruleLabel + " on keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Rule rule = tx.putRule(
                 ruleLabel,
                 tx.graql().parsePattern(when),

@@ -20,6 +20,7 @@ package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.exception.GraknServerException;
@@ -64,7 +65,7 @@ public class AttributeTypeController {
         AttributeType.DataType<?> attributeTypeDataType = fromString(attributeTypeDataTypeRaw);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postAttributeType - attempting to add new attributeType " + attributeTypeLabel + " of type " + attributeTypeDataTypeRaw);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             AttributeType attributeType = tx.putAttributeType(attributeTypeLabel, attributeTypeDataType);
             tx.commit();
             String jsonConceptId = attributeType.getId().getValue();
@@ -83,7 +84,7 @@ public class AttributeTypeController {
         String attributeTypeLabel = mandatoryPathParameter(request, "attributeTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getAttributeType - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<AttributeType> attributeType = Optional.ofNullable(tx.getAttributeType(attributeTypeLabel));
             if (attributeType.isPresent()) {
                 String jsonConceptId = attributeType.get().getId().getValue();

@@ -25,8 +25,10 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.SampleKBLoader;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.apache.commons.httpclient.HttpStatus;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -58,7 +60,7 @@ public class RuleControllerTest {
     public void setupMock() {
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(Keyspace.of("randomKeyspace"));
+        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.graql()).thenAnswer(invocation -> sampleKB.tx().graql());
 
@@ -79,12 +81,12 @@ public class RuleControllerTest {
     @Test
     public void getRuleFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .get("/api/rule/expectation-rule");
 
         Json responseBody = Json.read(response.body().asString());
         
-        assertThat(response.statusCode(), equalTo(200));
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
         assertThat(responseBody.at("rule").at("conceptId").asString(), notNullValue());
         assertThat(responseBody.at("rule").at("label").asString(), equalTo("expectation-rule"));
     }
@@ -97,13 +99,13 @@ public class RuleControllerTest {
             "then", "$x has name \"newRule-then\""
         ));
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(body.toString())
             .post("/api/rule");
 
         Json responseBody = Json.read(response.body().asString());
 
-        assertThat(response.statusCode(), equalTo(200));
+        assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));
         assertThat(responseBody.at("rule").at("conceptId").asString(), notNullValue());
         assertThat(responseBody.at("rule").at("label").asString(), equalTo("newRule"));
         assertThat(responseBody.at("rule").at("when").asString(), equalTo("$x has name \"newRule-when\""));

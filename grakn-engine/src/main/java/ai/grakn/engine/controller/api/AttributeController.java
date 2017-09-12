@@ -20,6 +20,7 @@ package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -63,7 +64,7 @@ public class AttributeController {
         String attributeValue = requestBody.at("value").asString();
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("postAttribute - attempting to find attributeType " + attributeTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx graph = factory.tx(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx graph = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             Optional<AttributeType> attributeTypeOptional = Optional.ofNullable(graph.getAttributeType(attributeTypeLabel));
             if (attributeTypeOptional.isPresent()) {
                 LOG.info("postAttribute - attributeType " + attributeTypeLabel + " found.");

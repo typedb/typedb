@@ -25,6 +25,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -67,7 +68,7 @@ public class EntityTypeControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(Keyspace.of("randomKeyspace"));
+        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.putEntityType(anyString())).thenAnswer(invocation ->
             sampleKB.tx().putEntityType((String) invocation.getArgument(0)));
@@ -83,7 +84,7 @@ public class EntityTypeControllerTest {
     @Test
     public void getEntityTypeFromMovieGraphShouldExecuteSuccessfully() {
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .get("/api/entityType/production");
 
         Json responseBody = Json.read(response.body().asString());
@@ -98,7 +99,7 @@ public class EntityTypeControllerTest {
         Json body = Json.object("entityType", Json.object("label", "newEntityType"));
 
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(body.toString())
             .post("/api/entityType");
 
@@ -122,7 +123,7 @@ public class EntityTypeControllerTest {
             );
 
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .put("/api/entityType/production/attribute/runtime");
 
         assertThat(response.statusCode(), equalTo(HttpStatus.SC_OK));

@@ -25,6 +25,7 @@ import ai.grakn.engine.controller.SparkContext;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
 import ai.grakn.test.SampleKBContext;
 import ai.grakn.test.kbs.MovieKB;
+import ai.grakn.util.SampleKBLoader;
 import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
@@ -67,7 +68,7 @@ public class AttributeControllerTest {
     public void setupMock(){
         mockTx = mock(GraknTx.class, RETURNS_DEEP_STUBS);
 
-        when(mockTx.getKeyspace()).thenReturn(Keyspace.of("randomKeyspace"));
+        when(mockTx.getKeyspace()).thenReturn(SampleKBLoader.randomKeyspace());
 
         when(mockTx.getAttributeType(anyString())).thenAnswer(invocation ->
             sampleKBContext.tx().getAttributeType(invocation.getArgument(0)));
@@ -80,7 +81,7 @@ public class AttributeControllerTest {
     public void postAttributeShouldExecuteSuccessfully() {
         Json requestBody = Json.object("value", "attributeValue");
         Response response = with()
-            .queryParam(KEYSPACE, mockTx.getKeyspace())
+            .queryParam(KEYSPACE, mockTx.getKeyspace().getValue())
             .body(requestBody.toString())
             .post("/api/attributeType/real-name");
 

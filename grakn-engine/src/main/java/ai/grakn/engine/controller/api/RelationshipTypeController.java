@@ -20,6 +20,7 @@ package ai.grakn.engine.controller.api;
 
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.engine.factory.EngineGraknTxFactory;
@@ -63,7 +64,7 @@ public class RelationshipTypeController {
         String relationshipTypeLabel = mandatoryPathParameter(request, "relationshipTypeLabel");
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         LOG.info("getRelationshipType - attempting to find role " + relationshipTypeLabel + " in keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.READ)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.READ)) {
             Optional<RelationshipType> relationshipType = Optional.ofNullable(tx.getRelationshipType(relationshipTypeLabel));
             if (relationshipType.isPresent()) {
                 String jsonConceptId = relationshipType.get().getId().getValue();
@@ -88,7 +89,7 @@ public class RelationshipTypeController {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
 
         LOG.info("postRelationshipType - attempting to add a new relationshipType " + relationshipTypeLabel + " on keyspace " + keyspace);
-        try (GraknTx tx = factory.tx(keyspace, GraknTxType.WRITE)) {
+        try (GraknTx tx = factory.tx(Keyspace.of(keyspace), GraknTxType.WRITE)) {
             RelationshipType relationshipType = tx.putRelationshipType(relationshipTypeLabel);
 
             roleLabels.forEach(roleLabel -> {
