@@ -255,7 +255,14 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when changing the {@link Label} of an {@link SchemaConcept} which is owned by another {@link SchemaConcept}
      */
     public static GraknTxOperationException labelTaken(Label label){
-        throw new GraknTxOperationException(LABEL_TAKEN.getMessage(label));
+        return new GraknTxOperationException(LABEL_TAKEN.getMessage(label));
+    }
+
+    /**
+     * Thrown when creating an invalid {@link ai.grakn.Keyspace}
+     */
+    public static GraknTxOperationException invalidKeyspace(String keyspace){
+        return new GraknTxOperationException("Keyspace [" + keyspace + "] is invalid. Grakn Keyspaces cannot start with a number and can only be lower case containing alphanumeric values and underscore characters");
     }
 
     /**

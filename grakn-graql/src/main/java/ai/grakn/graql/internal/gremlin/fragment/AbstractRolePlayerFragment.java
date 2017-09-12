@@ -35,6 +35,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -101,12 +102,13 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
      * @param edgeProperty the edge property to look up the role label ID
      */
     static void traverseToRole(
-            GraphTraversal<?, Edge> traversal, @Nullable Var role, Schema.EdgeProperty edgeProperty) {
+            GraphTraversal<?, Edge> traversal, @Nullable Var role, Schema.EdgeProperty edgeProperty,
+            Collection<Var> vars) {
         if (role != null) {
             Var edge = Graql.var();
             traversal.as(edge.getValue());
             Fragments.outSubs(Fragments.traverseSchemaConceptFromEdge(traversal, edgeProperty));
-            traversal.as(role.getValue()).select(edge.getValue());
+            assignVar(traversal, role, vars).select(edge.getValue());
         }
     }
 }

@@ -21,6 +21,7 @@ package ai.grakn.test.migration.owl;
 import ai.grakn.Grakn;
 import ai.grakn.GraknTx;
 import ai.grakn.GraknTxType;
+import ai.grakn.Keyspace;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
@@ -46,7 +47,7 @@ import static org.junit.Assert.assertTrue;
 
 public class OwlMigratorMainTest extends TestOwlGraknBase {
 
-    private String keyspace;
+    private Keyspace keyspace;
 
     @Rule
     public final SystemErrRule sysErr = new SystemErrRule().enableLog();
@@ -66,18 +67,18 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     @Test
     public void owlMigratorCalledWithCorrectArgs_DataMigratedCorrectly(){
         String owlFile = getFile("owl", "shakespeare.owl").getAbsolutePath();
-        runAndAssertDataCorrect("owl", "-u", engine.uri(), "-input", owlFile, "-keyspace", keyspace);
+        runAndAssertDataCorrect("owl", "-u", engine.uri(), "-input", owlFile, "-keyspace", keyspace.getValue());
     }
 
     @Test
     public void owlMigratorCalledWithNoData_ErrorIsPrintedToSystemErr(){
-        run("owl", "-keyspace", keyspace, "-u", engine.uri());
+        run("owl", "-keyspace", keyspace.getValue(), "-u", engine.uri());
         assertThat(sysErr.getLog(), containsString("Data file missing (-i)"));
     }
 
     @Test
     public void owlMigratorCalledInvalidInputFile_ErrorIsPrintedToSystemErr(){
-        run("owl", "-input", "grah/?*", "-keyspace", keyspace, "-u", engine.uri());
+        run("owl", "-input", "grah/?*", "-keyspace", keyspace.getValue(), "-u", engine.uri());
         assertThat(sysErr.getLog(), containsString("Cannot find file:"));
     }
 

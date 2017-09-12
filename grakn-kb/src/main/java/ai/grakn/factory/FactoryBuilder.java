@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.Keyspace;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import org.apache.tinkerpop.shaded.minlog.Log;
@@ -57,7 +58,7 @@ public class FactoryBuilder {
         throw new UnsupportedOperationException();
     }
 
-    public static TxFactory<?> getFactory(String keyspace, String engineUrl, Properties properties){
+    public static TxFactory<?> getFactory(Keyspace keyspace, String engineUrl, Properties properties){
         try{
             String factoryType = factoryMapper.get(properties.get(KB_MODE).toString());
             return getFactory(factoryType, keyspace, engineUrl, properties);
@@ -72,8 +73,8 @@ public class FactoryBuilder {
      *                    A valid example includes: ai.grakn.factory.TxFactoryTinker
      * @return A graph factory which produces the relevant expected graph.
     */
-    static TxFactory<?> getFactory(String factoryType, String keyspace, String engineUrl, Properties properties){
-        String key = factoryType + keyspace.toLowerCase();
+    static TxFactory<?> getFactory(String factoryType, Keyspace keyspace, String engineUrl, Properties properties){
+        String key = factoryType + keyspace;
         Log.debug("Get factory for " + key);
         TxFactory<?> factory = openFactories.get(key);
         if (factory != null) {
@@ -92,11 +93,11 @@ public class FactoryBuilder {
      * @param properties Additional properties to apply to the graph
      * @return A new factory bound to a specific keyspace
      */
-    private static synchronized TxFactory<?> newFactory(String key, String factoryType, String keyspace, String engineUrl, Properties properties){
+    private static synchronized TxFactory<?> newFactory(String key, String factoryType, Keyspace keyspace, String engineUrl, Properties properties){
         TxFactory<?> txFactory;
         try {
             txFactory = (TxFactory<?>) Class.forName(factoryType)
-                    .getDeclaredConstructor(String.class, String.class, Properties.class)
+                    .getDeclaredConstructor(Keyspace.class, String.class, Properties.class)
                     .newInstance(keyspace, engineUrl, properties);
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);

@@ -65,8 +65,7 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
 
         long finalCount = count.keySet().stream()
                 .filter(id -> typeLabelIds.contains(LabelId.of(id)))
-                .map(count::get)
-                .reduce(0L, (x, y) -> x + y);
+                .mapToLong(count::get).sum();
         if (count.containsKey(RESERVED_TYPE_LABEL_KEY)) {
             finalCount += count.get(RESERVED_TYPE_LABEL_KEY);
         }
