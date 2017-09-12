@@ -48,12 +48,12 @@ public class Casting {
 
     private final Cache<Thing> cachedInstance = new Cache<>(Cacheable.concept(), () -> {
         VertexElement vertexElement = edge().target().orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()));
-        return edge().tx().factory().buildConcept(vertexElement);
+        return edge().tx().factory().<Thing>buildConcept(vertexElement).orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()));
     });
 
     private final Cache<Relationship> cachedRelation = new Cache<>(Cacheable.concept(), () -> {
         VertexElement vertexElement = edge().source().orElseThrow(() -> GraknTxOperationException.missingRelationship(edge().id().getValue()));
-        return edge().tx().factory().buildConcept(vertexElement);
+        return edge().tx().factory().<Relationship>buildConcept(vertexElement).orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()));
     });
 
     public Casting(EdgeElement edgeElement){

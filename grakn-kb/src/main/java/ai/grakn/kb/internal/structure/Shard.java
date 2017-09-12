@@ -88,7 +88,8 @@ public class Shard {
         return  vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).
                 map(EdgeElement::source).
                 flatMap(CommonUtil::optionalToStream).
-                map(vertexElement ->  vertex().tx().factory().buildConcept(vertexElement));
+                map(vertexElement ->  vertex().tx().factory().<V>buildConcept(vertexElement)).
+                flatMap(CommonUtil::optionalToStream);
     }
 
     /**

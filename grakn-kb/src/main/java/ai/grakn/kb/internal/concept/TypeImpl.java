@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -73,10 +74,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            if(edge.target().isPresent()) {
-                Role role = vertex().tx().factory().buildConcept(edge.target().get());
+
+            Optional<Role> role = edge.target().flatMap(roleVertex ->
+                    vertex().tx().factory().<Role>buildConcept(roleVertex));
+
+            if (role.isPresent()) {
                 Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
-                roleTypes.put(role, required);
+                roleTypes.put(role.get(), required);
             }
         });
 

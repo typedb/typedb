@@ -65,12 +65,12 @@ public class RelationshipEdge implements RelationshipStructure {
 
     private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> {
         VertexElement vertexElement = edge().source().orElseThrow(() -> GraknTxOperationException.missingOwner(getId()));
-        return edge().tx().factory().buildConcept(vertexElement);
+        return edge().tx().factory().<Thing>buildConcept(vertexElement).orElseThrow(() -> GraknTxOperationException.missingOwner(getId()));
     });
 
     private final Cache<Thing> value = new Cache<>(Cacheable.concept(), () -> {
         VertexElement vertexElement = edge().target().orElseThrow(() -> GraknTxOperationException.missingValue(getId()));
-        return edge().tx().factory().buildConcept(vertexElement);
+        return edge().tx().factory().<Thing>buildConcept(vertexElement).orElseThrow(() -> GraknTxOperationException.missingValue(getId()));
     });
 
     RelationshipEdge(EdgeElement edgeElement) {

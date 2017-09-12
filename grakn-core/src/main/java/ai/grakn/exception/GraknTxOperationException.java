@@ -308,4 +308,11 @@ public class GraknTxOperationException extends GraknException{
     public static GraknTxOperationException missingValue(ConceptId id) {
         return new GraknTxOperationException(String.format("Relationship {%s} is missing the value", id));
     }
+
+    /**
+     * Thrown when a {@link Thing} is missing a {@link Type}
+     */
+    public static GraknTxOperationException missingType(ConceptId id) {
+        return new GraknTxOperationException(String.format("Thing {%s} is missing a type", id));
+    }
 }

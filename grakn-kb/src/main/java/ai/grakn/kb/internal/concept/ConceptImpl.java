@@ -104,21 +104,22 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
      */
     <X extends Concept> Stream<X> neighbours(Direction direction, Schema.EdgeLabel label){
         switch (direction){
-            //TODO: Improve this
             case BOTH:
                 return vertex().getEdgesOfType(direction, label).
-                        flatMap(edge -> Stream.of(
-                                vertex().tx().factory().buildConcept(edge.source().get()),
-                                vertex().tx().factory().buildConcept(edge.target().get())
-                        ));
+                        flatMap(edge -> Stream.<Optional<X>>of(
+                                edge.source().flatMap(source -> vertex().tx().factory().buildConcept(source)),
+                                edge.target().flatMap(target -> vertex().tx().factory().buildConcept(target))
+                        )).flatMap(CommonUtil::optionalToStream);
             case IN:
-                return vertex().getEdgesOfType(direction, label).map(edge ->
-                        vertex().tx().factory().buildConcept(edge.source().get())
-                );
+                return vertex().getEdgesOfType(direction, label).flatMap(edge -> {
+                    Optional<X> optional = edge.source().flatMap(source -> vertex().tx().factory().buildConcept(source));
+                    return CommonUtil.optionalToStream(optional);
+                });
             case OUT:
-                return  vertex().getEdgesOfType(direction, label).map(edge ->
-                        vertex().tx().factory().buildConcept(edge.target().get())
-                );
+                return  vertex().getEdgesOfType(direction, label).flatMap(edge -> {
+                    Optional<X> optional = edge.target().flatMap(target -> vertex().tx().factory().buildConcept(target));
+                    return CommonUtil.optionalToStream(optional);
+                });
             default:
                 throw GraknTxOperationException.invalidDirection(direction);
         }

@@ -36,7 +36,6 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -50,12 +49,12 @@ public interface GraknAdmin {
 
     /**
      *
-     * @param vertex A vertex which contains properties necessary to build a concept from.
      * @param <T> The type of the concept being built
+     * @param vertex A vertex which contains properties necessary to build a concept from.
      * @return A concept built using the provided vertex
      */
     @CheckReturnValue
-    <T extends Concept> T buildConcept(Vertex vertex);
+    <T extends Concept> Optional<T> buildConcept(Vertex vertex);
 
     /**
      *
@@ -187,8 +186,7 @@ public interface GraknAdmin {
      * @return A concept with the matching key and value
      */
     @CheckReturnValue
-    @Nullable
-    <T extends Concept> T getConcept(Schema.VertexProperty key, Object value);
+    <T extends Concept> Optional<T> getConcept(Schema.VertexProperty key, Object value);
 
     /**
      * Closes the root session this graph stems from. This will automatically rollback any pending transactions.

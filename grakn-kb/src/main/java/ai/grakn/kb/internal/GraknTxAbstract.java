@@ -30,17 +30,17 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.LabelId;
 import ai.grakn.concept.Relationship;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Thing;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.exception.InvalidKBException;
 import ai.grakn.exception.PropertyNotUniqueException;
-import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.kb.admin.GraknAdmin;
 import ai.grakn.kb.internal.cache.GlobalCache;
 import ai.grakn.kb.internal.cache.TxCache;
@@ -244,7 +244,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public <T extends Concept> T buildConcept(Vertex vertex) {
+    public <T extends Concept> Optional<T> buildConcept(Vertex vertex) {
         return factory().buildConcept(vertex);
     }
 
@@ -337,7 +337,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
 
     //----------------------------------------------General Functionality-----------------------------------------------
     @Override
-    public <T extends Concept> T getConcept(Schema.VertexProperty key, Object value) {
+    public <T extends Concept> Optional<T> getConcept(Schema.VertexProperty key, Object value) {
         Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
 
         if (vertices.hasNext()) {
@@ -347,14 +347,14 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             }
             return factory().buildConcept(vertex);
         } else {
-            return null;
+            return Optional.empty();
         }
     }
 
     private Set<Concept> getConcepts(Schema.VertexProperty key, Object value) {
         Set<Concept> concepts = new HashSet<>();
         getTinkerTraversal().V().has(key.name(), value).
-                forEachRemaining(v -> concepts.add(factory().buildConcept(v)));
+                forEachRemaining(v -> factory().buildConcept(v).ifPresent(concepts::add));
         return concepts;
     }
 
@@ -536,7 +536,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
                     Optional<T> concept = getConceptEdge(id);
                     if (concept.isPresent()) return concept.get();
                 }
-                return getConcept(Schema.VertexProperty.ID, id.getValue());
+                return this.<T>getConcept(Schema.VertexProperty.ID, id.getValue()).orElse(null);
             }
         });
     }
@@ -560,7 +560,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Nullable
     public <T extends SchemaConcept> T getSchemaConcept(LabelId id) {
         if (!id.isValid()) return null;
-        return getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
+        return this.<T>getConcept(Schema.VertexProperty.LABEL_ID, id.getValue()).orElse(null);
     }
 
     @Override
@@ -836,8 +836,8 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public boolean duplicateResourcesExist(String index, Set<ConceptId> resourceVertexIds) {
         //This is done to ensure we merge into the indexed casting.
-        AttributeImpl<?> mainResource = getConcept(Schema.VertexProperty.INDEX, index);
-        return getDuplicates(mainResource, resourceVertexIds).size() > 0;
+        Optional<AttributeImpl<?>> mainResource = getConcept(Schema.VertexProperty.INDEX, index);
+        return mainResource.filter(attribute -> getDuplicates(attribute, resourceVertexIds).size() > 0).isPresent();
     }
 
     /**
@@ -847,7 +847,12 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     @Override
     public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds) {
         //This is done to ensure we merge into the indexed casting.
-        AttributeImpl<?> mainResource = this.getConcept(Schema.VertexProperty.INDEX, index);
+        Optional<AttributeImpl<?>> mainResourceOp = this.getConcept(Schema.VertexProperty.INDEX, index);
+        if(!mainResourceOp.isPresent()){
+            LOG.debug(String.format("Could not post process concept with index {%s} due to not finding the concept", index));
+            return false;
+        }
+        AttributeImpl<?> mainResource = mainResourceOp.get();
         Set<AttributeImpl> duplicates = getDuplicates(mainResource, resourceVertexIds);
 
         if (duplicates.size() > 0) {
@@ -897,7 +902,10 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     private void copyRelation(Attribute main, Attribute other, Relationship otherRelationship, RelationshipReified reifiedRelation) {
         String newIndex = reifiedRelation.getIndex().replaceAll(other.getId().getValue(), main.getId().getValue());
         Relationship foundRelationship = txCache().getCachedRelation(newIndex);
-        if (foundRelationship == null) foundRelationship = getConcept(Schema.VertexProperty.INDEX, newIndex);
+        if (foundRelationship == null) {
+            Optional<Relationship> optional = getConcept(Schema.VertexProperty.INDEX, newIndex);
+            if(optional.isPresent()) foundRelationship = optional.get();
+        }
 
         if (foundRelationship != null) {//If it exists delete the other one
             reifiedRelation.deleteNode(); //Raw deletion because the castings should remain

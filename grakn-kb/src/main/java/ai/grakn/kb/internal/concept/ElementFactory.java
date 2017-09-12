@@ -41,7 +41,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -150,24 +149,21 @@ public final class ElementFactory {
      * Constructors are called directly because this is only called when reading a known vertex or concept.
      * Thus tracking the concept can be skipped.
      *
-     * @param v A vertex of an unknown type
+     * @param vertex A vertex of an unknown type
      * @return A concept built to the correct type
      */
-    @Nullable
-    public <X extends Concept> X buildConcept(Vertex v){
-        //TODO: Improve this
-        return buildConcept(buildVertexElement(v).get());
+    public <X extends Concept> Optional<X> buildConcept(Vertex vertex){
+        return buildVertexElement(vertex).flatMap(this::buildConcept);
     }
 
-    @Nullable
-    public <X extends Concept> X buildConcept(VertexElement vertexElement){
+    public <X extends Concept> Optional<X> buildConcept(VertexElement vertexElement){
         Schema.BaseType type;
 
         try {
             type = getBaseType(vertexElement);
         } catch (IllegalStateException e){
             LOG.warn("Invalid vertex [" + vertexElement + "] due to " + e.getMessage(), e);
-            return null;
+            return Optional.empty();
         }
 
         ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));
@@ -206,7 +202,7 @@ public final class ElementFactory {
             }
             tx.txCache().cacheConcept(concept);
         }
-        return tx.txCache().getCachedConcept(conceptId);
+        return Optional.of(tx.txCache().getCachedConcept(conceptId));
     }
 
     /**
