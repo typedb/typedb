@@ -971,7 +971,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
             newValue = ConceptVertex.from(main);
         }
 
-        EdgeElement edge = newOwner.vertex().putEdge(newValue.vertex(), Schema.EdgeLabel.RESOURCE);
+        EdgeElement edge = newOwner.vertex().putEdge(newValue.vertex(), Schema.EdgeLabel.ATTRIBUTE);
         factory().buildRelation(edge, relationEdge.type(), relationEdge.ownerRole(), relationEdge.valueRole());
     }
 

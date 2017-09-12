@@ -62,7 +62,7 @@ public final class Schema {
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
         SHORTCUT("shortcut"),
-        RESOURCE("resource"),
+        ATTRIBUTE("attribute"),
         SHARD("shard");
 
         private final String label;

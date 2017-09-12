@@ -103,7 +103,7 @@ class InShortcutFragment extends AbstractFragment {
     private GraphTraversal<Vertex, Edge> edgeRelationTraversal(
             GraknTx graph, Direction direction, Schema.EdgeProperty roleProperty) {
 
-        GraphTraversal<Vertex, Edge> edgeTraversal = __.toE(direction, Schema.EdgeLabel.RESOURCE.getLabel());
+        GraphTraversal<Vertex, Edge> edgeTraversal = __.toE(direction, Schema.EdgeLabel.ATTRIBUTE.getLabel());
 
         // Identify the relation - role-player pair by combining the relation edge and direction into a map
         edgeTraversal.as(RELATION_EDGE).constant(direction).as(RELATION_DIRECTION);
