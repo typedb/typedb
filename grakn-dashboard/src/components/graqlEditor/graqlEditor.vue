@@ -267,10 +267,10 @@ export default {
     limitQuery(query){
       let limitedQuery = query;
       let getPos = query.indexOf('get');
-      //If there is no `get` the user mistyped the query - he shall see an error and learn that `get` is mandatory
+      //If there is no `get` the user mistyped the query
       if(getPos>=0){
         let getPattern = limitedQuery.slice(getPos);
-        limitedQuery = limitedQuery.slice(0,getPos);
+        limitedQuery = limitedQuery.slice(0,getPos).trim();
         if (!(limitedQuery.includes('offset')) && !(limitedQuery.includes('delete'))) { limitedQuery = `${limitedQuery} offset 0;`; }
         if (!(limitedQuery.includes('limit')) && !(limitedQuery.includes('delete'))) { limitedQuery = `${limitedQuery} limit ${User.getQueryLimit()};`; }
         limitedQuery = `${limitedQuery} ${getPattern}`;
