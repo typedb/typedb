@@ -48,7 +48,7 @@ abstract class ResourceIndexFragment extends Fragment {
 
     @Override
     public double fragmentCost() {
-        return COST_INDEX;
+        return COST_NODE_INDEX;
     }
 
     @Override

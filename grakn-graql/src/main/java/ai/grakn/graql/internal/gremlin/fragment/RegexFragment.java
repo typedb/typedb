@@ -48,6 +48,6 @@ abstract class RegexFragment extends Fragment {
 
     @Override
     public double fragmentCost() {
-        return COST_SAME_AS_PREVIOUS;
+        return COST_NODE_REGEX;
     }
 }

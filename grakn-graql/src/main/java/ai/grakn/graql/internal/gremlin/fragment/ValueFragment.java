@@ -52,10 +52,10 @@ abstract class ValueFragment extends Fragment {
     @Override
     public double fragmentCost() {
         if (predicate().isSpecific()) {
-            return COST_RESOURCES_PER_VALUE;
+            return COST_NODE_INDEX_VALUE;
         } else {
             // Assume approximately half of values will satisfy a filter
-            return COST_UNSPECIFIC_PREDICATE;
+            return COST_NODE_UNSPECIFIC_PREDICATE;
         }
     }
 
