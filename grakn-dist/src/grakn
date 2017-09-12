@@ -605,10 +605,20 @@ case_grakn_server_stop() {
 }
 
 # =============================================
+# CTRL+C handler
+# =============================================
+handle_ctrl_c() {
+  echo "Receiving SIGINT. Halting..."
+  grakn_server_stop
+  exit 1
+}
+# =============================================
 # main routine
 # =============================================
 
 update_classpath
+
+trap handle_ctrl_c INT # run handle_ctrl_c when receiving CTRL+C
 
 echo "Grakn: Database For AI"
 echo ""
