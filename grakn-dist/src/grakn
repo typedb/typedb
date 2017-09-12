@@ -608,7 +608,8 @@ case_grakn_server_stop() {
 # CTRL+C handler
 # =============================================
 handle_ctrl_c() {
-  echo "Receiving SIGINT. Halting..."
+  echo
+  echo "*** Receiving SIGINT. Halting ***"
   grakn_server_stop
   exit 1
 }
