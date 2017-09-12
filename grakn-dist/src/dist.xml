@@ -75,13 +75,6 @@
             </includes>
         </fileSet>
         <fileSet>
-            <outputDirectory>services/grakn</outputDirectory>
-            <directory>${main.basedir}/conf/test</directory>
-            <includes>
-                <include>logback-test.xml</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <outputDirectory>services/assets</outputDirectory>
             <directory>${main.basedir}/grakn-dashboard/static</directory>
             <includes>
