@@ -58,16 +58,16 @@ Within the [variable patterns](#variable-pattern) of both [define](#define-query
 queries, the following [properties](#property) are supported:
 
 <!-- TODO -->
+- `$A id <identifier>`
+- `$A label <identifier>`
 - `$A sub $B`
 - `$A relates $B`
 - `$A plays $B`
-- `$A id <identifier>`
-- `$A label <identifier>`
 - `$A has <identifier>`
 - `$A key <identifier>`
-- `($A: $x, ... )`
-- `$A is-abstract`
+- datatype
 - `$A regex <regex>`
+- `$A is-abstract`
 - `$A when <pattern>`
 - `$A then <pattern>`
 
@@ -241,12 +241,62 @@ If a [match](#match) is provided, then the [insert query](#insert-query) will op
 Within the [variable patterns](#variable-pattern), the following [properties](#property) are supported:
 
 <!-- TODO -->
-- `$x isa $A`
-- `$x id <identifier>`
-- `$x label <identifier>`
-- `$x val <predicate>`
-- `$x has <identifier> <predicate or variable> (as $y)`
-- `($A: $x, ... )`
+### isa
+
+`$x isa $A` creates a new direct instance of `$A` and binds it to `$x`.
+
+### relationship
+
+`$r ($A1: $x1, ..., $An, $xn)` will, for each `$Ai: $xi`, add a new role-player `$xi` to `$r` directly playing the role
+`$Ai`.
+
+### has (data)
+
+<!-- TODO: Describe without referring to relationships? -->
+```
+$x has <identifier> $y as $r;
+```
+
+If `<identifier>` is not a key for the direct type of `$x`, this is equivalent to:
+
+```
+$r (has-<identifier>-owner: $x, has-<identifier>-value: $y) isa has-<identifier>;
+$y isa <identifier>;
+```
+
+Otherwise, it is equivalent to:
+
+```
+$r (key-<identifier>-owner: $x, key-<identifier>-value: $y) isa key-<identifier>;
+$y isa <identifier>;
+```
+
+The `as $r` is optional. Additionally, a literal value can be used instead of a [variable](#variable):
+
+```
+$x has <identifier> <value>;
+```
+
+which is equivalent to:
+
+```
+$x has <identifier> $_;
+$_ val <value>;
+```
+
+### val
+
+`$x val <value>;` specifies that the attribute `$x` should have value `<value>`.
+
+### id
+
+`$x id <identifier>` will assign `$x` to an existing concept with the given ID. It is an error if no such concept
+exists.
+
+### label
+
+`$A label <identifier>` will assign `$A` to an existing schema concept with the given label. It is an error if no such
+schema concept exists.
 
 ## Delete Query
 
