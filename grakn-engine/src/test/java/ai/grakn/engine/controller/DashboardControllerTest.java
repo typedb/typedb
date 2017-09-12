@@ -31,7 +31,7 @@ public class DashboardControllerTest {
     private Response sendQueryExplain(String query) {
         return RestAssured.with()
                 .queryParam(QUERY, query)
-                .queryParam(KEYSPACE, genealogyKB.tx().getKeyspace())
+                .queryParam(KEYSPACE, genealogyKB.tx().getKeyspace().getValue())
                 .queryParam(INFER, true)
                 .queryParam(MATERIALISE, false)
                 .queryParam(LIMIT_EMBEDDED, -1)
