@@ -367,22 +367,6 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
         if (isReadOnly()) throw GraknTxOperationException.transactionReadOnly(this);
     }
 
-
-    //----------------------------------------------Concept Functionality-----------------------------------------------
-    //------------------------------------ Construction
-    @Nullable
-    public VertexElement addVertex(Schema.BaseType baseType) {
-        Vertex vertex = operateOnOpenGraph(() -> getTinkerPopGraph().addVertex(baseType.name()));
-        vertex.property(Schema.VertexProperty.ID.name(), Schema.PREFIX_VERTEX + vertex.id().toString());
-        return factory().buildVertexElement(vertex);
-    }
-
-    public VertexElement addVertex(Schema.BaseType baseType, ConceptId conceptId) {
-        Vertex vertex = operateOnOpenGraph(() -> getTinkerPopGraph().addVertex(baseType.name()));
-        vertex.property(Schema.VertexProperty.ID.name(), conceptId.getValue());
-        return factory().buildVertexElement(vertex);
-    }
-
     private VertexElement putVertex(Label label, Schema.BaseType baseType) {
         VertexElement vertex;
         ConceptImpl concept = getSchemaConcept(convertToId(label));
@@ -406,7 +390,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
      * @return The new type vertex
      */
     private VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
-        VertexElement vertexElement = addVertex(baseType);
+        VertexElement vertexElement = factory().addVertexElement(baseType);
         vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
         vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
         return vertexElement;

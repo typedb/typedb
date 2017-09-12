@@ -199,7 +199,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
 
     //----------------------------------- Sharding Functionality
     public void createShard(){
-        VertexElement shardVertex = vertex().tx().addVertex(Schema.BaseType.SHARD);
+        VertexElement shardVertex = vertex().tx().factory().addVertexElement(Schema.BaseType.SHARD);
         Shard shard = vertex().tx().factory().buildShard(this, shardVertex);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         currentShard.set(shard);

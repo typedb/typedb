@@ -305,4 +305,23 @@ public final class ElementFactory {
 
         return new VertexElement(tx, vertex);
     }
+
+    /**
+     * Creates a new {@link VertexElement} with a {@link ConceptId} which can optionally be set.
+     *
+     * @param baseType The {@link Schema.BaseType}
+     * @param conceptIds the optional {@link ConceptId} to set as the new {@link ConceptId}
+     * @return a new {@link VertexElement}
+     */
+    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId ... conceptIds) {
+        Vertex vertex = tx.getTinkerPopGraph().addVertex(baseType.name());
+        String newConceptId = Schema.PREFIX_VERTEX + vertex.id().toString();
+        if(conceptIds.length > 1){
+            throw new IllegalArgumentException("Cannot provide more than one concept id when creating a new concept");
+        } else if (conceptIds.length == 1){
+            newConceptId = conceptIds[0].getValue();
+        }
+        vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
+        return new VertexElement(tx, vertex);
+    }
 }
