@@ -102,5 +102,5 @@
     <!--<logger name="ai.grakn.engine.postprocessing.PostProcessing" level="DEBUG">-->
         <!--<appender-ref ref="FILE"/>-->
     <!--</logger>-->
-
+ 
 </configuration>
