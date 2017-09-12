@@ -208,7 +208,7 @@ public class ReasonerUtils {
 
     /**
      * @param concept which hierarchy should be considered
-     * @return set of schema concepts: provided concept and all its supers including meta
+     * @return set of {@link SchemaConcept}s: provided concept and all its supers including meta
      */
     public static Set<SchemaConcept> getUpstreamHierarchy(SchemaConcept concept){
         Set<SchemaConcept> concepts = new HashSet<>();

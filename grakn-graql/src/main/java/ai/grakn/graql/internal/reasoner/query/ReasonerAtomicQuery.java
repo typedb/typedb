@@ -243,7 +243,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Set<TypeAtom> mappedTypeConstraints = atom.getSpecificTypeConstraints();
         return getIdPredicateAnswerStream(answers)
                 .filter(a -> entityTypeFilter(a, mappedTypeConstraints))
-                .map(a -> a. filterVars(vars))
+                .map(a -> a.project(vars))
                 .flatMap(a -> a.expandHierarchies(expansionVars));
     }
 
@@ -271,7 +271,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         subGoals.add(this);
         Stream<Answer> answers = ruleBody
                 .computeJoin(subGoals, cache, dCache, differentialJoin)
-                .map(a -> a.filterVars(varsToRetain))
+                .map(a -> a.project(varsToRetain))
                 .distinct()
                 .map(ans -> ans.explain(new RuleExplanation(this, rule)));
 
@@ -292,7 +292,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         boolean isHeadEquivalent = this.isEquivalent(ruleHead);
         Set<Var> queryVars = this.getVarNames().size() < ruleHead.getVarNames().size()? ruleUnifier.keySet() : ruleHead.getVarNames();
         answers = answers
-                .map(a -> a.filterVars(queryVars))
+                .map(a -> a.project(queryVars))
                 .map(a -> a.unify(ruleUnifier))
                 .map(a -> a.unify(permutationUnifier))
                 .filter(a -> !a.isEmpty());

@@ -179,7 +179,7 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
-    public Answer filterVars(Set<Var> vars) {
+    public Answer project(Set<Var> vars) {
         QueryAnswer filteredAnswer = new QueryAnswer(this);
         Set<Var> varsToRemove = Sets.difference(this.keySet(), vars);
         varsToRemove.forEach(filteredAnswer::remove);

@@ -28,7 +28,7 @@ import java.util.Set;
 /**
  *
  * <p>
- * Query state produced by {@link AtomicState} when an atomic query {@link ReasonerAtomicQuery}contains role variables which may require role hierarchy expansion.
+ * Query state produced by {@link AtomicState} when an atomic query {@link ReasonerAtomicQuery} contains {@link Role} variables which may require role hierarchy expansion.
  * </p>
  *
  * @author Kasper Piskorski

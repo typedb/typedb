@@ -78,7 +78,7 @@ class AnswerState extends ResolutionState {
 
         return answer
                 .merge(query.getSubstitution())
-                .filterVars(query.getVarNames())
+                .project(query.getVarNames())
                 .explain(new RuleExplanation(query, rule));
     }
 
@@ -95,7 +95,7 @@ class AnswerState extends ResolutionState {
         //check if the specific answer to ruleHead already in cache/db
         Answer headAnswer = ruleHead
                             .lookupAnswer(cache, ans)
-                            .filterVars(queryVars)
+                            .project(queryVars)
                             .unify(unifier);
 
         //if not and query different than rule head do the same with the query
@@ -109,7 +109,7 @@ class AnswerState extends ResolutionState {
             Answer materialisedSub = ruleHead.materialise(ans).findFirst().orElse(null);
             if (!queryEquivalentToHead) cache.recordAnswer(ruleHead, materialisedSub);
             ans = materialisedSub
-                    .filterVars(queryVars)
+                    .project(queryVars)
                     .unify(unifier);
         } else {
             ans = headAnswer.isEmpty()? queryAnswer : headAnswer;

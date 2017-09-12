@@ -480,7 +480,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<Var> vars = this.getVarNames();
         return answerStream
                 .filter(a -> nonEqualsFilter(a, neqPredicates))
-                .map(a -> a.filterVars(vars));
+                .map(a -> a.project(vars));
     }
 
     /**

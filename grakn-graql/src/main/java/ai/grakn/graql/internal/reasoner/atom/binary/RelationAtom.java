@@ -836,9 +836,9 @@ public class RelationAtom extends IsaAtom {
     }
 
     /**
-     * if any role variable of the parent is user defined rewrite ALL role variables to user defined (otherwise unification is problematic)
+     * if any {@link Role} variable of the parent is user defined rewrite ALL {@link Role} variables to user defined (otherwise unification is problematic)
      * @param parentAtom parent atom that triggers rewrite
-     * @return new relation atom with user defined role variables if necessary or this
+     * @return new relation atom with user defined {@link Role} variables if necessary or this
      */
     private RelationAtom rewriteWithVariableRoles(Atom parentAtom){
         if (!parentAtom.isRelation() || ((RelationAtom) parentAtom).getRoleVariables().isEmpty()) return this;
