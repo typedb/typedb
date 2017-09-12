@@ -46,15 +46,15 @@ public class Casting {
     private final Cache<Role> cachedRoleType = new Cache<>(Cacheable.concept(), () -> (Role) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
     private final Cache<RelationshipType> cachedRelationType = new Cache<>(Cacheable.concept(), () -> (RelationshipType) edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATIONSHIP_TYPE_LABEL_ID))));
 
-    private final Cache<Thing> cachedInstance = new Cache<>(Cacheable.concept(), () -> {
-        VertexElement vertexElement = edge().target().orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()));
-        return edge().tx().factory().<Thing>buildConcept(vertexElement).orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()));
-    });
+    private final Cache<Thing> cachedInstance = new Cache<>(Cacheable.concept(), () -> edge().target().
+            flatMap(vertexElement -> edge().tx().factory().<Thing>buildConcept(vertexElement)).
+            orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()))
+    );
 
-    private final Cache<Relationship> cachedRelation = new Cache<>(Cacheable.concept(), () -> {
-        VertexElement vertexElement = edge().source().orElseThrow(() -> GraknTxOperationException.missingRelationship(edge().id().getValue()));
-        return edge().tx().factory().<Relationship>buildConcept(vertexElement).orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()));
-    });
+    private final Cache<Relationship> cachedRelation = new Cache<>(Cacheable.concept(), () -> edge().source().
+            flatMap(vertexElement -> edge().tx().factory().<Relationship>buildConcept(vertexElement)).
+            orElseThrow(() -> GraknTxOperationException.missingRolePlayer(edge().id().getValue()))
+    );
 
     public Casting(EdgeElement edgeElement){
         this.edgeElement = edgeElement;
