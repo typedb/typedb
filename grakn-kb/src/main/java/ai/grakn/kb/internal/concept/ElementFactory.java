@@ -216,20 +216,18 @@ public final class ElementFactory {
      * @param edge A {@link Edge} of an unknown type
      * @return A concept built to the correct type
      */
-    @Nullable
-    public <X extends Concept> X buildConcept(Edge edge){
+    public <X extends Concept> Optional<X> buildConcept(Edge edge){
         return buildConcept(buildEdgeElement(edge));
     }
 
-    @Nullable
-    public <X extends Concept> X buildConcept(EdgeElement edgeElement){
+    public <X extends Concept> Optional<X> buildConcept(EdgeElement edgeElement){
         Schema.EdgeLabel label;
 
         try {
             label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase());
         } catch (IllegalStateException e){
             LOG.warn("Invalid edge [" + edgeElement + "] due to " + e.getMessage(), e);
-            return null;
+            return Optional.empty();
         }
 
 
@@ -245,7 +243,7 @@ public final class ElementFactory {
             }
             tx.txCache().cacheConcept(concept);
         }
-        return tx.txCache().getCachedConcept(conceptId);
+        return Optional.of(tx.txCache().getCachedConcept(conceptId));
     }
 
     /**
@@ -309,17 +307,8 @@ public final class ElementFactory {
      * @return A {@link VertexElement} of
      */
     public Optional<VertexElement> buildVertexElement(Vertex vertex){
-        /*if (!tx.validElement(vertex)) {
-            LOG.warn("Invalid vertex [" + vertex + "]");
-            return Optional.empty();
-        }
-        return Optional.of(new VertexElement(tx, vertex));*/
-        return wrapResult(tx.validElement(vertex), vertex, (v) -> new VertexElement(tx, v));
-    }
-
-    private <X> Optional<X> wrapResult(boolean isValid, Vertex vertex, Function<Vertex, X> builder){
-        if(isValid) {
-            return Optional.of(builder.apply(vertex));
+        if(tx.validElement(vertex)) {
+            return Optional.of(new VertexElement(tx, vertex));
         } else{
             LOG.warn("Invalid vertex [" + vertex + "]");
             return Optional.empty();

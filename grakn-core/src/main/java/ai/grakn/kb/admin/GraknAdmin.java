@@ -59,12 +59,12 @@ public interface GraknAdmin {
 
     /**
      *
-     * @param edge An {@link Edge} which contains properties necessary to build a {@link Concept} from.
      * @param <T> The type of the {@link Concept} being built
+     * @param edge An {@link Edge} which contains properties necessary to build a {@link Concept} from.
      * @return A {@link Concept} built using the provided {@link Edge}
      */
     @CheckReturnValue
-    <T extends Concept> T buildConcept(Edge edge);
+    <T extends Concept> Optional<T> buildConcept(Edge edge);
 
 
     /**

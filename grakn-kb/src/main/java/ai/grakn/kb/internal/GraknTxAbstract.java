@@ -249,7 +249,7 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
     }
 
     @Override
-    public <T extends Concept> T buildConcept(Edge edge) {
+    public <T extends Concept> Optional<T> buildConcept(Edge edge) {
         return factory().buildConcept(edge);
     }
 
@@ -533,21 +533,21 @@ public abstract class GraknTxAbstract<G extends Graph> implements GraknTx, Grakn
                 return txCache().getCachedConcept(id);
             } else {
                 if (id.getValue().startsWith(Schema.PREFIX_EDGE)) {
-                    T concept = getConceptEdge(id);
-                    if (concept != null) return concept;
+                    Optional<T> concept = getConceptEdge(id);
+                    if (concept.isPresent()) return concept.get();
                 }
                 return getConcept(Schema.VertexProperty.ID, id.getValue());
             }
         });
     }
 
-    private <T extends Concept> T getConceptEdge(ConceptId id) {
+    private <T extends Concept> Optional<T> getConceptEdge(ConceptId id) {
         String edgeId = id.getValue().substring(1);
         GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(edgeId);
         if (traversal.hasNext()) {
             return factory().buildConcept(factory().buildEdgeElement(traversal.next()));
         }
-        return null;
+        return Optional.empty();
     }
 
     private <T extends SchemaConcept> T getSchemaConcept(Label label, Schema.BaseType baseType) {
