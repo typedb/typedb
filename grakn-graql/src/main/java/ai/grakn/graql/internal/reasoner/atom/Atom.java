@@ -258,6 +258,15 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return Collections.singleton(new UnifierImpl());}
 
+    @Override
+    public Atom inferTypes(){ return this; }
+
+    /**
+     * @param type to be added to this relation
+     * @return new relation with specified type
+     */
+    public Atom addType(SchemaConcept type){ return this;}
+
     /**
      * rewrites the atom to one with user defined name
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
