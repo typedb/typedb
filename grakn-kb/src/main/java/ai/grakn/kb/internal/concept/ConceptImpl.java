@@ -27,10 +27,12 @@ import ai.grakn.kb.internal.cache.ContainsTxCache;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 
@@ -52,7 +54,8 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     private final Cache<Shard> currentShard = new Cache<>(Cacheable.shard(), () -> {
         String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
         Vertex shardVertex = vertex().tx().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
-        return vertex().tx().factory().buildShard(shardVertex);
+        Optional<Shard> shard = vertex().tx().factory().buildShard(shardVertex);
+        return shard.orElseThrow(() -> GraknTxOperationException.missingShard(getId()));
     });
     private final Cache<ConceptId> conceptId = new Cache<>(Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
     private final VertexElement vertexElement;
@@ -101,19 +104,20 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
      */
     <X extends Concept> Stream<X> neighbours(Direction direction, Schema.EdgeLabel label){
         switch (direction){
+            //TODO: Improve this
             case BOTH:
                 return vertex().getEdgesOfType(direction, label).
                         flatMap(edge -> Stream.of(
-                                vertex().tx().factory().buildConcept(edge.source()),
-                                vertex().tx().factory().buildConcept(edge.target())
+                                vertex().tx().factory().buildConcept(edge.source().get()),
+                                vertex().tx().factory().buildConcept(edge.target().get())
                         ));
             case IN:
                 return vertex().getEdgesOfType(direction, label).map(edge ->
-                        vertex().tx().factory().buildConcept(edge.source())
+                        vertex().tx().factory().buildConcept(edge.source().get())
                 );
             case OUT:
                 return  vertex().getEdgesOfType(direction, label).map(edge ->
-                        vertex().tx().factory().buildConcept(edge.target())
+                        vertex().tx().factory().buildConcept(edge.target().get())
                 );
             default:
                 throw GraknTxOperationException.invalidDirection(direction);
@@ -206,8 +210,10 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, ContainsTxC
     }
 
     public Stream<Shard> shards(){
-        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).map(edge ->
-                vertex().tx().factory().buildShard(edge.source()));
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
+                map(EdgeElement::source).
+                flatMap(CommonUtil::optionalToStream).
+                map(edge -> vertex().tx().factory().buildShard(edge));
     }
 
     public Shard currentShard(){

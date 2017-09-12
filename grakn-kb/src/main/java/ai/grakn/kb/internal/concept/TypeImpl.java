@@ -32,6 +32,7 @@ import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
@@ -72,9 +73,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            Role role = vertex().tx().factory().buildConcept(edge.target());
-            Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
-            roleTypes.put(role, required);
+            if(edge.target().isPresent()) {
+                Role role = vertex().tx().factory().buildConcept(edge.target().get());
+                Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
+                roleTypes.put(role, required);
+            }
         });
 
         return roleTypes;
@@ -241,7 +244,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     Stream<V> instancesDirect(){
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
-                map(edge -> vertex().tx().factory().buildShard(edge.source())).
+                map(EdgeElement::source).
+                flatMap(CommonUtil::optionalToStream).
+                map(source -> vertex().tx().factory().buildShard(source)).
                 flatMap(Shard::<V>links);
     }
 

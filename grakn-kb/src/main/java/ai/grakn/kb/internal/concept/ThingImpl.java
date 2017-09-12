@@ -35,6 +35,7 @@ import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -76,14 +77,19 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     });
 
     private final Cache<V> cachedType = new Cache<>(Cacheable.concept(), () -> {
-        Optional<EdgeElement> typeEdge = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
-                flatMap(edge -> edge.target().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).findAny();
+        Optional<VertexElement> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
+                map(EdgeElement::target).
+                flatMap(CommonUtil::optionalToStream).
+                flatMap(edge -> edge.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).
+                map(EdgeElement::target).
+                flatMap(CommonUtil::optionalToStream).
+                findAny();
 
-        if(!typeEdge.isPresent()) {
+        if(!type.isPresent()) {
             throw GraknTxOperationException.noType(this);
         }
 
-        return vertex().tx().factory().buildConcept(typeEdge.get().target());
+        return vertex().tx().factory().buildConcept(type.get());
     });
 
     ThingImpl(VertexElement vertexElement) {

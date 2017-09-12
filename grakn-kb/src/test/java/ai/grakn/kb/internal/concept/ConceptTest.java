@@ -88,8 +88,8 @@ public class ConceptTest extends TxTestBase {
         assertThat(superType, is(not(empty())));
         assertThat(subs, is(not(empty())));
 
-        superType.forEach(edge -> assertEquals(entityType1, tx.factory().buildConcept(edge.target())));
-        subs.forEach(edge -> assertEquals(entityType3, tx.factory().buildConcept(edge.source())));
+        superType.forEach(edge -> assertEquals(entityType1, tx.factory().buildConcept(edge.target().get())));
+        subs.forEach(edge -> assertEquals(entityType3, tx.factory().buildConcept(edge.source().get())));
     }
 
     @Test

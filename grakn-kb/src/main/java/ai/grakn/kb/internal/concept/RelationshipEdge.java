@@ -24,6 +24,7 @@ import ai.grakn.concept.Relationship;
 import ai.grakn.concept.RelationshipType;
 import ai.grakn.concept.Role;
 import ai.grakn.concept.Thing;
+import ai.grakn.exception.GraknTxOperationException;
 import ai.grakn.kb.internal.cache.Cache;
 import ai.grakn.kb.internal.cache.Cacheable;
 import ai.grakn.kb.internal.structure.EdgeElement;
@@ -62,8 +63,15 @@ public class RelationshipEdge implements RelationshipStructure {
     private final Cache<Role> valueRole = new Cache<>(Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATIONSHIP_ROLE_VALUE_LABEL_ID))));
 
-    private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> edge().tx().factory().buildConcept(edge().source()));
-    private final Cache<Thing> value = new Cache<>(Cacheable.concept(), () -> edge().tx().factory().buildConcept(edge().target()));
+    private final Cache<Thing> owner = new Cache<>(Cacheable.concept(), () -> {
+        VertexElement vertexElement = edge().source().orElseThrow(() -> GraknTxOperationException.missingOwner(getId()));
+        return edge().tx().factory().buildConcept(vertexElement);
+    });
+
+    private final Cache<Thing> value = new Cache<>(Cacheable.concept(), () -> {
+        VertexElement vertexElement = edge().target().orElseThrow(() -> GraknTxOperationException.missingValue(getId()));
+        return edge().tx().factory().buildConcept(vertexElement);
+    });
 
     RelationshipEdge(EdgeElement edgeElement) {
         this.edgeElement = edgeElement;

@@ -33,6 +33,7 @@ import ai.grakn.kb.internal.structure.Casting;
 import ai.grakn.kb.internal.structure.EdgeElement;
 import ai.grakn.kb.internal.structure.Shard;
 import ai.grakn.kb.internal.structure.VertexElement;
+import ai.grakn.util.CommonUtil;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -154,7 +155,8 @@ public final class ElementFactory {
      */
     @Nullable
     public <X extends Concept> X buildConcept(Vertex v){
-        return buildConcept(buildVertexElement(v));
+        //TODO: Improve this
+        return buildConcept(buildVertexElement(v).get());
     }
 
     @Nullable
@@ -259,10 +261,13 @@ public final class ElementFactory {
             return Schema.BaseType.valueOf(vertex.label());
         } catch (IllegalArgumentException e){
             //Base type appears to be invalid. Let's try getting the type via the shard edge
-            Optional<EdgeElement> type = vertex.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD).findAny();
+            Optional<VertexElement> type = vertex.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD).
+                    map(EdgeElement::target).
+                    flatMap(CommonUtil::optionalToStream).
+                    findAny();
 
             if(type.isPresent()){
-                String label = type.get().target().label();
+                String label = type.get().label();
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
                 if(label.equals(RELATIONSHIP_TYPE.name())) return Schema.BaseType.RELATIONSHIP;
                 if(label.equals(Schema.BaseType.ATTRIBUTE_TYPE.name())) return Schema.BaseType.ATTRIBUTE;
@@ -292,18 +297,33 @@ public final class ElementFactory {
         return new Shard(vertexElement);
     }
 
-    Shard buildShard(Vertex vertex){
-        return new Shard(buildVertexElement(vertex));
+    Optional<Shard> buildShard(Vertex vertex){
+        return buildVertexElement(vertex).map(Shard::new);
     }
 
-    @Nullable
-    public VertexElement buildVertexElement(Vertex vertex){
-        if (!tx.validElement(vertex)) {
+    /**
+     * Builds a {@link VertexElement} from an already existing Vertex. An empty optional is returned if the passed in
+     * vertex is not valid. A vertex is not valid if it is null or has been deleted
+     *
+     * @param vertex A vertex which can possibly be turned into a {@link VertexElement}
+     * @return A {@link VertexElement} of
+     */
+    public Optional<VertexElement> buildVertexElement(Vertex vertex){
+        /*if (!tx.validElement(vertex)) {
             LOG.warn("Invalid vertex [" + vertex + "]");
-            return null;
+            return Optional.empty();
         }
+        return Optional.of(new VertexElement(tx, vertex));*/
+        return wrapResult(tx.validElement(vertex), vertex, (v) -> new VertexElement(tx, v));
+    }
 
-        return new VertexElement(tx, vertex);
+    private <X> Optional<X> wrapResult(boolean isValid, Vertex vertex, Function<Vertex, X> builder){
+        if(isValid) {
+            return Optional.of(builder.apply(vertex));
+        } else{
+            LOG.warn("Invalid vertex [" + vertex + "]");
+            return Optional.empty();
+        }
     }
 
     /**

@@ -22,6 +22,7 @@ import ai.grakn.GraknTx;
 import ai.grakn.concept.Attribute;
 import ai.grakn.concept.AttributeType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Label;
 import ai.grakn.concept.SchemaConcept;
 import ai.grakn.concept.Role;
@@ -269,7 +270,42 @@ public class GraknTxOperationException extends GraknException{
      * Thrown when changing the super of a {@link Type} will result in a {@link Role} disconnection which is in use.
      */
     public static GraknTxOperationException changingSuperWillDisconnectRole(Type oldSuper, Type newSuper, Role role){
-        throw new GraknTxOperationException(String.format("Cannot change the super type {%s} to {%s} because {%s} is connected to role {%s} which {%s} is not connected to.",
+        return new GraknTxOperationException(String.format("Cannot change the super type {%s} to {%s} because {%s} is connected to role {%s} which {%s} is not connected to.",
                 oldSuper.getLabel(), newSuper.getLabel(), oldSuper.getLabel(), role.getLabel(), newSuper.getLabel()));
+    }
+
+    /**
+     * Thrown when a {@link Concept} does not have a shard
+     */
+    public static GraknTxOperationException missingShard(ConceptId id) {
+        return new GraknTxOperationException(String.format("Concept {%s} is missing an essential shard", id));
+    }
+
+    /**
+     * Thrown when a casting does not have a role player
+     */
+    public static GraknTxOperationException missingRolePlayer(String id) {
+        return new GraknTxOperationException(String.format("Concept {%s} is missing a role player", id));
+    }
+
+    /**
+     * Thrown when a casting is missing a {@link ai.grakn.concept.Relationship}
+     */
+    public static GraknTxOperationException missingRelationship(String id) {
+        return new GraknTxOperationException(String.format("Concept {%s} is missing a relationship", id));
+    }
+
+    /**
+     * Thrown when link to a {@link Attribute} is missing the owner
+     */
+    public static GraknTxOperationException missingOwner(ConceptId id) {
+        return new GraknTxOperationException(String.format("Relationship {%s} is missing the owner", id));
+    }
+
+    /**
+     * Thrown when link to a {@link Attribute} is missing the owner
+     */
+    public static GraknTxOperationException missingValue(ConceptId id) {
+        return new GraknTxOperationException(String.format("Relationship {%s} is missing the value", id));
     }
 }
