@@ -147,11 +147,6 @@ grakn_server_stop_cassandra() {
   fi
 }
 
-cassandra_clean_cassandra() {
-  rm -rf db/cassandra
-  mkdir -p db/cassandra/data db/cassandra/commitlog db/cassandra/saved_caches
-}
-
 # ================================================
 # redis helper functions
 # ================================================
@@ -258,17 +253,6 @@ grakn_server_stop_redis() {
   return $status
 }
 
-redis_clean_redis() {
-  local redis_bin=
-  if [ "$(uname)" == "Darwin" ]; then
-      redis_bin="redis-cli-osx"
-  elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-      redis_bin="redis-cli-linux"
-  fi
-
-  "${GRAKN_HOME}/services/redis/"$redis_bin flushall
-}
-
 # ================================================
 # grakn helper functions
 # ================================================
@@ -359,10 +343,6 @@ grakn_server_stop_grakn() {
   fi
 }
 
-grakn_clean_grakn() {
-  rm "${GRAKN_HOME}"/logs/*.log
-}
-
 # ================================================
 # command line helpers
 # ================================================
@@ -441,7 +421,6 @@ COMMAND:
 start [grakn|redis|cassandra]  Start Grakn (or optionally, only one of the component)
 stop [grakn|redis|cassandra]   Stop Grakn (or optionally, only one of the component)
 status                         Check if Grakn is running
-clean                          DANGEROUS: wipe data completely
 
 Tips:
 - Start Grakn with 'grakn server start'
@@ -468,45 +447,6 @@ grakn_server_status() {
     echo "Grakn: RUNNING"
   else
     echo "Grakn: NOT RUNNING"
-  fi
-}
-
-# TODO
-# better to remove this functionality in production.
-# Having a very accessible full deletion functionality like this is dangerous
-grakn_server_clean() {
-  cassandra_is_cassandra_running
-  local is_cassandra_running=$?
-
-  redis_is_redis_running
-  local is_redis_running=$?
-
-  grakn_is_grakn_running
-  local is_grakn_running=$?
-
-  if [ $is_cassandra_running -eq 0 ] || [ $is_redis_running -eq 0 ] || [ $is_grakn_running -eq 0 ] ; then
-    echo "Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup."
-  else
-    echo -n "Are you sure you want to delete all stored data and logs? [y/N] " >&2
-    read response
-    if [ "$response" != "y" -a "$response" != "Y" ]; then
-        echo "Response \"$response\" did not equal \"y\" or \"Y\".  Canceling clean operation." >&2
-        return 0
-    fi
-
-    echo -n "Cleaning Cassandra..."
-    cassandra_clean_cassandra
-    echo "SUCCESS"
-
-    echo -n "Cleaning Redis..."
-    redis_start_and_wait_until_ready
-    redis_clean_redis
-    grakn_server_stop_redis
-    echo "SUCCESS"
-
-    echo -n "Cleaning Grakn..."
-    grakn_clean_grakn
-    echo "SUCCESS"
   fi
 }
 
@@ -635,9 +575,6 @@ case "$1" in
       ;;
       status)
         grakn_server_status
-      ;;
-      clean)
-        grakn_server_clean
       ;;
       help|*)
         grakn_server_help
