@@ -266,7 +266,15 @@ grakn_start_grakn() {
   return $status
 }
 
-grakn_is_grakn_running() {
+grakn_is_grakn_initiated() {
+  if [ -e "$GRAKN_PS" ] && ps -p `cat $GRAKN_PS` > /dev/null ; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+grakn_is_grakn_ready() {
   java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/services" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.client.Client > /dev/null 2>&1
   return $?
 }
@@ -277,7 +285,7 @@ grakn_wait_until_ready() {
 
   while [ $now_s -le $stop_s ]; do
       echo -n "." # output some sort of "progress bar"
-      grakn_is_grakn_running
+      grakn_is_grakn_ready
       local is_grakn_running=$?
       if [ $is_grakn_running -eq 0 ] ; then
           return 0
@@ -290,7 +298,7 @@ grakn_wait_until_ready() {
 }
 
 grakn_start_and_wait_until_ready() {
-  grakn_is_grakn_running
+  grakn_is_grakn_initiated
   is_grakn_running=$?
 
   if [ $is_grakn_running -eq 0 ]; then
@@ -321,7 +329,7 @@ grakn_start_and_wait_until_ready() {
 
 grakn_server_stop_grakn() {
   echo -n "Stopping Grakn..."
-  grakn_is_grakn_running
+  grakn_is_grakn_initiated
   local is_grakn_running=$?
   if [[ $is_grakn_running -eq 0 ]]; then
     if [[ -e "$GRAKN_PS" ]]; then
@@ -442,7 +450,7 @@ grakn_server_status() {
     echo "Redis: NOT RUNNING"
   fi
 
-  grakn_is_grakn_running
+  grakn_is_grakn_ready
   if [ $? -eq 0 ] ; then
     echo "Grakn: RUNNING"
   else
