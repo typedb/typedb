@@ -20,6 +20,7 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
+import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -30,6 +31,8 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Collection;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_DIRECTION;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.RELATION_EDGE;
@@ -51,17 +54,17 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_LABEL_ID;
 abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
+    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
         return Fragments.union(traversal, ImmutableSet.of(
-                reifiedRelationTraversal(graph),
-                edgeRelationTraversal(graph, Direction.OUT, RELATIONSHIP_ROLE_OWNER_LABEL_ID),
-                edgeRelationTraversal(graph, Direction.IN, RELATIONSHIP_ROLE_VALUE_LABEL_ID)
+                reifiedRelationTraversal(graph, vars),
+                edgeRelationTraversal(graph, Direction.OUT, RELATIONSHIP_ROLE_OWNER_LABEL_ID, vars),
+                edgeRelationTraversal(graph, Direction.IN, RELATIONSHIP_ROLE_VALUE_LABEL_ID, vars)
         ));
     }
 
-    private GraphTraversal<Element, Vertex> reifiedRelationTraversal(GraknTx graph) {
+    private GraphTraversal<Element, Vertex> reifiedRelationTraversal(GraknTx graph, Collection<Var> vars) {
         GraphTraversal<Element, Vertex> traversal = Fragments.isVertex(__.identity());
 
         GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(ROLE_PLAYER.getLabel()).as(edge().getValue());
@@ -70,20 +73,20 @@ abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
         applyLabelsToTraversal(edgeTraversal, ROLE_LABEL_ID, roleLabels(), graph);
         applyLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), graph);
 
-        traverseToRole(edgeTraversal, role(), ROLE_LABEL_ID);
+        traverseToRole(edgeTraversal, role(), ROLE_LABEL_ID, vars);
 
         return edgeTraversal.inV();
     }
 
     private GraphTraversal<Element, Vertex> edgeRelationTraversal(
-            GraknTx graph, Direction direction, Schema.EdgeProperty roleProperty) {
+            GraknTx graph, Direction direction, Schema.EdgeProperty roleProperty, Collection<Var> vars) {
         GraphTraversal<Element, Edge> edgeTraversal = Fragments.isEdge(__.identity());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), graph);
         applyLabelsToTraversal(edgeTraversal, RELATIONSHIP_TYPE_LABEL_ID, relationTypeLabels(), graph);
 
-        traverseToRole(edgeTraversal, role(), roleProperty);
+        traverseToRole(edgeTraversal, role(), roleProperty, vars);
 
         // Identify the relation - role-player pair by combining the relationship edge and direction into a map
         edgeTraversal.as(RELATION_EDGE).constant(direction).as(RELATION_DIRECTION);
