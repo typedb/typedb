@@ -31,16 +31,16 @@ if [ -z "${GRAKN_HOME}" ]; then
     [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
     GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
     GRAKN_CONFIG="${GRAKN_HOME}/conf/grakn.properties"
-    GRAKN_PS=/tmp/grakn-engine.pid
+    GRAKN_PID=/tmp/grakn.pid
     GRAKN_STARTUP_TIMEOUT_S=120
 fi
 
-# Cassandra globals
-CASSANDRA_PS=/tmp/grakn-storage.pid
-CASSANDRA_STARTUP_TIMEOUT_S=60
+# Storage globals
+STORAGE_PID=/tmp/grakn-storage.pid
+STORAGE_STARTUP_TIMEOUT_S=60
 
-# Redis globals
-REDIS_STARTUP_TIMEOUT_S=10
+# Queue globals
+QUEUE_STARTUP_TIMEOUT_S=10
 
 # ================================================
 # common helper functions
@@ -59,26 +59,26 @@ update_classpath() {
 }
 
 # ================================================
-# cassandra helper functions
+# storage helper functions
 # ================================================
-cassandra_start_cassandra() {
-  "${GRAKN_HOME}"/services/cassandra/cassandra -p $CASSANDRA_PS > /dev/null 2>&1
+storage_start_storage() {
+  "${GRAKN_HOME}"/services/cassandra/cassandra -p $STORAGE_PID > /dev/null 2>&1
   return $?
 }
 
-cassandra_is_cassandra_running() {
+storage_is_storage_running() {
   local status=
-  if [ -e $CASSANDRA_PS ] && ps -p `cat $CASSANDRA_PS` > /dev/null ; then
-    status=0 # cassandra running
+  if [ -e $STORAGE_PID ] && ps -p `cat $STORAGE_PID` > /dev/null ; then
+    status=0 # storage running
   else
-    status=1 # cassandra not running
+    status=1 # storage not running
   fi
   return $status
 }
 
-cassandra_wait_until_ready() {
+storage_wait_until_ready() {
   local now_s=`date '+%s'`
-  local stop_s=$(( $now_s + $CASSANDRA_STARTUP_TIMEOUT_S ))
+  local stop_s=$(( $now_s + $STORAGE_STARTUP_TIMEOUT_S ))
   local status_thrift=
 
   while [ $now_s -le $stop_s ]; do
@@ -95,28 +95,28 @@ cassandra_wait_until_ready() {
   return 1
 }
 
-cassandra_start_and_wait_until_ready() {
-  cassandra_is_cassandra_running
-  is_cassandra_running=$?
+storage_start_and_wait_until_ready() {
+  storage_is_storage_running
+  is_storage_running=$?
 
-  if [ $is_cassandra_running -eq 0 ]; then
-    echo "Cassandra is already running"
-    return 0 # cassandra is already running. no need to do anything
+  if [ $is_storage_running -eq 0 ]; then
+    echo "Storage is already running"
+    return 0 # storage is already running. no need to do anything
   else
     # otherwise attempt to start
-    echo -n "Starting Cassandra..."
-    cassandra_start_cassandra
-    local exec_cassandra_bin=$?
+    echo -n "Starting Storage..."
+    storage_start_storage
+    local exec_storage_bin=$?
 
-    # check cassandra status and wait until ready
+    # check storage status and wait until ready
     local status=
-    if [ $exec_cassandra_bin -eq 0 ] ; then
-      # exec cassandra bin successful. now wait until ready
-      cassandra_wait_until_ready
+    if [ $exec_storage_bin -eq 0 ] ; then
+      # exec storage bin successful. now wait until ready
+      storage_wait_until_ready
       status=$?
       echo "SUCCESS"
     else
-      # exec cassandra bin failed
+      # exec storage bin failed
       status=1
       echo "FAILED!"
     fi
@@ -125,13 +125,13 @@ cassandra_start_and_wait_until_ready() {
   fi
 }
 
-grakn_server_stop_cassandra() {
-  echo -n "Stopping Cassandra..."
-  cassandra_is_cassandra_running
-  local is_cassandra_running=$?
-  if [[ $is_cassandra_running -eq 0 ]]; then
-    if [[ -e $CASSANDRA_PS ]]; then
-      pid=`cat $CASSANDRA_PS`
+grakn_server_stop_storage() {
+  echo -n "Stopping Storage..."
+  storage_is_storage_running
+  local is_storage_running=$?
+  if [[ $is_storage_running -eq 0 ]]; then
+    if [[ -e $STORAGE_PID ]]; then
+      pid=`cat $STORAGE_PID`
       kill "$pid"
       while kill -0 "$pid" 2>/dev/null; do
           sleep 0.5
@@ -147,53 +147,53 @@ grakn_server_stop_cassandra() {
   fi
 }
 
-cassandra_clean_cassandra() {
+storage_clean_storage() {
   rm -rf db/cassandra
   mkdir -p db/cassandra/data db/cassandra/commitlog db/cassandra/saved_caches
 }
 
 # ================================================
-# redis helper functions
+# queue helper functions
 # ================================================
-redis_start_redis() {
-  local redis_bin=""
+queue_start_queue() {
+  local queue_bin=""
   if [ "$(uname)" == "Darwin" ]; then
-      redis_bin="redis-server-osx"
+      queue_bin="redis-server-osx"
   elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-      redis_bin="redis-server-linux"
+      queue_bin="redis-server-linux"
   fi
 
-  # run redis
-  # redis needs to be ran with $GRAKN_HOME as the working directory
+  # run queue
+  # queue needs to be ran with $GRAKN_HOME as the working directory
   # otherwise it won't be able to find its data directory located at $GRAKN_HOME/db/redis
   pushd "$GRAKN_HOME" > /dev/null
-  "${GRAKN_HOME}"/services/redis/$redis_bin "${GRAKN_HOME}"/services/redis/redis.conf
+  "${GRAKN_HOME}"/services/redis/$queue_bin "${GRAKN_HOME}"/services/redis/redis.conf
   local status=$?
   popd > /dev/null
 
   return $status
 }
 
-redis_is_redis_running() {
+queue_is_queue_running() {
   local status=
-  local count_running_redis_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
-  if [ $count_running_redis_process -gt 0 ] ; then
-    status=0 # redis running
+  local count_running_queue_process=`ps -ef | grep 'redis-server' | grep -v grep | awk '{ print $2}' | wc -l`
+  if [ $count_running_queue_process -gt 0 ] ; then
+    status=0 # queue running
   else
-    status=1 # redis not running
+    status=1 # queue not running
   fi
   return $status
 }
 
-redis_wait_until_ready() {
+queue_wait_until_ready() {
   local now_s=`date '+%s'`
-  local stop_s=$(( $now_s + $REDIS_STARTUP_TIMEOUT_S ))
+  local stop_s=$(( $now_s + $QUEUE_STARTUP_TIMEOUT_S ))
 
   while [ $now_s -le $stop_s ]; do
       echo -n "." # output some sort of "progress bar"
-      redis_is_redis_running
-      local is_redis_running=$?
-      if [ $is_redis_running -eq 0 ] ; then
+      queue_is_queue_running
+      local is_queue_running=$?
+      if [ $is_queue_running -eq 0 ] ; then
           return 0
       fi
       sleep $WAIT_INTERVAL_S
@@ -203,28 +203,28 @@ redis_wait_until_ready() {
   return 1
 }
 
-redis_start_and_wait_until_ready() {
-  redis_is_redis_running
-  is_redis_running=$?
+queue_start_and_wait_until_ready() {
+  queue_is_queue_running
+  is_queue_running=$?
 
-  if [ $is_redis_running -eq 0 ]; then
-    echo "Redis is already running"
-    return 0 # redis is already running. no need to do anything
+  if [ $is_queue_running -eq 0 ]; then
+    echo "Queue is already running"
+    return 0 # queue is already running. no need to do anything
   else
     # otherwise attempt to start
-    echo -n "Starting Redis..."
-    redis_start_redis
-    local exec_redis_bin=$?
+    echo -n "Starting Queue..."
+    queue_start_queue
+    local exec_queue_bin=$?
 
-    # check redis status and wait until ready
+    # check queue status and wait until ready
     local status=
-    if [ $exec_redis_bin -eq 0 ] ; then
-      # exec redis bin successful. now wait until ready
-      redis_wait_until_ready
+    if [ $exec_queue_bin -eq 0 ] ; then
+      # exec queue bin successful. now wait until ready
+      queue_wait_until_ready
       status=$?
       echo "SUCCESS"
     else
-      # exec redis bin failed
+      # exec queue bin failed
       status=1
       echo "FAILED!"
     fi
@@ -233,18 +233,18 @@ redis_start_and_wait_until_ready() {
   fi
 }
 
-grakn_server_stop_redis() {
-  echo -n "Stopping Redis..."
-  redis_is_redis_running
-  local is_redis_running=$?
-  if [[ $is_redis_running -eq 0 ]]; then
-    local redis_bin=
+grakn_server_stop_queue() {
+  echo -n "Stopping Queue..."
+  queue_is_queue_running
+  local is_queue_running=$?
+  if [[ $is_queue_running -eq 0 ]]; then
+    local queue_bin=
     if [ "$(uname)" == "Darwin" ]; then
-        redis_bin="redis-cli-osx"
+        queue_bin="redis-cli-osx"
     elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-        redis_bin="redis-cli-linux"
+        queue_bin="redis-cli-linux"
     fi
-    "${GRAKN_HOME}/services/redis/"$redis_bin shutdown
+    "${GRAKN_HOME}/services/redis/"$queue_bin shutdown
     local status=$?
     if [ $status -eq 0 ] ; then
       echo "SUCCESS"
@@ -258,15 +258,15 @@ grakn_server_stop_redis() {
   return $status
 }
 
-redis_clean_redis() {
-  local redis_bin=
+queue_clean_queue() {
+  local queue_bin=
   if [ "$(uname)" == "Darwin" ]; then
-      redis_bin="redis-cli-osx"
+      queue_bin="redis-cli-osx"
   elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-      redis_bin="redis-cli-linux"
+      queue_bin="redis-cli-linux"
   fi
 
-  "${GRAKN_HOME}/services/redis/"$redis_bin flushall
+  "${GRAKN_HOME}/services/redis/"$queue_bin flushall
 }
 
 # ================================================
@@ -278,12 +278,12 @@ grakn_start_grakn() {
     ai.grakn.engine.GraknEngineServer > /dev/null 2>&1 &
   status=$?
   pid=`ps -ef | grep GraknEngineServer | grep -v grep | awk '{ print $2}'`
-  echo $pid > "${GRAKN_PS}"
+  echo $pid > "${GRAKN_PID}"
   return $status
 }
 
 grakn_is_grakn_initiated() {
-  if [ -e "$GRAKN_PS" ] && ps -p `cat $GRAKN_PS` > /dev/null ; then
+  if [ -e "$GRAKN_PID" ] && ps -p `cat $GRAKN_PID` > /dev/null ; then
     return 0
   else
     return 1
@@ -348,10 +348,10 @@ grakn_server_stop_grakn() {
   grakn_is_grakn_initiated
   local is_grakn_running=$?
   if [[ $is_grakn_running -eq 0 ]]; then
-    if [[ -e "$GRAKN_PS" ]]; then
-      kill `cat $GRAKN_PS`
+    if [[ -e "$GRAKN_PID" ]]; then
+      kill `cat $GRAKN_PID`
       status_kill=$?
-      rm $GRAKN_PS
+      rm $GRAKN_PID
       if [ $status_kill -eq 0 ] ; then
         echo "SUCCESS"
       else
@@ -379,13 +379,13 @@ grakn_server_stop() {
   grakn_server_stop_grakn
   status_grakn=$?
 
-  grakn_server_stop_redis
-  status_redis=$?
+  grakn_server_stop_queue
+  status_queue=$?
 
-  grakn_server_stop_cassandra
-  status_cassandra=$?
+  grakn_server_stop_storage
+  status_storage=$?
 
-  if [ $status_grakn -eq 0 ] && [ $status_redis -eq 0 ] && [ $status_cassandra -eq 0 ] ; then
+  if [ $status_grakn -eq 0 ] && [ $status_queue -eq 0 ] && [ $status_storage -eq 0 ] ; then
     return 0
   else
     return 1
@@ -403,38 +403,38 @@ grakn_server_start_grakn() {
   return $grakn
 }
 
-grakn_server_start_redis() {
-  redis_start_and_wait_until_ready
-  redis=$?
+grakn_server_start_queue() {
+  queue_start_and_wait_until_ready
+  queue=$?
   # log
-  if [ $redis -ne 0 ] ; then
-    echo "Unable to start Redis"
+  if [ $queue -ne 0 ] ; then
+    echo "Unable to start Queue"
   fi
-  return $redis
+  return $queue
 }
 
-grakn_server_start_cassandra() {
-  cassandra_start_and_wait_until_ready
-  cassandra=$?
+grakn_server_start_storage() {
+  storage_start_and_wait_until_ready
+  storage=$?
   # log
-  if [ $cassandra -ne 0 ] ; then
-    echo "Unable to start Cassandra"
+  if [ $storage -ne 0 ] ; then
+    echo "Unable to start Storage"
   fi
-  return $cassandra
+  return $storage
 }
 
 grakn_server_start() {
-  grakn_server_start_cassandra
-  local cassandra=$?
+  grakn_server_start_storage
+  local storage=$?
 
-  grakn_server_start_redis
-  local redis=$?
+  grakn_server_start_queue
+  local queue=$?
 
   grakn_server_start_grakn
   local grakn=$?
 
   local status=
-  if [ $cassandra -ne 0 ] || [ $redis -ne 0 ] || [ $grakn -ne 0 ]; then
+  if [ $storage -ne 0 ] || [ $queue -ne 0 ] || [ $grakn -ne 0 ]; then
     status=1
   else
     status=0
@@ -447,29 +447,29 @@ grakn_server_help() {
   echo "Usage: grakn server COMMAND
 
 COMMAND:
-start [grakn|redis|cassandra]  Start Grakn (or optionally, only one of the component)
-stop [grakn|redis|cassandra]   Stop Grakn (or optionally, only one of the component)
+start [grakn|queue|storage]  Start Grakn (or optionally, only one of the component)
+stop [grakn|queue|storage]   Stop Grakn (or optionally, only one of the component)
 status                         Check if Grakn is running
 clean                          DANGEROUS: wipe data completely
 
 Tips:
 - Start Grakn with 'grakn server start'
-- Start or stop only one component with, e.g. 'grakn server start cassandra' or 'grakn server stop cassandra', respectively
+- Start or stop only one component with, e.g. 'grakn server start storage' or 'grakn server stop storage', respectively
 "
 }
 grakn_server_status() {
-  cassandra_is_cassandra_running
+  storage_is_storage_running
   if [ $? -eq 0 ] ; then
     echo "Casssandra: RUNNING"
   else
     echo "Casssandra: NOT RUNNING"
   fi
 
-  redis_is_redis_running
+  queue_is_queue_running
   if [ $? -eq 0 ] ; then
-    echo "Redis: RUNNING"
+    echo "Queue: RUNNING"
   else
-    echo "Redis: NOT RUNNING"
+    echo "Queue: NOT RUNNING"
   fi
 
   grakn_is_grakn_ready
@@ -484,16 +484,16 @@ grakn_server_status() {
 # better to remove this functionality in production.
 # Having a very accessible full deletion functionality like this is dangerous
 grakn_server_clean() {
-  cassandra_is_cassandra_running
-  local is_cassandra_running=$?
+  storage_is_storage_running
+  local is_storage_running=$?
 
-  redis_is_redis_running
-  local is_redis_running=$?
+  queue_is_queue_running
+  local is_queue_running=$?
 
   grakn_is_grakn_ready
   local is_grakn_running=$?
 
-  if [ $is_cassandra_running -eq 0 ] || [ $is_redis_running -eq 0 ] || [ $is_grakn_running -eq 0 ] ; then
+  if [ $is_storage_running -eq 0 ] || [ $is_queue_running -eq 0 ] || [ $is_grakn_running -eq 0 ] ; then
     echo "Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup."
   else
     echo -n "Are you sure you want to delete all stored data and logs? [y/N] " >&2
@@ -503,14 +503,14 @@ grakn_server_clean() {
         return 0
     fi
 
-    echo -n "Cleaning Cassandra..."
-    cassandra_clean_cassandra
+    echo -n "Cleaning Storage..."
+    storage_clean_storage
     echo "SUCCESS"
 
-    redis_start_and_wait_until_ready
-    redis_clean_redis
-    grakn_server_stop_redis
-    echo "Cleaning Redis...SUCCESS"
+    queue_start_and_wait_until_ready
+    queue_clean_queue
+    grakn_server_stop_queue
+    echo "Cleaning Queue...SUCCESS"
 
     echo -n "Cleaning Grakn..."
     grakn_clean_grakn
@@ -555,27 +555,27 @@ case_grakn_server_start() {
         exit 1
       fi
     ;;
-    redis)
-      grakn_server_start_redis
+    queue)
+      grakn_server_start_queue
       status=$?
       if [ $status -eq 0 ] ; then
         # do nothing
         exit 0
       else
         # failure detected. attempt to terminate every component gracefully
-        echo "Unable to start Redis. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        echo "Unable to start Queue. Please run 'grakn server status' or check the logs located under 'logs' directory."
         exit 1
       fi
     ;;
-    cassandra)
-      grakn_server_start_cassandra
+    storage)
+      grakn_server_start_storage
       status=$?
       if [ $status -eq 0 ] ; then
         # do nothing
         exit 0
       else
         # failure detected. attempt to terminate every component gracefully
-        echo "Unable to start Cassandra. Please run 'grakn server status' or check the logs located under 'logs' directory."
+        echo "Unable to start Storage. Please run 'grakn server status' or check the logs located under 'logs' directory."
         exit 1
       fi
     ;;
@@ -600,11 +600,11 @@ case_grakn_server_stop() {
     grakn)
       grakn_server_stop_grakn
     ;;
-    redis)
-      grakn_server_stop_redis
+    queue)
+      grakn_server_stop_queue
     ;;
-    cassandra)
-      grakn_server_stop_cassandra
+    storage)
+      grakn_server_stop_storage
     ;;
     *)
       grakn_server_stop
