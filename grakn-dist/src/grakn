@@ -36,7 +36,7 @@ if [ -z "${GRAKN_HOME}" ]; then
 fi
 
 # Cassandra globals
-CASSANDRA_PS=/tmp/grakn-cassandra.pid
+CASSANDRA_PS=/tmp/grakn-storage.pid
 CASSANDRA_STARTUP_TIMEOUT_S=60
 
 # Redis globals
