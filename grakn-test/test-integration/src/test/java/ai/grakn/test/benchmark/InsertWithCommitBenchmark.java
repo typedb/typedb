@@ -8,6 +8,7 @@ import ai.grakn.Keyspace;
 import ai.grakn.concept.EntityType;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.SampleKBLoader;
+import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -40,7 +41,7 @@ public class InsertWithCommitBenchmark extends BenchmarkTest {
         engine.after();
     }
 
-    @org.openjdk.jmh.annotations.Benchmark
+    @Benchmark
     public void inserts() {
         try(GraknTx graph = session.open(GraknTxType.WRITE)) {
             entityType.addEntity();

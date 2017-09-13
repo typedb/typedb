@@ -58,25 +58,28 @@ import redis.clients.util.Pool;
 public class RedisTaskManager implements TaskManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(RedisTaskManager.class);
-    private static final int TIMEOUT = 5;
+    private static final int TIMEOUT_SECONDS = 5;
+    private static final String QUEUE_NAME = "grakn";
+
     private final Redisq<Task> redisq;
     private final RedisTaskStorage taskStorage;
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
-                            EngineGraknTxFactory factory, LockProvider distributedLockClient,
-                            MetricRegistry metricRegistry) {
+            EngineGraknTxFactory factory, LockProvider distributedLockClient,
+            MetricRegistry metricRegistry) {
         this(engineId, config, jedisPool, 32, factory, distributedLockClient, metricRegistry);
     }
 
     public RedisTaskManager(EngineID engineId, GraknEngineConfig config, Pool<Jedis> jedisPool,
-                            int threads, EngineGraknTxFactory factory, LockProvider distributedLockClient,
-                            MetricRegistry metricRegistry) {
-        Consumer<Task> consumer = new RedisTaskQueueConsumer(this, engineId, config, RedisCountStorage
-                .create(jedisPool, metricRegistry), metricRegistry, factory, distributedLockClient);
+            int threads, EngineGraknTxFactory factory, LockProvider distributedLockClient,
+            MetricRegistry metricRegistry) {
+        Consumer<Task> consumer = new RedisTaskQueueConsumer(this, engineId, config,
+                RedisCountStorage.create(jedisPool, metricRegistry), metricRegistry, factory,
+                distributedLockClient);
         LOG.info("Running queue consumer with {} execution threads", threads);
         this.redisq = new RedisqBuilder<Task>()
                 .setJedisPool(jedisPool)
-                .setName("grakn")
+                .setName(QUEUE_NAME)
                 .setConsumer(consumer)
                 .setMetricRegistry(metricRegistry)
                 .setThreadPool(Executors.newFixedThreadPool(threads))
@@ -101,7 +104,7 @@ public class RedisTaskManager implements TaskManager {
                 .runAsync(redisq::startConsumer)
                 .exceptionally(e -> {
                     close();
-                    throw new RuntimeException("Failed to intitialize subscription");
+                    throw new RuntimeException("Failed to initialise subscription");
                 });
     }
 
@@ -139,19 +142,21 @@ public class RedisTaskManager implements TaskManager {
 
     public Future<Void> subscribeToTask(TaskId taskId)
             throws StateFutureInitializationException, ExecutionException, InterruptedException {
-        return redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(),
-                TIMEOUT, TimeUnit.SECONDS);
+        return redisq
+                .getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(),
+                        TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
 
     public void waitForTask(TaskId taskId)
             throws StateFutureInitializationException, ExecutionException, InterruptedException {
         redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(),
-                TIMEOUT, TimeUnit.SECONDS).get();
+                TIMEOUT_SECONDS, TimeUnit.SECONDS).get();
     }
 
     public void waitForTask(TaskId taskId, long timeout, TimeUnit timeUnit)
             throws StateFutureInitializationException, ExecutionException, InterruptedException, TimeoutException {
-        redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(), TIMEOUT, TimeUnit.SECONDS).get(timeout, timeUnit);
+        redisq.getFutureForDocumentStateWait(ImmutableSet.of(DONE, FAILED), taskId.getValue(),
+                TIMEOUT_SECONDS, TimeUnit.SECONDS).get(timeout, timeUnit);
     }
 
     public Redisq getQueue() {
