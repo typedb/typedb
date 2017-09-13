@@ -20,9 +20,12 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.GraknTx;
 import ai.grakn.concept.Label;
+import ai.grakn.graql.Var;
 import com.google.auto.value.AutoValue;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
+
+import java.util.Collection;
 
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static ai.grakn.util.Schema.VertexProperty.LABEL_ID;
@@ -33,8 +36,8 @@ abstract class LabelFragment extends Fragment {
     abstract Label label();
 
     @Override
-    public GraphTraversal<Element, ? extends Element> applyTraversal(
-            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph) {
+    public GraphTraversal<Element, ? extends Element> applyTraversalInner(
+            GraphTraversal<Element, ? extends Element> traversal, GraknTx graph, Collection<Var> vars) {
 
         return traversal.has(LABEL_ID.name(), graph.admin().convertToId(label()).getValue());
     }
@@ -46,7 +49,7 @@ abstract class LabelFragment extends Fragment {
 
     @Override
     public double fragmentCost() {
-        return COST_INDEX;
+        return COST_NODE_INDEX;
     }
 
     @Override
