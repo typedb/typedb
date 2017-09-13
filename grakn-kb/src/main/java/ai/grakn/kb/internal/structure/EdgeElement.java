@@ -23,7 +23,7 @@ import ai.grakn.kb.internal.GraknTxAbstract;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
-import javax.annotation.Nullable;
+import java.util.Optional;
 
 /**
  * <p>
@@ -68,8 +68,7 @@ public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
      *
      * @return The source of the edge.
      */
-    @Nullable
-    public VertexElement source(){
+    public Optional<VertexElement> source(){
         return tx().factory().buildVertexElement(element().outVertex());
     }
 
@@ -77,8 +76,7 @@ public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
      *
      * @return The target of the edge
      */
-    @Nullable
-    public VertexElement target(){
+    public Optional<VertexElement> target(){
         return tx().factory().buildVertexElement(element().inVertex());
     }
 }
