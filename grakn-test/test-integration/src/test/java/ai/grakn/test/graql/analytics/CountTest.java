@@ -47,7 +47,7 @@ import static org.junit.Assert.assertEquals;
 public class CountTest {
 
     @ClassRule
-    public static final EngineContext rule = EngineContext.startInMemoryServer();
+    public static final EngineContext rule = EngineContext.inMemoryServer();
 
     private GraknSession factory;
 

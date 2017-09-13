@@ -20,20 +20,27 @@ package ai.grakn.test;
 
 
 import ai.grakn.engine.GraknEngineConfig;
-import org.junit.rules.ExternalResource;
-import spark.Service;
-
+import static ai.grakn.engine.GraknEngineConfig.JWT_SECRET_PROPERTY;
+import static ai.grakn.engine.GraknEngineServer.configureSpark;
+import ai.grakn.engine.util.JWTHandler;
+import com.jayway.restassured.RestAssured;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import spark.Service;
 
 /**
  * Context that starts spark
  * @author Felix Chapman
  */
 public class SparkContext extends ExternalResource {
+    private static final Logger LOG = LoggerFactory.getLogger(SparkContext.class);
+
 
     private final BiConsumer<Service, GraknEngineConfig> createControllers;
-    private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
+    private final GraknEngineConfig config = EngineTestUtil.createTestConfig();
 
     private Service spark;
 
@@ -67,7 +74,10 @@ public class SparkContext extends ExternalResource {
     }
 
     public void start() {
-        spark = GraknTestEngineSetup.startSpark(config);
+        LOG.info("Starting spark on port " + config.uri());
+        Service spark = Service.ignite();
+        configureSpark(spark, config, JWTHandler.create(config.getProperty(JWT_SECRET_PROPERTY)));
+        RestAssured.baseURI = "http://" + config.uri();
 
         createControllers.accept(spark, config);
 

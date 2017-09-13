@@ -56,7 +56,7 @@ import static org.junit.Assume.assumeFalse;
 public class PostProcessingIT {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final EngineContext engine = EngineContext.inMemoryServer();
 
     @Test
     public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws InvalidKBException, ExecutionException, InterruptedException {

@@ -55,7 +55,7 @@ public class BatchMutatorClientTest {
     public ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    public static final EngineContext engine = EngineContext.inMemoryServer();
 
     @Before
     public void setupSession(){

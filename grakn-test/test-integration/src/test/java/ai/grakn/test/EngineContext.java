@@ -20,29 +20,29 @@ package ai.grakn.test;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTx;
+import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 import static ai.grakn.engine.GraknEngineConfig.REDIS_HOST;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.tasks.connection.RedisCountStorage;
+import ai.grakn.engine.SystemKeyspace;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.TaskManager;
 import ai.grakn.engine.tasks.manager.redisqueue.RedisTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import ai.grakn.engine.util.SimpleURI;
-import static ai.grakn.test.GraknTestEngineSetup.startEngine;
-import static ai.grakn.test.GraknTestEngineSetup.startRedis;
-import static ai.grakn.test.GraknTestEngineSetup.stopEngine;
-import static ai.grakn.test.GraknTestEngineSetup.stopRedis;
+import static ai.grakn.graql.Graql.var;
+import ai.grakn.util.EmbeddedRedis;
 import static ai.grakn.util.SampleKBLoader.randomKeyspace;
-import com.codahale.metrics.MetricRegistry;
 import com.jayway.restassured.RestAssured;
-import org.junit.rules.ExternalResource;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
-
+import java.util.HashSet;
+import java.util.Set;
 import javax.annotation.Nullable;
+import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -53,28 +53,28 @@ import javax.annotation.Nullable;
  * @author alexandraorth
  */
 public class EngineContext extends ExternalResource {
+    private static final Logger LOG = LoggerFactory.getLogger(EngineContext.class);
 
-    private GraknEngineServer server;
 
+    private final GraknEngineServer server;
     private final boolean startSingleQueueEngine;
     private final boolean startStandaloneEngine;
-    private final GraknEngineConfig config = GraknTestEngineSetup.createTestConfig();
-    private JedisPool jedisPool;
+    private final GraknEngineConfig config;
 
     private EngineContext(boolean startSingleQueueEngine, boolean startStandaloneEngine){
         this.startSingleQueueEngine = startSingleQueueEngine;
         this.startStandaloneEngine = startStandaloneEngine;
+        Class<? extends TaskManager> taskManagerClass = startSingleQueueEngine ? RedisTaskManager.class : StandaloneTaskManager.class;
+        config = EngineTestUtil.createTestConfig();
+        config.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
+        server = GraknEngineServer.create(config);
     }
 
-    public static EngineContext startNoQueue(){
-        return new EngineContext( false, false);
-    }
-
-    public static EngineContext startSingleQueueServer(){
+    public static EngineContext singleQueueServer(){
         return new EngineContext( true, false);
     }
 
-    public static EngineContext startInMemoryServer(){
+    public static EngineContext inMemoryServer(){
         return new EngineContext( true, true);
     }
 
@@ -88,21 +88,6 @@ public class EngineContext extends ExternalResource {
 
     public GraknEngineConfig config() {
         return config;
-    }
-
-    public RedisCountStorage redis() {
-        return redis(config.getProperty(REDIS_HOST));
-    }
-
-    public RedisCountStorage redis(String uri) {
-        SimpleURI simpleURI = new SimpleURI(uri);
-        return redis(simpleURI.getHost(), simpleURI.getPort());
-    }
-
-    public RedisCountStorage redis(String host, int port) {
-        JedisPoolConfig poolConfig = new JedisPoolConfig();
-        this.jedisPool = new JedisPool(poolConfig, host, port);
-        return RedisCountStorage.create(jedisPool, new MetricRegistry());
     }
 
     public TaskManager getTaskManager(){
@@ -120,16 +105,14 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void before() throws Throwable {
-        RestAssured.baseURI = "http://" + config.getProperty("server.host") + ":" + config.getProperty("server.port");        
+        RestAssured.baseURI = "http://" + uri();
         if (!config.getPropertyAsBool("test.start.embedded.components", true)) {
             return;
         }
 
         try {
             SimpleURI redisURI = new SimpleURI(config.getProperty(REDIS_HOST));
-            startRedis(redisURI.getPort());
-            jedisPool = new JedisPool(redisURI.getHost(), redisURI.getPort());
-
+            EmbeddedRedis.start(redisURI.getPort());
             @Nullable Class<? extends TaskManager> taskManagerClass = null;
 
             if(startSingleQueueEngine){
@@ -141,11 +124,13 @@ public class EngineContext extends ExternalResource {
             }
 
             if (taskManagerClass != null) {
-                config.setConfigProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
-                server = startEngine(config);
+                GraknTestSetup.startCassandraIfNeeded();
+                LOG.info("Starting engine on {}", uri());
+                server.start();
+                LOG.info("Engine started.");
             }
         } catch (Exception e) {
-            stopRedis();
+            EmbeddedRedis.stop();
             throw e;
         }
 
@@ -160,16 +145,34 @@ public class EngineContext extends ExternalResource {
 
         try {
             if(startSingleQueueEngine | startStandaloneEngine){
-                noThrow(() -> stopEngine(server), "Error closing engine");
+                noThrow(() -> {
+                    LOG.info("Stopping engine...");
+                    // Clear graphs before closing the server because deleting keyspaces needs access to the rest endpoint
+                    clearGraphs(server);
+                    server.close();
+                    LOG.info("Engine stopped.");
+                }, "Error closing engine");
             }
-            getJedisPool().close();
-            stopRedis();
+            EmbeddedRedis.stop();
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);
         }
     }
 
-    public JedisPool getJedisPool() {
-        return jedisPool;
+    private static void clearGraphs(GraknEngineServer server) {
+        // Drop all keyspaces
+        final Set<String> keyspaceNames = new HashSet<String>();
+        try(GraknTx systemGraph = server.factory().tx(SystemKeyspace.SYSTEM_KB_KEYSPACE, GraknTxType.WRITE)) {
+            systemGraph.graql().match(var("x").isa("keyspace-name"))
+                    .forEach(x -> x.values().forEach(y -> {
+                        keyspaceNames.add(y.asAttribute().getValue().toString());
+                    }));
+        }
+
+        keyspaceNames.forEach(name -> {
+            GraknTx graph = server.factory().tx(name, GraknTxType.WRITE);
+            graph.admin().delete();
+        });
+        server.factory().refreshConnections();
     }
 }
