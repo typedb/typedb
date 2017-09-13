@@ -368,7 +368,8 @@ grakn_server_stop_grakn() {
 }
 
 grakn_clean_grakn() {
-  rm "${GRAKN_HOME}"/logs/*.log
+  # redirect to /dev/null to silence 'No such file' error, when the directory is already empty
+  rm "${GRAKN_HOME}"/logs/*.log > /dev/null 2>&1
 }
 
 # ================================================
@@ -489,7 +490,7 @@ grakn_server_clean() {
   redis_is_redis_running
   local is_redis_running=$?
 
-  grakn_is_grakn_running
+  grakn_is_grakn_ready
   local is_grakn_running=$?
 
   if [ $is_cassandra_running -eq 0 ] || [ $is_redis_running -eq 0 ] || [ $is_grakn_running -eq 0 ] ; then
@@ -506,11 +507,10 @@ grakn_server_clean() {
     cassandra_clean_cassandra
     echo "SUCCESS"
 
-    echo -n "Cleaning Redis..."
     redis_start_and_wait_until_ready
     redis_clean_redis
     grakn_server_stop_redis
-    echo "SUCCESS"
+    echo "Cleaning Redis...SUCCESS"
 
     echo -n "Cleaning Grakn..."
     grakn_clean_grakn
