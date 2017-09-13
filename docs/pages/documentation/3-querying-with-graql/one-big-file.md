@@ -58,18 +58,81 @@ Within the [variable patterns](#variable-pattern) of both [define](#define-query
 queries, the following [properties](#property) are supported:
 
 <!-- TODO -->
-- `$A id <identifier>`
-- `$A label <identifier>`
-- `$A sub $B`
-- `$A relates $B`
-- `$A plays $B`
-- `$A has <identifier>`
-- `$A key <identifier>`
-- datatype
-- `$A regex <regex>`
-- `$A is-abstract`
-- `$A when <pattern>`
-- `$A then <pattern>`
+
+### id
+
+`$x id <identifier>` will assign `$x` to an existing concept with the given ID. It is an error if no such concept
+exists.
+
+### label
+
+`$A label <identifier>` will assign `$A` to a schema concept with the given label. If no such schema concept exists,
+one will be created.
+
+### sub
+
+`$A sub $B` defines `$A` as the direct sub-concept of `$B`.
+
+### relates
+
+`$A relates $B` define the relationship type `$A` to directly relate the role `$B`.
+
+### plays
+
+`$A plays $B` defines the type `$A` to directly play the role `$B`.
+
+### has (type)
+
+`$A has <identifier>` defines the type `$A` to have attributes of type `<identifier>`.
+
+This is done using the following relationship structure:
+```
+has-<identifier>-owner sub has-<sup>-owner;
+has-<identifier>-value sub has-<sup>-value;
+has-<identifier> sub has-<sup>, relates has-<identifier>-owner, relates has-<identifier>-value;
+
+$A plays has-<identifier>-owner;
+<identifier> plays has-<identifier>-value;
+```
+Where `<sup>` is the direct super-concept of `<identifier>`.
+
+### key (type)
+
+`$A key <identifier>` defines the type `$A` to have a key of attribute type `<identifier>`.
+
+This is done using the following relationship structure:
+```
+key-<identifier>-owner sub key-<sup>-owner;
+key-<identifier>-value sub key-<sup>-value;
+key-<identifier> sub key-<sup>, relates key-<identifier>-owner, relates key-<identifier>-value;
+
+$A plays{{required}} has-<identifier>-owner;
+<identifier> plays has-<identifier>-value;
+```
+Where `<sup>` is the direct super-concept of `<identifier>`.
+<!-- TODO: This is pretty bad -->
+(note that `plays{{required}}` is not valid syntax, but indicates that instances of the type _must_ play the required
+role exactly once).
+
+### datatype
+
+`$A datatype <datatype>` defines the attribute type `$A` to have the specified datatype.
+
+### regex
+
+`$A regex <regex>` defines the attribute type `$A` to have the specified regex constraint.
+
+### is-abstract
+
+`$A is-abstract` defines the type `$A` to be abstract.
+
+### when
+
+`$A when <pattern>` defines the rule `$A` to have the specified `when` [pattern](#pattern).
+
+### then
+
+`$A then <pattern>` defines the rule `$A` to have the specified `then` [pattern](#pattern).
 
 # Data Manipulation Language
 
