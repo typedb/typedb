@@ -267,6 +267,7 @@ public class GraknEngineServer implements AutoCloseable {
                        Integer.parseInt(prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER)),
                        prop.getPath(GraknEngineConfig.STATIC_FILES_PATH),
                        prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY, false),
+                       prop.tryIntProperty(GraknEngineConfig.WEBSERVER_THREADS, 64),
                        jwtHandler);
     }
     
@@ -275,6 +276,7 @@ public class GraknEngineServer implements AutoCloseable {
                                       int port, 
                                       String staticFolder,
                                       boolean passwordProtected,
+                                      int maxThreads,
                                       @Nullable JWTHandler jwtHandler){
         // Set host name
         spark.ipAddress(hostName);
@@ -285,6 +287,7 @@ public class GraknEngineServer implements AutoCloseable {
         // Set the external static files folder
         spark.staticFiles.externalLocation(staticFolder);
 
+        spark.threadPool(maxThreads);
         spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
         // Register filter to check authentication token in each request
