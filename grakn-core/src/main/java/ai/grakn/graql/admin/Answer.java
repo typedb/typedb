@@ -125,12 +125,11 @@ public interface Answer {
     Answer explain(AnswerExplanation exp);
 
     /**
-     * @param vars variables to be retained
-     * @return answer with filtered variables
+     * @param vars variables defining the projection
+     * @return project the answer retaining the requested variables
      */
-    // TODO: Consider renaming this to `project`
     @CheckReturnValue
-    Answer filterVars(Set<Var> vars);
+    Answer project(Set<Var> vars);
 
     /**
      * @param unifier set of mappings between variables
@@ -145,6 +144,13 @@ public interface Answer {
      */
     @CheckReturnValue
     Stream<Answer> permute(Set<Unifier> unifierSet);
+
+    /**
+     * @param vars variables for which {@link Role} hierarchy should be expanded
+     * @return stream of answers with expanded role hierarchy
+     */
+    @CheckReturnValue
+    Stream<Answer> expandHierarchies(Set<Var> vars);
 
     /**
      * @return an explanation object indicating how this answer was obtained

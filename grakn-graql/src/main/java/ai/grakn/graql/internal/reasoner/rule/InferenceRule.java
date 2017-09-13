@@ -211,15 +211,15 @@ public class InferenceRule {
         return this;
     }
 
-    private InferenceRule rewriteHead(){
+    private InferenceRule rewriteHead(Atom parentAtom){
         Atom childAtom = head.getAtom();
-        Atom newAtom = childAtom.rewriteToUserDefined();
+        Atom newAtom = childAtom.rewriteToUserDefined(parentAtom);
         head.removeAtomic(childAtom);
         head.addAtomic(newAtom);
         return this;
     }
 
-    private InferenceRule rewriteBody(){
+    private InferenceRule rewriteBody(Atom parentAtom){
         HashSet<Atom> toRemove = new HashSet<>();
         HashSet<Atom> rewrites = new HashSet<>();
         body.getAtoms(Atom.class)
@@ -228,7 +228,7 @@ public class InferenceRule {
                 .filter(at -> Objects.nonNull(at.getSchemaConcept()))
                 .filter(at -> at.getSchemaConcept().equals(head.getAtom().getSchemaConcept()))
                 .peek(toRemove::add)
-                .forEach(at -> rewrites.add(at.rewriteToUserDefined()));
+                .forEach(at -> rewrites.add(at.rewriteToUserDefined(parentAtom)));
         toRemove.forEach(body::removeAtomic);
         rewrites.forEach(body::addAtomic);
         return this;
@@ -240,7 +240,7 @@ public class InferenceRule {
      * @return rewritten rule
      */
     public InferenceRule rewriteToUserDefined(Atom parentAtom){
-        return parentAtom.isUserDefinedName()? this.rewriteHead().rewriteBody() : this;
+        return this.rewriteHead(parentAtom).rewriteBody(parentAtom);
     }
 
     /**

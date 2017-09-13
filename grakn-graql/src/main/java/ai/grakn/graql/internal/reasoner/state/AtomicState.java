@@ -47,8 +47,8 @@ public class AtomicState extends QueryState{
     private final Iterator<Answer> dbIterator;
     private final Iterator<RuleTuple> ruleIterator;
 
-    private final Unifier cacheUnifier;
     private InferenceRule currentRule = null;
+    private final Unifier cacheUnifier;
 
     public AtomicState(ReasonerAtomicQuery q,
                        Answer sub,
@@ -82,9 +82,16 @@ public class AtomicState extends QueryState{
     }
 
     @Override
-    public ResolutionState propagateAnswer(AnswerState state) {
-        Answer answer = state.getAtomicAnswer(query, currentRule, cacheUnifier, getCache());
-        return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState()) : null;
+    boolean isAtomicState(){ return true;}
+
+    ResolutionState propagateAnswer(AnswerState state){
+        Answer answer = state.getAnswer();
+        if (answer.isEmpty()) return null;
+
+        if (currentRule != null && query.getAtom().requiresRoleExpansion()){
+            return new RoleExpansionState(answer, getUnifier(), query.getAtom().getRoleExpansionVariables(), getParentState());
+        }
+        return new AnswerState(answer, getUnifier(), getParentState());
     }
 
     @Override
@@ -94,20 +101,25 @@ public class AtomicState extends QueryState{
         return null;
     }
 
+    @Override
+    ReasonerAtomicQuery getQuery(){return query;}
+
+    @Override
+    Unifier getCacheUnifier(){ return cacheUnifier;}
+
+    InferenceRule getCurrentRule(){ return currentRule;}
+
     private ResolutionState generateSubGoalFromRule(RuleTuple ruleTuple){
         currentRule = ruleTuple.getRule();
         Unifier ruleUnifier = ruleTuple.getRuleUnifier();
         Unifier permutationUnifier = ruleTuple.getPermutationUnifier();
 
         //delta' = theta . thetaP . delta
-        Answer sub = query.getSubstitution();
-        Unifier uInv = ruleUnifier.inverse();
-        Answer partialSubPrime = sub
+        Answer partialSubPrime = query.getSubstitution()
                 .unify(permutationUnifier)
-                .unify(uInv);
+                .unify(ruleUnifier.inverse());
 
         Unifier combinedUnifier = ruleUnifier.combine(permutationUnifier);
-
         return currentRule.getBody().subGoal(partialSubPrime, combinedUnifier, this, getSubGoals(), getCache());
     }
 }

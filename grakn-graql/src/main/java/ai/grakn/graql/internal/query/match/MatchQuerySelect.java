@@ -57,7 +57,7 @@ class MatchQuerySelect extends MatchQueryModifier {
 
     @Override
     public Stream<Answer> stream(Optional<GraknTx> graph) {
-        return inner.stream(graph).map(result -> result.filterVars(names));
+        return inner.stream(graph).map(result -> result.project(names));
     }
 
     @Override
